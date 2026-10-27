@@ -30,6 +30,15 @@ public class Workspace {
     @Column(name = "svn_url", length = 1000)
     private String svnUrl;
 
+    @Column(name = "svn_username", length = 200)
+    private String svnUsername;
+
+    @Column(name = "svn_password_encrypted")
+    private String svnPasswordEncrypted;
+
+    @Column(name = "indexed_revision")
+    private Long indexedRevision;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -68,5 +77,33 @@ public class Workspace {
 
     public OffsetDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public String getSvnUsername() {
+        return svnUsername;
+    }
+
+    public String getSvnPasswordEncrypted() {
+        return svnPasswordEncrypted;
+    }
+
+    public Long getIndexedRevision() {
+        return indexedRevision;
+    }
+
+    public void setSvnUrl(String svnUrl) {
+        this.svnUrl = svnUrl;
+    }
+
+    public void setSvnUsername(String svnUsername) {
+        this.svnUsername = svnUsername;
+    }
+
+    public void setSvnPasswordEncrypted(String svnPasswordEncrypted) {
+        this.svnPasswordEncrypted = svnPasswordEncrypted;
+    }
+
+    public void setIndexedRevision(Long indexedRevision) {
+        this.indexedRevision = indexedRevision;
     }
 }

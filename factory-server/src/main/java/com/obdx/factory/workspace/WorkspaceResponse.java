@@ -9,15 +9,21 @@ public record WorkspaceResponse(
         String bankName,
         String obdxVersion,
         String svnUrl,
+        String svnUsername,
+        boolean svnPasswordSet,
+        Long indexedRevision,
         OffsetDateTime createdAt) {
 
-    static WorkspaceResponse from(Workspace workspace) {
+    public static WorkspaceResponse from(Workspace workspace) {
         return new WorkspaceResponse(
                 workspace.getId(),
                 workspace.getName(),
                 workspace.getBankName(),
                 workspace.getObdxVersion(),
                 workspace.getSvnUrl(),
+                workspace.getSvnUsername(),
+                workspace.getSvnPasswordEncrypted() != null,
+                workspace.getIndexedRevision(),
                 workspace.getCreatedAt());
     }
 }

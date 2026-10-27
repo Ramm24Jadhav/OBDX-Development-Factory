@@ -26,6 +26,7 @@ define([], function () {
   return {
     get: function (path) { return request('GET', path); },
     post: function (path, body) { return request('POST', path, body); },
+    put: function (path, body) { return request('PUT', path, body); },
     del: function (path) { return request('DELETE', path); }
   };
 });

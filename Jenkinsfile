@@ -1,5 +1,7 @@
 // Builds the OBDX Development Factory: the Oracle JET UI and the Spring Boot server, as one runnable jar.
-// Needs a JDK 21 and Maven on the agent; Node.js is downloaded by the build (see node.download.root in pom.xml).
+// Needs a JDK 21, Maven and the Subversion client (svn, svnadmin) on the agent; Node.js is downloaded by the build
+// (see node.download.root in pom.xml). Set FACTORY_TEST_DB_URL (plus FACTORY_TEST_DB_USER/PASSWORD) to a PostgreSQL
+// test database with pgvector to also run the import-and-search integration test.
 pipeline {
     agent any
 

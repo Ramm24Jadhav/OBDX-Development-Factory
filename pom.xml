@@ -25,6 +25,7 @@
   <properties>
     <java.version>21</java.version>
     <langchain4j.version>1.22.0</langchain4j.version>
+    <javaparser.version>3.28.2</javaparser.version>
     <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
     <!-- Node.js used to build the Oracle JET UI. Point node.download.root at an internal mirror for offline builds. -->
     <node.version>v22.22.0</node.version>
@@ -37,6 +38,11 @@
         <groupId>com.obdx.factory</groupId>
         <artifactId>factory-ui</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.javaparser</groupId>
+        <artifactId>javaparser-core</artifactId>
+        <version>${javaparser.version}</version>
       </dependency>
       <dependency>
         <groupId>dev.langchain4j</groupId>

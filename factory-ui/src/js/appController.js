@@ -33,6 +33,7 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
       let navData = [
         { path: '', redirect: 'workspaces' },
         { path: 'workspaces', detail: { label: 'Workspaces' } },
+        { path: 'code', detail: { label: 'Code' } },
         { path: 'models', detail: { label: 'Models' } },
         { path: 'about', detail: { label: 'About' } }
       ];

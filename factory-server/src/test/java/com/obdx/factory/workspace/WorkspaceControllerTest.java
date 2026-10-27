@@ -34,7 +34,7 @@ class WorkspaceControllerTest {
     void createsWorkspace() throws Exception {
         UUID id = UUID.randomUUID();
         when(service.create(any())).thenReturn(new WorkspaceResponse(
-                id, "bank-a-22", "Bank A", "22.x", "https://svn.bank-a.local/obdx/trunk", OffsetDateTime.now()));
+                id, "bank-a-22", "Bank A", "22.x", "https://svn.bank-a.local/obdx/trunk", null, false, null, OffsetDateTime.now()));
 
         mvc.perform(post("/api/workspaces")
                         .contentType(MediaType.APPLICATION_JSON)

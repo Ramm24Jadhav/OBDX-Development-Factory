@@ -17,6 +17,16 @@ spring:
     locations: classpath:db/migration
 
 factory:
+  security:
+    # 32 random bytes, base64 (openssl rand -base64 32). Encrypts stored SVN passwords. Keep it secret and stable.
+    secret-key: ${FACTORY_SECRET_KEY:}
+  storage:
+    root: ${FACTORY_DATA_DIR:data}
+  svn:
+    command: ${FACTORY_SVN_COMMAND:svn}
+    trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}
+  indexing:
+    embeddings-enabled: ${FACTORY_INDEX_EMBEDDINGS:true}
   model:
     base-url: ${FACTORY_MODEL_BASE_URL:http://localhost:11434/v1}
     api-key: ${FACTORY_MODEL_API_KEY:not-needed}

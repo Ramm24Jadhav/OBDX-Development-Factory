@@ -1,6 +1,8 @@
 package com.obdx.factory.common;
 
 import com.obdx.factory.model.ModelGatewayException;
+import com.obdx.factory.security.SecretCipher;
+import com.obdx.factory.svn.SvnException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +22,11 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ProblemDetail badRequest(BadRequestException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail conflict(ConflictException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
@@ -37,5 +44,15 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ModelGatewayException.class)
     public ProblemDetail modelUnavailable(ModelGatewayException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+    }
+
+    @ExceptionHandler(SvnException.class)
+    public ProblemDetail svnFailed(SvnException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+    }
+
+    @ExceptionHandler(SecretCipher.MissingSecretKeyException.class)
+    public ProblemDetail missingSecretKey(SecretCipher.MissingSecretKeyException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
 }

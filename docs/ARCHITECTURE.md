@@ -128,11 +128,11 @@ Later: new host integrations, new transaction flows, reports, and full frontend 
 ### 5.2 Code Indexer
 
 - Imports a workspace's codebase from its SVN repository (see 5.6).
-- Parses Java, JavaScript, HTML, JSON, SQL and properties/resource files with tree-sitter into meaningful chunks (classes, methods, components, view models, templates).
+- Parses Java, JavaScript, HTML, JSON, SQL and properties/resource files into meaningful chunks. Implemented so far: Java by class outline and method (JavaParser); other files by windows of lines. Planned: structure-aware chunking for JET view models and templates (tree-sitter).
 - Builds a dependency graph: screen → view model → REST endpoint → service → adapter → DB objects.
 - Stores embeddings plus keyword search; retrieval combines both with graph expansion.
 - Tags every chunk with workspace, OBDX version and whether it is product code or bank customization.
-- Re-indexes incrementally on new SVN revisions (only files changed since the last indexed revision).
+- Re-indexes incrementally on new SVN revisions: after `svn update`, only files whose content hash changed are re-indexed, and deleted files are removed.
 
 #### Project Profile (stack detection)
 
@@ -184,7 +184,7 @@ OBDX teams already build UI and backend packages with Jenkins pipelines, so the 
 OBDX code is kept in Subversion repositories. Developers use TortoiseSVN on Windows, and Jenkins jobs check out from the same SVN server. The factory talks to the SVN server directly with the standard `svn` command-line client; no TortoiseSVN install is needed on the server.
 
 - **Import:** check out (or export) the workspace's trunk or a chosen branch at a known revision. Store the revision number with the index.
-- **Incremental updates:** `svn log` / `svn diff` since the last indexed revision gives the changed files to re-index.
+- **Incremental updates:** `svn update` brings the working copy to HEAD; the indexer re-indexes files whose content hash changed (simpler and more robust than parsing `svn diff`).
 - **History:** `svn log` messages are used to link BRDs and change request IDs to the revisions that implemented them (for the evaluation set).
 - **Temporary branches:** `svn copy trunk branches/factory/<request-id>` (a cheap server-side copy), then commit the generated changes there for the Jenkins build.
 - **Delivery options:**

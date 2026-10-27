@@ -1,0 +1,82 @@
+<div class="oj-hybrid-padding">
+  <h1>Code</h1>
+  <p class="oj-text-color-secondary">
+    Connect a workspace to its SVN repository, import and index the code, then search it.
+  </p>
+
+  <oj-form-layout max-columns="2">
+    <oj-select-single id="workspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
+                      placeholder="Select a workspace"></oj-select-single>
+  </oj-form-layout>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspace()]]">
+    <h2>SVN repository</h2>
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-input-text id="svnUrl" label-hint="SVN URL" value="{{svnUrl}}" required
+                     help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
+      <oj-input-text id="svnUsername" label-hint="Username (service account)" value="{{svnUsername}}"></oj-input-text>
+      <oj-input-password id="svnPassword" label-hint="Password" value="{{svnPassword}}" mask-icon="visible"
+                         placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
+    </oj-form-layout>
+    <oj-toolbar>
+      <oj-button id="saveSvnButton" on-oj-action="[[saveSvn]]" disabled="[[busy]]">Save</oj-button>
+      <oj-button id="testSvnButton" on-oj-action="[[testSvn]]" disabled="[[busy]]">Test connection</oj-button>
+    </oj-toolbar>
+    <oj-bind-if test="[[svnMessage()]]">
+      <p class="oj-text-color-success"><oj-bind-text value="[[svnMessage]]"></oj-bind-text></p>
+    </oj-bind-if>
+
+    <h2>Code index</h2>
+    <oj-bind-if test="[[indexStatus()]]">
+      <ul>
+        <li>Indexed revision: <oj-bind-text value="[[indexStatus().indexedRevision === null ? 'not imported yet' : 'r' + indexStatus().indexedRevision]]"></oj-bind-text></li>
+        <li>Files: <oj-bind-text value="[[indexStatus().files]]"></oj-bind-text> (<oj-bind-text value="[[languageSummary]]"></oj-bind-text>)</li>
+        <li>Searchable pieces: <oj-bind-text value="[[indexStatus().chunks]]"></oj-bind-text>, with embeddings: <oj-bind-text value="[[indexStatus().chunksWithEmbedding]]"></oj-bind-text></li>
+      </ul>
+    </oj-bind-if>
+    <oj-button id="importButton" chroming="callToAction" on-oj-action="[[startImport]]" disabled="[[importRunning]]">
+      <oj-bind-text value="[[importRunning() ? 'Import running...' : 'Import / update code']]"></oj-bind-text>
+    </oj-button>
+
+    <oj-table id="jobTable" aria-label="Recent imports" data="[[jobProvider]]" class="oj-sm-margin-4x-top" style="width: 100%;"
+              columns='[{"headerText": "Started", "field": "created"},
+                        {"headerText": "Status", "field": "status"},
+                        {"headerText": "Revision", "field": "revisions"},
+                        {"headerText": "Files changed / removed", "field": "files"},
+                        {"headerText": "Pieces", "field": "chunksIndexed"},
+                        {"headerText": "Embeddings", "field": "embeddingsCreated"},
+                        {"headerText": "Message", "field": "message"}]'>
+      <template slot="noData">No imports yet.</template>
+    </oj-table>
+
+    <h2>Search</h2>
+    <oj-form-layout max-columns="1">
+      <oj-input-text id="searchQuery" label-hint="Where is ... implemented?" value="{{query}}"
+                     on-oj-enter="[[search]]" clear-icon="conditional"></oj-input-text>
+    </oj-form-layout>
+    <oj-button id="searchButton" on-oj-action="[[search]]" disabled="[[searching]]">Search</oj-button>
+    <oj-bind-if test="[[searchNote()]]">
+      <p class="oj-text-color-secondary"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p>
+    </oj-bind-if>
+    <oj-bind-for-each data="[[results]]">
+      <template>
+        <div class="factory-result">
+          <div>
+            <strong><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></strong>
+            <span class="oj-text-color-secondary">
+              lines <oj-bind-text value="[[$current.data.startLine + '-' + $current.data.endLine]]"></oj-bind-text>
+              · <oj-bind-text value="[[$current.data.kind]]"></oj-bind-text>
+              · <oj-bind-text value="[[$current.data.matchedBy]]"></oj-bind-text>
+            </span>
+          </div>
+          <div class="oj-typography-body-sm"><oj-bind-text value="[[$current.data.symbol]]"></oj-bind-text></div>
+          <pre class="factory-reply"><oj-bind-text value="[[$current.data.snippet]]"></oj-bind-text></pre>
+        </div>
+      </template>
+    </oj-bind-for-each>
+  </oj-bind-if>
+</div>

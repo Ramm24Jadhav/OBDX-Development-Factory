@@ -1,8 +1,10 @@
 package com.obdx.factory.model;
 
+import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -67,8 +69,22 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         try {
             return embeddingModel.embed(text).content().vector();
         } catch (RuntimeException e) {
-            throw new ModelGatewayException(
-                    "Embedding model '" + properties.embeddingModel() + "' at " + properties.baseUrl() + " failed: " + e.getMessage(), e);
+            throw embeddingFailure(e);
         }
+    }
+
+    @Override
+    public List<float[]> embedAll(List<String> texts) {
+        try {
+            List<Embedding> embeddings = embeddingModel.embedAll(texts.stream().map(TextSegment::from).toList()).content();
+            return embeddings.stream().map(Embedding::vector).toList();
+        } catch (RuntimeException e) {
+            throw embeddingFailure(e);
+        }
+    }
+
+    private ModelGatewayException embeddingFailure(RuntimeException e) {
+        return new ModelGatewayException(
+                "Embedding model '" + properties.embeddingModel() + "' at " + properties.baseUrl() + " failed: " + e.getMessage(), e);
     }
 }
