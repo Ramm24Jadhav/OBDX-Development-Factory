@@ -263,7 +263,7 @@ Some banks may ask to redesign their whole OBDX frontend in another technology, 
 
 ### Steps
 
-1. **Scan and inventory.** Build a catalog of every screen, user flow, REST service and role in the bank's OBDX application. This is the migration map.
+1. **Scan and inventory.** Build a catalog of every screen, user flow, REST service and role in the bank's OBDX application. This is the migration map. *Implemented:* a rule-based scan after each import (JET views, OBDX component folders, composite and VDOM components; JAX-RS and Spring services matched to the UI's calls; roles and segments; navigation flows; S/M/L sizes), shown on the Modernization page and exported as CSV.
 2. **Reverse-engineer screens.** Turn each existing JET screen into a target-neutral Screen Model, with fields, validations, actions and service calls taken from the real code.
 3. **Set up the target.** Agree the bank's new design system (colors, typography, components) and create a starter project: navigation, login, API client, error handling, logging. This acts as the target's profile.
 4. **Redesign and review.** Customers review and change screens in the Screen Designer with the React Native preview renderer, and check them on a real device with Expo.

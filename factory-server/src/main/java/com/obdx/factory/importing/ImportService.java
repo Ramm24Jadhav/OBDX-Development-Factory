@@ -5,6 +5,8 @@ import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.indexing.CodeIndexRepository;
 import com.obdx.factory.indexing.CodeIndexer;
+import com.obdx.factory.modernization.Inventory;
+import com.obdx.factory.modernization.InventoryService;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.svn.SvnClient;
 import com.obdx.factory.svn.SvnCredentials;
@@ -47,11 +49,12 @@ public class ImportService {
     private final CodeIndexRepository index;
     private final StorageProperties storage;
     private final ProjectProfileService profiles;
+    private final InventoryService inventories;
     private final TaskExecutor executor;
 
     public ImportService(ImportJobRepository jobs, WorkspaceRepository workspaces, WorkspaceService workspaceService,
                          SvnClient svnClient, CodeIndexer indexer, CodeIndexRepository index, StorageProperties storage,
-                         ProjectProfileService profiles, @Qualifier("importExecutor") TaskExecutor executor) {
+                         ProjectProfileService profiles, InventoryService inventories, @Qualifier("importExecutor") TaskExecutor executor) {
         this.jobs = jobs;
         this.workspaces = workspaces;
         this.workspaceService = workspaceService;
@@ -60,6 +63,7 @@ public class ImportService {
         this.index = index;
         this.storage = storage;
         this.profiles = profiles;
+        this.inventories = inventories;
         this.executor = executor;
     }
 
@@ -131,6 +135,7 @@ public class ImportService {
                 summary += " " + progress.warning;
             }
             summary += refreshProfile(workspace.getId());
+            summary += refreshInventory(workspace.getId());
             job.succeed(summary);
         } catch (Exception e) {
             log.error("Import job {} failed", jobId, e);
@@ -147,6 +152,17 @@ public class ImportService {
         } catch (RuntimeException e) {
             log.warn("Project profile detection failed for workspace {}", workspaceId, e);
             return " Project profile could not be updated: " + e.getMessage();
+        }
+    }
+
+    /** The modernization inventory also follows the code. A failure here does not fail the import. */
+    private String refreshInventory(UUID workspaceId) {
+        try {
+            Inventory inventory = inventories.scan(workspaceId);
+            return " Inventory: " + inventory.summary().screens() + " screen(s), " + inventory.summary().endpoints() + " service(s).";
+        } catch (RuntimeException e) {
+            log.warn("Inventory scan failed for workspace {}", workspaceId, e);
+            return " Inventory could not be updated: " + e.getMessage();
         }
     }
 

@@ -442,3 +442,13 @@
 .factory-design-code { margin-top: 12px; }
 .factory-code-file pre { max-height: 420px; overflow: auto; }
 .factory-mapping-table { max-width: 560px; }
+
+.factory-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 12px 0 16px; }
+.factory-tile { border: 1px solid var(--oj-core-divider-color, #ddd); border-radius: 6px; padding: 12px; background: var(--oj-core-bg-color-content, #fff); }
+.factory-tile-value { font-size: 1.8rem; font-weight: 700; }
+.factory-tile-label { font-weight: 600; }
+.factory-inventory-table { table-layout: auto; }
+.factory-inventory-table th { width: auto !important; }
+.factory-size-S { background-color: #e3f4e6; }
+.factory-size-M { background-color: #fdf1d6; }
+.factory-size-L { background-color: #f9dcdc; }

@@ -1,0 +1,148 @@
+<div class="oj-hybrid-padding">
+  <h1>Modernization</h1>
+  <p class="oj-text-color-secondary">
+    The migration map of this bank's OBDX application, scanned from its code: every screen with its fields, actions, the services it
+    calls and the screens it opens; the backend REST services; roles; and the user flows between screens. Use it to plan moving the
+    frontend to React Native or React in waves (choose the UI target on the Code page). It is scanned again after every import.
+  </p>
+
+  <oj-form-layout max-columns="2">
+    <oj-select-single id="modernizationWorkspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
+                      placeholder="Select a workspace"></oj-select-single>
+  </oj-form-layout>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+  <oj-bind-if test="[[emptyMessage()]]">
+    <p id="inventoryEmpty"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspaceId()]]">
+    <oj-toolbar>
+      <oj-button id="scanButton" on-oj-action="[[scan]]" disabled="[[busy() || !canScan()]]">
+        <oj-bind-text value="[[busy() ? 'Scanning...' : 'Scan again']]"></oj-bind-text>
+      </oj-button>
+      <oj-bind-if test="[[inventory()]]">
+        <a id="csvLink" class="factory-link-button" :href="[[csvUrl]]" download>Download screens (CSV)</a>
+      </oj-bind-if>
+    </oj-toolbar>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[inventory()]]">
+    <p id="scannedText" class="oj-text-color-secondary"><oj-bind-text value="[[scannedText]]"></oj-bind-text></p>
+    <div class="factory-tiles">
+      <oj-bind-for-each data="[[tiles]]" as="t">
+        <template>
+          <div class="factory-tile">
+            <div class="factory-tile-value"><oj-bind-text value="[[t.data.value]]"></oj-bind-text></div>
+            <div class="factory-tile-label"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></div>
+            <div class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[t.data.detail]]"></oj-bind-text></div>
+          </div>
+        </template>
+      </oj-bind-for-each>
+    </div>
+    <oj-bind-for-each data="[[inventory().notes]]">
+      <template><p class="factory-warning"><oj-bind-text value="[[$current.data]]"></oj-bind-text></p></template>
+    </oj-bind-for-each>
+
+    <h2>Modules</h2>
+    <table id="moduleTable" class="factory-profile-table factory-inventory-table">
+      <thead><tr><th>Module</th><th>Screens</th><th>Fields</th><th>Small</th><th>Medium</th><th>Large</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[modules]]" as="m">
+          <template>
+            <tr><td><oj-bind-text value="[[m.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.screens]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[m.data.fields]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.complexity.S]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[m.data.complexity.M]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.complexity.L]]"></oj-bind-text></td></tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+
+    <h2>Screens</h2>
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-select-single id="moduleFilter" label-hint="Module" data="[[moduleProvider]]" value="{{moduleFilter}}"></oj-select-single>
+      <oj-input-text id="screenSearch" label-hint="Search (name, file or service)" value="{{search}}" raw-value="{{search}}"></oj-input-text>
+    </oj-form-layout>
+    <p class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[screenCount() + ' screen(s)']]"></oj-bind-text>.
+      Size from fields, actions, services, screens opened and lines of code: S, M or L.</p>
+    <table id="screenTable" class="factory-profile-table factory-inventory-table">
+      <thead><tr><th>Screen</th><th>Module</th><th>Size</th><th>Fields</th><th>Actions</th><th>Services called</th><th>Opens</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[screenRows]]" as="s">
+          <template>
+            <tr>
+              <td><details><summary><span class="oj-typography-bold"><oj-bind-text value="[[s.data.name]]"></oj-bind-text></span>
+                <span class="oj-typography-body-xs oj-text-color-secondary"> <oj-bind-text value="[[s.data.kind]]"></oj-bind-text></span></summary>
+                <div class="factory-evidence">
+                  <oj-bind-for-each data="[[s.data.files]]" as="file"><template><div><oj-bind-text value="[[file.data]]"></oj-bind-text></div></template></oj-bind-for-each>
+                  <oj-bind-if test="[[s.data.fields.length > 0]]"><div class="oj-typography-bold">Fields</div></oj-bind-if>
+                  <oj-bind-for-each data="[[s.data.fields]]" as="field"><template><div><oj-bind-text value="[[field.data]]"></oj-bind-text></div></template></oj-bind-for-each>
+                </div></details></td>
+              <td><oj-bind-text value="[[s.data.module]]"></oj-bind-text></td>
+              <td><span :class="[['factory-status factory-size-' + s.data.complexity]]" :title="[['Score ' + s.data.score]]"><oj-bind-text value="[[s.data.complexity]]"></oj-bind-text></span></td>
+              <td><oj-bind-text value="[[s.data.fieldCount]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[s.data.actions]]"></oj-bind-text></td>
+              <td class="factory-evidence"><oj-bind-text value="[[s.data.calls]]"></oj-bind-text></td>
+              <td class="factory-evidence"><oj-bind-text value="[[s.data.opens]]"></oj-bind-text></td>
+            </tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+
+    <h2>User flows</h2>
+    <oj-bind-if test="[[flows().length === 0]]"><p class="oj-text-color-secondary">No navigation between screens was found.</p></oj-bind-if>
+    <ul id="flowList">
+      <oj-bind-for-each data="[[flows]]" as="f">
+        <template>
+          <li><span class="oj-typography-bold"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>:
+            <oj-bind-text value="[[f.data.steps.join('; ')]]"></oj-bind-text></li>
+        </template>
+      </oj-bind-for-each>
+    </ul>
+
+    <h2>Services the UI calls</h2>
+    <table id="callTable" class="factory-profile-table factory-inventory-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Backend service</th><th>Called by</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[callRows]]" as="c">
+          <template>
+            <tr><td><oj-bind-text value="[[c.data.method]]"></oj-bind-text></td><td><code><oj-bind-text value="[[c.data.path]]"></oj-bind-text></code></td>
+              <td :class="[[c.data.missing ? 'oj-text-color-secondary' : '']]"><oj-bind-text value="[[c.data.endpoint]]"></oj-bind-text></td>
+              <td class="factory-evidence"><oj-bind-text value="[[c.data.screens]]"></oj-bind-text></td></tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+
+    <h2>Backend REST services</h2>
+    <table id="endpointTable" class="factory-profile-table factory-inventory-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Code</th><th>Owner</th><th>Used by screens</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[endpointRows]]" as="e">
+          <template>
+            <tr><td><oj-bind-text value="[[e.data.method]]"></oj-bind-text></td><td><code><oj-bind-text value="[[e.data.path]]"></oj-bind-text></code></td>
+              <td class="factory-evidence"><oj-bind-text value="[[e.data.code]]"></oj-bind-text></td><td><oj-bind-text value="[[e.data.product]]"></oj-bind-text></td>
+              <td class="factory-evidence"><oj-bind-text value="[[e.data.usedBy]]"></oj-bind-text></td></tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+
+    <h2>Roles and user segments</h2>
+    <oj-bind-if test="[[roles().length === 0]]"><p class="oj-text-color-secondary">None found in the code.</p></oj-bind-if>
+    <table id="roleTable" class="factory-profile-table factory-inventory-table">
+      <thead><tr><th>Name</th><th>Found as</th><th>Where</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[roles]]" as="r">
+          <template>
+            <tr><td><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.source]]"></oj-bind-text></td>
+              <td class="factory-evidence"><oj-bind-text value="[[r.data.evidence]]"></oj-bind-text></td></tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+  </oj-bind-if>
+</div>

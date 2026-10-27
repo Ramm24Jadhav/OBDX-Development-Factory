@@ -24,6 +24,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`; `ChangeBuildService` runs the quick checks and Jenkins builds with the fix loop.
 - `pack/`: version packs. `VersionPacks` loads the YAML rule and recipe files (`RecipeLoader` for recipes and templates); `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings; `RecipeService` finds and pins reference examples.
 - `target/`: UI targets. `TargetPacks` loads `target-packs/`; `ScreenScaffolder` turns an approved Screen Model into a screen, test and texts for React Native or React; `TargetService` holds each workspace's target and app folder, the starter download and the planner's guide.
+- `modernization/`: the modernization inventory. `InventoryScanner` scans a working copy into screens, services, roles and flows; `InventoryService` stores it after each import and exports the screens as CSV.
 - `jenkins/`: Jenkins settings, REST client and build log parsing.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC, SAML); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
@@ -187,6 +188,19 @@ Teams can adapt a pack without rebuilding: `FACTORY_PACKS_DIR/targets/<id>/targe
 
 Generated screens were checked with the real toolchains: the React Native starter with a generated screen type-checks (`tsc`) and its tests pass (Jest, React Native Testing Library); the React starter builds (`vite build`) and its tests pass (Vitest).
 
+## Modernization inventory
+
+The **Modernization** page shows the migration map of a workspace's OBDX application, for planning a move of its frontend to React Native or React. It is scanned from the imported code after every import (and with **Scan again**), without a model, so the same code always gives the same inventory:
+
+- **Screens**: classic JET views with view models (`views/x.html` + `viewModels/x.js`), OBDX-style component folders (`x/x.html` + `x/x.js`, with `model.js` and the `nls` resource bundle), JET composite components (`component.json`) and VDOM components (`ojs/ojvcomponent`). For each: module (the folder after `modules/`, or the nearest meaningful folder), files, fields (Screen Model type, label binding, value binding), actions (buttons), the services it calls (`baseService.fetch({url: ...})`, `xService.post('payments/transfers/' + id + '/approve')`, `url:` properties; variables become `{}`), the screens it opens (`loadComponent('...')`, router `go`, `navigate`), and a size: S, M or L from fields + 2 x actions + 3 x services + 2 x screens opened + lines / 50.
+- **Backend REST services** in the code (JAX-RS `@Path` with `@GET`/`@POST`/..., Spring `@RequestMapping`/`@GetMapping`/...), marked Oracle product (`com.ofss`) or bank, with the screens that call them.
+- **Services the UI calls**, matched to backend services (segments compared from the end, so prefixes such as `digx/v1` do not matter). Calls without a match are usually Oracle OBDX product services, which the new app calls as they are.
+- **Roles and user segments** from `@RolesAllowed`, `@Secured`, `@PreAuthorize`, user-segment checks in the UI and segment folders (retail, corporate, admin, ...).
+- **User flows**: screens connected by navigation, in the order they are reached.
+- **Modules** with their screen counts and sizes, and **Download screens (CSV)** (opens in Excel) for wave planning.
+
+The new app's folder (a React Native or React target) is left out. Navigation built from variables, and services called through helpers the patterns do not know, are not found; the counts are a starting point to check with the team.
+
 ## Recipes, templates and reference examples
 
 The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
@@ -343,6 +357,9 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/targets/{id}/starter.zip` | Download a target pack's starter project |
 | `GET` / `PUT /api/workspaces/{id}/target` | The workspace's UI target and app folder (`target`, `appFolder`) |
 | `GET /api/designs/{id}/code?module=` | The screen, test and texts a design becomes in the workspace's React Native or React app |
+| `GET /api/workspaces/{id}/inventory` | The modernization inventory (204 when not scanned yet) |
+| `POST /api/workspaces/{id}/inventory/scan` | Scan the imported code again |
+| `GET /api/workspaces/{id}/inventory/screens.csv` | The screens as CSV for planning |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
@@ -383,4 +400,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Modernization at scale (section 6 of the architecture): scanning and inventorying a whole OBDX application, reverse-engineering existing JET screens into Screen Models, wave planning, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+The rest of modernization (section 6 of the architecture): reverse-engineering existing JET screens into Screen Models, wave planning on top of the inventory, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
