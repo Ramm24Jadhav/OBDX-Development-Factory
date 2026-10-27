@@ -126,6 +126,19 @@ Later: new host integrations, new transaction flows, reports.
 - Tags every chunk with workspace, OBDX version and whether it is product code or bank customization.
 - Re-indexes incrementally on new SVN revisions (only files changed since the last indexed revision).
 
+#### Project Profile (stack detection)
+
+The factory does not assume a fixed technology stack for the OBDX code it generates. When a workspace is first indexed, the scanner builds a **Project Profile** from the codebase itself, and every later step generates code that matches it. Examples of what it detects:
+
+- OBDX version and patch level.
+- UI: Oracle JET version, component and module structure, third-party JS libraries, styling and resource bundle conventions.
+- Backend: Java version, frameworks and libraries in use, build tool and packaging (from build files and dependencies).
+- Data: database type, script conventions, naming patterns for tables and sequences.
+- Integration: host systems and adapter patterns in use.
+- Bank conventions: package names, folder layout for customizations, naming, logging, error handling, code style.
+
+The profile is stored with the workspace, shown in the UI for a developer to confirm or correct, and refreshed when the codebase changes. Where the profile and the version pack disagree, the profile wins, because it reflects what the bank actually runs.
+
 ### 5.3 Version Packs
 
 A version pack captures what differs between OBDX releases, so generation follows the right conventions:
@@ -141,7 +154,7 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 ### 5.4 Agent Pipeline
 
 - Explicit state machine (LangGraph or custom), one step per workflow stage, with human approval gates after spec and plan.
-- Each step reads only from its own workspace's index and the matching version pack.
+- Each step reads only from its own workspace's index, its Project Profile and the matching version pack.
 - Structured outputs (JSON schemas) for spec, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
 
@@ -190,7 +203,9 @@ OBDX code is kept in Subversion repositories. Developers use TortoiseSVN on Wind
 
 ---
 
-## 7. Tech stack
+## 7. Tech stack (of the factory tool)
+
+This is the stack used to build the OBDX Development Factory itself. The stack of the OBDX code it generates is not fixed here; it comes from each workspace's Project Profile (see 5.2).
 
 | Part | Choice |
 |---|---|
