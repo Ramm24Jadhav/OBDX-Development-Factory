@@ -18,4 +18,4 @@ mvn clean verify                                  # builds the JET UI and the Sp
 java -jar factory-server/target/obdx-factory.jar  # http://localhost:8080
 ```
 
-Needs JDK 21, Maven and PostgreSQL with pgvector. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, configuration and installation on a Linux server.
+Needs JDK 21, Maven and PostgreSQL with pgvector. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, configuration, installation on a Linux server and publishing behind Oracle HTTP Server at `https://<OHS host>/factory/`, the same way OBDX is published.

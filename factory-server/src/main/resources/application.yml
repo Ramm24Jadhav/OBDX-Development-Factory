@@ -1,7 +1,17 @@
 # Every value can be overridden with an environment variable, for example FACTORY_DB_URL or FACTORY_MODEL_BASE_URL.
 server:
   port: ${FACTORY_PORT:8080}
+  # Address the factory listens on. Behind Oracle HTTP Server (or another proxy) on the same machine, use 127.0.0.1.
+  address: ${FACTORY_BIND_ADDRESS:0.0.0.0}
+  # Trust X-Forwarded-Host/-Proto/-Prefix from the proxy in front (Oracle HTTP Server), so redirects and single sign-on URLs
+  # use the address users see. Only enable this when the factory is reachable through the proxy alone.
+  forward-headers-strategy: ${FACTORY_FORWARD_HEADERS:none}
+  tomcat:
+    # Redirects like /factory to /factory/ are sent as paths, so browsers keep the proxy's https address.
+    use-relative-redirects: true
   servlet:
+    # Path the factory is served under, for example /factory behind Oracle HTTP Server; empty for the root.
+    context-path: ${FACTORY_CONTEXT_PATH:}
     session:
       # Signed-in sessions end after this much inactivity.
       timeout: ${FACTORY_SESSION_TIMEOUT:30m}

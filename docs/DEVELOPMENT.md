@@ -398,6 +398,27 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 4. Copy `deploy/obdx-factory.service` to `/etc/systemd/system/` and run `systemctl daemon-reload && systemctl enable --now obdx-factory`.
 5. Check: `curl http://localhost:8080/actuator/health`.
 
+## Deploying behind Oracle HTTP Server (like OBDX)
+
+OBDX is published as Oracle HTTP Server (OHS) in front of WebLogic. The factory is published the same way: OHS terminates HTTPS with the bank's certificate and forwards `/factory` to the factory service, which takes the place of the WebLogic managed server. Users open `https://<OHS host>/factory/` in the browser; nothing is installed on their machines.
+
+The factory is not deployed *into* WebLogic: it is built on Spring Boot 4 (Jakarta EE 11), and WebLogic 14.1 supports Java EE 8 and 15.1 Jakarta EE 9.1. It runs as its own service (`deploy/obdx-factory.service`) with an embedded server, which OHS proxies to exactly as it proxies to WebLogic.
+
+1. Install the factory service as in [Installing on a Linux server](#installing-on-a-linux-server), and add to `/etc/obdx-factory/obdx-factory.env`:
+   ```
+   FACTORY_CONTEXT_PATH=/factory
+   FACTORY_FORWARD_HEADERS=native
+   FACTORY_COOKIE_SECURE=true
+   FACTORY_BIND_ADDRESS=127.0.0.1   # when OHS runs on the same machine; otherwise firewall port 8080 to the OHS hosts
+   ```
+   `FACTORY_FORWARD_HEADERS=native` makes the factory trust the `X-Forwarded-Proto` header from proxies on internal addresses, so it knows users came in over HTTPS (secure cookies, single sign-on URLs). Redirects are sent as relative paths, so they keep the OHS address.
+2. Copy `deploy/ohs/obdx-factory.conf` to the OHS instance's `moduleconf` folder (for example `$DOMAIN_HOME/config/fmwconfig/components/OHS/instances/ohs1/moduleconf/`) and replace `factory-host` with the factory server's host name. OHS includes every `*.conf` file there. It needs `mod_proxy`, `mod_proxy_http` and `mod_headers`, which ship with OHS.
+3. Restart the factory service and OHS, then check `curl -k https://<OHS host>/factory/actuator/health` and open `https://<OHS host>/factory/`.
+
+With a context path, every factory URL starts with it: the health check is `/factory/actuator/health`, the OIDC redirect URI `https://<OHS host>/factory/login/oauth2/code/sso` and the SAML metadata `https://<OHS host>/factory/saml2/metadata/sso`. Give the identity provider these addresses, not the service's own.
+
+Several factory servers can sit behind one OHS for availability: list them in a `<Proxy balancer://factory>` block with sticky sessions (`stickysession=JSESSIONID`), since the signed-in session lives on the server that created it.
+
 ## Not built yet
 
 The rest of modernization (section 6 of the architecture): reverse-engineering existing JET screens into Screen Models, wave planning on top of the inventory, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
