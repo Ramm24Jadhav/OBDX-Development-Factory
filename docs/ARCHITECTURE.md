@@ -81,7 +81,7 @@ Later: new host integrations, new transaction flows, reports.
 2. **Impact analysis.** Search the workspace's code index to find related screens, services and adapters. Decide whether each requirement is a new component or an extension. List affected files with reasons.
 3. **Plan.** Produce an ordered plan by layer, with the files to create or modify and the pattern from the version pack each one follows. A reviewer approves or edits the plan before any code is generated.
 4. **Generate.** Generate code layer by layer, each step grounded in retrieved code from the same codebase and the version pack.
-5. **Validate and fix.** Apply changes in an isolated sandbox copy of the codebase. Run build, lint and unit tests. Feed failures back to the model for a bounded number of retries. Report anything still failing.
+5. **Validate and fix.** Run quick local checks first (syntax, lint). Then push the changes to a temporary Git branch and trigger the bank's existing Jenkins pipeline to build the UI and backend packages and run tests. Feed failures back to the model for a bounded number of retries. Report anything still failing.
 6. **Deliver.** Produce a Git branch or patch, a change summary, the spec-to-code traceability, and a test checklist.
 
 ---
@@ -96,11 +96,11 @@ Later: new host integrations, new transaction flows, reports.
 | API and Orchestrator                                                      |
 | auth (SSO), roles, workspaces, jobs, approvals, audit log                 |
 +------------------+------------------+------------------+------------------+
-| Document Ingest  | Code Indexer     | Agent Pipeline   | Build Sandbox    |
-| parse BRD/FSD    | per workspace:   | spec, impact,    | per-workspace    |
-| extract spec     | chunks, symbols, | plan, generate,  | container image: |
-|                  | dependency graph,| validate, fix    | build, lint,     |
-|                  | embeddings       |                  | tests            |
+| Document Ingest  | Code Indexer     | Agent Pipeline   | Build Validation |
+| parse BRD/FSD    | per workspace:   | spec, impact,    | quick local      |
+| extract spec     | chunks, symbols, | plan, generate,  | checks + bank's  |
+|                  | dependency graph,| validate, fix    | Jenkins pipeline |
+|                  | embeddings       |                  | via REST API     |
 +------------------+------------------+------------------+------------------+
 | Model Gateway (OpenAI-compatible)        | Version Packs (22.x, 25.x)     |
 | vLLM / Ollama / private cloud endpoints  | patterns, extension points,    |
@@ -145,11 +145,17 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 - Structured outputs (JSON schemas) for spec, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
 
-### 5.5 Build Sandbox
+### 5.5 Build Validation (Jenkins)
 
-- One container image per workspace with that bank's build toolchain (JDK, build tool, Node toolchain for the UI).
-- Runs on a disposable copy of the repo; no network access except approved internal artifact repositories.
-- Returns structured results (errors, test failures) to the pipeline.
+OBDX teams already build UI and backend packages with Jenkins pipelines, so the factory reuses them instead of introducing a new build system.
+
+- **Quick local checks** run first on the factory server, with no build tools needed: syntax parsing (tree-sitter), JSON/XML/SQL well-formedness, lint rules from the version pack. These catch most mistakes in seconds.
+- **Jenkins build:** the factory pushes the generated changes to a temporary branch (for example `factory/<request-id>`) and triggers the workspace's Jenkins job through the Jenkins REST API (`buildWithParameters`, passing the branch name).
+- **Results:** the factory polls the build status, then reads the console log and JUnit test reports through the API and turns them into structured errors for the fix loop.
+- **Per-workspace settings:** Jenkins URL, job names (UI and backend), the parameter name for the branch, and a Jenkins API token stored in the secret store.
+- **Requirement on the bank side:** a Jenkins job that accepts a branch parameter and publishes test results. Existing jobs usually need only that one parameter added.
+- **Trade-off:** a Jenkins build takes minutes, not seconds, so the fix loop is capped (for example 3 build attempts) and local checks do as much as possible before each build.
+- Temporary branches are deleted after the request is delivered or abandoned.
 
 ---
 
@@ -182,9 +188,9 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 | Document parsing | Docling or Unstructured |
 | Local models | Open-weight coding models (Qwen Coder / DeepSeek Coder class) via vLLM; Ollama for dev |
 | Embeddings | Local embedding model (BGE / Nomic class) |
-| Sandbox | Docker (rootless), per-workspace images |
+| Build validation | Quick local checks + the bank's existing Jenkins pipelines via the Jenkins REST API |
 | Auth | OIDC / SAML / LDAP, role-based access |
-| Packaging | Docker Compose for dev and small installs; Helm chart for Kubernetes |
+| Packaging | Standard installer for Linux servers (services managed by systemd), so OBDX teams need no Docker knowledge. Container images offered optionally for teams that run Docker or Kubernetes |
 
 ---
 
@@ -224,5 +230,6 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 
 - Which bank codebase and BRDs make up the Phase 0/1 pilot?
 - Which Git hosting do banks use (affects import and export)?
+- For the pilot bank: Jenkins version, job names for UI and backend builds, whether jobs already accept a branch parameter, and whether they publish JUnit results.
 - Which GPUs or private model endpoints are available for the pilot?
 - Licensing confirmation for indexing product and customized code.
