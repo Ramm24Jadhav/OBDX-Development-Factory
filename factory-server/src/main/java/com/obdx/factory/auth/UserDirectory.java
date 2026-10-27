@@ -99,7 +99,8 @@ public class UserDirectory {
         if (users.findByUsername(name).isPresent()) {
             throw new ConflictException("User " + name + " already exists");
         }
-        AppUser.Source source = properties.isLocal() ? AppUser.Source.LOCAL : properties.isLdap() ? AppUser.Source.LDAP : AppUser.Source.OIDC;
+        AppUser.Source source = properties.isLocal() ? AppUser.Source.LOCAL : properties.isLdap() ? AppUser.Source.LDAP
+                : properties.isSaml() ? AppUser.Source.SAML : AppUser.Source.OIDC;
         AppUser user = new AppUser(name, displayName, email, source);
         if (source == AppUser.Source.LOCAL) {
             user.setPasswordHash(passwordEncoder.encode(checkPassword(password)));

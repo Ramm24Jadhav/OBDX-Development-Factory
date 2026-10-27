@@ -7,7 +7,8 @@ server:
       timeout: ${FACTORY_SESSION_TIMEOUT:30m}
       cookie:
         http-only: true
-        same-site: lax
+        # lax by default; SAML sign-in needs none (with secure: true), because the identity provider posts back cross-site.
+        same-site: ${FACTORY_COOKIE_SAME_SITE:lax}
         # Set to true when the factory is served over HTTPS (it should be in production).
         secure: ${FACTORY_COOKIE_SECURE:false}
 
@@ -31,7 +32,7 @@ spring:
 
 factory:
   auth:
-    # local (accounts in the factory), ldap (bank directory) or oidc (single sign-on)
+    # local (accounts in the factory), ldap (bank directory), oidc or saml (single sign-on)
     mode: ${FACTORY_AUTH_MODE:local}
     # Comma-separated usernames that are always administrators (for directory or SSO sign-in)
     admin-users: ${FACTORY_ADMIN_USERS:}
@@ -46,6 +47,12 @@ factory:
     oidc:
       registration-id: sso
       username-claim: ${FACTORY_OIDC_USERNAME_CLAIM:preferred_username}
+    saml:
+      registration-id: sso
+      # Attribute used as the factory username; empty uses the assertion's NameID.
+      username-attribute: ${FACTORY_SAML_USERNAME_ATTRIBUTE:}
+      display-name-attribute: ${FACTORY_SAML_DISPLAY_NAME_ATTRIBUTE:http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name}
+      email-attribute: ${FACTORY_SAML_EMAIL_ATTRIBUTE:http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress}
   security:
     # 32 random bytes, base64 (openssl rand -base64 32). Encrypts stored SVN passwords. Keep it secret and stable.
     secret-key: ${FACTORY_SECRET_KEY:}

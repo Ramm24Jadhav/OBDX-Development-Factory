@@ -101,11 +101,11 @@
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
         <div role="main" class="oj-web-applayout-max-width oj-web-applayout-content factory-login">
           <h2>Sign in</h2>
-          <oj-bind-if test="[[authConfig() && authConfig().mode === 'oidc']]">
+          <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
             <p>This installation uses your organization's single sign-on.</p>
             <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">Sign in with single sign-on</a>
           </oj-bind-if>
-          <oj-bind-if test="[[authConfig() && authConfig().mode !== 'oidc']]">
+          <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
             <p class="oj-text-color-secondary">
               <oj-bind-text value="[[authConfig().mode === 'ldap' ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.']]"></oj-bind-text>
             </p>

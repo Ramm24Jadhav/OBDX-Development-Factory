@@ -204,8 +204,26 @@ Every build is listed with its round, job, link to Jenkins, result, errors, a lo
 - `local` (default): accounts are kept in the factory with BCrypt-hashed passwords (at least 12 characters). On first start an `admin` account is created with `FACTORY_ADMIN_PASSWORD`, or with a random password written once to the log. Users change their own password on the **Account** page; administrators reset passwords on the **Admin** page.
 - `ldap`: users sign in with their bank directory (Active Directory) username and password; see the `FACTORY_LDAP_*` settings. The factory does not store their passwords.
 - `oidc`: users sign in through the bank's identity provider (Azure AD, Keycloak, ...). Configure the client with the standard `spring.security.oauth2.client.registration.sso.*` settings; the redirect URI is `https://<factory host>/login/oauth2/code/sso`.
+- `saml`: users sign in through a SAML 2.0 identity provider (AD FS, Azure AD/Entra ID, Okta, Ping, Shibboleth, ...). See **SAML sign-in** below.
 
-With `ldap` and `oidc`, users appear in the factory at their first sign-in (or can be added in advance on the Admin page). `FACTORY_ADMIN_USERS` names users who are always administrators.
+With `ldap`, `oidc` and `saml`, users appear in the factory at their first sign-in (or can be added in advance on the Admin page). `FACTORY_ADMIN_USERS` names users who are always administrators.
+
+**SAML sign-in** (`FACTORY_AUTH_MODE=saml`). The factory is the service provider (relying party); Spring Security checks the response's signature, issuer, audience, validity times and that it answers the factory's own request.
+
+1. Give the identity provider's administrators the factory's details. Its metadata is at `https://<factory host>/saml2/metadata/sso`: entity ID `https://<factory host>/saml2/service-provider-metadata/sso`, assertion consumer service `https://<factory host>/login/saml2/sso/sso` (HTTP-POST).
+2. Configure the identity provider with the standard Spring settings, preferably from its metadata:
+
+   ```
+   SPRING_SECURITY_SAML2_RELYINGPARTY_REGISTRATION_SSO_ASSERTINGPARTY_METADATA_URI=https://adfs.bank.local/FederationMetadata/2007-06/FederationMetadata.xml
+   ```
+
+   (or `..._ASSERTINGPARTY_ENTITY_ID`, `..._SINGLESIGNON_URL` and `..._VERIFICATION_CREDENTIALS_0_CERTIFICATE_LOCATION=file:/etc/obdx-factory/idp.crt` without metadata). The identity provider must sign its responses or assertions.
+3. Choose the username: `FACTORY_SAML_USERNAME_ATTRIBUTE` names the attribute to use (empty: the NameID). Name and email come from `FACTORY_SAML_DISPLAY_NAME_ATTRIBUTE` and `FACTORY_SAML_EMAIL_ATTRIBUTE` (AD FS claim URIs by default).
+4. Serve the factory over HTTPS and set `FACTORY_COOKIE_SECURE=true` and `FACTORY_COOKIE_SAME_SITE=none`: the identity provider posts its answer from another site, and the browser only sends the session cookie with that post when SameSite is none. Otherwise sign-in fails with "no saved authentication request" (the factory logs a warning at startup).
+
+Signing the factory's own requests, encrypted assertions and single logout are not set up; Spring Security supports them through the same `spring.security.saml2.relyingparty.registration.sso.*` settings (`signing`, `decryption`, `singlelogout`) if the bank requires them.
+
+**Building with SAML support.** Spring Security's SAML code uses OpenSAML, which is published only in the Shibboleth repository (`https://build.shibboleth.net/maven/releases/`), not Maven Central. So that every other installation builds from Maven Central alone, OpenSAML is added only with the `saml` Maven profile: `mvn -Psaml clean verify` (in Jenkins, add `-Psaml` to the build command). Build machines then need access to the Shibboleth repository, usually through the bank's Nexus or Artifactory as a proxy repository with a `settings.xml` mirror. Starting with `FACTORY_AUTH_MODE=saml` from a build without the profile stops with a message saying so.
 
 **Roles.** Administrators can do everything, including creating workspaces, managing users and roles, and reading the audit log. Everyone else needs a role in each workspace they work in, and only sees those workspaces:
 
@@ -338,4 +356,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-SAML sign-in and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+The React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -43,6 +43,11 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-ldap</artifactId>
     </dependency>
+    <!-- SAML 2.0 sign-in. Needs OpenSAML from the Shibboleth repository (see <repositories> below). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-saml2</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -102,6 +107,17 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <!-- OpenSAML (used by Spring Security for SAML) is published only here, not in Maven Central. In a bank, proxy this
+       repository in Nexus/Artifactory and point Maven at the proxy (settings.xml mirror). -->
+  <repositories>
+    <repository>
+      <id>shibboleth-releases</id>
+      <url>https://build.shibboleth.net/maven/releases/</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
 
   <build>
     <finalName>obdx-factory</finalName>

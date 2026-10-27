@@ -1,16 +1,22 @@
 package com.obdx.factory.auth;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.ldap.LdapBindAuthenticationManagerFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,6 +29,9 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
+import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -38,6 +47,8 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -51,7 +62,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthProperties properties,
                                                    SecurityContextRepository contextRepository,
-                                                   ObjectProvider<OAuth2UserService<OidcUserRequest, OidcUser>> oidcUsers) throws Exception {
+                                                   ObjectProvider<OAuth2UserService<OidcUserRequest, OidcUser>> oidcUsers,
+                                                   ObjectProvider<RelyingPartyRegistrationRepository> samlRegistrations,
+                                                   SamlProvisioner samlProvisioner, Environment environment) throws Exception {
         http
                 .csrf(csrf -> csrf.spa())
                 .securityContext(context -> context.securityContextRepository(contextRepository))
@@ -77,6 +90,25 @@ public class SecurityConfig {
                     .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUsers.getObject()))
                     .defaultSuccessUrl("/", true)
                     .failureUrl("/?signInError=sso"));
+        }
+        if (properties.isSaml()) {
+            RelyingPartyRegistrationRepository registrations = samlRegistrations.getIfAvailable();
+            if (registrations == null || registrations.findByRegistrationId(properties.saml().registrationId()) == null) {
+                throw new IllegalStateException("FACTORY_AUTH_MODE is saml, but there is no SAML registration \""
+                        + properties.saml().registrationId() + "\": set spring.security.saml2.relyingparty.registration."
+                        + properties.saml().registrationId() + ".* (see docs/DEVELOPMENT.md)");
+            }
+            if (!"none".equalsIgnoreCase(environment.getProperty("server.servlet.session.cookie.same-site", "lax"))) {
+                log.warn("SAML sign-in: the identity provider posts its response from another site, so the session cookie must be "
+                        + "sent cross-site. Set FACTORY_COOKIE_SAME_SITE=none and FACTORY_COOKIE_SECURE=true (HTTPS), or sign-in "
+                        + "fails with \"no saved authentication request\".");
+            }
+            http.saml2Login(login -> login
+                            .authenticationManager(new ProviderManager(samlAuthentication(samlProvisioner)))
+                            .defaultSuccessUrl("/", true)
+                            .failureUrl("/?signInError=sso"))
+                    // The factory's SAML metadata, for the identity provider's administrators: /saml2/metadata/{registrationId}
+                    .saml2Metadata(Customizer.withDefaults());
         }
         return http.build();
     }
@@ -130,6 +162,22 @@ public class SecurityConfig {
     public OAuth2UserService<OidcUserRequest, OidcUser> provisioningOidcUserService(OidcProvisioner provisioner) {
         OidcUserService delegate = new OidcUserService();
         return request -> provisioner.provision(delegate.loadUser(request));
+    }
+
+    /** Spring Security checks the SAML response (signature, issuer, audience, times, InResponseTo); then the user is recorded. */
+    private static AuthenticationProvider samlAuthentication(SamlProvisioner provisioner) {
+        OpenSaml5AuthenticationProvider openSaml = new OpenSaml5AuthenticationProvider();
+        return new AuthenticationProvider() {
+            @Override
+            public Authentication authenticate(Authentication authentication) {
+                return provisioner.provision((Saml2Authentication) openSaml.authenticate(authentication));
+            }
+
+            @Override
+            public boolean supports(Class<?> type) {
+                return openSaml.supports(type);
+            }
+        };
     }
 
     private static void problem(HttpServletResponse response, HttpStatus status, String detail) throws java.io.IOException {

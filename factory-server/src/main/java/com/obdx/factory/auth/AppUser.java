@@ -19,7 +19,7 @@ import java.util.UUID;
 public class AppUser {
 
     /** Where the account comes from: kept in the factory, the bank's directory, or single sign-on. */
-    public enum Source { LOCAL, LDAP, OIDC }
+    public enum Source { LOCAL, LDAP, OIDC, SAML }
 
     @Id
     private UUID id;

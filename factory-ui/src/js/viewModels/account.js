@@ -14,7 +14,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.messageClass = ko.pureComputed(() => (this.success() ? 'oj-text-color-success' : 'oj-text-color-danger'));
       this.sourceLabel = ko.pureComputed(() => {
         const source = this.user() ? this.user().source : '';
-        return source === 'LDAP' ? 'bank directory (LDAP)' : source === 'OIDC' ? 'single sign-on' : 'factory account';
+        return source === 'LDAP' ? 'bank directory (LDAP)' : source === 'OIDC' ? 'single sign-on (OpenID Connect)'
+          : source === 'SAML' ? 'single sign-on (SAML)' : 'factory account';
       });
       this.workspaceSummary = ko.pureComputed(() => {
         const me = this.user();

@@ -66,13 +66,14 @@ public class AuthController {
     /** Tells the sign-in page which form to show. */
     @GetMapping("/api/auth/config")
     public AuthConfig config() {
-        return new AuthConfig(properties.mode().toLowerCase(),
-                properties.isOidc() ? "oauth2/authorization/" + properties.oidc().registrationId() : null);
+        String ssoLoginUrl = properties.isOidc() ? "oauth2/authorization/" + properties.oidc().registrationId()
+                : properties.isSaml() ? "saml2/authenticate/" + properties.saml().registrationId() : null;
+        return new AuthConfig(properties.mode().toLowerCase(), ssoLoginUrl);
     }
 
     @PostMapping("/api/auth/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest login, HttpServletRequest request, HttpServletResponse response) {
-        if (properties.isOidc()) {
+        if (properties.isSso()) {
             return problem(HttpStatus.BAD_REQUEST, "This installation uses single sign-on");
         }
         String username = AppUser.normalize(login.username());
