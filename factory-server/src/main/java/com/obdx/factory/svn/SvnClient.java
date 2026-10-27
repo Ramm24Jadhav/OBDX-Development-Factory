@@ -70,6 +70,23 @@ public class SvnClient {
     }
 
     /**
+     * The revisions of source that Subversion's merge tracking reports for target: "eligible" (not merged yet) or
+     * "merged", as with TortoiseSVN's merge dialog. Merges recorded with svn:mergeinfo count; hand-copied changes do not.
+     */
+    public List<Long> mergeinfo(String kind, String source, String target, SvnCredentials credentials) {
+        if (!kind.equals("eligible") && !kind.equals("merged")) {
+            throw new IllegalArgumentException("kind must be eligible or merged");
+        }
+        String output = run(List.of("mergeinfo", "--show-revs", kind, source, target), credentials, null, properties.commandTimeout());
+        List<Long> revisions = new ArrayList<>();
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?m)^r(\\d+)").matcher(output);
+        while (matcher.find()) {
+            revisions.add(Long.parseLong(matcher.group(1)));
+        }
+        return revisions;
+    }
+
+    /**
      * Runs several repository operations as one commit with svnmucc (part of Subversion), for example copying trunk
      * to a branch and putting changed files into it. Operation URLs are relative to rootUrl. Returns the new revision.
      */

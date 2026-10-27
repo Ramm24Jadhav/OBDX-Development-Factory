@@ -10,6 +10,8 @@ import org.springframework.util.unit.DataSize;
  * @param maxFileSize      larger existing files are not rewritten by the model
  * @param fixAttempts      times the model may fix a file that fails its checks
  * @param branchFolder     where delivery branches are created, relative to the repository root
+ * @param branchCleanup    when to look for delivered branches that were merged and remove them (cron; "-" turns it
+ *                         off); read by {@link ChangeBranchService}
  */
 @ConfigurationProperties(prefix = "factory.change")
 public record ChangeProperties(
@@ -17,5 +19,6 @@ public record ChangeProperties(
         @DefaultValue("25") int maxCandidates,
         @DefaultValue("80KB") DataSize maxFileSize,
         @DefaultValue("2") int fixAttempts,
-        @DefaultValue("branches/factory") String branchFolder) {
+        @DefaultValue("branches/factory") String branchFolder,
+        @DefaultValue("0 17 2 * * *") String branchCleanup) {
 }

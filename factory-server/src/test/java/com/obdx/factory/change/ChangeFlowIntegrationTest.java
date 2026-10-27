@@ -19,6 +19,7 @@ import com.obdx.factory.workspace.WorkspaceRequest;
 import com.obdx.factory.workspace.WorkspaceService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
@@ -64,6 +65,7 @@ class ChangeFlowIntegrationTest {
         registry.add("factory.storage.root", () -> temp.resolve("data").toString());
         registry.add("factory.security.secret-key", () -> Base64.getEncoder().encodeToString(new byte[32]));
         registry.add("factory.jenkins.poll-interval", () -> "50ms");
+        registry.add("factory.change.branch-cleanup", () -> "-");
     }
 
     static final String SERVICE = """
@@ -196,11 +198,21 @@ class ChangeFlowIntegrationTest {
     @Autowired
     private RecipeService recipes;
 
+    @Autowired
+    private ChangeBranchService changeBranches;
+
     private UUID workspaceId;
 
     @BeforeAll
     static void requireSvn() {
         assumeTrue(TestSvnRepository.toolsAvailable(), "svn and svnadmin are not installed");
+    }
+
+    @BeforeEach
+    void resetCannedModel() {
+        validatorAttempts.set(0);
+        chatPrompts.clear();
+        planPrompts.clear();
     }
 
     @AfterEach
@@ -380,6 +392,64 @@ class ChangeFlowIntegrationTest {
             assertThat(changes.get(changeId).files()).filteredOn(f -> f.path().equals(validatorPath))
                     .extracting(ChangeService.FileView::checkStatus).containsExactly(FileChecks.Status.PASSED);
         }
+
+        // Closing: the branch must be merged first (or closed anyway); a merged branch is found and removed by the cleanup.
+        assertThatThrownBy(() -> changes.delete(changeId)).hasMessageContaining("Close it first");
+        assertThatThrownBy(() -> changeBranches.close(changeId, ChangeRequest.CloseReason.MERGED, false, "Lead"))
+                .hasMessageContaining("of the branch are not merged into " + repo.trunkUrl());
+        changeBranches.removeMergedBranches();
+        assertThat(changes.get(changeId).status()).isEqualTo(ChangeRequest.Status.DELIVERED);
+
+        repo.mergeIntoTrunk(delivered.branchUrl());
+        changeBranches.removeMergedBranches();
+        ChangeService.ChangeDetail closed = changes.get(changeId);
+        assertThat(closed.status()).isEqualTo(ChangeRequest.Status.CLOSED);
+        assertThat(closed.closedReason()).isEqualTo(ChangeRequest.CloseReason.MERGED);
+        assertThat(closed.closedBy()).isEqualTo(ChangeBranchService.AUTOMATIC);
+        assertThat(closed.branchDeletedRevision()).isNotNull();
+        assertThat(closed.message()).contains("branch was removed in revision " + closed.branchDeletedRevision());
+        assertThat(svn.exists(delivered.branchUrl(), SvnCredentials.NONE)).isFalse();
+        assertThat(svn.exists(repo.trunkUrl().replace("/trunk", "/branches/factory"), SvnCredentials.NONE)).isTrue();
+        assertThatThrownBy(() -> changeBranches.close(changeId, ChangeRequest.CloseReason.ABANDONED, false, "Lead"))
+                .hasMessageContaining("is closed");
+        changes.delete(changeId);
+    }
+
+    @Test
+    void abandonedChangesLoseTheirBranchButOnlyFactoryBranches() throws Exception {
+        TestSvnRepository repo = TestSvnRepository.create(temp.resolve("svn-abandon"), Map.of(
+                "backend/src/com/bank/payments/FundTransferService.java", SERVICE,
+                "ui/js/viewModels/fund-transfer.js", "define(['knockout'], function (ko) {\n  return function VM() {\n    this.amount = ko.observable();\n  };\n});\n"));
+        workspaceId = workspaces.create(new WorkspaceRequest("abandon-" + UUID.randomUUID(), "Bank B", "25.x", null)).id();
+        workspaces.updateSvnSettings(workspaceId, new SvnSettingsRequest(repo.trunkUrl(), null, null));
+        UUID job = imports.start(workspaceId).id();
+        waitFor(() -> imports.recent(workspaceId, 1).getFirst().status() == ImportJob.Status.SUCCEEDED, "import of " + job);
+        UUID requirementId = requirements.fromText(workspaceId, "Transfer remarks", "Add remarks to transfers.").id();
+        waitFor(() -> requirements.get(requirementId).status() == Requirement.Status.READY, "spec");
+        requirements.approve(requirementId, "Lead");
+        designs.fromRequirement(requirementId).forEach(d -> designs.approve(d.id(), "Lead"));
+
+        // Without a branch, closing just ends the change.
+        UUID planOnly = changes.create(requirementId, "Dev").id();
+        waitFor(() -> changes.get(planOnly).status() == ChangeRequest.Status.PLAN_READY, "plan");
+        ChangeService.ChangeDetail abandonedPlan = changeBranches.close(planOnly, ChangeRequest.CloseReason.ABANDONED, false, "Lead");
+        assertThat(abandonedPlan.status()).isEqualTo(ChangeRequest.Status.CLOSED);
+        assertThat(abandonedPlan.branchDeletedRevision()).isNull();
+
+        UUID changeId = changes.create(requirementId, "Dev").id();
+        waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.PLAN_READY, "plan");
+        changes.approvePlan(changeId, "Lead");
+        waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "code");
+        ChangeService.ChangeDetail delivered = changes.deliverToBranch(changeId);
+
+        ChangeService.ChangeDetail abandoned = changeBranches.close(changeId, ChangeRequest.CloseReason.ABANDONED, false, "Lead");
+        assertThat(abandoned.status()).isEqualTo(ChangeRequest.Status.CLOSED);
+        assertThat(abandoned.closedReason()).isEqualTo(ChangeRequest.CloseReason.ABANDONED);
+        assertThat(abandoned.closedBy()).isEqualTo("Lead");
+        assertThat(abandoned.branchDeletedRevision()).isEqualTo(delivered.deliveredRevision() + 1);
+        assertThat(svn.exists(delivered.branchUrl(), SvnCredentials.NONE)).isFalse();
+        // The branch is still in the history, at the revision it was delivered.
+        assertThat(svn.exists(delivered.branchUrl() + "@" + delivered.deliveredRevision(), SvnCredentials.NONE)).isTrue();
     }
 
     private static void waitFor(Supplier<Boolean> condition, String what) throws InterruptedException {

@@ -46,9 +46,15 @@
       </h2>
       <p id="changeMessage"><oj-bind-text value="[[detail().message]]"></oj-bind-text></p>
       <p class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[facts]]"></oj-bind-text></p>
-      <oj-bind-if test="[[detail().branchUrl]]">
+      <oj-bind-if test="[[detail().branchUrl && !detail().branchDeletedRevision]]">
         <p class="factory-approved">Branch: <code id="branchUrl"><oj-bind-text value="[[detail().branchUrl]]"></oj-bind-text></code>
-          (revision <oj-bind-text value="[[detail().deliveredRevision]]"></oj-bind-text>). Review and merge it with TortoiseSVN as usual.</p>
+          (revision <oj-bind-text value="[[detail().deliveredRevision]]"></oj-bind-text>). Review and merge it with TortoiseSVN as usual;
+          once it is merged into trunk, the factory closes the change and removes the branch (nightly), or use Close as merged.</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[detail().branchDeletedRevision]]">
+        <p id="branchRemoved" class="oj-text-color-secondary">Branch <code><oj-bind-text value="[[detail().branchUrl]]"></oj-bind-text></code>
+          was removed in revision <oj-bind-text value="[[detail().branchDeletedRevision]]"></oj-bind-text>. To look at it again, open it in the
+          SVN history at revision <oj-bind-text value="[[detail().deliveredRevision]]"></oj-bind-text> or later.</p>
       </oj-bind-if>
 
       <oj-toolbar>
@@ -77,7 +83,14 @@
         <oj-bind-if test="[[detail().status === 'GENERATED' && canManage()]]">
           <oj-button id="deliverButton" chroming="callToAction" on-oj-action="[[deliver]]" disabled="[[busy]]">Commit to SVN branch</oj-button>
         </oj-bind-if>
-        <oj-bind-if test="[[canManage() && detail().status !== 'ANALYZING' && detail().status !== 'GENERATING']]">
+        <oj-bind-if test="[[canClose() && (detail().status === 'GENERATED' || detail().status === 'DELIVERED')]]">
+          <oj-button id="closeMergedButton" on-oj-action="[[closeMerged]]" disabled="[[busy]]">Close as merged</oj-button>
+        </oj-bind-if>
+        <oj-bind-if test="[[canClose()]]">
+          <oj-button id="abandonButton" on-oj-action="[[abandon]]" disabled="[[busy]]">Abandon</oj-button>
+        </oj-bind-if>
+        <oj-bind-if test="[[canManage() && detail().status !== 'ANALYZING' && detail().status !== 'GENERATING'
+                            && !(detail().branchUrl && !detail().branchDeletedRevision)]]">
           <oj-button id="deleteChangeButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
         </oj-bind-if>
       </oj-toolbar>

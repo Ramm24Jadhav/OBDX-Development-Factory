@@ -12,6 +12,9 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, UU
 
     List<ChangeRequest> findByWorkspaceIdOrderByCreatedAtDesc(UUID workspaceId);
 
+    /** Delivered changes whose branch has not been removed: candidates for the merge check. */
+    List<ChangeRequest> findByStatusAndBranchUrlIsNotNullAndBranchDeletedRevisionIsNull(ChangeRequest.Status status);
+
     @Modifying
     @Query("UPDATE ChangeRequest c SET c.status = com.obdx.factory.change.ChangeRequest.Status.FAILED, c.message = :message, "
             + "c.updatedAt = :now WHERE c.status IN (com.obdx.factory.change.ChangeRequest.Status.ANALYZING, "

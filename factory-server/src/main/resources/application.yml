@@ -67,6 +67,8 @@ factory:
   change:
     # Delivery branches are created here, relative to the SVN repository root.
     branch-folder: ${FACTORY_CHANGE_BRANCH_FOLDER:branches/factory}
+    # When to remove delivery branches that were merged (Spring cron: second minute hour day month weekday; "-" = off).
+    branch-cleanup: ${FACTORY_BRANCH_CLEANUP:0 17 2 * * *}
   requirements:
     # Long documents go to the model in sections of this size; lower it for models with a small context window.
     max-chars-per-call: ${FACTORY_REQUIREMENTS_MAX_CHARS:12000}

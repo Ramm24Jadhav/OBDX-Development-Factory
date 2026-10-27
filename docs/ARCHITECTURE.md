@@ -183,7 +183,7 @@ OBDX teams already build UI and backend packages with Jenkins pipelines, so the 
 - **Trade-off:** a Jenkins build takes minutes, not seconds, so the fix loop is capped (for example 3 build attempts) and local checks do as much as possible before each build.
 - Temporary branches are deleted after the request is delivered or abandoned.
 - **If the bank does not allow the factory to commit:** the Jenkins job can instead take the patch file as a file parameter, check out trunk, apply the patch and build. Nothing is committed to the repository.
-- *Implemented:* per-workspace Jenkins settings (branch or patch mode, encrypted API token, connection test), triggering every job with the branch path/URL or the patch file, polling queue and build, error extraction from console logs (Maven, javac, ESLint, TypeScript) and JUnit reports, and up to two model fix rounds limited to the change's own files, with fixes committed to the change branch. Quick checks run before each Jenkins round and their errors are fixed first. Not yet: deleting temporary branches.
+- *Implemented:* per-workspace Jenkins settings (branch or patch mode, encrypted API token, connection test), triggering every job with the branch path/URL or the patch file, polling queue and build, error extraction from console logs (Maven, javac, ESLint, TypeScript) and JUnit reports, and up to two model fix rounds limited to the change's own files, with fixes committed to the change branch. Quick checks run before each Jenkins round and their errors are fixed first. Delivery branches are removed when a change is closed as merged (checked with Subversion merge tracking) or abandoned, and a nightly check closes changes whose branch was merged.
 
 ### 5.6 Version Control (SVN)
 

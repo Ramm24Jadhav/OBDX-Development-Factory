@@ -9,7 +9,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const POLL_MS = 2000;
     const STATUS_LABELS = {
       ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
-      DELIVERED: 'delivered', FAILED: 'failed'
+      DELIVERED: 'delivered', FAILED: 'failed', CLOSED: 'closed'
     };
 
     function ChangesViewModel() {
@@ -155,6 +155,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.build = () => api.post(base() + '/build').then(show).catch(showError);
       this.checkAgain = () => api.post(base() + '/check').then(show).catch(showError);
+      const close = (reason, force) => api.post(base() + '/close', { reason: reason, force: force })
+        .then((detail) => { show(detail); loadList(); });
+      const liveBranch = () => this.detail().branchUrl && !this.detail().branchDeletedRevision;
+      this.closeMerged = () => {
+        if (!window.confirm(liveBranch()
+          ? 'Close this change as merged? The factory checks in SVN that the branch is merged into trunk, then removes the branch (it stays in the SVN history).'
+          : 'Close this change as merged or applied?')) {
+          return;
+        }
+        this.busy(true);
+        close('MERGED', false)
+          .catch((error) => {
+            if (error.status === 409 && error.message.indexOf('Merge the branch first') >= 0
+                && window.confirm(error.message + '\n\nClose anyway and remove the branch?')) {
+              return close('MERGED', true);
+            }
+            throw error;
+          })
+          .catch(showError).finally(() => this.busy(false));
+      };
+      this.abandon = () => {
+        if (!window.confirm('Abandon this change?' + (liveBranch() ? ' Its branch is removed from SVN (it stays in the SVN history).' : ''))) {
+          return;
+        }
+        this.busy(true);
+        close('ABANDONED', false).catch(showError).finally(() => this.busy(false));
+      };
+      this.canClose = ko.pureComputed(() => {
+        const d = this.detail();
+        return !!d && this.canManage() && d.buildStatus !== 'BUILDING'
+          && ['PLAN_READY', 'GENERATED', 'DELIVERED', 'FAILED'].indexOf(d.status) >= 0;
+      });
+
       this.remove = () => {
         if (!window.confirm('Delete this change with its plan and generated code?')) {
           return;

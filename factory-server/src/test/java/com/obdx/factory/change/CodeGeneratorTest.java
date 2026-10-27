@@ -40,7 +40,7 @@ class CodeGeneratorTest {
             throw new UnsupportedOperationException();
         }
     };
-    private final CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory"),
+    private final CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"),
             new LocalChecks(VersionPacks.builtIn()), VersionPacks.builtIn());
 
     private final ChangeContext context = new ChangeContext("Remarks", "{\"screens\": []}", "[{\"name\": \"Transfer\"}]", "- Java version: Java 8", "backend/: 3");

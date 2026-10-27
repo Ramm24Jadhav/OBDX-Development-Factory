@@ -3,9 +3,11 @@ package com.obdx.factory.change;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
+@EnableScheduling
 public class ChangeConfig {
 
     /** Impact analysis and code generation make many model calls; one change at a time keeps the model server responsive. */

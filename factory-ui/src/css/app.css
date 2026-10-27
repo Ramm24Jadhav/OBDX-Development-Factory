@@ -354,6 +354,7 @@
 .factory-change-status-generated { background-color: #fdf1d6; }
 .factory-change-status-delivered { background-color: #e3f4e6; }
 .factory-change-status-failed { background-color: #f9dcdc; }
+.factory-change-status-closed { background-color: #f1efed; }
 .factory-action-create { background-color: #e3f4e6; }
 .factory-action-modify { background-color: #e8eef7; }
 .factory-check-passed { background-color: #e3f4e6; }

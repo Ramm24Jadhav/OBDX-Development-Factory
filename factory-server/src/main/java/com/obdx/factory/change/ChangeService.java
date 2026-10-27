@@ -122,7 +122,9 @@ public class ChangeService {
                                String message, Long baseRevision, ChangePlan plan, String planApprovedBy,
                                OffsetDateTime planApprovedAt, String branchUrl, Long deliveredRevision, String createdBy,
                                OffsetDateTime createdAt, OffsetDateTime updatedAt, List<FileView> files,
-                               String buildStatus, String buildMessage, List<ChangeBuildStore.Build> builds) {
+                               String buildStatus, String buildMessage, List<ChangeBuildStore.Build> builds,
+                               ChangeRequest.CloseReason closedReason, String closedBy, OffsetDateTime closedAt,
+                               Long branchDeletedRevision) {
     }
 
     public record ChangeSummary(UUID id, String title, ChangeRequest.Status status, String message, int files,
@@ -485,6 +487,10 @@ public class ChangeService {
         if (change.getStatus() == ChangeRequest.Status.ANALYZING || change.getStatus() == ChangeRequest.Status.GENERATING) {
             throw new ConflictException("Wait until the change has finished " + change.getStatus().name().toLowerCase());
         }
+        if (change.hasLiveBranch()) {
+            throw new ConflictException("The change still has its branch " + change.getBranchUrl()
+                    + ". Close it first (as merged or abandoned), which removes the branch.");
+        }
         changes.delete(change);
     }
 
@@ -602,7 +608,8 @@ public class ChangeService {
         return new ChangeDetail(c.getId(), c.getWorkspaceId(), c.getRequirementId(), c.getTitle(), c.getStatus(), c.getMessage(),
                 c.getBaseRevision(), c.getPlan() == null ? null : json.readValue(c.getPlan(), ChangePlan.class),
                 c.getPlanApprovedBy(), c.getPlanApprovedAt(), c.getBranchUrl(), c.getDeliveredRevision(), c.getCreatedBy(),
-                c.getCreatedAt(), c.getUpdatedAt(), views, c.getBuildStatus(), c.getBuildMessage(), builds.list(c.getId()));
+                c.getCreatedAt(), c.getUpdatedAt(), views, c.getBuildStatus(), c.getBuildMessage(), builds.list(c.getId()),
+                c.getClosedReason(), c.getClosedBy(), c.getClosedAt(), c.getBranchDeletedRevision());
     }
 
     static void requireNotBuilding(ChangeRequest change) {

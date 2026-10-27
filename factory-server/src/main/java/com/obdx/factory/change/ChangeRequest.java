@@ -23,7 +23,10 @@ public class ChangeRequest {
      * ANALYZING: impact analysis is running. PLAN_READY: the plan waits for review. GENERATING: files are written.
      * GENERATED: the code waits for review and delivery. DELIVERED: committed to an SVN branch.
      */
-    public enum Status { ANALYZING, PLAN_READY, GENERATING, GENERATED, DELIVERED, FAILED }
+    public enum Status { ANALYZING, PLAN_READY, GENERATING, GENERATED, DELIVERED, FAILED, CLOSED }
+
+    /** MERGED: the change went into the code (branch merged or patch applied). ABANDONED: it will not be used. */
+    public enum CloseReason { MERGED, ABANDONED }
 
     @Id
     private UUID id;
@@ -68,6 +71,19 @@ public class ChangeRequest {
 
     @Column(name = "build_message")
     private String buildMessage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "closed_reason", length = 20)
+    private CloseReason closedReason;
+
+    @Column(name = "closed_by", length = 200)
+    private String closedBy;
+
+    @Column(name = "closed_at")
+    private OffsetDateTime closedAt;
+
+    @Column(name = "branch_deleted_revision")
+    private Long branchDeletedRevision;
 
     @Column(name = "created_by", length = 200)
     private String createdBy;
@@ -121,6 +137,37 @@ public class ChangeRequest {
         this.branchUrl = branchUrl;
         this.deliveredRevision = revision;
         status(Status.DELIVERED, "Committed to " + branchUrl + " in revision " + revision + ".");
+    }
+
+    void close(CloseReason reason, String by, Long deletedRevision, String note) {
+        this.closedReason = reason;
+        this.closedBy = by;
+        this.closedAt = OffsetDateTime.now();
+        this.branchDeletedRevision = deletedRevision;
+        status(Status.CLOSED, (reason == CloseReason.MERGED ? "Closed as merged" : "Closed as abandoned") + " by " + by + "."
+                + (deletedRevision != null ? " Its branch was removed in revision " + deletedRevision
+                + " (it stays in the SVN history and can be restored from there)." : "") + (note == null ? "" : " " + note));
+    }
+
+    /** True while the delivery branch exists in SVN as far as the factory knows. */
+    boolean hasLiveBranch() {
+        return branchUrl != null && branchDeletedRevision == null;
+    }
+
+    public CloseReason getClosedReason() {
+        return closedReason;
+    }
+
+    public String getClosedBy() {
+        return closedBy;
+    }
+
+    public OffsetDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public Long getBranchDeletedRevision() {
+        return branchDeletedRevision;
     }
 
     void build(String status, String message) {

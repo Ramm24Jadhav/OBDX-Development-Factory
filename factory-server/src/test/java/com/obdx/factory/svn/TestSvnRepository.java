@@ -57,6 +57,14 @@ public final class TestSvnRepository {
         run(workingCopy, "svn", "commit", "--quiet", "-m", "Change");
     }
 
+    /** Merges a branch into trunk as TortoiseSVN's "merge a range of revisions" would (recording svn:mergeinfo). */
+    public void mergeIntoTrunk(String branchUrl) throws IOException {
+        Path workingCopy = root.resolve("wc-merge-" + System.nanoTime());
+        run(root, "svn", "checkout", "--quiet", trunkUrl(), workingCopy.toString());
+        run(workingCopy, "svn", "merge", "--quiet", branchUrl, ".");
+        run(workingCopy, "svn", "commit", "--quiet", "-m", "Merge " + branchUrl);
+    }
+
     private static void writeFiles(Path base, Map<String, String> files) throws IOException {
         for (Map.Entry<String, String> file : files.entrySet()) {
             Path path = base.resolve(file.getKey());

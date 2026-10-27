@@ -3,6 +3,7 @@ package com.obdx.factory.change;
 import com.obdx.factory.auth.AccessGuard;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
+import com.obdx.factory.common.BadRequestException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,10 +26,13 @@ public class ChangeController {
 
     private final ChangeService service;
     private final ChangeBuildService builds;
+    private final ChangeBranchService branches;
     private final AccessGuard guard;
     private final AuditLog audit;
 
-    public ChangeController(ChangeService service, ChangeBuildService builds, AccessGuard guard, AuditLog audit) {
+    public ChangeController(ChangeService service, ChangeBuildService builds, ChangeBranchService branches, AccessGuard guard,
+                            AuditLog audit) {
+        this.branches = branches;
         this.service = service;
         this.builds = builds;
         this.guard = guard;
@@ -125,6 +129,23 @@ public class ChangeController {
     }
 
     /** Builds the change with the workspace's Jenkins jobs, fixing build errors in its files a limited number of times. */
+    public record CloseRequest(ChangeRequest.CloseReason reason, Boolean force) {
+    }
+
+    /** Closes the change as merged or abandoned; removes its delivery branch. */
+    @PostMapping("/api/changes/{id}/close")
+    public ChangeService.ChangeDetail close(@PathVariable UUID id, @RequestBody CloseRequest request) {
+        var user = guard.requireForChange(id, Permission.MANAGE_CODE);
+        if (request.reason() == null) {
+            throw new BadRequestException("Give a reason: MERGED or ABANDONED");
+        }
+        ChangeService.ChangeDetail change = branches.close(id, request.reason(), Boolean.TRUE.equals(request.force()), user.getDisplayName());
+        audit.record("CHANGE_CLOSED", change.workspaceId(), change.title(), request.reason().name().toLowerCase()
+                + (Boolean.TRUE.equals(request.force()) ? " (closed anyway)" : "")
+                + (change.branchDeletedRevision() != null ? "; branch removed in r" + change.branchDeletedRevision() : ""));
+        return change;
+    }
+
     @PostMapping("/api/changes/{id}/check")
     public ChangeService.ChangeDetail checkAgain(@PathVariable UUID id) {
         guard.requireForChange(id, Permission.MANAGE_CODE);

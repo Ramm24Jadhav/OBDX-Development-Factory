@@ -154,6 +154,16 @@ Every generated file is checked on the factory server in milliseconds, before re
 
 The pack rules are starting points: confirm them against each bank's codebase and the Oracle documentation for the release.
 
+## Closing changes and removing branches
+
+Delivery branches (`branches/factory/cr-<id>`) are temporary. A change ends in one of two ways:
+
+- **Close as merged** (Developer or Lead): for a delivered change, the factory asks Subversion's merge tracking (`svn mergeinfo`, the same information TortoiseSVN's merge dialog uses) whether every revision of the branch is merged into the workspace's trunk. If revisions are missing, it says which and offers **close anyway** (for changes applied another way, for example by hand). Then it removes the branch in one commit. For a patch-mode change it just closes it.
+- **Abandon**: closes the change and removes its branch without the merge check.
+- **Automatically**, every night (`FACTORY_BRANCH_CLEANUP`, a Spring cron expression, default `0 17 2 * * *`; `-` turns it off), delivered changes whose branch is fully merged are closed as merged by "factory (automatic)" and their branches removed. Merges done without merge tracking (copying files by hand) are not detected; close those changes by hand.
+
+Removed branches stay in the SVN history and can be restored (`svn copy <branch URL>@<revision> ...`). The factory only removes branches it created, named `cr-<change id>` in the configured branch folder. A change that still has its branch cannot be deleted; close it first. Closing is recorded in the audit log.
+
 ## Recipes, templates and reference examples
 
 The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
@@ -287,6 +297,7 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/workspaces/{id}/recipes` | The version pack's recipes with templates and the workspace's reference examples |
 | `POST /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples` | Pin a file as a reference example (`path`) |
 | `DELETE /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples?path=` | Unpin it |
+| `POST /api/changes/{id}/close` | Close the change (`reason`: `MERGED` or `ABANDONED`, `force` to close as merged without the merge check); removes its branch |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
@@ -327,4 +338,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+SAML sign-in and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
