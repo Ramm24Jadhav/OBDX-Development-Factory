@@ -45,6 +45,32 @@ class SvnClientTest {
     }
 
     @Test
+    void createsBranchWithChangedFilesInOneCommit() throws Exception {
+        TestSvnRepository repo = TestSvnRepository.create(temp.resolve("server"), Map.of("src/A.java", "class A {}"));
+        String root = repo.trunkUrl().substring(0, repo.trunkUrl().length() - "/trunk".length());
+        Path changed = temp.resolve("A.java");
+        Files.writeString(changed, "class A { int x; }");
+        Path added = temp.resolve("B.java");
+        Files.writeString(added, "class B {}");
+
+        assertThat(client.exists(root + "/branches", SvnCredentials.NONE)).isFalse();
+        long revision = client.multiCommit(root, "Change", List.of(
+                "mkdir", "branches", "cp", "1", "trunk", "branches/cr-1",
+                "put", changed.toString(), "branches/cr-1/src/A.java",
+                "mkdir", "branches/cr-1/src/new",
+                "put", added.toString(), "branches/cr-1/src/new/B.java"), SvnCredentials.NONE);
+
+        assertThat(revision).isEqualTo(2);
+        Path branch = temp.resolve("branch");
+        client.checkout(root + "/branches/cr-1", branch, SvnCredentials.NONE);
+        assertThat(branch.resolve("src/A.java")).hasContent("class A { int x; }");
+        assertThat(branch.resolve("src/new/B.java")).hasContent("class B {}");
+        Path trunk = temp.resolve("trunk");
+        client.checkout(repo.trunkUrl(), trunk, SvnCredentials.NONE);
+        assertThat(trunk.resolve("src/A.java")).as("trunk is untouched").hasContent("class A {}");
+    }
+
+    @Test
     void reportsSvnErrors() {
         String missing = temp.resolve("no-such-repo").toUri() + "trunk";
 

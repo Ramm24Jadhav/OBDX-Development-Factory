@@ -56,6 +56,9 @@ factory:
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}
   indexing:
     embeddings-enabled: ${FACTORY_INDEX_EMBEDDINGS:true}
+  change:
+    # Delivery branches are created here, relative to the SVN repository root.
+    branch-folder: ${FACTORY_CHANGE_BRANCH_FOLDER:branches/factory}
   requirements:
     # Long documents go to the model in sections of this size; lower it for models with a small context window.
     max-chars-per-call: ${FACTORY_REQUIREMENTS_MAX_CHARS:12000}

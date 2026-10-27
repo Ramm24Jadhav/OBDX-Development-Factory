@@ -86,7 +86,7 @@ Later: new host integrations, new transaction flows, reports, and full frontend 
 
 1. **Ingest and understand.** Parse the document (Word, PDF, text, including tables). Extract a structured spec: screens, fields (name, type, validation, mandatory), actions, business rules, roles/entitlements, APIs, host interactions, messages. Flag gaps and ambiguities as questions for the analyst. *Implemented:* long documents are drafted section by section and merged; analysts answer questions, the model applies the answers (kept as decisions), every change is a spec version, and approval requires no open questions. Each screen is linked to possibly related existing code via code search.
 2. **Screen design and customer review.** The AI drafts a Screen Model for each new or changed screen. For an existing screen, the draft starts from that screen's current layout, taken from the code. The analyst and customer review it in the Screen Designer with a live preview, make changes, and approve it (section 5.7). The approved Screen Model is locked and becomes the source for UI generation.
-3. **Impact analysis.** Search the workspace's code index to find related screens, services and adapters. Decide whether each requirement is a new component or an extension. List affected files with reasons.
+3. **Impact analysis.** *(Implemented, see 5.4.)* Search the workspace's code index to find related screens, services and adapters. Decide whether each requirement is a new component or an extension. List affected files with reasons.
 4. **Plan.** Produce an ordered plan by layer, with the files to create or modify and the pattern from the version pack each one follows. A reviewer approves or edits the plan before any code is generated.
 5. **Generate.** Generate code layer by layer, each step grounded in the approved Screen Model, retrieved code from the same codebase, the Project Profile and the version pack.
 6. **Validate and fix.** Run quick local checks first (syntax, lint). Then commit the changes to a temporary SVN branch and trigger the bank's existing Jenkins pipeline to build the UI and backend packages and run tests. Feed failures back to the model for a bounded number of retries. Report anything still failing.
@@ -167,6 +167,7 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 - Each step reads only from its own workspace's index, its Project Profile, the matching version pack and the target pack.
 - Structured outputs (JSON schemas) for spec, Screen Model, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
+- *Implemented:* impact analysis (code search per screen, rule, API and host interaction, then a model-written plan that is validated against the working copy), plan approval by a Lead, file-by-file generation in layer order with parse checks and up to two fixes per file, reviewer edits and per-file regeneration, delivery as a Subversion patch or a branch committed in one `svnmucc` commit. Not yet: the Jenkins build and build-error fix loop (5.5).
 
 ### 5.5 Build Validation (Jenkins)
 

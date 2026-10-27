@@ -44,8 +44,9 @@
 
 .factory-warning {
     padding: 8px 12px;
-    border-left: 4px solid var(--oj-core-warning-3, #c35500);
-    background-color: var(--oj-core-warning-1, #fff6e5);
+    border-left: 4px solid #c35500;
+    background-color: #fff6e5;
+    color: #4a2a00;
 }
 
 .factory-profile-table {
@@ -345,4 +346,66 @@
 
 .factory-audit td {
     font-size: 0.85rem;
+}
+
+.factory-change-status-analyzing,
+.factory-change-status-generating { background-color: #e8eef7; }
+.factory-change-status-plan_ready,
+.factory-change-status-generated { background-color: #fdf1d6; }
+.factory-change-status-delivered { background-color: #e3f4e6; }
+.factory-change-status-failed { background-color: #f9dcdc; }
+.factory-action-create { background-color: #e3f4e6; }
+.factory-action-modify { background-color: #e8eef7; }
+.factory-check-passed { background-color: #e3f4e6; }
+.factory-check-failed { background-color: #f9dcdc; }
+.factory-check-warning { background-color: #fdf1d6; }
+.factory-check-not { background-color: #f1efed; }
+
+.factory-path {
+    font-family: monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.factory-lines {
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.factory-added { color: #1e7b34; }
+.factory-removed { color: #b42318; margin-left: 6px; }
+
+.factory-file-viewer {
+    margin-top: 16px;
+    border-top: 1px solid var(--oj-core-divider-color, #ddd);
+}
+
+.factory-diff,
+.factory-full {
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    max-height: 70vh;
+    overflow: auto;
+    white-space: pre;
+    border: 1px solid var(--oj-core-divider-color, #ddd);
+    border-radius: 4px;
+    padding: 8px;
+    background: #fff;
+}
+
+.factory-diff-add { background-color: #e6ffec; display: block; }
+.factory-diff-del { background-color: #ffebe9; display: block; }
+.factory-diff-hunk { color: #6639ba; display: block; }
+.factory-diff-meta { color: #666; display: block; }
+.factory-diff span { display: block; }
+
+.factory-link-button {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #312d2a;
+    border-radius: 6px;
+    color: #312d2a;
+    text-decoration: none;
+    margin-right: 8px;
 }

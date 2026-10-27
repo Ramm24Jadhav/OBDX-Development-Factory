@@ -20,6 +20,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
 - `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
 - `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
+- `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
@@ -31,7 +32,7 @@ Database changes are Flyway scripts in `factory-server/src/main/resources/db/mig
 
 - JDK 21 and Maven 3.9+
 - PostgreSQL 14+ with the pgvector extension
-- The Subversion command-line client (`svn`) on the factory server, and network access from it to the banks' SVN servers. On Linux: `apt install subversion` or `dnf install subversion`.
+- The Subversion command-line tools (`svn`, and `svnmucc` for delivering branches; both are in the `subversion` package) on the factory server, and network access from it to the banks' SVN servers. On Linux: `apt install subversion` or `dnf install subversion`.
 - A model server for real answers, for example [Ollama](https://ollama.com) (optional for building and tests)
 
 Node.js does not need to be installed: the Maven build downloads it into `factory-ui/target/`. For offline or bank builds, point it at an internal mirror: `mvn -Dnode.download.root=https://mirror.local/nodejs/ ...`. npm packages come from the npm registry, or from an internal one configured in `factory-ui/.npmrc`.
@@ -128,6 +129,17 @@ Scanned PDFs have no text layer and need OCR before upload. With a local model, 
 
 Limitations: the preview uses this factory's JET version and the Redwood theme, not each bank's own JET version and theme. Enhancing an existing screen starts from the spec's fields, not from the screen's current layout in the code. Anyone with a review link can comment and approve, so share it only with the intended reviewers.
 
+## Changes: impact analysis and code generation
+
+1. On the **Changes** page pick an approved requirement and click **Analyze impact** (Developer or Lead). All screen designs created for the requirement must be approved, and the workspace's code must be imported.
+2. **Impact analysis** searches the code for each screen, field, business rule, API and host interaction, and sends the model the approved spec and designs, the Project Profile, the folder structure and up to 25 relevant code excerpts. The model answers with a plan: each file to create or modify, its layer (data, integration, service, ui, test, config), its purpose, the files whose patterns it follows, and risks. The plan is checked: paths must stay inside the repository, "modify" is only kept for files that exist, and files are ordered data → integration → service → config → ui → test.
+3. A **Lead approves** the plan (it can be edited as JSON first, or analyzed again). Only then is code written.
+4. **Generation** writes each file completely, in plan order, with the current content (for modified files), example files to follow, the start of files already written in this change, and the spec, designs and profile. Java, JSON and XML must parse; if not, the model gets the error and tries again (twice at most). JavaScript and HTML get a basic bracket and tag check that only warns. Existing files over 80 KB are not rewritten; change those by hand.
+5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
+6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
+
+A real build of the branch (Jenkins) is the next step and not yet automated: build the branch or the patched working copy with your usual Jenkins job.
+
 ## Sign-in, roles and audit
 
 **Sign-in options** (`FACTORY_AUTH_MODE`):
@@ -210,6 +222,18 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/designs/{id}/approve` / `reopen` | Approve (`by`) or reopen for changes |
 | `GET /api/review/{token}` | Customer review: the design by review link |
 | `POST /api/review/{token}/comments` / `approve` | Customer comment or approval |
+| `GET /api/workspaces/{id}/changes` | List changes |
+| `POST /api/requirements/{id}/changes` | Start a change (impact analysis) for an approved requirement |
+| `GET /api/changes/{id}` | Change with plan, status and files |
+| `POST /api/changes/{id}/analyze` | Analyze again |
+| `PUT /api/changes/{id}/plan` | Replace the plan with edited JSON |
+| `POST /api/changes/{id}/approve-plan` | Approve the plan and write the code (Lead) |
+| `GET /api/changes/{id}/file?path=` | One file: original, generated content and diff |
+| `PUT /api/changes/{id}/file` | Save a reviewer's edit (`path`, `content`) |
+| `POST /api/changes/{id}/regenerate` | Write one file again (`path`, optional `note`) |
+| `GET /api/changes/{id}/patch` | Download the change as a patch |
+| `POST /api/changes/{id}/deliver` | Commit the change to a new SVN branch |
+| `DELETE /api/changes/{id}` | Delete a change |
 | `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
@@ -246,4 +270,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-SAML sign-in, impact analysis and planning, code generation (the agent pipeline) and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Jenkins build validation and the build-error fix loop, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

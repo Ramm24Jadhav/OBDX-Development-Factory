@@ -13,4 +13,6 @@ public interface ScreenDesignRepository extends JpaRepository<ScreenDesign, UUID
     Optional<ScreenDesign> findByReviewToken(String reviewToken);
 
     boolean existsByRequirementId(UUID requirementId);
+
+    List<ScreenDesign> findByRequirementIdOrderByCreatedAt(UUID requirementId);
 }

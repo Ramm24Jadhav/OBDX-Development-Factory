@@ -71,6 +71,10 @@ public class AccessGuard {
         return require(workspaceOf("screen_design", designId, "Design"), permission);
     }
 
+    public AppUser requireForChange(UUID changeId, WorkspaceRole.Permission permission) {
+        return require(workspaceOf("change_request", changeId, "Change"), permission);
+    }
+
     /** Workspace id to role for the signed-in user; null means "all workspaces" (administrator). */
     public Map<UUID, WorkspaceRole> visibleWorkspaces() {
         AppUser user = current();

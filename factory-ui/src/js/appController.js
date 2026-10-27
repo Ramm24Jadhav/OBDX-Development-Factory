@@ -37,6 +37,7 @@ define(['knockout', './services/session', 'ojs/ojcontext', 'ojs/ojmodule-element
         { path: 'profile', detail: { label: 'Profile' } },
         { path: 'requirements', detail: { label: 'Requirements' } },
         { path: 'designer', detail: { label: 'Designer' } },
+        { path: 'changes', detail: { label: 'Changes' } },
         { path: 'models', detail: { label: 'Models' } },
         { path: 'admin', detail: { label: 'Admin', adminOnly: true } },
         { path: 'about', detail: { label: 'About' } },
