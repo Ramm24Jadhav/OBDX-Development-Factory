@@ -10,3 +10,4 @@ Thumbs.db
 
 # CA certificates added locally for Docker builds (see deploy/docker/certs/README.md)
 deploy/docker/certs/*.crt
+/dist/

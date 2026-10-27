@@ -16,6 +16,12 @@ pipeline {
                 sh 'mvn -B clean verify'
             }
         }
+        stage('Download zip') {
+            steps {
+                // Start scripts, settings and demo code with the jar; see deploy/bundle/README.txt
+                sh 'deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory.zip'
+            }
+        }
     }
 
     post {
@@ -23,7 +29,7 @@ pipeline {
             junit allowEmptyResults: true, testResults: 'factory-server/target/surefire-reports/*.xml'
         }
         success {
-            archiveArtifacts artifacts: 'factory-server/target/obdx-factory.jar, deploy/*', fingerprint: true
+            archiveArtifacts artifacts: 'factory-server/target/obdx-factory.jar, dist/obdx-factory.zip, deploy/*', fingerprint: true
         }
     }
 }

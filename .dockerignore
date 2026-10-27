@@ -10,3 +10,4 @@ factory-ui/staged-themes/
 .vscode/
 *.log
 .env
+/dist/

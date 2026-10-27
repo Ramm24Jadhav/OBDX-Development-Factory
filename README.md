@@ -13,6 +13,9 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requireme
 
 ## Quick start
 
+On Windows, without installing anything: download `obdx-factory-windows-x64` from the latest **Build** run in the
+repository's Actions tab, unzip it and double-click `start.bat` (Java and a trial database are included).
+
 With Docker, on any machine your team can reach (factory, database, local model and demo code, nothing else to install):
 
 ```bash

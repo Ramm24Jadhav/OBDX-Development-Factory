@@ -26,6 +26,8 @@
     <java.version>21</java.version>
     <langchain4j.version>1.22.0</langchain4j.version>
     <javaparser.version>3.28.2</javaparser.version>
+    <embedded-postgres.version>2.2.2</embedded-postgres.version>
+    <embedded-postgres-binaries.version>17.11.0</embedded-postgres-binaries.version>
     <poi.version>5.5.1</poi.version>
     <pdfbox.version>3.0.8</pdfbox.version>
     <java-diff-utils.version>4.16</java-diff-utils.version>

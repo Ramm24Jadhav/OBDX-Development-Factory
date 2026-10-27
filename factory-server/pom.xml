@@ -65,6 +65,30 @@
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <!-- Trial database (FACTORY_TRIAL_DATABASE=true): PostgreSQL started by the factory itself, for Windows and Linux x64 -->
+    <dependency>
+      <groupId>io.zonky.test</groupId>
+      <artifactId>embedded-postgres</artifactId>
+      <version>${embedded-postgres.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.zonky.test.postgres</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-windows-amd64</artifactId>
+      <version>${embedded-postgres-binaries.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-linux-amd64</artifactId>
+      <version>${embedded-postgres-binaries.version}</version>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
       <groupId>dev.langchain4j</groupId>

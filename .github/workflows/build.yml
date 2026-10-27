@@ -1,0 +1,63 @@
+# Builds and tests the factory on every push, and produces the downloads (Actions run page, "Artifacts"):
+#   obdx-factory-windows-x64: unzip and double-click start.bat; Java is included
+#   obdx-factory: the same without Java, for Linux or a machine that has Java 21
+name: Build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: factory_test
+          POSTGRES_USER: factory
+          POSTGRES_PASSWORD: factory
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factory -d factory_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Install Subversion (used by the import tests)
+        run: sudo apt-get update -q && sudo apt-get install -y -q subversion
+      - name: Build and test
+        run: mvn -B clean verify
+        env:
+          FACTORY_TEST_DB_URL: jdbc:postgresql://localhost:5432/factory_test
+      - name: Download Java 21 for Windows
+        run: |
+          curl -fsSL -o jre.zip "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse"
+          unzip -q jre.zip -d jre-unpacked
+          mv jre-unpacked/* jre-windows
+      - name: Pack the downloads
+        run: |
+          deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory-windows-x64.zip jre-windows
+          deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory.zip
+          # GitHub zips each artifact itself, so the Windows one is uploaded unpacked (one zip to download, not two).
+          unzip -q dist/obdx-factory-windows-x64.zip -d dist/windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obdx-factory-windows-x64
+          path: dist/windows/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obdx-factory
+          path: dist/obdx-factory.zip
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-reports
+          path: factory-server/target/*-reports/

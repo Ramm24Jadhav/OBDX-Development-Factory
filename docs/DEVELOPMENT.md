@@ -69,6 +69,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_PORT` | `8080` |
 | `FACTORY_DB_URL` | `jdbc:postgresql://localhost:5432/factory` |
 | `FACTORY_DB_USER` / `FACTORY_DB_PASSWORD` | `factory` / `factory` |
+| `FACTORY_TRIAL_DATABASE` | `false`. `true`: the factory starts its own PostgreSQL (data in `FACTORY_DATA_DIR/trial-database`) and ignores the `FACTORY_DB_*` settings. For trials only |
 | `FACTORY_SECRET_KEY` | none. Required before saving an SVN password. Generate with `openssl rand -base64 32` and keep it stable |
 | `FACTORY_DATA_DIR` | `data` (SVN working copies are kept under it) |
 | `FACTORY_SVN_COMMAND` | `svn` |
@@ -389,6 +390,29 @@ CREATE EXTENSION vector;
 ```bash
 FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 ```
+
+## Download and run (Windows or Linux, no installation)
+
+The download is a zip with the factory, start scripts, settings and demo code. GitHub builds it on every push: open
+the repository's **Actions** tab, choose the latest **Build** run and download an artifact:
+
+- `obdx-factory-windows-x64`: for Windows, with Java included.
+- `obdx-factory`: the same without Java, for Linux or a machine with Java 21.
+
+On Windows, unzip it (for example to `C:\obdx-factory`), double-click `start.bat` and open `http://localhost:8080/`.
+Sign in as `admin` with the password in `settings.properties` (`Factory-Admin-1` until changed). On Linux, run
+`./start.sh` as an ordinary user. `README.txt` in the zip has the details, including `create-demo-svn.bat` for trying
+it with demo code. Importing code needs the Subversion command-line tools: on Windows, TortoiseSVN with "command line
+client tools" ticked.
+
+The download uses the **trial database** (`FACTORY_TRIAL_DATABASE=true` in its `settings.properties`): the factory
+starts its own PostgreSQL 17, keeps its data in `data/trial-database` and stops it when the factory stops, so nothing
+needs to be installed. It listens on localhost only. It has no pgvector, which has no Windows build; a pure-SQL
+stand-in (`factory-server/src/main/resources/trial-database/`) gives semantic search the same results, without a vector
+index, which is fine for trial-sized codebases. For a team installation, use a PostgreSQL server with pgvector.
+
+To pack the zip yourself: `deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory.zip [jre folder]`
+(Jenkins does this in its "Download zip" stage).
 
 ## Running with Docker (development and trials)
 

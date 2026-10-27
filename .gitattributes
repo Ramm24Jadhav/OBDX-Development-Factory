@@ -1,0 +1,2 @@
+# Windows scripts keep Windows line endings
+*.bat text eol=crlf

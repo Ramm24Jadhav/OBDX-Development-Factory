@@ -1,0 +1,4 @@
+# Stand-in for pgvector in the factory's trial database (see TrialDatabaseConfig). Pure SQL, no vector index.
+comment = 'pgvector stand-in for the OBDX Development Factory trial database'
+default_version = 'trial'
+relocatable = true

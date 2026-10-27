@@ -68,6 +68,11 @@ factory:
     secret-key: ${FACTORY_SECRET_KEY:}
   storage:
     root: ${FACTORY_DATA_DIR:data}
+  trial-database:
+    # true: the factory starts its own PostgreSQL (data in FACTORY_DATA_DIR/trial-database) and ignores FACTORY_DB_*.
+    # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.
+    enabled: ${FACTORY_TRIAL_DATABASE:false}
+    directory: ${factory.storage.root}/trial-database
   svn:
     command: ${FACTORY_SVN_COMMAND:svn}
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}
