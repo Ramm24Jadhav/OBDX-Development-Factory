@@ -26,6 +26,8 @@
     <java.version>21</java.version>
     <langchain4j.version>1.22.0</langchain4j.version>
     <javaparser.version>3.28.2</javaparser.version>
+    <poi.version>5.5.1</poi.version>
+    <pdfbox.version>3.0.8</pdfbox.version>
     <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
     <!-- Node.js used to build the Oracle JET UI. Point node.download.root at an internal mirror for offline builds. -->
     <node.version>v22.22.0</node.version>
@@ -38,6 +40,21 @@
         <groupId>com.obdx.factory</groupId>
         <artifactId>factory-ui</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>${poi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-scratchpad</artifactId>
+        <version>${poi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>${pdfbox.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.javaparser</groupId>

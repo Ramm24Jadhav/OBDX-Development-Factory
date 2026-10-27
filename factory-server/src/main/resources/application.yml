@@ -9,6 +9,10 @@ spring:
     url: ${FACTORY_DB_URL:jdbc:postgresql://localhost:5432/factory}
     username: ${FACTORY_DB_USER:factory}
     password: ${FACTORY_DB_PASSWORD:factory}
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 26MB
   jpa:
     open-in-view: false
     hibernate:
@@ -27,6 +31,9 @@ factory:
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}
   indexing:
     embeddings-enabled: ${FACTORY_INDEX_EMBEDDINGS:true}
+  requirements:
+    # Long documents go to the model in sections of this size; lower it for models with a small context window.
+    max-chars-per-call: ${FACTORY_REQUIREMENTS_MAX_CHARS:12000}
   model:
     base-url: ${FACTORY_MODEL_BASE_URL:http://localhost:11434/v1}
     api-key: ${FACTORY_MODEL_API_KEY:not-needed}

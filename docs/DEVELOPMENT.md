@@ -18,6 +18,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `indexing/`: turns source files into searchable pieces ("chunks"): Java by class and method (JavaParser), other files by windows of lines. Stores them with full-text and vector search data.
 - `search/`: code search combining keyword and semantic (embedding) search.
 - `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
+- `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
 - `common/`: shared exceptions and the error handler that returns problem details to the UI.
@@ -65,6 +66,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_SVN_COMMAND` | `svn` |
 | `FACTORY_SVN_TRUST_UNKNOWN_CA` | `false` (accept SVN server certificates from an unknown CA) |
 | `FACTORY_INDEX_EMBEDDINGS` | `true` (create embeddings for semantic search while indexing) |
+| `FACTORY_REQUIREMENTS_MAX_CHARS` | `12000` (characters of a document sent to the model per call) |
 | `FACTORY_MODEL_BASE_URL` | `http://localhost:11434/v1` (Ollama) |
 | `FACTORY_MODEL_API_KEY` | `not-needed` |
 | `FACTORY_MODEL_CHAT` | `qwen2.5-coder:7b` |
@@ -104,6 +106,16 @@ After every successful import the factory scans the working copy and records fac
 
 On the **Profile** page a developer can **Confirm** a detected value, **Correct** it (or **Enter** one that was not found), and **Reset** back to the detected value. Confirmed and corrected values are stored separately and survive later scans. If the detected OBDX version disagrees with the workspace's version, the page shows a warning. To add a fact, add it to the matching detector; every detector returns all of its facts, with "not found" where nothing was detected, so the profile doubles as a checklist.
 
+## Requirements (document ingestion)
+
+1. On the **Requirements** page, upload a BRD/FSD (`.docx`, `.doc`, `.pdf`, `.txt`, `.md`, up to 25 MB) or describe the change in text. The uploaded file is kept under `FACTORY_DATA_DIR/workspaces/<id>/requirements/`.
+2. The text is extracted (Word headings become `#` lines and tables become `|` rows) and sent to the chat model in sections of up to 12,000 characters (`FACTORY_REQUIREMENTS_MAX_CHARS`). Confirmed Project Profile facts (OBDX and JET version, database, host systems, error codes) are given as context.
+3. The model answers in JSON mode with a spec: screens (new or enhance) with fields, actions, business rules, roles, APIs, host interactions, messages and **open questions**. An unusable answer is retried once. Sections are merged and each screen gets up to three possibly related files from code search.
+4. Analysts answer open questions and click **Update spec with answers**: answered questions become decisions, and the model updates the spec with them. The spec can also be edited as JSON. Every change is stored as a new spec version.
+5. **Approve** locks the spec. It needs at least one screen and no open questions.
+
+Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes; raise `FACTORY_MODEL_TIMEOUT` if calls time out, and lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
+
 ## Working on the UI
 
 For quick UI changes without rebuilding the jar, run the server, then in `factory-ui/`:
@@ -131,6 +143,16 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/workspaces/{id}/imports` | Recent import jobs with progress |
 | `GET /api/workspaces/{id}/index` | Indexed revision and file/piece counts |
 | `GET /api/workspaces/{id}/search?q=...` | Search the workspace's code |
+| `GET /api/workspaces/{id}/requirements` | List requirements |
+| `POST /api/workspaces/{id}/requirements` | Upload a document (multipart `file`, optional `title`); drafting starts in the background |
+| `POST /api/workspaces/{id}/requirements/text` | Create from text (`title`, `text`) |
+| `GET /api/requirements/{id}` | Requirement with status, document text and current spec |
+| `PUT /api/requirements/{id}/answers` | Save answers to open questions (`answers`: `index`, `answer`) |
+| `POST /api/requirements/{id}/refine` | Update the spec with the answers (background) |
+| `PUT /api/requirements/{id}/spec` | Replace the spec with edited JSON |
+| `POST /api/requirements/{id}/approve` | Approve and lock the spec |
+| `POST /api/requirements/{id}/retry` | Draft again from the document |
+| `DELETE /api/requirements/{id}` | Delete the requirement and its versions |
 | `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
@@ -167,4 +189,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Login and roles (Spring Security), document ingestion, the screen designer, the agent pipeline and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Login and roles (Spring Security), the screen designer, the agent pipeline and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

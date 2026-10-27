@@ -67,6 +67,13 @@ class OpenAiCompatibleModelGatewayTest {
     }
 
     @Test
+    void asksForJsonObjectInJsonMode() {
+        gatewayFor("/v1").chatJson("Answer in JSON.", "Give me a spec");
+
+        assertThat(lastChatRequest.get()).contains("json_object");
+    }
+
+    @Test
     void returnsEmbeddingVector() {
         assertThat(gatewayFor("/v1").embed("fund transfer screen")).containsExactly(0.1f, 0.2f, 0.3f, 0.4f);
     }

@@ -10,6 +10,9 @@ public interface ModelGateway {
 
     ChatResult chat(String systemPrompt, String userPrompt);
 
+    /** Like {@link #chat}, but asks the model to answer with a JSON object only. */
+    ChatResult chatJson(String systemPrompt, String userPrompt);
+
     float[] embed(String text);
 
     /** Embeds several texts in one call; the result has one vector per text, in the same order. */

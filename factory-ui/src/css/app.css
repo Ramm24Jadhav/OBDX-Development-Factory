@@ -102,3 +102,39 @@
 .factory-profile-table th:nth-child(3) { width: 12%; }
 .factory-profile-table th:nth-child(4) { width: 22%; }
 .factory-profile-table th:nth-child(5) { width: 220px; }
+
+.factory-gap > * {
+    margin-right: 12px;
+}
+
+.factory-detail {
+    margin-top: 32px;
+    padding-top: 8px;
+    border-top: 2px solid var(--oj-core-divider-color, #ddd);
+}
+
+.factory-question {
+    margin: 12px 0;
+    max-width: 900px;
+}
+
+.factory-screen {
+    margin-bottom: 24px;
+}
+
+.factory-code textarea {
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.factory-source {
+    margin-top: 24px;
+}
+
+.factory-req-processing { background-color: #e8eef7; }
+.factory-req-ready { background-color: #fdf1d6; }
+.factory-req-failed { background-color: #f9dcdc; }
+.factory-req-approved { background-color: #e3f4e6; }
+.factory-change-new { background-color: #e3f4e6; }
+.factory-change-enhance { background-color: #e8eef7; }
+.factory-change-unknown { background-color: #f1efed; }

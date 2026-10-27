@@ -6,7 +6,12 @@
 define([], function () {
   function request(method, path, body) {
     const options = { method: method, headers: { 'Accept': 'application/json' } };
-    if (body !== undefined) {
+    if (body instanceof FormData) {
+      options.body = body;
+    } else if (typeof body === 'string') {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = body;
+    } else if (body !== undefined) {
       options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(body);
     }
@@ -30,6 +35,8 @@ define([], function () {
     get: function (path) { return request('GET', path); },
     post: function (path, body) { return request('POST', path, body); },
     put: function (path, body) { return request('PUT', path, body); },
+    /** Sends a multipart form, for file uploads. */
+    upload: function (path, formData) { return request('POST', path, formData); },
     del: function (path) { return request('DELETE', path); }
   };
 });

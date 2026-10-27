@@ -7,6 +7,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -46,6 +47,15 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     @Override
     public ChatResult chat(String systemPrompt, String userPrompt) {
+        return chat(systemPrompt, userPrompt, null);
+    }
+
+    @Override
+    public ChatResult chatJson(String systemPrompt, String userPrompt) {
+        return chat(systemPrompt, userPrompt, ResponseFormat.JSON);
+    }
+
+    private ChatResult chat(String systemPrompt, String userPrompt, ResponseFormat format) {
         List<ChatMessage> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(SystemMessage.from(systemPrompt));
@@ -54,7 +64,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
         long start = System.nanoTime();
         try {
-            ChatResponse response = chatModel.chat(ChatRequest.builder().messages(messages).build());
+            ChatRequest.Builder request = ChatRequest.builder().messages(messages);
+            if (format != null) {
+                request.responseFormat(format);
+            }
+            ChatResponse response = chatModel.chat(request.build());
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : properties.chatModel();
             return new ChatResult(response.aiMessage().text(), model, latencyMs);

@@ -67,6 +67,11 @@ class ImportAndSearchIntegrationTest {
                 }
 
                 @Override
+                public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                    return new ChatResult("{}", "fake", 0);
+                }
+
+                @Override
                 public float[] embed(String text) {
                     float[] vector = new float[64];
                     for (String word : text.toLowerCase(Locale.ROOT).split("[^a-z]+")) {

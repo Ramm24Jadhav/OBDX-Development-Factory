@@ -26,7 +26,8 @@ define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
 
       const load = () => api.get('workspaces')
         .then((data) => workspaces(data.map((workspace) => Object.assign({}, workspace, {
-          createdAt: new Date(workspace.createdAt).toLocaleString()
+          createdAt: new Date(workspace.createdAt).toLocaleString(),
+          deleteAction: () => this.deleteWorkspace(workspace.id)
         }))))
         .catch((error) => this.errorMessage(error.message));
 
@@ -53,9 +54,14 @@ define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
           .finally(() => this.saving(false));
       };
 
-      this.deleteWorkspace = (id) => api.del('workspaces/' + id)
-        .then(load)
-        .catch((error) => this.errorMessage(error.message));
+      this.deleteWorkspace = (id) => {
+        if (!window.confirm('Delete this workspace with its code index, profile and requirements?')) {
+          return;
+        }
+        api.del('workspaces/' + id)
+          .then(load)
+          .catch((error) => this.errorMessage(error.message));
+      };
 
       this.connected = () => {
         accUtils.announce('Workspaces page loaded.');

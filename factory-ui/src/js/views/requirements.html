@@ -1,0 +1,175 @@
+<div class="oj-hybrid-padding">
+  <h1>Requirements</h1>
+  <p class="oj-text-color-secondary">
+    Upload a BRD or FSD (Word, PDF or text) or describe a change. The model drafts a structured spec with open questions;
+    answer them, review the spec and approve it before development starts.
+  </p>
+
+  <oj-form-layout max-columns="2">
+    <oj-select-single id="reqWorkspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
+                      placeholder="Select a workspace"></oj-select-single>
+  </oj-form-layout>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspaceId()]]">
+    <h2>New requirement</h2>
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-input-text id="reqTitle" label-hint="Title (optional)" value="{{newTitle}}"></oj-input-text>
+    </oj-form-layout>
+    <div class="oj-flex oj-sm-flex-items-initial factory-gap">
+      <div class="oj-flex-item">
+        <oj-file-picker id="reqFile" accept='[".docx", ".doc", ".pdf", ".txt", ".md"]' selection-mode="single"
+                        on-oj-select="[[fileSelected]]">
+          <oj-button slot="trigger" id="chooseFileButton">Choose document</oj-button>
+        </oj-file-picker>
+        <span class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[chosenFileName]]"></oj-bind-text></span>
+        <oj-button id="uploadButton" chroming="callToAction" on-oj-action="[[upload]]" disabled="[[!chosenFile() || busy()]]">Upload and draft spec</oj-button>
+      </div>
+    </div>
+    <oj-form-layout max-columns="1">
+      <oj-text-area id="reqText" label-hint="...or describe the change" value="{{newText}}" rows="4"></oj-text-area>
+    </oj-form-layout>
+    <oj-button id="submitTextButton" on-oj-action="[[submitText]]" disabled="[[!newText() || busy()]]">Draft spec from text</oj-button>
+
+    <h2>All requirements</h2>
+    <oj-table id="reqTable" aria-label="Requirements" data="[[listProvider]]" style="width: 100%;"
+              columns='[{"headerText": "Title", "field": "title"},
+                        {"headerText": "Status", "field": "status"},
+                        {"headerText": "Screens", "field": "screens"},
+                        {"headerText": "Open questions", "field": "openQuestions"},
+                        {"headerText": "Updated", "field": "updated"},
+                        {"headerText": "", "field": "id", "template": "openTemplate", "sortable": "disabled"}]'>
+      <template slot="openTemplate" data-oj-as="cell">
+        <oj-button chroming="borderless" on-oj-action="[[cell.row.openAction]]">Open</oj-button>
+      </template>
+      <template slot="noData">No requirements yet.</template>
+    </oj-table>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[detail()]]">
+    <div id="reqDetail" class="factory-detail">
+      <h2><oj-bind-text value="[[detail().title]]"></oj-bind-text></h2>
+      <p>
+        <span :class="[['factory-status factory-req-' + detail().status.toLowerCase()]]"><oj-bind-text value="[[detail().status]]"></oj-bind-text></span>
+        <oj-bind-if test="[[detail().currentVersion]]">
+          <span class="oj-text-color-secondary"> · version <oj-bind-text value="[[detail().currentVersion]]"></oj-bind-text></span>
+        </oj-bind-if>
+        <oj-bind-if test="[[detail().fileName]]">
+          <span class="oj-text-color-secondary"> · <oj-bind-text value="[[detail().fileName]]"></oj-bind-text></span>
+        </oj-bind-if>
+      </p>
+      <oj-bind-if test="[[detail().message]]">
+        <p id="reqMessage"><oj-bind-text value="[[detail().message]]"></oj-bind-text></p>
+      </oj-bind-if>
+      <oj-toolbar>
+        <oj-bind-if test="[[detail().status === 'READY']]">
+          <oj-button id="approveButton" chroming="callToAction" on-oj-action="[[approve]]">Approve spec</oj-button>
+          <oj-button id="editJsonButton" on-oj-action="[[toggleJson]]">
+            <oj-bind-text value="[[editingJson() ? 'Close JSON editor' : 'Edit spec (JSON)']]"></oj-bind-text>
+          </oj-button>
+        </oj-bind-if>
+        <oj-bind-if test="[[detail().status === 'FAILED' || detail().status === 'READY']]">
+          <oj-button id="retryButton" on-oj-action="[[retry]]">Draft again from document</oj-button>
+        </oj-bind-if>
+        <oj-button id="deleteReqButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
+      </oj-toolbar>
+
+      <oj-bind-if test="[[editingJson()]]">
+        <oj-form-layout max-columns="1">
+          <oj-text-area id="specJson" label-hint="Spec JSON" value="{{specJson}}" rows="20" class="factory-code"></oj-text-area>
+        </oj-form-layout>
+        <oj-button id="saveJsonButton" chroming="callToAction" on-oj-action="[[saveJson]]">Save as new version</oj-button>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[spec()]]">
+        <oj-bind-if test="[[spec().summary]]">
+          <p><oj-bind-text value="[[spec().summary]]"></oj-bind-text></p>
+        </oj-bind-if>
+
+        <oj-bind-if test="[[spec().openQuestions.length > 0]]">
+          <h3>Open questions (<oj-bind-text value="[[spec().openQuestions.length]]"></oj-bind-text>)</h3>
+          <oj-bind-for-each data="[[questions]]" as="q">
+            <template>
+              <div class="factory-question">
+                <div><strong><oj-bind-text value="[[(q.index + 1) + '. ' + q.data.question]]"></oj-bind-text></strong></div>
+                <oj-bind-if test="[[q.data.context]]">
+                  <div class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[q.data.context]]"></oj-bind-text></div>
+                </oj-bind-if>
+                <oj-input-text value="{{q.data.answerValue}}" label-hint="Answer" label-edge="none"
+                               :aria-label="[['Answer to question ' + (q.index + 1)]]"
+                               disabled="[[!q.data.editable]]"></oj-input-text>
+              </div>
+            </template>
+          </oj-bind-for-each>
+          <oj-bind-if test="[[detail().status === 'READY']]">
+            <oj-toolbar>
+              <oj-button id="saveAnswersButton" on-oj-action="[[saveAnswers]]">Save answers</oj-button>
+              <oj-button id="refineButton" chroming="callToAction" on-oj-action="[[refine]]">Update spec with answers</oj-button>
+            </oj-toolbar>
+          </oj-bind-if>
+        </oj-bind-if>
+
+        <h3>Screens</h3>
+        <oj-bind-for-each data="[[screens]]" as="screen">
+          <template>
+            <div class="factory-screen">
+              <h4>
+                <oj-bind-text value="[[screen.data.name]]"></oj-bind-text>
+                <span :class="[['factory-status factory-change-' + screen.data.changeType]]"><oj-bind-text value="[[screen.data.changeType]]"></oj-bind-text></span>
+              </h4>
+              <oj-bind-if test="[[screen.data.description]]">
+                <p><oj-bind-text value="[[screen.data.description]]"></oj-bind-text></p>
+              </oj-bind-if>
+              <oj-bind-if test="[[screen.data.fields.length > 0]]">
+                <table class="factory-profile-table factory-fields">
+                  <thead><tr><th>Field</th><th>Label</th><th>Type</th><th>Mandatory</th><th>Validations</th><th>Source / notes</th></tr></thead>
+                  <tbody>
+                    <oj-bind-for-each data="[[screen.data.fields]]" as="field">
+                      <template>
+                        <tr>
+                          <td><oj-bind-text value="[[field.data.name]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[field.data.label]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[field.data.type]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[field.data.mandatory]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[field.data.validations]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[field.data.notes]]"></oj-bind-text></td>
+                        </tr>
+                      </template>
+                    </oj-bind-for-each>
+                  </tbody>
+                </table>
+              </oj-bind-if>
+              <oj-bind-if test="[[screen.data.actions]]">
+                <p><strong>Actions:</strong> <oj-bind-text value="[[screen.data.actions]]"></oj-bind-text></p>
+              </oj-bind-if>
+              <oj-bind-if test="[[screen.data.relatedCode]]">
+                <p class="oj-typography-body-sm"><strong>Possibly related code:</strong>
+                  <oj-bind-text value="[[screen.data.relatedCode]]"></oj-bind-text>
+                </p>
+              </oj-bind-if>
+            </div>
+          </template>
+        </oj-bind-for-each>
+
+        <oj-bind-for-each data="[[lists]]" as="list">
+          <template>
+            <h3><oj-bind-text value="[[list.data.title]]"></oj-bind-text></h3>
+            <ul>
+              <oj-bind-for-each data="[[list.data.items]]">
+                <template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </template>
+        </oj-bind-for-each>
+      </oj-bind-if>
+
+      <details class="factory-source">
+        <summary>Document text the spec was drafted from</summary>
+        <pre class="factory-reply"><oj-bind-text value="[[detail().documentText]]"></oj-bind-text></pre>
+      </details>
+    </div>
+  </oj-bind-if>
+</div>

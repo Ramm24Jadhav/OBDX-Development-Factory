@@ -30,7 +30,7 @@
                       {"headerText": "", "field": "id", "template": "actionTemplate", "sortable": "disabled"}]'
             class="oj-sm-margin-4x-top" style="width: 100%;">
     <template slot="actionTemplate" data-oj-as="cell">
-      <oj-button chroming="borderless" on-oj-action="[[function() { $parent.deleteWorkspace(cell.data); }]]">Delete</oj-button>
+      <oj-button chroming="borderless" on-oj-action="[[cell.row.deleteAction]]">Delete</oj-button>
     </template>
     <template slot="noData">No workspaces yet. Create one above.</template>
   </oj-table>
