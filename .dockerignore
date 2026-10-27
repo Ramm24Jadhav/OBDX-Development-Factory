@@ -1,0 +1,12 @@
+# Keep the build context small: build output, dependencies and local files are not needed to build the image.
+/target/
+factory-server/target/
+factory-ui/target/
+**/node_modules/
+factory-ui/web/
+factory-ui/staged-themes/
+.git/
+.idea/
+.vscode/
+*.log
+.env

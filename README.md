@@ -13,6 +13,14 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requireme
 
 ## Quick start
 
+With Docker, on any machine your team can reach (factory, database, local model and demo code, nothing else to install):
+
+```bash
+docker compose up -d                              # then open http://<machine>:8080/ and sign in as admin (password in .env)
+```
+
+From source:
+
 ```bash
 mvn clean verify                                  # builds the JET UI and the Spring Boot server, runs tests
 java -jar factory-server/target/obdx-factory.jar  # http://localhost:8080

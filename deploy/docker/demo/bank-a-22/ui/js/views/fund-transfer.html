@@ -1,0 +1,9 @@
+<div class="oj-flex">
+  <oj-form-layout>
+    <oj-select-single label-hint="[[nls.transfer.fromAccount]]" value="{{fromAccount}}"></oj-select-single>
+    <oj-select-single label-hint="[[nls.transfer.toAccount]]" value="{{toAccount}}"></oj-select-single>
+    <oj-input-number label-hint="[[nls.transfer.amount]]" value="{{amount}}"></oj-input-number>
+    <oj-input-text label-hint="[[nls.transfer.remarks]]" value="{{remarks}}"></oj-input-text>
+  </oj-form-layout>
+  <oj-button on-oj-action="[[submitTransfer]]">Transfer</oj-button>
+</div>

@@ -390,6 +390,61 @@ CREATE EXTENSION vector;
 FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 ```
 
+## Running with Docker (development and trials)
+
+To give a team a factory they open in the browser, run it with Docker on any machine you control: a development VM on
+the bank network, a laptop, or a cloud VM. On a machine with Docker (Docker Desktop, or Docker Engine with the compose
+plugin):
+
+```bash
+git clone <repository URL> && cd OBDX-Development-Factory
+# optional: edit .env (admin password, ports, model server)
+docker compose up -d
+```
+
+Then open `http://<machine>:8080/` and sign in as `admin` with `FACTORY_ADMIN_PASSWORD` from `.env`. The first start
+builds the image (a few minutes) and downloads the models (several GB), so the model answers are ready only after
+`docker compose logs -f model-pull` shows both models pulled.
+
+What runs (`docker-compose.yml`, settings in `.env`):
+
+| Service | What it is |
+|---|---|
+| `factory` | The factory, built from the `Dockerfile` (UI and server), on port `FACTORY_HTTP_PORT` (8080) |
+| `db` | PostgreSQL 17 with pgvector. Only the factory can reach it |
+| `ollama`, `model-pull` | Local model server and a one-time download of `FACTORY_MODEL_CHAT` and `FACTORY_MODEL_EMBEDDING` (profile `model`) |
+| `svn` | Demo Subversion server with two small OBDX-style codebases (`deploy/docker/demo/`), on port 3690 (profile `demo`) |
+| `demo-setup` | Creates the workspaces `bank-a-22` (OBDX 22.x) and `bank-b-25` (25.x) on the demo SVN server and imports them, once (profile `demo`) |
+
+`COMPOSE_PROFILES` in `.env` chooses the optional parts:
+
+- Use a model server you already have (Ollama on a GPU machine, vLLM): remove `model` and set `FACTORY_MODEL_BASE_URL`.
+  A 7B model on a CPU answers in minutes, not seconds; a GPU makes the factory much more pleasant.
+- Work with real bank code: remove `demo` and create workspaces in the factory pointing at the bank's SVN server. Keep
+  bank code on machines inside the bank network.
+
+Everyday commands:
+
+```bash
+docker compose ps                    # what runs, and whether it is healthy
+docker compose logs -f factory       # factory log
+git pull && docker compose up -d --build   # update to the latest version (data is kept)
+docker compose down                  # stop (data is kept in volumes)
+docker compose down -v               # stop and delete all data: database, working copies, models, demo SVN
+```
+
+Data lives in Docker volumes: `db-data` (the database), `factory-data` (SVN working copies and the generated secret key
+that encrypts stored SVN passwords), `ollama-models` and `svn-repos`. Back up `db-data` and `factory-data` together.
+
+Behind a corporate proxy, build with `docker compose build --build-arg HTTPS_PROXY=http://proxy:port` (or set the
+`proxies` section of `~/.docker/config.json`). If the proxy, or an internal SVN, model, Maven or npm server, uses a
+certificate from the bank's own CA, put the CA certificate in `deploy/docker/certs/` and rebuild.
+
+The port is open to anyone who can reach the machine. On a cloud VM, allow only your team's addresses in its firewall,
+and put only demo code on it. For a shared, long-lived installation use HTTPS: put Oracle HTTP Server in front as below
+(set `FACTORY_CONTEXT_PATH`, `FACTORY_FORWARD_HEADERS` and `FACTORY_COOKIE_SECURE` on the `factory` service), or install
+the service without Docker.
+
 ## Installing on a Linux server
 
 1. Build with Jenkins (or `mvn clean verify`) and copy `factory-server/target/obdx-factory.jar` to `/opt/obdx-factory/`.

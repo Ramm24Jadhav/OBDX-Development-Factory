@@ -1,0 +1,116 @@
+# OBDX Development Factory for development and trials: docker compose up -d, then open http://<this machine>:8080/
+# Settings are in .env next to this file. For production, see "Deploying behind Oracle HTTP Server" in docs/DEVELOPMENT.md.
+name: obdx-factory
+
+services:
+  factory:
+    build: .
+    image: obdx-factory:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${FACTORY_HTTP_PORT:-8080}:8080"
+    environment:
+      FACTORY_DB_URL: jdbc:postgresql://db:5432/factory
+      FACTORY_DB_USER: factory
+      FACTORY_DB_PASSWORD: ${DB_PASSWORD:-factory}
+      FACTORY_ADMIN_PASSWORD: ${FACTORY_ADMIN_PASSWORD:?set FACTORY_ADMIN_PASSWORD in .env}
+      FACTORY_SECRET_KEY: ${FACTORY_SECRET_KEY:-}
+      FACTORY_AUTH_MODE: ${FACTORY_AUTH_MODE:-local}
+      FACTORY_COOKIE_SECURE: ${FACTORY_COOKIE_SECURE:-false}
+      FACTORY_MODEL_BASE_URL: ${FACTORY_MODEL_BASE_URL:-http://ollama:11434/v1}
+      FACTORY_MODEL_API_KEY: ${FACTORY_MODEL_API_KEY:-not-needed}
+      FACTORY_MODEL_CHAT: ${FACTORY_MODEL_CHAT:-qwen2.5-coder:7b}
+      FACTORY_MODEL_EMBEDDING: ${FACTORY_MODEL_EMBEDDING:-nomic-embed-text}
+      FACTORY_MODEL_TIMEOUT: ${FACTORY_MODEL_TIMEOUT:-300s}
+      FACTORY_SVN_TRUST_UNKNOWN_CA: ${FACTORY_SVN_TRUST_UNKNOWN_CA:-false}
+      JAVA_OPTS: ${FACTORY_JAVA_OPTS:--XX:MaxRAMPercentage=75}
+    volumes:
+      # SVN working copies of the workspaces, and the generated secret key.
+      - factory-data:/var/lib/obdx-factory
+
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: factory
+      POSTGRES_USER: factory
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-factory}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factory -d factory"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Local model server (profile "model"). Leave the profile out of COMPOSE_PROFILES and set FACTORY_MODEL_BASE_URL to
+  # use a model server you already have.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: [model]
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  # Downloads the chat and embedding models on first start (several GB; later starts find them in the volume).
+  model-pull:
+    image: ollama/ollama:latest
+    profiles: [model]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      CHAT: ${FACTORY_MODEL_CHAT:-qwen2.5-coder:7b}
+      EMBEDDING: ${FACTORY_MODEL_EMBEDDING:-nomic-embed-text}
+    entrypoint: ["/bin/sh", "-c", "ollama pull \"$$CHAT\" && ollama pull \"$$EMBEDDING\""]
+    restart: "no"
+
+  # Demo Subversion server with two small OBDX-style codebases (profile "demo"): svn://<this machine>:3690/bank-a-22/trunk
+  # The factory image includes Subversion and the demo code, so it serves them too.
+  svn:
+    image: obdx-factory:latest
+    profiles: [demo]
+    entrypoint: ["svn-entrypoint.sh"]
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+    ports:
+      - "${SVN_PORT:-3690}:3690"
+    environment:
+      SVN_USER: ${SVN_USER:-factory}
+      SVN_PASSWORD: ${SVN_PASSWORD:-factory-demo}
+    volumes:
+      - svn-repos:/svn
+
+  # Creates the demo workspaces Bank A (OBDX 22.x) and Bank B (25.x) and imports their code, once.
+  demo-setup:
+    image: obdx-factory:latest
+    profiles: [demo]
+    depends_on:
+      factory:
+        condition: service_healthy
+      svn:
+        condition: service_started
+    entrypoint: ["demo-setup.sh"]
+    restart: "no"
+    environment:
+      FACTORY_URL: http://factory:8080
+      DEMO_SVN_URL: svn://svn
+      FACTORY_ADMIN_PASSWORD: ${FACTORY_ADMIN_PASSWORD}
+      SVN_USER: ${SVN_USER:-factory}
+      SVN_PASSWORD: ${SVN_PASSWORD:-factory-demo}
+
+volumes:
+  factory-data:
+  db-data:
+  ollama-models:
+  svn-repos:
