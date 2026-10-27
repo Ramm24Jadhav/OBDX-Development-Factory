@@ -66,6 +66,11 @@
         <oj-bind-if test="[[detail().status === 'GENERATED' || detail().status === 'DELIVERED']]">
           <a id="patchLink" class="factory-link-button" :href="[['api/changes/' + detail().id + '/patch']]" download>Download patch</a>
         </oj-bind-if>
+        <oj-bind-if test="[[canBuild()]]">
+          <oj-button id="buildButton" on-oj-action="[[build]]">
+            <oj-bind-text value="[[detail().buildStatus ? 'Build again with Jenkins' : 'Build with Jenkins']]"></oj-bind-text>
+          </oj-button>
+        </oj-bind-if>
         <oj-bind-if test="[[detail().status === 'GENERATED' && canManage()]]">
           <oj-button id="deliverButton" chroming="callToAction" on-oj-action="[[deliver]]" disabled="[[busy]]">Commit to SVN branch</oj-button>
         </oj-bind-if>
@@ -73,6 +78,13 @@
           <oj-button id="deleteChangeButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
         </oj-bind-if>
       </oj-toolbar>
+
+      <oj-bind-if test="[[detail().buildStatus]]">
+        <p id="buildMessage" :class="[['factory-build factory-build-' + detail().buildStatus.toLowerCase()]]">
+          <strong>Jenkins: <oj-bind-text value="[[detail().buildStatus.toLowerCase()]]"></oj-bind-text>.</strong>
+          <oj-bind-text value="[[detail().buildMessage]]"></oj-bind-text>
+        </p>
+      </oj-bind-if>
 
       <oj-bind-if test="[[editingPlan()]]">
         <oj-form-layout max-columns="1">
@@ -121,6 +133,31 @@
                   <td class="factory-lines"><span class="factory-added"><oj-bind-text value="[[f.data.added]]"></oj-bind-text></span>
                     <span class="factory-removed"><oj-bind-text value="[[f.data.removed]]"></oj-bind-text></span></td>
                   <td><oj-button chroming="borderless" on-oj-action="[[f.data.openAction]]">View</oj-button></td>
+                </tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[buildRows().length > 0]]">
+        <h3>Jenkins builds</h3>
+        <table id="buildTable" class="factory-profile-table">
+          <thead><tr><th>Round</th><th>Job</th><th>Build</th><th>Result</th><th>Errors</th><th>Fixed by the model</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[buildRows]]" as="b">
+              <template>
+                <tr>
+                  <td><oj-bind-text value="[[b.data.round]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[b.data.job]]"></oj-bind-text></td>
+                  <td><oj-bind-if test="[[b.data.buildUrl]]"><a :href="[[b.data.buildUrl]]" target="_blank" rel="noopener"><oj-bind-text value="[[b.data.number]]"></oj-bind-text></a></oj-bind-if></td>
+                  <td><span :class="[['factory-status factory-result-' + b.data.result.toLowerCase()]]"><oj-bind-text value="[[b.data.result]]"></oj-bind-text></span></td>
+                  <td class="factory-evidence"><oj-bind-text value="[[b.data.errors]]"></oj-bind-text>
+                    <oj-bind-if test="[[b.data.log]]">
+                      <details><summary>Log</summary><pre class="factory-diff"><oj-bind-text value="[[b.data.log]]"></oj-bind-text></pre></details>
+                    </oj-bind-if>
+                  </td>
+                  <td class="factory-evidence"><oj-bind-text value="[[b.data.fixed]]"></oj-bind-text></td>
                 </tr>
               </template>
             </oj-bind-for-each>

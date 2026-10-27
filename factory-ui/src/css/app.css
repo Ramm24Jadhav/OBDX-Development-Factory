@@ -409,3 +409,18 @@
     text-decoration: none;
     margin-right: 8px;
 }
+
+.factory-build {
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.factory-build-building { background-color: #e8eef7; }
+.factory-build-passed { background-color: #e3f4e6; }
+.factory-build-failed { background-color: #f9dcdc; }
+.factory-result-success { background-color: #e3f4e6; }
+.factory-result-failure,
+.factory-result-unstable,
+.factory-result-aborted { background-color: #f9dcdc; }
+.factory-result-queued,
+.factory-result-running { background-color: #e8eef7; }

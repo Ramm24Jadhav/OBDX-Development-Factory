@@ -167,7 +167,7 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 - Each step reads only from its own workspace's index, its Project Profile, the matching version pack and the target pack.
 - Structured outputs (JSON schemas) for spec, Screen Model, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
-- *Implemented:* impact analysis (code search per screen, rule, API and host interaction, then a model-written plan that is validated against the working copy), plan approval by a Lead, file-by-file generation in layer order with parse checks and up to two fixes per file, reviewer edits and per-file regeneration, delivery as a Subversion patch or a branch committed in one `svnmucc` commit. Not yet: the Jenkins build and build-error fix loop (5.5).
+- *Implemented:* impact analysis (code search per screen, rule, API and host interaction, then a model-written plan that is validated against the working copy), plan approval by a Lead, file-by-file generation in layer order with parse checks and up to two fixes per file, reviewer edits and per-file regeneration, delivery as a Subversion patch or a branch committed in one `svnmucc` commit. The Jenkins build and build-error fix loop (5.5) is also implemented.
 
 ### 5.5 Build Validation (Jenkins)
 
@@ -181,6 +181,7 @@ OBDX teams already build UI and backend packages with Jenkins pipelines, so the 
 - **Trade-off:** a Jenkins build takes minutes, not seconds, so the fix loop is capped (for example 3 build attempts) and local checks do as much as possible before each build.
 - Temporary branches are deleted after the request is delivered or abandoned.
 - **If the bank does not allow the factory to commit:** the Jenkins job can instead take the patch file as a file parameter, check out trunk, apply the patch and build. Nothing is committed to the repository.
+- *Implemented:* per-workspace Jenkins settings (branch or patch mode, encrypted API token, connection test), triggering every job with the branch path/URL or the patch file, polling queue and build, error extraction from console logs (Maven, javac, ESLint, TypeScript) and JUnit reports, and up to two model fix rounds limited to the change's own files, with fixes committed to the change branch. Not yet: version-pack lint rules before the build and deleting temporary branches.
 
 ### 5.6 Version Control (SVN)
 

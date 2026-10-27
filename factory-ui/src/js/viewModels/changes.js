@@ -26,6 +26,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.changes = ko.observableArray([]);
 
       this.detail = ko.observable(null);
+      this.jenkins = ko.observable(null);
       this.editingPlan = ko.observable(false);
       this.planJson = ko.observable('');
       this.file = ko.observable(null);
@@ -47,6 +48,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.planRows = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.items : []).map((item) => ({
         action: item.action, layer: item.layer, path: item.path, purpose: item.purpose || '', details: item.details || '',
         basedOn: (item.basedOn || []).join(', ')
+      })));
+      this.canBuild = ko.pureComputed(() => {
+        const d = this.detail();
+        const jenkins = this.jenkins();
+        if (!d || !jenkins || !this.canManage() || d.buildStatus === 'BUILDING') {
+          return false;
+        }
+        return jenkins.mode === 'BRANCH' ? d.status === 'DELIVERED' : (d.status === 'GENERATED' || d.status === 'DELIVERED');
+      });
+      this.buildRows = ko.pureComputed(() => (this.detail() ? this.detail().builds : []).map((b) => ({
+        round: b.round, job: b.job, number: b.buildNumber ? '#' + b.buildNumber : '', buildUrl: b.buildUrl,
+        result: b.result, errors: b.errors.slice(0, 3).join(' | ') + (b.errors.length > 3 ? ' (+' + (b.errors.length - 3) + ' more)' : ''),
+        log: b.logExcerpt || '', fixed: b.fixedFiles.join(', ')
       })));
       this.hasCode = ko.pureComputed(() => !!this.detail() && this.detail().files.some((f) => f.status !== 'PENDING'));
       this.fileRows = ko.pureComputed(() => (this.detail() ? this.detail().files : []).map((f) => ({
@@ -82,8 +96,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           requirementOptions([]);
           return Promise.resolve();
         }
-        return Promise.all([api.get('workspaces/' + id + '/changes'), api.get('workspaces/' + id + '/requirements')])
-          .then(([changeList, requirementList]) => {
+        return Promise.all([api.get('workspaces/' + id + '/changes'), api.get('workspaces/' + id + '/requirements'),
+          api.get('workspaces/' + id + '/jenkins')])
+          .then(([changeList, requirementList, jenkins]) => {
+            this.jenkins(jenkins);
             const current = this.detail() ? this.detail().id : null;
             this.changes(changeList.map((c) => ({
               title: c.title, status: c.status, statusLabel: STATUS_LABELS[c.status], selected: c.id === current,
@@ -104,7 +120,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.openFile(this.file().path, true);
         }
         clearTimeout(pollTimer);
-        if (detail.status === 'ANALYZING' || detail.status === 'GENERATING') {
+        if (detail.status === 'ANALYZING' || detail.status === 'GENERATING' || detail.buildStatus === 'BUILDING') {
           pollTimer = setTimeout(() => this.open(detail.id), POLL_MS);
         }
         loadList();
@@ -137,6 +153,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.busy(true);
         api.post(base() + '/deliver').then(show).catch(showError).finally(() => this.busy(false));
       };
+      this.build = () => api.post(base() + '/build').then(show).catch(showError);
       this.remove = () => {
         if (!window.confirm('Delete this change with its plan and generated code?')) {
           return;

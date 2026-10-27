@@ -3,6 +3,9 @@ package com.obdx.factory.change;
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.design.ScreenDesignService;
 import com.obdx.factory.importing.ImportJob;
+import com.obdx.factory.jenkins.JenkinsSettings;
+import com.obdx.factory.jenkins.JenkinsSettingsService;
+import com.obdx.factory.jenkins.StubJenkins;
 import com.obdx.factory.importing.ImportService;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.requirements.Requirement;
@@ -59,6 +62,7 @@ class ChangeFlowIntegrationTest {
         registry.add("spring.datasource.password", () -> System.getenv().getOrDefault("FACTORY_TEST_DB_PASSWORD", "factory"));
         registry.add("factory.storage.root", () -> temp.resolve("data").toString());
         registry.add("factory.security.secret-key", () -> Base64.getEncoder().encodeToString(new byte[32]));
+        registry.add("factory.jenkins.poll-interval", () -> "50ms");
     }
 
     static final String SERVICE = """
@@ -101,7 +105,10 @@ class ChangeFlowIntegrationTest {
                 public ChatResult chat(String systemPrompt, String userPrompt) {
                     String file = userPrompt.lines().findFirst().orElse("");
                     String reply;
-                    if (file.contains("RemarksValidator.java")) {
+                    if (userPrompt.contains("The Jenkins build failed")) {
+                        reply = "package com.bank.payments;\n\n// fixed after the Jenkins build\npublic class RemarksValidator {\n"
+                                + "    void check(String remarks) {\n    }\n}\n";
+                    } else if (file.contains("RemarksValidator.java")) {
                         reply = validatorAttempts.incrementAndGet() == 1
                                 ? "package com.bank.payments;\npublic class RemarksValidator { void check( }"
                                 : "```java\npackage com.bank.payments;\n\npublic class RemarksValidator {\n    void check(String remarks) {\n    }\n}\n```";
@@ -151,6 +158,12 @@ class ChangeFlowIntegrationTest {
 
     @Autowired
     private SvnClient svn;
+
+    @Autowired
+    private JenkinsSettingsService jenkinsSettings;
+
+    @Autowired
+    private ChangeBuildService changeBuilds;
 
     private UUID workspaceId;
 
@@ -232,6 +245,59 @@ class ChangeFlowIntegrationTest {
         assertThat(branch.resolve("backend/src/com/bank/payments/RemarksValidator.java")).content().contains("class RemarksValidator");
         assertThat(branch.resolve("db/patches/remarks/ADD_REMARKS.sql")).content().contains("35 CHAR");
         assertThatThrownBy(() -> changes.deliverToBranch(changeId)).hasMessageContaining("is delivered");
+
+        // Jenkins, branch mode: the backend job fails in a generated file, the model fixes it, round 2 passes.
+        try (StubJenkins stub = new StubJenkins()) {
+            stub.script("obdx/backend build",
+                    new StubJenkins.Outcome("FAILURE", "[INFO] Compiling 3 source files\n[ERROR] /var/jenkins/workspace/obdx/"
+                            + "backend/src/com/bank/payments/RemarksValidator.java:[5,9] cannot find symbol\nBUILD FAILURE", List.of()),
+                    StubJenkins.Outcome.success());
+            jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build, obdx/ui",
+                    JenkinsSettings.Mode.BRANCH, "BRANCH", JenkinsSettings.BranchValue.PATH, null, "factory", "api-token"));
+            assertThat(jenkinsSettings.test(workspaceId).warnings()).isEmpty();
+
+            changeBuilds.start(changeId);
+            waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "build");
+            ChangeService.ChangeDetail built = changes.get(changeId);
+            assertThat(built.buildStatus()).as(built.buildMessage()).isEqualTo("PASSED");
+            assertThat(built.buildMessage()).startsWith("Build passed in round 2");
+            assertThat(built.builds()).extracting(ChangeBuildStore.Build::round, ChangeBuildStore.Build::job, ChangeBuildStore.Build::result)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(1, "obdx/backend build", "FAILURE"),
+                            org.assertj.core.groups.Tuple.tuple(1, "obdx/ui", "SUCCESS"),
+                            org.assertj.core.groups.Tuple.tuple(2, "obdx/backend build", "SUCCESS"),
+                            org.assertj.core.groups.Tuple.tuple(2, "obdx/ui", "SUCCESS"));
+            ChangeBuildStore.Build failed = built.builds().getFirst();
+            assertThat(failed.errors()).singleElement().asString().contains("RemarksValidator.java:5 cannot find symbol");
+            assertThat(failed.fixedFiles()).containsExactly("backend/src/com/bank/payments/RemarksValidator.java");
+            assertThat(failed.buildNumber()).isNotNull();
+            assertThat(stub.triggers).allSatisfy(trigger ->
+                    assertThat(trigger.body()).isEqualTo("BRANCH=branches%2Ffactory%2Fcr-" + changeId.toString().substring(0, 8)));
+
+            Path fixedCheckout = temp.resolve("branch-after-fix");
+            svn.checkout(delivered.branchUrl(), fixedCheckout, SvnCredentials.NONE);
+            assertThat(fixedCheckout.resolve("backend/src/com/bank/payments/RemarksValidator.java")).content()
+                    .contains("fixed after the Jenkins build");
+            assertThat(svn.info(delivered.branchUrl(), SvnCredentials.NONE).revision()).isEqualTo(3);
+        }
+
+        // Jenkins, patch mode: the patch goes as a file; an error outside the change is reported, not "fixed".
+        try (StubJenkins stub = new StubJenkins()) {
+            stub.parameters.add("PATCH");
+            stub.script("obdx/backend build", new StubJenkins.Outcome("FAILURE",
+                    "[ERROR] /var/jenkins/workspace/obdx/backend/src/com/bank/Legacy.java:[1,1] class, interface, or enum expected", List.of()));
+            jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+
+            changeBuilds.start(changeId);
+            waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "patch build");
+            ChangeService.ChangeDetail built = changes.get(changeId);
+            assertThat(built.buildStatus()).isEqualTo("FAILED");
+            assertThat(built.buildMessage()).contains("no errors in the files of this change", "Legacy.java:1");
+            assertThat(stub.triggers.getFirst().contentType()).startsWith("multipart/form-data");
+            assertThat(stub.triggers.getFirst().body()).contains("filename=\"change-", "Index: backend/src/com/bank/payments/RemarksValidator.java",
+                    "+// fixed after the Jenkins build");
+        }
     }
 
     private static void waitFor(Supplier<Boolean> condition, String what) throws InterruptedException {

@@ -73,13 +73,14 @@ public class ChangeService {
     private final ChangeProperties properties;
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
+    private final ChangeBuildStore builds;
     private final TaskExecutor executor;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
                          DesignStore designStore, ProjectProfileService profiles, CodeSearchService codeSearch,
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
-                         ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json,
+                         ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          @Qualifier("changeExecutor") TaskExecutor executor) {
         this.changes = changes;
         this.files = files;
@@ -97,6 +98,7 @@ public class ChangeService {
         this.properties = properties;
         this.jdbc = jdbc;
         this.json = json;
+        this.builds = builds;
         this.executor = executor;
     }
 
@@ -108,7 +110,8 @@ public class ChangeService {
     public record ChangeDetail(UUID id, UUID workspaceId, UUID requirementId, String title, ChangeRequest.Status status,
                                String message, Long baseRevision, ChangePlan plan, String planApprovedBy,
                                OffsetDateTime planApprovedAt, String branchUrl, Long deliveredRevision, String createdBy,
-                               OffsetDateTime createdAt, OffsetDateTime updatedAt, List<FileView> files) {
+                               OffsetDateTime createdAt, OffsetDateTime updatedAt, List<FileView> files,
+                               String buildStatus, String buildMessage, List<ChangeBuildStore.Build> builds) {
     }
 
     public record ChangeSummary(UUID id, String title, ChangeRequest.Status status, String message, int files,
@@ -305,6 +308,7 @@ public class ChangeService {
     public ChangeDetail regenerate(UUID id, String path, String note) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
+        requireNotBuilding(change);
         files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         change.status(ChangeRequest.Status.GENERATING, "Writing " + path + " again...");
         changes.save(change);
@@ -317,6 +321,7 @@ public class ChangeService {
     public ChangeDetail editFile(UUID id, String path, String content) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
+        requireNotBuilding(change);
         ChangeFileStore.ChangeFile file = files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         String text = content == null ? "" : content.endsWith("\n") || content.isEmpty() ? content : content + "\n";
         files.saveResult(id, path, text.equals(file.original()) ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED,
@@ -351,6 +356,7 @@ public class ChangeService {
     public ChangeDetail deliverToBranch(UUID id) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
+        requireNotBuilding(change);
         List<ChangeFileStore.ChangeFile> deliverable = deliverable(id);
         if (deliverable.isEmpty()) {
             throw new BadRequestException("There are no changed files to deliver");
@@ -442,6 +448,7 @@ public class ChangeService {
     @Transactional
     public void failInterrupted() {
         int count = changes.failRunning("Interrupted because the server restarted. Analyze again.", OffsetDateTime.now());
+        count += changes.failBuilding("Interrupted because the server restarted. Build again.");
         if (count > 0) {
             log.warn("Marked {} change(s) as failed after restart", count);
         }
@@ -463,7 +470,7 @@ public class ChangeService {
         }
     }
 
-    private ChangeContext context(ChangeRequest change, RequirementService.RequirementDetail requirement) {
+    ChangeContext context(ChangeRequest change, RequirementService.RequirementDetail requirement) {
         String designsJson = null;
         List<ScreenModel> models = new ArrayList<>();
         for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId())) {
@@ -527,14 +534,14 @@ public class ChangeService {
         return files.files(id).stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
     }
 
-    private ChangePlan plan(ChangeRequest change) {
+    ChangePlan plan(ChangeRequest change) {
         if (change.getPlan() == null) {
             throw new BadRequestException("The change has no plan yet");
         }
         return json.readValue(change.getPlan(), ChangePlan.class);
     }
 
-    private ChangeDetail detail(ChangeRequest c) {
+    ChangeDetail detail(ChangeRequest c) {
         List<FileView> views = files.files(c.getId()).stream().map(f -> {
             int added = 0;
             int removed = 0;
@@ -551,10 +558,16 @@ public class ChangeService {
         return new ChangeDetail(c.getId(), c.getWorkspaceId(), c.getRequirementId(), c.getTitle(), c.getStatus(), c.getMessage(),
                 c.getBaseRevision(), c.getPlan() == null ? null : json.readValue(c.getPlan(), ChangePlan.class),
                 c.getPlanApprovedBy(), c.getPlanApprovedAt(), c.getBranchUrl(), c.getDeliveredRevision(), c.getCreatedBy(),
-                c.getCreatedAt(), c.getUpdatedAt(), views);
+                c.getCreatedAt(), c.getUpdatedAt(), views, c.getBuildStatus(), c.getBuildMessage(), builds.list(c.getId()));
     }
 
-    private static void requireStatus(ChangeRequest change, ChangeRequest.Status... allowed) {
+    static void requireNotBuilding(ChangeRequest change) {
+        if ("BUILDING".equals(change.getBuildStatus())) {
+            throw new ConflictException("Wait until the Jenkins build has finished");
+        }
+    }
+
+    static void requireStatus(ChangeRequest change, ChangeRequest.Status... allowed) {
         for (ChangeRequest.Status status : allowed) {
             if (change.getStatus() == status) {
                 return;
@@ -564,7 +577,7 @@ public class ChangeService {
                 + "; this is not possible now");
     }
 
-    private ChangeRequest find(UUID id) {
+    ChangeRequest find(UUID id) {
         return changes.findById(id).orElseThrow(() -> new NotFoundException("Change not found: " + id));
     }
 

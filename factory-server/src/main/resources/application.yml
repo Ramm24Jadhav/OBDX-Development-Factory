@@ -56,6 +56,11 @@ factory:
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}
   indexing:
     embeddings-enabled: ${FACTORY_INDEX_EMBEDDINGS:true}
+  jenkins:
+    poll-interval: ${FACTORY_JENKINS_POLL_INTERVAL:10s}
+    build-timeout: ${FACTORY_JENKINS_BUILD_TIMEOUT:60m}
+    # Times the model may fix build errors in the change's files before a developer takes over.
+    max-fix-rounds: ${FACTORY_JENKINS_MAX_FIX_ROUNDS:2}
   change:
     # Delivery branches are created here, relative to the SVN repository root.
     branch-folder: ${FACTORY_CHANGE_BRANCH_FOLDER:branches/factory}

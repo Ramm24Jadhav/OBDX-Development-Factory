@@ -30,6 +30,39 @@
       <p class="oj-text-color-success"><oj-bind-text value="[[svnMessage]]"></oj-bind-text></p>
     </oj-bind-if>
 
+    <h2>Jenkins</h2>
+    <p class="oj-text-color-secondary oj-typography-body-sm">
+      Builds generated changes with the bank's Jenkins jobs. Branch mode builds the change's SVN branch; patch mode sends the
+      patch as a file parameter for jobs that apply it to trunk.
+    </p>
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-input-text id="jenkinsUrl" label-hint="Jenkins URL" value="{{jenkinsUrl}}" readonly="[[!canManage()]]"
+                     help-hints.definition="For example https://jenkins.bank.local"></oj-input-text>
+      <oj-input-text id="jenkinsJobs" label-hint="Jobs (comma-separated, folder/job)" value="{{jenkinsJobs}}" readonly="[[!canManage()]]"></oj-input-text>
+      <oj-select-single id="jenkinsMode" label-hint="Mode" data="[[jenkinsModeProvider]]" value="{{jenkinsMode}}" readonly="[[!canManage()]]"></oj-select-single>
+      <oj-bind-if test="[[jenkinsMode() === 'BRANCH']]">
+        <oj-input-text id="jenkinsBranchParameter" label-hint="Branch parameter" value="{{jenkinsBranchParameter}}" readonly="[[!canManage()]]"></oj-input-text>
+        <oj-select-single id="jenkinsBranchValue" label-hint="Send the branch as" data="[[jenkinsBranchValueProvider]]" value="{{jenkinsBranchValue}}"
+                          readonly="[[!canManage()]]"></oj-select-single>
+      </oj-bind-if>
+      <oj-bind-if test="[[jenkinsMode() === 'PATCH']]">
+        <oj-input-text id="jenkinsPatchParameter" label-hint="Patch file parameter" value="{{jenkinsPatchParameter}}" readonly="[[!canManage()]]"></oj-input-text>
+      </oj-bind-if>
+      <oj-input-text id="jenkinsUsername" label-hint="Username" value="{{jenkinsUsername}}" readonly="[[!canManage()]]"></oj-input-text>
+      <oj-input-password id="jenkinsToken" label-hint="API token" value="{{jenkinsToken}}" mask-icon="visible"
+                         placeholder="[[jenkinsTokenSet() ? 'Stored (leave empty to keep)' : '']]" readonly="[[!canManage()]]"></oj-input-password>
+    </oj-form-layout>
+    <oj-toolbar>
+      <oj-button id="saveJenkinsButton" on-oj-action="[[saveJenkins]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
+      <oj-button id="testJenkinsButton" on-oj-action="[[testJenkins]]" disabled="[[busy() || !canManage() || !jenkinsSaved()]]">Test connection</oj-button>
+    </oj-toolbar>
+    <oj-bind-if test="[[jenkinsMessage()]]">
+      <p id="jenkinsMessage" class="oj-text-color-success"><oj-bind-text value="[[jenkinsMessage]]"></oj-bind-text></p>
+    </oj-bind-if>
+    <oj-bind-for-each data="[[jenkinsWarnings]]">
+      <template><p class="factory-warning"><oj-bind-text value="[[$current.data]]"></oj-bind-text></p></template>
+    </oj-bind-for-each>
+
     <h2>Code index</h2>
     <oj-bind-if test="[[indexStatus()]]">
       <ul>

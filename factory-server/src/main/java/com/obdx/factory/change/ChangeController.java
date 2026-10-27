@@ -24,11 +24,13 @@ import java.util.UUID;
 public class ChangeController {
 
     private final ChangeService service;
+    private final ChangeBuildService builds;
     private final AccessGuard guard;
     private final AuditLog audit;
 
-    public ChangeController(ChangeService service, AccessGuard guard, AuditLog audit) {
+    public ChangeController(ChangeService service, ChangeBuildService builds, AccessGuard guard, AuditLog audit) {
         this.service = service;
+        this.builds = builds;
         this.guard = guard;
         this.audit = audit;
     }
@@ -119,6 +121,16 @@ public class ChangeController {
         guard.requireForChange(id, Permission.MANAGE_CODE);
         ChangeService.ChangeDetail change = service.deliverToBranch(id);
         audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision());
+        return change;
+    }
+
+    /** Builds the change with the workspace's Jenkins jobs, fixing build errors in its files a limited number of times. */
+    @PostMapping("/api/changes/{id}/build")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ChangeService.ChangeDetail build(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.MANAGE_CODE);
+        ChangeService.ChangeDetail change = builds.start(id);
+        audit.record("CHANGE_BUILD_STARTED", change.workspaceId(), change.title(), null);
         return change;
     }
 

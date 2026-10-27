@@ -20,6 +20,69 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.busy = ko.observable(false);
       this.errorMessage = ko.observable('');
 
+      // Jenkins settings
+      this.jenkinsUrl = ko.observable('');
+      this.jenkinsJobs = ko.observable('');
+      this.jenkinsMode = ko.observable('BRANCH');
+      this.jenkinsBranchParameter = ko.observable('BRANCH');
+      this.jenkinsBranchValue = ko.observable('PATH');
+      this.jenkinsPatchParameter = ko.observable('PATCH');
+      this.jenkinsUsername = ko.observable('');
+      this.jenkinsToken = ko.observable('');
+      this.jenkinsTokenSet = ko.observable(false);
+      this.jenkinsSaved = ko.observable(false);
+      this.jenkinsMessage = ko.observable('');
+      this.jenkinsWarnings = ko.observableArray([]);
+      this.jenkinsModeProvider = new ArrayDataProvider([
+        { value: 'BRANCH', label: 'Build the change branch' }, { value: 'PATCH', label: 'Send the patch to apply on trunk' }
+      ], { keyAttributes: 'value' });
+      this.jenkinsBranchValueProvider = new ArrayDataProvider([
+        { value: 'PATH', label: 'Path, e.g. branches/factory/cr-1a2b3c4d' }, { value: 'URL', label: 'Full SVN URL' }
+      ], { keyAttributes: 'value' });
+
+      const showJenkins = (settings) => {
+        this.jenkinsSaved(!!settings);
+        settings = settings || {};
+        this.jenkinsUrl(settings.url || '');
+        this.jenkinsJobs(settings.jobs || '');
+        this.jenkinsMode(settings.mode || 'BRANCH');
+        this.jenkinsBranchParameter(settings.branchParameter || 'BRANCH');
+        this.jenkinsBranchValue(settings.branchValue || 'PATH');
+        this.jenkinsPatchParameter(settings.patchParameter || 'PATCH');
+        this.jenkinsUsername(settings.username || '');
+        this.jenkinsToken('');
+        this.jenkinsTokenSet(!!settings.tokenSet);
+      };
+
+      this.saveJenkins = () => {
+        this.busy(true);
+        this.jenkinsMessage('');
+        this.jenkinsWarnings([]);
+        this.errorMessage('');
+        api.put('workspaces/' + this.workspaceId() + '/jenkins', {
+          url: this.jenkinsUrl(), jobs: this.jenkinsJobs(), mode: this.jenkinsMode(),
+          branchParameter: this.jenkinsBranchParameter(), branchValue: this.jenkinsBranchValue(),
+          patchParameter: this.jenkinsPatchParameter(), username: this.jenkinsUsername() || null,
+          token: this.jenkinsToken() ? this.jenkinsToken() : null
+        }).then((settings) => { showJenkins(settings); this.jenkinsMessage('Jenkins settings saved.'); })
+          .catch((error) => this.errorMessage(error.message))
+          .finally(() => this.busy(false));
+      };
+
+      this.testJenkins = () => {
+        this.busy(true);
+        this.jenkinsMessage('');
+        this.jenkinsWarnings([]);
+        this.errorMessage('');
+        api.post('workspaces/' + this.workspaceId() + '/jenkins/test')
+          .then((result) => {
+            this.jenkinsMessage('Connected. Jobs: ' + result.jobs.map((j) => j.name + ' (parameters: ' + (j.parameters.join(', ') || 'none') + ')').join('; ') + '.');
+            this.jenkinsWarnings(result.warnings);
+          })
+          .catch((error) => this.errorMessage(error.message))
+          .finally(() => this.busy(false));
+      };
+
       this.indexStatus = ko.observable(null);
       this.languageSummary = ko.pureComputed(() => {
         const status = this.indexStatus();
@@ -55,7 +118,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.svnUrl(workspace.svnUrl || '');
           this.svnUsername(workspace.svnUsername || '');
           this.svnPassword('');
-          return refreshImports();
+          this.jenkinsMessage('');
+          this.jenkinsWarnings([]);
+          return Promise.all([refreshImports(), api.get('workspaces/' + id + '/jenkins').then(showJenkins)]);
         }).catch(showError);
       };
 

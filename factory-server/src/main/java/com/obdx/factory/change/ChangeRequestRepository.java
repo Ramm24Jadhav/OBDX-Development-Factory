@@ -17,4 +17,8 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, UU
             + "c.updatedAt = :now WHERE c.status IN (com.obdx.factory.change.ChangeRequest.Status.ANALYZING, "
             + "com.obdx.factory.change.ChangeRequest.Status.GENERATING)")
     int failRunning(String message, OffsetDateTime now);
+
+    @Modifying
+    @Query("UPDATE ChangeRequest c SET c.buildStatus = 'FAILED', c.buildMessage = :message WHERE c.buildStatus = 'BUILDING'")
+    int failBuilding(String message);
 }

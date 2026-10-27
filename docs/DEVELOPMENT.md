@@ -138,7 +138,25 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
 6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
 
-A real build of the branch (Jenkins) is the next step and not yet automated: build the branch or the patched working copy with your usual Jenkins job.
+## Jenkins build validation
+
+Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **Jenkins** section; changes need Manage code):
+
+- **Jenkins URL**, **jobs** (comma-separated, for example `obdx-backend, obdx-ui`; folder jobs as `folder/job`), **username** and **API token** (create the token in Jenkins under the user's *Security* page; it is stored encrypted with `FACTORY_SECRET_KEY`).
+- **Mode**:
+  - *Branch* (default): the job gets the branch the change was committed to. Set the **branch parameter** name (for example `BRANCH`) and whether it receives the path relative to the repository root (`branches/factory/cr-<id>`) or the full URL. The job's Subversion checkout must use that parameter in its repository URL, for example `https://svn.bank.local/obdx/${BRANCH}`.
+  - *Patch*: for banks that do not allow the factory to commit. The job gets the patch as a file parameter (set its name, for example `PATCH`), checks out trunk, applies it (`svn patch`) and builds. Nothing is committed.
+- **Test connection** checks the login and that each job exists, and warns when a job lacks the configured parameter.
+
+On the **Changes** page, **Build with Jenkins** (Developer or Lead) is available once the change is delivered to a branch (branch mode) or generated (patch mode). The factory then:
+
+1. Triggers every job and waits for each build (queue timeout 30 minutes, build timeout `FACTORY_JENKINS_BUILD_TIMEOUT`).
+2. Reads the console log and the JUnit test report and extracts errors (Maven/javac, ESLint, TypeScript, failed tests).
+3. If all builds pass, the change shows **Jenkins: passed**.
+4. If errors point at files of this change, the model rewrites those files with the errors as input. In branch mode the fixes are committed to the change branch; in patch mode the patch is updated. Then it builds again. This runs at most `FACTORY_JENKINS_MAX_FIX_ROUNDS` times (default 2).
+5. Errors outside the change's files are not fixed by the model: the build is marked failed and the log excerpt is shown for a developer.
+
+Every build is listed with its round, job, link to Jenkins, result, errors, a log excerpt and the files the model fixed. While a build runs the change cannot be edited, regenerated or delivered. Builds that were running when the factory restarted are marked failed.
 
 ## Sign-in, roles and audit
 
@@ -234,6 +252,10 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/changes/{id}/patch` | Download the change as a patch |
 | `POST /api/changes/{id}/deliver` | Commit the change to a new SVN branch |
 | `DELETE /api/changes/{id}` | Delete a change |
+| `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
+| `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
+| `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
+| `POST /api/workspaces/{id}/jenkins/test` | Check the Jenkins login and jobs |
 | `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
@@ -270,4 +292,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Jenkins build validation and the build-error fix loop, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Quick local checks from the version pack before each build, deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

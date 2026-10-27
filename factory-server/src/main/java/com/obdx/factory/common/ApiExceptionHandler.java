@@ -49,6 +49,11 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
     }
 
+    @ExceptionHandler(com.obdx.factory.jenkins.JenkinsException.class)
+    public ProblemDetail jenkinsFailed(com.obdx.factory.jenkins.JenkinsException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+    }
+
     @ExceptionHandler(SvnException.class)
     public ProblemDetail svnFailed(SvnException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());

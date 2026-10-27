@@ -62,6 +62,13 @@ public class ChangeRequest {
     @Column(name = "delivered_revision")
     private Long deliveredRevision;
 
+    /** BUILDING, PASSED or FAILED; null before the first Jenkins build. */
+    @Column(name = "build_status", length = 20)
+    private String buildStatus;
+
+    @Column(name = "build_message")
+    private String buildMessage;
+
     @Column(name = "created_by", length = 200)
     private String createdBy;
 
@@ -114,6 +121,20 @@ public class ChangeRequest {
         this.branchUrl = branchUrl;
         this.deliveredRevision = revision;
         status(Status.DELIVERED, "Committed to " + branchUrl + " in revision " + revision + ".");
+    }
+
+    void build(String status, String message) {
+        this.buildStatus = status;
+        this.buildMessage = message;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public String getBuildStatus() {
+        return buildStatus;
+    }
+
+    public String getBuildMessage() {
+        return buildMessage;
     }
 
     public UUID getId() {

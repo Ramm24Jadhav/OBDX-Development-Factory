@@ -20,4 +20,17 @@ public class ChangeConfig {
         executor.initialize();
         return executor;
     }
+
+    /** Jenkins builds can take long; they run apart from analysis and generation. */
+    @Bean
+    public TaskExecutor buildExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setThreadNamePrefix("build-");
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(100);
+        executor.setWaitForTasksToCompleteOnShutdown(false);
+        executor.initialize();
+        return executor;
+    }
 }
