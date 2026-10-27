@@ -153,7 +153,7 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 
 ### 5.4 Agent Pipeline
 
-- Explicit state machine (LangGraph or custom), one step per workflow stage, with human approval gates after spec and plan.
+- Explicit state machine in Java (using LangChain4j for model calls), one step per workflow stage, with human approval gates after spec and plan.
 - Each step reads only from its own workspace's index, its Project Profile and the matching version pack.
 - Structured outputs (JSON schemas) for spec, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
@@ -207,21 +207,26 @@ OBDX code is kept in Subversion repositories. Developers use TortoiseSVN on Wind
 
 This is the stack used to build the OBDX Development Factory itself. The stack of the OBDX code it generates is not fixed here; it comes from each workspace's Project Profile (see 5.2).
 
+The stack is chosen so that OBDX developers (Java, Oracle JET, SQL, Maven, Jenkins, SVN) can build and maintain the tool without learning a new language. Heavy computation runs in the model server and the database, so this costs no performance.
+
 | Part | Choice |
 |---|---|
-| Web UI | React + TypeScript (Next.js), Monaco-based diff viewer |
-| Backend API | Python 3.12 + FastAPI |
-| Agent workflow | LangGraph or a custom state machine |
-| Database / vectors | PostgreSQL + pgvector |
-| Background jobs | Celery + Redis (or Temporal) |
-| Version control | Subversion (`svn` CLI) behind an adapter interface; Git adapter later |
-| Code parsing | tree-sitter |
-| Document parsing | Docling or Unstructured |
-| Local models | Open-weight coding models (Qwen Coder / DeepSeek Coder class) via vLLM; Ollama for dev |
-| Embeddings | Local embedding model (BGE / Nomic class) |
+| Web UI | Oracle JET (proposed, decision pending), with a JavaScript diff viewer (Monaco or diff2html) |
+| Backend API | Java 21 + Spring Boot, run as a standalone service |
+| AI workflow | LangChain4j (or Spring AI), with a simple explicit state machine for the pipeline steps |
+| Database / vectors | PostgreSQL + pgvector (app data, keyword search and vector search in one database) |
+| Data access | Spring Data JPA / Hibernate; schema migrations with Flyway |
+| Background jobs | Spring scheduling with a job table in PostgreSQL (no Redis) |
+| File storage | Server file system (uploaded documents, generated patches) |
+| Version control | Subversion via the `svn` CLI (or SVNKit) behind an adapter interface; Git adapter later |
+| Code parsing | tree-sitter Java bindings; JavaParser for deeper Java analysis |
+| Document parsing | Apache POI (Word/Excel), Apache Tika / PDFBox (PDF); optional `docling-serve` HTTP service for complex PDFs |
+| Local models | Open-weight coding models (Qwen Coder / DeepSeek Coder class) served by vLLM; Ollama for dev. Installed and run, not coded |
+| Embeddings | Local embedding model (BGE / Nomic class) served by the same model server |
 | Build validation | Quick local checks + the bank's existing Jenkins pipelines via the Jenkins REST API |
-| Auth | OIDC / SAML / LDAP, role-based access |
-| Packaging | Standard installer for Linux servers (services managed by systemd), so OBDX teams need no Docker knowledge. Container images offered optionally for teams that run Docker or Kubernetes |
+| Auth | Spring Security with LDAP / OIDC / SAML, role-based access |
+| Build of the tool | Maven, Jenkins, SVN (same as OBDX projects) |
+| Packaging | Spring Boot jar run as a Linux service (systemd); no Docker knowledge needed. Container images optional |
 
 ---
 
