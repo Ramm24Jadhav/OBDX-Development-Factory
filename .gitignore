@@ -1,7 +1,12 @@
-target/
+/target/
+factory-server/target/
+factory-ui/target/
 *.log
 .idea/
 *.iml
 .vscode/
 .DS_Store
 Thumbs.db
+
+# CA certificates added locally for Docker builds (see deploy/docker/certs/README.md)
+deploy/docker/certs/*.crt
