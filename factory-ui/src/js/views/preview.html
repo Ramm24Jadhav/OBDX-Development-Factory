@@ -1,0 +1,74 @@
+<div class="factory-preview" :class="[[{'factory-preview-empty': !screen()}]]">
+  <oj-bind-if test="[[!screen()]]">
+    <p class="oj-text-color-secondary">Waiting for a screen design...</p>
+  </oj-bind-if>
+  <oj-bind-if test="[[screen()]]">
+    <h1 class="factory-preview-title"><oj-bind-text value="[[screen().title]]"></oj-bind-text></h1>
+    <oj-bind-for-each data="[[screen().sections]]" as="section">
+      <template>
+        <div class="factory-preview-section">
+          <oj-bind-if test="[[section.data.title]]">
+            <h2><oj-bind-text value="[[section.data.title]]"></oj-bind-text></h2>
+          </oj-bind-if>
+          <oj-form-layout max-columns="[[section.data.columns]]" direction="row" user-assistance-density="efficient">
+            <oj-bind-for-each data="[[section.data.components]]" as="c">
+              <template>
+                <oj-bind-if test="[[c.data.type === 'text']]">
+                  <oj-input-text :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                 required="[[c.data.required]]" readonly="[[c.data.readonly]]" placeholder="[[c.data.placeholder]]"
+                                 length.max="[[c.data.maxLength]]" length.counter="[[c.data.counter]]" help.instruction="[[c.data.helpText]]"></oj-input-text>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'textarea']]">
+                  <oj-text-area :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                required="[[c.data.required]]" readonly="[[c.data.readonly]]" placeholder="[[c.data.placeholder]]" rows="3"
+                                length.max="[[c.data.maxLength]]" length.counter="[[c.data.counter]]" help.instruction="[[c.data.helpText]]"></oj-text-area>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'number' || c.data.type === 'amount']]">
+                  <oj-input-number :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                   required="[[c.data.required]]" readonly="[[c.data.readonly]]" placeholder="[[c.data.placeholder]]"
+                                   converter="[[c.data.converter]]" help.instruction="[[c.data.helpText]]"></oj-input-number>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'date']]">
+                  <oj-input-date :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                 required="[[c.data.required]]" readonly="[[c.data.readonly]]" help.instruction="[[c.data.helpText]]"></oj-input-date>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'select' || c.data.type === 'account']]">
+                  <oj-select-single :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                    data="[[c.data.optionsProvider]]" required="[[c.data.required]]" readonly="[[c.data.readonly]]"
+                                    placeholder="[[c.data.placeholder]]" help.instruction="[[c.data.helpText]]"></oj-select-single>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'radio']]">
+                  <oj-radioset :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                               options="[[c.data.optionsProvider]]" required="[[c.data.required]]" readonly="[[c.data.readonly]]"
+                               help.instruction="[[c.data.helpText]]"></oj-radioset>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'checkbox']]">
+                  <oj-checkboxset :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.values}}"
+                                  options="[[c.data.optionsProvider]]" required="[[c.data.required]]" readonly="[[c.data.readonly]]"
+                                  help.instruction="[[c.data.helpText]]"></oj-checkboxset>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'switch']]">
+                  <oj-switch :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.checked}}"
+                             readonly="[[c.data.readonly]]" help.instruction="[[c.data.helpText]]"></oj-switch>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'display']]">
+                  <oj-input-text :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="[[c.data.displayValue]]"
+                                 readonly="true"></oj-input-text>
+                </oj-bind-if>
+              </template>
+            </oj-bind-for-each>
+          </oj-form-layout>
+        </div>
+      </template>
+    </oj-bind-for-each>
+    <div class="factory-preview-actions">
+      <oj-bind-for-each data="[[screen().actions]]" as="a">
+        <template>
+          <oj-button :data-cid="[[a.data.id]]" :class="[[a.data.css]]" chroming="[[a.data.chroming]]">
+            <oj-bind-text value="[[a.data.label]]"></oj-bind-text>
+          </oj-button>
+        </template>
+      </oj-bind-for-each>
+    </div>
+  </oj-bind-if>
+</div>

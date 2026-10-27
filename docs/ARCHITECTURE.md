@@ -220,6 +220,8 @@ BRD / FSD  ->  Screen Model (JSON)  <->  Live preview + designer  ->  Customer a
 
 **Scope.** Start with form-style screens (fields, sections, tables, buttons), which cover most OBDX requirements. Complex custom widgets are shown as placeholders until supported.
 
+**Implemented (first version):** designs are generated from approved requirement specs (or started blank) with form components (text, multi-line text, number, amount, date, dropdown, account selector, radio, checkboxes, switch, read-only text) and action buttons. The designer supports drag-and-drop ordering, a properties panel, plain-language changes through the model, versions, comments and review links with customer comments and approval. Not yet: tables/grids as components, the bank's own JET version and theme in the preview, starting enhancements from the existing screen's layout in the code, and side-by-side version comparison.
+
 ### 5.8 Target Packs
 
 A **Target Pack** teaches the factory how to turn a target-neutral Screen Model into code for one UI technology. Each pack contains:

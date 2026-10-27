@@ -1,0 +1,62 @@
+<div class="oj-hybrid-padding factory-review-page">
+  <oj-bind-if test="[[errorMessage()]]">
+    <p id="reviewError" class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[review()]]">
+    <p class="oj-text-color-secondary oj-typography-body-sm">Screen design for review</p>
+    <h1><oj-bind-text value="[[review().name]]"></oj-bind-text></h1>
+    <oj-bind-if test="[[review().status === 'APPROVED']]">
+      <p id="reviewApproved" class="factory-approved">Approved by <oj-bind-text value="[[review().approvedBy]]"></oj-bind-text>. Thank you!</p>
+    </oj-bind-if>
+    <oj-bind-if test="[[review().status !== 'APPROVED']]">
+      <p>
+        Please try the screen below: it uses sample data. Leave comments on anything that should change, or approve it
+        when it is right. This link works until <oj-bind-text value="[[expires]]"></oj-bind-text>.
+      </p>
+    </oj-bind-if>
+  </oj-bind-if>
+
+  <div :style.display="[[review() ? 'block' : 'none']]">
+    <oj-toolbar aria-label="Preview size">
+      <oj-bind-for-each data="[[viewports]]" as="vp">
+        <template>
+          <oj-button chroming="[[vp.data.active ? 'callToAction' : 'outlined']]" on-oj-action="[[vp.data.selectAction]]">
+            <oj-bind-text value="[[vp.data.label]]"></oj-bind-text>
+          </oj-button>
+        </template>
+      </oj-bind-for-each>
+    </oj-toolbar>
+    <div class="factory-frame-box">
+      <iframe id="reviewPreview" title="Screen preview" :src="[[previewSrc]]" :style.width="[[frameWidth]]" class="factory-frame"></iframe>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[review()]]">
+    <h2>Comments</h2>
+    <oj-bind-for-each data="[[comments]]" as="cm">
+      <template>
+        <div class="factory-comment">
+          <strong><oj-bind-text value="[[cm.data.author]]"></oj-bind-text></strong>
+          <span class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[cm.data.meta]]"></oj-bind-text></span>
+          <div><oj-bind-text value="[[cm.data.text]]"></oj-bind-text></div>
+        </div>
+      </template>
+    </oj-bind-for-each>
+    <oj-bind-if test="[[comments().length === 0]]">
+      <p class="oj-text-color-secondary">No comments yet.</p>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[review().status !== 'APPROVED']]">
+      <oj-form-layout max-columns="1">
+        <oj-input-text id="reviewerName" label-hint="Your name" value="{{author}}"></oj-input-text>
+        <oj-text-area id="reviewComment" rows="3" value="{{text}}"
+                      label-hint="[[selectedLabel() ? 'Comment on ' + selectedLabel() : 'Comment (click a field in the screen to comment on it)']]"></oj-text-area>
+      </oj-form-layout>
+      <oj-toolbar>
+        <oj-button id="sendCommentButton" on-oj-action="[[sendComment]]" disabled="[[!author() || !text()]]">Send comment</oj-button>
+        <oj-button id="reviewApproveButton" chroming="callToAction" on-oj-action="[[approve]]" disabled="[[!author()]]">Approve this design</oj-button>
+      </oj-toolbar>
+    </oj-bind-if>
+  </oj-bind-if>
+</div>

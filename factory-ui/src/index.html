@@ -62,6 +62,7 @@
          ** and the CSS documentation under Support/API Docs/Non-Component Styling
          ** on the JET website for more information on how to use this pattern.
       -->
+      <oj-bind-if test="[[!embedded]]">
       <header role="banner" class="oj-web-applayout-header">
         <div class="oj-web-applayout-max-width oj-flex-bar oj-sm-align-items-center">
           <div class="oj-flex-bar-middle oj-sm-align-items-baseline">
@@ -93,6 +94,7 @@
           </oj-tab-bar>
         </div>
       </header>
+      </oj-bind-if>
       <oj-module role="main" class="oj-web-applayout-max-width oj-web-applayout-content" config="[[moduleAdapter.koObservableConfig]]">
       </oj-module>
     </div>

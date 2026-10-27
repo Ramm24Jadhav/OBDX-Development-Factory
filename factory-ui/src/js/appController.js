@@ -36,8 +36,12 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
         { path: 'code', detail: { label: 'Code' } },
         { path: 'profile', detail: { label: 'Profile' } },
         { path: 'requirements', detail: { label: 'Requirements' } },
+        { path: 'designer', detail: { label: 'Designer' } },
         { path: 'models', detail: { label: 'Models' } },
-        { path: 'about', detail: { label: 'About' } }
+        { path: 'about', detail: { label: 'About' } },
+        // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
+        { path: 'preview', detail: { label: 'Preview', hidden: true } },
+        { path: 'review', detail: { label: 'Review', hidden: true } }
       ];
       // Router setup
       let router = new CoreRouter(navData, {
@@ -51,7 +55,10 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
 
       // Setup the navDataProvider with the routes, excluding the first redirected
       // route.
-      this.navDataProvider = new ArrayDataProvider(navData.slice(1), {keyAttributes: "path"});
+      this.navDataProvider = new ArrayDataProvider(navData.slice(1).filter((route) => !route.detail.hidden), {keyAttributes: "path"});
+
+      // "embed=1" shows a page without the header and navigation: the preview frame and customer review links.
+      this.embedded = new URLSearchParams(window.location.search).get('embed') === '1';
 
       // Header
       // Application Name used in Branding Area

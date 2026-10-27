@@ -19,6 +19,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `search/`: code search combining keyword and semantic (embedding) search.
 - `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
 - `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
+- `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
 - `common/`: shared exceptions and the error handler that returns problem details to the UI.
@@ -116,6 +117,16 @@ On the **Profile** page a developer can **Confirm** a detected value, **Correct*
 
 Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes; raise `FACTORY_MODEL_TIMEOUT` if calls time out, and lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
 
+## Screen designer
+
+1. On the **Designer** page, pick an **approved** requirement and click **Create designs**: one design per screen of its spec, with every field mapped to a component (dropdown fields become selects, "max length 35" becomes a 35-character limit, and so on). A blank screen can also be started.
+2. Edit the structure: sections (title, 1–3 columns), components (drag and drop, or the arrow buttons), and the selected component's properties (label, type, field name, mandatory, length, default, placeholder, help, read-only, options, validations). Action buttons have a label and a style.
+3. The preview on the right renders the design with real Oracle JET components and sample data, at desktop, tablet or phone width. It runs in an iframe (`?ojr=preview&embed=1`) and receives the model with `postMessage`. Clicking a component in the preview selects it.
+4. **Ask AI** applies a change described in words ("move remarks to the end and make it optional") and saves it as a new version. Every save is a version; older versions can be loaded back into the editor.
+5. **Share for review** creates a review link (valid 14 days, replaced by **New review link**, ended by **Close link**). The customer sees the preview without the factory's navigation, can click a field to comment on it, and can approve. **Approve** in the designer does the same for the team. Approved designs are locked until reopened.
+
+Limitations: the preview uses this factory's JET version and the Redwood theme, not each bank's own JET version and theme. Enhancing an existing screen starts from the spec's fields, not from the screen's current layout in the code. Anyone with a review link can comment and approve, so share it only with the intended reviewers.
+
 ## Working on the UI
 
 For quick UI changes without rebuilding the jar, run the server, then in `factory-ui/`:
@@ -153,6 +164,19 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/requirements/{id}/approve` | Approve and lock the spec |
 | `POST /api/requirements/{id}/retry` | Draft again from the document |
 | `DELETE /api/requirements/{id}` | Delete the requirement and its versions |
+| `GET /api/design/catalog` | Component types available in the designer |
+| `GET /api/workspaces/{id}/designs` | List screen designs |
+| `POST /api/workspaces/{id}/designs` | Create a blank design (`name`) |
+| `POST /api/requirements/{id}/designs` | Create designs from an approved requirement |
+| `GET /api/designs/{id}` | Design with current model, versions and comments |
+| `GET /api/designs/{id}/versions/{version}` | An earlier version's model |
+| `PUT /api/designs/{id}/model` | Save the model as a new version (`model`, optional `note`) |
+| `POST /api/designs/{id}/ai-change` | Apply a change described in words (`instruction`) |
+| `POST /api/designs/{id}/comments` | Add a team comment (`author`, `text`, optional `componentId`) |
+| `POST` / `DELETE /api/designs/{id}/review-link` | Create (optional `days`) or close the customer review link |
+| `POST /api/designs/{id}/approve` / `reopen` | Approve (`by`) or reopen for changes |
+| `GET /api/review/{token}` | Customer review: the design by review link |
+| `POST /api/review/{token}/comments` / `approve` | Customer comment or approval |
 | `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
@@ -189,4 +213,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Login and roles (Spring Security), the screen designer, the agent pipeline and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Login and roles (Spring Security), impact analysis and planning, code generation (the agent pipeline) and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
