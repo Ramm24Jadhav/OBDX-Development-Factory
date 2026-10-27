@@ -1,6 +1,6 @@
 # OBDX Development Factory: Architecture and Requirements
 
-Status: Draft v0.1
+Status: Draft v0.2
 Scope: OBDX 22.x and 25.x, full stack (UI, services, integration, data)
 
 ---
@@ -9,15 +9,19 @@ Scope: OBDX 22.x and 25.x, full stack (UI, services, integration, data)
 
 Many banks run Oracle Banking Digital Experience (OBDX), each on its own version and with its own customizations. Building a new feature for a bank means learning that bank's codebase first, then repeating work that has been done many times before for other banks.
 
-OBDX Development Factory is a web-based tool that takes a requirement (a prompt, BRD, FSD or other technical document) and turns it into working code inside the bank's existing OBDX application. It either builds new screens or enhances existing ones.
+OBDX Development Factory is a web-based tool that takes a requirement (a prompt, BRD, FSD or other technical document) and turns it into working code inside the bank's existing OBDX application. It either builds new screens or enhances existing ones. Before any code is written, proposed screens can be previewed and changed interactively with the customer.
+
+The same foundation also supports **modernization**: redesigning a bank's OBDX frontend in another technology such as React Native, on top of the existing OBDX services (see section 6).
 
 The tool runs on local or privately hosted AI models, so bank code and documents never leave approved infrastructure.
 
 ### Goals
 
 - Cut the time from requirement to reviewable code for OBDX customizations.
+- Let customers see, change and approve proposed screens before development starts.
 - Make generated code follow each bank's existing conventions and version.
-- Keep a human in control at every major step (spec, plan, code).
+- Keep a human in control at every major step (spec, screen design, plan, code).
+- Stay independent of the target UI technology, so new targets can be added without redesigning the factory.
 - Run fully on-prem or in a private cloud, with no dependency on public AI services.
 
 ### Non-goals (for now)
@@ -40,7 +44,8 @@ Both modes ship from the same codebase. A **workspace** is the unit of isolation
 ### Roles
 
 - **Admin:** manages workspaces, model settings, users.
-- **Analyst:** uploads requirements, reviews and edits the structured spec.
+- **Analyst:** uploads requirements, reviews and edits the structured spec, prepares screen designs.
+- **Customer reviewer:** a bank business user who views screen previews through a shared link, comments, suggests changes and approves designs. Has no access to code.
 - **Developer:** reviews impact, plan and generated code; exports the result.
 - **Reviewer/Lead:** approves the plan and the final change.
 
@@ -53,7 +58,7 @@ Initial focus, based on the most common BRD content:
 1. **New screens:** a new UI component with its view model, template, labels, navigation/menu entry, the REST service behind it, DTOs, host adapter calls and any DB/configuration scripts.
 2. **Enhancing existing screens:** adding fields, sections, validations or actions to an existing screen, plus the matching service, DTO, adapter and data changes.
 
-Later: new host integrations, new transaction flows, reports.
+Later: new host integrations, new transaction flows, reports, and full frontend modernization (section 6).
 
 ---
 
@@ -62,52 +67,55 @@ Later: new host integrations, new transaction flows, reports.
 ```
  Requirement (prompt / BRD / FSD)
             |
-   [1] Ingest and understand  ------>  Structured spec      (human review)
+   [1] Ingest and understand  ------>  Structured spec                 (human review)
             |
-   [2] Impact analysis        ------>  New vs. extend, affected files
+   [2] Screen design          ------>  Screen Model + live preview     (customer review and approval)
             |
-   [3] Plan                   ------>  Layer-by-layer change plan  (human approval)
+   [3] Impact analysis        ------>  New vs. extend, affected files
             |
-   [4] Generate               ------>  Code per layer (UI, service, integration, data, tests)
+   [4] Plan                   ------>  Layer-by-layer change plan      (human approval)
             |
-   [5] Validate and fix loop  ------>  Build, lint, tests in sandbox; errors fed back
+   [5] Generate               ------>  Code per layer (UI, service, integration, data, tests)
             |
-   [6] Deliver                ------>  SVN branch / patch + change summary  (human review)
+   [6] Validate and fix loop  ------>  Local checks + Jenkins build; errors fed back
+            |
+   [7] Deliver                ------>  SVN branch / patch + change summary  (human review)
 ```
 
 ### Step details
 
 1. **Ingest and understand.** Parse the document (Word, PDF, text, including tables). Extract a structured spec: screens, fields (name, type, validation, mandatory), actions, business rules, roles/entitlements, APIs, host interactions, messages. Flag gaps and ambiguities as questions for the analyst.
-2. **Impact analysis.** Search the workspace's code index to find related screens, services and adapters. Decide whether each requirement is a new component or an extension. List affected files with reasons.
-3. **Plan.** Produce an ordered plan by layer, with the files to create or modify and the pattern from the version pack each one follows. A reviewer approves or edits the plan before any code is generated.
-4. **Generate.** Generate code layer by layer, each step grounded in retrieved code from the same codebase and the version pack.
-5. **Validate and fix.** Run quick local checks first (syntax, lint). Then commit the changes to a temporary SVN branch and trigger the bank's existing Jenkins pipeline to build the UI and backend packages and run tests. Feed failures back to the model for a bounded number of retries. Report anything still failing.
-6. **Deliver.** Produce an SVN branch or a patch file (applies with TortoiseSVN "Apply Patch"), a change summary, the spec-to-code traceability, and a test checklist.
+2. **Screen design and customer review.** The AI drafts a Screen Model for each new or changed screen. For an existing screen, the draft starts from that screen's current layout, taken from the code. The analyst and customer review it in the Screen Designer with a live preview, make changes, and approve it (section 5.7). The approved Screen Model is locked and becomes the source for UI generation.
+3. **Impact analysis.** Search the workspace's code index to find related screens, services and adapters. Decide whether each requirement is a new component or an extension. List affected files with reasons.
+4. **Plan.** Produce an ordered plan by layer, with the files to create or modify and the pattern from the version pack each one follows. A reviewer approves or edits the plan before any code is generated.
+5. **Generate.** Generate code layer by layer, each step grounded in the approved Screen Model, retrieved code from the same codebase, the Project Profile and the version pack.
+6. **Validate and fix.** Run quick local checks first (syntax, lint). Then commit the changes to a temporary SVN branch and trigger the bank's existing Jenkins pipeline to build the UI and backend packages and run tests. Feed failures back to the model for a bounded number of retries. Report anything still failing.
+7. **Deliver.** Produce an SVN branch or a patch file (applies with TortoiseSVN "Apply Patch"), a change summary, the spec-to-code traceability, and a test checklist.
 
 ---
 
 ## 5. Architecture
 
 ```
-+---------------------------------------------------------------------------+
-| Web UI                                                                    |
-| workspaces | upload | spec editor | impact view | plan review | diff view |
-+---------------------------------------------------------------------------+
-| API and Orchestrator                                                      |
-| auth (SSO), roles, workspaces, jobs, approvals, audit log                 |
-+------------------+------------------+------------------+------------------+
-| Document Ingest  | Code Indexer     | Agent Pipeline   | Build Validation |
-| parse BRD/FSD    | per workspace:   | spec, impact,    | quick local      |
-| extract spec     | chunks, symbols, | plan, generate,  | checks + bank's  |
-|                  | dependency graph,| validate, fix    | Jenkins pipeline |
-|                  | embeddings       |                  | via REST API     |
-+------------------+------------------+------------------+------------------+
-| Model Gateway (OpenAI-compatible)        | Version Packs (22.x, 25.x)     |
-| vLLM / Ollama / private cloud endpoints  | patterns, extension points,    |
-| routing per workspace and per task       | build steps, templates         |
-+------------------------------------------+--------------------------------+
-| PostgreSQL + pgvector | Object storage (docs, artifacts) | SVN (bank repos)|
-+---------------------------------------------------------------------------+
++-----------------------------------------------------------------------------+
+| Web UI (Oracle JET)                                                         |
+| workspaces | upload | spec editor | screen designer + preview | plan | diff |
++-----------------------------------------------------------------------------+
+| API and Orchestrator (Spring Boot)                                          |
+| auth (SSO), roles, workspaces, jobs, approvals, review links, audit log     |
++----------------+----------------+----------------+-------------+------------+
+| Document       | Code Indexer   | Agent Pipeline | Screen      | Build      |
+| Ingest         | per workspace: | spec, impact,  | Models      | Validation |
+| parse BRD/FSD  | chunks, graph, | plan, generate,| versions,   | local      |
+| extract spec   | embeddings,    | validate, fix  | comments,   | checks +   |
+|                | Project Profile|                | approvals   | Jenkins    |
++----------------+----------------+----------------+-------------+------------+
+| Model Gateway (OpenAI-compatible)    | Version Packs (22.x, 25.x)           |
+| vLLM / Ollama / private endpoints    | Target Packs (JET; React Native and  |
+| routing per workspace and per task   | React later) + preview renderers     |
++--------------------------------------+--------------------------------------+
+| PostgreSQL + pgvector | File storage (docs, artifacts) | SVN (bank repos)   |
++-----------------------------------------------------------------------------+
 ```
 
 ### 5.1 Model Gateway
@@ -153,9 +161,9 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 
 ### 5.4 Agent Pipeline
 
-- Explicit state machine in Java (using LangChain4j for model calls), one step per workflow stage, with human approval gates after spec and plan.
-- Each step reads only from its own workspace's index, its Project Profile and the matching version pack.
-- Structured outputs (JSON schemas) for spec, impact and plan so they can be edited in the UI.
+- Explicit state machine in Java (using LangChain4j for model calls), one step per workflow stage, with human approval gates after spec, screen design and plan.
+- Each step reads only from its own workspace's index, its Project Profile, the matching version pack and the target pack.
+- Structured outputs (JSON schemas) for spec, Screen Model, impact and plan so they can be edited in the UI.
 - Bounded fix loop (for example max 3 retries per layer).
 
 ### 5.5 Build Validation (Jenkins)
@@ -185,15 +193,96 @@ OBDX code is kept in Subversion repositories. Developers use TortoiseSVN on Wind
 - **Access:** a dedicated SVN service account per workspace, read-only by default. Write access, if granted, is limited to `branches/factory/`. Credentials are kept in the secret store.
 - **Design:** version control sits behind a small adapter interface, so Git can be added later for banks that use it.
 
+### 5.7 Screen Model and Screen Designer
+
+Customers need to see a proposed screen as it will really look and behave before development starts. The Screen Designer provides an interactive preview built from real components, and the **Screen Model** is the agreed description that code generation follows.
+
+```
+BRD / FSD  ->  Screen Model (JSON)  <->  Live preview + designer  ->  Customer approves  ->  Code generation
+```
+
+**Screen Model.** A structured, versioned JSON description of a screen: sections, fields, component types, labels, help text, validations, mandatory flags, default values, actions/buttons, layout (grid, order, responsive behavior), navigation, roles, and the services each part calls. It is **target-neutral**: it describes what the screen does, not how a specific UI technology implements it, so the same model can generate JET, React Native or React screens (5.8).
+
+**Designer features:**
+
+- AI drafts the Screen Model from the spec. For existing screens, it starts from the current screen, reverse-engineered from the code.
+- Live preview with real components, the bank's theme and generated sample data (never real customer data).
+- Change component types (text box → dropdown, radio → switch, text → date picker), from a catalog limited to what the workspace's target and version support.
+- Reorder fields and sections by drag and drop; change grid layout.
+- Edit labels, help text, mandatory flags, validations and default values; add or remove fields, sections, tables and buttons.
+- Desktop, tablet and mobile views.
+- Changes by chat ("move remarks to the end and make it optional"); the AI updates the Screen Model and the preview refreshes.
+- Shareable review link for customer reviewers, with comments, version history, side-by-side comparison of versions, and an Approve action. The approved version is locked.
+
+**Preview isolation.** The preview runs in an isolated frame, separate from the factory's own UI. Each workspace's preview loads its own target runtime: for OBDX JET screens, the JET version and bank theme detected in the Project Profile (22.x and 25.x use different JET versions). This keeps previews accurate and keeps the factory UI independent of any bank's versions.
+
+**Scope.** Start with form-style screens (fields, sections, tables, buttons), which cover most OBDX requirements. Complex custom widgets are shown as placeholders until supported.
+
+### 5.8 Target Packs
+
+A **Target Pack** teaches the factory how to turn a target-neutral Screen Model into code for one UI technology. Each pack contains:
+
+- Component mapping (for example, a Screen Model "select" becomes a JET select component, or a React Native picker).
+- Project and folder structure, navigation and routing patterns.
+- Styling and theming approach.
+- State management and form/validation patterns.
+- API client patterns for calling OBDX REST services.
+- Test patterns.
+- A **preview renderer** for the Screen Designer.
+
+| Target pack | Preview renderer | When |
+|---|---|---|
+| **OBDX JET** (per version: 22.x, 25.x) | Real JET components with the bank theme | First |
+| **React Native** (iOS/Android) | React Native Web in the browser; Expo on a real device for checks | Modernization (section 6) |
+| **React** (web) | React in the browser | Later, on demand |
+
+Version packs (5.3) describe OBDX release differences; target packs describe UI technologies. A workspace uses one version pack and one target pack at a time.
+
 ---
 
-## 6. Data and isolation
+## 6. Modernization mode
+
+Some banks may ask to redesign their whole OBDX frontend in another technology, for example a React Native mobile app (iOS and Android) or a React web app. The OBDX backend and its REST services stay; the new frontend calls them. This is a different kind of job from enhancing screens, so it runs as a separate mode built on the same foundation.
+
+| | Enhancement mode | Modernization mode |
+|---|---|---|
+| Backend | OBDX services, extended as needed | OBDX REST services stay; the new app calls them |
+| Frontend | Existing JET code, extended | New app (for example React Native), mostly generated |
+| Conventions come from | Bank's existing codebase (Project Profile) | Bank's new design system plus a starter project |
+| Main job | Add or enhance screens | Move many existing screens faithfully, in phases |
+
+### Steps
+
+1. **Scan and inventory.** Build a catalog of every screen, user flow, REST service and role in the bank's OBDX application. This is the migration map.
+2. **Reverse-engineer screens.** Turn each existing JET screen into a target-neutral Screen Model, with fields, validations, actions and service calls taken from the real code.
+3. **Set up the target.** Agree the bank's new design system (colors, typography, components) and create a starter project: navigation, login, API client, error handling, logging. This acts as the target's profile.
+4. **Redesign and review.** Customers review and change screens in the Screen Designer with the React Native preview renderer, and check them on a real device with Expo.
+5. **Generate in waves.** Plan the migration by module (for example login and dashboard, then accounts, then payments). Generate screens plus a typed API layer from the OBDX REST services.
+6. **Check parity.** Verify that each new screen covers the same fields, validations, flows and service calls as the old one, using tests generated from the Screen Model.
+7. **Build and deliver.** The same SVN and Jenkins flow, with Jenkins jobs for Android and iOS builds.
+
+### Impact on the factory and the team
+
+- The factory's own UI stays Oracle JET. Only the preview renderer and target pack change per target.
+- Someone on the bank's or delivery team must know the target technology (for example React Native) to review the generated code. The factory reduces this effort but does not remove it.
+
+### Risks to raise with the bank
+
+- **Security features:** OBDX login, two-factor authentication, device binding and session handling must be rebuilt correctly. These need human design, not only generation.
+- **Upgrades:** with a custom frontend, the bank no longer gets Oracle's UI improvements on upgrade. Each new OBDX release needs a check of the services the app uses.
+- **Mobile-only features:** push notifications, biometrics, offline behavior and app store releases are new work that has no equivalent in OBDX's JET screens.
+- **Scale:** a full redesign is a program of many months. The factory speeds up screen and API work; testing and UAT remain significant.
+
+---
+
+## 7. Data and isolation
 
 - **Strict workspace isolation:** separate index namespaces, storage prefixes and database row-level security. Retrieval never crosses workspaces.
 - **Factory mode** may optionally run a separate database schema per bank.
 - **No cross-bank training** without written consent from each bank.
 - **Encryption** at rest and in transit; secrets in a vault.
 - **Audit log** of uploads, approvals, generations, exports and model calls.
+- **Customer review links** are scoped to one Screen Model, time-limited and access-controlled; previews use sample data only.
 
 ### Using existing assets
 
@@ -203,15 +292,18 @@ OBDX code is kept in Subversion repositories. Developers use TortoiseSVN on Wind
 
 ---
 
-## 7. Tech stack (of the factory tool)
+## 8. Tech stack (of the factory tool)
 
-This is the stack used to build the OBDX Development Factory itself. The stack of the OBDX code it generates is not fixed here; it comes from each workspace's Project Profile (see 5.2).
+This is the stack used to build the OBDX Development Factory itself. The stack of the OBDX code it generates is not fixed here; it comes from each workspace's Project Profile (see 5.2) and target pack (see 5.8).
 
 The stack is chosen so that OBDX developers (Java, Oracle JET, SQL, Maven, Jenkins, SVN) can build and maintain the tool without learning a new language. Heavy computation runs in the model server and the database, so this costs no performance.
 
 | Part | Choice |
 |---|---|
-| Web UI | Oracle JET (proposed, decision pending), with a JavaScript diff viewer (Monaco or diff2html) |
+| Web UI | Oracle JET, built into static files and served by the Spring Boot backend (no separate Node.js server) |
+| Code diff viewer | Monaco Editor or diff2html, embedded in JET |
+| Screen Designer | JET UI with a drag-and-drop library (for example SortableJS); preview in an isolated frame |
+| Preview renderers | JET (per workspace JET version and theme) first; React Native Web / Expo and React added with their target packs |
 | Backend API | Java 21 + Spring Boot, run as a standalone service |
 | AI workflow | LangChain4j (or Spring AI), with a simple explicit state machine for the pipeline steps |
 | Database / vectors | PostgreSQL + pgvector (app data, keyword search and vector search in one database) |
@@ -230,42 +322,50 @@ The stack is chosen so that OBDX developers (Java, Oracle JET, SQL, Maven, Jenki
 
 ---
 
-## 8. Quality and evaluation
+## 9. Quality and evaluation
 
 - **Evaluation set:** 10–20 past BRDs per version with their real implementations.
 - **Metrics:**
   - Spec extraction: fields and rules correctly captured.
+  - Screen design: share of fields, components and validations in the AI's first draft that survive customer review unchanged.
   - Impact analysis: affected files found (precision/recall vs. the real change).
   - Code: builds on first try / after fix loop; tests pass; reviewer edit effort.
-- Run the evaluation on every change to prompts, models or version packs.
+  - Modernization: parity of migrated screens (fields, validations, flows, service calls) with the originals.
+- Run the evaluation on every change to prompts, models, version packs or target packs.
 
 ---
 
-## 9. Non-functional requirements
+## 10. Non-functional requirements
 
 - Runs with no internet access (air-gapped bank mode).
 - Index a typical customized OBDX codebase in under 1 hour; incremental updates in minutes.
 - Spec and plan in minutes; full generation within a working session.
+- Screen preview refreshes within about a second after a designer change.
 - Hardware guide: at least one or two data-center GPUs for a 30B+ class coding model, or a private model endpoint.
 
 ---
 
-## 10. Roadmap
+## 11. Roadmap
 
 | Phase | Outcome |
 |---|---|
 | 0: Retrieval proof | Index one bank's 22.x codebase; answer "where is X implemented?" correctly |
-| 1: Spec and plan MVP | BRD → structured spec → impact analysis → plan, with review in the web UI |
-| 2: Code generation | Full-stack generation for new screens and screen enhancements on 22.x, with build-and-fix loop |
+| 1: Spec and screen design MVP | BRD → structured spec → Screen Model with live JET preview, designer and customer review links → impact analysis → plan |
+| 2: Code generation | Full-stack generation for new screens and screen enhancements on 22.x from approved Screen Models, with build-and-fix loop |
 | 3: Multi-version and modes | Add 25.x pack, multiple workspaces, bank-mode installer |
 | 4: Improve | Run evaluation on past BRDs; LoRA fine-tuning if scores show the need |
+| 5: Modernization | React Native target pack and preview renderer; scan-and-inventory, reverse-engineering and wave planning (React target pack on demand) |
+
+The Screen Model is kept target-neutral from Phase 1, so Phase 5 adds target packs without redesigning the factory.
 
 ---
 
-## 11. Open questions
+## 12. Open questions
 
 - Which bank codebase and BRDs make up the Phase 0/1 pilot?
 - For each bank: SVN server URL and repository layout (trunk/branches/tags), and whether the factory may commit to `branches/factory/` or must deliver patches only.
 - For the pilot bank: Jenkins version, job names for UI and backend builds, whether jobs already accept a branch parameter, and whether they publish JUnit results.
 - Which GPUs or private model endpoints are available for the pilot?
 - Licensing confirmation for indexing product and customized code.
+- Can customer reviewers reach the factory (network access, SSO or guest links), especially in bank mode?
+- Is there a bank currently asking for a React Native (or React) redesign, and does it have a design system already?

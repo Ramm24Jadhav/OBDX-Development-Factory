@@ -4,6 +4,9 @@ A web-based tool that turns requirements (prompts, BRDs, FSDs) into code for a b
 
 - Supports OBDX 22.x and 25.x
 - Factory mode (one installation, many banks) and bank mode (installed inside one bank)
-- Human review of spec, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
+- Interactive screen designer with live previews that customers can review and approve
+- Target-neutral screen models, so frontends can later be generated for React Native or React (modernization mode)
+- Built with the OBDX team's own stack: Oracle JET, Java/Spring Boot, PostgreSQL, Maven, Jenkins, SVN
+- Human review of spec, screen design, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requirements and roadmap.
