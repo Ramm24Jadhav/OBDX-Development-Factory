@@ -1,9 +1,9 @@
 /*
  * Profile page: shows the detected Project Profile of a workspace and lets developers confirm or correct facts.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar'],
-  function (ko, accUtils, api, workspaceSelection, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
     const SECTION_TITLES = {
       OBDX: 'OBDX',
       UI: 'User interface',
@@ -17,6 +17,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.profile = ko.observable(null);
+      this.canEdit = ko.pureComputed(() => session.can(this.workspaceId(), 'MANAGE_CODE'));
       this.errorMessage = ko.observable('');
       this.emptyMessage = ko.observable('');
       this.busy = ko.observable(false);

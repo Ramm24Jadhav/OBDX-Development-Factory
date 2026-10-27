@@ -8,6 +8,10 @@
     <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
   </oj-bind-if>
 
+  <oj-bind-if test="[[!isAdmin()]]">
+    <p class="oj-text-color-secondary">You see the workspaces you are a member of. Administrators create workspaces and assign roles.</p>
+  </oj-bind-if>
+  <oj-bind-if test="[[isAdmin()]]">
   <h2>New workspace</h2>
   <oj-validation-group id="workspaceForm" valid="{{formValid}}">
     <oj-form-layout max-columns="2" direction="row">
@@ -19,6 +23,7 @@
     </oj-form-layout>
   </oj-validation-group>
   <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
+  </oj-bind-if>
 
   <h2>All workspaces</h2>
   <oj-table id="workspaceTable" aria-label="Workspaces" data="[[workspaceProvider]]"
@@ -30,7 +35,9 @@
                       {"headerText": "", "field": "id", "template": "actionTemplate", "sortable": "disabled"}]'
             class="oj-sm-margin-4x-top" style="width: 100%;">
     <template slot="actionTemplate" data-oj-as="cell">
-      <oj-button chroming="borderless" on-oj-action="[[cell.row.deleteAction]]">Delete</oj-button>
+      <oj-bind-if test="[[cell.row.canDelete]]">
+        <oj-button chroming="borderless" on-oj-action="[[cell.row.deleteAction]]">Delete</oj-button>
+      </oj-bind-if>
     </template>
     <template slot="noData">No workspaces yet. Create one above.</template>
   </oj-table>

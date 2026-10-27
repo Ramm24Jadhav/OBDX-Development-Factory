@@ -1,0 +1,107 @@
+<div class="oj-hybrid-padding">
+  <h1>Administration</h1>
+  <oj-bind-if test="[[errorMessage()]]">
+    <p id="adminError" class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+  <oj-bind-if test="[[infoMessage()]]">
+    <p id="adminInfo" class="oj-text-color-success"><oj-bind-text value="[[infoMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <h2>Users</h2>
+  <p class="oj-text-color-secondary">
+    <oj-bind-text value="[[modeHint]]"></oj-bind-text>
+  </p>
+  <table class="factory-profile-table">
+    <thead><tr><th>Username</th><th>Name</th><th>Signs in with</th><th>Administrator</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead>
+    <tbody>
+      <oj-bind-for-each data="[[users]]" as="u">
+        <template>
+          <tr>
+            <td><oj-bind-text value="[[u.data.username]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[u.data.displayName]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[u.data.source]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[u.data.admin ? 'yes' : 'no']]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[u.data.enabled ? 'active' : 'disabled']]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[u.data.lastLogin]]"></oj-bind-text></td>
+            <td class="factory-actions">
+              <oj-button chroming="borderless" on-oj-action="[[u.data.toggleAdmin]]">
+                <oj-bind-text value="[[u.data.admin ? 'Remove admin' : 'Make admin']]"></oj-bind-text>
+              </oj-button>
+              <oj-button chroming="borderless" on-oj-action="[[u.data.toggleEnabled]]">
+                <oj-bind-text value="[[u.data.enabled ? 'Disable' : 'Enable']]"></oj-bind-text>
+              </oj-button>
+              <oj-bind-if test="[[u.data.source === 'LOCAL']]">
+                <oj-button chroming="borderless" on-oj-action="[[u.data.resetPassword]]">Reset password</oj-button>
+              </oj-bind-if>
+            </td>
+          </tr>
+        </template>
+      </oj-bind-for-each>
+    </tbody>
+  </table>
+
+  <h3>Add a user</h3>
+  <oj-form-layout max-columns="3" direction="row">
+    <oj-input-text id="newUsername" label-hint="Username" value="{{newUsername}}"></oj-input-text>
+    <oj-input-text id="newDisplayName" label-hint="Name" value="{{newDisplayName}}"></oj-input-text>
+    <oj-input-text id="newEmail" label-hint="Email" value="{{newEmail}}"></oj-input-text>
+    <oj-bind-if test="[[localMode()]]">
+      <oj-input-password id="newPassword" label-hint="Password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></oj-input-password>
+    </oj-bind-if>
+    <oj-switch id="newAdmin" label-hint="Administrator" value="{{newAdmin}}"></oj-switch>
+  </oj-form-layout>
+  <oj-button id="addUserButton" chroming="callToAction" on-oj-action="[[addUser]]" disabled="[[!newUsername()]]">Add user</oj-button>
+
+  <h2>Workspace members</h2>
+  <oj-form-layout max-columns="2">
+    <oj-select-single id="memberWorkspace" label-hint="Workspace" data="[[workspaceProvider]]" value="{{memberWorkspaceId}}"
+                      placeholder="Select a workspace"></oj-select-single>
+  </oj-form-layout>
+  <oj-bind-if test="[[memberWorkspaceId()]]">
+    <table class="factory-profile-table">
+      <thead><tr><th>User</th><th>Role</th><th>Can</th><th></th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[members]]" as="m">
+          <template>
+            <tr>
+              <td><oj-bind-text value="[[m.data.label]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[m.data.role]]"></oj-bind-text></td>
+              <td class="oj-typography-body-sm"><oj-bind-text value="[[m.data.can]]"></oj-bind-text></td>
+              <td><oj-button chroming="borderless" on-oj-action="[[m.data.removeAction]]">Remove</oj-button></td>
+            </tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+    <oj-bind-if test="[[members().length === 0]]">
+      <p class="oj-text-color-secondary">No members yet. Only administrators can see this workspace.</p>
+    </oj-bind-if>
+    <div class="oj-flex factory-gap oj-sm-align-items-flex-end">
+      <oj-select-single id="memberUser" class="factory-wide-select" label-hint="User" data="[[userProvider]]" value="{{memberUserId}}"></oj-select-single>
+      <oj-select-single id="memberRole" class="factory-narrow" label-hint="Role" data="[[roleProvider]]" value="{{memberRole}}"></oj-select-single>
+      <oj-button id="setMemberButton" on-oj-action="[[setMember]]" disabled="[[!memberUserId() || !memberRole()]]">Add or change</oj-button>
+    </div>
+    <p class="oj-typography-body-sm oj-text-color-secondary">
+      Analyst: requirements and designs. Developer: SVN, imports, Project Profile and designs. Lead: everything in the workspace, including approvals.
+    </p>
+  </oj-bind-if>
+
+  <h2>Audit log</h2>
+  <table class="factory-profile-table factory-audit">
+    <thead><tr><th>When</th><th>Who</th><th>What</th><th>Workspace</th><th>Item</th><th>Details</th></tr></thead>
+    <tbody>
+      <oj-bind-for-each data="[[auditEvents]]" as="e">
+        <template>
+          <tr>
+            <td><oj-bind-text value="[[e.data.when]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[e.data.username || '']]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[e.data.action]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[e.data.workspace]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[e.data.target || '']]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[e.data.detail || '']]"></oj-bind-text></td>
+          </tr>
+        </template>
+      </oj-bind-for-each>
+    </tbody>
+  </table>
+</div>

@@ -195,6 +195,12 @@ public class ScreenDesignService {
                 store.comments(design.getId()), design.getReviewExpiresAt(), design.getApprovedBy(), design.getApprovedAt());
     }
 
+    /** The workspace a review link belongs to, for the audit log. */
+    @Transactional(readOnly = true)
+    public UUID workspaceOfReview(String token) {
+        return byToken(token).getWorkspaceId();
+    }
+
     @Transactional
     public ReviewView reviewComment(String token, String author, String text, String componentId) {
         ScreenDesign design = byToken(token);

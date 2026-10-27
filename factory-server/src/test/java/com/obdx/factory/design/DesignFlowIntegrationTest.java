@@ -120,7 +120,7 @@ class DesignFlowIntegrationTest {
         waitForStatus(requirementId, Requirement.Status.READY);
 
         assertThatThrownBy(() -> designs.fromRequirement(requirementId)).hasMessageContaining("Approve the requirement");
-        requirements.approve(requirementId);
+        requirements.approve(requirementId, "Lead");
 
         List<ScreenDesignService.DesignSummary> created = designs.fromRequirement(requirementId);
         assertThat(created).extracting(ScreenDesignService.DesignSummary::name).containsExactly("Own Account Transfer", "Transfer Confirmation");

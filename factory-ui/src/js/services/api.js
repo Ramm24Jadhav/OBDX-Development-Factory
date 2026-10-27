@@ -4,8 +4,17 @@
  * status is the HTTP status code.
  */
 define([], function () {
+  /** The CSRF token the server keeps in the XSRF-TOKEN cookie; changes must send it back in a header. */
+  function csrfToken() {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
   function request(method, path, body) {
-    const options = { method: method, headers: { 'Accept': 'application/json' } };
+    const options = { method: method, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' };
+    if (method !== 'GET' && csrfToken()) {
+      options.headers['X-XSRF-TOKEN'] = csrfToken();
+    }
     if (body instanceof FormData) {
       options.body = body;
     } else if (typeof body === 'string') {
@@ -20,6 +29,10 @@ define([], function () {
         return null;
       }
       return response.json().catch(function () { return null; }).then(function (data) {
+        if (response.status === 401 && path !== 'auth/me' && path !== 'auth/login') {
+          // The session ended: let the app show the sign-in page.
+          window.dispatchEvent(new CustomEvent('factory-signed-out'));
+        }
         if (!response.ok) {
           const message = (data && (data.detail || data.title)) || ('Request failed: HTTP ' + response.status);
           const error = new Error(message);

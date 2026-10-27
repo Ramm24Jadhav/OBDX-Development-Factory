@@ -1,0 +1,29 @@
+<div class="oj-hybrid-padding">
+  <h1>Account</h1>
+  <oj-bind-if test="[[user()]]">
+    <ul>
+      <li>Username: <oj-bind-text value="[[user().username]]"></oj-bind-text></li>
+      <li>Name: <oj-bind-text value="[[user().displayName]]"></oj-bind-text></li>
+      <li>Signs in with: <oj-bind-text value="[[sourceLabel]]"></oj-bind-text></li>
+      <li>Administrator: <oj-bind-text value="[[user().admin ? 'yes' : 'no']]"></oj-bind-text></li>
+      <li>Workspaces: <oj-bind-text value="[[workspaceSummary]]"></oj-bind-text></li>
+    </ul>
+
+    <oj-bind-if test="[[user().canChangePassword]]">
+      <h2>Change password</h2>
+      <oj-form-layout max-columns="1" class="factory-narrow-form">
+        <oj-input-password id="currentPassword" label-hint="Current password" value="{{currentPassword}}" autocomplete="current-password"></oj-input-password>
+        <oj-input-password id="newPassword" label-hint="New password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></oj-input-password>
+        <oj-input-password id="repeatPassword" label-hint="Repeat new password" value="{{repeatPassword}}" autocomplete="new-password"></oj-input-password>
+      </oj-form-layout>
+      <oj-button id="changePasswordButton" chroming="callToAction" on-oj-action="[[changePassword]]"
+                 disabled="[[!currentPassword() || !newPassword()]]">Change password</oj-button>
+    </oj-bind-if>
+    <oj-bind-if test="[[!user().canChangePassword]]">
+      <p class="oj-text-color-secondary">Your password is managed by your organization's directory or single sign-on.</p>
+    </oj-bind-if>
+    <oj-bind-if test="[[message()]]">
+      <p id="accountMessage" :class="[[messageClass]]"><oj-bind-text value="[[message]]"></oj-bind-text></p>
+    </oj-bind-if>
+  </oj-bind-if>
+</div>

@@ -1,11 +1,12 @@
 /*
  * Workspaces page: lists workspaces and creates or deletes them through /api/workspaces.
  */
-define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojtable', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
         'ojs/ojbutton', 'ojs/ojvalidationgroup'],
-  function (ko, accUtils, api, ArrayDataProvider) {
+  function (ko, accUtils, api, session, ArrayDataProvider) {
     function WorkspacesViewModel() {
+      this.isAdmin = session.isAdmin;
       const workspaces = ko.observableArray([]);
       this.workspaceProvider = new ArrayDataProvider(workspaces, { keyAttributes: 'id' });
 
@@ -27,7 +28,8 @@ define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
       const load = () => api.get('workspaces')
         .then((data) => workspaces(data.map((workspace) => Object.assign({}, workspace, {
           createdAt: new Date(workspace.createdAt).toLocaleString(),
-          deleteAction: () => this.deleteWorkspace(workspace.id)
+          deleteAction: () => this.deleteWorkspace(workspace.id),
+          canDelete: session.isAdmin()
         }))))
         .catch((error) => this.errorMessage(error.message));
 

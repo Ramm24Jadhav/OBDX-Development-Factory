@@ -56,6 +56,9 @@ public class Requirement {
     @Column(name = "approved_at")
     private OffsetDateTime approvedAt;
 
+    @Column(name = "approved_by", length = 200)
+    private String approvedBy;
+
     protected Requirement() {
         // for JPA
     }
@@ -91,8 +94,9 @@ public class Requirement {
         updatedAt = OffsetDateTime.now();
     }
 
-    void approve() {
+    void approve(String by) {
         status = Status.APPROVED;
+        approvedBy = by;
         approvedAt = OffsetDateTime.now();
         updatedAt = approvedAt;
         message = null;
@@ -144,5 +148,9 @@ public class Requirement {
 
     public OffsetDateTime getApprovedAt() {
         return approvedAt;
+    }
+
+    public String getApprovedBy() {
+        return approvedBy;
     }
 }

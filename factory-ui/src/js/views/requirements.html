@@ -15,6 +15,7 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[workspaceId()]]">
+    <oj-bind-if test="[[canEdit()]]">
     <h2>New requirement</h2>
     <oj-form-layout max-columns="2" direction="row">
       <oj-input-text id="reqTitle" label-hint="Title (optional)" value="{{newTitle}}"></oj-input-text>
@@ -33,6 +34,7 @@
       <oj-text-area id="reqText" label-hint="...or describe the change" value="{{newText}}" rows="4"></oj-text-area>
     </oj-form-layout>
     <oj-button id="submitTextButton" on-oj-action="[[submitText]]" disabled="[[!newText() || busy()]]">Draft spec from text</oj-button>
+    </oj-bind-if>
 
     <h2>All requirements</h2>
     <oj-table id="reqTable" aria-label="Requirements" data="[[listProvider]]" style="width: 100%;"
@@ -60,21 +62,28 @@
         <oj-bind-if test="[[detail().fileName]]">
           <span class="oj-text-color-secondary"> · <oj-bind-text value="[[detail().fileName]]"></oj-bind-text></span>
         </oj-bind-if>
+        <oj-bind-if test="[[detail().approvedBy]]">
+          <span class="oj-text-color-secondary"> · approved by <oj-bind-text value="[[detail().approvedBy]]"></oj-bind-text></span>
+        </oj-bind-if>
       </p>
       <oj-bind-if test="[[detail().message]]">
         <p id="reqMessage"><oj-bind-text value="[[detail().message]]"></oj-bind-text></p>
       </oj-bind-if>
       <oj-toolbar>
-        <oj-bind-if test="[[detail().status === 'READY']]">
+        <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
           <oj-button id="approveButton" chroming="callToAction" on-oj-action="[[approve]]">Approve spec</oj-button>
+        </oj-bind-if>
+        <oj-bind-if test="[[detail().status === 'READY' && canEdit()]]">
           <oj-button id="editJsonButton" on-oj-action="[[toggleJson]]">
             <oj-bind-text value="[[editingJson() ? 'Close JSON editor' : 'Edit spec (JSON)']]"></oj-bind-text>
           </oj-button>
         </oj-bind-if>
-        <oj-bind-if test="[[detail().status === 'FAILED' || detail().status === 'READY']]">
+        <oj-bind-if test="[[(detail().status === 'FAILED' || detail().status === 'READY') && canEdit()]]">
           <oj-button id="retryButton" on-oj-action="[[retry]]">Draft again from document</oj-button>
         </oj-bind-if>
-        <oj-button id="deleteReqButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
+        <oj-bind-if test="[[canEdit()]]">
+          <oj-button id="deleteReqButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
+        </oj-bind-if>
       </oj-toolbar>
 
       <oj-bind-if test="[[editingJson()]]">
@@ -104,7 +113,7 @@
               </div>
             </template>
           </oj-bind-for-each>
-          <oj-bind-if test="[[detail().status === 'READY']]">
+          <oj-bind-if test="[[detail().status === 'READY' && canEdit()]]">
             <oj-toolbar>
               <oj-button id="saveAnswersButton" on-oj-action="[[saveAnswers]]">Save answers</oj-button>
               <oj-button id="refineButton" chroming="callToAction" on-oj-action="[[refine]]">Update spec with answers</oj-button>

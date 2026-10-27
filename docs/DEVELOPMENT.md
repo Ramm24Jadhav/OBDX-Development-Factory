@@ -20,6 +20,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
 - `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
 - `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
+- `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
 - `common/`: shared exceptions and the error handler that returns problem details to the UI.
@@ -127,6 +128,30 @@ Scanned PDFs have no text layer and need OCR before upload. With a local model, 
 
 Limitations: the preview uses this factory's JET version and the Redwood theme, not each bank's own JET version and theme. Enhancing an existing screen starts from the spec's fields, not from the screen's current layout in the code. Anyone with a review link can comment and approve, so share it only with the intended reviewers.
 
+## Sign-in, roles and audit
+
+**Sign-in options** (`FACTORY_AUTH_MODE`):
+
+- `local` (default): accounts are kept in the factory with BCrypt-hashed passwords (at least 12 characters). On first start an `admin` account is created with `FACTORY_ADMIN_PASSWORD`, or with a random password written once to the log. Users change their own password on the **Account** page; administrators reset passwords on the **Admin** page.
+- `ldap`: users sign in with their bank directory (Active Directory) username and password; see the `FACTORY_LDAP_*` settings. The factory does not store their passwords.
+- `oidc`: users sign in through the bank's identity provider (Azure AD, Keycloak, ...). Configure the client with the standard `spring.security.oauth2.client.registration.sso.*` settings; the redirect URI is `https://<factory host>/login/oauth2/code/sso`.
+
+With `ldap` and `oidc`, users appear in the factory at their first sign-in (or can be added in advance on the Admin page). `FACTORY_ADMIN_USERS` names users who are always administrators.
+
+**Roles.** Administrators can do everything, including creating workspaces, managing users and roles, and reading the audit log. Everyone else needs a role in each workspace they work in, and only sees those workspaces:
+
+| Role | Can |
+|---|---|
+| Analyst | View, comment, create and edit requirements, design screens and share review links |
+| Developer | View, comment, SVN settings and imports, Project Profile corrections, design screens |
+| Lead | Everything in the workspace, including approving requirements and designs |
+
+Every API checks these permissions (`AccessGuard`); the UI hides actions a user cannot take. Customer review links stay public and work by their token only.
+
+**Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row lock a username for 15 minutes. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
+
+**Audit log** (Admin page, `GET /api/admin/audit`): sign-ins and failed sign-ins, workspace creation and deletion, SVN setting changes, imports, Project Profile corrections, requirements created, approved and deleted, review links, design approvals (including by customers), and user and role changes. Passwords are never recorded.
+
 ## Working on the UI
 
 For quick UI changes without rebuilding the jar, run the server, then in `factory-ui/`:
@@ -144,7 +169,15 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 
 | Method and path | Purpose |
 |---|---|
-| `GET /api/workspaces` | List workspaces |
+| `GET /api/auth/config` | Sign-in mode (public) |
+| `POST /api/auth/login` | Sign in with username and password (`local` and `ldap`) |
+| `POST /api/auth/logout` | Sign out |
+| `GET /api/auth/me` | The signed-in user with workspace roles and permissions |
+| `POST /api/auth/password` | Change your own password (local accounts) |
+| `GET` / `POST /api/admin/users`, `PUT /api/admin/users/{id}`, `POST /api/admin/users/{id}/password` | Users (administrators) |
+| `GET /api/workspaces/{id}/members`, `PUT` / `DELETE /api/workspaces/{id}/members/{userId}` | Workspace members and roles (changes by administrators) |
+| `GET /api/admin/audit` | Audit log (administrators) |
+| `GET /api/workspaces` | List workspaces (administrators: all; others: their workspaces) |
 | `POST /api/workspaces` | Create a workspace (`name`, `bankName`, `obdxVersion` = `22.x` or `25.x`, optional `svnUrl`) |
 | `GET /api/workspaces/{id}` | Get one workspace |
 | `DELETE /api/workspaces/{id}` | Delete a workspace, its index and its working copy |
@@ -186,7 +219,7 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
 | `GET /actuator/health` | Health check |
 
-Errors are returned as problem details (`status`, `title`, `detail`).
+Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.
 
 ## Tests
 
@@ -213,4 +246,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Login and roles (Spring Security), impact analysis and planning, code generation (the agent pipeline) and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+SAML sign-in, impact analysis and planning, code generation (the agent pipeline) and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

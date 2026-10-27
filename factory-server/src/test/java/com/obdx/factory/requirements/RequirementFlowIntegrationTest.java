@@ -128,7 +128,7 @@ class RequirementFlowIntegrationTest {
             assertThat(summary.openQuestions()).isEqualTo(2);
         });
 
-        assertThatThrownBy(() -> requirements.approve(created.id()))
+        assertThatThrownBy(() -> requirements.approve(created.id(), "Lead"))
                 .isInstanceOf(BadRequestException.class).hasMessageContaining("2 open question(s)");
         assertThatThrownBy(() -> requirements.refine(created.id()))
                 .hasMessageContaining("Answer at least one open question");
@@ -156,9 +156,10 @@ class RequirementFlowIntegrationTest {
                 """;
         assertThat(requirements.updateSpec(created.id(), edited).currentVersion()).isEqualTo(4);
 
-        RequirementService.RequirementDetail approved = requirements.approve(created.id());
+        RequirementService.RequirementDetail approved = requirements.approve(created.id(), "Lead");
         assertThat(approved.status()).isEqualTo(Requirement.Status.APPROVED);
         assertThat(approved.approvedAt()).isNotNull();
+        assertThat(approved.approvedBy()).isEqualTo("Lead");
         assertThatThrownBy(() -> requirements.updateSpec(created.id(), edited)).hasMessageContaining("is approved");
     }
 

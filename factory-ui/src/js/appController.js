@@ -8,8 +8,8 @@
 /*
  * Your application specific code will go here
  */
-define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojarraydataprovider', 'ojs/ojknockouttemplateutils', 'ojs/ojmodule-element', 'ojs/ojknockout'],
-  function(ko, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter, ArrayDataProvider, KnockoutTemplateUtils) {
+define(['knockout', './services/session', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojarraydataprovider', 'ojs/ojknockouttemplateutils', 'ojs/ojmodule-element', 'ojs/ojknockout'],
+  function(ko, session, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter, ArrayDataProvider, KnockoutTemplateUtils) {
 
      function ControllerViewModel() {
 
@@ -38,7 +38,9 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
         { path: 'requirements', detail: { label: 'Requirements' } },
         { path: 'designer', detail: { label: 'Designer' } },
         { path: 'models', detail: { label: 'Models' } },
+        { path: 'admin', detail: { label: 'Admin', adminOnly: true } },
         { path: 'about', detail: { label: 'About' } },
+        { path: 'account', detail: { label: 'Account', hidden: true } },
         // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
         { path: 'review', detail: { label: 'Review', hidden: true } }
@@ -55,16 +57,53 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
 
       // Setup the navDataProvider with the routes, excluding the first redirected
       // route.
-      this.navDataProvider = new ArrayDataProvider(navData.slice(1).filter((route) => !route.detail.hidden), {keyAttributes: "path"});
+      // The Admin tab is shown only to administrators.
+      const visibleRoutes = () => navData.slice(1)
+        .filter((route) => !route.detail.hidden && (!route.detail.adminOnly || session.isAdmin()));
+      const navItems = ko.observableArray(visibleRoutes());
+      session.user.subscribe(() => navItems(visibleRoutes()));
+      this.navDataProvider = new ArrayDataProvider(navItems, {keyAttributes: "path"});
 
       // "embed=1" shows a page without the header and navigation: the preview frame and customer review links.
       this.embedded = new URLSearchParams(window.location.search).get('embed') === '1';
+      if (!this.embedded) {
+        session.load();
+      }
 
       // Header
       // Application Name used in Branding Area
       this.appName = ko.observable("OBDX Development Factory");
       // User Info used in Global Navigation area
-      this.userLogin = ko.observable("Not signed in");
+      this.userLogin = ko.pureComputed(() => (session.user() ? session.user().displayName : 'Not signed in'));
+      this.canChangePassword = ko.pureComputed(() => !!session.user() && session.user().canChangePassword);
+
+      // Sign-in: pages show only for a signed-in user, except the preview and customer review pages (embedded).
+      this.signedIn = ko.pureComputed(() => session.user() !== null);
+      this.sessionChecked = session.checked;
+      this.authConfig = session.config;
+      this.loginUsername = ko.observable('');
+      this.loginPassword = ko.observable('');
+      this.loginError = ko.observable(new URLSearchParams(window.location.search).get('signInError') === 'sso'
+        ? 'Single sign-on did not complete. Try again or contact your administrator.' : '');
+      this.signingIn = ko.observable(false);
+      this.signIn = () => {
+        this.signingIn(true);
+        this.loginError('');
+        session.login(this.loginUsername(), this.loginPassword())
+          .then(() => this.loginPassword(''))
+          .catch((error) => this.loginError(error.message))
+          .finally(() => this.signingIn(false));
+      };
+      this.userMenuAction = (event) => {
+        const value = event.detail.selectedValue;
+        if (value === 'out') {
+          session.logout();
+        } else if (value === 'account') {
+          router.go({ path: 'account' });
+        } else if (value === 'about') {
+          router.go({ path: 'about' });
+        }
+      };
 
      }
 

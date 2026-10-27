@@ -1,5 +1,8 @@
 package com.obdx.factory.design;
 
+import com.obdx.factory.auth.WorkspaceRole.Permission;
+import com.obdx.factory.auth.AuditLog;
+import com.obdx.factory.auth.AccessGuard;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +20,13 @@ import java.util.UUID;
 public class ScreenDesignController {
 
     private final ScreenDesignService service;
+    private final AccessGuard guard;
+    private final AuditLog audit;
 
-    public ScreenDesignController(ScreenDesignService service) {
+    public ScreenDesignController(ScreenDesignService service, AccessGuard guard, AuditLog audit) {
         this.service = service;
+        this.guard = guard;
+        this.audit = audit;
     }
 
     @GetMapping("/api/design/catalog")
@@ -29,70 +36,93 @@ public class ScreenDesignController {
 
     @GetMapping("/api/workspaces/{workspaceId}/designs")
     public List<ScreenDesignService.DesignSummary> list(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
         return service.list(workspaceId);
     }
 
     @PostMapping("/api/workspaces/{workspaceId}/designs")
     @ResponseStatus(HttpStatus.CREATED)
     public ScreenDesignService.DesignDetail blank(@PathVariable UUID workspaceId, @RequestBody NameRequest request) {
+        guard.require(workspaceId, Permission.EDIT_DESIGNS);
         return service.blank(workspaceId, request.name());
     }
 
     @PostMapping("/api/requirements/{requirementId}/designs")
     @ResponseStatus(HttpStatus.CREATED)
     public List<ScreenDesignService.DesignSummary> fromRequirement(@PathVariable UUID requirementId) {
+        guard.requireForRequirement(requirementId, Permission.EDIT_DESIGNS);
         return service.fromRequirement(requirementId);
     }
 
     @GetMapping("/api/designs/{id}")
     public ScreenDesignService.DesignDetail get(@PathVariable UUID id) {
+        guard.requireForDesign(id, Permission.VIEW);
         return service.get(id);
     }
 
     @GetMapping("/api/designs/{id}/versions/{version}")
     public ScreenModel version(@PathVariable UUID id, @PathVariable int version) {
+        guard.requireForDesign(id, Permission.VIEW);
         return service.version(id, version);
     }
 
     @PutMapping("/api/designs/{id}/model")
     public ScreenDesignService.DesignDetail save(@PathVariable UUID id, @RequestBody SaveRequest request) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
         return service.save(id, request.model(), request.note());
     }
 
     @PostMapping("/api/designs/{id}/ai-change")
     public ScreenDesignService.DesignDetail aiChange(@PathVariable UUID id, @RequestBody InstructionRequest request) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
         return service.aiChange(id, request.instruction());
     }
 
     @PostMapping("/api/designs/{id}/comments")
     public ScreenDesignService.DesignDetail comment(@PathVariable UUID id, @RequestBody CommentRequest request) {
-        return service.comment(id, request.author(), request.text(), request.componentId());
+        var user = guard.requireForDesign(id, Permission.COMMENT);
+        return service.comment(id, user.getDisplayName(), request.text(), request.componentId());
     }
 
     @PostMapping("/api/designs/{id}/review-link")
     public ScreenDesignService.DesignDetail openReview(@PathVariable UUID id, @RequestBody(required = false) ReviewLinkRequest request) {
-        return service.openReview(id, request == null ? null : request.days());
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        ScreenDesignService.DesignDetail detail = service.openReview(id, request == null ? null : request.days());
+        audit.record("REVIEW_LINK_CREATED", detail.workspaceId(), detail.name(), "expires " + detail.reviewExpiresAt());
+        return detail;
     }
 
     @DeleteMapping("/api/designs/{id}/review-link")
     public ScreenDesignService.DesignDetail closeReview(@PathVariable UUID id) {
-        return service.closeReview(id);
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        ScreenDesignService.DesignDetail detail = service.closeReview(id);
+        audit.record("REVIEW_LINK_CLOSED", detail.workspaceId(), detail.name(), null);
+        return detail;
     }
 
     @PostMapping("/api/designs/{id}/approve")
-    public ScreenDesignService.DesignDetail approve(@PathVariable UUID id, @RequestBody ApproveRequest request) {
-        return service.approve(id, request.by());
+    public ScreenDesignService.DesignDetail approve(@PathVariable UUID id) {
+        var user = guard.requireForDesign(id, Permission.APPROVE);
+        ScreenDesignService.DesignDetail detail = service.approve(id, user.getDisplayName());
+        audit.record("DESIGN_APPROVED", detail.workspaceId(), detail.name(), "version " + detail.approvedVersion());
+        return detail;
     }
 
     @PostMapping("/api/designs/{id}/reopen")
     public ScreenDesignService.DesignDetail reopen(@PathVariable UUID id) {
-        return service.reopen(id);
+        guard.requireForDesign(id, Permission.APPROVE);
+        ScreenDesignService.DesignDetail detail = service.reopen(id);
+        audit.record("DESIGN_REOPENED", detail.workspaceId(), detail.name(), null);
+        return detail;
     }
 
     @DeleteMapping("/api/designs/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        ScreenDesignService.DesignDetail detail = service.get(id);
         service.delete(id);
+        audit.record("DESIGN_DELETED", detail.workspaceId(), detail.name(), null);
     }
 
     // Customer review through a review link: only the token is needed.
@@ -109,7 +139,10 @@ public class ScreenDesignController {
 
     @PostMapping("/api/review/{token}/approve")
     public ScreenDesignService.ReviewView reviewApprove(@PathVariable String token, @RequestBody ApproveRequest request) {
-        return service.reviewApprove(token, request.by());
+        UUID workspaceId = service.workspaceOfReview(token);
+        ScreenDesignService.ReviewView view = service.reviewApprove(token, request.by());
+        audit.recordAs("review link: " + request.by(), "DESIGN_APPROVED_BY_REVIEWER", workspaceId, view.name(), "version " + view.version());
+        return view;
     }
 
     public record NameRequest(String name) {
@@ -121,6 +154,7 @@ public class ScreenDesignController {
     public record InstructionRequest(String instruction) {
     }
 
+    /** author is used only on review links; signed-in users comment under their own name. */
     public record CommentRequest(String author, String text, String componentId) {
     }
 

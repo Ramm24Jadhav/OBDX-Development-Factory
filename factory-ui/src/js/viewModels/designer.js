@@ -2,11 +2,11 @@
  * Screen designer: edits a Screen Model (sections, components, actions) with a live preview, applies changes
  * described in plain words, manages versions, comments, the customer review link and approval.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
         'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
         'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider) {
     const VIEWPORTS = [
       { key: 'desktop', label: 'Desktop', width: '100%' },
       { key: 'tablet', label: 'Tablet', width: '768px' },
@@ -33,9 +33,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.dirty = ko.observable(false);
       this.selectedId = ko.observable(null);
       this.aiInstruction = ko.observable('');
-      this.commentAuthor = ko.observable('');
       this.commentText = ko.observable('');
-      this.editable = ko.pureComputed(() => this.detail() !== null && this.detail().status !== 'APPROVED');
+      this.canDesign = ko.pureComputed(() => session.can(this.workspaceId(), 'EDIT_DESIGNS'));
+      this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
+      this.editable = ko.pureComputed(() => this.detail() !== null && this.detail().status !== 'APPROVED' && this.canDesign());
 
       const catalog = ko.observableArray([]);
       this.typeProvider = new ArrayDataProvider(catalog, { keyAttributes: 'value' });
@@ -393,11 +394,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .catch(() => showInfo('Select the link and copy it.'));
       };
       this.approve = () => {
-        const by = window.prompt('Approve this version for development. Your name:', this.commentAuthor() || '');
-        if (!by) {
+        if (!window.confirm('Approve version ' + this.detail().currentVersion + ' for development?')) {
           return;
         }
-        api.post(base() + '/approve', { by: by }).then((detail) => show(detail, true)).catch(showError);
+        api.post(base() + '/approve').then((detail) => show(detail, true)).catch(showError);
       };
       this.reopen = () => api.post(base() + '/reopen').then((detail) => show(detail, true)).catch(showError);
       this.remove = () => {
@@ -407,7 +407,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.del(base()).then(() => { this.detail(null); this.working(null); this.dirty(false); loadDesigns(); }).catch(showError);
       };
       this.addComment = () => api.post(base() + '/comments', {
-        author: this.commentAuthor(), text: this.commentText(), componentId: this.selectedId()
+        text: this.commentText(), componentId: this.selectedId()
       }).then((detail) => {
         this.commentText('');
         this.detail(detail);

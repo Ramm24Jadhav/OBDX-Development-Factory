@@ -324,3 +324,25 @@
         position: static;
     }
 }
+
+.factory-login {
+    max-width: 420px;
+    margin: 48px auto;
+}
+
+.factory-sso-button {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 6px;
+    background: #312d2a;
+    color: #fff;
+    text-decoration: none;
+}
+
+.factory-narrow-form {
+    max-width: 420px;
+}
+
+.factory-audit td {
+    font-size: 0.85rem;
+}

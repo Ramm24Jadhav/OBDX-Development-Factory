@@ -1,6 +1,15 @@
 # Every value can be overridden with an environment variable, for example FACTORY_DB_URL or FACTORY_MODEL_BASE_URL.
 server:
   port: ${FACTORY_PORT:8080}
+  servlet:
+    session:
+      # Signed-in sessions end after this much inactivity.
+      timeout: ${FACTORY_SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        same-site: lax
+        # Set to true when the factory is served over HTTPS (it should be in production).
+        secure: ${FACTORY_COOKIE_SECURE:false}
 
 spring:
   application:
@@ -21,6 +30,22 @@ spring:
     locations: classpath:db/migration
 
 factory:
+  auth:
+    # local (accounts in the factory), ldap (bank directory) or oidc (single sign-on)
+    mode: ${FACTORY_AUTH_MODE:local}
+    # Comma-separated usernames that are always administrators (for directory or SSO sign-in)
+    admin-users: ${FACTORY_ADMIN_USERS:}
+    # Password of the first local "admin" account; if empty, a random one is written to the log once
+    initial-admin-password: ${FACTORY_ADMIN_PASSWORD:}
+    ldap:
+      url: ${FACTORY_LDAP_URL:}
+      user-search-base: ${FACTORY_LDAP_USER_SEARCH_BASE:}
+      user-search-filter: ${FACTORY_LDAP_USER_SEARCH_FILTER:(uid={0})}
+      manager-dn: ${FACTORY_LDAP_MANAGER_DN:}
+      manager-password: ${FACTORY_LDAP_MANAGER_PASSWORD:}
+    oidc:
+      registration-id: sso
+      username-claim: ${FACTORY_OIDC_USERNAME_CLAIM:preferred_username}
   security:
     # 32 random bytes, base64 (openssl rand -base64 32). Encrypts stored SVN passwords. Keep it secret and stable.
     secret-key: ${FACTORY_SECRET_KEY:}

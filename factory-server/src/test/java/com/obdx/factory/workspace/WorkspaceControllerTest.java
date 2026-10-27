@@ -1,11 +1,14 @@
 package com.obdx.factory.workspace;
 
+import com.obdx.factory.auth.AccessGuard;
+import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,12 +19,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(WorkspaceController.class)
+@WithMockUser
 class WorkspaceControllerTest {
 
     @Autowired
@@ -30,13 +35,19 @@ class WorkspaceControllerTest {
     @MockitoBean
     private WorkspaceService service;
 
+    @MockitoBean
+    private AccessGuard guard;
+
+    @MockitoBean
+    private AuditLog audit;
+
     @Test
     void createsWorkspace() throws Exception {
         UUID id = UUID.randomUUID();
         when(service.create(any())).thenReturn(new WorkspaceResponse(
                 id, "bank-a-22", "Bank A", "22.x", "https://svn.bank-a.local/obdx/trunk", null, false, null, OffsetDateTime.now()));
 
-        mvc.perform(post("/api/workspaces")
+        mvc.perform(post("/api/workspaces").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "bank-a-22", "bankName": "Bank A", "obdxVersion": "22.x",
@@ -49,7 +60,7 @@ class WorkspaceControllerTest {
 
     @Test
     void rejectsUnsupportedVersionAndBadSvnUrl() throws Exception {
-        mvc.perform(post("/api/workspaces")
+        mvc.perform(post("/api/workspaces").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "bank-a", "bankName": "Bank A", "obdxVersion": "19.x", "svnUrl": "c:\\\\code"}
@@ -65,7 +76,7 @@ class WorkspaceControllerTest {
     void reportsDuplicateNameAsConflict() throws Exception {
         when(service.create(any())).thenThrow(new ConflictException("A workspace named 'bank-a' already exists"));
 
-        mvc.perform(post("/api/workspaces")
+        mvc.perform(post("/api/workspaces").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "bank-a", "bankName": "Bank A", "obdxVersion": "25.x"}

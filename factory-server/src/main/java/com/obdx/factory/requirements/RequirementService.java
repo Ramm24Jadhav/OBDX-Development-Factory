@@ -76,7 +76,7 @@ public class RequirementService {
     public record RequirementDetail(UUID id, UUID workspaceId, String title, String fileName, int sizeBytes,
                                     Requirement.Status status, String message, Integer currentVersion,
                                     OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime approvedAt,
-                                    String documentText, RequirementSpec spec) {
+                                    String approvedBy, String documentText, RequirementSpec spec) {
     }
 
     public record Answer(int index, String answer) {
@@ -174,7 +174,7 @@ public class RequirementService {
         return addVersion(requirement, RequirementSpecRepository.Origin.EDITED, edited, "Spec edited.");
     }
 
-    public RequirementDetail approve(UUID id) {
+    public RequirementDetail approve(UUID id, String by) {
         Requirement requirement = requireStatus(find(id), Requirement.Status.READY);
         RequirementSpec spec = currentSpec(requirement);
         long open = spec.openQuestions().size();
@@ -185,7 +185,7 @@ public class RequirementService {
         if (spec.screens().isEmpty()) {
             throw new BadRequestException("The spec has no screens to build yet");
         }
-        requirement.approve();
+        requirement.approve(by);
         return detail(requirements.save(requirement));
     }
 
@@ -328,7 +328,7 @@ public class RequirementService {
     private RequirementDetail detail(Requirement r) {
         return new RequirementDetail(r.getId(), r.getWorkspaceId(), r.getTitle(), r.getFileName(), r.getSizeBytes(),
                 r.getStatus(), r.getMessage(), r.getCurrentVersion(), r.getCreatedAt(), r.getUpdatedAt(), r.getApprovedAt(),
-                r.getDocumentText(), currentSpec(r));
+                r.getApprovedBy(), r.getDocumentText(), currentSpec(r));
     }
 
     private RequirementSpec currentSpec(Requirement requirement) {

@@ -18,7 +18,7 @@
     <p><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></p>
   </oj-bind-if>
 
-  <oj-bind-if test="[[workspaceId()]]">
+  <oj-bind-if test="[[workspaceId() && canEdit()]]">
     <oj-toolbar>
       <oj-button id="detectButton" on-oj-action="[[detect]]" disabled="[[busy]]">Detect again</oj-button>
     </oj-toolbar>
@@ -74,6 +74,7 @@
                     </oj-bind-for-each>
                   </td>
                   <td class="factory-actions">
+                    <oj-bind-if test="[[fact.data.page.canEdit()]]">
                     <oj-bind-if test="[[fact.data.page.editingKey() === fact.data.key]]">
                       <oj-button chroming="callToAction" on-oj-action="[[function() { fact.data.page.saveEdit(fact.data); }]]">Save</oj-button>
                       <oj-button chroming="borderless" on-oj-action="[[fact.data.page.cancelEdit]]">Cancel</oj-button>
@@ -88,6 +89,7 @@
                       <oj-bind-if test="[[fact.data.status === 'confirmed' || fact.data.status === 'corrected']]">
                         <oj-button chroming="borderless" on-oj-action="[[function() { fact.data.page.reset(fact.data); }]]">Reset</oj-button>
                       </oj-bind-if>
+                    </oj-bind-if>
                     </oj-bind-if>
                   </td>
                 </tr>

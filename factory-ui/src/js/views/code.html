@@ -16,15 +16,15 @@
   <oj-bind-if test="[[workspace()]]">
     <h2>SVN repository</h2>
     <oj-form-layout max-columns="2" direction="row">
-      <oj-input-text id="svnUrl" label-hint="SVN URL" value="{{svnUrl}}" required
+      <oj-input-text id="svnUrl" label-hint="SVN URL" value="{{svnUrl}}" required readonly="[[!canManage()]]"
                      help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
-      <oj-input-text id="svnUsername" label-hint="Username (service account)" value="{{svnUsername}}"></oj-input-text>
+      <oj-input-text id="svnUsername" label-hint="Username (service account)" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
       <oj-input-password id="svnPassword" label-hint="Password" value="{{svnPassword}}" mask-icon="visible"
                          placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
     </oj-form-layout>
     <oj-toolbar>
-      <oj-button id="saveSvnButton" on-oj-action="[[saveSvn]]" disabled="[[busy]]">Save</oj-button>
-      <oj-button id="testSvnButton" on-oj-action="[[testSvn]]" disabled="[[busy]]">Test connection</oj-button>
+      <oj-button id="saveSvnButton" on-oj-action="[[saveSvn]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
+      <oj-button id="testSvnButton" on-oj-action="[[testSvn]]" disabled="[[busy() || !canManage()]]">Test connection</oj-button>
     </oj-toolbar>
     <oj-bind-if test="[[svnMessage()]]">
       <p class="oj-text-color-success"><oj-bind-text value="[[svnMessage]]"></oj-bind-text></p>
@@ -38,7 +38,7 @@
         <li>Searchable pieces: <oj-bind-text value="[[indexStatus().chunks]]"></oj-bind-text>, with embeddings: <oj-bind-text value="[[indexStatus().chunksWithEmbedding]]"></oj-bind-text></li>
       </ul>
     </oj-bind-if>
-    <oj-button id="importButton" chroming="callToAction" on-oj-action="[[startImport]]" disabled="[[importRunning]]">
+    <oj-button id="importButton" chroming="callToAction" on-oj-action="[[startImport]]" disabled="[[importRunning() || !canManage()]]">
       <oj-bind-text value="[[importRunning() ? 'Import running...' : 'Import / update code']]"></oj-bind-text>
     </oj-button>
 

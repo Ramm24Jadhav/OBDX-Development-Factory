@@ -71,19 +71,21 @@
           <div class="oj-flex-bar-end">
             <!-- Responsive Toolbar -->
             <oj-toolbar>
+              <oj-bind-if test="[[signedIn()]]">
               <oj-menu-button id="userMenu" display="[[smScreen() ? 'icons' : 'all']]" chroming="borderless">
                 <span><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
                 <span slot="endIcon" :class="[[{'oj-icon demo-appheader-avatar': smScreen(), 'oj-component-icon oj-button-menu-dropdown-icon': !smScreen()}]]"></span>
-                <oj-menu id="menu1" slot="menu">
-                  <oj-option id="pref" value="pref">Preferences</oj-option>
-                  <oj-option id="help" value="help">Help</oj-option>
+                <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
+                  <oj-option id="account" value="account">Account</oj-option>
                   <oj-option id="about" value="about">About</oj-option>
-                  <oj-option id="out" value="out">Sign Out</oj-option>
+                  <oj-option id="out" value="out">Sign out</oj-option>
                 </oj-menu>
               </oj-menu-button>
+              </oj-bind-if>
             </oj-toolbar>
           </div>
         </div>
+        <oj-bind-if test="[[signedIn()]]">
         <div role="navigation" class="oj-web-applayout-max-width oj-web-applayout-navbar">
           <oj-tab-bar id="navTabBar" data="[[navDataProvider]]"
                               :class="[[{'oj-md-condense oj-md-justify-content-flex-end': !smScreen()}]]"
@@ -93,10 +95,36 @@
                               selection="{{selection.path}}">
           </oj-tab-bar>
         </div>
+        </oj-bind-if>
       </header>
       </oj-bind-if>
+      <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
+        <div role="main" class="oj-web-applayout-max-width oj-web-applayout-content factory-login">
+          <h2>Sign in</h2>
+          <oj-bind-if test="[[authConfig() && authConfig().mode === 'oidc']]">
+            <p>This installation uses your organization's single sign-on.</p>
+            <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">Sign in with single sign-on</a>
+          </oj-bind-if>
+          <oj-bind-if test="[[authConfig() && authConfig().mode !== 'oidc']]">
+            <p class="oj-text-color-secondary">
+              <oj-bind-text value="[[authConfig().mode === 'ldap' ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.']]"></oj-bind-text>
+            </p>
+            <oj-form-layout max-columns="1">
+              <oj-input-text id="loginUsername" label-hint="Username" value="{{loginUsername}}" autocomplete="username"></oj-input-text>
+              <oj-input-password id="loginPassword" label-hint="Password" value="{{loginPassword}}" autocomplete="current-password"
+                                 on-oj-enter="[[signIn]]"></oj-input-password>
+            </oj-form-layout>
+            <oj-button id="signInButton" chroming="callToAction" on-oj-action="[[signIn]]" disabled="[[signingIn]]">Sign in</oj-button>
+          </oj-bind-if>
+          <oj-bind-if test="[[loginError()]]">
+            <p id="loginError" class="oj-text-color-danger"><oj-bind-text value="[[loginError]]"></oj-bind-text></p>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
+      <oj-bind-if test="[[embedded || signedIn()]]">
       <oj-module role="main" class="oj-web-applayout-max-width oj-web-applayout-content" config="[[moduleAdapter.koObservableConfig]]">
       </oj-module>
+      </oj-bind-if>
     </div>
 
     <!-- This injects script tags for the main javascript files -->

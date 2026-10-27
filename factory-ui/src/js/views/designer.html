@@ -18,7 +18,7 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[workspaceId()]]">
-    <div class="oj-flex factory-gap oj-sm-align-items-flex-end">
+    <div class="oj-flex factory-gap oj-sm-align-items-flex-end" :style.display="[[canDesign() ? 'flex' : 'none']]">
       <oj-select-single id="requirementSelect" class="factory-wide-select" label-hint="Approved requirement" data="[[requirementProvider]]"
                         value="{{requirementId}}" placeholder="Select an approved requirement"></oj-select-single>
       <oj-button id="fromRequirementButton" on-oj-action="[[createFromRequirement]]" disabled="[[!requirementId()]]">Create designs</oj-button>
@@ -58,12 +58,16 @@
             <oj-button id="reviewLinkButton" on-oj-action="[[openReview]]" disabled="[[dirty()]]">
               <oj-bind-text value="[[detail().reviewToken ? 'New review link' : 'Share for review']]"></oj-bind-text>
             </oj-button>
+          </oj-bind-if>
+          <oj-bind-if test="[[editable() && canApprove()]]">
             <oj-button id="approveDesignButton" on-oj-action="[[approve]]" disabled="[[dirty()]]">Approve</oj-button>
           </oj-bind-if>
-          <oj-bind-if test="[[detail().status === 'APPROVED']]">
+          <oj-bind-if test="[[detail().status === 'APPROVED' && canApprove()]]">
             <oj-button id="reopenButton" on-oj-action="[[reopen]]">Reopen for changes</oj-button>
           </oj-bind-if>
-          <oj-button id="deleteDesignButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
+          <oj-bind-if test="[[canDesign()]]">
+            <oj-button id="deleteDesignButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
+          </oj-bind-if>
         </oj-toolbar>
 
         <oj-bind-if test="[[detail().status === 'APPROVED']]">
@@ -189,11 +193,10 @@
             </div>
           </template>
         </oj-bind-for-each>
-        <oj-form-layout max-columns="2" direction="row">
-          <oj-input-text id="commentAuthor" label-hint="Your name" value="{{commentAuthor}}"></oj-input-text>
+        <oj-form-layout max-columns="1">
           <oj-input-text id="commentText" label-hint="[[selectedComponent() ? 'Comment on ' + selectedComponent().label : 'Comment']]" value="{{commentText}}"></oj-input-text>
         </oj-form-layout>
-        <oj-button id="addCommentButton" on-oj-action="[[addComment]]" disabled="[[!commentText() || !commentAuthor()]]">Add comment</oj-button>
+        <oj-button id="addCommentButton" on-oj-action="[[addComment]]" disabled="[[!commentText()]]">Add comment</oj-button>
 
         <h3>Versions</h3>
         <oj-bind-for-each data="[[versions]]" as="v">

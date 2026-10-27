@@ -2,16 +2,18 @@
  * Requirements page: upload or describe a requirement, then review the drafted spec: answer open questions,
  * update the spec with the answers, edit it as JSON, and approve it.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar',
         'ojs/ojtable', 'ojs/ojfilepicker'],
-  function (ko, accUtils, api, workspaceSelection, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
     const POLL_MS = 2000;
 
     function RequirementsViewModel() {
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
+      this.canEdit = ko.pureComputed(() => session.can(this.workspaceId(), 'EDIT_REQUIREMENTS'));
+      this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
       this.busy = ko.observable(false);
 
       this.newTitle = ko.observable('');
@@ -91,7 +93,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.questions(detail.spec ? detail.spec.openQuestions.map((q) => ({
           question: q.question,
           context: (q.reason || '') + (q.reference ? ' (' + q.reference + ')' : ''),
-          editable: detail.status === 'READY',
+          editable: detail.status === 'READY' && this.canEdit(),
           answerValue: ko.observable(q.answer || '')
         })) : []);
         if (this.editingJson()) {

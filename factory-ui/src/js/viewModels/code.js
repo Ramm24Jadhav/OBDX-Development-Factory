@@ -1,16 +1,17 @@
 /*
  * Code page: SVN settings, import jobs, index status and code search for one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
         'ojs/ojtoolbar', 'ojs/ojtable'],
-  function (ko, accUtils, api, workspaceSelection, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
     const POLL_MS = 2000;
 
     function CodeViewModel() {
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.workspace = ko.observable(null);
+      this.canManage = ko.pureComputed(() => session.can(this.workspaceId(), 'MANAGE_CODE'));
 
       this.svnUrl = ko.observable('');
       this.svnUsername = ko.observable('');
