@@ -438,7 +438,9 @@ that encrypts stored SVN passwords), `ollama-models` and `svn-repos`. Back up `d
 
 Behind a corporate proxy, build with `docker compose build --build-arg HTTPS_PROXY=http://proxy:port` (or set the
 `proxies` section of `~/.docker/config.json`). If the proxy, or an internal SVN, model, Maven or npm server, uses a
-certificate from the bank's own CA, put the CA certificate in `deploy/docker/certs/` and rebuild.
+certificate from the bank's own CA, put the CA certificate in `deploy/docker/certs/` and rebuild. The model download
+at the first start goes through `MODEL_DOWNLOAD_PROXY` in `.env` (and trusts the same certificates); without internet
+access at all, use a model server that already has the models.
 
 The port is open to anyone who can reach the machine. On a cloud VM, allow only your team's addresses in its firewall,
 and put only demo code on it. For a shared, long-lived installation use HTTPS: put Oracle HTTP Server in front as below

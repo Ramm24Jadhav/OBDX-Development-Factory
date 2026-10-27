@@ -52,8 +52,14 @@ services:
     image: ollama/ollama:latest
     profiles: [model]
     restart: unless-stopped
+    environment:
+      # Models are downloaded from registry.ollama.ai, through this proxy if set (for example http://proxy.bank.local:8080).
+      HTTPS_PROXY: ${MODEL_DOWNLOAD_PROXY:-}
+      # Also trust the CA certificates in deploy/docker/certs/ (a TLS-inspecting proxy).
+      SSL_CERT_DIR: /etc/ssl/certs:/factory-certs
     volumes:
       - ollama-models:/root/.ollama
+      - ./deploy/docker/certs:/factory-certs:ro
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
@@ -101,6 +107,8 @@ services:
       svn:
         condition: service_started
     entrypoint: ["demo-setup.sh"]
+    healthcheck:
+      disable: true
     restart: "no"
     environment:
       FACTORY_URL: http://factory:8080
