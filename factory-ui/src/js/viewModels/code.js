@@ -1,9 +1,9 @@
 /*
- * Code page: SVN settings, import jobs, index status and code search for one workspace.
+ * Code page: SVN settings, Jenkins settings, quick check rules, import jobs, index status and code search for one workspace.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
-        'ojs/ojtoolbar', 'ojs/ojtable'],
+        'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch'],
   function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
     const POLL_MS = 2000;
 
@@ -19,6 +19,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.svnMessage = ko.observable('');
       this.busy = ko.observable(false);
       this.errorMessage = ko.observable('');
+
+      // Quick checks: the workspace's version pack rules, each of which can be turned off
+      this.checksSummary = ko.observable('');
+      this.checkRules = ko.observableArray([]);
 
       // Jenkins settings
       this.jenkinsUrl = ko.observable('');
@@ -104,6 +108,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       let pollTimer = null;
       const showError = (error) => this.errorMessage(error.message);
 
+      const showChecks = (checks) => {
+        const id = this.workspaceId();
+        const canManage = this.canManage();
+        const enabled = checks.rules.filter((r) => r.enabled).length;
+        this.checksSummary(checks.description + ': ' + enabled + ' of ' + checks.rules.length + ' rules on. Java is checked at level '
+          + checks.javaLevel + ' (from the ' + checks.javaLevelSource + ').');
+        this.checkRules(checks.rules.map((r) => ({
+          id: r.id,
+          title: r.title,
+          message: r.message,
+          severity: r.severity.toLowerCase(),
+          files: r.files.join(', ') + (r.exclude.length ? ' (not ' + r.exclude.join(', ') + ')' : ''),
+          enabled: r.enabled,
+          canManage: canManage,
+          note: r.matchesProfile ? '' : 'Does not apply to this codebase (Project Profile).',
+          toggle: (event) => {
+            if (event.detail.updatedFrom !== 'internal') {
+              return;
+            }
+            api.put('workspaces/' + id + '/checks/' + encodeURIComponent(r.id), { enabled: event.detail.value })
+              .then(showChecks).catch(showError);
+          }
+        })));
+      };
+
       const loadWorkspace = (id) => {
         this.errorMessage('');
         this.svnMessage('');
@@ -120,7 +149,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.svnPassword('');
           this.jenkinsMessage('');
           this.jenkinsWarnings([]);
-          return Promise.all([refreshImports(), api.get('workspaces/' + id + '/jenkins').then(showJenkins)]);
+          return Promise.all([refreshImports(), api.get('workspaces/' + id + '/jenkins').then(showJenkins),
+            api.get('workspaces/' + id + '/checks').then(showChecks)]);
         }).catch(showError);
       };
 

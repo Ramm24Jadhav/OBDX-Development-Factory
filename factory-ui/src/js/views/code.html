@@ -63,6 +63,34 @@
       <template><p class="factory-warning"><oj-bind-text value="[[$current.data]]"></oj-bind-text></p></template>
     </oj-bind-for-each>
 
+    <h2>Quick checks</h2>
+    <p class="oj-text-color-secondary oj-typography-body-sm">
+      Run on the factory server on every generated file, and again before each Jenkins build: syntax at the bank's Java level,
+      plus the rules of the OBDX version pack. Errors go back to the model to fix; warnings are shown to reviewers. Only lines
+      added by a change are checked. Turn a rule off when this bank's codebase deliberately does it differently.
+    </p>
+    <p id="checksSummary"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></p>
+    <table id="ruleTable" class="factory-profile-table">
+      <thead><tr><th>Rule</th><th>Severity</th><th>Files</th><th>On</th></tr></thead>
+      <tbody>
+        <oj-bind-for-each data="[[checkRules]]" as="r">
+          <template>
+            <tr>
+              <td><div class="oj-typography-bold"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></div>
+                <div class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[r.data.message]]"></oj-bind-text></div>
+                <oj-bind-if test="[[r.data.note]]">
+                  <div class="oj-typography-body-xs factory-warning-text"><oj-bind-text value="[[r.data.note]]"></oj-bind-text></div>
+                </oj-bind-if></td>
+              <td><span :class="[['factory-status factory-severity-' + r.data.severity]]"><oj-bind-text value="[[r.data.severity]]"></oj-bind-text></span></td>
+              <td class="factory-evidence"><oj-bind-text value="[[r.data.files]]"></oj-bind-text></td>
+              <td><oj-switch :id="[['rule-' + r.data.id]]" value="[[r.data.enabled]]" disabled="[[!r.data.canManage]]"
+                             on-value-changed="[[r.data.toggle]]" label-hint="[[r.data.title]]" label-edge="none"></oj-switch></td>
+            </tr>
+          </template>
+        </oj-bind-for-each>
+      </tbody>
+    </table>
+
     <h2>Code index</h2>
     <oj-bind-if test="[[indexStatus()]]">
       <ul>

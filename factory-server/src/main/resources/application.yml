@@ -61,6 +61,9 @@ factory:
     build-timeout: ${FACTORY_JENKINS_BUILD_TIMEOUT:60m}
     # Times the model may fix build errors in the change's files before a developer takes over.
     max-fix-rounds: ${FACTORY_JENKINS_MAX_FIX_ROUNDS:2}
+  packs:
+    # Optional folder with the team's own version pack files (common.yml, 22.x.yml, 25.x.yml); read at startup.
+    dir: ${FACTORY_PACKS_DIR:}
   change:
     # Delivery branches are created here, relative to the SVN repository root.
     branch-folder: ${FACTORY_CHANGE_BRANCH_FOLDER:branches/factory}

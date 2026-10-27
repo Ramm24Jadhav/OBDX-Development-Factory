@@ -55,4 +55,9 @@ public class ChangeFileStore {
                 status.name(), original, generated, edited, check == null ? null : check.status().name(),
                 check == null ? null : check.message(), attempts, changeId, path);
     }
+
+    public void saveCheck(UUID changeId, String path, FileChecks.Result check) {
+        jdbc.update("UPDATE change_file SET check_status = ?, check_message = ? WHERE change_id = ? AND path = ?",
+                check.status().name(), check.message(), changeId, path);
+    }
 }

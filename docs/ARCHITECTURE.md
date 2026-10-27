@@ -161,6 +161,8 @@ A version pack captures what differs between OBDX releases, so generation follow
 
 Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are built partly by comparing the customized codebases we already have. Exact contents must be confirmed against each release.
 
+*Implemented:* the quick-check part of the packs: YAML rule files (common, 22.x, 25.x) with forbidden or required patterns per path glob, conditions on the Project Profile (JET version, javax/jakarta, module system), a default Java level per version, team overrides from a folder without rebuilding, and per-workspace on/off. Not yet: folder structure, extension points, templates and reference examples.
+
 ### 5.4 Agent Pipeline
 
 - Explicit state machine in Java (using LangChain4j for model calls), one step per workflow stage, with human approval gates after spec, screen design and plan.
@@ -173,7 +175,7 @@ Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are
 
 OBDX teams already build UI and backend packages with Jenkins pipelines, so the factory reuses them instead of introducing a new build system.
 
-- **Quick local checks** run first on the factory server, with no build tools needed: syntax parsing (tree-sitter), JSON/XML/SQL well-formedness, lint rules from the version pack. These catch most mistakes in seconds.
+- **Quick local checks** run first on the factory server, with no build tools needed: Java parsing at the bank's Java level (JavaParser), JSON/XML well-formedness, basic JavaScript/HTML/SQL balance checks, and the version pack rules. These catch many mistakes in milliseconds.
 - **Jenkins build:** the factory commits the generated changes to a temporary SVN branch (for example `branches/factory/<request-id>`) and triggers the workspace's Jenkins job through the Jenkins REST API (`buildWithParameters`, passing the branch path). The job's Subversion checkout uses that parameter in its repository URL.
 - **Results:** the factory polls the build status, then reads the console log and JUnit test reports through the API and turns them into structured errors for the fix loop.
 - **Per-workspace settings:** Jenkins URL, job names (UI and backend), the parameter name for the branch, and a Jenkins API token stored in the secret store.
@@ -181,7 +183,7 @@ OBDX teams already build UI and backend packages with Jenkins pipelines, so the 
 - **Trade-off:** a Jenkins build takes minutes, not seconds, so the fix loop is capped (for example 3 build attempts) and local checks do as much as possible before each build.
 - Temporary branches are deleted after the request is delivered or abandoned.
 - **If the bank does not allow the factory to commit:** the Jenkins job can instead take the patch file as a file parameter, check out trunk, apply the patch and build. Nothing is committed to the repository.
-- *Implemented:* per-workspace Jenkins settings (branch or patch mode, encrypted API token, connection test), triggering every job with the branch path/URL or the patch file, polling queue and build, error extraction from console logs (Maven, javac, ESLint, TypeScript) and JUnit reports, and up to two model fix rounds limited to the change's own files, with fixes committed to the change branch. Not yet: version-pack lint rules before the build and deleting temporary branches.
+- *Implemented:* per-workspace Jenkins settings (branch or patch mode, encrypted API token, connection test), triggering every job with the branch path/URL or the patch file, polling queue and build, error extraction from console logs (Maven, javac, ESLint, TypeScript) and JUnit reports, and up to two model fix rounds limited to the change's own files, with fixes committed to the change branch. Quick checks run before each Jenkins round and their errors are fixed first. Not yet: deleting temporary branches.
 
 ### 5.6 Version Control (SVN)
 

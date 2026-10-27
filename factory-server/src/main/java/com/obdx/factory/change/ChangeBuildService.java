@@ -35,11 +35,15 @@ import java.util.stream.Collectors;
 /**
  * Builds a change with the bank's Jenkins jobs and, when the build fails in files of the change, lets the model fix
  * those files and builds again, a limited number of times. Errors in other files are reported, not "fixed".
+ * Before each Jenkins round the quick checks run on the factory server; their errors are fixed first (in the same
+ * rounds), so Jenkins only builds code that parses and follows the version pack.
  */
 @Service
 public class ChangeBuildService {
 
     private static final Logger log = LoggerFactory.getLogger(ChangeBuildService.class);
+    /** The "job" name under which quick check rounds are listed with the builds. */
+    static final String QUICK_CHECKS = "Quick checks";
 
     private final ChangeService changes;
     private final ChangeRequestRepository repository;
@@ -85,7 +89,7 @@ public class ChangeBuildService {
         } else {
             ChangeService.requireStatus(change, ChangeRequest.Status.GENERATED, ChangeRequest.Status.DELIVERED);
         }
-        change.build("BUILDING", "Building with Jenkins (" + String.join(", ", settings.jobList()) + ")...");
+        change.build("BUILDING", "Running the quick checks, then building with Jenkins (" + String.join(", ", settings.jobList()) + ")...");
         repository.save(change);
         executor.execute(() -> run(changeId));
         return changes.detail(change);
@@ -98,6 +102,12 @@ public class ChangeBuildService {
             JenkinsClient client = jenkins.client(change.getWorkspaceId());
             int maxRounds = 1 + Math.max(0, properties.maxFixRounds());
             for (int round = 1; round <= maxRounds; round++) {
+                if (!quickChecksPass(changeId, round, maxRounds)) {
+                    if (round == maxRounds) {
+                        return;
+                    }
+                    continue;
+                }
                 Map<UUID, List<BuildLogParser.BuildError>> failures = new LinkedHashMap<>();
                 List<String> otherErrors = new ArrayList<>();
                 boolean passed = true;
@@ -136,7 +146,7 @@ public class ChangeBuildService {
                             + byFile.size() + " file(s) with errors. Review them and fix by hand.");
                     return;
                 }
-                List<String> fixed = fix(change, byFile);
+                List<String> fixed = fix(change, byFile, "The Jenkins build failed with these errors in this file:");
                 failures.keySet().forEach(buildId -> builds.fixed(buildId, fixed));
                 ChangeRequest latest = changes.find(changeId);
                 latest.build("BUILDING", "Round " + round + " failed; the model fixed " + String.join(", ", fixed)
@@ -147,6 +157,34 @@ public class ChangeBuildService {
             log.error("Jenkins build of change {} failed", changeId, e);
             finish(changeId, "FAILED", "Could not build with Jenkins: " + e.getMessage());
         }
+    }
+
+    /**
+     * Runs the quick checks on the change's files. On errors, records them as a "Quick checks" row and, if rounds are
+     * left, lets the model fix the files; in the last round the build ends as failed. Returns true when all passed.
+     */
+    private boolean quickChecksPass(UUID changeId, int round, int maxRounds) {
+        Map<String, String> failing = changes.recheck(changes.find(changeId));
+        if (failing.isEmpty()) {
+            return true;
+        }
+        UUID checkId = builds.start(changeId, round, QUICK_CHECKS);
+        Map<String, List<BuildLogParser.BuildError>> byFile = new LinkedHashMap<>();
+        failing.forEach((path, message) -> byFile.put(path, message.lines().map(line -> new BuildLogParser.BuildError(path, 0, line)).toList()));
+        builds.finish(checkId, "FAILURE", byFile.values().stream().flatMap(List::stream).map(e -> e.file() + " " + e.message()).toList(), null);
+        if (round == maxRounds) {
+            finish(changeId, "FAILED", "Quick checks still find errors in " + String.join(", ", failing.keySet())
+                    + " after " + properties.maxFixRounds() + " fix round(s); Jenkins was not started. Fix them by hand.");
+            return false;
+        }
+        List<String> fixed = fix(changes.find(changeId), byFile,
+                "The quick checks (syntax and the OBDX version pack rules) found these problems in this file:");
+        builds.fixed(checkId, fixed);
+        ChangeRequest latest = changes.find(changeId);
+        latest.build("BUILDING", "Quick checks found errors in round " + round + "; the model fixed " + String.join(", ", fixed)
+                + ". Checking again before building...");
+        repository.save(latest);
+        return false;
     }
 
     private record JobOutcome(boolean success, List<BuildLogParser.BuildError> errors, List<String> unmatched) {
@@ -194,7 +232,7 @@ public class ChangeBuildService {
     }
 
     /** Lets the model fix each file with build errors, saves the fixes and, in BRANCH mode, commits them to the branch. */
-    private List<String> fix(ChangeRequest change, Map<String, List<BuildLogParser.BuildError>> byFile) {
+    private List<String> fix(ChangeRequest change, Map<String, List<BuildLogParser.BuildError>> byFile, String heading) {
         ChangeRequest current = changes.find(change.getId());
         RequirementService.RequirementDetail requirement = requirements.get(current.getRequirementId());
         ChangeContext context = changes.context(current, requirement);
@@ -206,10 +244,10 @@ public class ChangeBuildService {
             ChangeFileStore.ChangeFile file = files.file(change.getId(), entry.getKey()).orElseThrow();
             ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(file.path())).findFirst()
                     .orElse(new ChangePlan.Item(file.path(), file.action(), file.layer(), file.purpose(), List.of(), null));
-            String note = "The Jenkins build failed with these errors in this file:\n" + entry.getValue().stream()
+            String note = heading + "\n" + entry.getValue().stream()
                     .map(e -> "- " + (e.line() > 0 ? "line " + e.line() + ": " : "") + e.message()).collect(Collectors.joining("\n"))
                     + "\nFix them and keep everything else unchanged.";
-            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), Map.of(), others, note);
+            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note);
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),
                     file.edited(), result.check(), file.attempts() + result.attempts());
             fixed.add(file.path());
@@ -234,7 +272,7 @@ public class ChangeBuildService {
                 Files.writeString(content, files.file(change.getId(), paths.get(i)).orElseThrow().generated(), StandardCharsets.UTF_8);
                 operations.addAll(List.of("put", content.toString(), branch + "/" + paths.get(i)));
             }
-            long revision = svn.multiCommit(root, "OBDX Development Factory: fix build errors in " + String.join(", ", paths)
+            long revision = svn.multiCommit(root, "OBDX Development Factory: fix check and build errors in " + String.join(", ", paths)
                     + " (change " + change.getId().toString().substring(0, 8) + ")", operations, credentials);
             log.info("Committed build fixes for change {} in revision {}", change.getId(), revision);
         } catch (IOException e) {

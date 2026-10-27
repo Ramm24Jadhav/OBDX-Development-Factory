@@ -8,6 +8,9 @@ import com.obdx.factory.design.ScreenDesign;
 import com.obdx.factory.design.ScreenDesignRepository;
 import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.importing.StorageProperties;
+import com.obdx.factory.pack.CheckScope;
+import com.obdx.factory.pack.LocalChecks;
+import com.obdx.factory.pack.PackService;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.requirements.Requirement;
 import com.obdx.factory.requirements.RequirementService;
@@ -74,6 +77,8 @@ public class ChangeService {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final ChangeBuildStore builds;
+    private final PackService packs;
+    private final LocalChecks localChecks;
     private final TaskExecutor executor;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
@@ -81,7 +86,7 @@ public class ChangeService {
                          DesignStore designStore, ProjectProfileService profiles, CodeSearchService codeSearch,
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
-                         @Qualifier("changeExecutor") TaskExecutor executor) {
+                         PackService packs, LocalChecks localChecks, @Qualifier("changeExecutor") TaskExecutor executor) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -99,6 +104,8 @@ public class ChangeService {
         this.jdbc = jdbc;
         this.json = json;
         this.builds = builds;
+        this.packs = packs;
+        this.localChecks = localChecks;
         this.executor = executor;
     }
 
@@ -325,8 +332,35 @@ public class ChangeService {
         ChangeFileStore.ChangeFile file = files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         String text = content == null ? "" : content.endsWith("\n") || content.isEmpty() ? content : content + "\n";
         files.saveResult(id, path, text.equals(file.original()) ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED,
-                file.original(), text, true, FileChecks.check(path, text), file.attempts());
+                file.original(), text, true, localChecks.check(packs.scope(change.getWorkspaceId()), path, file.original(), text),
+                file.attempts());
         return detail(change);
+    }
+
+    /** Runs the quick checks again on every written file, for example after version pack rules were changed. */
+    @Transactional
+    public ChangeDetail checkAgain(UUID id) {
+        ChangeRequest change = find(id);
+        requireStatus(change, ChangeRequest.Status.GENERATED, ChangeRequest.Status.DELIVERED);
+        requireNotBuilding(change);
+        recheck(change);
+        return detail(change);
+    }
+
+    /** Checks the written files of the change again and saves the results; returns the files with errors and their findings. */
+    Map<String, String> recheck(ChangeRequest change) {
+        CheckScope scope = packs.scope(change.getWorkspaceId());
+        Map<String, String> failing = new LinkedHashMap<>();
+        for (ChangeFileStore.ChangeFile file : files.files(change.getId())) {
+            if (file.status() == ChangeFileStore.Status.GENERATED && file.generated() != null) {
+                FileChecks.Result check = localChecks.check(scope, file.path(), file.original(), file.generated());
+                files.saveCheck(change.getId(), file.path(), check);
+                if (check.status() == FileChecks.Status.FAILED) {
+                    failing.put(file.path(), check.message());
+                }
+            }
+        }
+        return failing;
     }
 
     // --- review and delivery ---
@@ -488,7 +522,7 @@ public class ChangeService {
             profile = "";
         }
         return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
-                structure(change.getWorkspaceId()));
+                structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()));
     }
 
     /** Folders of the indexed code with their number of files, so the model knows where things live. */

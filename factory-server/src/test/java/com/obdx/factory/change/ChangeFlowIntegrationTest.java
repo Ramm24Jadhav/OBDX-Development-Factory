@@ -105,7 +105,10 @@ class ChangeFlowIntegrationTest {
                 public ChatResult chat(String systemPrompt, String userPrompt) {
                     String file = userPrompt.lines().findFirst().orElse("");
                     String reply;
-                    if (userPrompt.contains("The Jenkins build failed")) {
+                    if (userPrompt.contains("The quick checks")) {
+                        reply = "package com.bank.payments;\n\n// fixed after the quick checks\npublic class RemarksValidator {\n"
+                                + "    void check(String remarks) {\n    }\n}\n";
+                    } else if (userPrompt.contains("The Jenkins build failed")) {
                         reply = "package com.bank.payments;\n\n// fixed after the Jenkins build\npublic class RemarksValidator {\n"
                                 + "    void check(String remarks) {\n    }\n}\n";
                     } else if (file.contains("RemarksValidator.java")) {
@@ -165,6 +168,9 @@ class ChangeFlowIntegrationTest {
     @Autowired
     private ChangeBuildService changeBuilds;
 
+    @Autowired
+    private ChangeFileStore changeFiles;
+
     private UUID workspaceId;
 
     @BeforeAll
@@ -215,7 +221,7 @@ class ChangeFlowIntegrationTest {
         assertThat(generated.planApprovedBy()).isEqualTo("Lead");
         assertThat(generated.files()).extracting(ChangeService.FileView::path, ChangeService.FileView::status, ChangeService.FileView::checkStatus)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("db/patches/remarks/ADD_REMARKS.sql", ChangeFileStore.Status.GENERATED, FileChecks.Status.NOT_CHECKED),
+                        org.assertj.core.groups.Tuple.tuple("db/patches/remarks/ADD_REMARKS.sql", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED),
                         org.assertj.core.groups.Tuple.tuple("backend/src/com/bank/payments/RemarksValidator.java", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED),
                         org.assertj.core.groups.Tuple.tuple("backend/src/com/bank/payments/FundTransferService.java", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED),
                         org.assertj.core.groups.Tuple.tuple("ui/js/viewModels/fund-transfer.js", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED));
@@ -297,6 +303,38 @@ class ChangeFlowIntegrationTest {
             assertThat(stub.triggers.getFirst().contentType()).startsWith("multipart/form-data");
             assertThat(stub.triggers.getFirst().body()).contains("filename=\"change-", "Index: backend/src/com/bank/payments/RemarksValidator.java",
                     "+// fixed after the Jenkins build");
+        }
+
+        // Quick checks before Jenkins: a version pack error in a file of the change is fixed before Jenkins builds.
+        String validatorPath = "backend/src/com/bank/payments/RemarksValidator.java";
+        ChangeFileStore.ChangeFile validator = changeFiles.file(changeId, validatorPath).orElseThrow();
+        changeFiles.saveResult(changeId, validatorPath, ChangeFileStore.Status.GENERATED, validator.original(),
+                validator.generated().replace("void check(String remarks) {", "void check(String remarks) {\n        System.out.println(remarks);"),
+                false, null, validator.attempts());
+        ChangeService.FileView checked = changes.checkAgain(changeId).files().stream().filter(f -> f.path().equals(validatorPath)).findFirst().orElseThrow();
+        assertThat(checked.checkStatus()).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(checked.checkMessage()).startsWith("Line 6 (java-no-system-out, error)");
+        try (StubJenkins stub = new StubJenkins()) {
+            stub.parameters.add("PATCH");
+            stub.script("obdx/backend build", StubJenkins.Outcome.success());
+            jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+
+            changeBuilds.start(changeId);
+            waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "build after quick checks");
+            ChangeService.ChangeDetail built = changes.get(changeId);
+            assertThat(built.buildStatus()).as(built.buildMessage()).isEqualTo("PASSED");
+            assertThat(built.buildMessage()).startsWith("Build passed in round 2");
+            List<ChangeBuildStore.Build> latest = built.builds().subList(built.builds().size() - 2, built.builds().size());
+            assertThat(latest).extracting(ChangeBuildStore.Build::round, ChangeBuildStore.Build::job, ChangeBuildStore.Build::result)
+                    .containsExactly(org.assertj.core.groups.Tuple.tuple(1, ChangeBuildService.QUICK_CHECKS, "FAILURE"),
+                            org.assertj.core.groups.Tuple.tuple(2, "obdx/backend build", "SUCCESS"));
+            assertThat(latest.getFirst().errors()).singleElement().asString().contains(validatorPath, "java-no-system-out");
+            assertThat(latest.getFirst().fixedFiles()).containsExactly(validatorPath);
+            assertThat(stub.triggers).hasSize(1);
+            assertThat(stub.triggers.getFirst().body()).contains("+// fixed after the quick checks").doesNotContain("System.out");
+            assertThat(changes.get(changeId).files()).filteredOn(f -> f.path().equals(validatorPath))
+                    .extracting(ChangeService.FileView::checkStatus).containsExactly(FileChecks.Status.PASSED);
         }
     }
 

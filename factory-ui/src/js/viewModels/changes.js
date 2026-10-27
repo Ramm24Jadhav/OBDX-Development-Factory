@@ -154,6 +154,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.post(base() + '/deliver').then(show).catch(showError).finally(() => this.busy(false));
       };
       this.build = () => api.post(base() + '/build').then(show).catch(showError);
+      this.checkAgain = () => api.post(base() + '/check').then(show).catch(showError);
       this.remove = () => {
         if (!window.confirm('Delete this change with its plan and generated code?')) {
           return;

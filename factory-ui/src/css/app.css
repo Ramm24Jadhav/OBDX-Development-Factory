@@ -424,3 +424,8 @@
 .factory-result-aborted { background-color: #f9dcdc; }
 .factory-result-queued,
 .factory-result-running { background-color: #e8eef7; }
+
+.factory-check-message { white-space: pre-line; max-width: 480px; }
+.factory-warning-text { color: #8a3c00; }
+.factory-severity-error { background-color: #f9dcdc; }
+.factory-severity-warning { background-color: #fff6e5; }

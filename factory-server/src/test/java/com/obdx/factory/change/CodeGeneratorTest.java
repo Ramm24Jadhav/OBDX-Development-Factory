@@ -1,6 +1,8 @@
 package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.pack.LocalChecks;
+import com.obdx.factory.pack.VersionPacks;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
@@ -38,7 +40,8 @@ class CodeGeneratorTest {
             throw new UnsupportedOperationException();
         }
     };
-    private final CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory"));
+    private final CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory"),
+            new LocalChecks(VersionPacks.builtIn()));
 
     private final ChangeContext context = new ChangeContext("Remarks", "{\"screens\": []}", "[{\"name\": \"Transfer\"}]", "- Java version: Java 8", "backend/: 3");
     private final ChangePlan.Item item = new ChangePlan.Item("backend/RemarksValidator.java", "create", "service", "Validate remarks",
@@ -60,7 +63,7 @@ class CodeGeneratorTest {
                 "Reviewer's instruction: use a constant", "Example file to follow, backend/LimitValidator.java",
                 "Files already written in this change", "- Java version: Java 8")
                 .doesNotContain("Screen designs");
-        assertThat(prompts.get(1)).contains("It did not pass a check: Java does not parse");
+        assertThat(prompts.get(1)).contains("It did not pass the checks:\nJava does not parse");
     }
 
     @Test

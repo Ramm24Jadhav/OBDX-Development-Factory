@@ -16,7 +16,10 @@ class FileChecksTest {
         assertThat(FileChecks.check("a.json", "{\"a\": [1, 2}").status()).isEqualTo(FileChecks.Status.FAILED);
         assertThat(FileChecks.check("web.xml", "<web-app><servlet/></web-app>").status()).isEqualTo(FileChecks.Status.PASSED);
         assertThat(FileChecks.check("web.xml", "<web-app><servlet></web-app>").status()).isEqualTo(FileChecks.Status.FAILED);
-        assertThat(FileChecks.check("x.sql", "select 1").status()).isEqualTo(FileChecks.Status.NOT_CHECKED);
+        assertThat(FileChecks.check("x.sql", "select 1").status()).isEqualTo(FileChecks.Status.PASSED);
+        assertThat(FileChecks.check("x.sql", "insert into t values ('it''s', (1));").status()).isEqualTo(FileChecks.Status.PASSED);
+        assertThat(FileChecks.check("x.sql", "insert into t values ('open);").status()).isEqualTo(FileChecks.Status.WARNING);
+        assertThat(FileChecks.check("x.txt", "text").status()).isEqualTo(FileChecks.Status.NOT_CHECKED);
         assertThat(FileChecks.check("x.sql", "  ").status()).isEqualTo(FileChecks.Status.FAILED);
     }
 

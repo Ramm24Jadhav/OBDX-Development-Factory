@@ -1,0 +1,27 @@
+# Version pack for OBDX 22.x. The rules of common.yml apply too.
+# These are starting points: confirm them against the bank's 22.x codebase and the Oracle documentation, turn rules
+# off per workspace where the bank does things differently, and add the team's own rules in FACTORY_PACKS_DIR.
+
+description: OBDX 22.x (Oracle JET with Knockout views and view models, RequireJS modules)
+
+# Java level for parsing generated Java when the Project Profile does not show the bank's Java version.
+# The profile's value always wins.
+java: 8
+
+rules:
+  - id: ui-amd-module
+    title: RequireJS (AMD) modules
+    severity: warning
+    files: ["**/viewModels/**/*.js", "**/components/**/*.js", "**/modules/**/*.js"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/nls/**"]
+    ifProfile: {ui.moduleSystem: '^RequireJS'}
+    require: '\bdefine\s*\('
+    message: UI modules in this codebase are RequireJS (AMD) modules; wrap the code in define([...], function (...) { ... }) like the existing files.
+
+  - id: ui-no-vdom-22
+    title: No VDOM components
+    severity: warning
+    files: ["**/*.js", "**/*.ts", "**/*.tsx"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**"]
+    forbid: 'ojs/ojvcomponent|from\s+["'']preact'
+    message: The OBDX 22.x UI is built from Knockout views and view models; do not introduce VDOM (Preact) components.

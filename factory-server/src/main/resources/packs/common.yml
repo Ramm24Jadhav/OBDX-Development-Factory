@@ -1,0 +1,178 @@
+# Quick checks for generated code that apply to every OBDX version.
+#
+# Each rule has:
+#   id        lowercase letters, digits and dashes; used to turn the rule off for a workspace
+#   title     short name shown in the UI
+#   severity  error   = the model must fix it (and a Jenkins build is not started while it is open)
+#             warning = shown to reviewers only
+#   files     path globs the rule applies to ("**/" matches any folders, also none)
+#   exclude   path globs it does not apply to (optional)
+#   forbid    regular expression (Java syntax) that must not occur, or
+#   require   regular expression that must occur
+#   message   what to do instead; the model is told this before it writes the file
+#   minJet    optional: only for Oracle JET of at least this major version (from the Project Profile)
+#   ifProfile optional: only when Project Profile facts are known and match regular expressions,
+#             for example {backend.eeNamespace: '^javax$'}
+#
+# Comments in the checked file are ignored, and in modified files only lines added by the change are reported.
+# Teams can add or override rules without rebuilding: see FACTORY_PACKS_DIR in docs/DEVELOPMENT.md.
+
+rules:
+  # --- Java (backend) ---
+  - id: java-no-system-out
+    title: No System.out / System.err
+    severity: error
+    files: ["**/*.java"]
+    exclude: ["**/test/**"]
+    forbid: 'System\.(out|err)\.print'
+    message: Log with the logger the existing classes use instead of System.out or System.err.
+
+  - id: java-no-print-stack-trace
+    title: No printStackTrace
+    severity: error
+    files: ["**/*.java"]
+    exclude: ["**/test/**"]
+    forbid: '\.printStackTrace\s*\(\s*\)'
+    message: Log exceptions with the project's logger (and rethrow or map them to the project's error codes) instead of printStackTrace().
+
+  - id: java-no-empty-catch
+    title: No empty catch blocks
+    severity: error
+    files: ["**/*.java"]
+    forbid: 'catch\s*\([^)]*\)\s*\{\s*\}'
+    message: Do not swallow exceptions in an empty catch block; log them or handle them as the existing code does.
+
+  - id: java-no-hardcoded-credentials
+    title: No hard-coded credentials
+    severity: warning
+    files: ["**/*.java"]
+    exclude: ["**/test/**"]
+    forbid: '(?i)\b\w*(password|passwd|pwd|secret|apikey|api_key|token)\w*\s*=\s*"[^"]+"'
+    message: Do not hard-code passwords, secrets or tokens; read them from the configuration the project already uses.
+
+  - id: java-no-sql-concatenation
+    title: SQL with bind parameters
+    severity: error
+    files: ["**/*.java"]
+    forbid: '(?i)\b(executeQuery|executeUpdate|prepareStatement|prepareCall|createQuery|createNativeQuery|execute)\s*\(\s*"[^"]*"\s*\+'
+    message: Build SQL with bind parameters (? or :name), never by concatenating values into the SQL string.
+
+  - id: java-no-thread-sleep
+    title: No Thread.sleep in server code
+    severity: warning
+    files: ["**/*.java"]
+    exclude: ["**/test/**"]
+    forbid: '\bThread\.sleep\s*\('
+    message: Avoid Thread.sleep in server code; it blocks application server threads.
+
+  - id: java-javax-namespace
+    title: javax, not jakarta
+    severity: error
+    files: ["**/*.java"]
+    ifProfile: {backend.eeNamespace: '^javax$'}
+    forbid: '^\s*import\s+(static\s+)?jakarta\.'
+    message: This codebase uses the javax.* Java EE packages; import javax.* (for example javax.ws.rs, javax.persistence), not jakarta.*.
+
+  - id: java-jakarta-namespace
+    title: jakarta, not javax
+    severity: error
+    files: ["**/*.java"]
+    ifProfile: {backend.eeNamespace: '^jakarta$'}
+    forbid: '^\s*import\s+(static\s+)?javax\.(ws\.rs|persistence|inject|ejb|enterprise|servlet|xml\.bind|validation|annotation\.security|transaction|json)\.'
+    message: This codebase uses the jakarta.* Jakarta EE packages; import jakarta.* (for example jakarta.ws.rs, jakarta.persistence), not javax.*.
+
+  # --- JavaScript (UI) ---
+  - id: js-no-eval
+    title: No eval
+    severity: error
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**"]
+    forbid: '(?<![.\w])eval\s*\(|\bnew\s+Function\s*\('
+    message: Do not use eval() or new Function().
+
+  - id: js-no-console
+    title: No console logging
+    severity: warning
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**", "**/test/**"]
+    forbid: '\bconsole\.(log|debug|info|trace|dir)\s*\('
+    message: Remove console logging from UI code.
+
+  - id: js-no-alert
+    title: No alert or confirm
+    severity: warning
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**"]
+    forbid: '(?<![.\w])(window\.)?(alert|confirm)\s*\('
+    message: Show messages and confirmations with the components the existing screens use, not alert() or confirm().
+
+  - id: js-no-direct-ajax
+    title: Services through the model
+    severity: warning
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**", "**/framework/**"]
+    forbid: '\$\.(ajax|get|post|getJSON)\s*\(|\bnew\s+XMLHttpRequest\b|(?<![.\w])fetch\s*\('
+    message: Call REST services the way the existing components do (through the component's model and the OBDX base service), not with $.ajax, fetch or XMLHttpRequest directly.
+
+  - id: js-no-hardcoded-url
+    title: No hard-coded server addresses
+    severity: warning
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**", "**/test/**"]
+    forbid: '["''`]https?://'
+    message: Do not hard-code server addresses; use the relative service URLs and configuration the existing code uses.
+
+  - id: jet-no-table-data-source
+    title: No deprecated TableDataSource
+    severity: error
+    files: ["**/*.js", "**/*.ts"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**"]
+    forbid: '\b(ArrayTableDataSource|PagingTableDataSource|CollectionTableDataSource|FlattenedTreeTableDataSource)\b|ojs/oj(arraytabledatasource|pagingtabledatasource|collectiontabledatasource)'
+    message: Oracle JET TableDataSource classes are deprecated; use ArrayDataProvider (ojs/ojarraydataprovider) or PagingDataProviderView instead.
+
+  # --- HTML views ---
+  - id: html-no-inline-script
+    title: No script in views
+    severity: error
+    files: ["**/*.html"]
+    exclude: ["**/index.html"]
+    forbid: '(?i)<script\b'
+    message: Put code in the view model, not in a script element in the view.
+
+  - id: html-no-inline-style
+    title: No inline styles
+    severity: warning
+    files: ["**/*.html"]
+    forbid: '(?i)\sstyle\s*=\s*["'']'
+    message: Use the project's CSS classes instead of inline style attributes.
+
+  - id: html-labels-from-bundle
+    title: Labels from resource bundles
+    severity: warning
+    files: ["**/*.html"]
+    exclude: ["**/index.html"]
+    forbid: '>\s*[A-Za-z][A-Za-z0-9 ,.:;!?''()-]*[A-Za-z]\s*<|\s(label-hint|placeholder|title|aria-label|label|primary-text|secondary-text)\s*=\s*"\s*[A-Za-z][^"{\[]*"'
+    message: Take visible texts from the resource bundle (nls) through bindings, as the existing views do, so they can be translated.
+
+  # --- SQL scripts ---
+  - id: sql-delete-without-where
+    title: DELETE with WHERE
+    severity: warning
+    files: ["**/*.sql"]
+    forbid: '(?i)\bDELETE\s+(FROM\s+)?[\w.$"]+\s*;'
+    message: A DELETE without WHERE removes all rows; add a WHERE clause.
+
+  - id: sql-update-without-where
+    title: UPDATE with WHERE
+    severity: warning
+    files: ["**/*.sql"]
+    forbid: '(?is)\bUPDATE\s+[\w.$"]+\s+SET\b(?:(?!\bWHERE\b)[^;])*;'
+    message: An UPDATE without WHERE changes all rows; add a WHERE clause.
+
+  - id: sql-no-drop
+    title: No DROP or TRUNCATE
+    severity: warning
+    files: ["**/*.sql"]
+    exclude: ["**/rollback/**", "**/*rollback*"]
+    forbid: '(?i)\b(DROP\s+(TABLE|USER|TABLESPACE|SCHEMA)|TRUNCATE\s+TABLE)\b'
+    message: Dropping or truncating objects in a customization script loses data; keep this to rollback scripts and confirm it is intended.

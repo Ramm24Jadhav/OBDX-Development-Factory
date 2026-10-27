@@ -125,6 +125,12 @@ public class ChangeController {
     }
 
     /** Builds the change with the workspace's Jenkins jobs, fixing build errors in its files a limited number of times. */
+    @PostMapping("/api/changes/{id}/check")
+    public ChangeService.ChangeDetail checkAgain(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.MANAGE_CODE);
+        return service.checkAgain(id);
+    }
+
     @PostMapping("/api/changes/{id}/build")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail build(@PathVariable UUID id) {

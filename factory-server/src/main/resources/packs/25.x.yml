@@ -1,0 +1,28 @@
+# Version pack for OBDX 25.x. The rules of common.yml apply too.
+# These are starting points: confirm them against the bank's 25.x codebase and the Oracle documentation, turn rules
+# off per workspace where the bank does things differently, and add the team's own rules in FACTORY_PACKS_DIR.
+
+description: OBDX 25.x (newer Oracle JET release line)
+
+# Java level for parsing generated Java when the Project Profile does not show the bank's Java version.
+# Kept conservative on purpose; the profile's value always wins.
+java: 11
+
+rules:
+  - id: ui-amd-module
+    title: RequireJS (AMD) modules
+    severity: warning
+    files: ["**/viewModels/**/*.js", "**/components/**/*.js", "**/modules/**/*.js"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/nls/**"]
+    ifProfile: {ui.moduleSystem: '^RequireJS'}
+    require: '\bdefine\s*\('
+    message: UI modules in this codebase are RequireJS (AMD) modules; wrap the code in define([...], function (...) { ... }) like the existing files.
+
+  - id: jet-no-select-one
+    title: oj-select-single instead of oj-select-one
+    severity: warning
+    files: ["**/*.html", "**/*.js", "**/*.ts", "**/*.tsx"]
+    exclude: ["**/*.min.js", "**/libs/**", "**/node_modules/**"]
+    minJet: 12
+    forbid: '<oj-select-one\b|ojs/ojselectcombobox'
+    message: oj-select-one is deprecated in recent Oracle JET releases; use oj-select-single (ojs/ojselectsingle) with a data provider.

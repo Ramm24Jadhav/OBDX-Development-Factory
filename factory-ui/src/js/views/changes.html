@@ -66,6 +66,9 @@
         <oj-bind-if test="[[detail().status === 'GENERATED' || detail().status === 'DELIVERED']]">
           <a id="patchLink" class="factory-link-button" :href="[['api/changes/' + detail().id + '/patch']]" download>Download patch</a>
         </oj-bind-if>
+        <oj-bind-if test="[[(detail().status === 'GENERATED' || detail().status === 'DELIVERED') && canManage() && detail().buildStatus !== 'BUILDING']]">
+          <oj-button id="checkAgainButton" on-oj-action="[[checkAgain]]" disabled="[[busy]]">Check again</oj-button>
+        </oj-bind-if>
         <oj-bind-if test="[[canBuild()]]">
           <oj-button id="buildButton" on-oj-action="[[build]]">
             <oj-bind-text value="[[detail().buildStatus ? 'Build again with Jenkins' : 'Build with Jenkins']]"></oj-bind-text>
@@ -129,7 +132,7 @@
                   <td class="factory-path"><oj-bind-text value="[[f.data.path]]"></oj-bind-text></td>
                   <td><oj-bind-text value="[[f.data.statusText]]"></oj-bind-text></td>
                   <td><span :class="[['factory-status factory-check-' + f.data.check]]"><oj-bind-text value="[[f.data.check]]"></oj-bind-text></span>
-                    <div class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[f.data.checkMessage]]"></oj-bind-text></div></td>
+                    <div class="oj-typography-body-xs oj-text-color-secondary factory-check-message"><oj-bind-text value="[[f.data.checkMessage]]"></oj-bind-text></div></td>
                   <td class="factory-lines"><span class="factory-added"><oj-bind-text value="[[f.data.added]]"></oj-bind-text></span>
                     <span class="factory-removed"><oj-bind-text value="[[f.data.removed]]"></oj-bind-text></span></td>
                   <td><oj-button chroming="borderless" on-oj-action="[[f.data.openAction]]">View</oj-button></td>
@@ -141,7 +144,7 @@
       </oj-bind-if>
 
       <oj-bind-if test="[[buildRows().length > 0]]">
-        <h3>Jenkins builds</h3>
+        <h3>Quick checks and Jenkins builds</h3>
         <table id="buildTable" class="factory-profile-table">
           <thead><tr><th>Round</th><th>Job</th><th>Build</th><th>Result</th><th>Errors</th><th>Fixed by the model</th></tr></thead>
           <tbody>

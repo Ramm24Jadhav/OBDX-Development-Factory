@@ -20,7 +20,9 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
 - `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
 - `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
-- `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`.
+- `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`; `ChangeBuildService` runs the quick checks and Jenkins builds with the fix loop.
+- `pack/`: version packs and quick checks. `VersionPacks` loads the YAML rule files; `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings.
+- `jenkins/`: Jenkins settings, REST client and build log parsing.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
@@ -138,6 +140,20 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
 6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
 
+## Quick checks and version packs
+
+Every generated file is checked on the factory server in milliseconds, before reviewers see it and again before each Jenkins build:
+
+- **Syntax:** Java is parsed at the bank's Java level (from the Project Profile's Java version, else the pack's default: 8 for 22.x, 11 for 25.x), so newer syntax such as records or text blocks fails for a Java 8 bank. If an existing file already uses newer Java, it is parsed at the newest level instead. JSON and XML must parse; JavaScript, HTML and SQL get a basic bracket, tag and quote check (warning only).
+- **Version pack rules:** YAML files in `factory-server/src/main/resources/packs/` (`common.yml` for all versions, `22.x.yml`, `25.x.yml`). A rule forbids or requires a regular expression in files matching path globs, for example no `System.out`, no SQL built by concatenation, no deprecated JET `ArrayTableDataSource`, javax vs. jakarta imports to match the codebase, labels from resource bundles, `DELETE`/`UPDATE` with `WHERE`. The format is explained at the top of `common.yml`.
+- **Errors** go back to the model with the findings (like a parse error); **warnings** are shown to reviewers. Comments are ignored, and in modified files only lines the change added are reported, so the bank's existing code is never blamed.
+- The model is told the rules for each file before it writes it.
+- Rules can depend on the Project Profile (`minJet`, `ifProfile`). The **Code** page lists the workspace's rules; Manage code can turn a rule off for that workspace (audited) when the bank's codebase deliberately does it differently.
+- **Team rules without rebuilding:** set `FACTORY_PACKS_DIR` to a folder with `common.yml`, `22.x.yml` and/or `25.x.yml`. Rules there are added; a rule with the same `id` replaces the built-in one; `enabled: false` removes it; `java:` sets the default Java level. Files are read at startup (restart the service after editing); a mistake stops startup with a message naming the file and rule.
+- **Check again** on the Changes page re-runs the checks on all files (for example after changing rules).
+
+The pack rules are starting points: confirm them against each bank's codebase and the Oracle documentation for the release.
+
 ## Jenkins build validation
 
 Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **Jenkins** section; changes need Manage code):
@@ -150,11 +166,12 @@ Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **J
 
 On the **Changes** page, **Build with Jenkins** (Developer or Lead) is available once the change is delivered to a branch (branch mode) or generated (patch mode). The factory then:
 
-1. Triggers every job and waits for each build (queue timeout 30 minutes, build timeout `FACTORY_JENKINS_BUILD_TIMEOUT`).
-2. Reads the console log and the JUnit test report and extracts errors (Maven/javac, ESLint, TypeScript, failed tests).
-3. If all builds pass, the change shows **Jenkins: passed**.
-4. If errors point at files of this change, the model rewrites those files with the errors as input. In branch mode the fixes are committed to the change branch; in patch mode the patch is updated. Then it builds again. This runs at most `FACTORY_JENKINS_MAX_FIX_ROUNDS` times (default 2).
-5. Errors outside the change's files are not fixed by the model: the build is marked failed and the log excerpt is shown for a developer.
+1. Runs the quick checks on all files of the change. Errors are fixed by the model first (committed to the branch in branch mode) and listed as a "Quick checks" round; Jenkins is only started once the checks pass.
+2. Triggers every job and waits for each build (queue timeout 30 minutes, build timeout `FACTORY_JENKINS_BUILD_TIMEOUT`).
+3. Reads the console log and the JUnit test report and extracts errors (Maven/javac, ESLint, TypeScript, failed tests).
+4. If all builds pass, the change shows **Jenkins: passed**.
+5. If errors point at files of this change, the model rewrites those files with the errors as input. In branch mode the fixes are committed to the change branch; in patch mode the patch is updated. Then it builds again. This runs at most `FACTORY_JENKINS_MAX_FIX_ROUNDS` times (default 2).
+6. Errors outside the change's files are not fixed by the model: the build is marked failed and the log excerpt is shown for a developer.
 
 Every build is listed with its round, job, link to Jenkins, result, errors, a log excerpt and the files the model fixed. While a build runs the change cannot be edited, regenerated or delivered. Builds that were running when the factory restarted are marked failed.
 
@@ -252,6 +269,9 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/changes/{id}/patch` | Download the change as a patch |
 | `POST /api/changes/{id}/deliver` | Commit the change to a new SVN branch |
 | `DELETE /api/changes/{id}` | Delete a change |
+| `POST /api/changes/{id}/check` | Run the quick checks again on all files |
+| `GET /api/workspaces/{id}/checks` | The workspace's version pack rules, with on/off and Java level |
+| `PUT /api/workspaces/{id}/checks/{ruleId}` | Turn a rule on or off for the workspace (`enabled`) |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
@@ -292,4 +312,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Quick local checks from the version pack before each build, deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Version pack templates and reference examples for new screens, deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

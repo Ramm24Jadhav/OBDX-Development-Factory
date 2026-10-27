@@ -1,6 +1,7 @@
 package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.pack.LocalChecks;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -8,7 +9,8 @@ import java.util.stream.Collectors;
 
 /**
  * Writes one file of an approved plan: the complete new content, following the existing code and the Project
- * Profile. Each result is checked; a failed check goes back to the model with the error, a limited number of times.
+ * Profile. Each result gets the quick checks (syntax and version pack rules); a failed check goes back to the model
+ * with the findings, a limited number of times.
  */
 @Component
 public class CodeGenerator {
@@ -32,10 +34,12 @@ public class CodeGenerator {
 
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
+    private final LocalChecks checks;
 
-    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties) {
+    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties, LocalChecks checks) {
         this.modelGateway = modelGateway;
         this.properties = properties;
+        this.checks = checks;
     }
 
     /**
@@ -46,22 +50,31 @@ public class CodeGenerator {
      */
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
                            Map<String, String> examples, Map<String, String> earlier, String note) {
-        String prompt = prompt(context, plan, item, current, examples, earlier, note);
+        return generate(context, plan, item, current, current, examples, earlier, note);
+    }
+
+    /**
+     * @param original the file before the change (null for a new file), which the checks compare with so that only
+     *                 lines added by the change are reported; differs from current when an earlier result is fixed
+     */
+    public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
+                           Map<String, String> examples, Map<String, String> earlier, String note) {
+        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()));
         String content = clean(modelGateway.chat(SYSTEM, prompt).reply());
-        FileChecks.Result check = FileChecks.check(item.path(), content);
+        FileChecks.Result check = checks.check(context.checks(), item.path(), original, content);
         int attempts = 1;
         while (check.status() == FileChecks.Status.FAILED && attempts <= properties.fixAttempts()) {
-            String fix = prompt + "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass a check: " + check.message()
+            String fix = prompt + "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
             content = clean(modelGateway.chat(SYSTEM, fix).reply());
-            check = FileChecks.check(item.path(), content);
+            check = checks.check(context.checks(), item.path(), original, content);
             attempts++;
         }
         return new Result(content, check, attempts);
     }
 
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
-                                 Map<String, String> examples, Map<String, String> earlier, String note) {
+                                 Map<String, String> examples, Map<String, String> earlier, String note, String rules) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -77,6 +90,9 @@ public class CodeGenerator {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
         }
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
+        if (!rules.isEmpty()) {
+            user.append("Rules for this file (they are checked):\n").append(rules).append("\n\n");
+        }
         if (current != null) {
             user.append("Current content of ").append(item.path()).append(":\n").append(current).append("\n\n");
         }
