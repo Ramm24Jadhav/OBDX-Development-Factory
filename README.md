@@ -4,6 +4,6 @@ A web-based tool that turns requirements (prompts, BRDs, FSDs) into code for a b
 
 - Supports OBDX 22.x and 25.x
 - Factory mode (one installation, many banks) and bank mode (installed inside one bank)
-- Human review of spec, plan and code; output as a Git branch or patch
+- Human review of spec, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requirements and roadmap.
