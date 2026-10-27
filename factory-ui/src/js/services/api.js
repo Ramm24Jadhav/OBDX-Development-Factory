@@ -1,6 +1,7 @@
 /*
  * Small wrapper around fetch for calls to the factory backend (/api/...).
- * Rejects with an Error whose message comes from the backend's error body when available.
+ * Rejects with an Error whose message comes from the backend's error body when available, and whose
+ * status is the HTTP status code.
  */
 define([], function () {
   function request(method, path, body) {
@@ -16,7 +17,9 @@ define([], function () {
       return response.json().catch(function () { return null; }).then(function (data) {
         if (!response.ok) {
           const message = (data && (data.detail || data.title)) || ('Request failed: HTTP ' + response.status);
-          throw new Error(message);
+          const error = new Error(message);
+          error.status = response.status;
+          throw error;
         }
         return data;
       });

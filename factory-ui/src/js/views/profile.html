@@ -1,0 +1,101 @@
+<div class="oj-hybrid-padding">
+  <h1>Project profile</h1>
+  <p class="oj-text-color-secondary">
+    What this bank's OBDX codebase is built with and how its code is written, detected from the imported code.
+    Confirm or correct each fact: code generation will follow this profile, and your values are kept when the code is scanned again.
+  </p>
+
+  <oj-form-layout max-columns="2">
+    <oj-select-single id="profileWorkspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
+                      placeholder="Select a workspace"></oj-select-single>
+  </oj-form-layout>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[emptyMessage()]]">
+    <p><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspaceId()]]">
+    <oj-toolbar>
+      <oj-button id="detectButton" on-oj-action="[[detect]]" disabled="[[busy]]">Detect again</oj-button>
+    </oj-toolbar>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[profile()]]">
+    <p class="oj-text-color-secondary">
+      Detected from revision r<oj-bind-text value="[[profile().revision]]"></oj-bind-text>
+      on <oj-bind-text value="[[detectedAt]]"></oj-bind-text>.
+      <oj-bind-text value="[[summary]]"></oj-bind-text>
+    </p>
+    <oj-bind-for-each data="[[profile().warnings]]">
+      <template>
+        <p class="factory-warning"><oj-bind-text value="[[$current.data]]"></oj-bind-text></p>
+      </template>
+    </oj-bind-for-each>
+
+    <oj-bind-for-each data="[[sections]]" as="section">
+      <template>
+        <h2><oj-bind-text value="[[section.data.title]]"></oj-bind-text></h2>
+        <table class="factory-profile-table">
+          <thead>
+            <tr><th>Fact</th><th>Value</th><th>Status</th><th>Found in</th><th></th></tr>
+          </thead>
+          <tbody>
+            <oj-bind-for-each data="[[section.data.facts]]" as="fact">
+              <template>
+                <tr>
+                  <td class="factory-fact-label"><oj-bind-text value="[[fact.data.label]]"></oj-bind-text></td>
+                  <td>
+                    <oj-bind-if test="[[fact.data.page.editingKey() !== fact.data.key]]">
+                      <oj-bind-text value="[[fact.data.value || '(not found)']]"></oj-bind-text>
+                      <oj-bind-if test="[[fact.data.status === 'corrected' && fact.data.detectedValue]]">
+                        <div class="oj-typography-body-xs oj-text-color-secondary">
+                          Detected: <oj-bind-text value="[[fact.data.detectedValue]]"></oj-bind-text>
+                        </div>
+                      </oj-bind-if>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[fact.data.page.editingKey() === fact.data.key]]">
+                      <oj-input-text value="{{fact.data.page.editValue}}" label-hint="New value" label-edge="none"
+                                     :aria-label="[['New value for ' + fact.data.label]]" class="factory-edit-input"></oj-input-text>
+                    </oj-bind-if>
+                  </td>
+                  <td>
+                    <span :class="[['factory-status factory-status-' + fact.data.status]]"><oj-bind-text value="[[fact.data.status]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[fact.data.status === 'detected']]">
+                      <div class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[fact.data.confidence.toLowerCase() + ' confidence']]"></oj-bind-text></div>
+                    </oj-bind-if>
+                  </td>
+                  <td class="factory-evidence">
+                    <oj-bind-for-each data="[[fact.data.evidence]]">
+                      <template><div><oj-bind-text value="[[$current.data]]"></oj-bind-text></div></template>
+                    </oj-bind-for-each>
+                  </td>
+                  <td class="factory-actions">
+                    <oj-bind-if test="[[fact.data.page.editingKey() === fact.data.key]]">
+                      <oj-button chroming="callToAction" on-oj-action="[[function() { fact.data.page.saveEdit(fact.data); }]]">Save</oj-button>
+                      <oj-button chroming="borderless" on-oj-action="[[fact.data.page.cancelEdit]]">Cancel</oj-button>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[fact.data.page.editingKey() !== fact.data.key]]">
+                      <oj-bind-if test="[[fact.data.status === 'detected']]">
+                        <oj-button chroming="borderless" on-oj-action="[[function() { fact.data.page.confirm(fact.data); }]]">Confirm</oj-button>
+                      </oj-bind-if>
+                      <oj-button chroming="borderless" on-oj-action="[[function() { fact.data.page.startEdit(fact.data); }]]">
+                        <oj-bind-text value="[[fact.data.value ? 'Correct' : 'Enter']]"></oj-bind-text>
+                      </oj-button>
+                      <oj-bind-if test="[[fact.data.status === 'confirmed' || fact.data.status === 'corrected']]">
+                        <oj-button chroming="borderless" on-oj-action="[[function() { fact.data.page.reset(fact.data); }]]">Reset</oj-button>
+                      </oj-bind-if>
+                    </oj-bind-if>
+                  </td>
+                </tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+      </template>
+    </oj-bind-for-each>
+  </oj-bind-if>
+</div>

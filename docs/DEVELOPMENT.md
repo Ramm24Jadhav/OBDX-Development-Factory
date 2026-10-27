@@ -17,6 +17,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `importing/`: import jobs that check out or update a workspace's code and index it in the background.
 - `indexing/`: turns source files into searchable pieces ("chunks"): Java by class and method (JavaParser), other files by windows of lines. Stores them with full-text and vector search data.
 - `search/`: code search combining keyword and semantic (embedding) search.
+- `profile/`: the Project Profile. One detector per area (`ObdxDetector`, `UiDetector`, `BackendDetector`, `DataDetector`, `IntegrationDetector`, `ConventionsDetector`) scans the working copy and returns facts with evidence; `ProjectProfileService` stores them and merges developers' confirmed or corrected values.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
 - `common/`: shared exceptions and the error handler that returns problem details to the UI.
@@ -88,6 +89,21 @@ Then open the **Models** page and send a prompt.
 5. Each piece gets an embedding from the embedding model. If the model is unavailable, the import still succeeds with keyword search only, and the next import fills in the missing embeddings.
 6. **Search** combines PostgreSQL full-text search (identifiers are split into words, so "fund transfer" finds `FundTransferService`) with vector similarity, and merges the two rankings.
 
+## Project Profile
+
+After every successful import the factory scans the working copy and records facts about the codebase, each with a confidence level and the files it was found in:
+
+| Area | Facts |
+|---|---|
+| OBDX | OBDX version (from version settings, OBDX/DIGX dependencies in POMs, manifests or file names); whether Oracle product source (`com.ofss`) is in the repository |
+| User interface | JET version, UI architecture (Knockout MVVM or VDOM), module system (RequireJS or ES modules), views/view models and composite components, resource bundles and translations, styling and theme, third-party libraries |
+| Backend | Build tools, Java version, frameworks (from imports), javax vs jakarta namespace, packaging, application server, logging, REST endpoints |
+| Database | Database type (JDBC URLs, else SQL dialect), table name prefixes, script folders |
+| Integration | Host systems (FLEXCUBE, OBPM and others), adapter classes |
+| Bank conventions | Bank Java packages, customization folders, class name suffixes, error code format, exception base classes, indentation |
+
+On the **Profile** page a developer can **Confirm** a detected value, **Correct** it (or **Enter** one that was not found), and **Reset** back to the detected value. Confirmed and corrected values are stored separately and survive later scans. If the detected OBDX version disagrees with the workspace's version, the page shows a warning. To add a fact, add it to the matching detector; every detector returns all of its facts, with "not found" where nothing was detected, so the profile doubles as a checklist.
+
 ## Working on the UI
 
 For quick UI changes without rebuilding the jar, run the server, then in `factory-ui/`:
@@ -115,6 +131,10 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/workspaces/{id}/imports` | Recent import jobs with progress |
 | `GET /api/workspaces/{id}/index` | Indexed revision and file/piece counts |
 | `GET /api/workspaces/{id}/search?q=...` | Search the workspace's code |
+| `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
+| `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
+| `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
+| `DELETE /api/workspaces/{id}/profile/facts/{key}` | Go back to the detected value |
 | `GET /api/model/status` | Show the configured model endpoint and models |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
@@ -147,4 +167,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Login and roles (Spring Security), the Project Profile (stack detection), document ingestion, the screen designer, the agent pipeline and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Login and roles (Spring Security), document ingestion, the screen designer, the agent pipeline and Jenkins build validation. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

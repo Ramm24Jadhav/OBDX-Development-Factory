@@ -5,6 +5,7 @@ import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.indexing.CodeIndexRepository;
 import com.obdx.factory.indexing.CodeIndexer;
+import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.svn.SvnClient;
 import com.obdx.factory.svn.SvnCredentials;
 import com.obdx.factory.workspace.Workspace;
@@ -45,11 +46,12 @@ public class ImportService {
     private final CodeIndexer indexer;
     private final CodeIndexRepository index;
     private final StorageProperties storage;
+    private final ProjectProfileService profiles;
     private final TaskExecutor executor;
 
     public ImportService(ImportJobRepository jobs, WorkspaceRepository workspaces, WorkspaceService workspaceService,
                          SvnClient svnClient, CodeIndexer indexer, CodeIndexRepository index, StorageProperties storage,
-                         @Qualifier("importExecutor") TaskExecutor executor) {
+                         ProjectProfileService profiles, @Qualifier("importExecutor") TaskExecutor executor) {
         this.jobs = jobs;
         this.workspaces = workspaces;
         this.workspaceService = workspaceService;
@@ -57,6 +59,7 @@ public class ImportService {
         this.indexer = indexer;
         this.index = index;
         this.storage = storage;
+        this.profiles = profiles;
         this.executor = executor;
     }
 
@@ -124,12 +127,27 @@ public class ImportService {
 
             String summary = "Indexed revision " + revision + ": " + progress.filesIndexed + " changed file(s), "
                     + progress.filesRemoved + " removed, " + progress.embeddingsCreated + " embedding(s) created.";
-            job.succeed(progress.warning == null ? summary : summary + " " + progress.warning);
+            if (progress.warning != null) {
+                summary += " " + progress.warning;
+            }
+            summary += refreshProfile(workspace.getId());
+            job.succeed(summary);
         } catch (Exception e) {
             log.error("Import job {} failed", jobId, e);
             job.fail(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
         }
         jobs.save(job);
+    }
+
+    /** The profile follows the code, so it is re-detected after every import. A failure here does not fail the import. */
+    private String refreshProfile(UUID workspaceId) {
+        try {
+            profiles.refresh(workspaceId);
+            return " Project profile updated.";
+        } catch (RuntimeException e) {
+            log.warn("Project profile detection failed for workspace {}", workspaceId, e);
+            return " Project profile could not be updated: " + e.getMessage();
+        }
     }
 
     private long checkoutOrUpdate(String url, Path workingCopy, SvnCredentials credentials) throws IOException {

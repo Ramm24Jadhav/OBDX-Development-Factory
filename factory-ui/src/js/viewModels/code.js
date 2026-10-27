@@ -1,16 +1,15 @@
 /*
  * Code page: SVN settings, import jobs, index status and code search for one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
         'ojs/ojtoolbar', 'ojs/ojtable'],
-  function (ko, accUtils, api, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, ArrayDataProvider) {
     const POLL_MS = 2000;
 
     function CodeViewModel() {
-      const workspaces = ko.observableArray([]);
-      this.workspaceProvider = new ArrayDataProvider(workspaces, { keyAttributes: 'value' });
-      this.workspaceId = ko.observable(null);
+      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
+      this.workspaceId = workspaceSelection.selectedId;
       this.workspace = ko.observable(null);
 
       this.svnUrl = ko.observable('');
@@ -92,7 +91,7 @@ define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
         }
       };
 
-      this.workspaceId.subscribe(loadWorkspace);
+      let subscription = null;
 
       this.saveSvn = () => {
         this.busy(true);
@@ -142,17 +141,18 @@ define(['knockout', '../accUtils', '../services/api', 'ojs/ojarraydataprovider',
       this.connected = () => {
         accUtils.announce('Code page loaded.');
         document.title = 'Code';
-        api.get('workspaces').then((list) => {
-          workspaces(list.map((workspace) => ({ value: workspace.id, label: workspace.name + ' (' + workspace.bankName + ', ' + workspace.obdxVersion + ')' })));
-          if (list.length > 0 && !this.workspaceId()) {
-            this.workspaceId(list[0].id);
-          } else if (this.workspaceId()) {
-            loadWorkspace(this.workspaceId());
-          }
-        }).catch(showError);
+        subscription = this.workspaceId.subscribe(loadWorkspace);
+        const before = this.workspaceId();
+        // If loading the list changed the selection, the subscription has already loaded the workspace.
+        workspaceSelection.load().then(() => { if (this.workspaceId() === before) { loadWorkspace(before); } }).catch(showError);
       };
 
-      this.disconnected = () => clearTimeout(pollTimer);
+      this.disconnected = () => {
+        clearTimeout(pollTimer);
+        if (subscription) {
+          subscription.dispose();
+        }
+      };
     }
 
     return CodeViewModel;

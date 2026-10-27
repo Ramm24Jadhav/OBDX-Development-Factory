@@ -34,6 +34,7 @@ define(['knockout', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojrespon
         { path: '', redirect: 'workspaces' },
         { path: 'workspaces', detail: { label: 'Workspaces' } },
         { path: 'code', detail: { label: 'Code' } },
+        { path: 'profile', detail: { label: 'Profile' } },
         { path: 'models', detail: { label: 'Models' } },
         { path: 'about', detail: { label: 'About' } }
       ];

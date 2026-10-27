@@ -1,6 +1,7 @@
 package com.obdx.factory.importing;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.search.CodeSearchService;
 import com.obdx.factory.svn.TestSvnRepository;
 import com.obdx.factory.workspace.SvnSettingsRequest;
@@ -94,6 +95,9 @@ class ImportAndSearchIntegrationTest {
     @Autowired
     private CodeSearchService search;
 
+    @Autowired
+    private ProjectProfileService profiles;
+
     private UUID workspaceId;
 
     @BeforeAll
@@ -155,6 +159,19 @@ class ImportAndSearchIntegrationTest {
         assertThat(found.results().stream().limit(3).map(CodeSearchService.SearchResult::symbol))
                 .contains("FundTransferService.checkDailyLimit(TransferRequest)");
 
+        ProjectProfileService.ProfileResponse profile = profiles.get(workspaceId);
+        assertThat(profile.revision()).isEqualTo(1);
+        assertThat(fact(profile, "ui.moduleSystem").value()).startsWith("RequireJS");
+        assertThat(fact(profile, "ui.moduleSystem").status()).isEqualTo("detected");
+        assertThat(fact(profile, "backend.javaVersion").status()).isEqualTo("missing");
+
+        profiles.setValue(workspaceId, "backend.javaVersion", "Java 8");
+        profiles.setValue(workspaceId, "ui.moduleSystem", fact(profile, "ui.moduleSystem").value());
+        profile = profiles.get(workspaceId);
+        assertThat(fact(profile, "backend.javaVersion").status()).isEqualTo("corrected");
+        assertThat(fact(profile, "backend.javaVersion").value()).isEqualTo("Java 8");
+        assertThat(fact(profile, "ui.moduleSystem").status()).isEqualTo("confirmed");
+
         repo.commit(Map.of("ui/js/viewModels/beneficiary.js", "define([], function () { function BeneficiaryViewModel() {} });"),
                 List.of("ui/js/viewModels/account-summary.js"));
 
@@ -171,6 +188,15 @@ class ImportAndSearchIntegrationTest {
         assertThat(status.filesByLanguage()).containsEntry("java", 1L).containsEntry("javascript", 1L);
         assertThat(search.search(workspaceId, "AccountSummaryViewModel", 5).results())
                 .noneMatch(result -> result.path().contains("account-summary"));
+
+        ProjectProfileService.ProfileResponse updated = profiles.get(workspaceId);
+        assertThat(updated.revision()).isEqualTo(2);
+        assertThat(fact(updated, "backend.javaVersion").value()).as("corrections survive a re-scan").isEqualTo("Java 8");
+        assertThat(fact(profiles.reset(workspaceId, "backend.javaVersion"), "backend.javaVersion").status()).isEqualTo("missing");
+    }
+
+    private static ProjectProfileService.FactView fact(ProjectProfileService.ProfileResponse profile, String key) {
+        return profile.facts().stream().filter(f -> f.key().equals(key)).findFirst().orElseThrow();
     }
 
     private ImportJobResponse runImport() throws InterruptedException {
