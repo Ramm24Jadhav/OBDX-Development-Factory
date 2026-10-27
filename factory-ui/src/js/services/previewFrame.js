@@ -1,8 +1,15 @@
 /*
- * Connects a page to a screen preview running in an iframe (the "preview" route with embed=1). Sends the latest
- * Screen Model once the preview has loaded, and reports clicks on components in the preview.
+ * Connects a page to a screen preview running in an iframe: the JET "preview" route (embed=1), or the React Native or
+ * React preview page for workspaces with such a UI target. Sends the latest Screen Model once the preview has loaded,
+ * and reports clicks on components in the preview.
  */
 define([], function () {
+  const PAGES = {
+    jet: 'index.html?ojr=preview&embed=1',
+    'react-native': 'preview-react-native.html',
+    react: 'preview-react.html'
+  };
+
   /** Creates a connection; call attach() when the iframe is in the page and detach() when leaving it. */
   function PreviewFrame(onSelect) {
     let frame = null;
@@ -27,7 +34,12 @@ define([], function () {
       }
     };
 
-    this.src = 'index.html?ojr=preview&embed=1';
+    this.src = PAGES.jet;
+
+    /** Call when the iframe loads another preview page; the model is sent again once that page is ready. */
+    this.reload = () => {
+      ready = false;
+    };
 
     this.attach = (iframeId) => {
       frame = document.getElementById(iframeId);
@@ -47,6 +59,9 @@ define([], function () {
       send();
     };
   }
+
+  /** The preview page for a renderer: jet, react-native or react. */
+  PreviewFrame.srcFor = (kind) => PAGES[kind] || PAGES.jet;
 
   return PreviewFrame;
 });

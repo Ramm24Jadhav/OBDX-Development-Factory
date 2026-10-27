@@ -25,7 +25,14 @@ define(['knockout', '../services/api', '../services/previewFrame',
       })));
       this.frameWidth = ko.pureComputed(() => VIEWPORTS.find((vp) => vp.key === this.viewport()).width);
       const preview = new PreviewFrame((id) => this.selectedId(id));
-      this.previewSrc = preview.src;
+      this.previewKind = ko.observable('jet');
+      this.previewSrc = ko.pureComputed(() => PreviewFrame.srcFor(this.previewKind()));
+      this.previewKind.subscribe((kind) => {
+        preview.reload();
+        if (kind === 'react-native') {
+          this.viewport('phone');
+        }
+      });
       ko.computed(() => preview.show(this.review() ? this.review().model : null, this.selectedId()));
 
       this.selectedLabel = ko.pureComputed(() => {
@@ -79,6 +86,7 @@ define(['knockout', '../services/api', '../services/previewFrame',
           return;
         }
         api.get(base).then((review) => {
+          this.previewKind(review.preview || 'jet');
           this.review(review);
           document.title = 'Review: ' + review.name;
         }).catch(showError);

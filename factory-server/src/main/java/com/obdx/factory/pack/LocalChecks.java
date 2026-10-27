@@ -1,12 +1,16 @@
 package com.obdx.factory.pack;
 
 import com.obdx.factory.change.FileChecks;
+import com.obdx.factory.target.TargetPack;
+import com.obdx.factory.target.TargetPacks;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -25,9 +29,17 @@ public class LocalChecks {
     }
 
     private final VersionPacks packs;
+    private final TargetPacks targets;
 
-    public LocalChecks(VersionPacks packs) {
+    @Autowired
+    public LocalChecks(VersionPacks packs, TargetPacks targets) {
         this.packs = packs;
+        this.targets = targets;
+    }
+
+    /** With the built-in target packs, for tests and tools. */
+    public LocalChecks(VersionPacks packs) {
+        this(packs, TargetPacks.builtIn());
     }
 
     /**
@@ -57,6 +69,10 @@ public class LocalChecks {
 
     /** The pack rules that apply to a file in this workspace, to tell the model before it writes the file. */
     public List<PackRule> rulesFor(CheckScope scope, String path) {
+        if (scope.inApp(path)) {
+            return targets.find(scope.target()).map(TargetPack::rules).orElse(List.of()).stream()
+                    .filter(r -> !scope.disabled().contains(r.id()) && r.appliesTo(path)).toList();
+        }
         VersionPack pack = packs.find(scope.version()).orElse(null);
         if (pack == null) {
             return List.of();
@@ -64,6 +80,22 @@ public class LocalChecks {
         Integer jet = scope.jetMajor();
         return pack.rules().stream().filter(r -> !scope.disabled().contains(r.id()) && r.appliesTo(path)
                 && r.appliesToProfile(scope.facts(), jet)).toList();
+    }
+
+    /**
+     * The recipe part that covers a plan item: from the target pack for files of the new app, else from the version
+     * pack.
+     */
+    public Optional<Recipe.Match> recipeFor(CheckScope scope, String path, String action, String layer) {
+        if (scope.inApp(path)) {
+            return targets.find(scope.target()).flatMap(t -> t.recipeFor(path, action, layer));
+        }
+        return packs.find(scope.version()).flatMap(p -> p.recipeFor(path, action, layer));
+    }
+
+    /** The target pack's guidance for a file of the new app, or an empty string. */
+    public String targetGuidance(CheckScope scope, String path) {
+        return scope.inApp(path) ? targets.find(scope.target()).map(TargetPack::guidance).orElse("") : "";
     }
 
     /** The rules as a short list for a prompt, or an empty string. */

@@ -63,6 +63,9 @@ public class ImpactAnalyzer {
         user.append("Screen designs (approved):\n").append(context.designsJson() == null ? "(none)" : ChangeContext.cap(context.designsJson(), 8000)).append("\n\n");
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
         user.append("Folder structure (folder: files):\n").append(context.structure()).append("\n\n");
+        if (context.target() != null && !context.target().isBlank()) {
+            user.append("UI target:\n").append(context.target()).append('\n');
+        }
         if (context.recipes() != null && !context.recipes().isBlank()) {
             user.append("Version pack recipes (kinds of work, the files each needs, and reference examples in this codebase):\n")
                     .append(ChangeContext.cap(context.recipes(), 5000)).append('\n');

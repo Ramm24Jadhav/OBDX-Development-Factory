@@ -121,6 +121,19 @@
 
   <build>
     <finalName>obdx-factory</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- The target packs (React Native, React) with their starter projects; the UI build reads the same folder. -->
+      <resource>
+        <directory>../target-packs</directory>
+        <targetPath>target-packs</targetPath>
+        <excludes>
+          <exclude>**/node_modules/**</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

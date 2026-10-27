@@ -5,7 +5,7 @@ A web-based tool that turns requirements (prompts, BRDs, FSDs) into code for a b
 - Supports OBDX 22.x and 25.x
 - Factory mode (one installation, many banks) and bank mode (installed inside one bank)
 - Interactive screen designer with live previews that customers can review and approve
-- Target-neutral screen models, so frontends can later be generated for React Native or React (modernization mode)
+- Target-neutral Screen Models, generated as Oracle JET screens or as screens of a new React Native (iOS/Android) or React web app on the same OBDX services, previewed with that app's own components
 - Built with the OBDX team's own stack: Oracle JET, Java/Spring Boot, PostgreSQL, Maven, Jenkins, SVN
 - Human review of spec, screen design, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
 

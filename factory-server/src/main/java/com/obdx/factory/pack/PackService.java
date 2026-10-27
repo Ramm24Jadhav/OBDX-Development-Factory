@@ -4,14 +4,18 @@ import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.workspace.Workspace;
 import com.obdx.factory.workspace.WorkspaceRepository;
+import com.obdx.factory.target.TargetPack;
+import com.obdx.factory.target.TargetPacks;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,8 +26,9 @@ import java.util.UUID;
 @Service
 public class PackService {
 
+    /** appliesTo: "OBDX code" for version pack rules, or the new app (for example "React Native app in mobile/"). */
     public record RuleView(String id, String title, PackRule.Severity severity, List<String> files, List<String> exclude,
-                           String forbid, String require, String message, boolean enabled, boolean matchesProfile) {
+                           String forbid, String require, String message, boolean enabled, boolean matchesProfile, String appliesTo) {
     }
 
     public record WorkspaceChecks(String version, String description, int javaLevel, String javaLevelSource,
@@ -31,14 +36,16 @@ public class PackService {
     }
 
     private final VersionPacks packs;
+    private final TargetPacks targets;
     private final LocalChecks checks;
     private final WorkspaceRepository workspaces;
     private final ProjectProfileService profiles;
     private final JdbcTemplate jdbc;
 
-    public PackService(VersionPacks packs, LocalChecks checks, WorkspaceRepository workspaces, ProjectProfileService profiles,
-                       JdbcTemplate jdbc) {
+    public PackService(VersionPacks packs, TargetPacks targets, LocalChecks checks, WorkspaceRepository workspaces,
+                       ProjectProfileService profiles, JdbcTemplate jdbc) {
         this.packs = packs;
+        this.targets = targets;
         this.checks = checks;
         this.workspaces = workspaces;
         this.profiles = profiles;
@@ -48,7 +55,8 @@ public class PackService {
     /** What the quick checks of this workspace's changes run with. */
     public CheckScope scope(UUID workspaceId) {
         Workspace workspace = workspace(workspaceId);
-        return new CheckScope(workspace.getObdxVersion(), facts(workspaceId), disabled(workspaceId));
+        return new CheckScope(workspace.getObdxVersion(), facts(workspaceId), disabled(workspaceId), workspace.getTarget(),
+                workspace.getAppFolder());
     }
 
     public WorkspaceChecks get(UUID workspaceId) {
@@ -56,15 +64,20 @@ public class PackService {
         VersionPack pack = packs.find(scope.version())
                 .orElseThrow(() -> new NotFoundException("No version pack for OBDX " + scope.version()));
         Integer jet = scope.jetMajor();
-        List<RuleView> rules = pack.rules().stream().map(r -> new RuleView(r.id(), r.title(), r.severity(), r.files(), r.exclude(),
-                r.forbid(), r.require(), r.message(), !scope.disabled().contains(r.id()), r.appliesToProfile(scope.facts(), jet))).toList();
+        List<RuleView> rules = new ArrayList<>(pack.rules().stream().map(r -> new RuleView(r.id(), r.title(), r.severity(), r.files(), r.exclude(),
+                r.forbid(), r.require(), r.message(), !scope.disabled().contains(r.id()), r.appliesToProfile(scope.facts(), jet), "OBDX code"))
+                .toList());
+        targetPack(scope).ifPresent(target -> target.rules().forEach(r -> rules.add(new RuleView(r.id(), r.title(), r.severity(), r.files(),
+                r.exclude(), r.forbid(), r.require(), r.message(), !scope.disabled().contains(r.id()), true,
+                target.title() + " app in " + scope.appFolder() + "/"))));
         return new WorkspaceChecks(pack.version(), pack.description(), checks.javaLevel(scope),
                 scope.javaVersion() != null ? "Project Profile" : "version pack default", rules);
     }
 
     public WorkspaceChecks setEnabled(UUID workspaceId, String ruleId, boolean enabled, String by) {
         CheckScope scope = scope(workspaceId);
-        boolean known = packs.find(scope.version()).stream().flatMap(p -> p.rules().stream()).anyMatch(r -> r.id().equals(ruleId));
+        boolean known = packs.find(scope.version()).stream().flatMap(p -> p.rules().stream()).anyMatch(r -> r.id().equals(ruleId))
+                || targetPack(scope).stream().flatMap(t -> t.rules().stream()).anyMatch(r -> r.id().equals(ruleId));
         if (!known) {
             throw new NotFoundException("No rule " + ruleId + " in the OBDX " + scope.version() + " pack");
         }
@@ -75,6 +88,11 @@ public class PackService {
                     + "ON CONFLICT (workspace_id, rule_id) DO NOTHING", workspaceId, ruleId, by, OffsetDateTime.now());
         }
         return get(workspaceId);
+    }
+
+    /** The workspace's React Native or React target pack, if it has one with an app folder. */
+    private Optional<TargetPack> targetPack(CheckScope scope) {
+        return scope.appFolder() == null ? Optional.empty() : targets.find(scope.target()).filter(t -> !t.isJet());
     }
 
     private Set<String> disabled(UUID workspaceId) {

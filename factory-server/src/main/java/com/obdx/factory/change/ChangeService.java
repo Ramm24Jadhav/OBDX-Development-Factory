@@ -12,6 +12,9 @@ import com.obdx.factory.pack.CheckScope;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.PackService;
 import com.obdx.factory.pack.RecipeService;
+import com.obdx.factory.target.ScreenScaffolder;
+import com.obdx.factory.target.TargetPacks;
+import com.obdx.factory.target.TargetService;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.requirements.Requirement;
 import com.obdx.factory.requirements.RequirementService;
@@ -81,6 +84,8 @@ public class ChangeService {
     private final PackService packs;
     private final LocalChecks localChecks;
     private final RecipeService recipes;
+    private final TargetService targets;
+    private final TargetPacks targetPacks;
     private final TaskExecutor executor;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
@@ -88,8 +93,8 @@ public class ChangeService {
                          DesignStore designStore, ProjectProfileService profiles, CodeSearchService codeSearch,
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
-                         PackService packs, LocalChecks localChecks, RecipeService recipes,
-                         @Qualifier("changeExecutor") TaskExecutor executor) {
+                         PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
+                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -110,6 +115,8 @@ public class ChangeService {
         this.packs = packs;
         this.localChecks = localChecks;
         this.recipes = recipes;
+        this.targets = targets;
+        this.targetPacks = targetPacks;
         this.executor = executor;
     }
 
@@ -279,7 +286,8 @@ public class ChangeService {
                 current = read(file);
             }
             Map<String, String> examples = examples(workspaceId, workingCopy, item);
-            CodeGenerator.Result result = generator.generate(context, plan, item, current, examples, earlier, note);
+            ScreenScaffolder.Scaffold scaffold = scaffold(context, item.path(), current);
+            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold);
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
@@ -362,10 +370,14 @@ public class ChangeService {
     /** Checks the written files of the change again and saves the results; returns the files with errors and their findings. */
     Map<String, String> recheck(ChangeRequest change) {
         CheckScope scope = packs.scope(change.getWorkspaceId());
+        List<ScreenModel> models = scope.appFolder() == null ? List.of() : designModels(change);
         Map<String, String> failing = new LinkedHashMap<>();
         for (ChangeFileStore.ChangeFile file : files.files(change.getId())) {
             if (file.status() == ChangeFileStore.Status.GENERATED && file.generated() != null) {
-                FileChecks.Result check = localChecks.check(scope, file.path(), file.original(), file.generated());
+                ScreenScaffolder.Scaffold scaffold = scope.inApp(file.path()) ? targetPacks.find(scope.target())
+                        .flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(), models, file.original())).orElse(null) : null;
+                FileChecks.Result check = CodeGenerator.withParity(localChecks.check(scope, file.path(), file.original(), file.generated()),
+                        file.generated(), scaffold);
                 files.saveCheck(change.getId(), file.path(), check);
                 if (check.status() == FileChecks.Status.FAILED) {
                     failing.put(file.path(), check.message());
@@ -520,13 +532,19 @@ public class ChangeService {
         }
     }
 
-    ChangeContext context(ChangeRequest change, RequirementService.RequirementDetail requirement) {
-        String designsJson = null;
+    /** The requirement's screen designs: the approved version of each (the current one if not approved). */
+    private List<ScreenModel> designModels(ChangeRequest change) {
         List<ScreenModel> models = new ArrayList<>();
         for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId())) {
             int version = design.getApprovedVersion() != null ? design.getApprovedVersion() : design.getCurrentVersion();
             designStore.model(design.getId(), version).ifPresent(models::add);
         }
+        return models;
+    }
+
+    ChangeContext context(ChangeRequest change, RequirementService.RequirementDetail requirement) {
+        String designsJson = null;
+        List<ScreenModel> models = designModels(change);
         if (!models.isEmpty()) {
             designsJson = json.writeValueAsString(models);
         }
@@ -538,7 +556,21 @@ public class ChangeService {
             profile = "";
         }
         return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
-                structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()));
+                structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
+                targets.planGuide(change.getWorkspaceId()), models);
+    }
+
+    /**
+     * For files of a React Native or React app: the starting point generated from the approved Screen Model (screen,
+     * test or texts), or null.
+     */
+    ScreenScaffolder.Scaffold scaffold(ChangeContext context, String path, String current) {
+        CheckScope scope = context.checks();
+        if (!scope.inApp(path)) {
+            return null;
+        }
+        return targetPacks.find(scope.target())
+                .flatMap(pack -> ScreenScaffolder.forFile(pack, scope.appFolder(), path, context.models(), current)).orElse(null);
     }
 
     /** Folders of the indexed code with their number of files, so the model knows where things live. */

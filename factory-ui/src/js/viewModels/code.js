@@ -1,5 +1,6 @@
 /*
- * Code page: SVN settings, Jenkins settings, quick check rules, import jobs, index status and code search for one workspace.
+ * Code page: SVN settings, UI target, Jenkins settings, quick check rules, import jobs, index status and code search for
+ * one workspace.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
@@ -19,6 +20,46 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.svnMessage = ko.observable('');
       this.busy = ko.observable(false);
       this.errorMessage = ko.observable('');
+
+      // UI target: Oracle JET (the bank's OBDX UI) or a new React Native / React app in its own folder
+      this.targets = ko.observableArray([]);
+      this.targetProvider = new ArrayDataProvider(this.targets, { keyAttributes: 'value' });
+      this.targetId = ko.observable('jet');
+      this.appFolder = ko.observable('');
+      this.targetMessage = ko.observable('');
+      this.targetWarning = ko.observable(false);
+      const packs = ko.observableArray([]);
+      this.mappingRows = ko.pureComputed(() => {
+        const pack = packs().find((p) => p.id === this.targetId());
+        return pack ? Object.keys(pack.components).map((type) => ({
+          type: type,
+          component: '<' + pack.components[type].component + (pack.components[type].props ? ' ' + pack.components[type].props : '') + '>'
+        })) : [];
+      });
+      this.targetId.subscribe((id) => {
+        const pack = packs().find((p) => p.id === id);
+        if (pack && pack.defaultAppFolder && !this.appFolder()) {
+          this.appFolder(pack.defaultAppFolder);
+        }
+      });
+      const showTarget = (target) => {
+        this.targetId(target.target);
+        this.appFolder(target.appFolder || '');
+        const missing = target.target !== 'jet' && !target.appFolderExists;
+        this.targetWarning(missing);
+        this.targetMessage(target.target === 'jet' ? '' : missing
+          ? 'The imported code has no app in ' + target.appFolder + '/ yet. Download the starter project, commit it to that folder with TortoiseSVN, then import again.'
+          : target.title + ' app found in ' + target.appFolder + '/.');
+      };
+      this.saveTarget = () => {
+        this.targetMessage('');
+        const id = this.workspaceId();
+        api.put('workspaces/' + id + '/target', { target: this.targetId(), appFolder: this.appFolder() || null })
+          .then(showTarget)
+          // The quick-check rules include the target pack's for the app folder.
+          .then(() => api.get('workspaces/' + id + '/checks')).then(showChecks)
+          .catch(showError);
+      };
 
       // Quick checks: the workspace's version pack rules, each of which can be turned off
       this.checksSummary = ko.observable('');
@@ -120,6 +161,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           message: r.message,
           severity: r.severity.toLowerCase(),
           files: r.files.join(', ') + (r.exclude.length ? ' (not ' + r.exclude.join(', ') + ')' : ''),
+          appliesTo: r.appliesTo,
           enabled: r.enabled,
           canManage: canManage,
           note: r.matchesProfile ? '' : 'Does not apply to this codebase (Project Profile).',
@@ -150,7 +192,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.jenkinsMessage('');
           this.jenkinsWarnings([]);
           return Promise.all([refreshImports(), api.get('workspaces/' + id + '/jenkins').then(showJenkins),
-            api.get('workspaces/' + id + '/checks').then(showChecks)]);
+            api.get('workspaces/' + id + '/checks').then(showChecks),
+            api.get('targets').then((list) => {
+              packs(list);
+              this.targets(list.map((p) => ({ value: p.id, label: p.title })));
+              return api.get('workspaces/' + id + '/target');
+            }).then(showTarget)]);
         }).catch(showError);
       };
 

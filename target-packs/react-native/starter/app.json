@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "OBDX Mobile",
+    "slug": "obdx-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "bundleIdentifier": "com.bank.obdx.mobile" },
+    "android": { "package": "com.bank.obdx.mobile" }
+  }
+}

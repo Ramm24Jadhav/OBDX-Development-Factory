@@ -3,10 +3,12 @@ package com.obdx.factory.change;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.Recipe;
-import com.obdx.factory.pack.VersionPacks;
+import com.obdx.factory.target.ScreenScaffolder;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -37,13 +39,11 @@ public class CodeGenerator {
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
     private final LocalChecks checks;
-    private final VersionPacks packs;
 
-    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties, LocalChecks checks, VersionPacks packs) {
+    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties, LocalChecks checks) {
         this.modelGateway = modelGateway;
         this.properties = properties;
         this.checks = checks;
-        this.packs = packs;
     }
 
     /**
@@ -63,25 +63,57 @@ public class CodeGenerator {
      */
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note) {
-        Recipe.Match recipe = packs.find(context.checks().version())
-                .flatMap(p -> p.recipeFor(item.path(), item.action(), item.layer())).orElse(null);
-        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()), recipe);
+        return generate(context, plan, item, current, original, examples, earlier, note, null);
+    }
+
+    /**
+     * @param scaffold for files of a React Native or React app: the starting point generated from the approved Screen
+     *                 Model, or null. A screen must then keep every Screen Model id as a testID (parity), which is
+     *                 checked like the other checks.
+     */
+    public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
+                           Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold) {
+        Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
+        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()), recipe,
+                checks.targetGuidance(context.checks(), item.path()), scaffold);
         String content = clean(modelGateway.chat(SYSTEM, prompt).reply());
-        FileChecks.Result check = checks.check(context.checks(), item.path(), original, content);
+        FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
         int attempts = 1;
         while (check.status() == FileChecks.Status.FAILED && attempts <= properties.fixAttempts()) {
             String fix = prompt + "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
             content = clean(modelGateway.chat(SYSTEM, fix).reply());
-            check = checks.check(context.checks(), item.path(), original, content);
+            check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
             attempts++;
         }
         return new Result(content, check, attempts);
     }
 
+    /** A screen of a React Native or React app must keep every field and action of the approved Screen Model. */
+    static FileChecks.Result withParity(FileChecks.Result check, String content, ScreenScaffolder.Scaffold scaffold) {
+        List<String> missing = parityGaps(content, scaffold);
+        if (missing.isEmpty()) {
+            return check;
+        }
+        String parity = "Parity with the approved Screen Model: no testID for " + String.join(", ", missing)
+                + ". Keep every field and action of the design, each with its Screen Model id as testID.";
+        return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? parity : check.message() + "\n" + parity);
+    }
+
+    /** Screen Model ids the screen does not have as testID. */
+    static List<String> parityGaps(String content, ScreenScaffolder.Scaffold scaffold) {
+        if (scaffold == null || scaffold.expectedIds().isEmpty() || content == null) {
+            return List.of();
+        }
+        return scaffold.expectedIds().stream()
+                .filter(id -> !Pattern.compile("testID=(\"" + Pattern.quote(id) + "\"|\\{\\s*['\"`]" + Pattern.quote(id) + "['\"`]\\s*})")
+                        .matcher(content).find())
+                .toList();
+    }
+
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
                                  Map<String, String> examples, Map<String, String> earlier, String note, String rules,
-                                 Recipe.Match recipe) {
+                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -97,8 +129,12 @@ public class CodeGenerator {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
         }
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
+        if (!targetGuidance.isEmpty()) {
+            user.append("How the new app is built (target pack):\n").append(targetGuidance).append("\n\n");
+        }
         if (recipe != null) {
-            user.append("How this is built in OBDX (version pack recipe \"").append(recipe.recipe().title()).append("\", ")
+            user.append(targetGuidance.isEmpty() ? "How this is built in OBDX (version pack recipe \"" : "How this is built (target pack recipe \"")
+                    .append(recipe.recipe().title()).append("\", ")
                     .append(recipe.part().name()).append("):\n").append(recipe.recipe().guidance()).append("\n\n");
         }
         if (!rules.isEmpty()) {
@@ -117,7 +153,13 @@ public class CodeGenerator {
                 user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), 40)).append('\n');
             }
         }
-        if (current == null && recipe != null && recipe.part().content() != null) {
+        if (scaffold != null) {
+            user.append(scaffold.kind().equals("texts")
+                            ? "The texts file with this change's screens added (keep all existing texts; adjust only what the change needs):\n"
+                            : "Starting point generated from the approved Screen Model (keep its testIDs, text keys and structure; complete "
+                            + "what its comments ask, such as loading options and calling the API):\n")
+                    .append(scaffold.content()).append('\n');
+        } else if (current == null && recipe != null && recipe.part().content() != null) {
             user.append("Template to start from (replace every <<...>> placeholder; where the example files differ, follow the examples):\n")
                     .append(recipe.part().content()).append('\n');
         }

@@ -59,8 +59,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       })));
       this.frameWidth = ko.pureComputed(() => VIEWPORTS.find((vp) => vp.key === this.viewport()).width);
       const preview = new PreviewFrame((id) => this.selectedId(id));
-      this.previewSrc = preview.src;
+      // The workspace's UI target decides the renderer: JET, or the React Native / React app's own components.
+      this.previewKind = ko.observable('jet');
+      this.targetTitle = ko.observable('');
+      this.appTarget = ko.pureComputed(() => this.previewKind() !== 'jet');
+      this.previewSrc = ko.pureComputed(() => PreviewFrame.srcFor(this.previewKind()));
+      this.previewKind.subscribe((kind) => {
+        preview.reload();
+        if (kind === 'react-native') {
+          this.viewport('phone');
+        }
+      });
+      this.previewNote = ko.pureComputed(() => (this.appTarget()
+        ? 'Preview with the components of the ' + this.targetTitle() + ' app that code generation uses'
+          + (this.previewKind() === 'react-native' ? ' (React Native Web in the browser; check on a device with Expo)' : '')
+          + ', filled with sample data. Click a component to select it.'
+        : 'Preview with this factory\'s Oracle JET version and Redwood theme, filled with sample data. Click a component to select it.'));
       ko.computed(() => preview.show(this.working(), this.selectedId()));
+
+      // Code the design becomes in a React Native or React app (current saved version)
+      this.codeModule = ko.observable('app');
+      this.codeFiles = ko.observableArray([]);
+      this.showCode = () => api.get('designs/' + this.detail().id + '/code?module=' + encodeURIComponent(this.codeModule() || 'app'))
+        .then((files) => this.codeFiles(files)).catch(showError);
 
       // --- editing the working model ---
 
@@ -308,8 +329,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- loading and actions ---
 
+      const loadTarget = (id) => api.get('workspaces/' + id + '/target').then((target) => {
+        this.targetTitle(target.title);
+        this.previewKind(target.preview);
+      });
+
       const loadDesigns = () => {
         const id = this.workspaceId();
+        if (id) {
+          loadTarget(id).catch(showError);
+        }
         if (!id) {
           this.designs([]);
           requirementOptions([]);
@@ -326,6 +355,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       const show = (detail, keepSelection) => {
+        if (!this.detail() || this.detail().id !== detail.id) {
+          this.codeFiles([]);
+        }
         this.detail(detail);
         this.working(clone(detail.model));
         this.dirty(false);

@@ -19,20 +19,26 @@ import java.util.regex.PatternSyntaxException;
  * Reads the "recipes" list of a pack file. Templates are read from the team's pack folder first, then from the
  * built-in packs. A recipe with the same id as an earlier one replaces it; "enabled: false" removes it.
  */
-final class RecipeLoader {
+public final class RecipeLoader {
 
     static final Set<String> ACTIONS = Set.of("create", "modify");
     static final Set<String> LAYERS = Set.of("data", "integration", "service", "ui", "test", "config");
     private static final Pattern ID = Pattern.compile("[a-z0-9][a-z0-9-]{1,63}");
 
     private final Path teamDir;
+    private final String classpathBase;
 
-    RecipeLoader(Path teamDir) {
+    /**
+     * @param teamDir       the team's folder whose files win over built-in ones, or null
+     * @param classpathBase the built-in folder on the classpath that template names are relative to, for example "packs"
+     */
+    public RecipeLoader(Path teamDir, String classpathBase) {
         this.teamDir = teamDir;
+        this.classpathBase = classpathBase;
     }
 
     @SuppressWarnings("unchecked")
-    void merge(Map<String, Recipe> recipes, Map<String, Object> file, String source) {
+    public void merge(Map<String, Recipe> recipes, Map<String, Object> file, String source) {
         Object list = file.get("recipes");
         if (list == null) {
             return;
@@ -122,7 +128,8 @@ final class RecipeLoader {
                 template, content, finder);
     }
 
-    private String template(String name, String where) {
+    /** A template's content: from the team folder if it has the file, else built in. */
+    public String template(String name, String where) {
         if (name.contains("..") || name.startsWith("/")) {
             throw new IllegalStateException(where + "template '" + name + "' must be a path inside the pack folder");
         }
@@ -136,7 +143,7 @@ final class RecipeLoader {
                 }
             }
         }
-        try (InputStream in = RecipeLoader.class.getResourceAsStream("/packs/" + name)) {
+        try (InputStream in = RecipeLoader.class.getResourceAsStream("/" + classpathBase + "/" + name)) {
             if (in == null) {
                 throw new IllegalStateException(where + "template not found: " + name);
             }

@@ -42,7 +42,7 @@ public class VersionPacks {
         }
         Map<String, Object> common = builtIn("common.yml");
         Map<String, Object> commonRecipes = builtIn("recipes.yml");
-        RecipeLoader recipeLoader = new RecipeLoader(dir);
+        RecipeLoader recipeLoader = new RecipeLoader(dir, "packs");
         for (String version : VERSIONS) {
             Map<String, Object> own = builtIn(version + ".yml");
             Map<String, PackRule> rules = new LinkedHashMap<>();
@@ -105,8 +105,9 @@ public class VersionPacks {
         }
     }
 
+    /** Reads one YAML pack file (a map). Also used for target packs. */
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> parse(InputStream in, String source) {
+    public static Map<String, Object> parse(InputStream in, String source) {
         Object document = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
         if (document == null) {
             return Map.of();
@@ -117,8 +118,9 @@ public class VersionPacks {
         return (Map<String, Object>) document;
     }
 
+    /** Adds the "rules" of a pack file: same id replaces, "enabled: false" removes. Also used for target packs. */
     @SuppressWarnings("unchecked")
-    private static void merge(Map<String, PackRule> rules, Map<String, Object> file, String source) {
+    public static void merge(Map<String, PackRule> rules, Map<String, Object> file, String source) {
         Object list = file.get("rules");
         if (list == null) {
             return;

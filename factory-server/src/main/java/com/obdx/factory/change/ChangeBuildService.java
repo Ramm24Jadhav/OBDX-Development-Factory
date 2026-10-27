@@ -247,7 +247,8 @@ public class ChangeBuildService {
             String note = heading + "\n" + entry.getValue().stream()
                     .map(e -> "- " + (e.line() > 0 ? "line " + e.line() + ": " : "") + e.message()).collect(Collectors.joining("\n"))
                     + "\nFix them and keep everything else unchanged.";
-            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note);
+            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
+                    changes.scaffold(context, file.path(), file.original()));
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),
                     file.edited(), result.check(), file.attempts() + result.attempts());
             fixed.add(file.path());

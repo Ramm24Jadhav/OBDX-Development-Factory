@@ -1,8 +1,8 @@
 <div class="oj-hybrid-padding">
   <h1>Screen designer</h1>
   <p class="oj-text-color-secondary">
-    Design screens from approved requirements, preview them with real JET components, share a review link with the
-    customer, and approve the final version for development.
+    Design screens from approved requirements, preview them with real components (Oracle JET, or the components of the
+    workspace's React Native or React app), share a review link with the customer, and approve the final version for development.
   </p>
 
   <oj-form-layout max-columns="2">
@@ -225,9 +225,28 @@
       <div class="factory-frame-box">
         <iframe id="designerPreview" title="Screen preview" :src="[[previewSrc]]" :style.width="[[frameWidth]]" class="factory-frame"></iframe>
       </div>
-      <p class="oj-typography-body-xs oj-text-color-secondary">
-        Preview with this factory's Oracle JET version and Redwood theme, filled with sample data. Click a component to select it.
-      </p>
+      <p id="previewNote" class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[previewNote]]"></oj-bind-text></p>
+      <oj-bind-if test="[[appTarget() && detail()]]">
+        <details id="designCode" class="factory-design-code">
+          <summary>Code for the <oj-bind-text value="[[targetTitle]]"></oj-bind-text> app</summary>
+          <p class="oj-typography-body-xs oj-text-color-secondary">
+            What code generation starts from for this design (last saved version): the screen with every field and action as a testID, its
+            test, and its texts. The model then completes it (loading data, calling the OBDX service).
+          </p>
+          <div class="factory-pin">
+            <oj-input-text id="codeModule" class="factory-pin-input" label-hint="Module folder" label-edge="inside" value="{{codeModule}}"></oj-input-text>
+            <oj-button id="showCodeButton" on-oj-action="[[showCode]]">Show code</oj-button>
+          </div>
+          <oj-bind-for-each data="[[codeFiles]]" as="f">
+            <template>
+              <details class="factory-code-file" open>
+                <summary><code><oj-bind-text value="[[f.data.path]]"></oj-bind-text></code></summary>
+                <pre class="factory-diff"><oj-bind-text value="[[f.data.content]]"></oj-bind-text></pre>
+              </details>
+            </template>
+          </oj-bind-for-each>
+        </details>
+      </oj-bind-if>
     </div>
   </div>
 </div>

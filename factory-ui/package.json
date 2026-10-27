@@ -10,7 +10,11 @@
     "fs-extra": "^8.1.0",
     "glob": "10.4.5",
     "underscore": "^1.10.2",
-    "@oracle/ojet-cli": "~21.0.1"
+    "@oracle/ojet-cli": "~21.0.1",
+    "esbuild": "0.28.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native-web": "0.21.4"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -21,7 +25,8 @@
   },
   "scripts": {
     "build": "ojet build",
-    "build:release": "ojet build --release",
-    "serve": "ojet serve"
+    "build:release": "ojet build --release && node scripts/build-previews.js",
+    "serve": "ojet serve",
+    "build:previews": "node scripts/build-previews.js"
   }
 }

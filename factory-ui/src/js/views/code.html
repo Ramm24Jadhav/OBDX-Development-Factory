@@ -30,6 +30,44 @@
       <p class="oj-text-color-success"><oj-bind-text value="[[svnMessage]]"></oj-bind-text></p>
     </oj-bind-if>
 
+    <h2>UI target</h2>
+    <p class="oj-text-color-secondary oj-typography-body-sm">
+      What screens are built with. Oracle JET enhances the bank's existing OBDX UI. React Native and React build the screens of a
+      new app (in its own folder of the repository) on the same OBDX services, from the same approved Screen Models; the designer
+      then previews screens with that app's components.
+    </p>
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-select-single id="targetSelect" label-hint="Target" data="[[targetProvider]]" value="{{targetId}}" readonly="[[!canManage()]]"></oj-select-single>
+      <oj-bind-if test="[[targetId() !== 'jet']]">
+        <oj-input-text id="appFolder" label-hint="App folder in the repository" value="{{appFolder}}" readonly="[[!canManage()]]"
+                       help-hints.definition="Relative to the workspace's SVN URL, for example mobile"></oj-input-text>
+      </oj-bind-if>
+    </oj-form-layout>
+    <oj-toolbar>
+      <oj-button id="saveTargetButton" on-oj-action="[[saveTarget]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
+      <oj-bind-if test="[[targetId() !== 'jet']]">
+        <a id="starterLink" class="factory-link-button" :href="[['api/targets/' + targetId() + '/starter.zip']]" download>Download starter project</a>
+      </oj-bind-if>
+    </oj-toolbar>
+    <oj-bind-if test="[[targetMessage()]]">
+      <p id="targetMessage" :class="[[targetWarning() ? 'factory-warning' : 'oj-text-color-success']]"><oj-bind-text value="[[targetMessage]]"></oj-bind-text></p>
+    </oj-bind-if>
+    <oj-bind-if test="[[mappingRows().length > 0]]">
+      <details id="targetMapping"><summary>How Screen Model components map to the app's components</summary>
+        <table class="factory-profile-table factory-mapping-table">
+          <thead><tr><th>Screen Model type</th><th>Component</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[mappingRows]]" as="m">
+              <template>
+                <tr><td><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
+                  <td><code><oj-bind-text value="[[m.data.component]]"></oj-bind-text></code></td></tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+      </details>
+    </oj-bind-if>
+
     <h2>Jenkins</h2>
     <p class="oj-text-color-secondary oj-typography-body-sm">
       Builds generated changes with the bank's Jenkins jobs. Branch mode builds the change's SVN branch; patch mode sends the
@@ -82,7 +120,8 @@
                   <div class="oj-typography-body-xs factory-warning-text"><oj-bind-text value="[[r.data.note]]"></oj-bind-text></div>
                 </oj-bind-if></td>
               <td><span :class="[['factory-status factory-severity-' + r.data.severity]]"><oj-bind-text value="[[r.data.severity]]"></oj-bind-text></span></td>
-              <td class="factory-evidence"><oj-bind-text value="[[r.data.files]]"></oj-bind-text></td>
+              <td class="factory-evidence"><div class="oj-typography-bold"><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></div>
+                <oj-bind-text value="[[r.data.files]]"></oj-bind-text></td>
               <td><oj-switch :id="[['rule-' + r.data.id]]" value="[[r.data.enabled]]" disabled="[[!r.data.canManage]]"
                              on-value-changed="[[r.data.toggle]]" label-hint="[[r.data.title]]" label-edge="none"></oj-switch></td>
             </tr>

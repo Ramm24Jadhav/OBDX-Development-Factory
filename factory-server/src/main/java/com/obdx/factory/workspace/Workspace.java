@@ -39,6 +39,14 @@ public class Workspace {
     @Column(name = "indexed_revision")
     private Long indexedRevision;
 
+    /** Target pack id: "jet" (the bank's OBDX UI), "react-native" or "react". */
+    @Column(nullable = false, length = 40)
+    private String target = "jet";
+
+    /** Folder of the new app in the repository, relative to the workspace's SVN URL; null for jet. */
+    @Column(name = "app_folder", length = 500)
+    private String appFolder;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -101,6 +109,19 @@ public class Workspace {
 
     public void setSvnPasswordEncrypted(String svnPasswordEncrypted) {
         this.svnPasswordEncrypted = svnPasswordEncrypted;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public String getAppFolder() {
+        return appFolder;
+    }
+
+    public void setTarget(String target, String appFolder) {
+        this.target = target;
+        this.appFolder = appFolder;
     }
 
     public void setIndexedRevision(Long indexedRevision) {

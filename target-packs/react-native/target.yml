@@ -1,0 +1,142 @@
+# React Native target pack: a new iOS and Android app (Expo, TypeScript) on the bank's OBDX REST services.
+id: react-native
+title: React Native (iOS and Android)
+description: A new mobile app built with React Native and Expo (TypeScript) that calls the bank's OBDX REST services.
+preview: react-native
+defaultAppFolder: mobile
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {Screen} the screen name in PascalCase (FundTransfer), {screenKey} the same in camelCase (fundTransfer).
+structure:
+  screen: src/screens/{module}/{Screen}Screen.tsx
+  test: src/screens/{module}/__tests__/{Screen}Screen.test.tsx
+  api: src/api/{module}Api.ts
+  texts: src/i18n/en.json
+  navigation: src/navigation/AppNavigator.tsx
+
+# Screen Model component type -> starter component (src/components). value: string, list (string[]) or boolean.
+components:
+  text: {component: TextField, value: string}
+  textarea: {component: TextField, value: string, props: multiline}
+  number: {component: NumberField, value: string}
+  amount: {component: AmountField, value: string}
+  date: {component: DateField, value: string}
+  select: {component: SelectField, value: string, options: true}
+  account: {component: AccountField, value: string, options: true}
+  radio: {component: RadioGroup, value: string, options: true}
+  checkbox: {component: CheckboxGroup, value: list, options: true}
+  switch: {component: SwitchField, value: boolean}
+  display: {component: ReadOnlyField, value: string}
+
+templates:
+  screen: templates/screen.tsx
+  test: templates/screen.test.tsx
+
+guidance: |
+  - This is a React Native app (Expo, TypeScript) in its own folder; it calls the bank's OBDX REST services. Do not
+    change the OBDX JET UI for it.
+  - Build screens only from the components in src/components (TextField, NumberField, AmountField, DateField,
+    SelectField, AccountField, RadioGroup, CheckboxGroup, SwitchField, ReadOnlyField, Button, Section, Screen). They
+    all take testID, label, value, onChange, error, required, readOnly, helpText, placeholder, maxLength (and options).
+    No HTML elements, no inline colors: use theme from src/components.
+  - Every field and action of the approved Screen Model keeps its Screen Model id as testID.
+  - Keep form state and validation in useForm (src/forms/useForm): rules for required and maxLength, check() for the
+    spec's other validations.
+  - All visible texts come from src/i18n/en.json through t('screenKey.name'); add the screen's texts there.
+  - Call OBDX services only through src/api (api.get/post from client.ts) in a <module>Api.ts file with typed request
+    and response types; take the service paths and fields from the bank's OBDX REST services.
+  - Screens do not navigate themselves: they call onAction(actionId) and onDone(), which AppNavigator wires up.
+  - Write tests with @testing-library/react-native (await render, await fireEvent).
+
+rules:
+  - id: rn-no-html
+    title: No HTML elements
+    severity: error
+    files: ["**/*.tsx"]
+    forbid: '<(div|span|p|input|button|select|textarea|label|form|h[1-6])[\s>/]'
+    message: React Native has no HTML elements; use the components in src/components (or View and Text).
+  - id: app-no-jet
+    title: No Oracle JET in the new app
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: '''ojs/|\bknockout\b|<oj-'
+    message: This is the new app; do not use Oracle JET or Knockout here.
+  - id: app-api-through-client
+    title: Services through src/api
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/src/api/**", "**/__tests__/**", "**/*.test.*"]
+    forbid: '(?<![.\w])fetch\s*\(|\bXMLHttpRequest\b|\baxios\b'
+    message: Call OBDX services through src/api (api.get/post in a <module>Api.ts file), not with fetch directly.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/src/screens/**/*.tsx"]
+    exclude: ["**/__tests__/**", "**/*.test.*"]
+    forbid: '<Text[^>]*>\s*[A-Za-z][^<>{}]*[A-Za-z]\s*</Text>|\b(label|title|placeholder|helpText)="[^"]*[A-Za-z]'
+    message: Take visible texts from src/i18n/en.json with t('screenKey.name') so they can be translated.
+  - id: app-theme-colors
+    title: Colors from the theme
+    severity: warning
+    files: ["**/src/screens/**/*.tsx"]
+    forbid: '[''"]#[0-9a-fA-F]{3,8}[''"]'
+    message: Use colors from theme (src/components/theme.ts), not literal color codes, so the design system applies.
+  - id: app-no-console
+    title: No console logging
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/__tests__/**", "**/*.test.*"]
+    forbid: '\bconsole\.(log|debug|info)\s*\('
+    message: Remove console logging from app code.
+  - id: app-no-any
+    title: Typed code
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: ':\s*any\b|\bas\s+any\b'
+    message: Use specific types (for example the request and response types of the API file) instead of any.
+
+recipes:
+  - id: app-screen
+    title: Screen in the React Native app
+    when: A screen of the requirement is built (or changed) in the React Native app.
+    guidance: |
+      - Start from the generated starting point: it already maps every field and action of the approved Screen Model to
+        the starter components, with testIDs, texts, required and length rules.
+      - Load data (for example the customer's accounts) and send the form through the module's API file.
+      - On success call onDone(); on an ApiError show its message (error state shown above the actions).
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/src/screens/**/*Screen.tsx"]
+        examples: {files: ["**/src/screens/**/*Screen.tsx"], exclude: ["**/__tests__/**"], contains: 'useForm|<Screen'}
+      - id: test
+        name: Screen test
+        files: ["**/src/screens/**/__tests__/*.test.tsx"]
+        examples: {files: ["**/src/**/__tests__/*.test.tsx"]}
+  - id: app-api
+    title: API file for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module in src/api, exporting typed functions (for example transfer(request): Promise<TransferResult>)
+        that call api.get/post with the OBDX service path.
+      - Declare request and response types with the field names the OBDX service uses.
+    parts:
+      - id: api
+        name: API file
+        files: ["**/src/api/*Api.ts"]
+        template: templates/api.ts
+        examples: {files: ["**/src/api/*Api.ts"]}
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - AppNavigator: add the screen to RootStackParamList and one Stack.Screen line, with onAction/onDone wired to
+        navigation.
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/src/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/src/navigation/*.tsx"]

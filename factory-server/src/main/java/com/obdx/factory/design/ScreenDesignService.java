@@ -5,6 +5,8 @@ import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.requirements.Requirement;
 import com.obdx.factory.requirements.RequirementService;
+import com.obdx.factory.target.TargetPack;
+import com.obdx.factory.target.TargetPacks;
 import com.obdx.factory.requirements.RequirementSpec;
 import com.obdx.factory.workspace.WorkspaceRepository;
 import org.springframework.stereotype.Service;
@@ -32,11 +34,13 @@ public class ScreenDesignService {
     private final WorkspaceRepository workspaces;
     private final RequirementService requirements;
     private final ScreenModelEditor editor;
+    private final TargetPacks targets;
     private final SecureRandom random = new SecureRandom();
 
     public ScreenDesignService(ScreenDesignRepository designs, DesignStore store, WorkspaceRepository workspaces,
-                               RequirementService requirements, ScreenModelEditor editor) {
+                               RequirementService requirements, ScreenModelEditor editor, TargetPacks targets) {
         this.designs = designs;
+        this.targets = targets;
         this.store = store;
         this.workspaces = workspaces;
         this.requirements = requirements;
@@ -53,9 +57,10 @@ public class ScreenDesignService {
                                Integer approvedVersion, String approvedBy, OffsetDateTime approvedAt) {
     }
 
+    /** preview: which renderer shows the screen (jet, react-native or react), from the workspace's UI target. */
     public record ReviewView(String name, ScreenDesign.Status status, int version, ScreenModel model,
                              List<DesignStore.Comment> comments, OffsetDateTime expiresAt, String approvedBy,
-                             OffsetDateTime approvedAt) {
+                             OffsetDateTime approvedAt, String preview) {
     }
 
     // --- create ---
@@ -192,7 +197,7 @@ public class ScreenDesignService {
     public ReviewView review(String token) {
         ScreenDesign design = byToken(token);
         return new ReviewView(design.getName(), design.getStatus(), design.getCurrentVersion(), currentModel(design),
-                store.comments(design.getId()), design.getReviewExpiresAt(), design.getApprovedBy(), design.getApprovedAt());
+                store.comments(design.getId()), design.getReviewExpiresAt(), design.getApprovedBy(), design.getApprovedAt(), preview(design));
     }
 
     /** The workspace a review link belongs to, for the audit log. */
@@ -217,10 +222,16 @@ public class ScreenDesignService {
         design.approve(name);
         designs.save(design);
         return new ReviewView(design.getName(), design.getStatus(), design.getCurrentVersion(), currentModel(design),
-                store.comments(design.getId()), null, design.getApprovedBy(), design.getApprovedAt());
+                store.comments(design.getId()), null, design.getApprovedBy(), design.getApprovedAt(), preview(design));
     }
 
     // --- helpers ---
+
+    /** The preview renderer of the design's workspace (its UI target). */
+    private String preview(ScreenDesign design) {
+        String target = workspaces.findById(design.getWorkspaceId()).map(w -> w.getTarget()).orElse(TargetPack.JET);
+        return targets.find(target).map(TargetPack::preview).orElse(TargetPack.JET);
+    }
 
     private ScreenDesign byToken(String token) {
         ScreenDesign design = designs.findByReviewToken(token)

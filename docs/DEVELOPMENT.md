@@ -6,6 +6,7 @@
 |---|---|
 | `factory-ui/` | Oracle JET web UI (Knockout MVVM, same style as OBDX). Built into static files and packaged into a jar. |
 | `factory-server/` | Spring Boot backend (Java 21): REST API, model gateway, database access. Serves the UI. |
+| `target-packs/` | UI target packs (Oracle JET, React Native, React): component mapping, templates, rules and starter projects. Packaged into the server; the UI build bundles the starters' components for the previews. |
 | `deploy/` | Linux service file and settings template for installing on a server. |
 | `docs/` | Architecture and this guide. |
 | `Jenkinsfile` | Jenkins pipeline that builds, tests and archives the jar. |
@@ -22,8 +23,9 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
 - `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`; `ChangeBuildService` runs the quick checks and Jenkins builds with the fix loop.
 - `pack/`: version packs. `VersionPacks` loads the YAML rule and recipe files (`RecipeLoader` for recipes and templates); `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings; `RecipeService` finds and pins reference examples.
+- `target/`: UI targets. `TargetPacks` loads `target-packs/`; `ScreenScaffolder` turns an approved Screen Model into a screen, test and texts for React Native or React; `TargetService` holds each workspace's target and app folder, the starter download and the planner's guide.
 - `jenkins/`: Jenkins settings, REST client and build log parsing.
-- `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
+- `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC, SAML); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
 - `model/`: the model gateway. `ModelGateway` is the only way the factory calls AI models; `OpenAiCompatibleModelGateway` works with Ollama, vLLM and private OpenAI-compatible endpoints.
 - `common/`: shared exceptions and the error handler that returns problem details to the UI.
@@ -163,6 +165,27 @@ Delivery branches (`branches/factory/cr-<id>`) are temporary. A change ends in o
 - **Automatically**, every night (`FACTORY_BRANCH_CLEANUP`, a Spring cron expression, default `0 17 2 * * *`; `-` turns it off), delivered changes whose branch is fully merged are closed as merged by "factory (automatic)" and their branches removed. Merges done without merge tracking (copying files by hand) are not detected; close those changes by hand.
 
 Removed branches stay in the SVN history and can be restored (`svn copy <branch URL>@<revision> ...`). The factory only removes branches it created, named `cr-<change id>` in the configured branch folder. A change that still has its branch cannot be deleted; close it first. Closing is recorded in the audit log.
+
+## UI targets: React Native and React
+
+Each workspace has a **UI target** (Code page, **UI target**; changes need Manage code):
+
+- **Oracle JET** (default): enhance the bank's existing OBDX UI, as described above.
+- **React Native** (iOS and Android, Expo, TypeScript) or **React** (web, Vite, TypeScript): build the screens of a **new app** that lives in its own **app folder** of the same repository (default `mobile` or `web`, relative to the workspace's SVN URL) and calls the existing OBDX REST services. OBDX backend changes still follow the version pack.
+
+The packs are in `target-packs/` (see its README). Each has a **starter project**: navigation, API client for OBDX services, texts (`src/i18n/en.json`), form handling (`useForm`) and one form component per Screen Model type (`TextField`, `AmountField`, `SelectField`, `AccountField`, ...). Download it from the Code page (**Download starter project**), commit it to the app folder with TortoiseSVN and import again; the Code page says whether the app was found. Restyle the components or rebuild them with the bank's design system; generated screens keep working because they only use the components' props.
+
+What changes with a React Native or React target:
+
+- **Designer and customer review**: the preview renders the screen with the starter's own components, through React Native Web (phone size) or React, bundled into the factory (no internet needed). Check React Native screens on a real device with Expo (`npm start` in the app). **Code for the ... app** in the designer shows what a design becomes: the screen, its test and its texts.
+- **Impact analysis**: the planner is told to build the screens in the app folder (screen, test, API file, texts, navigation, by the pack's `structure`) and not to change the JET UI.
+- **Generation**: for each screen and test the factory first generates a starting point from the approved Screen Model (`ScreenScaffolder`): every field mapped to its component with the Screen Model id as `testID`, texts keys, required and length rules, spec validations as comments, actions wired to `submit` or `onAction`. The texts file is merged. The model completes it (loading options, calling the API file), with the pack's guidance and recipes and examples from the app itself.
+- **Parity**: a screen must keep every field and action of the approved design as a `testID`; if one is missing, the model gets that as a failed check and fixes it (also on **Check again** and before Jenkins builds). The generated test checks the same at run time, plus the required-field messages.
+- **Quick checks**: files in the app folder follow the target pack's rules (for example no HTML elements in React Native, OBDX calls only through `src/api`, texts through `t()`, no Oracle JET); other code keeps the version pack's rules. Both appear on the Code page and can be turned off per workspace.
+
+Teams can adapt a pack without rebuilding: `FACTORY_PACKS_DIR/targets/<id>/target.yml` replaces the guidance and adds or replaces component mappings, structure entries, rules and recipes by id; files under `targets/<id>/starter/` and `targets/<id>/templates/` win over the built-in ones (for example the bank's own `theme.ts`). A folder with a new id defines a new target pack.
+
+Generated screens were checked with the real toolchains: the React Native starter with a generated screen type-checks (`tsc`) and its tests pass (Jest, React Native Testing Library); the React starter builds (`vite build`) and its tests pass (Vitest).
 
 ## Recipes, templates and reference examples
 
@@ -316,6 +339,10 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples` | Pin a file as a reference example (`path`) |
 | `DELETE /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples?path=` | Unpin it |
 | `POST /api/changes/{id}/close` | Close the change (`reason`: `MERGED` or `ABANDONED`, `force` to close as merged without the merge check); removes its branch |
+| `GET /api/targets` | The UI target packs with their component mapping and structure |
+| `GET /api/targets/{id}/starter.zip` | Download a target pack's starter project |
+| `GET` / `PUT /api/workspaces/{id}/target` | The workspace's UI target and app folder (`target`, `appFolder`) |
+| `GET /api/designs/{id}/code?module=` | The screen, test and texts a design becomes in the workspace's React Native or React app |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
@@ -356,4 +383,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-The React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Modernization at scale (section 6 of the architecture): scanning and inventorying a whole OBDX application, reverse-engineering existing JET screens into Screen Models, wave planning, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

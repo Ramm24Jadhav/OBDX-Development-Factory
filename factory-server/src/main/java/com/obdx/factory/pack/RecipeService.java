@@ -3,6 +3,7 @@ package com.obdx.factory.pack;
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
+import com.obdx.factory.target.TargetPacks;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -58,12 +59,17 @@ public class RecipeService {
     }
 
     private final VersionPacks packs;
+    private final TargetPacks targets;
+    private final LocalChecks checks;
     private final PackService packService;
     private final StorageProperties storage;
     private final JdbcTemplate jdbc;
 
-    public RecipeService(VersionPacks packs, PackService packService, StorageProperties storage, JdbcTemplate jdbc) {
+    public RecipeService(VersionPacks packs, TargetPacks targets, LocalChecks checks, PackService packService, StorageProperties storage,
+                         JdbcTemplate jdbc) {
         this.packs = packs;
+        this.targets = targets;
+        this.checks = checks;
         this.packService = packService;
         this.storage = storage;
         this.jdbc = jdbc;
@@ -73,7 +79,7 @@ public class RecipeService {
         CheckScope scope = packService.scope(workspaceId);
         VersionPack pack = pack(scope);
         Finder finder = new Finder(workspaceId, scope);
-        List<RecipeView> views = pack.recipes().stream().map(recipe -> new RecipeView(recipe.id(), recipe.title(), recipe.when(),
+        List<RecipeView> views = recipes(scope).stream().map(recipe -> new RecipeView(recipe.id(), recipe.title(), recipe.when(),
                 recipe.guidance(), List.copyOf(recipe.actions()), List.copyOf(recipe.layers()), recipe.source(),
                 recipe.parts().stream().map(part -> new PartView(part.id(), part.name(), part.files(), part.exclude(), part.template(),
                         part.content(), finder.examples(recipe, part))).toList())).toList();
@@ -104,7 +110,7 @@ public class RecipeService {
     /** The reference example paths for a plan item (pinned first), or an empty list when no recipe covers it. */
     public List<String> examplesFor(UUID workspaceId, String path, String action, String layer) {
         CheckScope scope = packService.scope(workspaceId);
-        Optional<Recipe.Match> match = packs.find(scope.version()).flatMap(p -> p.recipeFor(path, action, layer));
+        Optional<Recipe.Match> match = checks.recipeFor(scope, path, action, layer);
         if (match.isEmpty()) {
             return List.of();
         }
@@ -114,14 +120,14 @@ public class RecipeService {
     /** A short description of the recipes, with example paths, for the planner. */
     public String planGuide(UUID workspaceId) {
         CheckScope scope = packService.scope(workspaceId);
-        VersionPack pack = packs.find(scope.version()).orElse(null);
-        if (pack == null || pack.recipes().isEmpty()) {
+        List<Recipe> recipes = packs.find(scope.version()).isEmpty() ? List.of() : recipes(scope);
+        if (recipes.isEmpty()) {
             return "";
         }
         Finder finder = new Finder(workspaceId, scope);
         StringBuilder guide = new StringBuilder();
-        for (Recipe recipe : pack.recipes()) {
-            guide.append("- ").append(recipe.title()).append(" (").append(String.join("/", recipe.actions().isEmpty() ? List.of("create", "modify") : recipe.actions().stream().sorted().toList()))
+        for (Recipe recipe : recipes) {
+            guide.append("- ").append(recipe.title()).append(fromTarget(scope, recipe) ? " [new app, in " + scope.appFolder() + "/]" : "").append(" (").append(String.join("/", recipe.actions().isEmpty() ? List.of("create", "modify") : recipe.actions().stream().sorted().toList()))
                     .append(recipe.layers().isEmpty() ? "" : ", layer " + String.join("/", recipe.layers().stream().sorted().toList())).append("): ")
                     .append(recipe.when() == null ? "" : recipe.when()).append('\n');
             for (Recipe.Part part : recipe.parts()) {
@@ -135,13 +141,25 @@ public class RecipeService {
     }
 
     private Recipe.Part part(UUID workspaceId, String recipeId, String partId) {
-        VersionPack pack = pack(packService.scope(workspaceId));
-        Recipe recipe = pack.recipe(recipeId).orElseThrow(() -> new NotFoundException("No recipe " + recipeId + " in the OBDX " + pack.version() + " pack"));
+        CheckScope scope = packService.scope(workspaceId);
+        Recipe recipe = recipes(scope).stream().filter(r -> r.id().equals(recipeId)).findFirst()
+                .orElseThrow(() -> new NotFoundException("No recipe " + recipeId + " for this workspace"));
         Recipe.Part part = recipe.part(partId);
         if (part == null) {
             throw new NotFoundException("No part " + partId + " in recipe " + recipeId);
         }
         return part;
+    }
+
+    /** The version pack's recipes, then (for a React Native or React target) the target pack's. */
+    private List<Recipe> recipes(CheckScope scope) {
+        List<Recipe> all = new ArrayList<>(pack(scope).recipes());
+        targets.find(scope.target()).filter(t -> !t.isJet() && scope.appFolder() != null).ifPresent(t -> all.addAll(t.recipes()));
+        return all;
+    }
+
+    private boolean fromTarget(CheckScope scope, Recipe recipe) {
+        return scope.appFolder() != null && targets.find(scope.target()).map(t -> t.recipes().contains(recipe)).orElse(false);
     }
 
     private VersionPack pack(CheckScope scope) {
@@ -151,12 +169,14 @@ public class RecipeService {
     /** Finds examples in one workspace's code; reads the file list and pins once. */
     private final class Finder {
 
+        private final CheckScope scope;
         private final List<CodeFile> files;
         private final List<String> customizationFolders = new ArrayList<>();
         private final Map<String, List<Pin>> pins = new LinkedHashMap<>();
         private final Path workingCopy;
 
         Finder(UUID workspaceId, CheckScope scope) {
+            this.scope = scope;
             this.files = jdbc.query("SELECT path, size_bytes FROM code_file WHERE workspace_id = ?",
                     (rs, row) -> new CodeFile(rs.getString("path"), rs.getInt("size_bytes")), workspaceId);
             String folders = scope.facts().get("conventions.customizationFolders");
@@ -183,6 +203,8 @@ public class RecipeService {
             Pattern contains = part.examples().contains() == null ? null : Pattern.compile(part.examples().contains(), Pattern.MULTILINE);
             List<CodeFile> candidates = files.stream()
                     .filter(f -> f.size() >= MIN_EXAMPLE_BYTES && f.size() <= MAX_EXAMPLE_BYTES && part.examples().accepts(f.path()))
+                    // Examples for the new app come from the app itself; examples for OBDX code never from the app.
+                    .filter(f -> fromTarget(scope, recipe) == scope.inApp(f.path()))
                     .filter(f -> result.stream().noneMatch(e -> e.path().equals(f.path())))
                     .sorted(Comparator.comparingInt(this::score).reversed()
                             .thenComparingInt(f -> Math.abs(f.size() - 4000))

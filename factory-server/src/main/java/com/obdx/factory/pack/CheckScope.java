@@ -6,10 +6,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * What the quick checks of one workspace depend on: its OBDX version (which pack), its Project Profile facts (key to
- * value, confirmed or corrected values first) and the rules turned off for it.
+ * What the quick checks and recipes of one workspace depend on: its OBDX version (which version pack), its Project
+ * Profile facts (key to value, confirmed or corrected values first), the rules turned off for it, and its target pack
+ * with the folder of the new app (files there follow the target pack instead of the version pack).
  */
-public record CheckScope(String version, Map<String, String> facts, Set<String> disabled) {
+public record CheckScope(String version, Map<String, String> facts, Set<String> disabled, String target, String appFolder) {
 
     private static final Pattern NUMBER = Pattern.compile("(\\d+)");
     /** "1.8" is Java 8. */
@@ -18,11 +19,23 @@ public record CheckScope(String version, Map<String, String> facts, Set<String> 
     public CheckScope {
         facts = facts == null ? Map.of() : Map.copyOf(facts);
         disabled = disabled == null ? Set.of() : Set.copyOf(disabled);
+        target = target == null ? "jet" : target;
+        appFolder = appFolder == null || appFolder.isBlank() || "jet".equals(target) ? null : appFolder.replaceAll("^/+|/+$", "");
+    }
+
+    /** A workspace that enhances the bank's existing OBDX UI (the jet target). */
+    public CheckScope(String version, Map<String, String> facts, Set<String> disabled) {
+        this(version, facts, disabled, "jet", null);
     }
 
     /** No pack: only the syntax checks run. */
     public static CheckScope none() {
         return new CheckScope(null, Map.of(), Set.of());
+    }
+
+    /** True for files of the new app (a React Native or React target), which follow the target pack. */
+    public boolean inApp(String path) {
+        return appFolder != null && path != null && path.replace('\\', '/').startsWith(appFolder + "/");
     }
 
     /** The Java version from the profile ("Java 8 (also: ...)" gives 8), or null. */

@@ -12,6 +12,8 @@ public record WorkspaceResponse(
         String svnUsername,
         boolean svnPasswordSet,
         Long indexedRevision,
+        String target,
+        String appFolder,
         OffsetDateTime createdAt) {
 
     public static WorkspaceResponse from(Workspace workspace) {
@@ -24,6 +26,8 @@ public record WorkspaceResponse(
                 workspace.getSvnUsername(),
                 workspace.getSvnPasswordEncrypted() != null,
                 workspace.getIndexedRevision(),
+                workspace.getTarget(),
+                workspace.getAppFolder(),
                 workspace.getCreatedAt());
     }
 }

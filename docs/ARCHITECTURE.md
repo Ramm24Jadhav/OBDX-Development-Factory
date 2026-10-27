@@ -246,6 +246,8 @@ A **Target Pack** teaches the factory how to turn a target-neutral Screen Model 
 
 Version packs (5.3) describe OBDX release differences; target packs describe UI technologies. A workspace uses one version pack and one target pack at a time.
 
+*Implemented:* JET, React Native (Expo, TypeScript) and React (Vite, TypeScript) target packs in `target-packs/`, each with component mapping, file structure, guidance, quick-check rules, recipes, templates and a starter project whose form components are also what the designer's preview renders (React Native Web for React Native). A workspace chooses its target and the app folder; generated screens start from a deterministic scaffold of the approved Screen Model, and parity (every field and action as a testID) is checked and tested. Not yet: device previews with Expo inside the factory, and the modernization steps of section 6 beyond building screens (inventory, reverse-engineering, waves).
+
 ---
 
 ## 6. Modernization mode

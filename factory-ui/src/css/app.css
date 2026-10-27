@@ -439,3 +439,6 @@
 .factory-recipe .factory-profile-table th:nth-child(1) { width: 190px; }
 .factory-recipe .factory-profile-table th:nth-child(3) { width: 42%; }
 .factory-recipe pre { max-height: 360px; overflow: auto; }
+.factory-design-code { margin-top: 12px; }
+.factory-code-file pre { max-height: 420px; overflow: auto; }
+.factory-mapping-table { max-width: 560px; }

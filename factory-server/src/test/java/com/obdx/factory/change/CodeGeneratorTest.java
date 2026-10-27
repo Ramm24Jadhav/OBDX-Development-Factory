@@ -41,7 +41,7 @@ class CodeGeneratorTest {
         }
     };
     private final CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"),
-            new LocalChecks(VersionPacks.builtIn()), VersionPacks.builtIn());
+            new LocalChecks(VersionPacks.builtIn()));
 
     private final ChangeContext context = new ChangeContext("Remarks", "{\"screens\": []}", "[{\"name\": \"Transfer\"}]", "- Java version: Java 8", "backend/: 3");
     private final ChangePlan.Item item = new ChangePlan.Item("backend/RemarksValidator.java", "create", "service", "Validate remarks",

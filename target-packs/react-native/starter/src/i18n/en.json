@@ -1,0 +1,11 @@
+{
+  "common": {
+    "required": "Enter {label}.",
+    "tooLong": "{label} can have at most {max} characters.",
+    "failed": "Something went wrong. Try again."
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Welcome"
+  }
+}

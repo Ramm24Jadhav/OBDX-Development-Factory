@@ -7,6 +7,8 @@ import com.obdx.factory.jenkins.JenkinsSettings;
 import com.obdx.factory.jenkins.JenkinsSettingsService;
 import com.obdx.factory.jenkins.StubJenkins;
 import com.obdx.factory.pack.RecipeService;
+import com.obdx.factory.target.TargetPacks;
+import com.obdx.factory.target.TargetService;
 import com.obdx.factory.importing.ImportService;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.requirements.Requirement;
@@ -96,7 +98,19 @@ class ChangeFlowIntegrationTest {
              "risks": ["Host narrative length is assumed to be 35"]}
             """;
 
+    static final String APP_PLAN = """
+            {"summary": "Remarks in the mobile app's fund transfer screen.",
+             "items": [
+               {"path": "mobile/src/api/paymentsApi.ts", "action": "create", "layer": "ui", "purpose": "Transfer service"},
+               {"path": "mobile/src/screens/payments/FundTransferScreen.tsx", "action": "create", "layer": "ui", "purpose": "Fund transfer screen"},
+               {"path": "mobile/src/screens/payments/__tests__/FundTransferScreen.test.tsx", "action": "create", "layer": "test", "purpose": "Screen test"},
+               {"path": "mobile/src/i18n/en.json", "action": "modify", "layer": "ui", "purpose": "Texts"},
+               {"path": "mobile/src/navigation/AppNavigator.tsx", "action": "modify", "layer": "ui", "purpose": "Register the screen"}],
+             "risks": []}
+            """;
+
     static final AtomicInteger validatorAttempts = new AtomicInteger();
+    static final AtomicInteger appScreenAttempts = new AtomicInteger();
     static final List<String> chatPrompts = new java.util.concurrent.CopyOnWriteArrayList<>();
     static final List<String> planPrompts = new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -126,6 +140,9 @@ class ChangeFlowIntegrationTest {
                     chatPrompts.add(userPrompt);
                     String file = userPrompt.lines().findFirst().orElse("");
                     String reply;
+                    if (file.startsWith("File to write: mobile/")) {
+                        return new ChatResult(appFile(file, userPrompt), "canned", 0);
+                    }
                     if (userPrompt.contains("The quick checks")) {
                         reply = "package com.bank.payments;\n\n// fixed after the quick checks\npublic class RemarksValidator {\n"
                                 + "    void check(String remarks) {\n    }\n}\n";
@@ -152,7 +169,8 @@ class ChangeFlowIntegrationTest {
                     if (systemPrompt.contains("change plan")) {
                         planPrompts.add(userPrompt);
                     }
-                    return new ChatResult(systemPrompt.contains("change plan") ? PLAN : SPEC, "canned", 0);
+                    return new ChatResult(systemPrompt.contains("change plan") ? (userPrompt.contains("UI target:") ? APP_PLAN : PLAN) : SPEC,
+                            "canned", 0);
                 }
 
                 @Override
@@ -201,6 +219,9 @@ class ChangeFlowIntegrationTest {
     @Autowired
     private ChangeBranchService changeBranches;
 
+    @Autowired
+    private TargetService targets;
+
     private UUID workspaceId;
 
     @BeforeAll
@@ -208,9 +229,35 @@ class ChangeFlowIntegrationTest {
         assumeTrue(TestSvnRepository.toolsAvailable(), "svn and svnadmin are not installed");
     }
 
+    /** Files of the mobile app: the generated starting point, except that the screen's first version loses a field. */
+    static String appFile(String file, String prompt) {
+        String marker = prompt.contains("Starting point generated from the approved Screen Model")
+                ? "Starting point generated from the approved Screen Model" : "The texts file with this change's screens added";
+        if (prompt.contains(marker)) {
+            String start = prompt.substring(prompt.indexOf('\n', prompt.indexOf(marker)) + 1);
+            String scaffold = start.substring(0, start.lastIndexOf("\nWrite the complete content of"));
+            if (file.contains("FundTransferScreen.tsx") && appScreenAttempts.incrementAndGet() == 1) {
+                return scaffold.replace("testID=\"c-remarks\"", "testID=\"remarks-box\"");
+            }
+            return scaffold;
+        }
+        if (file.contains("paymentsApi.ts")) {
+            return "import { api } from './client';\n\nexport interface TransferRequest {\n  remarks: string;\n}\n\n"
+                    + "export function transfer(request: TransferRequest): Promise<void> {\n  return api.post<void>('/digx/v1/payments/transfers', request);\n}\n";
+        }
+        // Other files (navigation): the current content with one line added.
+        int current = prompt.indexOf("Current content of ");
+        if (current < 0) {
+            return "export {};\n";
+        }
+        String content = prompt.substring(prompt.indexOf('\n', current) + 1);
+        return "// Fund transfer added by the change\n" + content.substring(0, content.indexOf("\n\n"));
+    }
+
     @BeforeEach
     void resetCannedModel() {
         validatorAttempts.set(0);
+        appScreenAttempts.set(0);
         chatPrompts.clear();
         planPrompts.clear();
     }
@@ -413,6 +460,72 @@ class ChangeFlowIntegrationTest {
         assertThatThrownBy(() -> changeBranches.close(changeId, ChangeRequest.CloseReason.ABANDONED, false, "Lead"))
                 .hasMessageContaining("is closed");
         changes.delete(changeId);
+    }
+
+    @Test
+    void buildsScreensOfAReactNativeAppFromTheApprovedDesign() throws Exception {
+        Map<String, String> repoFiles = new java.util.LinkedHashMap<>(Map.of("backend/src/com/bank/payments/FundTransferService.java", SERVICE));
+        TargetPacks.builtIn().find("react-native").orElseThrow().starter().forEach((path, content) -> repoFiles.put("mobile/" + path, content));
+        TestSvnRepository repo = TestSvnRepository.create(temp.resolve("svn-app"), repoFiles);
+        workspaceId = workspaces.create(new WorkspaceRequest("app-" + UUID.randomUUID(), "Bank C", "25.x", null)).id();
+        workspaces.updateSvnSettings(workspaceId, new SvnSettingsRequest(repo.trunkUrl(), null, null));
+        UUID job = imports.start(workspaceId).id();
+        waitFor(() -> imports.recent(workspaceId, 1).getFirst().status() == ImportJob.Status.SUCCEEDED, "import of " + job);
+        assertThatThrownBy(() -> targets.update(workspaceId, new TargetService.TargetRequest("react-native", "../outside")))
+                .hasMessageContaining("relative path");
+        TargetService.WorkspaceTarget target = targets.update(workspaceId, new TargetService.TargetRequest("react-native", null));
+        assertThat(target.appFolder()).isEqualTo("mobile");
+        assertThat(target.appFolderExists()).isTrue();
+
+        UUID requirementId = requirements.fromText(workspaceId, "Transfer remarks", "Add remarks to transfers.").id();
+        waitFor(() -> requirements.get(requirementId).status() == Requirement.Status.READY, "spec");
+        requirements.approve(requirementId, "Lead");
+        UUID designId = designs.fromRequirement(requirementId).getFirst().id();
+        String token = designs.openReview(designId, 7).reviewToken();
+        assertThat(designs.review(token).preview()).as("customers review with the app's components").isEqualTo("react-native");
+        designs.approve(designId, "Lead");
+        assertThat(targets.code(workspaceId, designs.get(designId).model(), "payments")).extracting(TargetService.CodeFile::path)
+                .containsExactly("mobile/src/screens/payments/FundTransferScreen.tsx",
+                        "mobile/src/screens/payments/__tests__/FundTransferScreen.test.tsx", "mobile/src/i18n/en.json");
+
+        UUID changeId = changes.create(requirementId, "Dev").id();
+        waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.PLAN_READY, "plan");
+        assertThat(planPrompts.getLast()).contains("UI target:", "a new React Native (iOS and Android) app in the folder mobile/",
+                "- screen: mobile/src/screens/{module}/{Screen}Screen.tsx", "Screen in the React Native app [new app, in mobile/]");
+        assertThat(changes.get(changeId).plan().items()).hasSize(5);
+
+        changes.approvePlan(changeId, "Lead");
+        waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "code");
+        ChangeService.ChangeDetail generated = changes.get(changeId);
+        assertThat(generated.files()).extracting(ChangeService.FileView::path, ChangeService.FileView::checkStatus).contains(
+                org.assertj.core.groups.Tuple.tuple("mobile/src/screens/payments/FundTransferScreen.tsx", FileChecks.Status.PASSED),
+                org.assertj.core.groups.Tuple.tuple("mobile/src/api/paymentsApi.ts", FileChecks.Status.PASSED));
+        ChangeService.FileView screen = generated.files().stream().filter(f -> f.path().endsWith("FundTransferScreen.tsx")).findFirst().orElseThrow();
+        assertThat(screen.attempts()).as("the screen lost a field once and was fixed").isEqualTo(2);
+
+        String screenPrompt = chatPrompts.stream().filter(p -> p.startsWith("File to write: mobile/src/screens/payments/FundTransferScreen.tsx"))
+                .findFirst().orElseThrow();
+        assertThat(screenPrompt).contains("How the new app is built (target pack):", "target pack recipe \"Screen in the React Native app\"",
+                "Starting point generated from the approved Screen Model", "export function FundTransferScreen(", "testID=\"c-remarks\"")
+                .doesNotContain("version pack recipe", "OBDX base service");
+        String fixPrompt = chatPrompts.stream().filter(p -> p.startsWith("File to write: mobile/src/screens/payments/FundTransferScreen.tsx")
+                && p.contains("Parity with the approved Screen Model")).findFirst().orElseThrow();
+        assertThat(fixPrompt).contains("no testID for c-remarks");
+        String apiPrompt = chatPrompts.stream().filter(p -> p.startsWith("File to write: mobile/src/api/paymentsApi.ts")).findFirst().orElseThrow();
+        assertThat(apiPrompt).contains("Template to start from", "<<Name>>Request");
+
+        assertThat(changes.fileContent(changeId, "mobile/src/i18n/en.json").generated()).contains("\"fundTransfer\": {", "\"common\": {");
+        assertThat(changes.fileContent(changeId, "mobile/src/screens/payments/__tests__/FundTransferScreen.test.tsx").generated())
+                .contains("const ids = ['c-remarks'");
+
+        // Quick checks of the app follow the target pack, not the JET version pack.
+        changes.editFile(changeId, "mobile/src/screens/payments/FundTransferScreen.tsx",
+                changes.fileContent(changeId, "mobile/src/screens/payments/FundTransferScreen.tsx").generated()
+                        .replace("export function", "const legacy = ko.observable('ojs/ojknockout');\nconsole.log(legacy);\nexport function"));
+        ChangeService.FileView edited = changes.checkAgain(changeId).files().stream().filter(f -> f.path().endsWith("FundTransferScreen.tsx"))
+                .findFirst().orElseThrow();
+        assertThat(edited.checkStatus()).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(edited.checkMessage()).contains("(app-no-jet, error)", "(app-no-console, warning)").doesNotContain("js-no-console");
     }
 
     @Test
