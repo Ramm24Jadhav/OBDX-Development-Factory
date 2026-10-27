@@ -1,0 +1,192 @@
+# Recipes: how the usual kinds of OBDX work are built, for every OBDX version. A version file (22.x.yml, 25.x.yml)
+# can add recipes or replace one with the same id.
+#
+# Each recipe has:
+#   id, title  identifier and short name
+#   when       when it applies; shown to the planner
+#   match      which plan items it covers: action (create, modify) and layer (data, integration, service, ui,
+#              test, config); leave one out to cover all
+#   guidance   steps and conventions; given to the planner (summary) and to the model writing each file
+#   parts      the kinds of files: id, name, files (path globs of plan items), exclude, an optional template
+#              (a file in the pack folder, with <<placeholders>> the model fills in) and how to find reference
+#              examples in the bank's own code: examples.files / exclude (globs), contains (regular expression the
+#              file must contain) and count
+#
+# Reference examples come from the bank's indexed code: files in customization folders are preferred, Oracle product
+# code is avoided, and a developer can pin the files that show the bank's way best (Profile page). The bank's
+# examples win where they differ from a template.
+
+recipes:
+  - id: ui-new-screen
+    title: New UI screen
+    when: The requirement needs a new screen, page or component in the OBDX (Oracle JET) UI.
+    match: {action: create, layer: ui}
+    guidance: |
+      - A screen is a view model (JavaScript), a view (HTML) and a resource bundle with its texts; create all three,
+        in the folders where the bank keeps its own (customized) screens, named like the reference examples.
+      - Use the module system, base modules and imports of the reference examples (in OBDX usually RequireJS
+        define([...], function (...) { ... }) with Knockout observables).
+      - One observable per field of the approved screen design, with the validations from the spec.
+      - Every visible text (labels, hints, messages, buttons) comes from the resource bundle; add the texts for all
+        locales the bank's other bundles have.
+      - Call REST services the way the reference examples do (through the component's model and the OBDX base
+        service), never with direct AJAX calls.
+      - Register the screen wherever the bank registers screens (menu, navigation or component registry), as a
+        separate plan item when that is a modified file.
+    parts:
+      - id: view-model
+        name: View model
+        files: ["**/*.js", "**/*.ts"]
+        exclude: ["**/nls/**", "**/resources/**", "**/*.min.js"]
+        template: templates/ui-view-model.js
+        examples:
+          files: ["**/viewModels/**/*.js", "**/components/**/*.js", "**/modules/**/*.js"]
+          exclude: ["**/nls/**", "**/resources/**", "**/*.min.js", "**/libs/**", "**/node_modules/**", "**/model.js"]
+          contains: 'ko\.observable'
+      - id: view
+        name: View
+        files: ["**/*.html"]
+        exclude: ["**/index.html"]
+        template: templates/ui-view.html
+        examples:
+          files: ["**/views/**/*.html", "**/components/**/*.html", "**/modules/**/*.html"]
+          contains: '<oj-'
+      - id: resource-bundle
+        name: Resource bundle (texts)
+        files: ["**/nls/**/*.js", "**/resources/**/*.js"]
+        template: templates/ui-resource-bundle.js
+        examples:
+          files: ["**/nls/**/*.js", "**/resources/**/*.js"]
+          contains: '\broot\s*:'
+
+  - id: ui-enhance-screen
+    title: Enhance an existing UI screen
+    when: The requirement adds or changes fields, sections, validations or actions on a screen that already exists.
+    match: {action: modify, layer: ui}
+    guidance: |
+      - Change only what the requirement needs; keep the rest of the file exactly as it is (structure, formatting,
+        comments, order).
+      - A new field usually needs: an element in the view, an observable (and validation) in the view model, its
+        label and messages in the resource bundle for every locale, and the value in the request the screen sends.
+      - Reuse the components, CSS classes and validators the screen already uses.
+      - If the screen is Oracle product code, do not edit it in place when the bank's customizations show another way
+        (for example a customization folder or extension point); follow that way and say so in the plan's risks.
+    parts:
+      - id: view-model
+        name: View model
+        files: ["**/*.js", "**/*.ts"]
+        exclude: ["**/nls/**", "**/resources/**", "**/*.min.js"]
+        examples:
+          files: ["**/viewModels/**/*.js", "**/components/**/*.js", "**/modules/**/*.js"]
+          exclude: ["**/nls/**", "**/resources/**", "**/*.min.js", "**/libs/**", "**/node_modules/**"]
+          contains: 'ko\.observable'
+      - id: view
+        name: View
+        files: ["**/*.html"]
+        examples:
+          files: ["**/views/**/*.html", "**/components/**/*.html", "**/modules/**/*.html"]
+          contains: '<oj-'
+      - id: resource-bundle
+        name: Resource bundle (texts)
+        files: ["**/nls/**/*.js", "**/resources/**/*.js"]
+        examples:
+          files: ["**/nls/**/*.js", "**/resources/**/*.js"]
+          contains: '\broot\s*:'
+
+  - id: service-new
+    title: New backend service or class
+    when: The requirement needs new business logic, a new REST service, a DTO or a validator on the OBDX backend.
+    match: {action: create, layer: service}
+    guidance: |
+      - Put the class in the bank's own packages and folders (not in Oracle product packages), next to similar
+        classes, named with the suffixes the bank uses (for example Service, Validator, DTO).
+      - Use the frameworks, annotations, base classes, logging and error handling of the reference examples; raise
+        errors with the bank's error codes and exception classes, never with System.out or printStackTrace.
+      - Keep the Java level of the bank's build; do not use newer language features than its other code.
+      - Validate inputs as the spec says; read configuration the way the examples do, never hard-coded values.
+    parts:
+      - id: java
+        name: Java class
+        files: ["**/*.java"]
+        exclude: ["**/test/**", "**/*Test.java"]
+        template: templates/service-class.java
+        examples:
+          files: ["**/*.java"]
+          exclude: ["**/test/**", "**/*Test.java", "**/com/ofss/**"]
+          contains: '\b(class|interface)\s+\w+(Service|Validator|Resource|Helper|Manager)\b'
+
+  - id: service-enhance
+    title: Enhance an existing backend class
+    when: The requirement changes behavior of an existing service, validator, DTO or REST resource.
+    match: {action: modify, layer: service}
+    guidance: |
+      - Change only what the requirement needs and keep everything else exactly as it is.
+      - New fields in requests or responses usually need the DTO, its mapping, validation and the host call.
+      - If the class is Oracle product code (com.ofss), prefer the bank's extension mechanism shown in its
+        customizations over editing product code, and say so in the plan's risks.
+    parts:
+      - id: java
+        name: Java class
+        files: ["**/*.java"]
+        exclude: ["**/test/**", "**/*Test.java"]
+        examples:
+          files: ["**/*.java"]
+          exclude: ["**/test/**", "**/*Test.java", "**/com/ofss/**"]
+          contains: '\b(class|interface)\s+\w+(Service|Validator|Resource|Helper|Manager)\b'
+
+  - id: integration-adapter
+    title: Host integration (adapter)
+    when: The requirement sends new data to, or reads new data from, a host system (core banking, payments, etc.).
+    match: {layer: integration}
+    guidance: |
+      - Follow the adapter pattern the bank already uses for this host (see the examples): request and response
+        mapping, error mapping to the bank's error codes, logging without sensitive data (no account numbers in
+        full, no credentials).
+      - Do not change Oracle product adapters in place when the bank has its own adapter or extension classes.
+      - Field lengths and formats must match the host's; put assumptions about them in the plan's risks.
+    parts:
+      - id: adapter
+        name: Adapter class
+        files: ["**/*.java"]
+        exclude: ["**/test/**"]
+        examples:
+          files: ["**/*.java"]
+          exclude: ["**/test/**", "**/com/ofss/**"]
+          contains: '\b(class|interface)\s+\w*(Adapter|Connector|Client)\w*\b'
+
+  - id: data-script
+    title: Database script
+    when: The requirement needs new tables or columns, configuration rows, error messages or labels in the database.
+    match: {layer: data}
+    guidance: |
+      - Put the script in the bank's script folders, named and numbered like the examples.
+      - Make it re-runnable: delete its own rows before inserting them (or MERGE), and check before adding columns
+        when the bank's scripts do.
+      - Use the bank's table name prefixes and the database type of the Project Profile (usually Oracle).
+      - Provide a rollback script when the bank's examples have them.
+      - Never DELETE or UPDATE without a WHERE clause.
+    parts:
+      - id: sql
+        name: SQL script
+        files: ["**/*.sql"]
+        template: templates/data-script.sql
+        examples:
+          files: ["**/*.sql"]
+          exclude: ["**/rollback/**", "**/*rollback*"]
+          contains: '(?i)\b(insert\s+into|merge\s+into|alter\s+table|create\s+table)\b'
+
+  - id: unit-test
+    title: Unit test
+    when: The change adds or changes logic that the bank covers with unit tests.
+    match: {layer: test}
+    guidance: |
+      - Use the test framework, assertion and mocking libraries of the bank's existing tests (see the examples);
+        do not add new test libraries.
+      - Cover the rules of the spec: valid input, each validation error, and edge cases such as maximum lengths.
+    parts:
+      - id: test
+        name: Test class
+        files: ["**/*.java", "**/*.js"]
+        examples:
+          files: ["**/test/**/*.java", "**/*Test.java", "**/test/**/*.js", "**/*.spec.js"]
+          contains: '@Test|\bdescribe\s*\(|\bit\s*\('

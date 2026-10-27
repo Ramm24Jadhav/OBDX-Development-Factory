@@ -1,5 +1,6 @@
 /*
- * Profile page: shows the detected Project Profile of a workspace and lets developers confirm or correct facts.
+ * Profile page: shows the detected Project Profile of a workspace and lets developers confirm or correct facts, and the
+ * version pack's recipes with their templates and reference examples from the bank's code (which can be pinned).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar'],
@@ -54,8 +55,49 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.emptyMessage('');
       };
 
+      // Version pack recipes: each part has its reference examples and pin/unpin actions
+      this.recipes = ko.observableArray([]);
+      this.recipesNote = ko.observable('');
+      const showRecipes = (data) => {
+        const id = this.workspaceId();
+        const canEdit = this.canEdit();
+        this.recipesNote(data.indexedFiles === 0
+          ? 'Import the code to find reference examples in it.'
+          : 'OBDX ' + data.version + ' pack. Examples are picked from the ' + data.indexedFiles + ' indexed files: customization folders first, Oracle product code last.');
+        this.recipes(data.recipes.map((r) => ({
+          id: r.id,
+          title: r.title,
+          when: r.when || '',
+          guidance: r.guidance,
+          scope: (r.actions.length ? r.actions.join(' / ') : 'create / modify') + (r.layers.length ? ' · ' + r.layers.join(' / ') : ''),
+          parts: r.parts.map((p) => {
+            const url = 'workspaces/' + id + '/recipes/' + r.id + '/parts/' + p.id + '/examples';
+            const newPath = ko.observable('');
+            return {
+              id: r.id + '-' + p.id,
+              name: p.name,
+              files: p.files.join(', '),
+              template: p.templateContent || '',
+              templateName: p.template || '',
+              canEdit: canEdit,
+              newPath: newPath,
+              examples: p.examples.map((e) => ({
+                path: e.path,
+                reason: e.reason,
+                pinned: e.pinned,
+                canEdit: canEdit,
+                unpin: () => api.del(url + '?path=' + encodeURIComponent(e.path)).then(showRecipes).catch(showError)
+              })),
+              pin: () => api.post(url, { path: newPath() }).then(showRecipes).catch(showError)
+            };
+          })
+        })));
+      };
+
       const load = (id) => {
         this.profile(null);
+        this.recipes([]);
+        this.recipesNote('');
         this.errorMessage('');
         this.emptyMessage('');
         this.editingKey(null);
@@ -65,6 +107,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.get('workspaces/' + id + '/profile')
           .then((profile) => { if (id === this.workspaceId()) { show(profile); } })
           .catch((error) => (error.status === 404 ? this.emptyMessage(error.message) : showError(error)));
+        api.get('workspaces/' + id + '/recipes')
+          .then((data) => { if (id === this.workspaceId()) { showRecipes(data); } })
+          .catch(showError);
       };
 
       this.detect = () => {

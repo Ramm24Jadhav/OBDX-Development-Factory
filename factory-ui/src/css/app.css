@@ -429,3 +429,12 @@
 .factory-warning-text { color: #8a3c00; }
 .factory-severity-error { background-color: #f9dcdc; }
 .factory-severity-warning { background-color: #fff6e5; }
+
+.factory-recipe { margin-top: 24px; }
+.factory-guidance { white-space: pre-line; padding: 8px 12px; }
+.factory-example { margin-bottom: 4px; }
+.factory-pin { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.factory-pin-input { max-width: 420px; }
+.factory-recipe .factory-profile-table th:nth-child(1) { width: 190px; }
+.factory-recipe .factory-profile-table th:nth-child(3) { width: 42%; }
+.factory-recipe pre { max-height: 360px; overflow: auto; }

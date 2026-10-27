@@ -21,7 +21,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `requirements/`: requirement documents and their specs. `DocumentTextExtractor` reads Word/PDF/text (Apache POI, PDFBox); `SpecDrafter` holds the prompts and asks the model for JSON; `SpecParser` reads the model's JSON leniently; `SpecMerger` combines the sections of long documents; `RequirementService` runs the draft → answer → update → approve workflow.
 - `design/`: the screen designer. `ScreenModel` is the target-neutral screen description; `ComponentCatalog` lists component types and their JET components; `ScreenModels` creates (from a spec screen), parses and normalizes models; `ScreenModelEditor` applies plain-language changes through the model; `ScreenDesignService` handles versions, comments, review links and approval.
 - `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`; `ChangeBuildService` runs the quick checks and Jenkins builds with the fix loop.
-- `pack/`: version packs and quick checks. `VersionPacks` loads the YAML rule files; `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings.
+- `pack/`: version packs. `VersionPacks` loads the YAML rule and recipe files (`RecipeLoader` for recipes and templates); `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings; `RecipeService` finds and pins reference examples.
 - `jenkins/`: Jenkins settings, REST client and build log parsing.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
@@ -154,6 +154,18 @@ Every generated file is checked on the factory server in milliseconds, before re
 
 The pack rules are starting points: confirm them against each bank's codebase and the Oracle documentation for the release.
 
+## Recipes, templates and reference examples
+
+The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
+
+- Each recipe covers plan items by `action` and `layer`, and has **parts**, one per kind of file (for a new screen: view model, view, resource bundle), matched by path globs.
+- **Guidance** (steps and conventions) goes to the model writing each matching file. The **planner** gets a short list of the recipes with the kinds of files each needs and the reference examples, so plans include all parts (for example the resource bundle of a new screen) and good `basedOn` files.
+- **Templates** (with `<<placeholders>>`) are given to the model only for new files. The bank's examples win where they differ.
+- **Reference examples** are files from the bank's indexed code. A part's finder (`examples.files`, `exclude`, `contains`, `count`) picks them: files in customization folders (from the Project Profile) first, Oracle product code (`com/ofss/`) last, mid-sized files preferred. On the **Profile** page, developers with Manage code can **pin** the files that show the bank's way best (and unpin them); pinned files come first. Generation uses the plan's `basedOn` files first, then these examples (two at most).
+- Teams can add or replace recipes and templates without rebuilding: put `recipes.yml` (and `templates/...`) in `FACTORY_PACKS_DIR`. Templates are looked up there first, then in the built-in packs. A recipe with `enabled: false` is removed.
+
+The built-in guidance and templates are deliberately generic: they describe what OBDX customizations usually need and let each bank's own code decide the details. Confirm and extend them against your codebases.
+
 ## Jenkins build validation
 
 Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **Jenkins** section; changes need Manage code):
@@ -272,6 +284,9 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/changes/{id}/check` | Run the quick checks again on all files |
 | `GET /api/workspaces/{id}/checks` | The workspace's version pack rules, with on/off and Java level |
 | `PUT /api/workspaces/{id}/checks/{ruleId}` | Turn a rule on or off for the workspace (`enabled`) |
+| `GET /api/workspaces/{id}/recipes` | The version pack's recipes with templates and the workspace's reference examples |
+| `POST /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples` | Pin a file as a reference example (`path`) |
+| `DELETE /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples?path=` | Unpin it |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
@@ -312,4 +327,4 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn verify
 
 ## Not built yet
 
-Version pack templates and reference examples for new screens, deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).
+Deleting temporary branches after delivery, SAML sign-in, and the React Native / React target packs. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

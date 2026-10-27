@@ -6,6 +6,7 @@ import com.obdx.factory.importing.ImportJob;
 import com.obdx.factory.jenkins.JenkinsSettings;
 import com.obdx.factory.jenkins.JenkinsSettingsService;
 import com.obdx.factory.jenkins.StubJenkins;
+import com.obdx.factory.pack.RecipeService;
 import com.obdx.factory.importing.ImportService;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.requirements.Requirement;
@@ -94,6 +95,23 @@ class ChangeFlowIntegrationTest {
             """;
 
     static final AtomicInteger validatorAttempts = new AtomicInteger();
+    static final List<String> chatPrompts = new java.util.concurrent.CopyOnWriteArrayList<>();
+    static final List<String> planPrompts = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    static final String PAYEE_VIEW_MODEL = """
+            define(['knockout', 'ojL10n!resources/nls/payee'], function (ko, nls) {
+              'use strict';
+              return function PayeeViewModel(params) {
+                const self = this;
+                self.nls = nls;
+                self.payeeName = ko.observable();
+                self.accountNumber = ko.observable();
+                self.save = function () {
+                  params.baseModel.save({ name: self.payeeName(), account: self.accountNumber() });
+                };
+              };
+            });
+            """;
 
     @TestConfiguration
     static class CannedModel {
@@ -103,6 +121,7 @@ class ChangeFlowIntegrationTest {
             return new ModelGateway() {
                 @Override
                 public ChatResult chat(String systemPrompt, String userPrompt) {
+                    chatPrompts.add(userPrompt);
                     String file = userPrompt.lines().findFirst().orElse("");
                     String reply;
                     if (userPrompt.contains("The quick checks")) {
@@ -128,6 +147,9 @@ class ChangeFlowIntegrationTest {
 
                 @Override
                 public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                    if (systemPrompt.contains("change plan")) {
+                        planPrompts.add(userPrompt);
+                    }
                     return new ChatResult(systemPrompt.contains("change plan") ? PLAN : SPEC, "canned", 0);
                 }
 
@@ -171,6 +193,9 @@ class ChangeFlowIntegrationTest {
     @Autowired
     private ChangeFileStore changeFiles;
 
+    @Autowired
+    private RecipeService recipes;
+
     private UUID workspaceId;
 
     @BeforeAll
@@ -189,7 +214,8 @@ class ChangeFlowIntegrationTest {
     void plansGeneratesReviewsAndDeliversCode() throws Exception {
         TestSvnRepository repo = TestSvnRepository.create(temp.resolve("svn"), Map.of(
                 "backend/src/com/bank/payments/FundTransferService.java", SERVICE,
-                "ui/js/viewModels/fund-transfer.js", "define(['knockout'], function (ko) {\n  function VM() {\n    this.amount = ko.observable();\n  }\n  return VM;\n});\n"));
+                "ui/js/viewModels/fund-transfer.js", "define(['knockout'], function (ko) {\n  function VM() {\n    this.amount = ko.observable();\n  }\n  return VM;\n});\n",
+                "ui/ext/js/viewModels/payee.js", PAYEE_VIEW_MODEL));
         workspaceId = workspaces.create(new WorkspaceRequest("change-" + UUID.randomUUID(), "Bank A", "22.x", null)).id();
         workspaces.updateSvnSettings(workspaceId, new SvnSettingsRequest(repo.trunkUrl(), null, null));
         UUID job = imports.start(workspaceId).id();
@@ -213,6 +239,19 @@ class ChangeFlowIntegrationTest {
                 "backend/src/com/bank/payments/FundTransferService.java",
                 "ui/js/viewModels/fund-transfer.js");
         assertThat(planned.baseRevision()).isEqualTo(1);
+        assertThat(planPrompts.getLast()).contains("Version pack recipes", "Enhance an existing UI screen",
+                "follow, for example, ui/ext/js/viewModels/payee.js");
+
+        // Reference examples: found in the bank's customization folder, and pinned by a developer.
+        RecipeService.PartView enhanceViewModel = recipes.get(workspaceId).recipes().stream().filter(r -> r.id().equals("ui-enhance-screen"))
+                .findFirst().orElseThrow().parts().getFirst();
+        assertThat(enhanceViewModel.examples()).extracting(RecipeService.Example::path, RecipeService.Example::reason)
+                .contains(org.assertj.core.groups.Tuple.tuple("ui/ext/js/viewModels/payee.js", "In the customization folder ui/ext/"));
+        RecipeService.WorkspaceRecipes pinned = recipes.pin(workspaceId, "service-new", "java", "backend/src/com/bank/payments/FundTransferService.java", "dev1");
+        assertThat(pinned.recipes().stream().filter(r -> r.id().equals("service-new")).findFirst().orElseThrow().parts().getFirst().examples().getFirst())
+                .isEqualTo(new RecipeService.Example("backend/src/com/bank/payments/FundTransferService.java", true, "Pinned by dev1"));
+        assertThatThrownBy(() -> recipes.pin(workspaceId, "service-new", "java", "backend/Missing.java", "dev1"))
+                .hasMessageContaining("No file backend/Missing.java");
         assertThat(planned.plan().risks()).containsExactly("Host narrative length is assumed to be 35");
 
         changes.approvePlan(changeId, "Lead");
@@ -226,6 +265,11 @@ class ChangeFlowIntegrationTest {
                         org.assertj.core.groups.Tuple.tuple("backend/src/com/bank/payments/FundTransferService.java", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED),
                         org.assertj.core.groups.Tuple.tuple("ui/js/viewModels/fund-transfer.js", ChangeFileStore.Status.GENERATED, FileChecks.Status.PASSED));
         assertThat(generated.files().get(1).attempts()).as("broken validator fixed once").isEqualTo(2);
+        String viewModelPrompt = chatPrompts.stream().filter(p -> p.startsWith("File to write: ui/js/viewModels/fund-transfer.js")).findFirst().orElseThrow();
+        assertThat(viewModelPrompt).contains("How this is built in OBDX (version pack recipe \"Enhance an existing UI screen\", View model)",
+                "Example file to follow, ui/ext/js/viewModels/payee.js").doesNotContain("Template to start from");
+        String validatorPrompt = chatPrompts.stream().filter(p -> p.startsWith("File to write: backend/src/com/bank/payments/RemarksValidator.java")).findFirst().orElseThrow();
+        assertThat(validatorPrompt).contains("version pack recipe \"New backend service or class\"", "Template to start from", "public class <<ClassName>>");
         assertThat(generated.files().get(2).linesAdded()).isEqualTo(1);
         assertThat(generated.files().get(2).linesRemoved()).isEqualTo(1);
 

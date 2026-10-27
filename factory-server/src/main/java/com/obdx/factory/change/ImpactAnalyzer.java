@@ -26,6 +26,8 @@ public class ImpactAnalyzer {
 
             Rules:
             - Follow the bank's existing structure and conventions. Put new files next to similar existing files.
+            - Use the version pack recipes: each kind of work needs the kinds of files its recipe lists, and the
+              reference examples show where and how this bank builds them (good basedOn files).
             - Modify existing files when the requirement enhances an existing screen, service or script; create new
               files for new screens and services.
             - Cover every layer the requirement needs: data (SQL scripts), integration (host adapters), service (REST
@@ -61,6 +63,10 @@ public class ImpactAnalyzer {
         user.append("Screen designs (approved):\n").append(context.designsJson() == null ? "(none)" : ChangeContext.cap(context.designsJson(), 8000)).append("\n\n");
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
         user.append("Folder structure (folder: files):\n").append(context.structure()).append("\n\n");
+        if (context.recipes() != null && !context.recipes().isBlank()) {
+            user.append("Version pack recipes (kinds of work, the files each needs, and reference examples in this codebase):\n")
+                    .append(ChangeContext.cap(context.recipes(), 5000)).append('\n');
+        }
         user.append("Relevant existing code:\n");
         if (candidates.isEmpty()) {
             user.append("(no matches found; the code may not be imported yet)\n");

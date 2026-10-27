@@ -2,6 +2,8 @@ package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.pack.LocalChecks;
+import com.obdx.factory.pack.Recipe;
+import com.obdx.factory.pack.VersionPacks;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -35,11 +37,13 @@ public class CodeGenerator {
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
     private final LocalChecks checks;
+    private final VersionPacks packs;
 
-    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties, LocalChecks checks) {
+    public CodeGenerator(ModelGateway modelGateway, ChangeProperties properties, LocalChecks checks, VersionPacks packs) {
         this.modelGateway = modelGateway;
         this.properties = properties;
         this.checks = checks;
+        this.packs = packs;
     }
 
     /**
@@ -59,7 +63,9 @@ public class CodeGenerator {
      */
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note) {
-        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()));
+        Recipe.Match recipe = packs.find(context.checks().version())
+                .flatMap(p -> p.recipeFor(item.path(), item.action(), item.layer())).orElse(null);
+        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()), recipe);
         String content = clean(modelGateway.chat(SYSTEM, prompt).reply());
         FileChecks.Result check = checks.check(context.checks(), item.path(), original, content);
         int attempts = 1;
@@ -74,7 +80,8 @@ public class CodeGenerator {
     }
 
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
-                                 Map<String, String> examples, Map<String, String> earlier, String note, String rules) {
+                                 Map<String, String> examples, Map<String, String> earlier, String note, String rules,
+                                 Recipe.Match recipe) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -90,6 +97,10 @@ public class CodeGenerator {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
         }
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
+        if (recipe != null) {
+            user.append("How this is built in OBDX (version pack recipe \"").append(recipe.recipe().title()).append("\", ")
+                    .append(recipe.part().name()).append("):\n").append(recipe.recipe().guidance()).append("\n\n");
+        }
         if (!rules.isEmpty()) {
             user.append("Rules for this file (they are checked):\n").append(rules).append("\n\n");
         }
@@ -105,6 +116,10 @@ public class CodeGenerator {
             for (Map.Entry<String, String> file : earlier.entrySet()) {
                 user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), 40)).append('\n');
             }
+        }
+        if (current == null && recipe != null && recipe.part().content() != null) {
+            user.append("Template to start from (replace every <<...>> placeholder; where the example files differ, follow the examples):\n")
+                    .append(recipe.part().content()).append('\n');
         }
         user.append("\nWrite the complete content of ").append(item.path()).append('.');
         return user.toString();

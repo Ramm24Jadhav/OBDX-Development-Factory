@@ -100,4 +100,70 @@
       </template>
     </oj-bind-for-each>
   </oj-bind-if>
+
+  <oj-bind-if test="[[recipes().length > 0]]">
+    <h2 id="recipesHeading">Recipes and reference examples</h2>
+    <p class="oj-text-color-secondary">
+      How the usual kinds of work are built, from the OBDX version pack. The planner and the model writing each file get the
+      recipe's guidance, its template for new files, and reference examples from this bank's own code, which win where they differ
+      from a template. Pin the files that show this bank's way best.
+    </p>
+    <p id="recipesNote"><oj-bind-text value="[[recipesNote]]"></oj-bind-text></p>
+    <oj-bind-for-each data="[[recipes]]" as="recipe">
+      <template>
+        <div class="factory-recipe" :id="[['recipe-' + recipe.data.id]]">
+          <h3><oj-bind-text value="[[recipe.data.title]]"></oj-bind-text>
+            <span class="factory-status factory-check-not"><oj-bind-text value="[[recipe.data.scope]]"></oj-bind-text></span></h3>
+          <p class="oj-text-color-secondary"><oj-bind-text value="[[recipe.data.when]]"></oj-bind-text></p>
+          <details><summary>Guidance</summary><div class="factory-guidance"><oj-bind-text value="[[recipe.data.guidance]]"></oj-bind-text></div></details>
+          <table class="factory-profile-table">
+            <thead><tr><th>Kind of file</th><th>Reference examples</th><th>Template</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[recipe.data.parts]]" as="part">
+                <template>
+                  <tr :id="[['part-' + part.data.id]]">
+                    <td><div class="oj-typography-bold"><oj-bind-text value="[[part.data.name]]"></oj-bind-text></div>
+                      <div class="oj-typography-body-xs oj-text-color-secondary factory-evidence"><oj-bind-text value="[[part.data.files]]"></oj-bind-text></div></td>
+                    <td>
+                      <oj-bind-for-each data="[[part.data.examples]]" as="example">
+                        <template>
+                          <div class="factory-example">
+                            <span class="factory-path"><oj-bind-text value="[[example.data.path]]"></oj-bind-text></span>
+                            <span :class="[[example.data.pinned ? 'factory-status factory-check-passed' : 'oj-typography-body-xs oj-text-color-secondary']]">
+                              <oj-bind-text value="[[example.data.reason]]"></oj-bind-text></span>
+                            <oj-bind-if test="[[example.data.pinned && example.data.canEdit]]">
+                              <oj-button chroming="borderless" on-oj-action="[[example.data.unpin]]">Unpin</oj-button>
+                            </oj-bind-if>
+                          </div>
+                        </template>
+                      </oj-bind-for-each>
+                      <oj-bind-if test="[[part.data.examples.length === 0]]">
+                        <div class="oj-typography-body-xs oj-text-color-secondary">None found in the code yet.</div>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[part.data.canEdit]]">
+                        <div class="factory-pin">
+                          <oj-input-text class="factory-pin-input" value="{{part.data.newPath}}" label-hint="Pin a file" label-edge="none"
+                                         placeholder="Path of a file in the code, e.g. ui/ext/js/viewModels/payee.js"></oj-input-text>
+                          <oj-button on-oj-action="[[part.data.pin]]">Pin</oj-button>
+                        </div>
+                      </oj-bind-if>
+                    </td>
+                    <td>
+                      <oj-bind-if test="[[part.data.template]]">
+                        <details><summary><oj-bind-text value="[[part.data.templateName]]"></oj-bind-text></summary>
+                          <pre class="factory-diff"><oj-bind-text value="[[part.data.template]]"></oj-bind-text></pre></details>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[!part.data.template]]">
+                        <span class="oj-typography-body-xs oj-text-color-secondary">None: the examples show the way.</span>
+                      </oj-bind-if>
+                    </td>
+                  </tr>
+                </template>
+              </oj-bind-for-each>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </oj-bind-for-each>
+  </oj-bind-if>
 </div>

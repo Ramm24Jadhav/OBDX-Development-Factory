@@ -1,0 +1,13 @@
+<!-- <<Screen title>>: view. Every visible text comes from the resource bundle (nls). -->
+<div class="oj-flex oj-flex-items-pad">
+  <div class="oj-flex-item">
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-input-text label-hint="[[nls.<<screenKey>>.labels.<<fieldName>>]]" value="{{<<fieldName>>}}"></oj-input-text>
+    </oj-form-layout>
+  </div>
+</div>
+<div class="oj-flex oj-flex-items-pad">
+  <oj-button chroming="callToAction" on-oj-action="[[<<actionName>>]]">
+    <oj-bind-text value="[[nls.<<screenKey>>.labels.<<actionName>>]]"></oj-bind-text>
+  </oj-button>
+</div>

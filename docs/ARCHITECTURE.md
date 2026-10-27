@@ -161,7 +161,7 @@ A version pack captures what differs between OBDX releases, so generation follow
 
 Packs exist for **22.x** and **25.x**, are versioned files in this repo, and are built partly by comparing the customized codebases we already have. Exact contents must be confirmed against each release.
 
-*Implemented:* the quick-check part of the packs: YAML rule files (common, 22.x, 25.x) with forbidden or required patterns per path glob, conditions on the Project Profile (JET version, javax/jakarta, module system), a default Java level per version, team overrides from a folder without rebuilding, and per-workspace on/off. Not yet: folder structure, extension points, templates and reference examples.
+*Implemented:* the quick-check part of the packs: YAML rule files (common, 22.x, 25.x) with forbidden or required patterns per path glob, conditions on the Project Profile (JET version, javax/jakarta, module system), a default Java level per version, team overrides from a folder without rebuilding, and per-workspace on/off. Also implemented: recipes for the usual kinds of work (new or enhanced UI screen, new or enhanced backend class, host adapter, database script, unit test), each with guidance, templates for new files and finders that pick reference examples from the bank's indexed code (customization folders first), which developers can pin per workspace. The planner gets the recipes with their examples; the model writing a file gets the matching recipe's guidance, template and examples. Not yet: release-specific extension points and build steps confirmed against Oracle's documentation for each release.
 
 ### 5.4 Agent Pipeline
 

@@ -22,8 +22,9 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * The version packs: built-in YAML files (resources/packs) plus, optionally, the team's own files in
- * factory.packs.dir. Files are read at startup; a mistake in a rule stops startup with a message naming the rule.
+ * The version packs: built-in YAML files (resources/packs: common.yml and recipes.yml for every version, plus one
+ * file per version) and, optionally, the team's own files with the same names in factory.packs.dir. Files are read
+ * at startup; a mistake in a rule or recipe stops startup with a message naming it.
  */
 @Component
 public class VersionPacks {
@@ -40,19 +41,25 @@ public class VersionPacks {
             throw new IllegalStateException("factory.packs.dir is not a folder: " + dir);
         }
         Map<String, Object> common = builtIn("common.yml");
+        Map<String, Object> commonRecipes = builtIn("recipes.yml");
+        RecipeLoader recipeLoader = new RecipeLoader(dir);
         for (String version : VERSIONS) {
             Map<String, Object> own = builtIn(version + ".yml");
             Map<String, PackRule> rules = new LinkedHashMap<>();
+            Map<String, Recipe> recipes = new LinkedHashMap<>();
             merge(rules, common, "packs/common.yml");
             merge(rules, own, "packs/" + version + ".yml");
+            recipeLoader.merge(recipes, commonRecipes, "packs/recipes.yml");
+            recipeLoader.merge(recipes, own, "packs/" + version + ".yml");
             Object javaLevel = own.get("java");
             String description = (String) own.getOrDefault("description", "OBDX " + version);
             if (dir != null) {
-                for (String name : List.of("common.yml", version + ".yml")) {
+                for (String name : List.of("common.yml", "recipes.yml", version + ".yml")) {
                     Path file = dir.resolve(name);
                     if (Files.isRegularFile(file)) {
                         Map<String, Object> extra = read(file);
                         merge(rules, extra, file.toString());
+                        recipeLoader.merge(recipes, extra, file.toString());
                         if (name.equals(version + ".yml") && extra.get("java") != null) {
                             javaLevel = extra.get("java");
                         }
@@ -60,9 +67,10 @@ public class VersionPacks {
                 }
             }
             packs.put(version, new VersionPack(version, description, javaLevel == null ? 8 : Integer.parseInt(javaLevel.toString()),
-                    List.copyOf(rules.values())));
+                    List.copyOf(rules.values()), List.copyOf(recipes.values())));
         }
-        packs.values().forEach(p -> log.info("Version pack {}: {} rule(s), Java level {}", p.version(), p.rules().size(), p.javaLevel()));
+        packs.values().forEach(p -> log.info("Version pack {}: {} rule(s), {} recipe(s), Java level {}", p.version(), p.rules().size(),
+                p.recipes().size(), p.javaLevel()));
     }
 
     /** The built-in packs only, for tests and tools. */

@@ -11,6 +11,7 @@ import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.pack.CheckScope;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.PackService;
+import com.obdx.factory.pack.RecipeService;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.requirements.Requirement;
 import com.obdx.factory.requirements.RequirementService;
@@ -79,6 +80,7 @@ public class ChangeService {
     private final ChangeBuildStore builds;
     private final PackService packs;
     private final LocalChecks localChecks;
+    private final RecipeService recipes;
     private final TaskExecutor executor;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
@@ -86,7 +88,8 @@ public class ChangeService {
                          DesignStore designStore, ProjectProfileService profiles, CodeSearchService codeSearch,
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
-                         PackService packs, LocalChecks localChecks, @Qualifier("changeExecutor") TaskExecutor executor) {
+                         PackService packs, LocalChecks localChecks, RecipeService recipes,
+                         @Qualifier("changeExecutor") TaskExecutor executor) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -106,6 +109,7 @@ public class ChangeService {
         this.builds = builds;
         this.packs = packs;
         this.localChecks = localChecks;
+        this.recipes = recipes;
         this.executor = executor;
     }
 
@@ -239,7 +243,7 @@ public class ChangeService {
                 if (onlyPath != null && !item.path().equals(onlyPath)) {
                     continue;
                 }
-                generateFile(id, context, plan, item, workingCopy, earlier, note);
+                generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, note);
             }
 
             List<ChangeFileStore.ChangeFile> result = files.files(id);
@@ -258,8 +262,8 @@ public class ChangeService {
         changes.save(change);
     }
 
-    private void generateFile(UUID changeId, ChangeContext context, ChangePlan plan, ChangePlan.Item item, Path workingCopy,
-                              Map<String, String> earlier, String note) {
+    private void generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
+                              Path workingCopy, Map<String, String> earlier, String note) {
         boolean modify = "modify".equals(item.action());
         String current = null;
         try {
@@ -272,7 +276,7 @@ public class ChangeService {
                 }
                 current = read(file);
             }
-            Map<String, String> examples = examples(workingCopy, item);
+            Map<String, String> examples = examples(workspaceId, workingCopy, item);
             CodeGenerator.Result result = generator.generate(context, plan, item, current, examples, earlier, note);
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
@@ -285,12 +289,18 @@ public class ChangeService {
         }
     }
 
-    /** Files to imitate: the plan's basedOn files, or else a file of the same type in the same folder. */
-    private Map<String, String> examples(Path workingCopy, ChangePlan.Item item) throws IOException {
+    /**
+     * Files to imitate: the plan's basedOn files, then the reference examples of the version pack recipe for this
+     * kind of file (pinned by developers or found in the codebase), else a file of the same type in the same folder.
+     */
+    private Map<String, String> examples(UUID workspaceId, Path workingCopy, ChangePlan.Item item) throws IOException {
         Map<String, String> examples = new LinkedHashMap<>();
-        for (String path : item.basedOn()) {
+        List<String> paths = new ArrayList<>(item.basedOn());
+        paths.addAll(recipes.examplesFor(workspaceId, item.path(), item.action(), item.layer()));
+        for (String path : paths) {
             Path file = workingCopy.resolve(path);
-            if (examples.size() < 2 && Files.isRegularFile(file) && Files.size(file) <= properties.maxFileSize().toBytes()) {
+            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file)
+                    && Files.size(file) <= properties.maxFileSize().toBytes()) {
                 examples.put(path, read(file));
             }
         }
@@ -522,7 +532,7 @@ public class ChangeService {
             profile = "";
         }
         return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
-                structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()));
+                structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()));
     }
 
     /** Folders of the indexed code with their number of files, so the model knows where things live. */
