@@ -1,0 +1,30 @@
+<div class="oj-hybrid-padding">
+  <h1>Models</h1>
+  <p class="oj-text-color-secondary">
+    The model gateway connects the factory to a local model server (Ollama, vLLM) or a privately hosted endpoint
+    through the OpenAI-compatible API. Use this page to check that the connection works.
+  </p>
+
+  <h2>Configured models</h2>
+  <oj-bind-if test="[[status()]]">
+    <ul>
+      <li>Endpoint: <oj-bind-text value="[[status().baseUrl]]"></oj-bind-text></li>
+      <li>Chat model: <oj-bind-text value="[[status().chatModel]]"></oj-bind-text></li>
+      <li>Embedding model: <oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></li>
+    </ul>
+  </oj-bind-if>
+
+  <h2>Try a prompt</h2>
+  <oj-form-layout max-columns="1">
+    <oj-text-area id="prompt" label-hint="Prompt" value="{{prompt}}" rows="4"></oj-text-area>
+  </oj-form-layout>
+  <oj-button id="sendButton" chroming="callToAction" on-oj-action="[[send]]" disabled="[[busy]]">Send</oj-button>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+  <oj-bind-if test="[[reply()]]">
+    <h3>Reply <span class="oj-text-color-secondary oj-typography-body-sm">(<oj-bind-text value="[[reply().model]]"></oj-bind-text>, <oj-bind-text value="[[reply().latencyMs]]"></oj-bind-text> ms)</span></h3>
+    <pre class="factory-reply"><oj-bind-text value="[[reply().reply]]"></oj-bind-text></pre>
+  </oj-bind-if>
+</div>

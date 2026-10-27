@@ -10,3 +10,12 @@ A web-based tool that turns requirements (prompts, BRDs, FSDs) into code for a b
 - Human review of spec, screen design, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requirements and roadmap.
+
+## Quick start
+
+```bash
+mvn clean verify                                  # builds the JET UI and the Spring Boot server, runs tests
+java -jar factory-server/target/obdx-factory.jar  # http://localhost:8080
+```
+
+Needs JDK 21, Maven and PostgreSQL with pgvector. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for setup, configuration and installation on a Linux server.

@@ -1,0 +1,31 @@
+# Every value can be overridden with an environment variable, for example FACTORY_DB_URL or FACTORY_MODEL_BASE_URL.
+server:
+  port: ${FACTORY_PORT:8080}
+
+spring:
+  application:
+    name: obdx-development-factory
+  datasource:
+    url: ${FACTORY_DB_URL:jdbc:postgresql://localhost:5432/factory}
+    username: ${FACTORY_DB_USER:factory}
+    password: ${FACTORY_DB_PASSWORD:factory}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+factory:
+  model:
+    base-url: ${FACTORY_MODEL_BASE_URL:http://localhost:11434/v1}
+    api-key: ${FACTORY_MODEL_API_KEY:not-needed}
+    chat-model: ${FACTORY_MODEL_CHAT:qwen2.5-coder:7b}
+    embedding-model: ${FACTORY_MODEL_EMBEDDING:nomic-embed-text}
+    timeout: ${FACTORY_MODEL_TIMEOUT:120s}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

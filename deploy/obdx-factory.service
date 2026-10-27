@@ -1,0 +1,19 @@
+# systemd unit for OBDX Development Factory.
+# Install: copy obdx-factory.jar to /opt/obdx-factory/, this file to /etc/systemd/system/,
+# obdx-factory.env to /etc/obdx-factory/, then: systemctl daemon-reload && systemctl enable --now obdx-factory
+[Unit]
+Description=OBDX Development Factory
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=obdxfactory
+WorkingDirectory=/opt/obdx-factory
+EnvironmentFile=/etc/obdx-factory/obdx-factory.env
+ExecStart=/usr/bin/java -Xms512m -Xmx2g -jar /opt/obdx-factory/obdx-factory.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

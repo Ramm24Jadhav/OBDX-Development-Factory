@@ -1,0 +1,37 @@
+<div class="oj-hybrid-padding">
+  <h1>Workspaces</h1>
+  <p class="oj-text-color-secondary">
+    A workspace holds one bank's OBDX codebase, version and settings. Code, documents and indexes never cross workspaces.
+  </p>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+  </oj-bind-if>
+
+  <h2>New workspace</h2>
+  <oj-validation-group id="workspaceForm" valid="{{formValid}}">
+    <oj-form-layout max-columns="2" direction="row">
+      <oj-input-text id="name" label-hint="Workspace name" value="{{name}}" required></oj-input-text>
+      <oj-input-text id="bankName" label-hint="Bank" value="{{bankName}}" required></oj-input-text>
+      <oj-select-single id="obdxVersion" label-hint="OBDX version" data="[[versionProvider]]" value="{{obdxVersion}}" required></oj-select-single>
+      <oj-input-text id="svnUrl" label-hint="SVN repository URL" value="{{svnUrl}}"
+                     help-hints.definition="For example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
+    </oj-form-layout>
+  </oj-validation-group>
+  <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
+
+  <h2>All workspaces</h2>
+  <oj-table id="workspaceTable" aria-label="Workspaces" data="[[workspaceProvider]]"
+            columns='[{"headerText": "Name", "field": "name"},
+                      {"headerText": "Bank", "field": "bankName"},
+                      {"headerText": "OBDX version", "field": "obdxVersion"},
+                      {"headerText": "SVN URL", "field": "svnUrl"},
+                      {"headerText": "Created", "field": "createdAt"},
+                      {"headerText": "", "field": "id", "template": "actionTemplate", "sortable": "disabled"}]'
+            class="oj-sm-margin-4x-top" style="width: 100%;">
+    <template slot="actionTemplate" data-oj-as="cell">
+      <oj-button chroming="borderless" on-oj-action="[[function() { $parent.deleteWorkspace(cell.data); }]]">Delete</oj-button>
+    </template>
+    <template slot="noData">No workspaces yet. Create one above.</template>
+  </oj-table>
+</div>
