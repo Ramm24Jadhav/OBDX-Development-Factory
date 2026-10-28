@@ -211,7 +211,7 @@ public final class ScreenModels {
                 .map(c -> c.strip().toLowerCase(Locale.ROOT)).filter(CHANNELS::contains).distinct().toList();
         return new ScreenModel(model.name().trim(), model.title() == null || model.title().isBlank() ? model.name().trim() : model.title().trim(),
                 blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown",
-                withConditions(sections), actions, STAGES.contains(stage) ? stage : null, channels);
+                withConditions(sections), actions, stage != null && STAGES.contains(stage) ? stage : null, channels);
     }
 
     /** A data source needs its API; the rest is optional. */
