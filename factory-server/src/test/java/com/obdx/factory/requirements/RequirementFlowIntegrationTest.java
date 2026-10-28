@@ -53,7 +53,7 @@ class RequirementFlowIntegrationTest {
                "fields": [{"name": "remarks", "label": "Remarks", "type": "text"}]}],
              "openQuestions": [
                {"question": "What is the maximum length of remarks?", "reason": "Needed for validation"},
-               {"question": "Is remarks mandatory?"}]}
+               {"question": "Is remarks mandatory?", "options": ["Yes", "No"], "suggestedAnswer": "No"}]}
             """;
 
     static final String REFINED = """
@@ -137,6 +137,9 @@ class RequirementFlowIntegrationTest {
                 List.of(new RequirementService.Answer(0, "35 characters")));
         assertThat(answered.currentVersion()).isEqualTo(2);
         assertThat(answered.spec().openQuestions().getFirst().answer()).isEqualTo("35 characters");
+        assertThat(answered.spec().openQuestions().get(1).options()).as("options are kept with the answers")
+                .containsExactly("Yes", "No");
+        assertThat(answered.spec().openQuestions().get(1).suggestedAnswer()).isEqualTo("No");
 
         requirements.refine(created.id());
         RequirementService.RequirementDetail refined = waitUntilReady(created.id());

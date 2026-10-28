@@ -40,7 +40,8 @@ public class SpecDrafter {
               "apis": [{"name": "service or endpoint", "method": "GET | POST | PUT | DELETE", "description": "purpose"}],
               "hostInteractions": [{"system": "host system", "description": "what is sent or read"}],
               "messages": [{"code": "error code if given", "text": "message text", "type": "error | warning | info | confirmation"}],
-              "openQuestions": [{"question": "what must be clarified", "reason": "why it matters for building", "reference": "section"}]
+              "openQuestions": [{"question": "one specific question in plain words", "reason": "why it matters for building",
+                "reference": "section", "options": ["short answer", "another answer"], "suggestedAnswer": "the usual choice"}]
             }""";
 
     private static final String DRAFT_SYSTEM = """
@@ -55,6 +56,11 @@ public class SpecDrafter {
             - Add an open question for everything a developer would need but the document leaves missing or unclear:
               field types and lengths, validations, mandatory fields, error messages, limits, user roles and access,
               host system behaviour, what happens on failure. Be specific; one question per gap.
+            - Write each question so a business user can answer it with a click: ask about one thing, in plain words,
+              naming the screen or field it is about. Not "What fields are needed?" but "Which order types can a
+              customer place?". Give 2 to 4 short options (a few words each) that are usual for a bank, and set
+              suggestedAnswer to the option most banks choose (null if there is no usual choice).
+            - Ask the most important questions first; at most 10.
             - Leave lists empty when the section has nothing for them.
             %s
             Answer with one JSON object in exactly this format, and nothing else:
@@ -66,7 +72,8 @@ public class SpecDrafter {
             You get a specification as JSON and the analyst's decisions (answers to earlier open questions).
             Update the specification so it reflects every decision: change fields, types, validations, mandatory flags,
             rules, roles, messages and host interactions as the answers say. Do not change anything the decisions do not
-            touch. Keep open questions that are still unanswered, and add new ones only if a decision raises one.
+            touch. Keep open questions that are still unanswered, and add new ones only if a decision raises one; a new
+            question asks about one thing in plain words, with 2 to 4 short options and the usual one as suggestedAnswer.
             %s
             Answer with the complete updated specification as one JSON object in exactly this format, and nothing else:
             %s

@@ -100,6 +100,10 @@
 
         <oj-bind-if test="[[spec().openQuestions.length > 0]]">
           <h3>Open questions (<oj-bind-text value="[[spec().openQuestions.length]]"></oj-bind-text>)</h3>
+          <p class="oj-typography-body-sm">Pick an answer or type your own. Several picks are combined.</p>
+          <oj-bind-if test="[[hasSuggestions]]">
+            <oj-button id="useSuggestionsButton" on-oj-action="[[useSuggestions]]">Use suggested answers</oj-button>
+          </oj-bind-if>
           <oj-bind-for-each data="[[questions]]" as="q">
             <template>
               <div class="factory-question">
@@ -107,7 +111,18 @@
                 <oj-bind-if test="[[q.data.context]]">
                   <div class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[q.data.context]]"></oj-bind-text></div>
                 </oj-bind-if>
+                <oj-bind-if test="[[q.data.editable && q.data.options.length > 0]]">
+                  <div class="factory-options">
+                    <oj-bind-for-each data="[[q.data.options]]" as="opt">
+                      <template>
+                        <oj-button chroming="[[opt.data.selected() ? 'callToAction' : 'outlined']]"
+                                   on-oj-action="[[opt.data.pick]]"><oj-bind-text value="[[opt.data.label]]"></oj-bind-text></oj-button>
+                      </template>
+                    </oj-bind-for-each>
+                  </div>
+                </oj-bind-if>
                 <oj-input-text value="{{q.data.answerValue}}" label-hint="Answer" label-edge="none"
+                               placeholder="Pick an answer above or type your own"
                                :aria-label="[['Answer to question ' + (q.index + 1)]]"
                                disabled="[[!q.data.editable]]"></oj-input-text>
               </div>

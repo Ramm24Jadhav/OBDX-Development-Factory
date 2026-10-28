@@ -48,8 +48,19 @@ public record RequirementSpec(
     public record Message(String code, String text, String type) {
     }
 
-    /** answer is filled in by an analyst; answered questions become decisions when the spec is updated. */
-    public record OpenQuestion(String question, String reason, String reference, String answer) {
+    /**
+     * options: short answers the analyst can pick from; suggestedAnswer: the usual choice, or null. answer is filled in
+     * by an analyst; answered questions become decisions when the spec is updated.
+     */
+    public record OpenQuestion(String question, String reason, String reference, List<String> options,
+                               String suggestedAnswer, String answer) {
+        public OpenQuestion {
+            options = options == null ? List.of() : options;
+        }
+
+        public OpenQuestion withAnswer(String answer) {
+            return new OpenQuestion(question, reason, reference, options, suggestedAnswer, answer);
+        }
     }
 
     public record Decision(String question, String answer) {

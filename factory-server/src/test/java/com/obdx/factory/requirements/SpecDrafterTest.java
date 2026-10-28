@@ -77,7 +77,7 @@ class SpecDrafterTest {
     void refineSendsSpecWithoutDecisionsAndListsDecisions() {
         model.replies.add("{\"title\": \"Limits\", \"screens\": [{\"name\": \"Limits\"}]}");
         RequirementSpec spec = new RequirementSpec("Limits", null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-                List.of(new RequirementSpec.OpenQuestion("Currency?", null, null, null)),
+                List.of(new RequirementSpec.OpenQuestion("Currency?", null, null, List.of(), null, null)),
                 List.of(new RequirementSpec.Decision("Is the limit per day?", "Yes, per calendar day")));
 
         drafter.refine(spec, "");

@@ -137,7 +137,7 @@ public class RequirementService {
             }
             RequirementSpec.OpenQuestion q = questions.get(answer.index());
             String text = answer.answer() == null || answer.answer().isBlank() ? null : answer.answer().trim();
-            questions.set(answer.index(), new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), text));
+            questions.set(answer.index(), q.withAnswer(text));
         }
         return addVersion(requirement, RequirementSpecRepository.Origin.ANSWERED, withQuestions(spec, questions, spec.decisions()),
                 "Answers saved. Click \"Update spec with answers\" to apply them.");
@@ -250,7 +250,7 @@ public class RequirementService {
             Set<String> decided = withDecisions.decisions().stream().map(d -> SpecMerger.normalize(d.question())).collect(Collectors.toSet());
             List<RequirementSpec.OpenQuestion> stillOpen = refined.openQuestions().stream()
                     .filter(q -> !decided.contains(SpecMerger.normalize(q.question())))
-                    .map(q -> new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), null))
+                    .map(q -> q.withAnswer(null))
                     .toList();
             Map<String, List<String>> previousCode = withDecisions.screens().stream()
                     .collect(Collectors.toMap(s -> SpecMerger.normalize(s.name()), RequirementSpec.Screen::relatedCode, (a, b) -> a));

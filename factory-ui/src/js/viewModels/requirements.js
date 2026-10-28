@@ -87,15 +87,49 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }).catch(showError);
       };
 
+      /**
+       * An open question with its options as buttons. Picking an option replaces an empty answer or another option,
+       * and is added to an answer the analyst typed, so several options can be combined.
+       */
+      const question = (q, editable) => {
+        const answerValue = ko.observable(q.answer || '');
+        const options = (q.options || []).slice();
+        if (q.suggestedAnswer && !options.includes(q.suggestedAnswer)) {
+          options.unshift(q.suggestedAnswer);
+        }
+        const parts = () => answerValue().split(';').map((part) => part.trim()).filter(Boolean);
+        return {
+          question: q.question,
+          context: (q.reason || '') + (q.reference ? ' (' + q.reference + ')' : ''),
+          editable: editable,
+          suggestedAnswer: q.suggestedAnswer || '',
+          answerValue: answerValue,
+          options: options.map((option) => ({
+            label: option === q.suggestedAnswer ? option + ' (usual)' : option,
+            selected: ko.pureComputed(() => parts().includes(option)),
+            pick: () => {
+              const current = answerValue().trim();
+              if (!current || options.includes(current)) {
+                answerValue(option);
+              } else if (!parts().includes(option)) {
+                answerValue(current + '; ' + option);
+              }
+            }
+          }))
+        };
+      };
+
+      this.hasSuggestions = ko.pureComputed(() => this.questions().some((q) => q.editable && q.suggestedAnswer && !q.answerValue().trim()));
+      this.useSuggestions = () => this.questions().forEach((q) => {
+        if (q.suggestedAnswer && !q.answerValue().trim()) {
+          q.answerValue(q.suggestedAnswer);
+        }
+      });
+
       const show = (detail) => {
         this.detail(detail);
         this.errorMessage('');
-        this.questions(detail.spec ? detail.spec.openQuestions.map((q) => ({
-          question: q.question,
-          context: (q.reason || '') + (q.reference ? ' (' + q.reference + ')' : ''),
-          editable: detail.status === 'READY' && this.canEdit(),
-          answerValue: ko.observable(q.answer || '')
-        })) : []);
+        this.questions(detail.spec ? detail.spec.openQuestions.map((q) => question(q, detail.status === 'READY' && this.canEdit())) : []);
         if (this.editingJson()) {
           this.specJson(detail.spec ? JSON.stringify(detail.spec, null, 2) : '');
         }

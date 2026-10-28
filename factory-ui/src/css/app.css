@@ -119,6 +119,13 @@
     max-width: 900px;
 }
 
+.factory-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0;
+}
+
 .factory-screen {
     margin-bottom: 24px;
 }

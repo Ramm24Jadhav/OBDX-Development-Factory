@@ -64,7 +64,8 @@ public final class SpecParser {
                 list(root, "messages", node -> new RequirementSpec.Message(text(node, "code"), textOrSelf(node, "text"),
                         oneOf(text(node, "type"), MESSAGE_TYPES, "info"))),
                 list(root, "openQuestions", node -> new RequirementSpec.OpenQuestion(textOrSelf(node, "question"),
-                        text(node, "reason"), text(node, "reference"), text(node, "answer"))),
+                        text(node, "reason"), text(node, "reference"), strings(node, "options"),
+                        text(node, "suggestedAnswer"), text(node, "answer"))),
                 list(root, "decisions", node -> new RequirementSpec.Decision(text(node, "question"), text(node, "answer"))));
     }
 
