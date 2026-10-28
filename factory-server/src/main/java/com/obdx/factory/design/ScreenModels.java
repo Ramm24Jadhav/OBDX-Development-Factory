@@ -26,6 +26,7 @@ public final class ScreenModels {
     private static final Pattern MAX_LENGTH = Pattern.compile("(?i)max(?:imum)?\\s*(?:length|len|chars?|characters)?\\s*(?:of|is|:|=)?\\s*(\\d{1,5})");
     private static final Set<String> CHANGE_TYPES = Set.of("new", "enhance", "unknown");
     private static final Set<String> ACTION_KINDS = Set.of("primary", "secondary", "link");
+    private static final int MAX_CODE = 20_000;
 
     private static final JsonMapper LENIENT = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS, JsonReadFeature.ALLOW_TRAILING_COMMA,
@@ -130,7 +131,8 @@ public final class ScreenModels {
                         c.label() != null && !c.label().isBlank() ? c.label().trim() : humanize(name),
                         c.required(), blankToNull(c.helpText()), blankToNull(c.placeholder()),
                         c.maxLength() != null && c.maxLength() > 0 ? c.maxLength() : null,
-                        blankToNull(c.defaultValue()), options, nullSafe(c.validations()), c.readonly(), component, params));
+                        blankToNull(c.defaultValue()), options, nullSafe(c.validations()), c.readonly(), component, params,
+                        code(c.html(), "HTML"), code(c.css(), "CSS"), code(c.script(), "script")));
             }
             sections.add(new ScreenModel.Section(uniqueId(section.id(), "s-" + sectionNumber, usedIds),
                     section.title() == null || section.title().isBlank() ? null : section.title().trim(),
@@ -151,6 +153,17 @@ public final class ScreenModels {
         String changeType = model.changeType() == null ? "unknown" : model.changeType().toLowerCase(Locale.ROOT);
         return new ScreenModel(model.name().trim(), model.title() == null || model.title().isBlank() ? model.name().trim() : model.title().trim(),
                 blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown", sections, actions);
+    }
+
+    /** A designer's own HTML, CSS or script for an element: kept as written, without surrounding blank lines. */
+    private static String code(String value, String what) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.length() > MAX_CODE) {
+            throw new BadRequestException("The " + what + " of an element is longer than " + MAX_CODE + " characters");
+        }
+        return value.strip();
     }
 
     /** Placeholder choices until the analyst fills them in; a table's options are its columns. */

@@ -35,6 +35,11 @@
           <oj-form-layout max-columns="[[section.data.columns]]" direction="row" user-assistance-density="efficient">
             <oj-bind-for-each data="[[section.data.components]]" as="c">
               <template>
+                <oj-bind-if test="[[c.data.type === 'custom']]">
+                  <div :data-cid="[[c.data.id]]" :data-label="[[c.data.label]]" :class="[[c.data.css + ' factory-custom-element']]">
+                    <iframe class="factory-element-frame" sandbox="allow-scripts" :title="[[c.data.label]]" :srcdoc="[[c.data.srcdoc]]"></iframe>
+                  </div>
+                </oj-bind-if>
                 <oj-bind-if test="[[c.data.type === 'text']]">
                   <oj-input-text :data-cid="[[c.data.id]]" :data-label="[[c.data.label]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
                                  required="[[c.data.required]]" readonly="[[c.data.readonly]]" placeholder="[[c.data.placeholder]]"

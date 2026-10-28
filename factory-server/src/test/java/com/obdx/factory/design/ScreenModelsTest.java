@@ -32,6 +32,22 @@ class ScreenModelsTest {
     }
 
     @Test
+    void keepsAnElementsOwnCode() {
+        ScreenModel model = ScreenModels.parse("""
+                {"name": "Transfer", "sections": [{"components": [
+                  {"type": "text", "label": "Remarks", "html": "\\n<div class=\\"note\\">Hi</div>\\n", "css": "& { color: red; }",
+                   "script": " ", "id": "c-remarks"}]}]}""");
+
+        ScreenModel.Component remarks = model.sections().getFirst().components().getFirst();
+        assertThat(remarks.html()).isEqualTo("<div class=\"note\">Hi</div>");
+        assertThat(remarks.css()).isEqualTo("& { color: red; }");
+        assertThat(remarks.script()).as("blank code is no code").isNull();
+        assertThatThrownBy(() -> ScreenModels.parse("{\"name\": \"x\", \"sections\": [{\"components\": [{\"type\": \"text\", \"css\": \""
+                + "a".repeat(20_001) + "\"}]}]}"))
+                .isInstanceOf(BadRequestException.class).hasMessageContaining("CSS of an element is longer");
+    }
+
+    @Test
     void buildsFirstDesignFromSpecScreen() {
         RequirementSpec.Screen screen = new RequirementSpec.Screen("Own Account Transfer", "enhance", "Add remarks", "2",
                 List.of(

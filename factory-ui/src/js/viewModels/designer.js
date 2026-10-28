@@ -81,6 +81,38 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.showHistory = () => this.rightTab('history');
       this.showCodeTab = () => this.rightTab('code');
 
+      // The side panels float over the canvas and collapse to rails; whether each is open is remembered in this browser.
+      const remembered = (key, fallback) => {
+        try {
+          const value = window.localStorage.getItem('factory.designer.' + key);
+          return value === null ? fallback : value === 'true';
+        } catch (e) {
+          return fallback;
+        }
+      };
+      const remember = (key, value) => {
+        try {
+          window.localStorage.setItem('factory.designer.' + key, String(value));
+        } catch (e) {
+          // private window or blocked storage: the panels just open as before next time
+        }
+      };
+      this.leftOpen = ko.observable(remembered('leftOpen', true));
+      this.rightOpen = ko.observable(remembered('rightOpen', true));
+      this.leftOpen.subscribe((open) => remember('leftOpen', open));
+      this.rightOpen.subscribe((open) => remember('rightOpen', open));
+      this.collapseLeft = () => this.leftOpen(false);
+      this.collapseRight = () => this.rightOpen(false);
+      const openLeftOn = (tab) => () => { this.leftTab(tab); this.leftOpen(true); };
+      const openRightOn = (tab) => () => { this.rightTab(tab); this.rightOpen(true); };
+      this.railComponents = openLeftOn('components');
+      this.railLayers = openLeftOn('layers');
+      this.railProperties = openRightOn('properties');
+      this.railComments = openRightOn('comments');
+      this.railHistory = openRightOn('history');
+      this.bodyClass = ko.pureComputed(() => 'factory-dz-body' + (this.leftOpen() ? ' factory-dz-left-open' : '')
+        + (this.rightOpen() ? ' factory-dz-right-open' : ''));
+
       const catalog = ko.observableArray([]);
       this.typeProvider = new ArrayDataProvider(catalog, { keyAttributes: 'value' });
       this.columnsProvider = new ArrayDataProvider([1, 2, 3].map((n) => ({ value: n, label: n + (n === 1 ? ' column' : ' columns') })), { keyAttributes: 'value' });
@@ -91,15 +123,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); };
       const showInfo = (text) => { this.errorMessage(''); this.infoMessage(text); };
       this.clearMessages = () => { this.errorMessage(''); this.infoMessage(''); };
-      // Plain inputs of the canvas and panels
-      this.paletteInput = (event) => this.paletteFilter(event.target.value);
-      this.aiInput = (event) => this.aiInstruction(event.target.value);
+      // Enter in the Ask AI box applies the instruction
       this.aiKeydown = (event) => {
         if (event.key === 'Enter') {
           this.askAi();
         }
       };
-      this.commentInput = (event) => this.commentText(event.target.value);
 
       // --- canvas (the preview) ---
 
@@ -523,6 +552,60 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           });
           c.params = params;
         });
+      // The element's own HTML, CSS and JS; a value binding commits when the box loses focus, so the canvas does not redraw per key
+      this.codeTab = ko.observable('html');
+      this.codeTabs = ko.pureComputed(() => [['html', 'HTML'], ['css', 'CSS'], ['js', 'JS']].map(([key, label]) => {
+        const c = this.selectedComponent();
+        const filled = !!c && !!c[key === 'js' ? 'script' : key];
+        return {
+          label: label + (filled ? ' ●' : ''),
+          css: 'factory-dz-seg' + (this.codeTab() === key ? ' factory-dz-seg-active' : ''),
+          pick: () => this.codeTab(key)
+        };
+      }));
+      const codeField = (key) => componentProperty((c) => c[key] || '', (c, v) => { c[key] = (v || '').trim() ? v : null; });
+      this.propHtml = codeField('html');
+      this.propCss = codeField('css');
+      this.propScript = codeField('script');
+      this.hasOwnCode = ko.pureComputed(() => {
+        const c = this.selectedComponent();
+        return !!c && !!(c.html || c.css || c.script);
+      });
+      const escapeHtml = (text) => String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      /** Plain markup like the generated element, to start editing from. */
+      this.startFromGenerated = () => {
+        const c = this.selectedComponent();
+        if (!c) {
+          return;
+        }
+        const label = '<label for="' + escapeHtml(c.name) + '">' + escapeHtml(c.label) + (c.required ? ' *' : '') + '</label>\n';
+        const options = (c.options || []).map((o) => escapeHtml(o));
+        let markup;
+        if (c.type === 'select' || c.type === 'account') {
+          markup = label + '<select id="' + escapeHtml(c.name) + '">\n' + options.map((o) => '  <option>' + o + '</option>').join('\n') + '\n</select>';
+        } else if (c.type === 'radio' || c.type === 'checkbox') {
+          markup = '<fieldset>\n  <legend>' + escapeHtml(c.label) + '</legend>\n' + options.map((o) => '  <label><input type="' + c.type
+            + '" name="' + escapeHtml(c.name) + '"> ' + o + '</label>').join('\n') + '\n</fieldset>';
+        } else if (c.type === 'table') {
+          markup = '<table>\n  <thead><tr>' + options.map((o) => '<th>' + o + '</th>').join('') + '</tr></thead>\n  <tbody></tbody>\n</table>';
+        } else if (c.type === 'textarea') {
+          markup = label + '<textarea id="' + escapeHtml(c.name) + '" rows="3"></textarea>';
+        } else {
+          const type = c.type === 'date' ? 'date' : c.type === 'number' || c.type === 'amount' ? 'number' : 'text';
+          markup = label + '<input id="' + escapeHtml(c.name) + '" type="' + type + '"' + (c.placeholder ? ' placeholder="' + escapeHtml(c.placeholder) + '"' : '') + '>';
+        }
+        this.propHtml(markup);
+        this.codeTab('html');
+      };
+      this.clearOwnCode = () => update((m) => {
+        const found = locate(m, this.selectedId());
+        if (found) {
+          found.component.html = null;
+          found.component.css = null;
+          found.component.script = null;
+        }
+      });
+
       this.propSectionTitle = sectionProperty((s) => s.title || '', (s, v) => { s.title = v || null; });
       this.propSectionColumns = sectionProperty((s) => s.columns || 2, (s, v) => { s.columns = v; });
       this.propActionLabel = actionProperty((a) => a.label, (a, v) => { a.label = v; });
@@ -674,7 +757,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
       this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
         : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
-      this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); };
+      this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); this.rightOpen(true); };
       /** What the requirement's rules say about this screen. */
       this.screenRules = ko.pureComputed(() => {
         const requirement = this.requirement();

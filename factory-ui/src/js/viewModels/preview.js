@@ -67,6 +67,37 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
 
     const today = () => new Date().toISOString().slice(0, 10);
 
+    /** A designer's CSS for an element: "&" stands for the element; plain declarations apply to it directly. */
+    const scopeCss = (css, selector) => (css.includes('{') ? css.split('&').join(selector) : selector + ' { ' + css + ' }');
+
+    /**
+     * The page an element with its own HTML or script is drawn in: a sandboxed frame without the factory's origin,
+     * so the script reaches only that frame. It reports its height and clicks to the preview.
+     */
+    const elementPage = (c) => {
+      const base = 'body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;font-size:14px;color:#1f2937;background:transparent}'
+        + 'label{display:block;font-size:12px;color:#4b5563;margin-bottom:4px}'
+        + 'input,select,textarea{box-sizing:border-box;width:100%;min-height:36px;padding:6px 10px;border:1px solid #c9cfd8;border-radius:6px;font:inherit}'
+        + 'button{min-height:36px;padding:0 14px;border-radius:6px;border:1px solid #2b6cb0;background:#2b6cb0;color:#fff;font:inherit;cursor:pointer}';
+      const css = c.css ? scopeCss(c.css, 'body') : '';
+      const html = c.html || '<label>' + (c.label || '') + '</label><div id="element"></div>';
+      const script = (c.script || '').replace(/<\/script/gi, '<\\/script');
+      const reporter = '(function(){var id=' + JSON.stringify(c.id) + ';'
+        + 'function size(){parent.postMessage({type:"factory-element-size",id:id,height:document.documentElement.scrollHeight},"*");}'
+        + 'window.addEventListener("load",size);if(window.ResizeObserver){new ResizeObserver(size).observe(document.body);}'
+        // A click selects the element, except in its inputs and buttons, so they can be tried out
+        + 'document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("input,select,textarea,button,a,label")){return;}'
+        + 'parent.postMessage({type:"factory-element-click",id:id},"*");},true);})();';
+      return '<!doctype html><html><head><meta charset="utf-8"><style>' + base + css.replace(/<\/style/gi, '') + '</style></head><body>'
+        + html + '<script>' + reporter + '<\/script><script>' + script + '<\/script></body></html>';
+    };
+
+    /** The CSS of every element that has CSS but no HTML of its own, scoped to the element in the page. */
+    const elementStyles = (model) => model.sections.reduce((all, s) => all.concat(s.components), [])
+      .filter((c) => c.css && !c.html && !c.script)
+      .map((c) => scopeCss(c.css, '[data-cid="' + String(c.id).replace(/"/g, '') + '"]'))
+      .join('\n').replace(/<\/style/gi, '');
+
     /** The value a field shows in the preview: its default, else a realistic sample. */
     const sampleValue = (c, look, options) => {
       const sample = sampleFor((c.name || '') + ' ' + (c.label || ''));
@@ -95,7 +126,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       const ctx = context || {};
       const warnings = ctx.warnings || {};
       const component = (c) => {
-        const look = c.type === 'component' ? (LOOKS[c.component] || 'generic') : null;
+        const look = c.type === 'component' && !c.html && !c.script ? (LOOKS[c.component] || 'generic') : null;
         const options = (c.type === 'account' || look === 'account') && (!c.options || c.options.length === 0 || c.options[0] === 'Option 1')
           ? SAMPLE_ACCOUNTS : (c.options || []);
         const optionItems = options.map((label) => ({ value: label, label: label }));
@@ -107,7 +138,9 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           params: Object.keys(params).map((key) => key + (params[key] ? ': ' + params[key] : '')),
           table: c.type === 'table' ? table(c.options || []) : null,
           id: c.id,
-          type: c.type,
+          // An element with its own HTML or script is drawn by it, in its own sandboxed frame
+          type: c.html || c.script ? 'custom' : c.type,
+          srcdoc: c.html || c.script ? elementPage(c) : '',
           label: c.label,
           required: c.required === true,
           readonly: c.readonly === true,
@@ -158,6 +191,29 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           return;
         }
         this.screen(event.data.model ? toView(event.data.model, event.data.highlight, event.data.context) : null);
+        let style = document.getElementById('factory-element-css');
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'factory-element-css';
+          document.head.appendChild(style);
+        }
+        style.textContent = event.data.model ? elementStyles(event.data.model) : '';
+      };
+
+      // Elements with their own HTML run in sandboxed frames (origin "null"): they report their height and clicks.
+      const onElementMessage = (event) => {
+        const frame = [...document.querySelectorAll('.factory-element-frame')].find((f) => f.contentWindow === event.source);
+        if (!frame || !event.data) {
+          return;
+        }
+        if (event.data.type === 'factory-element-size') {
+          frame.style.height = Math.min(Math.max(Number(event.data.height) || 0, 24), 2000) + 'px';
+        } else if (event.data.type === 'factory-element-click' && window.parent !== window) {
+          const holder = frame.closest('[data-cid]');
+          if (holder) {
+            window.parent.postMessage({ type: 'factory-preview-select', id: holder.getAttribute('data-cid') }, window.location.origin);
+          }
+        }
       };
       const onClick = (event) => {
         const target = event.target.closest('[data-cid]') || event.target.closest('[data-sid]');
@@ -209,6 +265,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       this.connected = () => {
         document.title = 'Screen preview';
         window.addEventListener('message', onMessage);
+        window.addEventListener('message', onElementMessage);
         document.addEventListener('click', onClick, true);
         document.addEventListener('dragover', onDragOver);
         document.addEventListener('drop', onDrop);
@@ -219,6 +276,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       };
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
+        window.removeEventListener('message', onElementMessage);
         document.removeEventListener('click', onClick, true);
         document.removeEventListener('dragover', onDragOver);
         document.removeEventListener('drop', onDrop);

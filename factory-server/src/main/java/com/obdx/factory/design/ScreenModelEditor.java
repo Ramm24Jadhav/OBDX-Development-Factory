@@ -52,6 +52,8 @@ public class ScreenModelEditor {
               "params" to an object of parameter values. Use one only from this list: %s.
             - "required" is true, false or null. "maxLength" is a number or null. "columns" is 1, 2 or 3.
             - Action "kind" is primary, secondary or link.
+            - "html", "css" and "script" of a component are the designer's own code: keep them exactly as they are
+              unless the instruction is about them.
             """;
 
     private static final int MAX_COMPONENTS = 60;

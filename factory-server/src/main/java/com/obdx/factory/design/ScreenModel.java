@@ -23,16 +23,20 @@ public record ScreenModel(String name, String title, String description, String 
      * @param component for type "component": the bank's existing component to use, as named in its code (for
      *                  example account-input or oj-list-view); null otherwise
      * @param params    values for that component's parameters, by name
+     * @param html      the designer's own markup for this element, drawn instead of the generated one; null if none
+     * @param css       the designer's own styles for this element ("&" stands for the element); null if none
+     * @param script    the designer's own script for this element's markup; null if none
      */
     public record Component(String id, String type, String name, String label, Boolean required, String helpText,
                             String placeholder, Integer maxLength, String defaultValue, List<String> options,
-                            List<String> validations, Boolean readonly, String component, Map<String, String> params) {
+                            List<String> validations, Boolean readonly, String component, Map<String, String> params,
+                            String html, String css, String script) {
 
         public Component(String id, String type, String name, String label, Boolean required, String helpText,
                          String placeholder, Integer maxLength, String defaultValue, List<String> options,
                          List<String> validations, Boolean readonly) {
             this(id, type, name, label, required, helpText, placeholder, maxLength, defaultValue, options, validations,
-                    readonly, null, Map.of());
+                    readonly, null, Map.of(), null, null, null);
         }
     }
 

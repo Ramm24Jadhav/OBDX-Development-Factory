@@ -36,6 +36,9 @@ public class CodeGenerator {
     public record Result(String content, FileChecks.Result check, int attempts) {
     }
 
+    /** A design element with the designer's own markup, styles or script. */
+    private static final Pattern CUSTOM_CODE = Pattern.compile("\"(html|css|script)\":\"");
+
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
     private final LocalChecks checks;
@@ -127,6 +130,11 @@ public class CodeGenerator {
         user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
+            if (CUSTOM_CODE.matcher(context.designsJson()).find()) {
+                user.append("Components with \"html\", \"css\" or \"script\" carry the designer's own code: use the html as that element's")
+                        .append(" markup in the template (with the code's bindings and resource bundle labels), the css (\"&\" is the element)")
+                        .append(" in the component's styles, and the script's behaviour in the view model, following the existing code.\n\n");
+            }
             if (context.designsJson().contains("\"type\":\"component\"")) {
                 user.append("Components of type \"component\" are existing components of the bank's code: use the component named in")
                         .append(" \"component\" exactly as the code uses it elsewhere, with the \"params\" given, instead of building it again.\n\n");

@@ -140,21 +140,37 @@
     </div>
   </oj-bind-if>
 
-  <div class="factory-dz-body">
+  <div :class="[[bodyClass]]">
+    <!-- Rails: the collapsed side panels -->
+    <div id="leftRail" class="factory-dz-rail factory-dz-rail-left" :style.display="[[detail() && !leftOpen() ? 'flex' : 'none']]">
+      <button type="button" class="factory-dz-rail-btn" title="Components" aria-label="Show components" on-click="[[railComponents]]">⧉<span>Components</span></button>
+      <button type="button" class="factory-dz-rail-btn" title="Layers" aria-label="Show layers" on-click="[[railLayers]]">☰<span>Layers</span></button>
+    </div>
+    <div id="rightRail" class="factory-dz-rail factory-dz-rail-right" :style.display="[[detail() && !rightOpen() ? 'flex' : 'none']]">
+      <button type="button" class="factory-dz-rail-btn" title="Properties" aria-label="Show properties" on-click="[[railProperties]]">⚙<span>Properties</span></button>
+      <button type="button" class="factory-dz-rail-btn" title="Checks" aria-label="Show checks" on-click="[[showChecks]]">
+        <oj-bind-text value="[[openChecks() > 0 ? '!' : '✓']]"></oj-bind-text><span>Checks</span></button>
+      <button type="button" class="factory-dz-rail-btn" title="Comments" aria-label="Show comments" on-click="[[railComments]]">✎<span>Comments</span></button>
+      <button type="button" class="factory-dz-rail-btn" title="History" aria-label="Show history" on-click="[[railHistory]]">↺<span>History</span></button>
+    </div>
+
     <!-- Left: components and layers -->
-    <aside class="factory-dz-left" :style.display="[[detail() ? 'flex' : 'none']]" aria-label="Components and layers">
+    <aside id="leftPanel" class="factory-dz-left factory-dz-float" :style.display="[[detail() && leftOpen() ? 'flex' : 'none']]" aria-label="Components and layers">
       <div class="factory-dz-tabs" role="tablist">
         <button type="button" role="tab" :class="[['factory-dz-tab' + (leftTab() === 'components' ? ' factory-dz-tab-active' : '')]]"
                 :aria-selected="[[leftTab() === 'components' ? 'true' : 'false']]" on-click="[[showComponents]]">Components</button>
         <button type="button" role="tab" :class="[['factory-dz-tab' + (leftTab() === 'layers' ? ' factory-dz-tab-active' : '')]]"
                 :aria-selected="[[leftTab() === 'layers' ? 'true' : 'false']]" on-click="[[showLayers]]">Layers</button>
+        <span class="factory-dz-spacer"></span>
+        <button type="button" id="collapseLeftButton" class="factory-dz-icon" title="Collapse to the side" aria-label="Collapse the left panel"
+                on-click="[[collapseLeft]]">«</button>
       </div>
       <div class="factory-dz-panel-scroll">
         <oj-bind-if test="[[leftTab() === 'components']]">
           <div id="designPalette">
             <oj-bind-if test="[[editable()]]">
               <input type="search" id="paletteFilter" class="factory-dz-input factory-dz-search" placeholder="Search components"
-                     aria-label="Search components" :value="[[paletteFilter]]" on-input="[[paletteInput]]"/>
+                     aria-label="Search components" data-bind="textInput: paletteFilter"/>
               <p class="factory-dz-hint">Drag onto the canvas or a layer, or click to add after the selection.</p>
               <oj-bind-if test="[[paletteNote()]]">
                 <p class="factory-dz-note"><oj-bind-text value="[[paletteNote]]"></oj-bind-text></p>
@@ -324,7 +340,7 @@
             <span class="factory-dz-ai-mark" aria-hidden="true">✦</span>
             <input type="text" id="aiInstruction" class="factory-dz-ai-input" aria-label="Ask AI to change the screen"
                    placeholder="Ask AI: move remarks to the end and make it optional"
-                   :value="[[aiInstruction]]" on-input="[[aiInput]]" on-keydown="[[aiKeydown]]"/>
+                   data-bind="textInput: aiInstruction" on-keydown="[[aiKeydown]]"/>
             <button type="button" id="askAiButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[askAi]]"
                     :disabled="[[!aiInstruction() || busy()]]">
               <oj-bind-text value="[[busy() ? 'Working…' : 'Apply']]"></oj-bind-text>
@@ -335,7 +351,7 @@
     </main>
 
     <!-- Right: the inspector -->
-    <aside class="factory-dz-right" :style.display="[[detail() ? 'flex' : 'none']]" aria-label="Inspector">
+    <aside id="rightPanel" class="factory-dz-right factory-dz-float" :style.display="[[detail() && rightOpen() ? 'flex' : 'none']]" aria-label="Inspector">
       <div class="factory-dz-tabs" role="tablist">
         <button type="button" role="tab" :class="[['factory-dz-tab' + (rightTab() === 'properties' ? ' factory-dz-tab-active' : '')]]"
                 :aria-selected="[[rightTab() === 'properties' ? 'true' : 'false']]" on-click="[[showProperties]]">Properties</button>
@@ -347,6 +363,9 @@
           <button type="button" role="tab" :class="[['factory-dz-tab' + (rightTab() === 'code' ? ' factory-dz-tab-active' : '')]]"
                   :aria-selected="[[rightTab() === 'code' ? 'true' : 'false']]" on-click="[[showCodeTab]]">Code</button>
         </oj-bind-if>
+        <span class="factory-dz-spacer"></span>
+        <button type="button" id="collapseRightButton" class="factory-dz-icon" title="Collapse to the side" aria-label="Collapse the inspector"
+                on-click="[[collapseRight]]">»</button>
       </div>
       <div class="factory-dz-panel-scroll">
         <oj-bind-if test="[[detail() && rightTab() === 'properties']]">
@@ -411,6 +430,45 @@
                   <oj-input-text id="propPlaceholder" label-hint="Placeholder" value="{{propPlaceholder}}"></oj-input-text>
                   <oj-input-text id="propHelp" label-hint="Help text" value="{{propHelp}}"></oj-input-text>
                 </oj-form-layout>
+                <div class="factory-dz-group">Code</div>
+                <div id="codeTabs" class="factory-dz-segmented factory-dz-segmented-full" role="group" aria-label="Element code">
+                  <oj-bind-for-each data="[[codeTabs]]" as="t">
+                    <template>
+                      <button type="button" :class="[[t.data.css]]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button>
+                    </template>
+                  </oj-bind-for-each>
+                </div>
+                <oj-bind-if test="[[codeTab() === 'html']]">
+                  <div>
+                    <p class="factory-dz-hint">Your own markup for this element, drawn instead of the generated one. It runs in a sealed frame on the
+                      canvas; code generation turns it into the element's template.</p>
+                    <textarea id="propHtml" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="HTML"
+                              placeholder="&lt;label&gt;Remarks&lt;/label&gt;&#10;&lt;textarea maxlength=&quot;35&quot;&gt;&lt;/textarea&gt;"
+                              data-bind="value: propHtml" :readonly="[[!editable()]]"></textarea>
+                    <oj-bind-if test="[[editable() && !propHtml()]]">
+                      <button type="button" class="factory-dz-link" on-click="[[startFromGenerated]]">Start from the generated markup</button>
+                    </oj-bind-if>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[codeTab() === 'css']]">
+                  <div>
+                    <p class="factory-dz-hint">Styles for this element. Write declarations (color: #1f3a5f;) or rules where &amp; is the element
+                      (&amp; label { font-weight: 600; }).</p>
+                    <textarea id="propCss" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="CSS"
+                              placeholder="&amp; { background: #f7f9fc; padding: 8px; }" data-bind="value: propCss" :readonly="[[!editable()]]"></textarea>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[codeTab() === 'js']]">
+                  <div>
+                    <p class="factory-dz-hint">Behaviour for this element's own markup, for example formatting or showing a field. It runs in the
+                      element's sealed frame only; code generation moves it into the view model.</p>
+                    <textarea id="propScript" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="JavaScript"
+                              placeholder="document.querySelector('textarea').addEventListener('input', …);" data-bind="value: propScript" :readonly="[[!editable()]]"></textarea>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[editable() && hasOwnCode()]]">
+                  <button type="button" class="factory-dz-link factory-dz-danger-link" on-click="[[clearOwnCode]]">Remove this element's own code</button>
+                </oj-bind-if>
               </div>
             </oj-bind-if>
 
@@ -501,7 +559,7 @@
             </oj-bind-if>
             <textarea id="commentText" class="factory-dz-input factory-dz-textarea" rows="3"
                       :placeholder="[[selectedKind() === 'screen' ? 'Comment on the screen' : 'Comment on ' + selectedTitle()]]"
-                      :value="[[commentText]]" on-input="[[commentInput]]"
+                      data-bind="textInput: commentText"
                       aria-label="Comment"></textarea>
             <button type="button" id="addCommentButton" class="factory-dz-btn" on-click="[[addComment]]" :disabled="[[!commentText()]]">Add comment</button>
           </div>
