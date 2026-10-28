@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -101,6 +103,7 @@ public class ImportService {
 
     /** Jobs cannot survive a restart; mark any left over as failed so a new import can start. */
     @EventListener(ApplicationReadyEvent.class)
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @Transactional
     public void failInterruptedJobs() {
         int count = jobs.failUnfinished("Interrupted because the server restarted. Start the import again.", OffsetDateTime.now());

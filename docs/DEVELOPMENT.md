@@ -402,7 +402,8 @@ the repository's **Actions** tab, choose the latest **Build** run and download a
 On Windows, unzip it (for example to `C:\obdx-factory`), double-click `start.bat` and open `http://localhost:8080/`.
 Sign in as `admin` with the password in `settings.properties` (`Factory-Admin-1` until changed). On Linux, run
 `./start.sh` as an ordinary user. `README.txt` in the zip has the details, including `create-demo-svn.bat` for trying
-it with demo code. Importing code needs the Subversion command-line tools: on Windows, TortoiseSVN with "command line
+it with demo code: it creates SVN repositories in `demo-svn/`, which the factory adds as workspaces and imports when it
+starts with the trial database (`FACTORY_DEMO_SVN_DIR`, default `demo-svn`). Importing code needs the Subversion command-line tools: on Windows, TortoiseSVN with "command line
 client tools" ticked.
 
 The download uses the **trial database** (`FACTORY_TRIAL_DATABASE=true` in its `settings.properties`): the factory

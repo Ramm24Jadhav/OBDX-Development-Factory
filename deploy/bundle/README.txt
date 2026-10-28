@@ -22,7 +22,8 @@ What you need
 
 Try it with demo code
   Run create-demo-svn.bat (or ./create-demo-svn.sh). It creates two small OBDX-style SVN repositories in the
-  demo-svn folder and prints their URLs. In the factory, create a workspace for each and import it.
+  demo-svn folder. Then start the factory, or stop and start it again if it was running: it adds them as the
+  workspaces bank-a-22 (OBDX 22.x) and bank-b-25 (25.x) and imports their code.
 
 Your data
   Everything is kept in the data folder: the trial database, imported code and the key that encrypts stored SVN

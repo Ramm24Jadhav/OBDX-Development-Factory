@@ -73,6 +73,8 @@ factory:
     # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.
     enabled: ${FACTORY_TRIAL_DATABASE:false}
     directory: ${factory.storage.root}/trial-database
+    # Demo SVN repositories made by create-demo-svn; they are added as workspaces and imported at startup.
+    demo-svn: ${FACTORY_DEMO_SVN_DIR:demo-svn}
   svn:
     command: ${FACTORY_SVN_COMMAND:svn}
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}

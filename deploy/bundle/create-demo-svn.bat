@@ -19,8 +19,6 @@ for /d %%d in (demo\*) do (
   )
 )
 echo.
-echo Demo repositories are ready. In the factory, create a workspace for each (Workspaces, New workspace):
-echo   Bank A, OBDX 22.x:  file:///%BASE%/demo-svn/bank-a-22/trunk
-echo   Bank B, OBDX 25.x:  file:///%BASE%/demo-svn/bank-b-25/trunk
-echo then on the Code page press "Import / update code".
+echo Demo repositories are ready in the demo-svn folder. Start the factory (or stop and start it again if it is
+echo running): it adds them as the workspaces bank-a-22 and bank-b-25 and imports their code.
 pause
