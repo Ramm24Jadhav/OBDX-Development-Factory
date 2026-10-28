@@ -93,6 +93,16 @@ ollama pull nomic-embed-text
 
 Then open the **Models** page and send a prompt.
 
+**Choosing the model server.** On the Models page administrators choose the server and models while the factory runs:
+**On this computer** finds Ollama (port 11434), vLLM (8000) and LM Studio (1234) on the factory's computer and lists
+their models; **Another server** takes any OpenAI-compatible URL (usually ending with `/v1`, for example a GPU server
+or a private cloud endpoint) and an API key, and lists that server's models through `/models`. Pick the chat model
+(code models are listed first) and the embedding model, and **Use these models**: the factory switches at once, without a
+restart. The choice is kept in the database (`model_settings`; the API key encrypted with `FACTORY_SECRET_KEY`) and
+replaces the `FACTORY_MODEL_*` settings, which apply until something is chosen. Changing the embedding model removes the
+stored embeddings, because embeddings of different models cannot be compared; import each workspace again to search by
+meaning.
+
 ## Creating a workspace
 
 On the Workspaces page, administrators choose where the code is, and the factory checks it before the workspace is
@@ -398,7 +408,10 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
 | `DELETE /api/workspaces/{id}/profile/facts/{key}` | Go back to the detected value |
-| `GET /api/model/status` | Show the configured model endpoint and models |
+| `GET /api/model/status` | The model server and models in use, and whether they were chosen on the Models page |
+| `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
+| `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
+| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`) (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
 | `GET /actuator/health` | Health check |

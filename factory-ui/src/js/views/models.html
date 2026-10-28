@@ -1,17 +1,63 @@
 <div class="oj-hybrid-padding">
   <h1>Models</h1>
   <p class="oj-text-color-secondary">
-    The model gateway connects the factory to a local model server (Ollama, vLLM) or a privately hosted endpoint
-    through the OpenAI-compatible API. Use this page to check that the connection works.
+    The factory works with a model server that speaks the OpenAI-compatible API: Ollama, vLLM or LM Studio on this
+    computer, or one on another server (for example a GPU machine or a private cloud endpoint).
   </p>
 
-  <h2>Configured models</h2>
+  <h2>In use</h2>
   <oj-bind-if test="[[status()]]">
-    <ul>
-      <li>Endpoint: <oj-bind-text value="[[status().baseUrl]]"></oj-bind-text></li>
+    <ul id="modelStatus">
+      <li>Model server: <oj-bind-text value="[[status().baseUrl]]"></oj-bind-text></li>
       <li>Chat model: <oj-bind-text value="[[status().chatModel]]"></oj-bind-text></li>
-      <li>Embedding model: <oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></li>
+      <li>Embedding model (code search): <oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></li>
+      <li class="oj-text-color-secondary"><oj-bind-text value="[[statusSource]]"></oj-bind-text></li>
     </ul>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[isAdmin()]]">
+    <h2>Choose the model server</h2>
+    <oj-radioset id="serverKind" value="{{serverKind}}" options="[[serverKindProvider]]" class="oj-choice-direction-row"
+                 label-hint="Where is the model server?" label-edge="none"></oj-radioset>
+
+    <oj-bind-if test="[[serverKind() === 'local']]">
+      <oj-bind-if test="[[searching()]]">
+        <p class="oj-text-color-secondary">Looking for model servers on this computer...</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[!searching() && localServers().length === 0]]">
+        <p class="factory-warning" id="noLocalServer">No model server answers on this computer (Ollama on port 11434, vLLM on 8000, LM Studio on
+          1234). Start Ollama and press Look again, or choose Another server.</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[localServers().length > 0]]">
+        <oj-radioset id="localServer" value="{{localServerUrl}}" options="[[localServerProvider]]" label-hint="Found on this computer"></oj-radioset>
+      </oj-bind-if>
+      <oj-button id="findLocalButton" on-oj-action="[[findLocal]]" disabled="[[searching]]">Look again</oj-button>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[serverKind() === 'remote']]">
+      <oj-form-layout max-columns="2" direction="row">
+        <oj-input-text id="remoteUrl" label-hint="Model server URL" value="{{remoteUrl}}"
+                       help-hints.definition="The OpenAI-compatible address, usually ending with /v1, for example http://gpu-server:11434/v1"></oj-input-text>
+        <oj-input-password id="apiKey" label-hint="[[apiKeyLabel]]" value="{{apiKey}}" mask-icon="visible"></oj-input-password>
+      </oj-form-layout>
+      <oj-button id="getModelsButton" on-oj-action="[[getRemoteModels]]" disabled="[[searching]]">Get models</oj-button>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[models().length > 0]]">
+      <h3>Models on <oj-bind-text value="[[modelsUrl]]"></oj-bind-text></h3>
+      <oj-form-layout max-columns="2" direction="row">
+        <oj-select-single id="chatModel" label-hint="Chat model (writing specs, designs and code)" data="[[chatProvider]]" value="{{chatModel}}"></oj-select-single>
+        <oj-select-single id="embeddingModel" label-hint="Embedding model (code search)" data="[[embeddingProvider]]" value="{{embeddingModel}}"></oj-select-single>
+      </oj-form-layout>
+      <oj-bind-if test="[[!hasEmbeddingModel()]]">
+        <p class="factory-warning">This server seems to have no embedding model; code search by meaning needs one. With Ollama:
+          <code>ollama pull nomic-embed-text</code>, then Look again.</p>
+      </oj-bind-if>
+      <oj-button id="saveModelsButton" chroming="callToAction" on-oj-action="[[save]]" disabled="[[saving]]">Use these models</oj-button>
+    </oj-bind-if>
+    <oj-bind-if test="[[savedMessage()]]">
+      <p class="factory-result" id="savedMessage"><oj-bind-text value="[[savedMessage]]"></oj-bind-text></p>
+    </oj-bind-if>
   </oj-bind-if>
 
   <h2>Try a prompt</h2>
@@ -21,10 +67,10 @@
   <oj-button id="sendButton" chroming="callToAction" on-oj-action="[[send]]" disabled="[[busy]]">Send</oj-button>
 
   <oj-bind-if test="[[errorMessage()]]">
-    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+    <p class="oj-text-color-danger" id="modelError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
   </oj-bind-if>
   <oj-bind-if test="[[reply()]]">
     <h3>Reply <span class="oj-text-color-secondary oj-typography-body-sm">(<oj-bind-text value="[[reply().model]]"></oj-bind-text>, <oj-bind-text value="[[reply().latencyMs]]"></oj-bind-text> ms)</span></h3>
-    <pre class="factory-reply"><oj-bind-text value="[[reply().reply]]"></oj-bind-text></pre>
+    <pre class="factory-reply" id="modelReply"><oj-bind-text value="[[reply().reply]]"></oj-bind-text></pre>
   </oj-bind-if>
 </div>
