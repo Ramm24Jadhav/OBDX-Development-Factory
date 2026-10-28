@@ -357,15 +357,122 @@
 }
 
 .factory-preview {
+    padding: 0;
+    min-height: 100vh;
+    background: #f5f6f8;
+}
+
+.factory-preview-empty {
     padding: 16px 24px;
 }
 
-.factory-preview-title {
-    margin-top: 0;
+/* The OBDX page around a screen: bank header, breadcrumb, title, journey steps, sections as cards */
+.factory-obdx-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    background: #1f3a5f;
+    color: #fff;
+    font-size: 13px;
 }
+
+.factory-obdx-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f3a5f;
+    font-weight: 700;
+}
+
+.factory-obdx-bank { font-weight: 600; font-size: 14px; }
+.factory-obdx-menu { flex: 1 1 auto; text-align: right; opacity: 0.85; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.factory-obdx-user {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.factory-obdx-page { padding: 16px 24px 24px; max-width: 1100px; margin: 0 auto; }
+.factory-obdx-breadcrumb { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+
+.factory-preview-title {
+    margin: 0 0 12px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.factory-obdx-steps {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+}
+
+.factory-obdx-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 4px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e3e6eb;
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.factory-obdx-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.factory-obdx-step-current { border-color: #2b6cb0; color: #1f2937; font-weight: 600; }
+.factory-obdx-step-current .factory-obdx-step-number { background: #2b6cb0; color: #fff; }
+.factory-obdx-step-done .factory-obdx-step-number { background: #d1e7d6; color: #1e6b33; }
 
 .factory-preview-section {
     margin-bottom: 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e3e6eb;
+    border-radius: 8px;
+}
+
+.factory-preview-section h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Components a check found a problem with */
+.factory-warning-mark {
+    outline: 2px dashed #d97706;
+    outline-offset: 3px;
+    border-radius: 2px;
 }
 
 .factory-preview-actions {
@@ -399,13 +506,8 @@
     pointer-events: none;
 }
 
-.factory-preview-section {
-    border-radius: 6px;
-    padding: 4px;
-}
-
 .factory-preview-section:hover {
-    box-shadow: inset 0 0 0 1px #d8dde6;
+    border-color: #c3ccd9;
 }
 
 .factory-drop-target {
@@ -1079,3 +1181,144 @@
     .factory-dz-left, .factory-dz-right { flex: 0 0 auto; border: none; border-bottom: 1px solid var(--dz-border); }
     .factory-dz-device { min-height: 520px; flex: 0 0 auto; height: 520px; }
 }
+
+/* Designer: checks, journey and the start page board */
+
+.factory-dz-checks-chip {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.factory-dz-checks-open { background: #fdf1d6; color: #7a4d00; border-color: #f3d28a; }
+.factory-dz-checks-ok { background: #e3f4e6; color: #1e6b33; border-color: #b7dfc1; }
+
+.factory-dz-journey {
+    padding: 10px 16px 0;
+    background: var(--dz-canvas);
+}
+
+.factory-dz-journey-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.factory-dz-steps {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.factory-dz-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 0;
+    min-width: 150px;
+    padding: 6px 10px;
+    border: 1px solid var(--dz-border);
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.factory-dz-step:hover { border-color: #b9c3d3; }
+.factory-dz-step-current { border: 2px solid var(--dz-accent); padding: 5px 9px; }
+
+.factory-dz-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.factory-dz-step-approved .factory-dz-step-number { background: #d1e7d6; color: #1e6b33; }
+.factory-dz-step-current .factory-dz-step-number { background: var(--dz-accent); color: #fff; }
+.factory-dz-step-text { display: flex; flex-direction: column; min-width: 0; }
+.factory-dz-step-name { font-size: 12px; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-dz-step-status { font-size: 11px; color: var(--dz-muted); }
+.factory-dz-step-approved .factory-dz-step-status { color: #1e6b33; }
+.factory-dz-step-in_review .factory-dz-step-status { color: #7a4d00; }
+
+.factory-dz-checks {
+    margin-bottom: 8px;
+    padding: 10px;
+    border: 1px solid var(--dz-border);
+    border-radius: 8px;
+    background: #fbfbfc;
+}
+
+.factory-dz-checks-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.factory-dz-check {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px solid var(--dz-border);
+    font-size: 12px;
+}
+
+.factory-dz-check-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.factory-dz-check-ok .factory-dz-check-icon { background: #e3f4e6; color: #1e6b33; }
+.factory-dz-check-warn .factory-dz-check-icon { background: #fdf1d6; color: #b45309; }
+.factory-dz-check-info .factory-dz-check-icon { background: #eaf1fa; color: var(--dz-accent); }
+.factory-dz-check-text { cursor: pointer; }
+.factory-dz-rules { margin: 0; padding-left: 18px; font-size: 12px; color: #374151; }
+.factory-dz-rules li { margin-bottom: 4px; }
+
+.factory-dz-empty { max-width: 980px; text-align: left; }
+.factory-dz-board { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; }
+
+.factory-dz-board-group {
+    padding: 14px;
+    border: 1px solid var(--dz-border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.factory-dz-board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.factory-dz-board-head h3 { margin: 0; font-size: 15px; }
+
+.factory-dz-progress {
+    height: 4px;
+    margin: 8px 0 4px;
+    border-radius: 2px;
+    background: #eef0f3;
+    overflow: hidden;
+}
+
+.factory-dz-progress span { display: block; height: 100%; background: #2e8b57; }
+.factory-dz-btn-link { display: inline-flex; align-items: center; text-decoration: none; }

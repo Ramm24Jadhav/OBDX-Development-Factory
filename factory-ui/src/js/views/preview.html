@@ -3,15 +3,34 @@
     <p class="oj-text-color-secondary">Waiting for a screen design...</p>
   </oj-bind-if>
   <oj-bind-if test="[[screen()]]">
+    <div class="factory-obdx-header">
+      <span class="factory-obdx-logo" aria-hidden="true"><oj-bind-text value="[[screen().bank.charAt(0)]]"></oj-bind-text></span>
+      <span class="factory-obdx-bank"><oj-bind-text value="[[screen().bank]]"></oj-bind-text></span>
+      <span class="factory-obdx-menu">Accounts · Payments · Investments · Requests</span>
+      <span class="factory-obdx-user" aria-hidden="true">PS</span>
+    </div>
+    <div class="factory-obdx-page">
+    <div class="factory-obdx-breadcrumb"><oj-bind-text value="[[screen().breadcrumb]]"></oj-bind-text></div>
     <h1 class="factory-preview-title"><oj-bind-text value="[[screen().title]]"></oj-bind-text></h1>
+    <oj-bind-if test="[[screen().steps.length > 0]]">
+      <ol class="factory-obdx-steps" aria-label="Steps">
+        <oj-bind-for-each data="[[screen().steps]]" as="st">
+          <template>
+            <li :class="[[st.data.css]]"><span class="factory-obdx-step-number"><oj-bind-text value="[[st.data.number]]"></oj-bind-text></span>
+              <oj-bind-text value="[[st.data.name]]"></oj-bind-text></li>
+          </template>
+        </oj-bind-for-each>
+      </ol>
+    </oj-bind-if>
     <oj-bind-for-each data="[[screen().sections]]" as="section">
       <template>
-        <div :class="[[section.data.css]]" :data-sid="[[section.data.id]]" :data-label="[[section.data.title || 'Section']]">
+        <div :class="[[section.data.css]]" :data-sid="[[section.data.id]]" :data-label="[[section.data.title || 'Section']]"
+             :title="[[section.data.warning]]">
           <oj-bind-if test="[[section.data.title]]">
             <h2><oj-bind-text value="[[section.data.title]]"></oj-bind-text></h2>
           </oj-bind-if>
           <oj-bind-if test="[[section.data.components.length === 0]]">
-            <div class="factory-preview-empty-section">Drop components here</div>
+            <div class="factory-preview-empty-section"><oj-bind-text value="[[screen().editing ? 'Drop components here' : 'No fields yet']]"></oj-bind-text></div>
           </oj-bind-if>
           <oj-form-layout max-columns="[[section.data.columns]]" direction="row" user-assistance-density="efficient">
             <oj-bind-for-each data="[[section.data.components]]" as="c">
@@ -107,6 +126,7 @@
           </oj-button>
         </template>
       </oj-bind-for-each>
+    </div>
     </div>
   </oj-bind-if>
 </div>

@@ -61,9 +61,16 @@ define([], function () {
       ready = false;
     };
 
-    /** Shows the model in the preview; highlight is the id of a component or action to mark. */
-    this.show = (model, highlight) => {
-      pending = { model: model ? JSON.parse(JSON.stringify(model)) : null, highlight: highlight || null };
+    /**
+     * Shows the model in the preview; highlight is the id of a component or action to mark. context (optional) frames
+     * it as an OBDX page: bank, breadcrumb, steps and step of the journey, warnings by id, editing.
+     */
+    this.show = (model, highlight, context) => {
+      pending = {
+        model: model ? JSON.parse(JSON.stringify(model)) : null,
+        highlight: highlight || null,
+        context: context ? JSON.parse(JSON.stringify(context)) : null
+      };
       send();
     };
   }

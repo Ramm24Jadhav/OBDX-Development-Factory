@@ -40,6 +40,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.requirementId = ko.observable(null);
       this.blankName = ko.observable('');
       this.designs = ko.observableArray([]);
+      // The workspace's screens and requirements as the server lists them, the bank of each workspace, and the
+      // approved requirement of the open screen (its spec drives the journey and the checks)
+      const rawDesigns = ko.observableArray([]);
+      const requirements = ko.observableArray([]);
+      const bankNames = {};
+      this.requirement = ko.observable(null);
       const designOptions = ko.observableArray([]);
       this.designProvider = new ArrayDataProvider(designOptions, { keyAttributes: 'value' });
       this.designPick = ko.observable(null);
@@ -117,8 +123,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.previewNote = ko.pureComputed(() => (this.appTarget()
         ? 'Preview with the components of the ' + this.targetTitle() + ' app'
           + (this.previewKind() === 'react-native' ? ' (React Native Web; check on a device with Expo)' : '')
-        : 'Oracle JET with the Redwood theme, filled with sample data'));
-      ko.computed(() => preview.show(this.working(), this.selectedId()));
+        : 'Oracle JET with the Redwood theme, in an OBDX page, with sample data'));
 
       // Code the design becomes in a React Native or React app (current saved version)
       this.codeModule = ko.observable('app');
@@ -523,6 +528,212 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.propActionLabel = actionProperty((a) => a.label, (a, v) => { a.label = v; });
       this.propActionKind = actionProperty((a) => a.kind, (a, v) => { a.kind = v; });
 
+      // --- the journey: the screens of the open screen's requirement, in the order of its spec ---
+
+      const norm = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const specScreens = ko.pureComputed(() => {
+        const requirement = this.requirement();
+        return requirement && requirement.spec ? requirement.spec.screens || [] : [];
+      });
+      /** The spec screen this design was made from (same name). */
+      this.specScreen = ko.pureComputed(() => {
+        const d = this.detail();
+        return d ? specScreens().find((s) => norm(s.name) === norm(d.name) || (this.working() && norm(s.name) === norm(this.working().name))) || null : null;
+      });
+      const statusLabel = (status) => status.replace('_', ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase());
+      this.journey = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d || !d.requirementId) {
+          return [];
+        }
+        const order = specScreens().map((s) => norm(s.name));
+        const position = (design) => {
+          const i = order.indexOf(norm(design.name));
+          return i < 0 ? order.length : i;
+        };
+        return rawDesigns().filter((x) => x.requirementId === d.requirementId)
+          .slice().sort((a, b) => position(a) - position(b))
+          .map((x, i) => ({
+            number: i + 1,
+            name: x.name,
+            current: x.id === d.id,
+            status: x.status,
+            statusText: x.id === d.id && this.dirty() ? 'Unsaved changes' : statusLabel(x.status),
+            css: 'factory-dz-step' + (x.id === d.id ? ' factory-dz-step-current' : '') + ' factory-dz-step-' + x.status.toLowerCase(),
+            openAction: () => this.open(x.id)
+          }));
+      });
+      this.journeyTitle = ko.pureComputed(() => (this.requirement() ? this.requirement().title : ''));
+      this.journeyApproved = ko.pureComputed(() => this.journey().filter((s) => s.status === 'APPROVED').length);
+      this.journeyDone = ko.pureComputed(() => this.journey().length > 0 && this.journeyApproved() === this.journey().length);
+
+      // --- checks: is the screen complete against its requirement, and is it a sound screen? ---
+
+      const PLACEHOLDERS = ['Option 1', 'Option 2', 'Column 1', 'Column 2'];
+      const SPEC_TYPES = {
+        dropdown: 'select', select: 'select', list: 'select', lov: 'select', radio: 'radio', checkbox: 'checkbox', date: 'date',
+        amount: 'amount', currency: 'amount', number: 'number', account: 'account', textarea: 'textarea', switch: 'switch',
+        boolean: 'switch', table: 'table', display: 'display', label: 'display'
+      };
+      const allComponents = (model) => model.sections.reduce((list, s) => list.concat(s.components), []);
+
+      /** What the requirement says about a field, for the model to use when it fixes the field. */
+      const requirementNotes = (component) => {
+        const requirement = this.requirement();
+        if (!requirement || !requirement.spec) {
+          return '';
+        }
+        const notes = [];
+        const field = this.specScreen() ? this.specScreen().fields.find((f) => norm(f.name) === norm(component.name)
+          || norm(f.label) === norm(component.label)) : null;
+        if (field) {
+          notes.push([field.type, field.source, field.notes].concat(field.validations || []).filter(Boolean).join('; '));
+        }
+        const key = norm(component.label);
+        (requirement.spec.decisions || []).filter((d) => norm(d.question + ' ' + d.answer).includes(key))
+          .forEach((d) => notes.push(d.answer));
+        const text = notes.filter(Boolean).join(' | ');
+        return text.length > 700 ? text.slice(0, 700) + '…' : text;
+      };
+
+      const fixWithAi = (instruction) => {
+        this.aiInstruction(instruction);
+        this.askAi();
+      };
+
+      const addSpecField = (field) => update((m) => {
+        const type = SPEC_TYPES[norm(field.type)] || 'text';
+        const entry = catalog().find((t) => t.value === type);
+        const component = {
+          id: newId(m, 'c'), type: type, name: field.name, label: field.label || field.name, required: field.mandatory,
+          validations: field.validations || [], defaultValue: field.defaultValue || null, helpText: field.notes || null,
+          options: entry && entry.hasOptions ? (type === 'table' ? ['Column 1', 'Column 2'] : ['Option 1', 'Option 2']) : []
+        };
+        m.sections[m.sections.length - 1].components.push(component);
+        setTimeout(() => this.selectedId(component.id));
+      });
+
+      this.checks = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model) {
+          return [];
+        }
+        const list = [];
+        const add = (level, text, id, fixLabel, fix) => list.push({
+          level: level, text: text, id: id || null, fixLabel: fixLabel || '',
+          css: 'factory-dz-check factory-dz-check-' + level,
+          icon: level === 'ok' ? '✓' : level === 'warn' ? '!' : 'i',
+          fixAction: fix || (() => this.selectedId(id || null)),
+          selectAction: () => { if (id) { this.selectedId(id); } }
+        });
+        const components = allComponents(model);
+        const spec = this.specScreen();
+        if (spec) {
+          const missing = (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name)
+            || (f.label && norm(c.label) === norm(f.label))));
+          if (missing.length === 0) {
+            add('ok', 'All ' + spec.fields.length + ' fields of the requirement are on the screen');
+          }
+          missing.forEach((f) => add('warn', '"' + (f.label || f.name) + '" from the requirement is not on the screen', null, 'Add',
+            () => addSpecField(f)));
+        } else if (this.detail() && this.detail().requirementId && this.requirement()) {
+          add('info', 'The requirement has no screen named "' + this.detail().name + '", so fields cannot be compared');
+        }
+        // Account selectors list the customer's accounts at run time, so their options stay placeholders
+        components.filter((c) => c.type !== 'account' && (c.options || []).length > 0 && c.options.every((o) => PLACEHOLDERS.includes(o))).forEach((c) => {
+          const what = c.type === 'table' ? 'columns' : 'choices';
+          const notes = requirementNotes(c);
+          add('warn', '"' + c.label + '" still has placeholder ' + what, c.id, 'Fix with AI',
+            () => fixWithAi('Replace the placeholder ' + what + ' of the component "' + c.label + '" (id ' + c.id + ') with the real '
+              + what + ' for an OBDX banking screen' + (notes ? '. The requirement says: ' + notes : '') + '. Change nothing else.'));
+        });
+        const inputs = components.filter((c) => !['display', 'table', 'component'].includes(c.type) && c.readonly !== true);
+        const unset = inputs.filter((c) => c.required !== true && c.required !== false);
+        if (unset.length > 0) {
+          add('info', 'Mandatory is not set for ' + unset.map((c) => '"' + c.label + '"').join(', '), unset[0].id, 'Select');
+        }
+        components.filter((c) => c.type === 'component' && Object.keys(c.params || {}).some((k) => !c.params[k])).forEach((c) => {
+          add('info', '"' + c.label + '" has parameters without values', c.id, 'Select');
+        });
+        model.sections.filter((s) => s.components.length === 0).forEach((s) => {
+          add('warn', 'Section "' + (s.title || 'Section') + '" is empty', s.id, 'Remove',
+            () => update((m) => { m.sections = m.sections.filter((x) => x.id !== s.id); }));
+        });
+        const primaries = model.actions.filter((a) => a.kind === 'primary');
+        if (model.actions.length === 0) {
+          add('warn', 'The screen has no buttons', null, 'Add Submit', () => this.addAction());
+        } else if (primaries.length !== 1) {
+          add('warn', (primaries.length === 0 ? 'No button is' : primaries.length + ' buttons are') + ' primary; a screen has one main button',
+            model.actions[0].id, 'Make "' + model.actions[0].label + '" primary',
+            () => update((m) => { m.actions.forEach((a, i) => { a.kind = i === 0 ? 'primary' : (a.kind === 'primary' ? 'secondary' : a.kind); }); }));
+        } else {
+          add('ok', 'One main button: ' + primaries[0].label);
+        }
+        return list;
+      });
+      this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
+      this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
+        : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
+      this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); };
+      /** What the requirement's rules say about this screen. */
+      this.screenRules = ko.pureComputed(() => {
+        const requirement = this.requirement();
+        const d = this.detail();
+        if (!requirement || !requirement.spec || !d) {
+          return [];
+        }
+        return (requirement.spec.businessRules || [])
+          .filter((r) => !r.screens || r.screens.length === 0 || r.screens.some((s) => norm(s) === norm(d.name)))
+          .map((r) => (r.id ? r.id + ': ' : '') + r.description);
+      });
+
+      // --- the canvas shows the screen in an OBDX page, with the journey's steps and the checks' warnings ---
+
+      this.previewContext = ko.pureComputed(() => {
+        const warnings = {};
+        this.checks().filter((c) => c.level === 'warn' && c.id).forEach((c) => { warnings[c.id] = c.text; });
+        // The journey's steps show in the strip above the canvas, not again inside the page
+        return {
+          bank: bankNames[this.workspaceId()] || 'Online banking',
+          breadcrumb: 'Dashboard' + (this.journeyTitle() ? ' / ' + this.journeyTitle() : ''),
+          warnings: warnings,
+          editing: this.editable()
+        };
+      });
+      ko.computed(() => preview.show(this.working(), this.selectedId(), this.previewContext()));
+
+      // --- the start page: each requirement with its screens and how far they are ---
+
+      this.board = ko.pureComputed(() => {
+        const designs = rawDesigns();
+        const groups = requirements()
+          .filter((r) => r.status === 'APPROVED' || designs.some((d) => d.requirementId === r.id))
+          .map((r) => ({ id: r.id, title: r.title, designs: designs.filter((d) => d.requirementId === r.id) }));
+        const loose = designs.filter((d) => !d.requirementId || !requirements().some((r) => r.id === d.requirementId));
+        if (loose.length > 0) {
+          groups.push({ id: null, title: 'Other screens', designs: loose });
+        }
+        return groups.map((g) => {
+          const approved = g.designs.filter((d) => d.status === 'APPROVED').length;
+          return {
+            title: g.title,
+            empty: g.designs.length === 0,
+            progressText: g.designs.length === 0 ? 'No screens yet' : approved + ' of ' + g.designs.length + ' approved',
+            progressWidth: g.designs.length === 0 ? '0%' : Math.round(approved * 100 / g.designs.length) + '%',
+            done: g.designs.length > 0 && approved === g.designs.length,
+            createAction: () => { this.requirementId(g.id); this.createFromRequirement(); },
+            canCreate: !!g.id && g.designs.length === 0 && this.canDesign(),
+            screens: g.designs.map((d) => ({
+              name: d.name,
+              meta: d.components + ' components · v' + d.currentVersion,
+              statusText: statusLabel(d.status),
+              statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+              openAction: () => this.open(d.id)
+            }))
+          };
+        });
+      });
+
       // --- comments, versions, review ---
 
       const componentLabel = (id) => {
@@ -571,12 +782,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         if (!id) {
           this.designs([]);
+          rawDesigns([]);
+          requirements([]);
           designOptions([]);
           requirementOptions([]);
           return Promise.resolve();
         }
         return Promise.all([api.get('workspaces/' + id + '/designs'), api.get('workspaces/' + id + '/requirements')])
           .then(([designList, requirementList]) => {
+            rawDesigns(designList);
+            requirements(requirementList);
             const current = this.detail() ? this.detail().id : null;
             this.designs(designList.map((d) => ({
               name: d.name, status: d.status, statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
@@ -587,9 +802,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }).catch(showError);
       };
 
+      const requirementCache = {};
+      const loadRequirement = (requirementId) => {
+        if (!requirementId) {
+          this.requirement(null);
+          return;
+        }
+        if (requirementCache[requirementId]) {
+          this.requirement(requirementCache[requirementId]);
+          return;
+        }
+        api.get('requirements/' + requirementId).then((requirement) => {
+          requirementCache[requirementId] = requirement;
+          if (this.detail() && this.detail().requirementId === requirementId) {
+            this.requirement(requirement);
+          }
+        }).catch(() => this.requirement(null));
+      };
+
       const show = (detail, keepSelection) => {
         if (!this.detail() || this.detail().id !== detail.id) {
           this.codeFiles([]);
+          loadRequirement(detail.requirementId);
         }
         this.detail(detail);
         this.designPick(detail.id);
@@ -755,7 +989,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           loadDesigns();
           refreshPalette().catch(showError);
         });
-        workspaceSelection.load().then(() => Promise.all([loadDesigns(), refreshPalette()])).catch(showError);
+        workspaceSelection.load().then((list) => {
+          list.forEach((workspace) => { bankNames[workspace.id] = workspace.bankName; });
+          return Promise.all([loadDesigns(), refreshPalette()]);
+        }).catch(showError);
       };
       this.disconnected = () => {
         preview.detach();

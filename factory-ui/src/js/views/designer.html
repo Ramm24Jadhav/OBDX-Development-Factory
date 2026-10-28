@@ -12,6 +12,8 @@
       <oj-bind-if test="[[dirty()]]">
         <span class="factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
       </oj-bind-if>
+      <button type="button" id="checksChip" :class="[['factory-dz-checks-chip' + (openChecks() === 0 ? ' factory-dz-checks-ok' : ' factory-dz-checks-open')]]"
+              on-click="[[showChecks]]" title="Show the checks"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></button>
     </oj-bind-if>
     <oj-bind-if test="[[workspaceId() && canDesign()]]">
       <button type="button" id="newScreenButton" class="factory-dz-btn factory-dz-btn-ghost" on-click="[[openNew]]">+ New screen</button>
@@ -246,21 +248,69 @@
             <p>Choose a workspace in the top bar.</p>
           </oj-bind-if>
           <oj-bind-if test="[[workspaceId()]]">
-            <p>Open one of this workspace's screens, or create one from an approved requirement, a blank page or a design import.</p>
-            <div class="factory-dz-screen-list">
-              <oj-bind-for-each data="[[designs]]" as="d">
+            <p>Each approved requirement and its screens. Open a screen to design it; when all of a requirement's screens are
+              approved, its change can be planned on the Changes page.</p>
+            <div id="designBoard" class="factory-dz-board">
+              <oj-bind-for-each data="[[board]]" as="g">
                 <template>
-                  <button type="button" class="factory-dz-screen-card" on-click="[[d.data.openAction]]">
-                    <span class="factory-dz-screen-name"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></span>
-                    <span :class="[[d.data.statusClass]]"><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span>
-                  </button>
+                  <section class="factory-dz-board-group">
+                    <div class="factory-dz-board-head">
+                      <h3><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h3>
+                      <span class="factory-dz-hint"><oj-bind-text value="[[g.data.progressText]]"></oj-bind-text></span>
+                    </div>
+                    <div class="factory-dz-progress" aria-hidden="true"><span :style.width="[[g.data.progressWidth]]"></span></div>
+                    <div class="factory-dz-screen-list">
+                      <oj-bind-for-each data="[[g.data.screens]]" as="d">
+                        <template>
+                          <button type="button" class="factory-dz-screen-card" on-click="[[d.data.openAction]]">
+                            <span class="factory-dz-screen-name"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></span>
+                            <span class="factory-dz-hint"><oj-bind-text value="[[d.data.meta]]"></oj-bind-text></span>
+                            <span :class="[[d.data.statusClass]]"><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span>
+                          </button>
+                        </template>
+                      </oj-bind-for-each>
+                    </div>
+                    <oj-bind-if test="[[g.data.canCreate]]">
+                      <button type="button" class="factory-dz-btn factory-dz-btn-primary" on-click="[[g.data.createAction]]">Create its screens</button>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[g.data.done]]">
+                      <a class="factory-dz-btn factory-dz-btn-primary factory-dz-btn-link" href="?ojr=changes">All approved · plan the change</a>
+                    </oj-bind-if>
+                  </section>
                 </template>
               </oj-bind-for-each>
             </div>
+            <oj-bind-if test="[[board().length === 0]]">
+              <p class="factory-dz-hint">No approved requirements yet. Approve one on the Requirements page, or start a blank screen.</p>
+            </oj-bind-if>
             <oj-bind-if test="[[canDesign()]]">
-              <button type="button" class="factory-dz-btn factory-dz-btn-primary" on-click="[[openNew]]">+ New screen</button>
+              <button type="button" class="factory-dz-btn" on-click="[[openNew]]">+ New screen</button>
             </oj-bind-if>
           </oj-bind-if>
+        </div>
+      </oj-bind-if>
+      <oj-bind-if test="[[detail() && journey().length > 0]]">
+        <div id="journeyStrip" class="factory-dz-journey">
+          <div class="factory-dz-journey-head">
+            <strong><oj-bind-text value="[[journeyTitle]]"></oj-bind-text></strong>
+            <span class="factory-dz-hint"><oj-bind-text value="[[journeyApproved() + ' of ' + journey().length + ' screens approved']]"></oj-bind-text></span>
+            <oj-bind-if test="[[journeyDone()]]">
+              <a class="factory-dz-link" href="?ojr=changes">All approved · plan the change</a>
+            </oj-bind-if>
+          </div>
+          <div class="factory-dz-steps">
+            <oj-bind-for-each data="[[journey]]" as="st">
+              <template>
+                <button type="button" :class="[[st.data.css]]" on-click="[[st.data.openAction]]" :aria-current="[[st.data.current ? 'step' : 'false']]">
+                  <span class="factory-dz-step-number"><oj-bind-text value="[[st.data.number]]"></oj-bind-text></span>
+                  <span class="factory-dz-step-text">
+                    <span class="factory-dz-step-name"><oj-bind-text value="[[st.data.name]]"></oj-bind-text></span>
+                    <span class="factory-dz-step-status"><oj-bind-text value="[[st.data.statusText]]"></oj-bind-text></span>
+                  </span>
+                </button>
+              </template>
+            </oj-bind-for-each>
+          </div>
         </div>
       </oj-bind-if>
       <div class="factory-dz-stage" :style.display="[[detail() ? 'flex' : 'none']]">
@@ -381,6 +431,35 @@
 
             <oj-bind-if test="[[selectedKind() === 'screen']]">
               <div>
+                <div id="checksPanel" class="factory-dz-checks">
+                  <div class="factory-dz-checks-head">
+                    <span>Checks</span>
+                    <span :class="[[openChecks() === 0 ? 'factory-dz-badge factory-dz-badge-approved' : 'factory-dz-badge factory-dz-badge-in_review']]">
+                      <oj-bind-text value="[[checksSummary]]"></oj-bind-text></span>
+                  </div>
+                  <oj-bind-for-each data="[[checks]]" as="ck">
+                    <template>
+                      <div :class="[[ck.data.css]]">
+                        <span class="factory-dz-check-icon" aria-hidden="true"><oj-bind-text value="[[ck.data.icon]]"></oj-bind-text></span>
+                        <div class="factory-dz-grow">
+                          <div class="factory-dz-check-text" on-click="[[ck.data.selectAction]]"><oj-bind-text value="[[ck.data.text]]"></oj-bind-text></div>
+                          <oj-bind-if test="[[ck.data.fixLabel && ck.data.level !== 'ok']]">
+                            <button type="button" class="factory-dz-link" on-click="[[ck.data.fixAction]]"><oj-bind-text value="[[ck.data.fixLabel]]"></oj-bind-text></button>
+                          </oj-bind-if>
+                        </div>
+                      </div>
+                    </template>
+                  </oj-bind-for-each>
+                </div>
+                <oj-bind-if test="[[screenRules().length > 0]]">
+                  <div class="factory-dz-group">From the requirement</div>
+                  <ul class="factory-dz-rules">
+                    <oj-bind-for-each data="[[screenRules]]" as="rule">
+                      <template><li><oj-bind-text value="[[rule.data]]"></oj-bind-text></li></template>
+                    </oj-bind-for-each>
+                  </ul>
+                </oj-bind-if>
+                <div class="factory-dz-group">Screen</div>
                 <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact">
                   <oj-input-text id="screenTitle" label-hint="Title" value="{{screenTitle}}"></oj-input-text>
                   <oj-input-text id="screenName" label-hint="Name" value="{{screenName}}"></oj-input-text>
