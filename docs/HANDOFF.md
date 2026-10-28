@@ -20,7 +20,10 @@ changes; React Native and React target packs; modernization inventory; publishin
 Compose stack; the download zip with a built-in trial database; demo SVN repositories added automatically; new
 workspace from an SVN URL or a local folder with bank and OBDX version detected from the code (OBDX's
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
-that finds model servers on this computer or another server and switches models without a restart.
+that finds model servers on this computer or another server and switches models without a restart. The UI was
+redesigned to the 23 screens in `design/design and implementation plan.docx` (sidebar shell, Home, every work and setup
+page, plus Knowledge Explorer, Impact Analysis, Agent Runs, External Review, Integrations, Version Packs, Prompt Library,
+Notifications, Account and About); pages use real data only and leave out what the factory does not record.
 
 ## The user's installation
 

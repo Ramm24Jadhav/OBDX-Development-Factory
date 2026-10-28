@@ -339,6 +339,25 @@ npx ojet serve
 
 Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the sidebar (collapsible; it slides in on phones), the top bar with the user menu, and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), and a bell listing what needs attention. Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.
 
+The pages follow the screen designs in `design/design and implementation plan.docx`: Home (Overview), Workspaces (with
+the workspace details), Code (and the Knowledge Explorer behind it), Project Profile, Requirements, Visual Designer,
+Changes (and Impact Analysis behind it), Build, Test & Review, Modernization, Models & AI Providers, Agent Runs,
+Administration, External Review, Integrations, Version Packs, AI Prompt Library, Notifications, Account & Preferences and
+About. Pages show only the factory's real data; where a design shows something the factory does not record (test
+counts, coverage, costs, environments), the page leaves it out or says so, and estimates are labelled as estimates.
+Agent Runs, Notifications and the Prompt Library are built from the requirements, designs, changes, builds, imports and
+version-pack recipes the factory already keeps. Shared pieces:
+
+- `services/ui.js`: tabs, status pills, initials, select and switch helpers, pagers and dates.
+- `services/assistant.js`: the AI assistant panels (they call `POST /api/model/chat` with the page's context).
+- `services/pageRequests.js`: hands a search or a new workspace from one page to another.
+- `services/preferences.js` and `services/notifications.js`: preferences and read notifications, kept in the browser.
+- `app.css`: the page kit (`factory-pg`, `factory-kpis`, `factory-card`, `factory-row-*`, `factory-tabbar`,
+  `factory-stepper`, `factory-kv`, `factory-ring`) and one prefix per page.
+
+JET bindings cannot use `new`, function literals or `$parent` inside `oj-bind-for-each` templates, and `:style` takes an
+object: compute those in the view model.
+
 ## REST API (so far)
 
 | Method and path | Purpose |
@@ -368,6 +387,8 @@ Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/view
 | `GET /api/workspaces/{id}/imports` | Recent import jobs with progress |
 | `GET /api/workspaces/{id}/index` | Indexed revision and file/piece counts |
 | `GET /api/workspaces/{id}/search?q=...` | Search the workspace's code |
+| `GET /api/workspaces/{id}/files?q=&limit=` | The indexed files (path, language, size, revision), filtered by path |
+| `GET /api/workspaces/{id}/files/content?path=` | One indexed file from the working copy (cut at 512 KB) |
 | `GET /api/workspaces/{id}/requirements` | List requirements |
 | `POST /api/workspaces/{id}/requirements` | Upload a document (multipart `file`, optional `title`); drafting starts in the background |
 | `POST /api/workspaces/{id}/requirements/text` | Create from text (`title`, `text`) |
