@@ -157,6 +157,19 @@
           <exclude>**/node_modules/**</exclude>
         </excludes>
       </resource>
+      <!-- Helper scripts of the download, refreshed in place after an update (BundleFiles) -->
+      <resource>
+        <directory>../deploy/bundle</directory>
+        <targetPath>bundle</targetPath>
+        <includes>
+          <include>open-factory.bat</include>
+          <include>install-autostart.bat</include>
+          <include>remove-autostart.bat</include>
+          <include>create-demo-svn.bat</include>
+          <include>create-demo-svn.sh</include>
+          <include>README.txt</include>
+        </includes>
+      </resource>
     </resources>
     <plugins>
       <plugin>

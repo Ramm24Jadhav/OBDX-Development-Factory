@@ -10,7 +10,8 @@ Start on Windows
 
 Keep it running
   Run install-autostart.bat once: the factory then starts by itself when you sign in to Windows (minimized on the
-  taskbar), and the "OBDX Factory" shortcut on your desktop opens it. remove-autostart.bat undoes this.
+  taskbar), and the "OBDX Factory" shortcut on your desktop opens it, starting it first if it is not running.
+  remove-autostart.bat undoes this.
 
 Updates
   You do not need to download new versions. When there is one, administrators see "A new version is available" at

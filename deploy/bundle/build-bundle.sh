@@ -13,7 +13,7 @@ mkdir -p "$dir"
 cp "$jar" "$dir/obdx-factory.jar"
 cp "$here/start.sh" "$here/create-demo-svn.sh" "$dir/"
 # Windows files with Windows line endings
-for f in start.bat create-demo-svn.bat install-autostart.bat remove-autostart.bat settings.properties README.txt; do
+for f in start.bat open-factory.bat create-demo-svn.bat install-autostart.bat remove-autostart.bat settings.properties README.txt; do
   sed 's/\r*$/\r/' "$here/$f" > "$dir/$f"
 done
 cp -r "$here/../docker/demo" "$dir/demo"
