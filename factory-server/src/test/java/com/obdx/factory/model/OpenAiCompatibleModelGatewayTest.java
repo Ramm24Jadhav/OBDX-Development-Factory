@@ -91,7 +91,7 @@ class OpenAiCompatibleModelGatewayTest {
     private ModelGateway gatewayFor(String path) {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", Duration.ofSeconds(5)));
+                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", Duration.ofSeconds(5), null, null));
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {

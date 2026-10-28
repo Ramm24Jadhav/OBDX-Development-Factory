@@ -47,29 +47,80 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
       this.embeddingProvider = new ArrayDataProvider(embeddingOptions, { keyAttributes: 'value' });
       this.chatModel = ko.observable(null);
       this.embeddingModel = ko.observable(null);
-      this.hasEmbeddingModel = ko.pureComputed(() => this.models().some((m) => m.embedding));
       this.saving = ko.observable(false);
       this.savedMessage = ko.observable('');
 
-      /** Shows a server's models and preselects the ones in use, or else the likely chat and embedding models. */
+      // Code search: the embedding model on the same server, or on another one (for example chat from a cloud API
+      // and embeddings from Ollama on this computer)
+      this.embeddingSourceProvider = new ArrayDataProvider([
+        { value: 'same', label: 'On the same server' },
+        { value: 'other', label: 'On another server (for example Ollama on this computer)' }
+      ], { keyAttributes: 'value' });
+      this.embeddingSource = ko.observable('same');
+      this.embeddingUrl = ko.observable('');
+      this.embeddingApiKey = ko.observable('');
+      this.embeddingApiKeyLabel = ko.pureComputed(() => (this.status() && this.status().embeddingApiKeySet
+        ? 'API key (one is stored; leave empty to keep it)' : 'API key (if the server needs one)'));
+      this.embeddingServerModels = ko.observableArray([]);
+      this.embeddingCandidates = ko.pureComputed(() => (this.embeddingSource() === 'same' ? this.models() : this.embeddingServerModels()));
+      this.hasEmbeddingModel = ko.pureComputed(() => this.embeddingCandidates().some((m) => m.embedding));
+
+      // The model in use, also when the server lists it with ":latest" (Ollama treats both names the same)
+      const find = (models, name) => models.map((m) => m.id).find((id) => name && id.replace(/:latest$/, '') === name.replace(/:latest$/, ''));
+
+      /** Embedding models first, then the others (some servers do not mark embedding models). */
+      this.embeddingCandidates.subscribe((models) => {
+        const options = models.map((m) => ({ value: m.id, label: m.id }));
+        embeddingOptions(options.filter((o, i) => models[i].embedding).concat(options.filter((o, i) => !models[i].embedding)));
+        this.embeddingModel(find(models, (this.status() || {}).embeddingModel) || (embeddingOptions()[0] || {}).value || null);
+      });
+
+      /** Shows a server's models and preselects the ones in use, or else the likely chat model. */
       const showModels = (url, models) => {
         this.modelsUrl(url);
         const options = models.map((m) => ({ value: m.id, label: m.id }));
         const coder = (o) => /coder|code/i.test(o.value);
-        // Embedding models first in the embedding list; in the chat list, code models first, then other chat models
+        // Code models first, then other chat models
         const chats = options.filter((o, i) => !models[i].embedding);
         chatOptions(chats.filter(coder).concat(chats.filter((o) => !coder(o)), options.filter((o, i) => models[i].embedding)));
-        embeddingOptions(options.filter((o, i) => models[i].embedding).concat(chats));
         this.models(models);
-        const current = this.status() || {};
-        // The model in use, also when the server lists it with ":latest" (Ollama treats both names the same)
-        const find = (name) => models.map((m) => m.id).find((id) => name && id.replace(/:latest$/, '') === name.replace(/:latest$/, ''));
-        this.chatModel(find(current.chatModel) || (chatOptions()[0] || {}).value || null);
-        this.embeddingModel(find(current.embeddingModel) || (embeddingOptions()[0] || {}).value || null);
+        this.chatModel(find(models, (this.status() || {}).chatModel) || (chatOptions()[0] || {}).value || null);
       };
       const clearModels = () => { this.models([]); this.savedMessage(''); };
       this.serverKind.subscribe(clearModels);
       this.remoteUrl.subscribe(clearModels);
+      this.embeddingUrl.subscribe(() => { this.embeddingServerModels([]); this.savedMessage(''); });
+
+      /** Another server for code search: the one in use, else a server on this computer that has an embedding model. */
+      this.embeddingSource.subscribe((source) => {
+        this.savedMessage('');
+        if (source !== 'other' || this.embeddingUrl()) {
+          return;
+        }
+        const inUse = this.status() && this.status().embeddingBaseUrl;
+        const local = this.localServers().find((o) => o.server.models.some((m) => m.embedding));
+        if (inUse) {
+          this.embeddingUrl(inUse);
+          this.getEmbeddingModels();
+        } else if (local) {
+          this.embeddingUrl(local.value);
+          this.embeddingServerModels(local.server.models);
+        }
+      });
+
+      this.getEmbeddingModels = () => {
+        const url = this.embeddingUrl().trim();
+        if (!url) {
+          this.errorMessage('Enter the code search server URL');
+          return;
+        }
+        this.searching(true);
+        this.errorMessage('');
+        api.post('model/servers/models', { baseUrl: url, apiKey: this.embeddingApiKey() || null })
+          .then((models) => this.embeddingServerModels(models))
+          .catch(showError)
+          .finally(() => this.searching(false));
+      };
 
       this.findLocal = () => {
         this.searching(true);
@@ -113,17 +164,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
           this.errorMessage('Choose a chat model and an embedding model');
           return;
         }
+        const otherEmbeddingServer = this.embeddingSource() === 'other';
+        if (otherEmbeddingServer && this.embeddingServerModels().length === 0) {
+          this.errorMessage('Get the models of the code search server first');
+          return;
+        }
         this.saving(true);
         this.errorMessage('');
         api.put('model/settings', {
           baseUrl: this.modelsUrl(),
           apiKey: this.serverKind() === 'remote' ? (this.apiKey() || null) : '',
           chatModel: this.chatModel(),
-          embeddingModel: this.embeddingModel()
+          embeddingModel: this.embeddingModel(),
+          embeddingBaseUrl: otherEmbeddingServer ? this.embeddingUrl().trim() : null,
+          embeddingApiKey: otherEmbeddingServer ? (this.embeddingApiKey() || null) : null
         }).then((result) => {
           this.status(result.status);
           this.apiKey('');
-          this.savedMessage('Saved: the factory now uses ' + result.status.chatModel + ' and ' + result.status.embeddingModel + '.'
+          this.embeddingApiKey('');
+          const s = result.status;
+          this.savedMessage('Saved: the factory now uses ' + s.chatModel + ' and ' + s.embeddingModel
+            + (s.embeddingBaseUrl ? ' at ' + s.embeddingBaseUrl : '') + '.'
             + (result.embeddingsRemoved ? ' The embedding model changed, so import the code of each workspace again (Code page) to search it by meaning.' : ''));
         }).catch(showError).finally(() => this.saving(false));
       };
@@ -149,6 +210,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
             }
             // Open on the kind of server in use: one found on this computer, or else another server, filled in.
             return this.findLocal().then(() => {
+              if (data.embeddingBaseUrl) {
+                this.embeddingSource('other');
+              }
               if (!data.saved || this.localServers().some((o) => o.value.replace(/\/+$/, '') === data.baseUrl.replace(/\/+$/, ''))) {
                 return;
               }

@@ -114,6 +114,9 @@ factory:
     chat-model: ${FACTORY_MODEL_CHAT:qwen2.5-coder:7b}
     embedding-model: ${FACTORY_MODEL_EMBEDDING:nomic-embed-text}
     timeout: ${FACTORY_MODEL_TIMEOUT:120s}
+    # Empty: the embedding model is on base-url. Set to use another server for code search.
+    embedding-base-url: ${FACTORY_MODEL_EMBEDDING_BASE_URL:}
+    embedding-api-key: ${FACTORY_MODEL_EMBEDDING_API_KEY:}
 
 management:
   endpoints:

@@ -11,6 +11,9 @@
       <li>Model server: <oj-bind-text value="[[status().baseUrl]]"></oj-bind-text></li>
       <li>Chat model: <oj-bind-text value="[[status().chatModel]]"></oj-bind-text></li>
       <li>Embedding model (code search): <oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></li>
+      <oj-bind-if test="[[status().embeddingBaseUrl]]">
+        <li>Code search server: <oj-bind-text value="[[status().embeddingBaseUrl]]"></oj-bind-text></li>
+      </oj-bind-if>
       <li class="oj-text-color-secondary"><oj-bind-text value="[[statusSource]]"></oj-bind-text></li>
     </ul>
   </oj-bind-if>
@@ -47,11 +50,27 @@
       <h3>Models on <oj-bind-text value="[[modelsUrl]]"></oj-bind-text></h3>
       <oj-form-layout max-columns="2" direction="row">
         <oj-select-single id="chatModel" label-hint="Chat model (writing specs, designs and code)" data="[[chatProvider]]" value="{{chatModel}}"></oj-select-single>
-        <oj-select-single id="embeddingModel" label-hint="Embedding model (code search)" data="[[embeddingProvider]]" value="{{embeddingModel}}"></oj-select-single>
       </oj-form-layout>
-      <oj-bind-if test="[[!hasEmbeddingModel()]]">
-        <p class="factory-warning">This server seems to have no embedding model; code search by meaning needs one. With Ollama:
-          <code>ollama pull nomic-embed-text</code>, then Look again.</p>
+
+      <h3>Code search</h3>
+      <oj-radioset id="embeddingSource" value="{{embeddingSource}}" options="[[embeddingSourceProvider]]" class="oj-choice-direction-row"
+                   label-hint="Where is the embedding model?" label-edge="none"></oj-radioset>
+      <oj-bind-if test="[[embeddingSource() === 'other']]">
+        <oj-form-layout max-columns="2" direction="row">
+          <oj-input-text id="embeddingUrl" label-hint="Code search server URL" value="{{embeddingUrl}}"
+                         help-hints.definition="The OpenAI-compatible address, usually ending with /v1, for example http://localhost:11434/v1 for Ollama"></oj-input-text>
+          <oj-input-password id="embeddingApiKey" label-hint="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" mask-icon="visible"></oj-input-password>
+        </oj-form-layout>
+        <oj-button id="getEmbeddingModelsButton" on-oj-action="[[getEmbeddingModels]]" disabled="[[searching]]">Get models</oj-button>
+      </oj-bind-if>
+      <oj-bind-if test="[[embeddingCandidates().length > 0]]">
+        <oj-form-layout max-columns="2" direction="row">
+          <oj-select-single id="embeddingModel" label-hint="Embedding model (code search)" data="[[embeddingProvider]]" value="{{embeddingModel}}"></oj-select-single>
+        </oj-form-layout>
+        <oj-bind-if test="[[!hasEmbeddingModel()]]">
+          <p class="factory-warning">This server seems to have no embedding model; code search by meaning needs one. Choose
+            "On another server" for Ollama on this computer, or with Ollama: <code>ollama pull nomic-embed-text</code>, then Look again.</p>
+        </oj-bind-if>
       </oj-bind-if>
       <oj-button id="saveModelsButton" chroming="callToAction" on-oj-action="[[save]]" disabled="[[saving]]">Use these models</oj-button>
     </oj-bind-if>

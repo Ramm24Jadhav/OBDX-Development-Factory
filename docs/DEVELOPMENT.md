@@ -83,6 +83,8 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_MODEL_CHAT` | `qwen2.5-coder:7b` |
 | `FACTORY_MODEL_EMBEDDING` | `nomic-embed-text` |
 | `FACTORY_MODEL_TIMEOUT` | `120s` |
+| `FACTORY_MODEL_EMBEDDING_BASE_URL` | empty (the embedding model is on `FACTORY_MODEL_BASE_URL`) |
+| `FACTORY_MODEL_EMBEDDING_API_KEY` | empty |
 
 To try the model gateway with Ollama:
 
@@ -100,8 +102,15 @@ or a private cloud endpoint) and an API key, and lists that server's models thro
 (code models are listed first) and the embedding model, and **Use these models**: the factory switches at once, without a
 restart. The choice is kept in the database (`model_settings`; the API key encrypted with `FACTORY_SECRET_KEY`) and
 replaces the `FACTORY_MODEL_*` settings, which apply until something is chosen. Changing the embedding model removes the
-stored embeddings, because embeddings of different models cannot be compared; import each workspace again to search by
-meaning.
+stored embeddings, because embeddings of different models cannot be compared; import each workspace
+again to search by meaning.
+
+**Code search on another server.** Under **Code search**, **On another server** takes a second URL and API key for the
+embedding model, for example chat from a cloud API without embedding models (Groq:
+`https://api.groq.com/openai/v1`) and code search from Ollama on this computer (`http://localhost:11434/v1`,
+`nomic-embed-text`, which needs little memory). It is filled in with a server on this computer that has an embedding
+model, if one is found. With **On the same server** (the default) both come from the chat model server, as with a single
+local Ollama.
 
 ## Creating a workspace
 
@@ -413,7 +422,7 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/model/status` | The model server and models in use, and whether they were chosen on the Models page |
 | `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
 | `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
-| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`) (administrators) |
+| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server) (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
 | `GET /actuator/health` | Health check |

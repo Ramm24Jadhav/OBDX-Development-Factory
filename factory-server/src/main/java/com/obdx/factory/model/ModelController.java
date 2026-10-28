@@ -43,9 +43,13 @@ public class ModelController {
     @GetMapping("/status")
     public StatusResponse status() {
         ModelSettings.Current current = settings.current();
-        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.saved(),
-                current.apiKey() != null && !current.apiKey().isBlank() && !current.apiKey().equals("not-needed"),
+        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.embeddingBaseUrl(),
+                current.saved(), isSet(current.apiKey()), current.embeddingBaseUrl() != null && isSet(current.embeddingApiKey()),
                 current.updatedAt(), current.updatedBy());
+    }
+
+    private static boolean isSet(String apiKey) {
+        return apiKey != null && !apiKey.isBlank() && !apiKey.equals("not-needed");
     }
 
     /** Model servers running on the computer the factory runs on. */
@@ -68,7 +72,8 @@ public class ModelController {
         String username = guard.requireAdmin().getUsername();
         boolean embeddingsRemoved = settings.save(request, username);
         ModelSettings.Current current = settings.current();
-        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel());
+        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel()
+                + (current.embeddingBaseUrl() != null ? " at " + current.embeddingBaseUrl() : ""));
         return new SaveResponse(status(), embeddingsRemoved);
     }
 
@@ -83,10 +88,11 @@ public class ModelController {
     }
 
     /**
-     * @param saved false while the FACTORY_MODEL_* settings apply (nothing chosen on the Models page yet)
+     * @param embeddingBaseUrl server of the embedding model when it is not baseUrl, else null
+     * @param saved            false while the FACTORY_MODEL_* settings apply (nothing chosen on the Models page yet)
      */
-    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, boolean saved, boolean apiKeySet,
-                                 OffsetDateTime updatedAt, String updatedBy) {
+    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, String embeddingBaseUrl, boolean saved,
+                                 boolean apiKeySet, boolean embeddingApiKeySet, OffsetDateTime updatedAt, String updatedBy) {
     }
 
     public record ServerRequest(String baseUrl, String apiKey) {

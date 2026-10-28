@@ -27,9 +27,9 @@ import java.util.List;
 @Component
 public class OpenAiCompatibleModelGateway implements ModelGateway {
 
-    /** The models of one choice of server; replaced as a whole when the settings change. */
-    private record Connection(String baseUrl, String chatModelName, String embeddingModelName, ChatModel chatModel,
-                              EmbeddingModel embeddingModel) {
+    /** The models of one choice of servers; replaced as a whole when the settings change. */
+    private record Connection(String baseUrl, String chatModelName, String embeddingUrl, String embeddingModelName,
+                              ChatModel chatModel, EmbeddingModel embeddingModel) {
     }
 
     private final Duration timeout;
@@ -45,7 +45,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     public OpenAiCompatibleModelGateway(ModelProperties properties) {
         this.timeout = properties.timeout();
         this.connection = connect(new ModelSettings.Current(properties.baseUrl(), properties.apiKey(), properties.chatModel(),
-                properties.embeddingModel(), false, null, null));
+                properties.embeddingModel(), null, null, false, null, null));
     }
 
     @EventListener
@@ -54,18 +54,17 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     private Connection connect(ModelSettings.Current settings) {
-        String apiKey = settings.apiKey() == null || settings.apiKey().isBlank() ? "not-needed" : settings.apiKey();
-        return new Connection(settings.baseUrl(), settings.chatModel(), settings.embeddingModel(),
+        return new Connection(settings.baseUrl(), settings.chatModel(), settings.embeddingUrl(), settings.embeddingModel(),
                 OpenAiChatModel.builder()
                         .baseUrl(settings.baseUrl())
-                        .apiKey(apiKey)
+                        .apiKey(keyOrPlaceholder(settings.apiKey()))
                         .modelName(settings.chatModel())
                         .timeout(timeout)
                         .maxRetries(0)
                         .build(),
                 OpenAiEmbeddingModel.builder()
-                        .baseUrl(settings.baseUrl())
-                        .apiKey(apiKey)
+                        .baseUrl(settings.embeddingUrl())
+                        .apiKey(keyOrPlaceholder(settings.embeddingKey()))
                         .modelName(settings.embeddingModel())
                         .timeout(timeout)
                         .maxRetries(0)
@@ -127,8 +126,13 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         }
     }
 
+    /** Local servers accept any key, but the client needs one. */
+    private static String keyOrPlaceholder(String apiKey) {
+        return apiKey == null || apiKey.isBlank() ? "not-needed" : apiKey;
+    }
+
     private static ModelGatewayException embeddingFailure(Connection current, RuntimeException e) {
         return new ModelGatewayException(
-                "Embedding model '" + current.embeddingModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
+                "Embedding model '" + current.embeddingModelName() + "' at " + current.embeddingUrl() + " failed: " + e.getMessage(), e);
     }
 }
