@@ -4,6 +4,9 @@ import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.AccessGuard;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,12 +25,15 @@ public class ScreenDesignController {
 
     private final ScreenDesignService service;
     private final ComponentPalette palette;
+    private final DesignImporter importer;
     private final AccessGuard guard;
     private final AuditLog audit;
 
-    public ScreenDesignController(ScreenDesignService service, ComponentPalette palette, AccessGuard guard, AuditLog audit) {
+    public ScreenDesignController(ScreenDesignService service, ComponentPalette palette, DesignImporter importer,
+                                  AccessGuard guard, AuditLog audit) {
         this.service = service;
         this.palette = palette;
+        this.importer = importer;
         this.guard = guard;
         this.audit = audit;
     }
@@ -85,6 +92,24 @@ public class ScreenDesignController {
     public ScreenDesignService.DesignDetail aiChange(@PathVariable UUID id, @RequestBody InstructionRequest request) {
         guard.requireForDesign(id, Permission.EDIT_DESIGNS);
         return service.aiChange(id, request.instruction());
+    }
+
+    /** A design file made in a design tool (image or PDF) becomes the screen's next version. */
+    @PostMapping(path = "/api/designs/{id}/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ScreenDesignService.DesignDetail importFile(@PathVariable UUID id, @RequestParam("file") MultipartFile file) throws IOException {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        ScreenDesignService.DesignDetail detail = service.importDesign(id, importer.fromFile(file.getOriginalFilename(), file.getBytes()));
+        audit.record("DESIGN_IMPORTED", detail.workspaceId(), detail.name(), file.getOriginalFilename());
+        return detail;
+    }
+
+    /** A Figma frame becomes the screen's next version; the token is used for this request only. */
+    @PostMapping("/api/designs/{id}/import-figma")
+    public ScreenDesignService.DesignDetail importFigma(@PathVariable UUID id, @RequestBody FigmaRequest request) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        ScreenDesignService.DesignDetail detail = service.importDesign(id, importer.fromFigma(request.link(), request.token()));
+        audit.record("DESIGN_IMPORTED", detail.workspaceId(), detail.name(), "Figma " + request.link());
+        return detail;
     }
 
     @PostMapping("/api/designs/{id}/comments")
@@ -161,6 +186,10 @@ public class ScreenDesignController {
     }
 
     public record InstructionRequest(String instruction) {
+    }
+
+    /** @param token a Figma personal access token; not stored */
+    public record FigmaRequest(String link, String token) {
     }
 
     /** author is used only on review links; signed-in users comment under their own name. */

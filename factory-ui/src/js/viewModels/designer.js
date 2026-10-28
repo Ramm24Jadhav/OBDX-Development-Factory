@@ -5,7 +5,7 @@
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
         'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
-        'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar'],
+        'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker'],
   function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider) {
     const VIEWPORTS = [
       { key: 'desktop', label: 'Desktop', width: '100%' },
@@ -531,6 +531,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .catch(showError)
           .finally(() => this.busy(false));
       };
+
+      // --- importing a design from a design tool ---
+
+      this.designFile = ko.observable(null);
+      this.designFileName = ko.pureComputed(() => (this.designFile() ? this.designFile().name : 'No file chosen'));
+      this.designFileSelected = (event) => this.designFile(event.detail.files[0] || null);
+      this.figmaLink = ko.observable('');
+      // Kept only while the page is open, so several frames can be imported without typing it again
+      this.figmaToken = ko.observable('');
+
+      const runImport = (call, what) => {
+        if (this.dirty()) {
+          showError(new Error('Save or discard your changes first.'));
+          return;
+        }
+        this.busy(true);
+        showInfo('Importing ' + what + '...');
+        call()
+          .then((detail) => {
+            show(detail, true);
+            showInfo('Imported ' + what + ' as version ' + detail.currentVersion + '. Check the result; load an earlier version to undo.');
+          })
+          .catch(showError)
+          .finally(() => this.busy(false));
+      };
+      this.importFile = () => {
+        const form = new FormData();
+        form.append('file', this.designFile());
+        runImport(() => api.upload(base() + '/import', form).then((detail) => { this.designFile(null); return detail; }),
+          this.designFile().name);
+      };
+      this.importFigma = () => runImport(() => api.post(base() + '/import-figma', { link: this.figmaLink(), token: this.figmaToken() })
+        .then((detail) => { this.figmaLink(''); return detail; }), 'the Figma frame');
 
       this.openReview = () => api.post(base() + '/review-link', {})
         .then((detail) => { show(detail, true); showInfo('Review link created. Copy it and send it to the customer.'); })

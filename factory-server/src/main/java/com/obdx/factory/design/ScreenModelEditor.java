@@ -2,6 +2,7 @@ package com.obdx.factory.design;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.ModelGatewayException;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -9,7 +10,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Changes a Screen Model from a plain-language instruction, such as "move remarks to the end and make it optional".
+ * Changes a Screen Model from a plain-language instruction, such as "move remarks to the end and make it optional",
+ * or from a design made in a design tool (Figma, a PDF or an image).
  */
 @Component
 public class ScreenModelEditor {
@@ -21,6 +23,28 @@ public class ScreenModelEditor {
 
             Rules:
             - Change only what the instruction asks for. Keep everything else, including every "id", exactly as it is.
+            """;
+
+    private static final String IMPORT_SYSTEM = """
+            You turn a screen designed in a design tool (Figma, a PDF or an image of a mock-up) into a screen model for
+            Oracle Banking Digital Experience (OBDX). A screen model is JSON with sections of components and a list of
+            action buttons. You also get the screen's current model, which may come from the approved requirement.
+            Answer with the complete screen model as one JSON object, nothing else.
+
+            Rules:
+            - Follow the design: its sections and their titles, the order of fields, labels as written, columns when
+              fields sit side by side, and its buttons as actions (the main button is primary).
+            - Choose each component's type from what the design shows: text box, multi-line text, number, amount,
+              date, dropdown, account selector, radio buttons, checkboxes, switch, read-only value, or a table with its
+              column headers as options. Where the design uses one of the bank's components, use type "component".
+            - When a design element means the same as a component of the current model, keep that component's "id",
+              "name", validations and mandatory flag, and take the label from the design.
+            - Keep components of the current model that the design does not show, at the end of the last section:
+              they come from the requirement.
+            - Leave out decoration: logos, menus, headers, footers, status bars, images and icons.
+            """;
+
+    private static final String SHARED_RULES = """
             - New sections, components and actions get no "id"; it is assigned later.
             - Component "type" must be one of: %s.
             - Components of type select, account, radio and checkbox need "options"; a table's "options" are its columns.
@@ -46,21 +70,46 @@ public class ScreenModelEditor {
 
     /** @param components the components of the bank's code the design may use (from the palette) */
     public ScreenModel apply(ScreenModel model, String instruction, List<ComponentPalette.Item> components) {
+        String user = "Screen model:\n" + json.writeValueAsString(model) + "\n\nInstruction: " + instruction;
+        return ask(SYSTEM + rules(components), user, null);
+    }
+
+    /** A screen model that follows an imported design, keeping what matches the current model. */
+    public ScreenModel fromDesign(ScreenModel current, DesignImporter.Design design, List<ComponentPalette.Item> components) {
+        String user = "Current screen model:\n" + json.writeValueAsString(current) + "\n\nDesign (" + design.source() + "):\n"
+                + (design.outline() != null ? design.outline() : "the attached image");
+        try {
+            return ask(IMPORT_SYSTEM + rules(components), user, design);
+        } catch (ModelGatewayException e) {
+            if (design.image() == null) {
+                throw e;
+            }
+            throw new BadRequestException("The chat model could not read the image (" + e.getMessage() + "). Choose a model that"
+                    + " reads images on the Models page, or import a PDF or a Figma link instead.");
+        }
+    }
+
+    private static String rules(List<ComponentPalette.Item> components) {
         String types = ComponentCatalog.TYPES.stream()
                 .map(t -> t.type() + " (" + t.label() + ")").collect(Collectors.joining(", "));
         String available = components.stream().filter(c -> c.tag() != null).limit(MAX_COMPONENTS)
                 .map(c -> c.tag() + (c.params().isEmpty() ? "" : " (params: " + String.join(", ", c.params()) + ")"))
                 .collect(Collectors.joining("; "));
-        String system = SYSTEM.formatted(types, available.isEmpty() ? "(none found in the code)" : available);
-        String user = "Screen model:\n" + json.writeValueAsString(model) + "\n\nInstruction: " + instruction;
+        return SHARED_RULES.formatted(types, available.isEmpty() ? "(none found in the code)" : available);
+    }
+
+    private ScreenModel ask(String system, String user, DesignImporter.Design design) {
         BadRequestException last = null;
+        String prompt = user;
         for (int attempt = 0; attempt < 2; attempt++) {
-            String reply = modelGateway.chatJson(system, user).reply();
+            String reply = design != null && design.image() != null
+                    ? modelGateway.chatJsonWithImage(system, prompt, design.image(), design.imageType()).reply()
+                    : modelGateway.chatJson(system, prompt).reply();
             try {
                 return ScreenModels.parse(reply);
             } catch (BadRequestException e) {
                 last = e;
-                user = user + "\n\nYour previous answer could not be used (" + e.getMessage() + "). Answer with only the JSON object.";
+                prompt = user + "\n\nYour previous answer could not be used (" + e.getMessage() + "). Answer with only the JSON object.";
             }
         }
         throw new BadRequestException("The model did not return a usable screen model: " + last.getMessage());

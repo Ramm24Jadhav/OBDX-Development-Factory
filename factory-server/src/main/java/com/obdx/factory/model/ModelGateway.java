@@ -13,6 +13,15 @@ public interface ModelGateway {
     /** Like {@link #chat}, but asks the model to answer with a JSON object only. */
     ChatResult chatJson(String systemPrompt, String userPrompt);
 
+    /**
+     * Like {@link #chatJson}, with an image (PNG, JPEG or WebP) after the prompt, for models that read images.
+     *
+     * @throws ModelGatewayException when the model cannot read images
+     */
+    default ChatResult chatJsonWithImage(String systemPrompt, String userPrompt, byte[] image, String mimeType) {
+        throw new ModelGatewayException("This model connection cannot send images", null);
+    }
+
     float[] embed(String text);
 
     /** Embeds several texts in one call; the result has one vector per text, in the same order. */

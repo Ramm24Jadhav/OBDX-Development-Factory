@@ -146,6 +146,15 @@ public class ScreenDesignService {
         return detail(designs.save(design));
     }
 
+    /** Turns a design made in a design tool into this screen's next version. */
+    @Transactional
+    public DesignDetail importDesign(UUID id, DesignImporter.Design source) {
+        ScreenDesign design = editable(find(id));
+        ScreenModel imported = editor.fromDesign(currentModel(design), source, palette.palette(design.getWorkspaceId()).items());
+        design.newVersion(store.addVersion(id, DesignStore.Origin.IMPORTED, "From " + source.source(), imported), imported.name());
+        return detail(designs.save(design));
+    }
+
     @Transactional
     public DesignDetail comment(UUID id, String author, String text, String componentId) {
         ScreenDesign design = find(id);

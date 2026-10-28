@@ -122,6 +122,32 @@
           </div>
         </oj-bind-if>
 
+        <oj-bind-if test="[[editable()]]">
+          <h3>Import a design</h3>
+          <p class="oj-typography-body-sm oj-text-color-secondary">
+            Turn a design from Figma, Adobe XD, Sketch or any design tool into this screen's next version. Fields that match
+            the current screen keep their names; fields from the requirement that the design leaves out stay at the end.
+          </p>
+          <div class="oj-flex factory-gap oj-sm-align-items-center">
+            <oj-file-picker id="designFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
+                            on-oj-select="[[designFileSelected]]">
+              <oj-button slot="trigger" id="chooseDesignButton">Choose image or PDF</oj-button>
+            </oj-file-picker>
+            <span class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[designFileName]]"></oj-bind-text></span>
+            <oj-button id="importFileButton" on-oj-action="[[importFile]]" disabled="[[!designFile() || busy()]]">Import file</oj-button>
+          </div>
+          <p class="oj-typography-body-xs oj-text-color-secondary">
+            A PDF exported from the design tool works with any model. An image (screenshot or mock-up) needs a chat model that
+            reads images.
+          </p>
+          <oj-form-layout max-columns="2" direction="row">
+            <oj-input-text id="figmaLink" label-hint="Figma frame link (Copy link to selection)" value="{{figmaLink}}"></oj-input-text>
+            <oj-input-password id="figmaToken" label-hint="Figma personal access token (not stored)" value="{{figmaToken}}"
+                               mask-icon="visible"></oj-input-password>
+          </oj-form-layout>
+          <oj-button id="importFigmaButton" on-oj-action="[[importFigma]]" disabled="[[!figmaLink() || !figmaToken() || busy()]]">Import from Figma</oj-button>
+        </oj-bind-if>
+
         <h3>Screen</h3>
         <oj-form-layout max-columns="2" direction="row">
           <oj-input-text id="screenTitle" label-hint="Title" value="{{screenTitle}}" readonly="[[!editable()]]"></oj-input-text>

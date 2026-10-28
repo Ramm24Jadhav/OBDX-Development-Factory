@@ -2,7 +2,9 @@ package com.obdx.factory.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -81,13 +84,23 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         return chat(systemPrompt, userPrompt, ResponseFormat.JSON);
     }
 
+    @Override
+    public ChatResult chatJsonWithImage(String systemPrompt, String userPrompt, byte[] image, String mimeType) {
+        return chat(systemPrompt, UserMessage.from(TextContent.from(userPrompt),
+                ImageContent.from(Base64.getEncoder().encodeToString(image), mimeType)), ResponseFormat.JSON);
+    }
+
     private ChatResult chat(String systemPrompt, String userPrompt, ResponseFormat format) {
+        return chat(systemPrompt, UserMessage.from(userPrompt), format);
+    }
+
+    private ChatResult chat(String systemPrompt, UserMessage userMessage, ResponseFormat format) {
         Connection current = connection;
         List<ChatMessage> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(SystemMessage.from(systemPrompt));
         }
-        messages.add(UserMessage.from(userPrompt));
+        messages.add(userMessage);
 
         long start = System.nanoTime();
         try {
