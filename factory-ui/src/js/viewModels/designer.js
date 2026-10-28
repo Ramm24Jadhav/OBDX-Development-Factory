@@ -1,6 +1,7 @@
 /*
- * Screen designer: edits a Screen Model (sections, components, actions) with a live preview, applies changes
- * described in plain words, manages versions, comments, the customer review link and approval.
+ * Screen designer: a workspace with a top bar (screen, status, viewport, import, share, save), a left panel
+ * (component palette and layers), the live preview as the canvas (click to select, drop components on it) with
+ * "Ask AI" below it, and an inspector on the right (properties of the selection, comments, history).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
         'ojs/ojarraydataprovider',
@@ -8,14 +9,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker'],
   function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider) {
     const VIEWPORTS = [
-      { key: 'desktop', label: 'Desktop', width: '100%' },
-      { key: 'tablet', label: 'Tablet', width: '768px' },
-      { key: 'phone', label: 'Phone', width: '375px' }
+      { key: 'desktop', label: 'Desktop', icon: '▭', width: '100%' },
+      { key: 'tablet', label: 'Tablet', icon: '▯', width: '768px' },
+      { key: 'phone', label: 'Phone', icon: '▮', width: '375px' }
     ];
     const clone = (value) => JSON.parse(JSON.stringify(value));
     // Palette groups in the order of the OBDX UX Extensibility Toolkit
     const GROUPS = ['Forms', 'Controls', 'OBDX framework components', 'Business components', 'JET composite components',
       'Partials', 'JET components in this code', 'Other components used in this code'];
+    // Groups shown as icon tiles; the others are lists, because their names are long
+    const TILE_GROUPS = ['Forms', 'Controls'];
+    const ICONS = {
+      text: 'Aa', textarea: '¶', number: '123', amount: '₹', date: '▦', select: '▾', account: '◧', radio: '◉',
+      checkbox: '☑', switch: '◐', display: '≡', table: '▤', action: '▭', component: '⧉'
+    };
+    const SHORT_LABELS = { 'Table (options are its columns)': 'Table', 'Switch (on/off)': 'Switch', 'Multi-line text': 'Text area' };
     const camel = (label) => (label || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/)
       .map((word, i) => (i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
 
@@ -32,6 +40,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.requirementId = ko.observable(null);
       this.blankName = ko.observable('');
       this.designs = ko.observableArray([]);
+      const designOptions = ko.observableArray([]);
+      this.designProvider = new ArrayDataProvider(designOptions, { keyAttributes: 'value' });
+      this.designPick = ko.observable(null);
 
       this.detail = ko.observable(null);
       this.working = ko.observable(null);
@@ -42,6 +53,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.canDesign = ko.pureComputed(() => session.can(this.workspaceId(), 'EDIT_DESIGNS'));
       this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
       this.editable = ko.pureComputed(() => this.detail() !== null && this.detail().status !== 'APPROVED' && this.canDesign());
+      this.statusText = ko.pureComputed(() => {
+        const d = this.detail();
+        return d ? d.status.replace('_', ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase()) + ' · v' + d.currentVersion : '';
+      });
+
+      // Panels: the left one shows components or layers; the right one the selection, comments or history; the top bar
+      // opens one drawer at a time (a new screen, an import, the review link)
+      this.leftTab = ko.observable('components');
+      this.rightTab = ko.observable('properties');
+      this.drawer = ko.observable(null);
+      this.toggleDrawer = (name) => () => this.drawer(this.drawer() === name ? null : name);
+      this.openNew = this.toggleDrawer('new');
+      this.openImport = this.toggleDrawer('import');
+      this.openShare = this.toggleDrawer('share');
+      this.closeDrawer = () => this.drawer(null);
+      this.showComponents = () => this.leftTab('components');
+      this.showLayers = () => this.leftTab('layers');
+      this.showProperties = () => this.rightTab('properties');
+      this.showComments = () => this.rightTab('comments');
+      this.showHistory = () => this.rightTab('history');
+      this.showCodeTab = () => this.rightTab('code');
 
       const catalog = ko.observableArray([]);
       this.typeProvider = new ArrayDataProvider(catalog, { keyAttributes: 'value' });
@@ -49,21 +81,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.kindProvider = new ArrayDataProvider([
         { value: 'primary', label: 'Primary' }, { value: 'secondary', label: 'Secondary' }, { value: 'link', label: 'Link' }
       ], { keyAttributes: 'value' });
-      this.requiredProvider = new ArrayDataProvider([
-        { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unknown', label: 'Not specified' }
-      ], { keyAttributes: 'value' });
 
       const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); };
       const showInfo = (text) => { this.errorMessage(''); this.infoMessage(text); };
+      this.clearMessages = () => { this.errorMessage(''); this.infoMessage(''); };
+      // Plain inputs of the canvas and panels
+      this.paletteInput = (event) => this.paletteFilter(event.target.value);
+      this.aiInput = (event) => this.aiInstruction(event.target.value);
+      this.aiKeydown = (event) => {
+        if (event.key === 'Enter') {
+          this.askAi();
+        }
+      };
+      this.commentInput = (event) => this.commentText(event.target.value);
 
-      // --- preview ---
+      // --- canvas (the preview) ---
 
       this.viewport = ko.observable('desktop');
       this.viewports = ko.pureComputed(() => VIEWPORTS.map((vp) => ({
-        key: vp.key, label: vp.label, active: vp.key === this.viewport(), selectAction: () => this.viewport(vp.key)
+        key: vp.key, label: vp.label, icon: vp.icon, active: vp.key === this.viewport(), selectAction: () => this.viewport(vp.key)
       })));
       this.frameWidth = ko.pureComputed(() => VIEWPORTS.find((vp) => vp.key === this.viewport()).width);
-      const preview = new PreviewFrame((id) => this.selectedId(id));
+      const preview = new PreviewFrame((id) => this.selectedId(id), (targetId, sectionId) => dropOnCanvas(targetId, sectionId));
       // The workspace's UI target decides the renderer: JET, or the React Native / React app's own components.
       this.previewKind = ko.observable('jet');
       this.targetTitle = ko.observable('');
@@ -76,10 +115,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       });
       this.previewNote = ko.pureComputed(() => (this.appTarget()
-        ? 'Preview with the components of the ' + this.targetTitle() + ' app that code generation uses'
-          + (this.previewKind() === 'react-native' ? ' (React Native Web in the browser; check on a device with Expo)' : '')
-          + ', filled with sample data. Click a component to select it.'
-        : 'Preview with this factory\'s Oracle JET version and Redwood theme, filled with sample data. Click a component to select it.'));
+        ? 'Preview with the components of the ' + this.targetTitle() + ' app'
+          + (this.previewKind() === 'react-native' ? ' (React Native Web; check on a device with Expo)' : '')
+        : 'Oracle JET with the Redwood theme, filled with sample data'));
       ko.computed(() => preview.show(this.working(), this.selectedId()));
 
       // Code the design becomes in a React Native or React app (current saved version)
@@ -127,77 +165,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return '<' + component.component + '>';
         }
         const entry = catalog().find((t) => t.value === component.type);
-        return entry ? entry.label : component.type;
+        return entry ? SHORT_LABELS[entry.label] || entry.label : component.type;
       };
-
-      // --- palette: standard components and those found in the workspace's code ---
-
-      const paletteItems = ko.observableArray([]);
-      this.paletteNote = ko.observable('');
-      this.paletteFilter = ko.observable('');
-      this.paletteGroups = ko.pureComputed(() => {
-        const filter = (this.paletteFilter() || '').trim().toLowerCase();
-        const matches = (item) => !filter || (item.label + ' ' + (item.tag || '') + ' ' + (item.module || '')).toLowerCase().includes(filter);
-        return GROUPS.map((group) => ({
-          title: group,
-          open: group === 'Forms' || group === 'OBDX framework components' || group === 'Business components' || !!filter,
-          items: paletteItems().filter((item) => item.group === group && matches(item)).map((item) => ({
-            id: item.id,
-            page: self,
-            label: item.label,
-            detail: (item.tag ? '<' + item.tag + '>' : item.description || '') + (item.module ? ' · ' + item.module : ''),
-            title: item.description || '',
-            addAction: () => addFromPalette(item, null)
-          }))
-        })).filter((group) => group.items.length > 0);
-      });
-      const loadPalette = (id) => api.get('workspaces/' + id + '/design-palette').then((palette) => {
-        paletteItems(palette.items);
-        this.paletteNote(palette.note || '');
-      });
-
-      /** A new component (or action button) for a palette item; returns the component, or null for a button. */
-      const fromPalette = (m, item) => {
-        if (item.type === 'action') {
-          m.actions.push({ id: newId(m, 'a'), label: 'New button', kind: m.actions.length === 0 ? 'primary' : 'secondary' });
-          return null;
-        }
-        const entry = catalog().find((t) => t.value === item.type);
-        const params = {};
-        (item.params || []).forEach((p) => { params[p] = ''; });
-        return {
-          id: newId(m, 'c'),
-          type: item.type,
-          name: camel(item.label) || 'field',
-          label: item.label,
-          options: entry && entry.hasOptions ? (item.type === 'table' ? ['Column 1', 'Column 2'] : ['Option 1', 'Option 2']) : [],
-          validations: [],
-          component: item.type === 'component' ? item.tag : null,
-          params: item.type === 'component' ? params : {}
-        };
-      };
-
-      /**
-       * Adds a palette item before the component with targetId, or else after the selected component, or at the end
-       * of the last section.
-       */
-      const addFromPalette = (item, targetId, sectionId) => update((m) => {
-        const component = fromPalette(m, item);
-        if (!component) {
-          return;
-        }
-        const target = targetId ? locate(m, targetId) : null;
-        const selected = !target && !sectionId && this.selectedId() ? locate(m, this.selectedId()) : null;
-        if (target) {
-          target.section.components.splice(target.index, 0, component);
-        } else if (selected) {
-          selected.section.components.splice(selected.index + 1, 0, component);
-        } else {
-          const section = (sectionId && m.sections.find((s) => s.id === sectionId)) || m.sections[m.sections.length - 1];
-          section.components.push(component);
-        }
-        setTimeout(() => this.selectedId(component.id));
-      });
 
       /** A two-way binding to one property of the working model. */
       const modelProperty = (read, write) => ko.pureComputed({
@@ -208,41 +177,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.screenTitle = modelProperty((m) => m.title, (m, v) => { m.title = v; });
       this.screenName = modelProperty((m) => m.name, (m, v) => { m.name = v; });
 
-      this.sections = ko.pureComputed(() => {
+      // --- what is selected: a component, a section, an action button, or nothing (the screen) ---
+
+      this.selectedKind = ko.pureComputed(() => {
         const model = this.working();
-        if (!model) {
-          return [];
+        const id = this.selectedId();
+        if (!model || !id) {
+          return 'screen';
         }
-        return model.sections.map((section, sectionIndex) => ({
-          id: section.id,
-          page: self,
-          title: modelProperty((m) => m.sections[sectionIndex].title, (m, v) => { m.sections[sectionIndex].title = v; }),
-          columns: modelProperty((m) => m.sections[sectionIndex].columns, (m, v) => { m.sections[sectionIndex].columns = v; }),
-          addComponent: () => update((m) => {
-            const id = newId(m, 'c');
-            m.sections[sectionIndex].components.push({ id: id, type: 'text', name: 'newField', label: 'New field', options: [], validations: [] });
-            setTimeout(() => this.selectedId(id));
-          }),
-          removeSection: () => update((m) => { m.sections.splice(sectionIndex, 1); }),
-          components: section.components.map((c) => ({
-            id: c.id,
-            page: self,
-            label: c.label,
-            required: c.required === true,
-            typeLabel: typeLabel(c),
-            selected: c.id === this.selectedId(),
-            selectAction: () => this.selectedId(c.id),
-            moveUp: () => move(c.id, -1),
-            moveDown: () => move(c.id, 1),
-            removeAction: () => update((m) => {
-              const found = locate(m, c.id);
-              found.section.components.splice(found.index, 1);
-              if (this.selectedId() === c.id) {
-                this.selectedId(null);
-              }
-            })
-          }))
-        }));
+        if (locate(model, id)) {
+          return 'component';
+        }
+        if (model.sections.some((s) => s.id === id)) {
+          return 'section';
+        }
+        return model.actions.some((a) => a.id === id) ? 'action' : 'screen';
+      });
+      this.selectScreen = () => this.selectedId(null);
+
+      this.addSection = () => update((m) => {
+        const id = newId(m, 's');
+        m.sections.push({ id: id, title: 'New section', columns: 2, components: [] });
+        setTimeout(() => this.selectedId(id));
+      });
+      this.addAction = () => update((m) => {
+        const id = newId(m, 'a');
+        m.actions.push({ id: id, label: 'New button', kind: m.actions.length === 0 ? 'primary' : 'secondary' });
+        setTimeout(() => this.selectedId(id));
       });
 
       /** Moves a component up or down, across section boundaries at the ends of a section. */
@@ -265,12 +226,147 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           m.sections[to.si].components.push(component);
         }
       });
-
-      this.addSection = () => update((m) => {
-        m.sections.push({ id: newId(m, 's'), title: 'New section', columns: 2, components: [] });
+      this.moveSelectedUp = () => move(this.selectedId(), -1);
+      this.moveSelectedDown = () => move(this.selectedId(), 1);
+      this.removeSelected = () => {
+        const id = this.selectedId();
+        const kind = this.selectedKind();
+        update((m) => {
+          if (kind === 'component') {
+            const found = locate(m, id);
+            found.section.components.splice(found.index, 1);
+          } else if (kind === 'section') {
+            m.sections = m.sections.filter((s) => s.id !== id);
+          } else if (kind === 'action') {
+            m.actions = m.actions.filter((a) => a.id !== id);
+          }
+        });
+        this.selectedId(null);
+      };
+      this.duplicateSelected = () => update((m) => {
+        const found = locate(m, this.selectedId());
+        if (found) {
+          const copy = clone(found.component);
+          copy.id = newId(m, 'c');
+          copy.name = (copy.name || 'field') + 'Copy';
+          found.section.components.splice(found.index + 1, 0, copy);
+          setTimeout(() => this.selectedId(copy.id));
+        }
       });
 
-      // --- drag and drop ---
+      // --- layers: the screen's sections, components and buttons as a tree ---
+
+      this.layers = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model) {
+          return [];
+        }
+        const selected = this.selectedId();
+        return model.sections.map((section) => ({
+          id: section.id,
+          page: self,
+          title: section.title || 'Section',
+          selected: section.id === selected,
+          selectAction: () => this.selectedId(section.id),
+          components: section.components.map((c) => ({
+            id: c.id,
+            page: self,
+            label: (c.label || c.name) + (c.required === true ? ' *' : ''),
+            icon: ICONS[c.type] || '•',
+            typeLabel: typeLabel(c),
+            selected: c.id === selected,
+            selectAction: () => this.selectedId(c.id)
+          }))
+        }));
+      });
+      this.actionLayers = ko.pureComputed(() => {
+        const model = this.working();
+        const selected = this.selectedId();
+        return model ? model.actions.map((a) => ({
+          id: a.id, label: a.label, kind: a.kind, selected: a.id === selected, selectAction: () => this.selectedId(a.id)
+        })) : [];
+      });
+      this.componentCount = ko.pureComputed(() => (this.working()
+        ? this.working().sections.reduce((n, s) => n + s.components.length, 0) : 0));
+
+      // --- palette: standard components and those found in the workspace's code ---
+
+      const paletteItems = ko.observableArray([]);
+      this.paletteNote = ko.observable('');
+      this.paletteFilter = ko.observable('');
+      this.paletteGroups = ko.pureComputed(() => {
+        const filter = (this.paletteFilter() || '').trim().toLowerCase();
+        const matches = (item) => !filter || (item.label + ' ' + (item.tag || '') + ' ' + (item.module || '')).toLowerCase().includes(filter);
+        return GROUPS.map((group) => ({
+          title: group,
+          tiles: TILE_GROUPS.includes(group),
+          open: group !== 'Other components used in this code' || !!filter,
+          items: paletteItems().filter((item) => item.group === group && matches(item)).map((item) => ({
+            id: item.id,
+            page: self,
+            tile: TILE_GROUPS.includes(group),
+            label: SHORT_LABELS[item.label] || item.label,
+            icon: ICONS[item.type] || '⧉',
+            detail: [item.tag ? '<' + item.tag + '>' : '', item.module || '', item.uses ? 'used ' + item.uses + '×' : '']
+              .filter(Boolean).join(' · '),
+            title: item.description || item.label,
+            addAction: () => addFromPalette(item, null)
+          }))
+        })).filter((group) => group.items.length > 0);
+      });
+      const loadPalette = (id) => api.get('workspaces/' + id + '/design-palette').then((palette) => {
+        paletteItems(palette.items);
+        this.paletteNote(palette.note || '');
+      });
+
+      /** A new component (or action button) for a palette item; returns the component, or null for a button. */
+      const fromPalette = (m, item) => {
+        if (item.type === 'action') {
+          const id = newId(m, 'a');
+          m.actions.push({ id: id, label: 'New button', kind: m.actions.length === 0 ? 'primary' : 'secondary' });
+          setTimeout(() => this.selectedId(id));
+          return null;
+        }
+        const entry = catalog().find((t) => t.value === item.type);
+        const params = {};
+        (item.params || []).forEach((p) => { params[p] = ''; });
+        return {
+          id: newId(m, 'c'),
+          type: item.type,
+          name: camel(SHORT_LABELS[item.label] || item.label) || 'field',
+          label: SHORT_LABELS[item.label] || item.label,
+          options: entry && entry.hasOptions ? (item.type === 'table' ? ['Column 1', 'Column 2'] : ['Option 1', 'Option 2']) : [],
+          validations: [],
+          component: item.type === 'component' ? item.tag : null,
+          params: item.type === 'component' ? params : {}
+        };
+      };
+
+      /**
+       * Adds a palette item before the component with targetId, or at the end of the section with sectionId, or
+       * else after the selected component (or at the end of the selected section, or of the last section).
+       */
+      const addFromPalette = (item, targetId, sectionId) => update((m) => {
+        const component = fromPalette(m, item);
+        if (!component) {
+          return;
+        }
+        const target = targetId ? locate(m, targetId) : null;
+        const selectedComponent = !target && !sectionId && this.selectedId() ? locate(m, this.selectedId()) : null;
+        const section = (sectionId && m.sections.find((s) => s.id === sectionId))
+          || (!target && !selectedComponent && m.sections.find((s) => s.id === this.selectedId()))
+          || m.sections[m.sections.length - 1];
+        if (target) {
+          target.section.components.splice(target.index, 0, component);
+        } else if (selectedComponent && !sectionId) {
+          selectedComponent.section.components.splice(selectedComponent.index + 1, 0, component);
+        } else {
+          section.components.push(component);
+        }
+        setTimeout(() => this.selectedId(component.id));
+      });
+
+      // --- drag and drop: palette items and layers onto the layers tree or the canvas ---
 
       // A component of the screen being moved (draggedId), or a palette item being added (draggedItem)
       let draggedId = null;
@@ -288,62 +384,74 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         event.dataTransfer.effectAllowed = 'copy';
         event.dataTransfer.setData('text/plain', id);
       };
-      this.dragEnd = () => { draggedId = null; draggedItem = null; };
+      // A drop on the canvas arrives as a message after dragend, so the dragged thing is forgotten a moment later.
+      this.dragEnd = () => setTimeout(() => { draggedId = null; draggedItem = null; }, 300);
       this.dragOver = (event) => {
         if (draggedId || (draggedItem && this.editable())) {
           event.preventDefault();
         }
       };
+      const moveComponent = (id, targetId, sectionId) => update((m) => {
+        const from = locate(m, id);
+        if (!from) {
+          return;
+        }
+        const [component] = from.section.components.splice(from.index, 1);
+        const to = targetId ? locate(m, targetId) : null;
+        if (to) {
+          to.section.components.splice(to.index, 0, component);
+        } else {
+          (m.sections.find((s) => s.id === sectionId) || from.section).components.push(component);
+        }
+      });
+      const drop = (targetId, sectionId) => {
+        const id = draggedId;
+        const item = draggedItem;
+        draggedId = null;
+        draggedItem = null;
+        if (item) {
+          addFromPalette(item, targetId, sectionId);
+        } else if (id && id !== targetId) {
+          moveComponent(id, targetId, sectionId);
+        }
+      };
+      const dropOnCanvas = (targetId, sectionId) => {
+        if (this.editable()) {
+          drop(targetId, sectionId);
+        }
+      };
       this.dropOnComponent = (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const targetId = event.currentTarget.getAttribute('data-cid');
-        const id = draggedId;
-        const item = draggedItem;
-        draggedId = null;
-        draggedItem = null;
-        if (item) {
-          addFromPalette(item, targetId);
-          return;
-        }
-        if (!id || id === targetId) {
-          return;
-        }
-        update((m) => {
-          const from = locate(m, id);
-          const [component] = from.section.components.splice(from.index, 1);
-          const to = locate(m, targetId);
-          to.section.components.splice(to.index, 0, component);
-        });
+        drop(event.currentTarget.getAttribute('data-cid'), null);
       };
       this.dropOnSection = (event) => {
         event.preventDefault();
-        const sectionId = event.currentTarget.getAttribute('data-sid');
-        const id = draggedId;
-        const item = draggedItem;
-        draggedId = null;
-        draggedItem = null;
-        if (item) {
-          addFromPalette(item, null, sectionId);
-          return;
-        }
-        if (!id) {
-          return;
-        }
-        update((m) => {
-          const from = locate(m, id);
-          const [component] = from.section.components.splice(from.index, 1);
-          m.sections.find((s) => s.id === sectionId).components.push(component);
-        });
+        drop(null, event.currentTarget.getAttribute('data-sid'));
       };
 
-      // --- properties of the selected component ---
+      // --- properties of the selection ---
 
       this.selectedComponent = ko.pureComputed(() => {
         const model = this.working();
         const found = model && this.selectedId() ? locate(model, this.selectedId()) : null;
         return found ? found.component : null;
       });
+      this.selectedTitle = ko.pureComputed(() => {
+        const c = this.selectedComponent();
+        if (c) {
+          return c.label || c.name;
+        }
+        const model = this.working();
+        const id = this.selectedId();
+        const section = model && id ? model.sections.find((s) => s.id === id) : null;
+        if (section) {
+          return section.title || 'Section';
+        }
+        const action = model && id ? model.actions.find((a) => a.id === id) : null;
+        return action ? action.label + ' button' : 'Screen';
+      });
+      this.selectedTypeLabel = ko.pureComputed(() => (this.selectedComponent() ? typeLabel(this.selectedComponent()) : ''));
       this.selectedHasOptions = ko.pureComputed(() => {
         const c = this.selectedComponent();
         const entry = c ? catalog().find((t) => t.value === c.type) : null;
@@ -356,6 +464,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const componentProperty = (read, write) => modelProperty(
         (m) => { const found = locate(m, this.selectedId()); return found ? read(found.component) : null; },
         (m, value) => { const found = locate(m, this.selectedId()); if (found) { write(found.component, value); } });
+      const sectionProperty = (read, write) => modelProperty(
+        (m) => { const s = m.sections.find((x) => x.id === this.selectedId()); return s ? read(s) : null; },
+        (m, value) => { const s = m.sections.find((x) => x.id === this.selectedId()); if (s) { write(s, value); } });
+      const actionProperty = (read, write) => modelProperty(
+        (m) => { const a = m.actions.find((x) => x.id === this.selectedId()); return a ? read(a) : null; },
+        (m, value) => { const a = m.actions.find((x) => x.id === this.selectedId()); if (a) { write(a, value); } });
       const lines = (text) => (text || '').split('\n').map((line) => line.trim()).filter((line) => line);
 
       this.propLabel = componentProperty((c) => c.label, (c, v) => { c.label = v; });
@@ -364,12 +478,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         c.type = v;
         const entry = catalog().find((t) => t.value === v);
         if (entry && entry.hasOptions && (!c.options || c.options.length === 0)) {
-          c.options = ['Option 1', 'Option 2'];
+          c.options = v === 'table' ? ['Column 1', 'Column 2'] : ['Option 1', 'Option 2'];
         }
       });
-      this.propRequired = componentProperty(
-        (c) => (c.required === true ? 'yes' : c.required === false ? 'no' : 'unknown'),
-        (c, v) => { c.required = v === 'yes' ? true : v === 'no' ? false : null; });
+      // Mandatory as a segmented choice: yes, no, or not specified
+      this.requiredChoices = ko.pureComputed(() => {
+        const c = this.selectedComponent();
+        const current = !c ? null : c.required === true ? 'yes' : c.required === false ? 'no' : 'unknown';
+        return [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unknown', label: 'Not specified' }].map((choice) => ({
+          label: choice.label,
+          active: choice.value === current,
+          pick: () => update((m) => {
+            const found = locate(m, this.selectedId());
+            if (found) {
+              found.component.required = choice.value === 'yes' ? true : choice.value === 'no' ? false : null;
+            }
+          })
+        }));
+      });
       this.propMaxLength = componentProperty((c) => c.maxLength || null, (c, v) => { c.maxLength = v || null; });
       this.propDefault = componentProperty((c) => c.defaultValue || '', (c, v) => { c.defaultValue = v || null; });
       this.propPlaceholder = componentProperty((c) => c.placeholder || '', (c, v) => { c.placeholder = v || null; });
@@ -392,28 +518,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           });
           c.params = params;
         });
-
-      // --- action buttons ---
-
-      this.actionRows = ko.pureComputed(() => {
-        const model = this.working();
-        if (!model) {
-          return [];
-        }
-        return model.actions.map((action, index) => ({
-          id: action.id,
-          page: self,
-          label: modelProperty((m) => m.actions[index].label, (m, v) => { m.actions[index].label = v; }),
-          kind: modelProperty((m) => m.actions[index].kind, (m, v) => { m.actions[index].kind = v; }),
-          moveUp: () => update((m) => {
-            if (index > 0) {
-              m.actions.splice(index - 1, 0, m.actions.splice(index, 1)[0]);
-            }
-          }),
-          removeAction: () => update((m) => { m.actions.splice(index, 1); })
-        }));
-      });
-      this.addAction = () => update((m) => { m.actions.push({ id: newId(m, 'a'), label: 'New button', kind: 'secondary' }); });
+      this.propSectionTitle = sectionProperty((s) => s.title || '', (s, v) => { s.title = v || null; });
+      this.propSectionColumns = sectionProperty((s) => s.columns || 2, (s, v) => { s.columns = v; });
+      this.propActionLabel = actionProperty((a) => a.label, (a, v) => { a.label = v; });
+      this.propActionKind = actionProperty((a) => a.kind, (a, v) => { a.kind = v; });
 
       // --- comments, versions, review ---
 
@@ -426,18 +534,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.comments = ko.pureComputed(() => (this.detail() ? this.detail().comments : []).map((c) => ({
         author: c.author,
+        initials: (c.author || '?').split(/\s+/).map((w) => w.charAt(0)).join('').slice(0, 2).toUpperCase(),
         text: c.text,
-        meta: ' on v' + c.version + (c.componentId ? ', about ' + componentLabel(c.componentId) : '') + (c.fromReview ? ', via review link' : '')
-          + ', ' + new Date(c.createdAt).toLocaleString()
+        meta: 'v' + c.version + (c.componentId ? ' · ' + componentLabel(c.componentId) : '') + (c.fromReview ? ' · via review link' : '')
+          + ' · ' + new Date(c.createdAt).toLocaleString()
       })));
       this.versions = ko.pureComputed(() => (this.detail() ? this.detail().versions : []).map((v) => ({
         version: v.version,
-        text: v.origin.toLowerCase() + (v.note ? ': ' + v.note : '') + ' · ' + new Date(v.createdAt).toLocaleString(),
+        current: v.version === this.detail().currentVersion,
+        origin: v.origin.charAt(0) + v.origin.slice(1).toLowerCase(),
+        note: v.note || '',
+        when: new Date(v.createdAt).toLocaleString(),
         loadable: this.editable() && v.version !== this.detail().currentVersion,
         loadAction: () => api.get('designs/' + this.detail().id + '/versions/' + v.version).then((model) => {
           this.working(model);
           this.dirty(true);
-          showInfo('Version ' + v.version + ' loaded into the editor. Save to make it the current version.');
+          showInfo('Version ' + v.version + ' loaded. Save to make it the current version.');
         }).catch(showError)
       })));
       this.reviewUrl = ko.pureComputed(() => (this.detail() && this.detail().reviewToken
@@ -459,6 +571,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         if (!id) {
           this.designs([]);
+          designOptions([]);
           requirementOptions([]);
           return Promise.resolve();
         }
@@ -466,8 +579,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(([designList, requirementList]) => {
             const current = this.detail() ? this.detail().id : null;
             this.designs(designList.map((d) => ({
-              name: d.name, status: d.status, selected: d.id === current, openAction: () => this.open(d.id)
+              name: d.name, status: d.status, statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+              statusText: d.status.replace('_', ' ').toLowerCase(), selected: d.id === current, openAction: () => this.open(d.id)
             })));
+            designOptions(designList.map((d) => ({ value: d.id, label: d.name + ' (' + d.status.replace('_', ' ').toLowerCase() + ')' })));
             requirementOptions(requirementList.filter((r) => r.status === 'APPROVED').map((r) => ({ value: r.id, label: r.title })));
           }).catch(showError);
       };
@@ -477,6 +592,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.codeFiles([]);
         }
         this.detail(detail);
+        this.designPick(detail.id);
         this.working(clone(detail.model));
         this.dirty(false);
         if (!keepSelection) {
@@ -487,22 +603,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.open = (id) => {
         if (this.dirty() && !window.confirm('Discard your unsaved changes?')) {
+          this.designPick(this.detail() ? this.detail().id : null);
           return Promise.resolve();
         }
-        this.errorMessage('');
-        this.infoMessage('');
+        this.clearMessages();
+        this.drawer(null);
         return api.get('designs/' + id).then((detail) => show(detail)).catch(showError);
       };
+      this.designPick.subscribe((id) => {
+        if (id && (!this.detail() || this.detail().id !== id)) {
+          this.open(id);
+        }
+      });
 
       this.createFromRequirement = () => api.post('requirements/' + this.requirementId() + '/designs')
         .then((created) => {
           this.requirementId(null);
+          this.drawer(null);
           return (created.length > 0 ? this.open(created[0].id) : loadDesigns())
-            .then(() => showInfo(created.length + ' design(s) created.'));
+            .then(() => showInfo(created.length + ' screen(s) created.'));
         }).catch(showError);
 
       this.createBlank = () => api.post('workspaces/' + this.workspaceId() + '/designs', { name: this.blankName() })
-        .then((detail) => { this.blankName(''); show(detail); })
+        .then((detail) => { this.blankName(''); this.drawer(null); show(detail); })
         .catch(showError);
 
       const base = () => 'designs/' + this.detail().id;
@@ -511,7 +634,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .then((detail) => { show(detail, true); showInfo('Saved as version ' + detail.currentVersion + '.'); })
         .catch(showError);
 
-      this.discard = () => { this.working(clone(this.detail().model)); this.dirty(false); };
+      this.discard = () => { this.working(clone(this.detail().model)); this.dirty(false); this.clearMessages(); };
 
       this.askAi = () => {
         if (!this.aiInstruction()) {
@@ -522,11 +645,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.busy(true);
+        showInfo('Changing the screen...');
         api.post(base() + '/ai-change', { instruction: this.aiInstruction() })
           .then((detail) => {
             show(detail, true);
             this.aiInstruction('');
-            showInfo('Changed by AI and saved as version ' + detail.currentVersion + '. Review the result; load an earlier version to undo.');
+            showInfo('Changed and saved as version ' + detail.currentVersion + '. Check the result; History has the earlier versions.');
           })
           .catch(showError)
           .finally(() => this.busy(false));
@@ -551,7 +675,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         call()
           .then((detail) => {
             show(detail, true);
-            showInfo('Imported ' + what + ' as version ' + detail.currentVersion + '. Check the result; load an earlier version to undo.');
+            this.drawer(null);
+            showInfo('Imported ' + what + ' as version ' + detail.currentVersion + '. Check the result; History has the earlier versions.');
           })
           .catch(showError)
           .finally(() => this.busy(false));
@@ -584,13 +709,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.reopen = () => api.post(base() + '/reopen').then((detail) => show(detail, true)).catch(showError);
       this.remove = () => {
-        if (!window.confirm('Delete this design with all its versions and comments?')) {
+        if (!window.confirm('Delete this screen with all its versions and comments?')) {
           return;
         }
-        api.del(base()).then(() => { this.detail(null); this.working(null); this.dirty(false); loadDesigns(); }).catch(showError);
+        api.del(base()).then(() => {
+          this.detail(null);
+          this.working(null);
+          this.dirty(false);
+          this.designPick(null);
+          loadDesigns();
+        }).catch(showError);
       };
       this.addComment = () => api.post(base() + '/comments', {
-        text: this.commentText(), componentId: this.selectedId()
+        text: this.commentText(), componentId: this.selectedKind() === 'screen' ? null : this.selectedId()
       }).then((detail) => {
         this.commentText('');
         this.detail(detail);
@@ -620,6 +751,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.detail(null);
           this.working(null);
           this.dirty(false);
+          this.designPick(null);
           loadDesigns();
           refreshPalette().catch(showError);
         });

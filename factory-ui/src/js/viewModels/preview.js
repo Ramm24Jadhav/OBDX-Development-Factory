@@ -58,7 +58,13 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       };
       return {
         title: model.title || model.name,
-        sections: model.sections.map((s) => ({ title: s.title, columns: s.columns || 2, components: s.components.map(component) })),
+        sections: model.sections.map((s) => ({
+          id: s.id,
+          title: s.title,
+          columns: s.columns || 2,
+          css: 'factory-preview-section' + (s.id === highlight ? ' factory-highlight' : ''),
+          components: s.components.map(component)
+        })),
         actions: model.actions.map((a) => ({
           id: a.id, label: a.label,
           chroming: a.kind === 'primary' ? 'callToAction' : a.kind === 'link' ? 'borderless' : 'outlined',
@@ -77,9 +83,49 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         this.screen(event.data.model ? toView(event.data.model, event.data.highlight) : null);
       };
       const onClick = (event) => {
-        const target = event.target.closest('[data-cid]');
+        const target = event.target.closest('[data-cid]') || event.target.closest('[data-sid]');
         if (target && window.parent !== window) {
-          window.parent.postMessage({ type: 'factory-preview-select', id: target.getAttribute('data-cid') }, window.location.origin);
+          const id = target.getAttribute('data-cid') || target.getAttribute('data-sid');
+          window.parent.postMessage({ type: 'factory-preview-select', id: id }, window.location.origin);
+        }
+      };
+
+      // The designer can drop components from its palette onto the preview: show where, and tell it on drop.
+      let dropTarget = null;
+      const markDrop = (element) => {
+        if (dropTarget !== element) {
+          if (dropTarget) {
+            dropTarget.classList.remove('factory-drop-target');
+          }
+          dropTarget = element;
+          if (dropTarget) {
+            dropTarget.classList.add('factory-drop-target');
+          }
+        }
+      };
+      const targetOf = (event) => event.target.closest('.factory-preview-section [data-cid]') || event.target.closest('[data-sid]');
+      const onDragOver = (event) => {
+        if (window.parent === window) {
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        markDrop(targetOf(event));
+      };
+      const onDrop = (event) => {
+        event.preventDefault();
+        const component = event.target.closest('.factory-preview-section [data-cid]');
+        const section = event.target.closest('[data-sid]');
+        markDrop(null);
+        window.parent.postMessage({
+          type: 'factory-preview-drop',
+          targetId: component ? component.getAttribute('data-cid') : null,
+          sectionId: section ? section.getAttribute('data-sid') : null
+        }, window.location.origin);
+      };
+      const onDragLeave = (event) => {
+        if (!event.relatedTarget) {
+          markDrop(null);
         }
       };
 
@@ -87,6 +133,9 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         document.title = 'Screen preview';
         window.addEventListener('message', onMessage);
         document.addEventListener('click', onClick, true);
+        document.addEventListener('dragover', onDragOver);
+        document.addEventListener('drop', onDrop);
+        document.addEventListener('dragleave', onDragLeave);
         if (window.parent !== window) {
           window.parent.postMessage({ type: 'factory-preview-ready' }, window.location.origin);
         }
@@ -94,6 +143,9 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
         document.removeEventListener('click', onClick, true);
+        document.removeEventListener('dragover', onDragOver);
+        document.removeEventListener('drop', onDrop);
+        document.removeEventListener('dragleave', onDragLeave);
       };
     }
 
