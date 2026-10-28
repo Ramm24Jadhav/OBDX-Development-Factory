@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Checking for and installing a newer build, against a local server standing in for the GitHub release. */
 class UpdateServiceTest {
@@ -62,6 +63,34 @@ class UpdateServiceTest {
         assertThat(exitCode.get(20, TimeUnit.SECONDS)).isEqualTo(UpdateService.RESTART_EXIT_CODE);
         assertThat(Files.readAllBytes(folder.resolve("obdx-factory.jar"))).isEqualTo(JAR);
         assertThat(service.status(false).state()).isEqualTo(UpdateService.State.RESTARTING);
+    }
+
+    @Test
+    void checksAndDownloadsWithCurlWhenJavaCannotConnect() throws Exception {
+        UpdateService service = service("5");
+        assumeTrue(service.curlAvailable(), "curl is not installed here");
+        service.setJavaFirst(false);
+        CompletableFuture<Integer> exitCode = new CompletableFuture<>();
+        service.setExit(exitCode::complete);
+
+        assertThat(service.status(true).state()).isEqualTo(UpdateService.State.AVAILABLE);
+        service.update();
+
+        assertThat(exitCode.get(30, TimeUnit.SECONDS)).isEqualTo(UpdateService.RESTART_EXIT_CODE);
+        assertThat(Files.readAllBytes(folder.resolve("obdx-factory.jar"))).as("verified against the SHA-256").isEqualTo(JAR);
+        assertThat(folder.resolve("curl.log")).doesNotExist();
+    }
+
+    @Test
+    void withoutCurlTheJavaErrorIsReported() {
+        server.stop(0);
+        UpdateService service = service("5");
+        service.setCurlCommand("no-such-curl-program");
+
+        UpdateService.Status status = service.status(true);
+
+        assertThat(status.state()).isEqualTo(UpdateService.State.FAILED);
+        assertThat(status.message()).startsWith("Could not check for updates").doesNotContain("curl");
     }
 
     @Test

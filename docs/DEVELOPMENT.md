@@ -486,6 +486,9 @@ SHA-256, and both zips). With `FACTORY_UPDATES=true` (set in the download's `set
 its build number with `version.json` every 30 minutes; administrators see a banner and **Update now** (also on the
 About page) downloads the jar into `update/`, checks its SHA-256 and stops the factory with exit code 75. The start
 script then moves the new jar in place and starts it again; data and settings stay. Sign-ins end with the restart.
+When Java cannot connect (some networks answer on only some of GitHub's download addresses, and Java's client gives up
+on the first one), the check and the download fall back to `curl` (part of Windows 10 and later and of most Linux
+systems), which tries the next address; the SHA-256 is checked the same way.
 Development builds (`dev`) are never replaced. `FACTORY_UPDATE_URL` points elsewhere, for example to a bank's own copy
 of the release. Updates replace the jar only; when the start scripts change, download the zip once more.
 
