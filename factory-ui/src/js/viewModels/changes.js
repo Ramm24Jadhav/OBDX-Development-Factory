@@ -1,11 +1,13 @@
 /*
- * Changes page: impact analysis, plan review and approval, generated code review (diff, edit, write again) and
- * delivery as a patch or an SVN branch.
+ * Changes page, the implementation workbench: the change's lifecycle (requirement, impact analysis, code generation,
+ * validation, review, apply), its files as a tree with the code and diff of the selected one, the plan, quick checks and
+ * Jenkins builds, an assistant that answers from the change, and the actions: plan, approve, write again, edit, check,
+ * build, deliver as a patch or an SVN branch, close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar'],
-  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
+        '../services/ui', '../services/assistant', 'ojs/ojarraydataprovider',
+        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, ArrayDataProvider) {
     const POLL_MS = 2000;
     const STATUS_LABELS = {
       ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
@@ -102,9 +104,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             this.jenkins(jenkins);
             const current = this.detail() ? this.detail().id : null;
             this.changes(changeList.map((c) => ({
-              title: c.title, status: c.status, statusLabel: STATUS_LABELS[c.status], selected: c.id === current,
+              id: c.id, title: c.title, status: c.status, statusLabel: STATUS_LABELS[c.status], selected: c.id === current,
+              label: 'CHG-' + c.id.replace(/-/g, '').slice(0, 3).toUpperCase() + ' · ' + c.title,
               openAction: () => this.open(c.id)
             })));
+            if (!current && changeList.length) {
+              this.open(changeList[0].id);
+            }
             requirementOptions(requirementList.filter((r) => r.status === 'APPROVED').map((r) => ({ value: r.id, label: r.title })));
           }).catch(showError);
       };
@@ -214,6 +220,227 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.regenerate = () => api.post(base() + '/regenerate', { path: this.file().path, note: this.regenerateNote() || null })
         .then((detail) => { this.regenerateNote(''); show(detail); })
         .catch(showError);
+
+      // ---- The workbench layout ----
+      const STATUS_PILLS = {
+        ANALYZING: ui.pill('Analyzing', 'blue'), PLAN_READY: ui.pill('Plan to review', 'amber'), GENERATING: ui.pill('Writing code', 'blue'),
+        GENERATED: ui.pill('In Development', 'green'), DELIVERED: ui.pill('Delivered', 'green'), FAILED: ui.pill('Failed', 'red'), CLOSED: ui.pill('Closed', 'grey')
+      };
+      const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
+      this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
+      this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : ui.pill('', 'grey')));
+      this.changeMenu = ko.pureComputed(() => this.changes());
+      this.pickChange = (event) => this.open(event.detail.selectedValue);
+      this.requirementChoices = requirementOptions;
+      this.startFrom = (event) => { this.requirementId(event.detail.selectedValue); this.create(); };
+      this.requirementTitle = ko.observable('');
+
+      // Lifecycle: requirement approved, impact analysis, code generation, validation, review, apply changes
+      this.stages = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const s = d.status;
+        const generated = ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(s) >= 0;
+        const validated = generated && (d.buildStatus === 'PASSED' || s === 'DELIVERED' || s === 'CLOSED');
+        const done = [true, ['PLAN_READY', 'GENERATING', 'GENERATED', 'DELIVERED', 'CLOSED'].indexOf(s) >= 0 && !!d.planApprovedAt || generated,
+          generated, validated, s === 'DELIVERED' || s === 'CLOSED', s === 'CLOSED' && d.closedReason === 'MERGED'];
+        const current = done.indexOf(false);
+        const names = ['Requirement Approved', 'Impact Analysis', 'Code Generation', 'Validation', 'Review', 'Apply Changes'];
+        return names.map((name, i) => ({
+          name: (i + 1) + '. ' + name, number: i + 1, check: done[i],
+          css: 'factory-' + (done[i] ? 'st-done' : (i === current ? (s === 'FAILED' ? 'st-failed' : 'st-now') : 'st-todo'))
+        }));
+      });
+      this.infoRows = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const created = d.files.filter((f) => f.action === 'create').length;
+        return [
+          { label: 'Requirement', value: 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase() },
+          { label: 'Created', value: ui.when(d.createdAt) },
+          { label: 'Files', value: (d.files.length - created) + ' modified, ' + created + ' new' },
+          { label: 'Branch', value: d.branchUrl ? d.branchUrl.split('/').slice(-2).join('/') : 'Not delivered' },
+          { label: 'Code at', value: d.baseRevision ? 'r' + d.baseRevision : '–' },
+          { label: 'Requested by', value: d.createdBy || '–' }
+        ];
+      });
+
+      // Workbench tabs and the file tree of the change's files
+      this.tab = ko.observable('files');
+      this.tabs = ui.tabs(this.tab, [
+        { value: 'files', label: 'Files', count: ko.pureComputed(() => (this.detail() ? this.detail().files.length : 0)) },
+        { value: 'plan', label: 'Plan' },
+        { value: 'impact', label: 'Impact Analysis' },
+        { value: 'build', label: 'Build & Test' },
+        { value: 'history', label: 'History' }
+      ]);
+      this.fileFilter = ko.observable('');
+      this.fileFilterInput = ui.value(this.fileFilter);
+      const ACTION = { create: 'A', modify: 'M' };
+      this.tree = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const text = this.fileFilter().trim().toLowerCase();
+        const rows = [];
+        const seen = {};
+        d.files.filter((f) => !text || f.path.toLowerCase().indexOf(text) >= 0).slice().sort((a, b) => a.path.localeCompare(b.path)).forEach((f) => {
+          const parts = f.path.split('/');
+          parts.slice(0, -1).forEach((part, i) => {
+            const key = parts.slice(0, i + 1).join('/');
+            if (!seen[key]) {
+              seen[key] = true;
+              rows.push({ folder: true, name: part, style: { paddingLeft: (i * 14) + 'px' }, css: 'factory-ch-node factory-ch-folder' });
+            }
+          });
+          rows.push({
+            folder: false, name: parts[parts.length - 1], style: { paddingLeft: ((parts.length - 1) * 14) + 'px' }, path: f.path,
+            badge: ACTION[f.action] || 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (f.action === 'create' ? 'a' : 'm'),
+            css: ko.pureComputed(() => 'factory-ch-node factory-ch-file' + (this.file() && this.file().path === f.path ? ' factory-ch-file-on' : '')),
+            open: () => this.openFile(f.path)
+          });
+        });
+        return rows;
+      });
+      // The selected file's lines: the diff, or the whole generated file, with line numbers
+      this.codeLines = ko.pureComputed(() => {
+        const file = this.file();
+        if (!file) {
+          return [];
+        }
+        if (this.fileMode() === 'full') {
+          return (file.generated || file.original || '').split('\n').map((line, i) => ({ n: i + 1, sign: '', text: line, css: 'factory-ch-line' }));
+        }
+        if (!file.diff) {
+          return [{ n: '', sign: '', text: file.generated === null ? '(not written yet)' : '(no changes)', css: 'factory-ch-line' }];
+        }
+        let n = 0;
+        return file.diff.replace(/\n$/, '').split('\n').filter((line) => !/^(Index:|====|\+\+\+|---)/.test(line)).map((line) => {
+          const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);
+          if (hunk) {
+            n = Number(hunk[1]) - 1;
+            return { n: '', sign: '', text: line, css: 'factory-ch-line factory-ch-hunk' };
+          }
+          const sign = line.charAt(0);
+          if (sign !== '-') {
+            n++;
+          }
+          return {
+            n: sign === '-' ? '' : n, sign: sign === '+' || sign === '-' ? sign : '', text: line.slice(1),
+            css: 'factory-ch-line' + (sign === '+' ? ' factory-ch-add' : sign === '-' ? ' factory-ch-del' : '')
+          };
+        });
+      });
+      this.fileTabs = ko.pureComputed(() => (this.file() ? [{ name: this.file().path.split('/').pop(), badge: this.file().action === 'create' ? 'A' : 'M' }] : []));
+      this.closeFile = () => this.file(null);
+      this.proposed = ko.pureComputed(() => (this.detail() ? this.detail().files : []).filter((f) => f.status === 'GENERATED').map((f) => ({
+        name: f.path.split('/').pop(), path: f.path, added: '+' + f.linesAdded, removed: f.linesRemoved ? '-' + f.linesRemoved : '0',
+        badge: f.action === 'create' ? 'A' : 'M', open: () => this.openFile(f.path)
+      })));
+      this.totals = ko.pureComputed(() => {
+        const files = this.detail() ? this.detail().files : [];
+        return {
+          changed: files.filter((f) => f.status === 'GENERATED').length,
+          added: '+' + files.reduce((sum, f) => sum + f.linesAdded, 0),
+          removed: '-' + files.reduce((sum, f) => sum + f.linesRemoved, 0),
+          total: files.length
+        };
+      });
+
+      // Validation: quick checks over the files and the Jenkins builds
+      this.checkSummary = ko.pureComputed(() => {
+        const files = this.detail() ? this.detail().files : [];
+        const c = (s) => files.filter((f) => f.checkStatus === s).length;
+        return { passed: c('PASSED'), failed: c('FAILED'), warning: c('WARNING'), notChecked: files.length - c('PASSED') - c('FAILED') - c('WARNING') };
+      });
+      this.lastBuild = ko.pureComputed(() => {
+        const builds = this.detail() ? this.detail().builds : [];
+        return builds.length ? builds[builds.length - 1] : null;
+      });
+      this.validationTitle = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return '';
+        }
+        if (d.buildStatus === 'BUILDING') {
+          return 'Build running';
+        }
+        if (d.buildStatus === 'PASSED') {
+          return 'Build Successful';
+        }
+        if (d.buildStatus === 'FAILED') {
+          return 'Build Failed';
+        }
+        const s = this.checkSummary();
+        return s.failed ? 'Quick checks failed' : (s.passed ? 'Quick checks passed' : 'Not validated yet');
+      });
+      this.validationOk = ko.pureComputed(() => this.validationTitle() === 'Build Successful' || this.validationTitle() === 'Quick checks passed');
+      this.validationNote = ko.pureComputed(() => {
+        const b = this.lastBuild();
+        return b ? (b.job + (b.buildNumber ? ' #' + b.buildNumber : '') + ' · ' + (b.result || '') + ' · ' + ui.when(b.finishedAt || b.startedAt)) : 'Run quick checks, or build with Jenkins once it is set up.';
+      });
+      this.validationStages = ko.pureComputed(() => {
+        const s = this.checkSummary();
+        const b = this.lastBuild();
+        const stage = (name, state, detail) => ({
+          name: name, detail: detail, css: 'factory-step-dot factory-dot-' + ({ ok: 'green', bad: 'red', warn: 'amber', run: 'blue' }[state] || 'grey'),
+          icon: 'factory-nav-icon factory-ico-' + (state === 'ok' ? 'check' : state === 'bad' ? 'x' : state === 'warn' ? 'alert' : 'clock')
+        });
+        return [
+          stage('OBDX Quick Checks', s.failed ? 'bad' : s.warning ? 'warn' : s.passed ? 'ok' : 'none', s.passed + ' passed, ' + s.failed + ' failed, ' + s.warning + ' warnings'),
+          stage('Jenkins Build', !b ? 'none' : b.result === 'SUCCESS' ? 'ok' : (b.result === 'RUNNING' || b.result === 'QUEUED') ? 'run' : 'bad',
+            b ? (b.result || '') + (b.finishedAt ? ' · ' + Math.max(1, Math.round((new Date(b.finishedAt) - new Date(b.startedAt)) / 1000)) + 's' : '') : 'Not run'),
+          stage('Fix Rounds', !b ? 'none' : 'ok', (this.detail() ? this.detail().builds.length : 0) + ' rounds')
+        ];
+      });
+      this.bottom = ko.observable('build');
+      this.bottomTabs = ui.tabs(this.bottom, [
+        { value: 'build', label: 'Build & Test' }, { value: 'checks', label: 'Quick Checks' }, { value: 'builds', label: 'Build History' }
+      ]);
+
+      // History of the change from its own dates (the audit log has the rest, for administrators)
+      this.history = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const items = [{ text: 'Change created by ' + (d.createdBy || '?'), at: d.createdAt }];
+        if (d.planApprovedAt) {
+          items.push({ text: 'Plan approved by ' + d.planApprovedBy, at: d.planApprovedAt });
+        }
+        d.builds.forEach((b) => items.push({ text: 'Round ' + b.round + ': ' + b.job + ' ' + (b.result || '') + (b.fixedFiles.length ? ', fixed ' + b.fixedFiles.length + ' files' : ''), at: b.startedAt }));
+        if (d.deliveredRevision) {
+          items.push({ text: 'Delivered to ' + (d.branchUrl || 'SVN') + ' at r' + d.deliveredRevision, at: d.updatedAt });
+        }
+        if (d.closedAt) {
+          items.push({ text: 'Closed as ' + (d.closedReason || '').toLowerCase() + ' by ' + d.closedBy, at: d.closedAt });
+        }
+        return items.sort((a, b) => new Date(a.at) - new Date(b.at)).map((i) => Object.assign(i, { when: ui.when(i.at) }));
+      });
+      this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' : '#'));
+      this.openImpact = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'impact' }));
+      this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
+      this.moreAction = (event) => {
+        const action = event.detail.selectedValue;
+        ({ analyze: this.analyzeAgain, close: this.closeMerged, abandon: this.abandon, remove: this.remove })[action]();
+      };
+
+      this.ai = assistant.create(() => {
+        const d = this.detail();
+        if (!d) {
+          return '';
+        }
+        const file = this.file();
+        return 'Change "' + d.title + '" (' + d.status + ').\nPlan: ' + (d.plan ? d.plan.summary + '\nRisks: ' + d.plan.risks.join('; ')
+          + '\nFiles:\n' + d.plan.items.map((i) => '- ' + i.action + ' ' + i.path + ' (' + i.layer + '): ' + i.purpose).join('\n') : 'none yet')
+          + '\nQuick checks: ' + d.files.map((f) => f.path + ' ' + (f.checkStatus || 'not checked') + (f.checkMessage ? ' - ' + f.checkMessage : '')).join('; ')
+          + (file ? '\n\nSelected file ' + file.path + ' diff:\n' + (file.diff || '').slice(0, 9000) : '');
+      }, ['Explain this code', 'Check impact on other screens', 'Add unit tests for validation', 'What could break?']);
 
       let subscription = null;
       this.connected = () => {

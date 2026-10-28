@@ -1,199 +1,408 @@
-<div class="oj-hybrid-padding">
-  <h1>Requirements</h1>
-  <p class="oj-text-color-secondary">
-    Upload a BRD or FSD (Word, PDF or text) or describe a change. The model drafts a structured spec with open questions;
-    answer them, review the spec and approve it before development starts.
-  </p>
-
-  <oj-form-layout max-columns="2">
-    <oj-select-single id="reqWorkspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
-                      placeholder="Select a workspace"></oj-select-single>
-  </oj-form-layout>
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Requirements</h1>
+      <p>Manage business requirements, specifications and traceability to screens and code</p>
+    </div>
+    <oj-bind-if test="[[canEdit()]]">
+      <div class="factory-pg-actions">
+        <oj-button id="uploadTabButton" chroming="outlined" on-oj-action="[[startUpload]]">
+          <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Upload BRD/FSD</oj-button>
+        <oj-button id="newRequirementButton" chroming="callToAction" on-oj-action="[[startUpload]]">
+          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>New Requirement</oj-button>
+      </div>
+    </oj-bind-if>
+  </div>
 
   <oj-bind-if test="[[errorMessage()]]">
-    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+    <p class="oj-text-color-danger" id="requirementsError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
   </oj-bind-if>
 
-  <oj-bind-if test="[[workspaceId()]]">
-    <oj-bind-if test="[[canEdit()]]">
-    <h2>New requirement</h2>
-    <oj-form-layout max-columns="2" direction="row">
-      <oj-input-text id="reqTitle" label-hint="Title (optional)" value="{{newTitle}}"></oj-input-text>
-    </oj-form-layout>
-    <div class="oj-flex oj-sm-flex-items-initial factory-gap">
-      <div class="oj-flex-item">
-        <oj-file-picker id="reqFile" accept='[".docx", ".doc", ".pdf", ".txt", ".md"]' selection-mode="single"
-                        on-oj-select="[[fileSelected]]">
-          <oj-button slot="trigger" id="chooseFileButton">Choose document</oj-button>
-        </oj-file-picker>
-        <span class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[chosenFileName]]"></oj-bind-text></span>
-        <oj-button id="uploadButton" chroming="callToAction" on-oj-action="[[upload]]" disabled="[[!chosenFile() || busy()]]">Upload and draft spec</oj-button>
-      </div>
+  <div class="factory-tabbar" role="tablist" aria-label="Requirement views">
+    <oj-bind-for-each data="[[tabs]]">
+      <template><button type="button" role="tab" :id="[['tab-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <!-- New requirement -->
+  <oj-bind-if test="[[tab() === 'upload']]">
+    <div class="factory-row factory-row-2">
+      <section class="factory-card">
+        <h2>Upload a BRD or FSD</h2>
+        <p class="factory-card-sub">Word, PDF, text or Markdown, up to 25 MB. The factory drafts a structured specification from it.</p>
+        <oj-input-text id="reqTitle" label-hint="Title (optional)" value="{{newTitle}}"></oj-input-text>
+        <div class="factory-rq-file">
+          <oj-file-picker id="reqFile" accept='[".docx", ".doc", ".pdf", ".txt", ".md"]' selection-mode="single" on-oj-select="[[fileSelected]]">
+            <oj-button slot="trigger" id="chooseFileButton">Choose document</oj-button>
+          </oj-file-picker>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[chosenFileName]]"></oj-bind-text></span>
+        </div>
+        <oj-button id="uploadButton" chroming="callToAction" on-oj-action="[[upload]]" disabled="[[!chosenFile() || busy() || !canEdit()]]">Upload and draft spec</oj-button>
+      </section>
+      <section class="factory-card">
+        <h2>Or describe the change</h2>
+        <p class="factory-card-sub">Write what the bank needs in plain words: screens, fields, rules and who uses it.</p>
+        <textarea id="reqText" class="factory-rq-textarea" rows="8" placeholder="For example: customers can schedule a fund transfer..." on-input="[[newTextInput]]"></textarea>
+        <oj-button id="submitTextButton" chroming="callToAction" on-oj-action="[[submitText]]" disabled="[[busy() || !canEdit()]]">Draft spec from text</oj-button>
+      </section>
     </div>
-    <oj-form-layout max-columns="1">
-      <oj-text-area id="reqText" label-hint="...or describe the change" value="{{newText}}" rows="4"></oj-text-area>
-    </oj-form-layout>
-    <oj-button id="submitTextButton" on-oj-action="[[submitText]]" disabled="[[!newText() || busy()]]">Draft spec from text</oj-button>
-    </oj-bind-if>
-
-    <h2>All requirements</h2>
-    <oj-table id="reqTable" aria-label="Requirements" data="[[listProvider]]" style="width: 100%;"
-              columns='[{"headerText": "Title", "field": "title"},
-                        {"headerText": "Status", "field": "status"},
-                        {"headerText": "Screens", "field": "screens"},
-                        {"headerText": "Open questions", "field": "openQuestions"},
-                        {"headerText": "Updated", "field": "updated"},
-                        {"headerText": "", "field": "id", "template": "openTemplate", "sortable": "disabled"}]'>
-      <template slot="openTemplate" data-oj-as="cell">
-        <oj-button chroming="borderless" on-oj-action="[[cell.row.openAction]]">Open</oj-button>
-      </template>
-      <template slot="noData">No requirements yet.</template>
-    </oj-table>
   </oj-bind-if>
 
-  <oj-bind-if test="[[detail()]]">
-    <div id="reqDetail" class="factory-detail">
-      <h2><oj-bind-text value="[[detail().title]]"></oj-bind-text></h2>
-      <p>
-        <span :class="[['factory-status factory-req-' + detail().status.toLowerCase()]]"><oj-bind-text value="[[detail().status]]"></oj-bind-text></span>
-        <oj-bind-if test="[[detail().currentVersion]]">
-          <span class="oj-text-color-secondary"> · version <oj-bind-text value="[[detail().currentVersion]]"></oj-bind-text></span>
-        </oj-bind-if>
-        <oj-bind-if test="[[detail().fileName]]">
-          <span class="oj-text-color-secondary"> · <oj-bind-text value="[[detail().fileName]]"></oj-bind-text></span>
-        </oj-bind-if>
-        <oj-bind-if test="[[detail().approvedBy]]">
-          <span class="oj-text-color-secondary"> · approved by <oj-bind-text value="[[detail().approvedBy]]"></oj-bind-text></span>
-        </oj-bind-if>
-      </p>
-      <oj-bind-if test="[[detail().message]]">
-        <p id="reqMessage"><oj-bind-text value="[[detail().message]]"></oj-bind-text></p>
-      </oj-bind-if>
-      <oj-toolbar>
-        <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
-          <oj-button id="approveButton" chroming="callToAction" on-oj-action="[[approve]]">Approve spec</oj-button>
-        </oj-bind-if>
-        <oj-bind-if test="[[detail().status === 'READY' && canEdit()]]">
-          <oj-button id="editJsonButton" on-oj-action="[[toggleJson]]">
-            <oj-bind-text value="[[editingJson() ? 'Close JSON editor' : 'Edit spec (JSON)']]"></oj-bind-text>
-          </oj-button>
-        </oj-bind-if>
-        <oj-bind-if test="[[(detail().status === 'FAILED' || detail().status === 'READY') && canEdit()]]">
-          <oj-button id="retryButton" on-oj-action="[[retry]]">Draft again from document</oj-button>
-        </oj-bind-if>
-        <oj-bind-if test="[[canEdit()]]">
-          <oj-button id="deleteReqButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
-        </oj-bind-if>
-      </oj-toolbar>
+  <!-- Open questions across requirements -->
+  <oj-bind-if test="[[tab() === 'questions']]">
+    <section class="factory-card">
+      <h2>Requirements with open questions</h2>
+      <ul class="factory-list">
+        <oj-bind-for-each data="[[allQuestions]]">
+          <template>
+            <li><span class="factory-step-dot factory-dot-amber"><span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span></span>
+              <span><button type="button" class="factory-list-title" on-click="[[$current.data.openAction]]"><oj-bind-text value="[[$current.data.code + ' · ' + $current.data.title]]"></oj-bind-text></button>
+                <span class="factory-list-sub"><oj-bind-text value="[[$current.data.openQuestions + ' open question' + ($current.data.openQuestions === 1 ? '' : 's') + ' · ' + $current.data.statusPill.text]]"></oj-bind-text></span></span>
+              <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></span></li>
+          </template>
+        </oj-bind-for-each>
+      </ul>
+      <oj-bind-if test="[[allQuestions().length === 0]]"><p class="factory-empty">No open questions.</p></oj-bind-if>
+    </section>
+  </oj-bind-if>
 
-      <oj-bind-if test="[[editingJson()]]">
-        <oj-form-layout max-columns="1">
-          <oj-text-area id="specJson" label-hint="Spec JSON" value="{{specJson}}" rows="20" class="factory-code"></oj-text-area>
-        </oj-form-layout>
-        <oj-button id="saveJsonButton" chroming="callToAction" on-oj-action="[[saveJson]]">Save as new version</oj-button>
-      </oj-bind-if>
+  <!-- Reports -->
+  <oj-bind-if test="[[tab() === 'reports']]">
+    <div class="factory-kpis factory-kpis-4">
+      <oj-bind-for-each data="[[reports]]">
+        <template><div class="factory-kpi"><span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+          <span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span></span></div></template>
+      </oj-bind-for-each>
+    </div>
+  </oj-bind-if>
 
-      <oj-bind-if test="[[spec()]]">
-        <oj-bind-if test="[[spec().summary]]">
-          <p><oj-bind-text value="[[spec().summary]]"></oj-bind-text></p>
-        </oj-bind-if>
-
-        <oj-bind-if test="[[spec().openQuestions.length > 0]]">
-          <h3>Open questions (<oj-bind-text value="[[spec().openQuestions.length]]"></oj-bind-text>)</h3>
-          <p class="oj-typography-body-sm">Pick an answer or type your own. Several picks are combined.</p>
-          <oj-bind-if test="[[hasSuggestions]]">
-            <oj-button id="useSuggestionsButton" on-oj-action="[[useSuggestions]]">Use suggested answers</oj-button>
-          </oj-bind-if>
-          <oj-bind-for-each data="[[questions]]" as="q">
+  <!-- List and detail -->
+  <oj-bind-if test="[[tab() === 'all' || tab() === 'traceability']]">
+    <div class="factory-row factory-row-side factory-rq-layout">
+      <section class="factory-card factory-rq-listcard">
+        <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span><oj-bind-text value="[['Requirements (' + total() + ')']]"></oj-bind-text></span></h2>
+        <div class="factory-filters">
+          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+            <input type="search" id="reqSearch" placeholder="Search requirements..." aria-label="Search requirements" on-input="[[searchInput]]"></span>
+        </div>
+        <div class="factory-filters">
+          <select class="factory-ws-select" aria-label="Status" on-change="[[statusChange]]">
+            <option value="">All Statuses</option><option value="PROCESSING">In Progress</option><option value="READY">In Review</option>
+            <option value="APPROVED">Approved</option><option value="FAILED">Failed</option>
+          </select>
+          <select class="factory-ws-select" aria-label="Type" on-change="[[typeChange]]">
+            <option value="">All Types</option><option value="BRD">BRD</option><option value="FSD">FSD</option><option value="DOCX">DOCX</option>
+            <option value="PDF">PDF</option><option value="Described">Described</option>
+          </select>
+        </div>
+        <div class="factory-rq-items">
+          <oj-bind-for-each data="[[rows]]">
             <template>
-              <div class="factory-question">
-                <div><strong><oj-bind-text value="[[(q.index + 1) + '. ' + q.data.question]]"></oj-bind-text></strong></div>
-                <oj-bind-if test="[[q.data.context]]">
-                  <div class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[q.data.context]]"></oj-bind-text></div>
-                </oj-bind-if>
-                <oj-bind-if test="[[q.data.editable && q.data.options.length > 0]]">
-                  <div class="factory-options">
-                    <oj-bind-for-each data="[[q.data.options]]" as="opt">
-                      <template>
-                        <oj-button chroming="[[opt.data.selected() ? 'callToAction' : 'outlined']]"
-                                   on-oj-action="[[opt.data.pick]]"><oj-bind-text value="[[opt.data.label]]"></oj-bind-text></oj-button>
-                      </template>
-                    </oj-bind-for-each>
-                  </div>
-                </oj-bind-if>
-                <oj-input-text value="{{q.data.answerValue}}" label-hint="Answer" label-edge="none"
-                               placeholder="Pick an answer above or type your own"
-                               :aria-label="[['Answer to question ' + (q.index + 1)]]"
-                               disabled="[[!q.data.editable]]"></oj-input-text>
-              </div>
+              <button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.openAction]]">
+                <span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+                <span class="factory-rq-item-main">
+                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></span>
+                  <strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
+                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.screens + ' screens · ' + $current.data.openQuestions + ' open questions']]"></oj-bind-text></span>
+                  <span><span class="factory-tag"><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></span></span>
+                </span>
+                <span class="factory-rq-item-side">
+                  <span :class="[[$current.data.statusPill.css]]"><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span>
+                  <span class="factory-ov-subtle">Updated</span>
+                  <span><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></span>
+                </span>
+              </button>
             </template>
           </oj-bind-for-each>
-          <oj-bind-if test="[[detail().status === 'READY' && canEdit()]]">
-            <oj-toolbar>
-              <oj-button id="saveAnswersButton" on-oj-action="[[saveAnswers]]">Save answers</oj-button>
-              <oj-button id="refineButton" chroming="callToAction" on-oj-action="[[refine]]">Update spec with answers</oj-button>
-            </oj-toolbar>
-          </oj-bind-if>
-        </oj-bind-if>
+          <oj-bind-if test="[[rows().length === 0]]"><p class="factory-empty">No requirements yet. Use New Requirement.</p></oj-bind-if>
+        </div>
+      </section>
 
-        <h3>Screens</h3>
-        <oj-bind-for-each data="[[screens]]" as="screen">
-          <template>
-            <div class="factory-screen">
-              <h4>
-                <oj-bind-text value="[[screen.data.name]]"></oj-bind-text>
-                <span :class="[['factory-status factory-change-' + screen.data.changeType]]"><oj-bind-text value="[[screen.data.changeType]]"></oj-bind-text></span>
-              </h4>
-              <oj-bind-if test="[[screen.data.description]]">
-                <p><oj-bind-text value="[[screen.data.description]]"></oj-bind-text></p>
+      <div class="factory-stack">
+        <oj-bind-if test="[[!detail()]]">
+          <section class="factory-card"><p class="factory-empty">Choose a requirement on the left.</p></section>
+        </oj-bind-if>
+        <oj-bind-if test="[[detail()]]">
+          <section class="factory-card" id="requirementDetail">
+            <div class="factory-rq-head">
+              <div class="factory-rq-title">
+                <span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+                <div>
+                  <span class="factory-ov-subtle"><oj-bind-text value="[[code]]"></oj-bind-text></span>
+                  <h2 class="factory-rq-name"><oj-bind-text value="[[detail().title]]"></oj-bind-text>
+                    <span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span></h2>
+                </div>
+              </div>
+              <ol class="factory-stepper factory-rq-stepper">
+                <oj-bind-for-each data="[[stages]]">
+                  <template>
+                    <li :class="[[$current.data.css]]"><span class="factory-st-mark">
+                      <oj-bind-if test="[[$current.data.check]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></oj-bind-if>
+                      <oj-bind-if test="[[!$current.data.check]]"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></oj-bind-if></span>
+                      <span class="factory-st-label"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></li>
+                  </template>
+                </oj-bind-for-each>
+              </ol>
+            </div>
+            <p class="factory-rq-summary"><oj-bind-text value="[[spec() ? (spec().summary || '') : (detail().message || 'The specification is being drafted.')]]"></oj-bind-text></p>
+            <div class="factory-rq-meta">
+              <div><span>Created</span><strong><oj-bind-text value="[[createdText]]"></oj-bind-text></strong></div>
+              <div><span>Updated</span><strong><oj-bind-text value="[[updatedText]]"></oj-bind-text></strong></div>
+              <div><span>Type</span><strong><span class="factory-tag"><oj-bind-text value="[[typeText]]"></oj-bind-text></span></strong></div>
+              <div><span>Version</span><strong><oj-bind-text value="[[detail().currentVersion ? 'v' + detail().currentVersion : '–']]"></oj-bind-text></strong></div>
+              <div><span>Approved by</span><strong><oj-bind-text value="[[detail().approvedBy || '–']]"></oj-bind-text></strong></div>
+              <div><span>Related Changes</span><strong class="factory-cp-link"><oj-bind-text value="[[relatedChanges]]"></oj-bind-text></strong></div>
+            </div>
+            <div class="factory-btn-row">
+              <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
+                <oj-button id="approveButton" chroming="callToAction" on-oj-action="[[approve]]">Approve</oj-button>
               </oj-bind-if>
-              <oj-bind-if test="[[screen.data.fields.length > 0]]">
-                <table class="factory-profile-table factory-fields">
-                  <thead><tr><th>Field</th><th>Label</th><th>Type</th><th>Mandatory</th><th>Validations</th><th>Source / notes</th></tr></thead>
-                  <tbody>
-                    <oj-bind-for-each data="[[screen.data.fields]]" as="field">
-                      <template>
-                        <tr>
-                          <td><oj-bind-text value="[[field.data.name]]"></oj-bind-text></td>
-                          <td><oj-bind-text value="[[field.data.label]]"></oj-bind-text></td>
-                          <td><oj-bind-text value="[[field.data.type]]"></oj-bind-text></td>
-                          <td><oj-bind-text value="[[field.data.mandatory]]"></oj-bind-text></td>
-                          <td><oj-bind-text value="[[field.data.validations]]"></oj-bind-text></td>
-                          <td><oj-bind-text value="[[field.data.notes]]"></oj-bind-text></td>
-                        </tr>
-                      </template>
-                    </oj-bind-for-each>
-                  </tbody>
-                </table>
+              <oj-bind-if test="[[detail().status === 'APPROVED' && canEdit()]]">
+                <oj-button id="makeScreensButton" chroming="callToAction" on-oj-action="[[makeScreens]]">Make screens in the designer</oj-button>
+                <oj-button id="planChangeButton" on-oj-action="[[planChange]]">Plan the change</oj-button>
               </oj-bind-if>
-              <oj-bind-if test="[[screen.data.actions]]">
-                <p><strong>Actions:</strong> <oj-bind-text value="[[screen.data.actions]]"></oj-bind-text></p>
+              <oj-bind-if test="[[detail().status === 'FAILED' && canEdit()]]">
+                <oj-button id="retryButton" chroming="callToAction" on-oj-action="[[retry]]">Try again</oj-button>
               </oj-bind-if>
-              <oj-bind-if test="[[screen.data.relatedCode]]">
-                <p class="oj-typography-body-sm"><strong>Possibly related code:</strong>
-                  <oj-bind-text value="[[screen.data.relatedCode]]"></oj-bind-text>
-                </p>
+              <oj-bind-if test="[[spec() && canEdit() && detail().status !== 'APPROVED']]">
+                <oj-button id="editJsonButton" chroming="outlined" on-oj-action="[[toggleJson]]">
+                  <span slot="startIcon" class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</oj-button>
+              </oj-bind-if>
+              <oj-bind-if test="[[canEdit()]]">
+                <oj-button id="deleteButton" chroming="borderless" on-oj-action="[[remove]]">Delete</oj-button>
               </oj-bind-if>
             </div>
-          </template>
-        </oj-bind-for-each>
+          </section>
 
-        <oj-bind-for-each data="[[lists]]" as="list">
-          <template>
-            <h3><oj-bind-text value="[[list.data.title]]"></oj-bind-text></h3>
-            <ul>
-              <oj-bind-for-each data="[[list.data.items]]">
-                <template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
-              </oj-bind-for-each>
-            </ul>
-          </template>
-        </oj-bind-for-each>
-      </oj-bind-if>
+          <oj-bind-if test="[[editingJson()]]">
+            <section class="factory-card">
+              <h2>Edit the specification (JSON)</h2>
+              <textarea id="specJson" class="factory-rq-textarea factory-mono" rows="18" :value="[[specJson]]" on-input="[[specJsonInput]]"></textarea>
+              <div class="factory-btn-row">
+                <oj-button id="saveJsonButton" chroming="callToAction" on-oj-action="[[saveJson]]">Save</oj-button>
+                <oj-button on-oj-action="[[toggleJson]]">Cancel</oj-button>
+              </div>
+            </section>
+          </oj-bind-if>
 
-      <details class="factory-source">
-        <summary>Document text the spec was drafted from</summary>
-        <pre class="factory-reply"><oj-bind-text value="[[detail().documentText]]"></oj-bind-text></pre>
-      </details>
+          <oj-bind-if test="[[spec()]]">
+            <div class="factory-card factory-rq-parts">
+              <div class="factory-subtabs" role="tablist" aria-label="Specification parts">
+                <oj-bind-for-each data="[[parts]]">
+                  <template><button type="button" role="tab" :id="[['part-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+                </oj-bind-for-each>
+              </div>
+
+              <oj-bind-if test="[[part() === 'specification']]">
+                <div class="factory-row factory-row-2">
+                  <section class="factory-card factory-card-inner">
+                    <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Overview</span></h2>
+                    <dl class="factory-kv">
+                      <oj-bind-for-each data="[[overview]]">
+                        <template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template>
+                      </oj-bind-for-each>
+                    </dl>
+                  </section>
+                  <section class="factory-card factory-card-inner">
+                    <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Business Rules</span></h2>
+                    <ol class="factory-rq-numbered">
+                      <oj-bind-for-each data="[[rules]]">
+                        <template><li><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></li></template>
+                      </oj-bind-for-each>
+                    </ol>
+                    <oj-bind-if test="[[rules().length === 0]]"><p class="factory-empty">No business rules in the specification.</p></oj-bind-if>
+                  </section>
+                </div>
+                <div class="factory-row factory-row-2">
+                  <section class="factory-card factory-card-inner">
+                    <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Document Attachments</span></h2>
+                    <div class="factory-ov2-table-wrap">
+                      <table class="factory-ov2-table">
+                        <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Uploaded</th></tr></thead>
+                        <tbody>
+                          <oj-bind-for-each data="[[attachment]]">
+                            <template><tr><td><span class="factory-pf-file factory-pf-file-plain"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></td>
+                              <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.size]]"></oj-bind-text></td>
+                              <td><oj-bind-text value="[[$current.data.uploaded]]"></oj-bind-text></td></tr></template>
+                          </oj-bind-for-each>
+                        </tbody>
+                      </table>
+                      <oj-bind-if test="[[attachment().length === 0]]"><p class="factory-ov-empty">Described in words, no document.</p></oj-bind-if>
+                    </div>
+                  </section>
+                  <section class="factory-card factory-card-inner">
+                    <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Roles and Access</span></h2>
+                    <div class="factory-ov2-table-wrap">
+                      <table class="factory-ov2-table">
+                        <thead><tr><th>Role</th><th>Access</th></tr></thead>
+                        <tbody>
+                          <oj-bind-for-each data="[[roles]]">
+                            <template><tr><td><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.access]]"></oj-bind-text></td></tr></template>
+                          </oj-bind-for-each>
+                        </tbody>
+                      </table>
+                      <oj-bind-if test="[[roles().length === 0]]"><p class="factory-ov-empty">No roles stated.</p></oj-bind-if>
+                    </div>
+                  </section>
+                </div>
+                <section class="factory-card factory-card-inner">
+                  <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>Related Screens and Changes</span></h2>
+                  <div class="factory-ov2-table-wrap">
+                    <table class="factory-ov2-table">
+                      <thead><tr><th>Item</th><th>Kind</th><th>Detail</th><th>Status</th></tr></thead>
+                      <tbody>
+                        <oj-bind-for-each data="[[designRows]]">
+                          <template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td>Screen design</td>
+                            <td><oj-bind-text value="[[$current.data.version + ' · ' + $current.data.updated]]"></oj-bind-text></td>
+                            <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
+                        </oj-bind-for-each>
+                        <oj-bind-for-each data="[[changeRows]]">
+                          <template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td><td>Code change</td>
+                            <td><oj-bind-text value="[[$current.data.files + ' · ' + $current.data.updated]]"></oj-bind-text></td>
+                            <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
+                        </oj-bind-for-each>
+                      </tbody>
+                    </table>
+                    <oj-bind-if test="[[designRows().length === 0 && changeRows().length === 0]]"><p class="factory-ov-empty">No screens or changes yet.</p></oj-bind-if>
+                  </div>
+                </section>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'screens']]">
+                <oj-bind-for-each data="[[screens]]">
+                  <template>
+                    <section class="factory-card factory-card-inner factory-rq-screen">
+                      <h2><oj-bind-text value="[[$current.data.name]]"></oj-bind-text><span :class="[[$current.data.kind.css]]"><oj-bind-text value="[[$current.data.kind.text]]"></oj-bind-text></span></h2>
+                      <p class="factory-card-sub"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></p>
+                      <div class="factory-ov2-table-wrap">
+                        <table class="factory-ov2-table">
+                          <thead><tr><th>Field</th><th>Label</th><th>Type</th><th>Mandatory</th><th>Validations</th></tr></thead>
+                          <tbody>
+                            <oj-bind-for-each data="[[$current.data.fieldRows]]" as="f">
+                              <template><tr><td class="factory-mono"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[f.data.label]]"></oj-bind-text></td>
+                                <td><oj-bind-text value="[[f.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[f.data.mandatoryText]]"></oj-bind-text></td>
+                                <td><oj-bind-text value="[[f.data.rules]]"></oj-bind-text></td></tr></template>
+                            </oj-bind-for-each>
+                          </tbody>
+                        </table>
+                      </div>
+                      <oj-bind-if test="[[$current.data.actionNames]]"><p class="factory-ov-subtle"><oj-bind-text value="[['Actions: ' + $current.data.actionNames]]"></oj-bind-text></p></oj-bind-if>
+                    </section>
+                  </template>
+                </oj-bind-for-each>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'rules']]">
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table">
+                    <thead><tr><th>#</th><th>Rule</th><th>Screens</th><th>Source</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[rules]]">
+                        <template><tr><td><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[$current.data.screens.join(', ')]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.reference]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                </div>
+                <h3>Messages</h3>
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table">
+                    <thead><tr><th>Code</th><th>Text</th><th>Type</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[messages]]">
+                        <template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                </div>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'apis']]">
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table">
+                    <thead><tr><th>Method</th><th>API</th><th>Description</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[apis]]">
+                        <template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td><td class="factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                  <oj-bind-if test="[[apis().length === 0]]"><p class="factory-ov-empty">No APIs in the specification.</p></oj-bind-if>
+                </div>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'hosts']]">
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table">
+                    <thead><tr><th>Host system</th><th>Interaction</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[hosts]]">
+                        <template><tr><td><oj-bind-text value="[[$current.data.system]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                  <oj-bind-if test="[[hosts().length === 0]]"><p class="factory-ov-empty">No host interfaces in the specification.</p></oj-bind-if>
+                </div>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'roles']]">
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table">
+                    <thead><tr><th>Role</th><th>Access</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[roles]]">
+                        <template><tr><td><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.access]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                </div>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'questions']]">
+                <oj-bind-if test="[[hasSuggestions()]]">
+                  <div class="factory-note">Some questions have a usual answer. <button type="button" class="factory-link-sm" id="useSuggestionsButton" on-click="[[useSuggestions]]">Use the usual answers</button></div>
+                </oj-bind-if>
+                <oj-bind-for-each data="[[questions]]">
+                  <template>
+                    <div class="factory-rq-question">
+                      <strong><oj-bind-text value="[[$current.data.question]]"></oj-bind-text></strong>
+                      <p class="factory-ov-subtle"><oj-bind-text value="[[$current.data.context]]"></oj-bind-text></p>
+                      <div class="factory-ai-suggest">
+                        <oj-bind-for-each data="[[$current.data.options]]" as="opt">
+                          <template><button type="button" :class="[[opt.data.css]]" :disabled="[[!opt.data.editable]]" on-click="[[opt.data.pick]]"><oj-bind-text value="[[opt.data.label]]"></oj-bind-text></button></template>
+                        </oj-bind-for-each>
+                      </div>
+                      <oj-input-text label-hint="Answer" value="{{$current.data.answerValue}}" readonly="[[!$current.data.editable]]"></oj-input-text>
+                    </div>
+                  </template>
+                </oj-bind-for-each>
+                <oj-bind-if test="[[questions().length === 0]]"><p class="factory-empty">No open questions.</p></oj-bind-if>
+                <oj-bind-if test="[[questions().length > 0 && detail().status === 'READY' && canEdit()]]">
+                  <div class="factory-btn-row">
+                    <oj-button id="saveAnswersButton" on-oj-action="[[saveAnswers]]">Save answers</oj-button>
+                    <oj-button id="refineButton" chroming="callToAction" on-oj-action="[[refine]]">Update the spec with the answers</oj-button>
+                  </div>
+                </oj-bind-if>
+              </oj-bind-if>
+
+              <oj-bind-if test="[[part() === 'trace']]">
+                <div class="factory-ov2-table-wrap">
+                  <table class="factory-ov2-table" id="traceTable">
+                    <thead><tr><th>Specified screen</th><th>Design</th><th>Design status</th><th>Related code</th><th>Change</th></tr></thead>
+                    <tbody>
+                      <oj-bind-for-each data="[[trace]]">
+                        <template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.design]]"></oj-bind-text></td>
+                          <td><span :class="[[$current.data.designStatus.css]]"><oj-bind-text value="[[$current.data.designStatus.text]]"></oj-bind-text></span></td>
+                          <td class="factory-mono factory-ov2-path"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.change]]"></oj-bind-text></td></tr></template>
+                      </oj-bind-for-each>
+                    </tbody>
+                  </table>
+                </div>
+              </oj-bind-if>
+            </div>
+          </oj-bind-if>
+        </oj-bind-if>
+      </div>
     </div>
   </oj-bind-if>
 </div>

@@ -1,0 +1,234 @@
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Impact Analysis &amp; Change Planning</h1>
+      <p>Analyze the impact of changes, understand dependencies and create an implementation plan before code generation</p>
+    </div>
+    <div class="factory-pg-actions">
+      <select class="factory-ws-select" id="impactChange" aria-label="Change" on-change="[[changeChange]]">
+        <oj-bind-for-each data="[[changes]]">
+          <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
+        </oj-bind-for-each>
+      </select>
+      <oj-button id="analyzeAgainButton" chroming="outlined" on-oj-action="[[analyzeAgain]]" disabled="[[!detail() || !canManage()]]">Analyze Again</oj-button>
+      <oj-button id="approvePlanButton" chroming="callToAction" on-oj-action="[[approvePlan]]" disabled="[[!detail() || detail().status !== 'PLAN_READY' || !canApprove()]]">
+        <span slot="startIcon" class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Approve Change Plan</oj-button>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="impactError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[changes().length === 0]]">
+    <section class="factory-card"><p class="factory-empty">No changes in this workspace yet. A change's impact analysis starts when you plan it from an approved requirement.</p></section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[detail()]]">
+    <div class="factory-kpis">
+      <oj-bind-for-each data="[[kpis]]">
+        <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+          <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+            <span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+            <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+      </oj-bind-for-each>
+    </div>
+
+    <div class="factory-tabbar" role="tablist" aria-label="Impact views">
+      <oj-bind-for-each data="[[tabs]]">
+        <template><button type="button" role="tab" :id="[['im-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+          <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+
+    <oj-bind-if test="[[tab() === 'impact' || tab() === 'graph']]">
+      <div class="factory-row factory-row-3w">
+        <div class="factory-stack">
+          <section class="factory-card">
+            <h2>Proposed Change <button type="button" class="factory-link-sm" on-click="[[openWorkbench]]">Open workbench</button></h2>
+            <dl class="factory-im-proposed">
+              <dt>Title</dt><dd><oj-bind-text value="[[proposed().title]]"></oj-bind-text></dd>
+              <dt>Description</dt><dd><oj-bind-text value="[[proposed().description]]"></oj-bind-text></dd>
+            </dl>
+            <dl class="factory-kv">
+              <dt>Type</dt><dd><span :class="[[proposed().type.css]]"><oj-bind-text value="[[proposed().type.text]]"></oj-bind-text></span></dd>
+              <dt>Module</dt><dd><oj-bind-text value="[[proposed().module]]"></oj-bind-text></dd>
+              <dt>Target Version</dt><dd><oj-bind-text value="[[proposed().version]]"></oj-bind-text></dd>
+              <dt>Status</dt><dd><span :class="[[proposed().status.css]]"><oj-bind-text value="[[proposed().status.text]]"></oj-bind-text></span></dd>
+            </dl>
+          </section>
+          <section class="factory-card">
+            <h2>Change Scope</h2>
+            <ul class="factory-im-scope">
+              <oj-bind-for-each data="[[scope]]">
+                <template><li><input type="checkbox" disabled :checked="[[$current.data.on]]" :aria-label="[[$current.data.label]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <p class="factory-card-sub">From the layers of the files in the plan.</p>
+          </section>
+        </div>
+
+        <div class="factory-stack">
+          <section class="factory-card">
+            <h2>Dependency Graph
+              <span class="factory-im-legend"><oj-bind-for-each data="[[legend]]"><template><span><i :style="[[$current.data.style]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></span></h2>
+            <p class="factory-card-sub">The plan's files by layer. Lines are inferred from the layer order, not read from the code.</p>
+            <div class="factory-im-graphwrap">
+              <div class="factory-im-graph" :style="[[graph().style]]" id="dependencyGraph">
+                <img class="factory-im-lines" :src="[[graph().lines]]" alt="">
+                <oj-bind-for-each data="[[graph().nodes]]">
+                  <template><div class="factory-im-node" :style="[[$current.data.style]]" :title="[[$current.data.path]]">
+                    <strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span><oj-bind-text value="[[$current.data.kind + ' · ' + $current.data.action]]"></oj-bind-text></span></div></template>
+                </oj-bind-for-each>
+              </div>
+            </div>
+          </section>
+          <section class="factory-card">
+            <h2><oj-bind-text value="[['Affected Files (' + files().length + ')']]"></oj-bind-text></h2>
+            <div class="factory-filters">
+              <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+                <input type="search" placeholder="Search files..." aria-label="Search files" on-input="[[fileSearchInput]]"></span>
+              <select class="factory-ws-select" aria-label="Layer" on-change="[[layerChange]]">
+                <option value="">All Layers</option><option value="ui">UI</option><option value="service">Service</option><option value="integration">Integration</option>
+                <option value="data">Data</option><option value="config">Config</option><option value="test">Test</option></select>
+              <select class="factory-ws-select" aria-label="Change type" on-change="[[actionChange]]">
+                <option value="">All Changes</option><option value="modify">Modified</option><option value="create">New</option></select>
+            </div>
+            <div class="factory-ov2-table-wrap">
+              <table class="factory-ov2-table" id="affectedFiles">
+                <thead><tr><th>File Path</th><th>Type</th><th>Module</th><th title="Estimated from the change type and whether the file is shared">Impact</th><th>Change Type</th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[filePager.rows]]">
+                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-cp-link factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
+                      <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
+                      <td><span :class="[[$current.data.impact.css]]"><oj-bind-text value="[[$current.data.impact.text]]"></oj-bind-text></span></td>
+                      <td><span :class="[[$current.data.change.css]]"><oj-bind-text value="[[$current.data.change.text]]"></oj-bind-text></span></td></tr></template>
+                  </oj-bind-for-each>
+                </tbody>
+              </table>
+            </div>
+            <div class="factory-pager"><span><oj-bind-text value="[[filePager.text]]"></oj-bind-text></span>
+              <span><button type="button" class="factory-ov2-btn" on-click="[[filePager.prev]]">‹</button>
+                <oj-bind-text value="[[filePager.page() + ' / ' + filePager.pages()]]"></oj-bind-text>
+                <button type="button" class="factory-ov2-btn" on-click="[[filePager.next]]">›</button></span></div>
+          </section>
+        </div>
+
+        <div class="factory-stack">
+          <section class="factory-card">
+            <h2>Impact Summary</h2>
+            <div class="factory-im-donutrow">
+              <span class="factory-ring factory-im-donut" :style="[[byLayer().style]]"><span><oj-bind-text value="[[files().length]]"></oj-bind-text><small>Files</small></span></span>
+              <ul class="factory-im-legendlist">
+                <oj-bind-for-each data="[[byLayer().parts]]">
+                  <template><li><i :style="[[$current.data.dot]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text><b><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></b></li></template>
+                </oj-bind-for-each>
+              </ul>
+            </div>
+          </section>
+          <section class="factory-card">
+            <h2>Module Impact</h2>
+            <ul class="factory-bars">
+              <oj-bind-for-each data="[[byModule]]">
+                <template><li><span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-ov2-bar"><span class="factory-ov2-bar-fill factory-ov2-fill-blue" :style="[[$current.data.style]]"></span></span><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </section>
+          <section class="factory-card">
+            <h2>Risk Assessment <span :class="[[riskLevel().css]]"><oj-bind-text value="[[riskLevel().text]]"></oj-bind-text></span></h2>
+            <ul class="factory-im-risks">
+              <oj-bind-for-each data="[[risks]]">
+                <template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <oj-bind-if test="[[risks().length === 0]]"><p class="factory-empty">The analysis found no risks.</p></oj-bind-if>
+          </section>
+          <section class="factory-card">
+            <h2>Next Steps</h2>
+            <ol class="factory-im-next">
+              <oj-bind-for-each data="[[nextSteps]]">
+                <template><li><span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ol>
+          </section>
+        </div>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'plan']]">
+      <section class="factory-card">
+        <h2>Change Plan</h2>
+        <p class="factory-card-sub"><oj-bind-text value="[[proposed().description]]"></oj-bind-text></p>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table" id="changePlan">
+            <thead><tr><th>#</th><th>Task</th><th>File</th><th>Layer</th><th>Follows</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[planRows]]">
+                <template><tr><td><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></td>
+                  <td><strong><oj-bind-text value="[[$current.data.action === 'create' ? 'Create' : 'Modify']]"></oj-bind-text></strong> <oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text>
+                    <div class="factory-ov-subtle"><oj-bind-text value="[[$current.data.details]]"></oj-bind-text></div></td>
+                  <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.layer]]"></oj-bind-text></td>
+                  <td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.basedOn]]"></oj-bind-text></td></tr></template>
+              </oj-bind-for-each>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'requirements']]">
+      <section class="factory-card">
+        <h2><oj-bind-text value="[[reqCode() + ' · ' + (requirement() ? requirement().title : '')]]"></oj-bind-text></h2>
+        <p class="factory-card-sub"><oj-bind-text value="[[requirement() && requirement().spec ? (requirement().spec.summary || '') : 'Loading the requirement...']]"></oj-bind-text></p>
+        <h3>Screens</h3>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[specScreens]]">
+            <template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+              <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></span>
+              <span class="factory-tag"><oj-bind-text value="[[$current.data.changeType]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+        <h3>APIs</h3>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[specApis]]">
+            <template><li><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span><span class="factory-list-title factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
+              <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'tests']]">
+      <div class="factory-row factory-row-2">
+        <section class="factory-card">
+          <h2>Tests in the plan</h2>
+          <ul class="factory-list">
+            <oj-bind-for-each data="[[tests]]">
+              <template><li><span class="factory-step-dot factory-dot-green"><span class="factory-nav-icon factory-ico-flask" aria-hidden="true"></span></span>
+                <span><span class="factory-list-title factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text></span></span>
+                <span class="factory-tag"><oj-bind-text value="[[$current.data.action]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-bind-if test="[[tests().length === 0]]"><p class="factory-empty">The plan has no tests.</p></oj-bind-if>
+        </section>
+        <section class="factory-card">
+          <h2>Files without a matching test</h2>
+          <p class="factory-card-sub">Changed files whose name no test in the plan mentions: candidates for regression coverage.</p>
+          <ul class="factory-pf-evlist"><oj-bind-for-each data="[[untested]]"><template><li class="factory-mono"><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        </section>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'approvals']]">
+      <section class="factory-card">
+        <h2>Review &amp; Approvals</h2>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table">
+            <thead><tr><th>Step</th><th>State</th><th>By</th><th>When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[approvals]]"><template><tr><td><oj-bind-text value="[[$current.data.step]]"></oj-bind-text></td>
+              <td><span :class="[[$current.data.state.css]]"><oj-bind-text value="[[$current.data.state.text]]"></oj-bind-text></span></td>
+              <td><oj-bind-text value="[[$current.data.who]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+          </table>
+        </div>
+        <p class="factory-card-sub">Code is generated only after the plan is approved by someone with the Lead role.</p>
+      </section>
+    </oj-bind-if>
+  </oj-bind-if>
+</div>

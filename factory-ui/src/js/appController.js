@@ -28,21 +28,32 @@ define(['knockout', './services/session', './services/updates', './services/dash
       const smQuery = ResponsiveUtils.getFrameworkQuery(ResponsiveUtils.FRAMEWORK_QUERY_KEY.SM_ONLY);
       this.smScreen = ResponsiveKnockoutUtils.createMediaQueryObservable(smQuery);
 
-      // icon: the sidebar icon (css class factory-ico-<icon>); group: the sidebar section.
+      // icon: the sidebar icon (css class factory-ico-<icon>); group: the sidebar section; parent: the sidebar entry
+      // that stays highlighted for a page opened from another one.
       let navData = [
         { path: '', redirect: 'overview' },
-        { path: 'overview', detail: { label: 'Overview', icon: 'home', group: 'work' } },
+        { path: 'overview', detail: { label: 'Home', icon: 'home', group: 'work' } },
         { path: 'workspaces', detail: { label: 'Workspaces', icon: 'folder', group: 'work' } },
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'work' } },
         { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'work' } },
         { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'work' } },
-        { path: 'designer', detail: { label: 'Designer', icon: 'design', group: 'work' } },
+        { path: 'designer', detail: { label: 'Visual Designer', icon: 'design', group: 'work' } },
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'work' } },
+        { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'work' } },
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'work' } },
-        { path: 'models', detail: { label: 'Models', icon: 'chip', group: 'setup' } },
-        { path: 'admin', detail: { label: 'Administration', icon: 'shield', group: 'setup', adminOnly: true } },
+        { path: 'models', detail: { label: 'Models & AI Providers', icon: 'chip', group: 'work' } },
+        { path: 'agents', detail: { label: 'Agent Runs', icon: 'robot', group: 'work' } },
+        { path: 'admin', detail: { label: 'Administration', icon: 'cog', group: 'setup', adminOnly: true } },
+        { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'setup' } },
+        { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'setup' } },
+        { path: 'packs', detail: { label: 'Version Packs', icon: 'cube', group: 'setup' } },
+        { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'setup' } },
+        { path: 'notifications', detail: { label: 'Notifications', icon: 'bell', group: 'setup' } },
+        { path: 'account', detail: { label: 'Account', icon: 'user', group: 'setup' } },
         { path: 'about', detail: { label: 'About', icon: 'info', group: 'setup' } },
-        { path: 'account', detail: { label: 'Account', hidden: true } },
+        // Opened from the Code and Changes pages
+        { path: 'knowledge', detail: { label: 'Knowledge Explorer', hidden: true, parent: 'code' } },
+        { path: 'impact', detail: { label: 'Impact Analysis', hidden: true, parent: 'changes' } },
         // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
         { path: 'review', detail: { label: 'Review', hidden: true } }
@@ -69,7 +80,10 @@ define(['knockout', './services/session', './services/updates', './services/dash
         label: route.detail.label,
         href: '?ojr=' + route.path,
         iconClass: 'factory-nav-icon factory-ico-' + route.detail.icon,
-        active: ko.pureComputed(() => this.selection.path() === route.path),
+        active: ko.pureComputed(() => {
+          const current = navData.find((r) => r.path === this.selection.path());
+          return this.selection.path() === route.path || (!!current && !!current.detail && current.detail.parent === route.path);
+        }),
         // A plain click opens the page here; Ctrl or Shift click opens it in a new tab.
         open: (event) => {
           if (event.ctrlKey || event.metaKey || event.shiftKey) {
@@ -120,7 +134,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
-      const workspacePages = ['code', 'profile', 'requirements', 'designer', 'changes', 'modernization'];
+      const workspacePages = ['code', 'profile', 'requirements', 'designer', 'changes', 'build', 'modernization', 'knowledge', 'impact', 'reviews', 'packs', 'prompts'];
       this.crumbWorkspace = ko.pureComputed(() => {
         if (workspacePages.indexOf(this.selection.path()) < 0) {
           return '';

@@ -1,148 +1,272 @@
-<div class="oj-hybrid-padding">
-  <h1>Modernization</h1>
-  <p class="oj-text-color-secondary">
-    The migration map of this bank's OBDX application, scanned from its code: every screen with its fields, actions, the services it
-    calls and the screens it opens; the backend REST services; roles; and the user flows between screens. Use it to plan moving the
-    frontend to React Native or React in waves (choose the UI target on the Code page). It is scanned again after every import.
-  </p>
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Modernization &amp; Migration</h1>
+      <p>Analyze current application, identify modernization opportunities and plan safe migration</p>
+    </div>
+    <div class="factory-pg-actions">
+      <oj-bind-if test="[[inventory()]]"><span class="factory-pg-meta">Last analysis<br><strong><oj-bind-text value="[[scannedText]]"></oj-bind-text></strong></span></oj-bind-if>
+      <oj-button id="scanButton" chroming="callToAction" on-oj-action="[[scan]]" disabled="[[busy() || !canScan() || !workspaceId()]]">
+        <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Run Analysis</oj-button>
+    </div>
+  </div>
 
-  <oj-form-layout max-columns="2">
-    <oj-select-single id="modernizationWorkspaceSelect" label-hint="Workspace" data="[[workspaceProvider]]" value="{{workspaceId}}"
-                      placeholder="Select a workspace"></oj-select-single>
-  </oj-form-layout>
+  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="modernizationError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[emptyMessage()]]"><div class="factory-note" id="modernizationEmpty"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></div></oj-bind-if>
 
-  <oj-bind-if test="[[errorMessage()]]">
-    <p class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
-  </oj-bind-if>
-  <oj-bind-if test="[[emptyMessage()]]">
-    <p id="inventoryEmpty"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></p>
-  </oj-bind-if>
-
-  <oj-bind-if test="[[workspaceId()]]">
-    <oj-toolbar>
-      <oj-button id="scanButton" on-oj-action="[[scan]]" disabled="[[busy() || !canScan()]]">
-        <oj-bind-text value="[[busy() ? 'Scanning...' : 'Scan again']]"></oj-bind-text>
-      </oj-button>
-      <oj-bind-if test="[[inventory()]]">
-        <a id="csvLink" class="factory-link-button" :href="[[csvUrl]]" download>Download screens (CSV)</a>
-      </oj-bind-if>
-    </oj-toolbar>
-  </oj-bind-if>
+  <div class="factory-tabbar" role="tablist" aria-label="Modernization views">
+    <oj-bind-for-each data="[[tabs]]">
+      <template><button type="button" role="tab" :id="[['mo-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
 
   <oj-bind-if test="[[inventory()]]">
-    <p id="scannedText" class="oj-text-color-secondary"><oj-bind-text value="[[scannedText]]"></oj-bind-text></p>
-    <div class="factory-tiles">
-      <oj-bind-for-each data="[[tiles]]" as="t">
-        <template>
-          <div class="factory-tile">
-            <div class="factory-tile-value"><oj-bind-text value="[[t.data.value]]"></oj-bind-text></div>
-            <div class="factory-tile-label"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></div>
-            <div class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[t.data.detail]]"></oj-bind-text></div>
+    <oj-bind-if test="[[tab() === 'overview']]">
+      <div class="factory-kpis">
+        <oj-bind-for-each data="[[kpis]]">
+          <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+            <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+              <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+        </oj-bind-for-each>
+        <div class="factory-kpi" title="Share of screens of small or medium complexity">
+          <span class="factory-ring factory-mo-ring" :style="[[readinessStyle]]"><span><oj-bind-text value="[[readiness() + '%']]"></oj-bind-text></span></span>
+          <span><span class="factory-kpi-label">Modernization Readiness</span><span :class="[[readinessPill().css]]"><oj-bind-text value="[[readinessPill().text]]"></oj-bind-text></span></span>
+        </div>
+      </div>
+
+      <div class="factory-row factory-row-3">
+        <section class="factory-card">
+          <h2>Technology Stack Status</h2>
+          <ul class="factory-mo-rows">
+            <oj-bind-for-each data="[[stack]]">
+              <template><li><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><span class="factory-mo-name"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
+                <span class="factory-mo-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+        </section>
+        <section class="factory-card">
+          <h2>Modernization Opportunities</h2>
+          <ul class="factory-mo-rows">
+            <oj-bind-for-each data="[[opportunities]]">
+              <template><li class="factory-clickable" on-click="[[$current.data.open]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><span class="factory-mo-name"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
+                <span class="factory-mo-value"><oj-bind-text value="[[$current.data.count]]"></oj-bind-text></span><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+        </section>
+        <section class="factory-card">
+          <h2>Migration Progress <button type="button" class="factory-link-sm" on-click="[[showPlan]]">View Plan</button></h2>
+          <ul class="factory-mo-phases">
+            <oj-bind-for-each data="[[phases]]">
+              <template><li><span class="factory-mo-phase"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span>
+                <span><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <div class="factory-mo-target"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span>
+            <span><span class="factory-ov-subtle">Target Version</span><strong><oj-bind-text value="[['OBDX ' + target()]]"></oj-bind-text></strong></span></div>
+        </section>
+      </div>
+
+      <div class="factory-row factory-mo-mid">
+        <section class="factory-card">
+          <h2>Deprecated APIs and Components <button type="button" class="factory-link-sm" on-click="[[rescanFindings]]">Search again</button></h2>
+          <div class="factory-chips factory-bt-filters">
+            <oj-bind-for-each data="[[severityTabs]]">
+              <template><button type="button" :class="[[$current.data.selected() ? 'factory-chip factory-chip-on' : 'factory-chip']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
           </div>
-        </template>
-      </oj-bind-for-each>
-    </div>
-    <oj-bind-for-each data="[[inventory().notes]]">
-      <template><p class="factory-warning"><oj-bind-text value="[[$current.data]]"></oj-bind-text></p></template>
-    </oj-bind-for-each>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table">
+              <thead><tr><th>Rule</th><th>Found in</th><th>Module</th><th>Replacement</th><th>Impact</th></tr></thead>
+              <tbody>
+                <oj-bind-for-each data="[[visibleFindings]]">
+                  <template><tr><td><oj-bind-text value="[[$current.data.rule]]"></oj-bind-text></td><td class="factory-mono factory-ov2-path" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td><td class="factory-ov-subtle factory-mo-repl"><oj-bind-text value="[[$current.data.replacement]]"></oj-bind-text></td>
+                    <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td></tr></template>
+                </oj-bind-for-each>
+              </tbody>
+            </table>
+            <oj-bind-if test="[[searchingFindings()]]"><p class="factory-ov-empty">Searching the code...</p></oj-bind-if>
+            <oj-bind-if test="[[!searchingFindings() && visibleFindings().length === 0]]"><p class="factory-ov-empty">No usage of forbidden APIs found in the indexed code.</p></oj-bind-if>
+          </div>
+        </section>
+        <section class="factory-card">
+          <h2>Dependency Impact</h2>
+          <div class="factory-mo-hub">
+            <div class="factory-mo-center"><oj-bind-text value="[[workspace() ? workspace().name : '']]"></oj-bind-text></div>
+            <oj-bind-for-each data="[[hub]]">
+              <template><div :class="[[$current.data.css]]" :style="[[$current.data.style]]"><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span><oj-bind-text value="[[$current.data.detail]]"></oj-bind-text></span></div></template>
+            </oj-bind-for-each>
+          </div>
+          <p class="factory-mo-legend"><i class="factory-mo-high"></i>Has large screens <i class="factory-mo-mid"></i>Medium <i class="factory-mo-low"></i>Small</p>
+        </section>
+        <section class="factory-card factory-ai">
+          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
+            <button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></h2>
+          <div class="factory-ai-log">
+            <oj-bind-for-each data="[[ai.messages]]">
+              <template><div :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text>
+                <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
+            </oj-bind-for-each>
+          </div>
+          <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+          <div class="factory-ai-suggest">
+            <oj-bind-for-each data="[[ai.suggestions]]">
+              <template><button type="button" class="factory-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+          <div class="factory-ai-input">
+            <oj-input-text id="moAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask something about modernization..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
+            <oj-button chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
+              <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+          </div>
+        </section>
+      </div>
 
-    <h2>Modules</h2>
-    <table id="moduleTable" class="factory-profile-table factory-inventory-table">
-      <thead><tr><th>Module</th><th>Screens</th><th>Fields</th><th>Small</th><th>Medium</th><th>Large</th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[modules]]" as="m">
-          <template>
-            <tr><td><oj-bind-text value="[[m.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.screens]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[m.data.fields]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.complexity.S]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[m.data.complexity.M]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.complexity.L]]"></oj-bind-text></td></tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
+      <div class="factory-row factory-row-3">
+        <section class="factory-card">
+          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>Risk Assessment</span></h2>
+          <div class="factory-im-donutrow">
+            <span class="factory-ring factory-im-donut" :style="[[risk().style]]"><span><oj-bind-text value="[[risk().total]]"></oj-bind-text><small>Screens</small></span></span>
+            <ul class="factory-im-legendlist">
+              <oj-bind-for-each data="[[risk().parts]]">
+                <template><li><i :style="[[$current.data.dot]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text><b><oj-bind-text value="[[$current.data.n + ' (' + $current.data.pct + ')']]"></oj-bind-text></b></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </div>
+        </section>
+        <section class="factory-card">
+          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Effort Estimate</span></h2>
+          <div class="factory-mo-effort">
+            <oj-bind-for-each data="[[effortBars]]">
+              <template><div><b><oj-bind-text value="[[$current.data.days + 'd']]"></oj-bind-text></b><span class="factory-mo-bar" :style="[[$current.data.style]]"></span><span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></div></template>
+            </oj-bind-for-each>
+          </div>
+          <p class="factory-card-sub">Estimate: 1, 3 and 5 days per small, medium and large screen.</p>
+        </section>
+        <section class="factory-card">
+          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Recommended Actions</span></h2>
+          <ol class="factory-im-next">
+            <oj-bind-for-each data="[[actions]]">
+              <template><li><span class="factory-step-dot factory-dot-blue"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><span class="factory-grow"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span>
+                <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ol>
+        </section>
+      </div>
+    </oj-bind-if>
 
-    <h2>Screens</h2>
-    <oj-form-layout max-columns="2" direction="row">
-      <oj-select-single id="moduleFilter" label-hint="Module" data="[[moduleProvider]]" value="{{moduleFilter}}"></oj-select-single>
-      <oj-input-text id="screenSearch" label-hint="Search (name, file or service)" value="{{search}}" raw-value="{{search}}"></oj-input-text>
-    </oj-form-layout>
-    <p class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[screenCount() + ' screen(s)']]"></oj-bind-text>.
-      Size from fields, actions, services, screens opened and lines of code: S, M or L.</p>
-    <table id="screenTable" class="factory-profile-table factory-inventory-table">
-      <thead><tr><th>Screen</th><th>Module</th><th>Size</th><th>Fields</th><th>Actions</th><th>Services called</th><th>Opens</th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[screenRows]]" as="s">
-          <template>
-            <tr>
-              <td><details><summary><span class="oj-typography-bold"><oj-bind-text value="[[s.data.name]]"></oj-bind-text></span>
-                <span class="oj-typography-body-xs oj-text-color-secondary"> <oj-bind-text value="[[s.data.kind]]"></oj-bind-text></span></summary>
-                <div class="factory-evidence">
-                  <oj-bind-for-each data="[[s.data.files]]" as="file"><template><div><oj-bind-text value="[[file.data]]"></oj-bind-text></div></template></oj-bind-for-each>
-                  <oj-bind-if test="[[s.data.fields.length > 0]]"><div class="oj-typography-bold">Fields</div></oj-bind-if>
-                  <oj-bind-for-each data="[[s.data.fields]]" as="field"><template><div><oj-bind-text value="[[field.data]]"></oj-bind-text></div></template></oj-bind-for-each>
-                </div></details></td>
-              <td><oj-bind-text value="[[s.data.module]]"></oj-bind-text></td>
-              <td><span :class="[['factory-status factory-size-' + s.data.complexity]]" :title="[['Score ' + s.data.score]]"><oj-bind-text value="[[s.data.complexity]]"></oj-bind-text></span></td>
-              <td><oj-bind-text value="[[s.data.fieldCount]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[s.data.actions]]"></oj-bind-text></td>
-              <td class="factory-evidence"><oj-bind-text value="[[s.data.calls]]"></oj-bind-text></td>
-              <td class="factory-evidence"><oj-bind-text value="[[s.data.opens]]"></oj-bind-text></td>
-            </tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
+    <oj-bind-if test="[[tab() === 'deprecated']]">
+      <section class="factory-card">
+        <h2>Deprecated APIs and Components</h2>
+        <p class="factory-card-sub">What the version pack rules forbid, found in the indexed code with code search (up to 20 files per rule) and checked against each rule's pattern.</p>
+        <div class="factory-filters">
+          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search API or component..." aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
+        </div>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table" id="findingTable">
+            <thead><tr><th>Rule</th><th>File</th><th>Lines</th><th>Type</th><th>Replacement</th><th>Impact</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[visibleFindings]]">
+                <template><tr><td><oj-bind-text value="[[$current.data.rule]]"></oj-bind-text></td><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[$current.data.lines]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td>
+                  <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.replacement]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td></tr></template>
+              </oj-bind-for-each>
+            </tbody>
+          </table>
+          <oj-bind-if test="[[visibleFindings().length === 0]]"><p class="factory-ov-empty">Nothing found.</p></oj-bind-if>
+        </div>
+      </section>
+    </oj-bind-if>
 
-    <h2>User flows</h2>
-    <oj-bind-if test="[[flows().length === 0]]"><p class="oj-text-color-secondary">No navigation between screens was found.</p></oj-bind-if>
-    <ul id="flowList">
-      <oj-bind-for-each data="[[flows]]" as="f">
-        <template>
-          <li><span class="oj-typography-bold"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>:
-            <oj-bind-text value="[[f.data.steps.join('; ')]]"></oj-bind-text></li>
-        </template>
-      </oj-bind-for-each>
-    </ul>
+    <oj-bind-if test="[[tab() === 'dependencies']]">
+      <div class="factory-row factory-row-2">
+        <section class="factory-card">
+          <h2>Services the screens call</h2>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table" id="callTable">
+              <thead><tr><th>Method</th><th>Path</th><th>Backend</th><th>Screens</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[callRows]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
+                <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+                <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.screens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="factory-card">
+          <h2>Backend services in this code</h2>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table" id="endpointTable">
+              <thead><tr><th>Method</th><th>Path</th><th>Code</th><th>Owner</th><th>Used by</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[endpointRows]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
+                <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[$current.data.product]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.usedBy]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+            </table>
+          </div>
+          <h3>Roles and segments</h3>
+          <ul class="factory-list"><oj-bind-for-each data="[[roles]]"><template><li><span class="factory-step-dot factory-dot-violet"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span></span>
+            <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.source + ': ' + $current.data.evidence]]"></oj-bind-text></span></span><span></span></li></template></oj-bind-for-each></ul>
+        </section>
+      </div>
+    </oj-bind-if>
 
-    <h2>Services the UI calls</h2>
-    <table id="callTable" class="factory-profile-table factory-inventory-table">
-      <thead><tr><th>Method</th><th>Path</th><th>Backend service</th><th>Called by</th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[callRows]]" as="c">
-          <template>
-            <tr><td><oj-bind-text value="[[c.data.method]]"></oj-bind-text></td><td><code><oj-bind-text value="[[c.data.path]]"></oj-bind-text></code></td>
-              <td :class="[[c.data.missing ? 'oj-text-color-secondary' : '']]"><oj-bind-text value="[[c.data.endpoint]]"></oj-bind-text></td>
-              <td class="factory-evidence"><oj-bind-text value="[[c.data.screens]]"></oj-bind-text></td></tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
+    <oj-bind-if test="[[tab() === 'plan']]">
+      <section class="factory-card">
+        <h2>Migration Plan <a :href="[[csvUrl]]" class="factory-link-sm" id="csvLink">Download screens as CSV</a></h2>
+        <p class="factory-card-sub">Screens by wave: small screens first, large screens last. Use the CSV to plan waves with the team.</p>
+        <div class="factory-filters">
+          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" id="screenSearch" placeholder="Search screens, files or services..." aria-label="Search screens" on-input="[[searchInput]]"></span>
+          <select class="factory-ws-select" aria-label="Module" on-change="[[moduleChange]]"><option value="">All Modules</option>
+            <oj-bind-for-each data="[[moduleNames]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+        </div>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table" id="screenTable">
+            <thead><tr><th>Screen</th><th>Module</th><th>Wave</th><th>Complexity</th><th>Fields</th><th>Actions</th><th>Calls</th><th>Opens</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[screenRows]]"><template><tr :title="[[$current.data.files]]"><td><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[$current.data.wave]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+              <td><oj-bind-text value="[[$current.data.fields]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.actions]]"></oj-bind-text></td>
+              <td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.calls]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.opens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+          </table>
+        </div>
+        <h3>User flows</h3>
+        <ul class="factory-list"><oj-bind-for-each data="[[flows]]"><template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span></span>
+          <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.steps.join(' → ')]]"></oj-bind-text></span></span><span></span></li></template></oj-bind-for-each></ul>
+      </section>
+    </oj-bind-if>
 
-    <h2>Backend REST services</h2>
-    <table id="endpointTable" class="factory-profile-table factory-inventory-table">
-      <thead><tr><th>Method</th><th>Path</th><th>Code</th><th>Owner</th><th>Used by screens</th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[endpointRows]]" as="e">
-          <template>
-            <tr><td><oj-bind-text value="[[e.data.method]]"></oj-bind-text></td><td><code><oj-bind-text value="[[e.data.path]]"></oj-bind-text></code></td>
-              <td class="factory-evidence"><oj-bind-text value="[[e.data.code]]"></oj-bind-text></td><td><oj-bind-text value="[[e.data.product]]"></oj-bind-text></td>
-              <td class="factory-evidence"><oj-bind-text value="[[e.data.usedBy]]"></oj-bind-text></td></tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
+    <oj-bind-if test="[[tab() === 'compatibility']]">
+      <div class="factory-row factory-row-2">
+        <section class="factory-card">
+          <h2>Version Compatibility</h2>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table"><thead><tr><th>From / To</th><th>OBDX 22.x</th><th>OBDX 25.x</th><th>Java</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[compatibility]]"><template><tr><td><strong><oj-bind-text value="[[$current.data.from]]"></oj-bind-text></strong></td>
+                <td><span :class="[[$current.data.to22.css]]"><oj-bind-text value="[[$current.data.to22.text]]"></oj-bind-text></span></td>
+                <td><span :class="[[$current.data.to25.css]]"><oj-bind-text value="[[$current.data.to25.text]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.java]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          </div>
+          <p class="factory-card-sub">From the factory's version packs: 22.x checks Java 8 code, 25.x checks Java 11 code and the newer Oracle JET release line.</p>
+        </section>
+        <section class="factory-card">
+          <h2>Rules of this workspace's version pack</h2>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table"><thead><tr><th>Rule</th><th>Severity</th><th>Applies to</th><th>On</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[packRules]]"><template><tr :title="[[$current.data.message]]"><td><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
+                <td><span :class="[[$current.data.severity.css]]"><oj-bind-text value="[[$current.data.severity.text]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[$current.data.appliesTo]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.enabled]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          </div>
+        </section>
+      </div>
+    </oj-bind-if>
 
-    <h2>Roles and user segments</h2>
-    <oj-bind-if test="[[roles().length === 0]]"><p class="oj-text-color-secondary">None found in the code.</p></oj-bind-if>
-    <table id="roleTable" class="factory-profile-table factory-inventory-table">
-      <thead><tr><th>Name</th><th>Found as</th><th>Where</th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[roles]]" as="r">
-          <template>
-            <tr><td><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.source]]"></oj-bind-text></td>
-              <td class="factory-evidence"><oj-bind-text value="[[r.data.evidence]]"></oj-bind-text></td></tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
+    <oj-bind-if test="[[tab() === 'progress']]">
+      <section class="factory-card">
+        <h2>Progress &amp; History</h2>
+        <dl class="factory-kv">
+          <dt>Last analysis</dt><dd><oj-bind-text value="[[scannedText]]"></oj-bind-text></dd>
+          <dt>Code revision</dt><dd><oj-bind-text value="[[inventory().revision ? 'r' + inventory().revision : '–']]"></oj-bind-text></dd>
+        </dl>
+        <h3>Notes from the analysis</h3>
+        <ul class="factory-pf-evlist"><oj-bind-for-each data="[[notes]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        <p class="factory-card-sub">Each Run Analysis replaces the inventory with the current code.</p>
+      </section>
+    </oj-bind-if>
   </oj-bind-if>
 </div>

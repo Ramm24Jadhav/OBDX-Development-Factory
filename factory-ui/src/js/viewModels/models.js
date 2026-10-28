@@ -1,10 +1,11 @@
 /*
- * Models page: the model server and models in use, choosing them (administrators: a server on this computer, found
+ * Models & AI Providers page: provider cards (OpenAI, xAI, Groq and servers found on this computer) with connection
+ * tests, the models they offer, the model server and models in use, choosing them (administrators: a server on this computer, found
  * automatically, or another one by URL, then its chat and embedding models), and a test prompt. Through /api/model.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojradioset', 'ojs/ojselectsingle'],
-  function (ko, accUtils, api, session, ArrayDataProvider) {
+  function (ko, accUtils, api, session, ui, ArrayDataProvider) {
     function ModelsViewModel() {
       this.isAdmin = session.isAdmin;
       this.status = ko.observable(null);
@@ -86,6 +87,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
         this.models(models);
         this.chatModel(find(models, (this.status() || {}).chatModel) || (chatOptions()[0] || {}).value || null);
       };
+      this.showModelsFor = showModels;
       const clearModels = () => { this.models([]); this.savedMessage(''); };
       this.serverKind.subscribe(clearModels);
       this.remoteUrl.subscribe(clearModels);
@@ -198,6 +200,116 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
           .catch(showError)
           .finally(() => this.busy(false));
       };
+
+      // ---- Provider cards: known cloud providers and the servers found on this computer ----
+      this.tab = ko.observable('providers');
+      this.tabs = ui.tabs(this.tab, [
+        { value: 'providers', label: 'Providers' }, { value: 'routing', label: 'Model Routing' },
+        { value: 'prompts', label: 'Prompts & Templates' }, { value: 'policies', label: 'Policies' }, { value: 'evaluation', label: 'Model Evaluation' }
+      ]);
+      const same = (a, b) => !!a && !!b && a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
+      const provider = (id, name, description, baseUrl, local) => {
+        const p = {
+          id: id, name: name, description: description, baseUrl: ko.observable(baseUrl), local: local,
+          logo: 'factory-md-logo factory-md-logo-' + id,
+          key: ko.observable(''), state: ko.observable(''), models: ko.observableArray([]), latency: ko.observable(null), checked: ko.observable(''),
+          testing: ko.observable(false), admin: session.isAdmin
+        };
+        p.active = ko.pureComputed(() => !!this.status() && same(this.status().baseUrl, p.baseUrl()));
+        p.pill = ko.pureComputed(() => (p.active() ? ui.pill('In use', 'green') : p.state() === 'ok' ? ui.pill('Connected', 'green')
+          : p.state() === 'failed' ? ui.pill('Not reachable', 'red') : ui.pill('Not tested', 'grey')));
+        p.statusText = ko.pureComputed(() => (p.state() === 'ok' ? p.models().length + ' models available' : p.state() === 'failed' ? 'Failed: ' + p.error : (p.active() ? 'In use' : 'Not tested')));
+        p.defaultModel = ko.pureComputed(() => (p.active() ? this.status().chatModel : (p.models().find((m) => !m.embedding) || {}).id || '–'));
+        p.keyLabel = ko.pureComputed(() => (p.active() && this.status().apiKeySet ? 'Stored (leave empty to keep)' : (local ? 'Not needed' : 'API key')));
+        p.test = () => {
+          p.testing(true);
+          const start = Date.now();
+          const key = p.key() || null;
+          api.post('model/servers/models', { baseUrl: p.baseUrl(), apiKey: key })
+            .then((models) => { p.models(models); p.state('ok'); })
+            .catch((error) => { p.error = error.message; p.state('failed'); })
+            .finally(() => { p.latency(Date.now() - start); p.checked(new Date().toLocaleTimeString()); p.testing(false); });
+        };
+        p.use = () => {
+          this.tab('providers');
+          if (p.local && this.localServers().some((o) => same(o.value, p.baseUrl()))) {
+            this.serverKind('local');
+            this.localServerUrl(null);
+            this.localServerUrl(this.localServers().find((o) => same(o.value, p.baseUrl())).value);
+          } else {
+            this.serverKind('remote');
+            this.remoteUrl(p.baseUrl());
+            this.apiKey(p.key());
+            if (p.models().length) {
+              this.showModelsFor(p.baseUrl(), p.models());
+            } else {
+              this.getRemoteModels();
+            }
+          }
+          window.setTimeout(() => { const el = document.getElementById('defaultSettings'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } }, 100);
+        };
+        return p;
+      };
+      const cloud = [
+        provider('openai', 'OpenAI', 'GPT models for code, analysis and documentation', 'https://api.openai.com/v1', false),
+        provider('xai', 'xAI (Grok)', 'Grok models for code generation and reasoning', 'https://api.x.ai/v1', false),
+        provider('groq', 'Groq', 'High-speed inference for open models', 'https://api.groq.com/openai/v1', false)
+      ];
+      this.providers = ko.pureComputed(() => {
+        const locals = this.localServers().map((o) => {
+          const p = provider('local', 'Local Model (' + o.server.name + ')', 'Self-hosted models for sensitive code bases', o.value, true);
+          p.models(o.server.models);
+          p.state('ok');
+          return p;
+        });
+        if (!locals.length) {
+          locals.push(provider('local', 'Local Model (Ollama)', 'Self-hosted models for sensitive code bases. Not found on this computer.', 'http://localhost:11434/v1', true));
+        }
+        const list = cloud.concat(locals);
+        // A provider in use that is none of these (another server by URL)
+        if (this.status() && !list.some((p) => same(p.baseUrl(), this.status().baseUrl))) {
+          list.push(provider('custom', 'Custom Server', 'An OpenAI-compatible server', this.status().baseUrl, false));
+        }
+        return list;
+      });
+      this.testAll = () => this.providers().forEach((p) => { if (!p.local || p.state() !== 'ok') { p.test(); } });
+      this.providerFilter = ko.observable('');
+      this.modelSearch = ko.observable('');
+      this.providerFilterChange = ui.value(this.providerFilter);
+      this.modelSearchInput = ui.value(this.modelSearch);
+      this.allModels = ko.pureComputed(() => {
+        const rows = [];
+        this.providers().forEach((p) => p.models().forEach((m) => rows.push({
+          id: m.id, provider: p.name, admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding (code search)' : 'Chat / Code',
+          isDefault: !!this.status() && same(this.status().baseUrl, p.baseUrl()) && (this.status().chatModel === m.id || this.status().embeddingModel === m.id),
+          setDefault: () => {
+            p.use();
+            window.setTimeout(() => { if (m.embedding) { this.embeddingModel(m.id); } else { this.chatModel(m.id); } }, 400);
+          }
+        })));
+        const text = this.modelSearch().trim().toLowerCase();
+        return rows.filter((r) => (!this.providerFilter() || r.provider === this.providerFilter()) && (!text || r.id.toLowerCase().indexOf(text) >= 0));
+      });
+      this.providerNames = ko.pureComputed(() => this.providers().map((p) => p.name));
+      this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
+        name: p.name, pill: p.state() === 'ok' ? ui.pill('Healthy', 'green') : ui.pill('Unavailable', 'red'),
+        latency: p.latency() !== null ? p.latency() + ' ms' : '–', checked: p.checked() || '–'
+      })));
+      this.routing = ko.pureComputed(() => {
+        const s = this.status();
+        if (!s) {
+          return [];
+        }
+        return [
+          { task: 'Drafting specifications from BRD/FSD', model: s.chatModel, server: s.baseUrl },
+          { task: 'Impact analysis and change plans', model: s.chatModel, server: s.baseUrl },
+          { task: 'Code generation and fixes', model: s.chatModel, server: s.baseUrl },
+          { task: 'Screen design changes and imports', model: s.chatModel, server: s.baseUrl },
+          { task: 'Assistant answers on every page', model: s.chatModel, server: s.baseUrl },
+          { task: 'Code search by meaning (embeddings)', model: s.embeddingModel, server: s.embeddingBaseUrl || s.baseUrl }
+        ];
+      });
+      this.openPrompts = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'prompts' }));
 
       this.connected = () => {
         accUtils.announce('Models page loaded.');

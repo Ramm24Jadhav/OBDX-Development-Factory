@@ -73,6 +73,7 @@ define(['knockout', './api', './session', './workspaceSelection'], function (ko,
         requirements: requirements || [],
         designs: designs || [],
         changes: changes || [],
+        changeDetails: details.filter(Boolean),
         builds: details.filter(Boolean).reduce((all, d) => all.concat((d.builds || []).map((b) => Object.assign({}, b, {
           changeTitle: d.title, branchUrl: d.branchUrl, workspaceName: w.name, workspaceId: w.id
         }))), []),
