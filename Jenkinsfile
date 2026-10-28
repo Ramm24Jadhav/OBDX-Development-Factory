@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Build and test') {
             steps {
-                sh 'mvn -B clean verify'
+                sh "mvn -B clean verify -Dfactory.build=${env.BUILD_NUMBER} -Dfactory.commit=${env.SVN_REVISION ?: env.GIT_COMMIT ?: 'unknown'}"
             }
         }
         stage('Download zip') {

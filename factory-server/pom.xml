@@ -162,6 +162,20 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <!-- META-INF/build-info.properties: the version and build number shown on the About page and used for updates -->
+          <execution>
+            <goals>
+              <goal>build-info</goal>
+            </goals>
+            <configuration>
+              <additionalProperties>
+                <number>${factory.build}</number>
+                <commit>${factory.commit}</commit>
+              </additionalProperties>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

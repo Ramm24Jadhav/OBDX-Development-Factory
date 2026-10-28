@@ -98,6 +98,14 @@
         </oj-bind-if>
       </header>
       </oj-bind-if>
+      <oj-bind-if test="[[!embedded && signedIn() && updateBanner()]]">
+        <div class="factory-update-banner oj-web-applayout-max-width" role="status" id="updateBanner">
+          <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
+          <oj-bind-if test="[[updateAvailable()]]">
+            <oj-button id="updateNowButton" chroming="callToAction" on-oj-action="[[installUpdate]]">Update now</oj-button>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
         <div role="main" class="oj-web-applayout-max-width oj-web-applayout-content factory-login">
           <h2>Sign in</h2>

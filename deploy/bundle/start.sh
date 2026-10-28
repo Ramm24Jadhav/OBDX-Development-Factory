@@ -24,4 +24,12 @@ export FACTORY_SECRET_KEY
 port=$(sed -n 's/^FACTORY_PORT=//p' settings.properties)
 echo "Starting OBDX Development Factory. When it is ready, open http://localhost:${port:-8080}/ in your browser."
 echo "The first start takes a minute or two. Stop it with Ctrl+C."
-exec "$JAVA" -Xmx2g -jar obdx-factory.jar --spring.config.additional-location=file:./settings.properties
+# A new version downloaded with "Update now" is installed here; the factory stops with exit code 75 to ask for it.
+while true; do
+  if [ -f update/obdx-factory.jar ]; then
+    mv -f update/obdx-factory.jar obdx-factory.jar && echo "Installed the new version."
+  fi
+  status=0
+  "$JAVA" -Xmx2g -Djava.net.useSystemProxies=true -jar obdx-factory.jar --spring.config.additional-location=file:./settings.properties || status=$?
+  [ "$status" = 75 ] || exit "$status"
+done

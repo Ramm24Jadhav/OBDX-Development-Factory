@@ -28,8 +28,17 @@ if not exist data\secret.key (
 set /p FACTORY_SECRET_KEY=<data\secret.key
 
 for /f "tokens=2 delims==" %%p in ('findstr /b "FACTORY_PORT=" settings.properties') do set "PORT=%%p"
-echo Starting OBDX Development Factory. When it is ready, open http://localhost:%PORT%/ in your browser.
-echo The first start takes a minute or two. Stop it with Ctrl+C.
+echo Starting OBDX Development Factory at http://localhost:%PORT%/ (the first start takes a minute or two).
+echo Keep this window open while you use the factory; stop it with Ctrl+C or by closing the window.
 echo.
-"%JAVA%" -Xmx2g -jar obdx-factory.jar --spring.config.additional-location=file:./settings.properties
+rem Open the browser when the factory is ready, unless it was started at Windows sign-in (install-autostart.bat).
+if /i not "%~1"=="/background" start "" /b powershell -NoProfile -WindowStyle Hidden -Command "for ($i = 0; $i -lt 150; $i++) { try { $null = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://localhost:%PORT%/actuator/health'; Start-Process 'http://localhost:%PORT%/'; break } catch { Start-Sleep 2 } }"
+
+:run
+rem A new version downloaded with "Update now" is installed here; the factory stops with exit code 75 to ask for it.
+if exist "update\obdx-factory.jar" (
+  move /y "update\obdx-factory.jar" obdx-factory.jar >nul && echo Installed the new version.
+)
+"%JAVA%" -Xmx2g -Djava.net.useSystemProxies=true -jar obdx-factory.jar --spring.config.additional-location=file:./settings.properties
+if %errorlevel%==75 goto run
 pause

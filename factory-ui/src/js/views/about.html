@@ -4,8 +4,31 @@
     OBDX Development Factory turns requirements (prompts, BRDs, FSDs) into code for a bank's existing
     Oracle Banking Digital Experience application, using local or privately hosted AI models.
   </p>
-  <p>
-    This is the project skeleton: workspaces and the model gateway. Document ingestion, code indexing,
-    the screen designer and code generation follow the roadmap in docs/ARCHITECTURE.md.
-  </p>
+
+  <h2>Version</h2>
+  <oj-bind-if test="[[status()]]">
+    <p id="versionText">
+      <oj-bind-text value="[[status().build === 'dev' ? 'Development build' : 'Build ' + status().build]]"></oj-bind-text>
+      <oj-bind-if test="[[status().builtAt]]">
+        <span class="oj-text-color-secondary">(<oj-bind-text value="[[builtAtText]]"></oj-bind-text>)</span>
+      </oj-bind-if>
+    </p>
+    <oj-bind-if test="[[status().enabled]]">
+      <p id="updateMessage"><oj-bind-text value="[[status().message]]"></oj-bind-text></p>
+      <oj-bind-if test="[[isAdmin()]]">
+        <div class="factory-actions">
+          <oj-button id="checkUpdatesButton" on-oj-action="[[check]]">Check for updates</oj-button>
+          <oj-bind-if test="[[status().state === 'AVAILABLE' || status().state === 'FAILED']]">
+            <oj-button id="aboutUpdateButton" chroming="callToAction" on-oj-action="[[install]]" disabled="[[!status().latestBuild]]">Update now</oj-button>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
+    </oj-bind-if>
+    <oj-bind-if test="[[!status().enabled]]">
+      <p class="oj-text-color-secondary">Updates are installed by the administrators of this factory.</p>
+    </oj-bind-if>
+  </oj-bind-if>
+  <oj-bind-if test="[[error()]]">
+    <p class="oj-text-color-danger"><oj-bind-text value="[[error]]"></oj-bind-text></p>
+  </oj-bind-if>
 </div>

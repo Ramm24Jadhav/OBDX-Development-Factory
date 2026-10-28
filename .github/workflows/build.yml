@@ -1,11 +1,16 @@
 # Builds and tests the factory on every push, and produces the downloads (Actions run page, "Artifacts"):
 #   obdx-factory-windows-x64: unzip and double-click start.bat; Java is included
 #   obdx-factory: the same without Java, for Linux or a machine that has Java 21
+# Each push also replaces the "latest" release (releases/download/latest/): the jar and version.json that installed
+# factories update from ("Update now"), and both downloads.
 name: Build
 
 on:
   push:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -32,7 +37,7 @@ jobs:
       - name: Install Subversion (used by the import tests)
         run: sudo apt-get update -q && sudo apt-get install -y -q subversion
       - name: Build and test
-        run: mvn -B clean verify
+        run: mvn -B clean verify -Dfactory.build=${{ github.run_number }} -Dfactory.commit=${{ github.sha }}
         env:
           FACTORY_TEST_DB_URL: jdbc:postgresql://localhost:5432/factory_test
       - name: Download Java 21 for Windows
@@ -46,6 +51,20 @@ jobs:
           deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory.zip
           # GitHub zips each artifact itself, so the Windows one is uploaded unpacked (one zip to download, not two).
           unzip -q dist/obdx-factory-windows-x64.zip -d dist/windows
+      - name: Publish the latest build
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jar=factory-server/target/obdx-factory.jar
+          cp "$jar" dist/obdx-factory.jar
+          printf '{"build": "%s", "commit": "%s", "date": "%s", "sha256": "%s", "size": %s}\n' \
+            "${{ github.run_number }}" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(sha256sum "$jar" | cut -d' ' -f1)" "$(stat -c %s "$jar")" \
+            > dist/version.json
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest --target "$GITHUB_SHA" --title "Latest build (${{ github.run_number }})" \
+            --notes "Build ${{ github.run_number }} of ${GITHUB_REF_NAME} ($GITHUB_SHA). Installed factories update to it with Update now; new installs: download obdx-factory-windows-x64.zip, unzip it and double-click start.bat." \
+            dist/obdx-factory.jar dist/version.json dist/obdx-factory-windows-x64.zip dist/obdx-factory.zip
       - uses: actions/upload-artifact@v4
         with:
           name: obdx-factory-windows-x64

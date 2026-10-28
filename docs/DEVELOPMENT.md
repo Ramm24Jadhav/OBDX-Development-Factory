@@ -71,6 +71,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_DB_USER` / `FACTORY_DB_PASSWORD` | `factory` / `factory` |
 | `FACTORY_TRIAL_DATABASE` | `false`. `true`: the factory starts its own PostgreSQL (data in `FACTORY_DATA_DIR/trial-database`) and ignores the `FACTORY_DB_*` settings. For trials only |
 | `FACTORY_LOCAL_FOLDERS` | the value of `FACTORY_TRIAL_DATABASE`. `true`: workspaces can be created from folders on the factory's computer (see Creating a workspace) |
+| `FACTORY_UPDATES` | `false`. `true`: check GitHub for newer builds and install them with Update now (only with the download's start scripts) |
 | `FACTORY_SECRET_KEY` | none. Required before saving an SVN password. Generate with `openssl rand -base64 32` and keep it stable |
 | `FACTORY_DATA_DIR` | `data` (SVN working copies are kept under it) |
 | `FACTORY_SVN_COMMAND` | `svn` |
@@ -329,6 +330,8 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `DELETE /api/workspaces/{id}` | Delete a workspace, its index and its working copy |
 | `PUT /api/workspaces/{id}/svn` | Set SVN URL, username and password (`svnPassword`: omit or null to keep, empty to remove) |
 | `POST /api/workspaces/{id}/svn/test` | Check the SVN connection; returns the latest revision |
+| `GET /api/update` | Version, build number and whether a newer build exists (`?check=true`: ask GitHub now, administrators) |
+| `POST /api/update` | Download the newer build and restart with it (administrators) |
 | `POST /api/sources/inspect-url` | Check an SVN URL (`svnUrl`, optional `svnUsername`, `svnPassword`) and suggest name, bank and OBDX version |
 | `GET /api/sources/local` | Whether folders on the factory's computer can be used, where to start browsing, SVN repositories found |
 | `GET /api/sources/local/folders?path=` | Subfolders of a folder, marked as SVN checkout or SVN repository |
@@ -437,6 +440,16 @@ starts its own PostgreSQL 17, keeps its data in `data/trial-database` and stops 
 needs to be installed. It listens on localhost only. It has no pgvector, which has no Windows build; a pure-SQL
 stand-in (`factory-server/src/main/resources/trial-database/`) gives semantic search the same results, without a vector
 index, which is fine for trial-sized codebases. For a team installation, use a PostgreSQL server with pgvector.
+
+**Keeping it running and up to date.** `install-autostart.bat` starts the factory at Windows sign-in (minimized) and
+puts an "OBDX Factory" shortcut on the desktop; `remove-autostart.bat` undoes it. Every push to GitHub publishes the
+build to the `latest` release (`releases/download/latest/`: `obdx-factory.jar`, `version.json` with build number and
+SHA-256, and both zips). With `FACTORY_UPDATES=true` (set in the download's `settings.properties`) the factory compares
+its build number with `version.json` every 30 minutes; administrators see a banner and **Update now** (also on the
+About page) downloads the jar into `update/`, checks its SHA-256 and stops the factory with exit code 75. The start
+script then moves the new jar in place and starts it again; data and settings stay. Sign-ins end with the restart.
+Development builds (`dev`) are never replaced. `FACTORY_UPDATE_URL` points elsewhere, for example to a bank's own copy
+of the release. Updates replace the jar only; when the start scripts change, download the zip once more.
 
 To pack the zip yourself: `deploy/bundle/build-bundle.sh factory-server/target/obdx-factory.jar dist/obdx-factory.zip [jre folder]`
 (Jenkins does this in its "Download zip" stage).

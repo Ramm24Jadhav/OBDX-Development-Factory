@@ -8,8 +8,8 @@
 /*
  * Your application specific code will go here
  */
-define(['knockout', './services/session', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojarraydataprovider', 'ojs/ojknockouttemplateutils', 'ojs/ojmodule-element', 'ojs/ojknockout'],
-  function(ko, session, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter, ArrayDataProvider, KnockoutTemplateUtils) {
+define(['knockout', './services/session', './services/updates', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojarraydataprovider', 'ojs/ojknockouttemplateutils', 'ojs/ojmodule-element', 'ojs/ojknockout'],
+  function (ko, session, updates, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter, ArrayDataProvider, KnockoutTemplateUtils) {
 
      function ControllerViewModel() {
 
@@ -98,6 +98,14 @@ define(['knockout', './services/session', 'ojs/ojcontext', 'ojs/ojmodule-element
           .catch((error) => this.loginError(error.message))
           .finally(() => this.signingIn(false));
       };
+      // Update banner for administrators: checked after sign-in and every 30 minutes.
+      this.updateBanner = updates.banner;
+      this.updateAvailable = ko.pureComputed(() => !!updates.status() && updates.status().state === 'AVAILABLE');
+      this.installUpdate = () => updates.install();
+      const checkUpdates = () => { if (session.isAdmin()) { updates.refresh(false); } };
+      session.user.subscribe(checkUpdates);
+      window.setInterval(checkUpdates, 30 * 60 * 1000);
+
       this.userMenuAction = (event) => {
         const value = event.detail.selectedValue;
         if (value === 'out') {

@@ -75,6 +75,13 @@ factory:
     directory: ${factory.storage.root}/trial-database
     # Demo SVN repositories made by create-demo-svn; they are added as workspaces and imported at startup.
     demo-svn: ${FACTORY_DEMO_SVN_DIR:demo-svn}
+  update:
+    # true: check GitHub for newer builds and install them on request (Update now). Only for the download's start
+    # scripts (start.bat, start.sh), which start the factory again after an update; they set it in settings.properties.
+    enabled: ${FACTORY_UPDATES:false}
+    # Where every build publishes obdx-factory.jar and version.json
+    url: ${FACTORY_UPDATE_URL:https://github.com/Ramm24Jadhav/OBDX-Development-Factory/releases/download/latest/}
+    directory: update
   local-folders:
     # Offer folders on the computer the factory runs on as workspace sources (an SVN checkout, an SVN repository or a
     # plain folder). On by default with the trial database, where that computer is the user's own; on a shared server
