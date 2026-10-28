@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +28,9 @@ public final class ScreenModels {
     private static final Set<String> CHANGE_TYPES = Set.of("new", "enhance", "unknown");
     private static final Set<String> ACTION_KINDS = Set.of("primary", "secondary", "link");
     private static final int MAX_CODE = 20_000;
+    public static final Set<String> STAGES = Set.of("initiate", "review", "confirm", "inquiry");
+    public static final Set<String> CHANNELS = Set.of("desktop", "tablet", "mobile-web", "mobile-app");
+    private static final Set<String> OPERATORS = Set.of("filled", "empty", "equals", "notEquals");
 
     private static final JsonMapper LENIENT = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS, JsonReadFeature.ALLOW_TRAILING_COMMA,
@@ -37,8 +41,17 @@ public final class ScreenModels {
     private ScreenModels() {
     }
 
-    /** A first design for a screen from an approved requirement spec: one section with every field, then the actions. */
     public static ScreenModel fromSpec(RequirementSpec.Screen screen) {
+        return fromSpec(screen, List.of());
+    }
+
+    /**
+     * A first design for a screen from an approved requirement spec: one section with every field, then the actions.
+     * Its stage is guessed from its name.
+     *
+     * @param channels the channels the requirement names (empty: all)
+     */
+    public static ScreenModel fromSpec(RequirementSpec.Screen screen, List<String> channels) {
         List<ScreenModel.Component> components = new ArrayList<>();
         for (RequirementSpec.Field field : screen.fields()) {
             Integer maxLength = null;
@@ -64,7 +77,48 @@ public final class ScreenModels {
             actions.add(new ScreenModel.ActionButton(null, "Cancel", "secondary"));
         }
         return normalize(new ScreenModel(screen.name(), screen.name(), screen.description(), screen.changeType(),
-                List.of(new ScreenModel.Section(null, "Details", 2, components)), actions));
+                List.of(new ScreenModel.Section(null, "Details", 2, components)), actions, guessStage(screen.name()), channels));
+    }
+
+    /**
+     * The review and confirmation screens of an OBDX transaction flow, from its initiate screen: review shows every
+     * field read-only with Confirm and Back; confirmation shows the outcome, a reference and the key details.
+     */
+    public static List<ScreenModel> reviewAndConfirm(ScreenModel initiate) {
+        List<ScreenModel.Section> reviewSections = new ArrayList<>();
+        List<ScreenModel.Component> keyDetails = new ArrayList<>();
+        for (ScreenModel.Section section : initiate.sections()) {
+            List<ScreenModel.Component> shown = new ArrayList<>();
+            for (ScreenModel.Component c : section.components()) {
+                if ("table".equals(c.type())) {
+                    continue;
+                }
+                ScreenModel.Component display = new ScreenModel.Component(null, "display", c.name(), c.label(), null, null, null,
+                        null, null, List.of(), List.of(), true);
+                shown.add(display);
+                if (keyDetails.size() < 4) {
+                    keyDetails.add(display);
+                }
+            }
+            reviewSections.add(new ScreenModel.Section(null, section.title() == null ? "Review details" : section.title(),
+                    section.columns(), shown));
+        }
+        ScreenModel review = normalize(new ScreenModel(initiate.name() + " – Review", "Review " + initiate.title(),
+                "Check the details before confirming", initiate.changeType(), reviewSections,
+                List.of(new ScreenModel.ActionButton(null, "Confirm", "primary"), new ScreenModel.ActionButton(null, "Back", "secondary"),
+                        new ScreenModel.ActionButton(null, "Cancel", "link")), "review", initiate.channels()));
+        List<ScreenModel.Component> outcome = new ArrayList<>();
+        outcome.add(new ScreenModel.Component(null, "display", "status", "Status", null, null, null, null,
+                "Your request was submitted successfully", List.of(), List.of(), true));
+        outcome.add(new ScreenModel.Component(null, "display", "referenceNumber", "Reference number", null, null, null, null,
+                null, List.of(), List.of(), true));
+        outcome.addAll(keyDetails);
+        ScreenModel confirm = normalize(new ScreenModel(initiate.name() + " – Confirmation", initiate.title() + " – Done",
+                "The outcome of the transaction", initiate.changeType(),
+                List.of(new ScreenModel.Section(null, "Confirmation", 2, outcome)),
+                List.of(new ScreenModel.ActionButton(null, "Go to dashboard", "primary"),
+                        new ScreenModel.ActionButton(null, "Start another", "secondary")), "confirm", initiate.channels()));
+        return List.of(review, confirm);
     }
 
     public static ScreenModel blank(String name) {
@@ -132,7 +186,8 @@ public final class ScreenModels {
                         c.required(), blankToNull(c.helpText()), blankToNull(c.placeholder()),
                         c.maxLength() != null && c.maxLength() > 0 ? c.maxLength() : null,
                         blankToNull(c.defaultValue()), options, nullSafe(c.validations()), c.readonly(), component, params,
-                        code(c.html(), "HTML"), code(c.css(), "CSS"), code(c.script(), "script")));
+                        code(c.html(), "HTML"), code(c.css(), "CSS"), code(c.script(), "script"),
+                        dataSource(c.dataSource()), c.visibleWhen(), c.requiredWhen()));
             }
             sections.add(new ScreenModel.Section(uniqueId(section.id(), "s-" + sectionNumber, usedIds),
                     section.title() == null || section.title().isBlank() ? null : section.title().trim(),
@@ -151,8 +206,90 @@ public final class ScreenModels {
                     action.label().trim(), ACTION_KINDS.contains(kind) ? kind : "secondary"));
         }
         String changeType = model.changeType() == null ? "unknown" : model.changeType().toLowerCase(Locale.ROOT);
+        String stage = model.stage() == null ? null : model.stage().strip().toLowerCase(Locale.ROOT);
+        List<String> channels = nullSafe(model.channels()).stream().filter(Objects::nonNull)
+                .map(c -> c.strip().toLowerCase(Locale.ROOT)).filter(CHANNELS::contains).distinct().toList();
         return new ScreenModel(model.name().trim(), model.title() == null || model.title().isBlank() ? model.name().trim() : model.title().trim(),
-                blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown", sections, actions);
+                blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown",
+                withConditions(sections), actions, STAGES.contains(stage) ? stage : null, channels);
+    }
+
+    /** A data source needs its API; the rest is optional. */
+    private static ScreenModel.DataSource dataSource(ScreenModel.DataSource source) {
+        if (source == null || blankToNull(source.api()) == null) {
+            return null;
+        }
+        return new ScreenModel.DataSource(source.api().strip(), blankToNull(source.path()), blankToNull(source.valueField()),
+                blankToNull(source.labelField()));
+    }
+
+    /**
+     * Conditions refer to another element by its id (or, as models sometimes write them, its name or label); they are
+     * resolved to the id, and dropped when the element is not on the screen or is the element itself.
+     */
+    private static List<ScreenModel.Section> withConditions(List<ScreenModel.Section> sections) {
+        Map<String, String> ids = new LinkedHashMap<>();
+        sections.forEach(s -> s.components().forEach(c -> {
+            ids.putIfAbsent(c.id(), c.id());
+            ids.putIfAbsent(c.name().toLowerCase(Locale.ROOT), c.id());
+            ids.putIfAbsent(c.label().toLowerCase(Locale.ROOT), c.id());
+        }));
+        return sections.stream().map(s -> new ScreenModel.Section(s.id(), s.title(), s.columns(), s.components().stream()
+                .map(c -> new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(), c.required(), c.helpText(), c.placeholder(),
+                        c.maxLength(), c.defaultValue(), c.options(), c.validations(), c.readonly(), c.component(), c.params(),
+                        c.html(), c.css(), c.script(), c.dataSource(), condition(c.visibleWhen(), c.id(), ids),
+                        condition(c.requiredWhen(), c.id(), ids)))
+                .toList())).toList();
+    }
+
+    private static ScreenModel.Condition condition(ScreenModel.Condition condition, String self, Map<String, String> ids) {
+        if (condition == null || condition.field() == null) {
+            return null;
+        }
+        String field = ids.getOrDefault(condition.field().strip(), ids.get(condition.field().strip().toLowerCase(Locale.ROOT)));
+        String operator = condition.operator() == null ? "filled" : condition.operator().strip();
+        if (field == null || field.equals(self) || !OPERATORS.contains(operator)) {
+            return null;
+        }
+        boolean needsValue = operator.equals("equals") || operator.equals("notEquals");
+        return new ScreenModel.Condition(field, operator, needsValue ? (condition.value() == null ? "" : condition.value().strip()) : null);
+    }
+
+    /** The stage a screen of a requirement most likely has, from its name. */
+    static String guessStage(String name) {
+        String lower = name == null ? "" : name.toLowerCase(Locale.ROOT);
+        if (lower.matches(".*\\b(review|verify|preview)\\b.*")) {
+            return "review";
+        }
+        if (lower.matches(".*\\b(confirm\\w*|acknowledg\\w*|success|receipt)\\b.*")) {
+            return "confirm";
+        }
+        if (lower.matches(".*\\b(list|book|history|holdings?|summary|search|details|view|statement|inquiry|enquiry|dashboard|overview)\\b.*")) {
+            return "inquiry";
+        }
+        return "initiate";
+    }
+
+    /**
+     * The channels a requirement names (web, tablet, mobile web, mobile app), from its text; empty when it names none
+     * or several in a way that cannot be told apart, which means all channels.
+     */
+    public static List<String> channelsIn(String text) {
+        String lower = text == null ? "" : text.toLowerCase(Locale.ROOT);
+        List<String> found = new ArrayList<>();
+        if (lower.matches("(?s).*((?<!mobile )\\b(web|browser)\\b|\\b(desktop|internet banking)\\b).*")) {
+            found.add("desktop");
+        }
+        if (lower.matches("(?s).*\\b(tablet|ipad)s?\\b.*")) {
+            found.add("tablet");
+        }
+        if (lower.matches("(?s).*\\bmobile (web|browser|site)\\b.*")) {
+            found.add("mobile-web");
+        }
+        if (lower.matches("(?s).*\\b(mobile app|mobile application|android|ios|iphone|app store|play store)\\b.*")) {
+            found.add("mobile-app");
+        }
+        return found;
     }
 
     /** Whether the model has a component, section or action button with this id. */
@@ -206,7 +343,8 @@ public final class ScreenModels {
                 actions.remove(index);
             }
         }
-        return normalize(new ScreenModel(current.name(), current.title(), current.description(), current.changeType(), sections, actions));
+        return normalize(new ScreenModel(current.name(), current.title(), current.description(), current.changeType(), sections, actions,
+                current.stage(), current.channels()));
     }
 
     private static int indexOfAction(List<ScreenModel.ActionButton> actions, String id) {

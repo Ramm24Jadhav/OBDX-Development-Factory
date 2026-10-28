@@ -38,6 +38,8 @@ public class CodeGenerator {
 
     /** A design element with the designer's own markup, styles or script. */
     private static final Pattern CUSTOM_CODE = Pattern.compile("\"(html|css|script)\":\"");
+    /** A design that is part of an OBDX transaction flow. */
+    private static final Pattern STAGES = Pattern.compile("\"stage\":\"(initiate|review|confirm)\"");
 
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
@@ -130,7 +132,27 @@ public class CodeGenerator {
         user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
-            if (CUSTOM_CODE.matcher(context.designsJson()).find()) {
+            String designs = context.designsJson();
+            if (designs.contains("\"dataSource\":{")) {
+                user.append("Elements with a \"dataSource\" load their values from that API (in the screen's model, as the existing")
+                        .append(" components call services), take the list at \"path\" of the response, and use \"valueField\" and")
+                        .append(" \"labelField\" for each option; they are not fixed lists.\n\n");
+            }
+            if (designs.contains("\"visibleWhen\":{") || designs.contains("\"requiredWhen\":{")) {
+                user.append("\"visibleWhen\" shows an element only while the other element (by id) meets the condition, and")
+                        .append(" \"requiredWhen\" makes it mandatory only then: implement both with the view model's observables and")
+                        .append(" the template's conditional rendering and validators, as the existing code does.\n\n");
+            }
+            if (STAGES.matcher(designs).find()) {
+                user.append("Screens with \"stage\" initiate, review and confirm are one OBDX transaction flow: implement them the way")
+                        .append(" this codebase builds its flows (for example one component with initiate, review and confirm states,")
+                        .append(" or a train), with the initiate screen's data carried to review and the transaction call on confirm.\n\n");
+            }
+            if (designs.contains("\"channels\":[\"")) {
+                user.append("Build each screen only for the \"channels\" it lists (desktop, tablet, mobile-web, mobile-app) and make it")
+                        .append(" responsive across them.\n\n");
+            }
+            if (CUSTOM_CODE.matcher(designs).find()) {
                 user.append("Components with \"html\", \"css\" or \"script\" carry the designer's own code: use the html as that element's")
                         .append(" markup in the template (with the code's bindings and resource bundle labels), the css (\"&\" is the element)")
                         .append(" in the component's styles, and the script's behaviour in the view model, following the existing code.\n\n");

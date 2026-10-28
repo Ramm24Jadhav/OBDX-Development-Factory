@@ -1487,3 +1487,54 @@
     .factory-preview-actions { flex-direction: column-reverse; align-items: stretch; }
     .factory-preview-actions oj-button { width: 100%; }
 }
+
+/* Preview: fields with conditions, and values from an API, while designing */
+
+.factory-conditional-hidden { opacity: 0.45; outline: 1px dashed #9ca3af; outline-offset: 3px; }
+
+.factory-preview-editing [data-api]:not([data-api=""])::after {
+    content: "\21C4  " attr(data-api);
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    color: #2b6cb0;
+    font-family: Consolas, "Courier New", monospace;
+}
+
+/* Designer: stages and channels */
+
+.factory-dz-stage-badge {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #eef0f3;
+    color: #4b5563;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.factory-dz-stage-initiate { background: #eaf1fa; color: #2b6cb0; }
+.factory-dz-stage-review { background: #fdf1d6; color: #7a4d00; }
+.factory-dz-stage-confirm { background: #e3f4e6; color: #1e6b33; }
+
+.factory-dz-channels { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+
+.factory-dz-channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid #c9cfd8;
+    border-radius: 14px;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.factory-dz-channel-on { background: var(--dz-accent-soft); border-color: var(--dz-accent); color: var(--dz-accent); font-weight: 600; }
+.factory-dz-condition { display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 8px; }
+.factory-dz-condition select, .factory-dz-condition input { width: 100%; }
+
+.factory-dz-full { width: 100%; margin-bottom: 6px; }

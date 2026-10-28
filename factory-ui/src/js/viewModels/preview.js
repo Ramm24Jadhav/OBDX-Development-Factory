@@ -155,26 +155,58 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           displayValue: value === null || value === undefined ? 'Sample value' : String(value),
           optionsProvider: new ArrayDataProvider(optionItems, { keyAttributes: 'value' }),
           warning: warnings[c.id] || '',
-          css: 'factory-cmp' + (c.id === highlight ? ' factory-highlight' : '') + (warnings[c.id] ? ' factory-warning-mark' : '')
+          // Where the values come from, shown on the canvas while designing
+          api: c.dataSource && c.dataSource.api ? c.dataSource.api : '',
+          visibleWhen: c.visibleWhen || null,
+          requiredWhen: c.requiredWhen || null,
+          baseRequired: c.required === true,
+          baseCss: 'factory-cmp' + (c.id === highlight ? ' factory-highlight' : '') + (warnings[c.id] ? ' factory-warning-mark' : '')
         };
       };
-      const steps = (ctx.steps || []).length > 1 ? ctx.steps.map((name, i) => ({
-        number: i + 1, name: name, css: 'factory-obdx-step' + (i === ctx.step ? ' factory-obdx-step-current' : i < ctx.step ? ' factory-obdx-step-done' : '')
-      })) : [];
+      const editing = ctx.editing === true;
+      const sections = model.sections.map((s) => ({
+        id: s.id,
+        title: s.title,
+        columns: s.columns || 2,
+        css: 'factory-preview-section' + (s.id === highlight ? ' factory-highlight' : '') + (warnings[s.id] ? ' factory-warning-mark' : ''),
+        warning: warnings[s.id] || '',
+        components: s.components.map(component)
+      }));
+      // Conditions follow the values typed on the canvas: a field shows, or becomes mandatory, only while another one
+      // meets its condition. While designing, a hidden field stays on the canvas, faded, so it can still be selected.
+      const views = {};
+      sections.forEach((s) => s.components.forEach((v) => { views[v.id] = v; }));
+      const holds = (condition) => {
+        const other = condition && views[condition.field];
+        if (!other) {
+          return true;
+        }
+        const raw = other.type === 'switch' ? other.checked() : other.type === 'checkbox' ? other.values() : other.value();
+        const values = Array.isArray(raw) ? raw.map(String) : raw === null || raw === undefined || raw === false ? [] : [String(raw)];
+        const filled = values.some((v) => v.trim() !== '');
+        switch (condition.operator) {
+          case 'empty': return !filled;
+          case 'equals': return values.includes(String(condition.value || ''));
+          case 'notEquals': return !values.includes(String(condition.value || ''));
+          default: return filled;
+        }
+      };
+      Object.keys(views).forEach((id) => {
+        const v = views[id];
+        v.shown = ko.pureComputed(() => holds(v.visibleWhen));
+        v.required = ko.pureComputed(() => v.baseRequired || (!!v.requiredWhen && holds(v.requiredWhen)));
+        v.display = ko.pureComputed(() => (v.shown() || editing ? '' : 'none'));
+        v.css = ko.pureComputed(() => v.baseCss + (v.shown() ? '' : ' factory-conditional-hidden')
+          + (v.visibleWhen || v.requiredWhen ? ' factory-conditional' : ''));
+      });
       return {
         bank: ctx.bank || 'Online banking',
         breadcrumb: ctx.breadcrumb || 'Dashboard',
-        editing: ctx.editing === true,
-        steps: steps,
+        editing: editing,
+        // The journey's steps show in the designer's strip; the page itself shows none
+        steps: [],
         title: model.title || model.name,
-        sections: model.sections.map((s) => ({
-          id: s.id,
-          title: s.title,
-          columns: s.columns || 2,
-          css: 'factory-preview-section' + (s.id === highlight ? ' factory-highlight' : '') + (warnings[s.id] ? ' factory-warning-mark' : ''),
-          warning: warnings[s.id] || '',
-          components: s.components.map(component)
-        })),
+        sections: sections,
         actions: model.actions.map((a) => ({
           id: a.id, label: a.label,
           chroming: a.kind === 'primary' ? 'callToAction' : a.kind === 'link' ? 'borderless' : 'outlined',

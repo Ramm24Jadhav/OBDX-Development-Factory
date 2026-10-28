@@ -714,6 +714,73 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           });
           c.params = params;
         });
+      // Where an element's values come from: its fixed options, or an API (the requirement's APIs are offered)
+      const VALUE_TYPES = ['select', 'account', 'radio', 'checkbox', 'table', 'component'];
+      this.selectedHasValues = ko.pureComputed(() => !!this.selectedComponent() && VALUE_TYPES.includes(this.selectedComponent().type));
+      this.valueSources = ko.pureComputed(() => {
+        const c = this.selectedComponent();
+        const api = !!(c && c.dataSource);
+        return [['fixed', 'Fixed list'], ['api', 'From an API']].map(([key, label]) => ({
+          label: label,
+          css: 'factory-dz-seg' + ((key === 'api') === api ? ' factory-dz-seg-active' : ''),
+          pick: () => update((m) => {
+            const found = locate(m, this.selectedId());
+            if (!found) {
+              return;
+            }
+            if (key === 'api' && !found.component.dataSource) {
+              const guess = found.component.type === 'account' ? 'GET /digx/v1/accounts/demandDeposit' : '';
+              found.component.dataSource = { api: guess, path: found.component.type === 'account' ? 'accounts' : '', valueField: 'id', labelField: 'displayName' };
+            } else if (key === 'fixed') {
+              found.component.dataSource = null;
+            }
+          })
+        }));
+      });
+      this.selectedFromApi = ko.pureComputed(() => !!this.selectedComponent() && !!this.selectedComponent().dataSource);
+      const sourceField = (key) => componentProperty((c) => (c.dataSource ? c.dataSource[key] || '' : ''), (c, v) => {
+        if (c.dataSource) {
+          c.dataSource[key] = (v || '').trim();
+        }
+      });
+      this.propApi = sourceField('api');
+      this.propApiPath = sourceField('path');
+      this.propApiValue = sourceField('valueField');
+      this.propApiLabel = sourceField('labelField');
+      this.apiSuggestions = ko.pureComputed(() => {
+        const requirement = this.requirement();
+        return requirement && requirement.spec ? (requirement.spec.apis || []).map((a) => ((a.method ? a.method + ' ' : '') + a.name).trim()) : [];
+      });
+
+      // Conditions: shown only when, mandatory only when another element meets a condition
+      this.conditionFields = ko.pureComputed(() => {
+        const model = this.working();
+        const id = this.selectedId();
+        return model ? model.sections.reduce((all, s) => all.concat(s.components), [])
+          .filter((c) => c.id !== id).map((c) => ({ value: c.id, label: c.label || c.name })) : [];
+      });
+      this.conditionOperators = [
+        { value: 'filled', label: 'has a value' }, { value: 'empty', label: 'is empty' },
+        { value: 'equals', label: 'is' }, { value: 'notEquals', label: 'is not' }
+      ];
+      const conditionPart = (key, part) => componentProperty(
+        (c) => (c[key] ? c[key][part] || (part === 'operator' ? 'filled' : '') : (part === 'operator' ? 'filled' : '')),
+        (c, v) => {
+          if (part === 'field') {
+            c[key] = v ? { field: v, operator: c[key] ? c[key].operator : 'filled', value: c[key] ? c[key].value : '' } : null;
+          } else if (c[key]) {
+            c[key][part] = v;
+          }
+        });
+      this.visibleField = conditionPart('visibleWhen', 'field');
+      this.visibleOperator = conditionPart('visibleWhen', 'operator');
+      this.visibleValue = conditionPart('visibleWhen', 'value');
+      this.requiredField = conditionPart('requiredWhen', 'field');
+      this.requiredOperator = conditionPart('requiredWhen', 'operator');
+      this.requiredValue = conditionPart('requiredWhen', 'value');
+      this.visibleNeedsValue = ko.pureComputed(() => ['equals', 'notEquals'].includes(this.visibleOperator()));
+      this.requiredNeedsValue = ko.pureComputed(() => ['equals', 'notEquals'].includes(this.requiredOperator()));
+
       // The element's own HTML, CSS and JS; a value binding commits when the box loses focus, so the canvas does not redraw per key
       this.codeTab = ko.observable('html');
       this.codeTabs = ko.pureComputed(() => [['html', 'HTML'], ['css', 'CSS'], ['js', 'JS']].map(([key, label]) => {
@@ -773,6 +840,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.propActionLabel = actionProperty((a) => a.label, (a, v) => { a.label = v; });
       this.propActionKind = actionProperty((a) => a.kind, (a, v) => { a.kind = v; });
 
+      // The screen's place in an OBDX transaction flow, and the channels it is for
+      this.stageProvider = new ArrayDataProvider([
+        { value: 'initiate', label: 'Initiate (enter the details)' }, { value: 'review', label: 'Review (check before confirming)' },
+        { value: 'confirm', label: 'Confirm (the outcome)' }, { value: 'inquiry', label: 'Inquiry (list, lookup or details)' }
+      ], { keyAttributes: 'value' });
+      this.propStage = modelProperty((m) => m.stage || null, (m, v) => { m.stage = v || null; });
+      const CHANNELS = [['desktop', 'Desktop web'], ['tablet', 'Tablet'], ['mobile-web', 'Mobile web'], ['mobile-app', 'Mobile app']];
+      this.channelChoices = ko.pureComputed(() => {
+        const chosen = (this.working() && this.working().channels) || [];
+        return CHANNELS.map(([key, label]) => ({
+          label: label,
+          css: 'factory-dz-channel' + (chosen.includes(key) ? ' factory-dz-channel-on' : ''),
+          on: chosen.includes(key),
+          pick: () => update((m) => {
+            const list = (m.channels || []).slice();
+            m.channels = list.includes(key) ? list.filter((x) => x !== key) : list.concat([key]);
+          })
+        }));
+      });
+      this.channelsText = ko.pureComputed(() => {
+        const chosen = (this.working() && this.working().channels) || [];
+        return chosen.length === 0 ? 'All channels' : CHANNELS.filter(([key]) => chosen.includes(key)).map(([, label]) => label).join(', ');
+      });
+      /** The canvas size for the screen's channels: a phone for mobile-only screens, a tablet for tablet-only ones. */
+      const sizeForChannels = (channels) => {
+        if (!channels || channels.length === 0 || channels.includes('desktop')) {
+          return 'fit';
+        }
+        return channels.includes('tablet') && !channels.some((c) => c.startsWith('mobile')) ? 'tablet' : 'phone';
+      };
+      this.canMakeFlow = ko.pureComputed(() => this.editable() && (!this.working() || !this.working().stage || this.working().stage === 'initiate'));
+      this.makeFlowScreens = () => {
+        if (this.dirty()) {
+          showError(new Error('Save or discard your changes first.'));
+          return;
+        }
+        this.busy(true);
+        api.post('designs/' + this.detail().id + '/flow-screens')
+          .then((created) => api.get('designs/' + this.detail().id).then((detail) => {
+            show(detail, true);
+            showInfo('Made ' + created.map((d) => '"' + d.name + '"').join(' and ') + ' from this screen. Open them in the journey above.');
+          }))
+          .catch(showError)
+          .finally(() => this.busy(false));
+      };
+
       // --- the journey: the screens of the open screen's requirement, in the order of its spec ---
 
       const norm = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -804,6 +917,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             current: x.id === d.id,
             status: x.status,
             statusText: x.id === d.id && this.dirty() ? 'Unsaved changes' : statusLabel(x.status),
+            stage: (x.id === d.id && this.working() ? this.working().stage : x.stage) || '',
+            stageCss: 'factory-dz-stage-badge factory-dz-stage-' + ((x.id === d.id && this.working() ? this.working().stage : x.stage) || 'none'),
             css: 'factory-dz-step' + (x.id === d.id ? ' factory-dz-step-current' : '') + ' factory-dz-step-' + x.status.toLowerCase(),
             openAction: () => this.open(x.id)
           }));
@@ -885,10 +1000,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           add('info', 'The requirement has no screen named "' + this.detail().name + '", so fields cannot be compared');
         }
         // Account selectors list the customer's accounts at run time, so their options stay placeholders
-        components.filter((c) => c.type !== 'account' && (c.options || []).length > 0 && c.options.every((o) => PLACEHOLDERS.includes(o))).forEach((c) => {
+        components.filter((c) => c.type !== 'account' && !c.dataSource && (c.options || []).length > 0
+          && c.options.every((o) => PLACEHOLDERS.includes(o))).forEach((c) => {
           const what = c.type === 'table' ? 'columns' : 'choices';
           const notes = requirementNotes(c);
-          add('warn', '"' + c.label + '" still has placeholder ' + what, c.id, 'Fix with AI',
+          add('warn', '"' + c.label + '" still has placeholder ' + what + ' (or load them from an API)', c.id, 'Fix with AI',
             () => fixWithAi('Replace the placeholder ' + what + ' of the component "' + c.label + '" (id ' + c.id + ') with the real '
               + what + ' for an OBDX banking screen' + (notes ? '. The requirement says: ' + notes : '') + '. Change nothing else.'));
         });
@@ -903,6 +1019,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         model.sections.filter((s) => s.components.length === 0).forEach((s) => {
           add('warn', 'Section "' + (s.title || 'Section') + '" is empty', s.id, 'Remove',
             () => update((m) => { m.sections = m.sections.filter((x) => x.id !== s.id); }));
+        });
+        // Values that come from the bank at run time need their API
+        components.filter((c) => c.type === 'account' && !c.dataSource).forEach((c) => {
+          add('info', '"' + c.label + '" lists the customer\'s accounts: set the API they come from', c.id, 'Set the API');
+        });
+        components.filter((c) => c.dataSource && !c.dataSource.api).forEach((c) => {
+          add('warn', '"' + c.label + '" loads its values from an API, but no API is set', c.id, 'Set the API');
+        });
+        // An OBDX transaction: initiate, then review, then confirm
+        const stage = model.stage;
+        if (stage === 'initiate' && this.journey().length > 0) {
+          const stages = this.journey().map((s) => s.stage);
+          if (!stages.includes('review') || !stages.includes('confirm')) {
+            add('warn', 'This initiate screen has no review and confirmation screens in its journey', null,
+              'Create review and confirmation', () => this.makeFlowScreens());
+          }
+        }
+        const phoneOnly = (model.channels || []).length > 0 && (model.channels || []).every((c) => c.startsWith('mobile'));
+        model.sections.filter((s) => phoneOnly && (s.columns || 2) > 1).forEach((s) => {
+          add('info', 'Section "' + (s.title || 'Section') + '" has ' + s.columns + ' columns, but the screen is for phones only', s.id,
+            'Use one column', () => update((m) => { m.sections.forEach((x) => { if (x.id === s.id) { x.columns = 1; } }); }));
         });
         const primaries = model.actions.filter((a) => a.kind === 'primary');
         if (model.actions.length === 0) {
@@ -1091,6 +1228,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           loadRequirement(detail.requirementId);
           undoStack([]);
           redoStack([]);
+          if (!this.appTarget()) {
+            this.viewport(sizeForChannels(detail.model.channels));
+          }
         }
         this.detail(detail);
         this.designPick(detail.id);

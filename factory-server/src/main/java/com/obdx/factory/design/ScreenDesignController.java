@@ -94,6 +94,14 @@ public class ScreenDesignController {
         return service.aiChange(id, request.instruction(), request.targetId());
     }
 
+    /** Makes the review and confirmation screens of the flow this initiate screen starts. */
+    @PostMapping("/api/designs/{id}/flow-screens")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<ScreenDesignService.DesignSummary> flowScreens(@PathVariable UUID id) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        return service.flowScreens(id);
+    }
+
     /** Saves an earlier version again as the newest one. */
     @PostMapping("/api/designs/{id}/restore")
     public ScreenDesignService.DesignDetail restore(@PathVariable UUID id, @RequestBody RestoreRequest request) {

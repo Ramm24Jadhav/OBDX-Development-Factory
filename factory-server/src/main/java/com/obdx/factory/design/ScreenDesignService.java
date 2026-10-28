@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -51,7 +52,7 @@ public class ScreenDesignService {
     }
 
     public record DesignSummary(UUID id, String name, ScreenDesign.Status status, int currentVersion, UUID requirementId,
-                                long components, OffsetDateTime updatedAt) {
+                                long components, OffsetDateTime updatedAt, String stage, List<String> channels) {
     }
 
     public record DesignDetail(UUID id, UUID workspaceId, UUID requirementId, String name, ScreenDesign.Status status,
@@ -79,14 +80,51 @@ public class ScreenDesignService {
             throw new ConflictException("Designs for this requirement already exist");
         }
         List<DesignSummary> created = new ArrayList<>();
+        // The channels the requirement names ("mobile app only", "web and tablet"), from its text and answers
+        StringBuilder text = new StringBuilder(requirement.documentText() == null ? "" : requirement.documentText());
+        text.append('\n').append(requirement.spec().summary() == null ? "" : requirement.spec().summary());
+        requirement.spec().decisions().forEach(d -> text.append('\n').append(d.question()).append(' ').append(d.answer()));
+        List<String> channels = ScreenModels.channelsIn(text.toString());
         for (RequirementSpec.Screen screen : requirement.spec().screens()) {
-            ScreenModel model = ScreenModels.fromSpec(screen);
+            ScreenModel model = ScreenModels.fromSpec(screen, channels);
             ScreenDesign design = new ScreenDesign(requirement.workspaceId(), requirementId, model.name());
             designs.saveAndFlush(design);
             int version = store.addVersion(design.getId(), DesignStore.Origin.GENERATED,
                     "From requirement \"" + requirement.title() + "\" (spec version " + requirement.currentVersion() + ")", model);
             design.newVersion(version, model.name());
             created.add(summary(designs.save(design), model));
+        }
+        return created;
+    }
+
+    /**
+     * The review and confirmation screens of an OBDX transaction flow, made from its initiate screen and linked to the
+     * same requirement. The initiate screen is marked as such.
+     */
+    @Transactional
+    public List<DesignSummary> flowScreens(UUID id) {
+        ScreenDesign initiate = editable(find(id));
+        ScreenModel model = currentModel(initiate);
+        List<ScreenModel> made = ScreenModels.reviewAndConfirm(model);
+        List<String> existing = designs.findByWorkspaceIdOrderByCreatedAt(initiate.getWorkspaceId()).stream()
+                .filter(d -> Objects.equals(d.getRequirementId(), initiate.getRequirementId())).map(ScreenDesign::getName).toList();
+        for (ScreenModel screen : made) {
+            if (existing.contains(screen.name())) {
+                throw new ConflictException("\"" + screen.name() + "\" already exists. Delete it first to make it again.");
+            }
+        }
+        if (!"initiate".equals(model.stage())) {
+            ScreenModel marked = ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description(), model.changeType(),
+                    model.sections(), model.actions(), "initiate", model.channels()));
+            initiate.newVersion(store.addVersion(id, DesignStore.Origin.EDITED, "Marked as the initiate screen of its flow", marked), marked.name());
+            designs.save(initiate);
+        }
+        List<DesignSummary> created = new ArrayList<>();
+        for (ScreenModel screen : made) {
+            ScreenDesign design = designs.saveAndFlush(new ScreenDesign(initiate.getWorkspaceId(), initiate.getRequirementId(), screen.name()));
+            design.newVersion(store.addVersion(design.getId(), DesignStore.Origin.GENERATED,
+                    "The " + screen.stage() + " screen of \"" + model.name() + "\"", screen), screen.name());
+            created.add(summary(designs.save(design), screen));
         }
         return created;
     }
@@ -289,7 +327,8 @@ public class ScreenDesignService {
     private DesignSummary summary(ScreenDesign design, ScreenModel model) {
         long components = model == null ? 0 : model.sections().stream().mapToLong(s -> s.components().size()).sum();
         return new DesignSummary(design.getId(), design.getName(), design.getStatus(), design.getCurrentVersion(),
-                design.getRequirementId(), components, design.getUpdatedAt());
+                design.getRequirementId(), components, design.getUpdatedAt(), model == null ? null : model.stage(),
+                model == null ? List.of() : model.channels());
     }
 
     private DesignDetail detail(ScreenDesign d) {

@@ -65,6 +65,58 @@ class ScreenModelsTest {
     }
 
     @Test
+    void keepsDataSourcesConditionsStageAndChannels() {
+        ScreenModel model = ScreenModels.parse("""
+                {"name": "Order", "stage": "Initiate", "channels": ["mobile-app", "watch", "Tablet"], "sections": [{"components": [
+                  {"id": "c-type", "type": "radio", "label": "Order type", "options": ["Market", "Limit"]},
+                  {"id": "c-price", "type": "amount", "label": "Limit price",
+                   "visibleWhen": {"field": "Order type", "operator": "equals", "value": " Limit "}},
+                  {"id": "c-note", "type": "text", "label": "Note", "visibleWhen": {"field": "c-gone"},
+                   "requiredWhen": {"field": "c-note", "operator": "filled"}},
+                  {"id": "c-from", "type": "account", "label": "From", "dataSource": {"api": " GET /accounts ", "path": "accounts", "labelField": " "}},
+                  {"id": "c-to", "type": "select", "label": "To", "dataSource": {"api": " "}}
+                ]}]}""");
+
+        List<ScreenModel.Component> components = model.sections().getFirst().components();
+        assertThat(model.stage()).isEqualTo("initiate");
+        assertThat(model.channels()).as("unknown channels are dropped").containsExactly("mobile-app", "tablet");
+        assertThat(components.get(1).visibleWhen()).as("found by label, value trimmed")
+                .isEqualTo(new ScreenModel.Condition("c-type", "equals", "Limit"));
+        assertThat(components.get(2).visibleWhen()).as("refers to a missing element").isNull();
+        assertThat(components.get(2).requiredWhen()).as("refers to itself").isNull();
+        assertThat(components.get(3).dataSource()).isEqualTo(new ScreenModel.DataSource("GET /accounts", "accounts", null, null));
+        assertThat(components.get(4).dataSource()).as("no API is no data source").isNull();
+    }
+
+    @Test
+    void guessesStagesAndChannelsAndMakesReviewAndConfirmScreens() {
+        assertThat(ScreenModels.guessStage("Fund Transfer")).isEqualTo("initiate");
+        assertThat(ScreenModels.guessStage("Order Review and Confirmation")).isEqualTo("review");
+        assertThat(ScreenModels.guessStage("Transfer acknowledgement")).isEqualTo("confirm");
+        assertThat(ScreenModels.guessStage("Order Book")).isEqualTo("inquiry");
+        assertThat(ScreenModels.channelsIn("Only in the mobile app, not on the web")).containsExactly("desktop", "mobile-app");
+        assertThat(ScreenModels.channelsIn("For mobile web and tablets")).containsExactly("tablet", "mobile-web");
+        assertThat(ScreenModels.channelsIn("Add a remarks field")).isEmpty();
+
+        ScreenModel initiate = ScreenModels.parse("""
+                {"name": "Transfer", "title": "Transfer money", "channels": ["desktop"], "sections": [{"title": "Pay", "components": [
+                  {"type": "account", "label": "From account"}, {"type": "amount", "label": "Amount"},
+                  {"type": "table", "label": "Recent"}]}]}""");
+        List<ScreenModel> flow = ScreenModels.reviewAndConfirm(initiate);
+
+        assertThat(flow).extracting(ScreenModel::name, ScreenModel::stage)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Transfer – Review", "review"),
+                        org.assertj.core.groups.Tuple.tuple("Transfer – Confirmation", "confirm"));
+        assertThat(flow.getFirst().sections().getFirst().components()).extracting(ScreenModel.Component::label, ScreenModel.Component::type)
+                .as("every field read-only, without the table")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("From account", "display"), org.assertj.core.groups.Tuple.tuple("Amount", "display"));
+        assertThat(flow.getFirst().actions()).extracting(ScreenModel.ActionButton::label).containsExactly("Confirm", "Back", "Cancel");
+        assertThat(flow.get(1).sections().getFirst().components()).extracting(ScreenModel.Component::label)
+                .startsWith("Status", "Reference number");
+        assertThat(flow).allSatisfy(screen -> assertThat(screen.channels()).containsExactly("desktop"));
+    }
+
+    @Test
     void keepsAnElementsOwnCode() {
         ScreenModel model = ScreenModels.parse("""
                 {"name": "Transfer", "sections": [{"components": [

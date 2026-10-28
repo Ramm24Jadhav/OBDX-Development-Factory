@@ -377,7 +377,8 @@
                   <span class="factory-dz-step-number"><oj-bind-text value="[[st.data.number]]"></oj-bind-text></span>
                   <span class="factory-dz-step-text">
                     <span class="factory-dz-step-name"><oj-bind-text value="[[st.data.name]]"></oj-bind-text></span>
-                    <span class="factory-dz-step-status"><oj-bind-text value="[[st.data.statusText]]"></oj-bind-text></span>
+                    <span class="factory-dz-step-status"><oj-bind-text value="[[st.data.statusText]]"></oj-bind-text>
+                      <oj-bind-if test="[[st.data.stage]]"> <span :class="[[st.data.stageCss]]"><oj-bind-text value="[[st.data.stage]]"></oj-bind-text></span></oj-bind-if></span>
                   </span>
                 </button>
               </template>
@@ -391,6 +392,7 @@
                   :style.width="[[frameInnerWidth]]" :style.height="[[frameInnerHeight]]" :style.transform="[[frameTransform]]"></iframe>
         </div>
         <p id="previewNote" class="factory-dz-hint factory-dz-canvas-note"><span id="viewportText"><oj-bind-text value="[[viewportText]]"></oj-bind-text></span>
+          · <span id="channelsText"><oj-bind-text value="[[channelsText]]"></oj-bind-text></span>
           · <oj-bind-text value="[[previewNote]]"></oj-bind-text>. Click a component to select it.</p>
         <oj-bind-if test="[[editable()]]">
           <div class="factory-dz-ai">
@@ -462,8 +464,44 @@
                     <oj-text-area id="propParams" label-hint="Parameters (one per line, name: value)" value="{{propParams}}" rows="4"></oj-text-area>
                   </oj-bind-if>
                 </oj-form-layout>
-                <oj-bind-if test="[[selectedHasOptions()]]">
+                <oj-bind-if test="[[selectedHasOptions() || selectedHasValues()]]">
                   <div class="factory-dz-group">Data</div>
+                </oj-bind-if>
+                <oj-bind-if test="[[selectedHasValues()]]">
+                  <div id="valueSource" class="factory-dz-segmented factory-dz-segmented-full" role="group" aria-label="Where the values come from">
+                    <oj-bind-for-each data="[[valueSources]]" as="vs">
+                      <template>
+                        <button type="button" :class="[[vs.data.css]]" on-click="[[vs.data.pick]]"><oj-bind-text value="[[vs.data.label]]"></oj-bind-text></button>
+                      </template>
+                    </oj-bind-for-each>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[selectedFromApi()]]">
+                  <div>
+                    <p class="factory-dz-hint">The values are loaded when the screen opens. Code generation calls this API through the screen's model.</p>
+                    <div class="factory-dz-field-label">API</div>
+                    <input type="text" id="propApi" class="factory-dz-input factory-dz-full" list="apiSuggestions" placeholder="GET /digx/v1/accounts/demandDeposit"
+                           data-bind="value: propApi" :readonly="[[!editable()]]"/>
+                    <datalist id="apiSuggestions">
+                      <oj-bind-for-each data="[[apiSuggestions]]" as="sug">
+                        <template><option :value="[[sug.data]]"></option></template>
+                      </oj-bind-for-each>
+                    </datalist>
+                    <div class="factory-dz-field-label">List in the response</div>
+                    <input type="text" id="propApiPath" class="factory-dz-input factory-dz-full" placeholder="accounts" data-bind="value: propApiPath" :readonly="[[!editable()]]"/>
+                    <div class="factory-dz-row">
+                      <div class="factory-dz-grow">
+                        <div class="factory-dz-field-label">Value field</div>
+                        <input type="text" id="propApiValue" class="factory-dz-input factory-dz-full" placeholder="id.value" data-bind="value: propApiValue" :readonly="[[!editable()]]"/>
+                      </div>
+                      <div class="factory-dz-grow">
+                        <div class="factory-dz-field-label">Label field</div>
+                        <input type="text" id="propApiLabel" class="factory-dz-input factory-dz-full" placeholder="displayName" data-bind="value: propApiLabel" :readonly="[[!editable()]]"/>
+                      </div>
+                    </div>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[selectedHasOptions() && !selectedFromApi()]]">
                   <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact">
                     <oj-text-area id="propOptions" label-hint="[[optionsLabel]]" value="{{propOptions}}" rows="4"></oj-text-area>
                   </oj-form-layout>
@@ -487,6 +525,38 @@
                 <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact">
                   <oj-text-area id="propValidations" label-hint="Validations (one per line)" value="{{propValidations}}" rows="3"></oj-text-area>
                 </oj-form-layout>
+                <div class="factory-dz-group">Conditions</div>
+                <p class="factory-dz-hint">Depend on another field. Try it on the canvas: type in that field and this one follows.</p>
+                <div id="visibleWhen" class="factory-dz-condition">
+                  <div class="factory-dz-field-label">Show only when</div>
+                  <select class="factory-dz-input" aria-label="Show only when this field"
+                          data-bind="options: conditionFields, optionsText: 'label', optionsValue: 'value', optionsCaption: 'Always shown', value: visibleField, disable: !editable()"></select>
+                  <oj-bind-if test="[[!!visibleField()]]">
+                    <div class="factory-dz-row">
+                      <select class="factory-dz-input factory-dz-grow" aria-label="Condition"
+                              data-bind="options: conditionOperators, optionsText: 'label', optionsValue: 'value', value: visibleOperator, disable: !editable()"></select>
+                      <oj-bind-if test="[[visibleNeedsValue()]]">
+                        <input type="text" class="factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: visibleValue"
+                               :readonly="[[!editable()]]"/>
+                      </oj-bind-if>
+                    </div>
+                  </oj-bind-if>
+                </div>
+                <div id="requiredWhen" class="factory-dz-condition">
+                  <div class="factory-dz-field-label">Mandatory only when</div>
+                  <select class="factory-dz-input" aria-label="Mandatory only when this field"
+                          data-bind="options: conditionFields, optionsText: 'label', optionsValue: 'value', optionsCaption: 'As set above', value: requiredField, disable: !editable()"></select>
+                  <oj-bind-if test="[[!!requiredField()]]">
+                    <div class="factory-dz-row">
+                      <select class="factory-dz-input factory-dz-grow" aria-label="Condition"
+                              data-bind="options: conditionOperators, optionsText: 'label', optionsValue: 'value', value: requiredOperator, disable: !editable()"></select>
+                      <oj-bind-if test="[[requiredNeedsValue()]]">
+                        <input type="text" class="factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: requiredValue"
+                               :readonly="[[!editable()]]"/>
+                      </oj-bind-if>
+                    </div>
+                  </oj-bind-if>
+                </div>
                 <div class="factory-dz-group">Help</div>
                 <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact">
                   <oj-input-text id="propDefault" label-hint="Default value" value="{{propDefault}}"></oj-input-text>
@@ -584,7 +654,22 @@
                 <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact">
                   <oj-input-text id="screenTitle" label-hint="Title" value="{{screenTitle}}"></oj-input-text>
                   <oj-input-text id="screenName" label-hint="Name" value="{{screenName}}"></oj-input-text>
+                  <oj-select-single id="propStage" label-hint="Stage in the OBDX flow" data="[[stageProvider]]" value="{{propStage}}"
+                                    placeholder="Not set"></oj-select-single>
                 </oj-form-layout>
+                <oj-bind-if test="[[canMakeFlow()]]">
+                  <button type="button" id="makeFlowButton" class="factory-dz-btn factory-dz-btn-full" on-click="[[makeFlowScreens]]" :disabled="[[busy()]]">
+                    Create review and confirmation screens</button>
+                </oj-bind-if>
+                <div class="factory-dz-field-label">Channels (none chosen: all)</div>
+                <div id="channelChoices" class="factory-dz-channels" role="group" aria-label="Channels">
+                  <oj-bind-for-each data="[[channelChoices]]" as="ch">
+                    <template>
+                      <button type="button" :class="[[ch.data.css]]" :aria-pressed="[[ch.data.on ? 'true' : 'false']]" on-click="[[ch.data.pick]]">
+                        <oj-bind-text value="[[(ch.data.on ? '✓ ' : '') + ch.data.label]]"></oj-bind-text></button>
+                    </template>
+                  </oj-bind-for-each>
+                </div>
                 <div class="factory-dz-stats">
                   <div><span class="factory-dz-stat"><oj-bind-text value="[[working() ? working().sections.length : 0]]"></oj-bind-text></span> sections</div>
                   <div><span class="factory-dz-stat"><oj-bind-text value="[[componentCount]]"></oj-bind-text></span> components</div>

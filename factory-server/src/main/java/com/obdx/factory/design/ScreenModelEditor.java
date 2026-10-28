@@ -54,6 +54,12 @@ public class ScreenModelEditor {
             - Action "kind" is primary, secondary or link.
             - "html", "css" and "script" of a component are the designer's own code: keep them exactly as they are
               unless the instruction is about them.
+            - "dataSource" says an element's values come from an API: {"api": "GET /path", "path": "list in the
+              response", "valueField": "...", "labelField": "..."}; null for fixed options.
+            - "visibleWhen" and "requiredWhen" make an element shown or mandatory only while another element meets a
+              condition: {"field": "id of that element", "operator": "filled | empty | equals | notEquals", "value": "..."}.
+            - The screen's "stage" is initiate, review, confirm or inquiry; "channels" lists desktop, tablet,
+              mobile-web and mobile-app (empty: all). Keep them unless the instruction is about them.
             """;
 
     private static final int MAX_COMPONENTS = 60;
