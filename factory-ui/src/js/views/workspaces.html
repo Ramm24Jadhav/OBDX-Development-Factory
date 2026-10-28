@@ -12,6 +12,7 @@
     <p class="oj-text-color-secondary">You see the workspaces you are a member of. Administrators create workspaces and assign roles.</p>
   </oj-bind-if>
   <oj-bind-if test="[[isAdmin()]]">
+  <section class="factory-ov-card factory-ws-card">
   <h2>New workspace</h2>
   <h3>1. Where is the code?</h3>
   <oj-radioset id="sourceKind" value="{{sourceKind}}" options="[[sourceProvider]]" class="oj-choice-direction-row"
@@ -127,22 +128,27 @@
       <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
     </oj-bind-if>
   </oj-bind-if>
+  </section>
   </oj-bind-if>
 
+  <section class="factory-ov-card factory-ws-card">
   <h2>All workspaces</h2>
   <oj-table id="workspaceTable" aria-label="Workspaces" data="[[workspaceProvider]]"
             columns='[{"headerText": "Name", "field": "name"},
                       {"headerText": "Bank", "field": "bankName"},
                       {"headerText": "OBDX version", "field": "obdxVersion"},
-                      {"headerText": "SVN URL", "field": "svnUrl"},
+                      {"headerText": "Code", "field": "indexed"},
+                      {"headerText": "SVN URL", "field": "svnUrl", "className": "factory-ws-url"},
                       {"headerText": "Created", "field": "createdAt"},
                       {"headerText": "", "field": "id", "template": "actionTemplate", "sortable": "disabled"}]'
-            class="oj-sm-margin-4x-top" style="width: 100%;">
+            style="width: 100%;">
     <template slot="actionTemplate" data-oj-as="cell">
+      <oj-button chroming="outlined" on-oj-action="[[cell.row.openAction]]">Open</oj-button>
       <oj-bind-if test="[[cell.row.canDelete]]">
         <oj-button chroming="borderless" on-oj-action="[[cell.row.deleteAction]]">Delete</oj-button>
       </oj-bind-if>
     </template>
     <template slot="noData">No workspaces yet. Create one above.</template>
   </oj-table>
+  </section>
 </div>

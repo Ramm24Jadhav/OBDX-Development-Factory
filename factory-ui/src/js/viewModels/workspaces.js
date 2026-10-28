@@ -134,6 +134,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         .then((data) => workspaces(data.map((workspace) => Object.assign({}, workspace, {
           createdAt: new Date(workspace.createdAt).toLocaleString(),
           deleteAction: () => this.deleteWorkspace(workspace.id),
+          openAction: () => {
+            workspaceSelection.selectedId(workspace.id);
+            window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' }));
+          },
+          indexed: workspace.indexedRevision !== null && workspace.indexedRevision !== undefined
+            ? 'Revision ' + workspace.indexedRevision : 'Not imported',
           canDelete: session.isAdmin()
         }))))
         .catch(showError);

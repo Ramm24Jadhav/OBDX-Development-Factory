@@ -6,14 +6,12 @@
  * @ignore
  */
 /*
- * Your application specific code will go here
+ * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojarraydataprovider', 'ojs/ojknockouttemplateutils', 'ojs/ojmodule-element', 'ojs/ojknockout'],
-  function (ko, session, updates, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter, ArrayDataProvider, KnockoutTemplateUtils) {
+define(['knockout', './services/session', './services/updates', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout'],
+  function (ko, session, updates, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
-
-        this.KnockoutTemplateUtils = KnockoutTemplateUtils;
 
         // Handle announcements sent when pages change, for Accessibility.
         this.manner = ko.observable('polite');
@@ -30,18 +28,20 @@ define(['knockout', './services/session', './services/updates', 'ojs/ojcontext',
       const smQuery = ResponsiveUtils.getFrameworkQuery(ResponsiveUtils.FRAMEWORK_QUERY_KEY.SM_ONLY);
       this.smScreen = ResponsiveKnockoutUtils.createMediaQueryObservable(smQuery);
 
+      // icon: the sidebar icon (css class factory-ico-<icon>); group: the sidebar section.
       let navData = [
-        { path: '', redirect: 'workspaces' },
-        { path: 'workspaces', detail: { label: 'Workspaces' } },
-        { path: 'code', detail: { label: 'Code' } },
-        { path: 'profile', detail: { label: 'Profile' } },
-        { path: 'requirements', detail: { label: 'Requirements' } },
-        { path: 'designer', detail: { label: 'Designer' } },
-        { path: 'changes', detail: { label: 'Changes' } },
-        { path: 'modernization', detail: { label: 'Modernization' } },
-        { path: 'models', detail: { label: 'Models' } },
-        { path: 'admin', detail: { label: 'Admin', adminOnly: true } },
-        { path: 'about', detail: { label: 'About' } },
+        { path: '', redirect: 'overview' },
+        { path: 'overview', detail: { label: 'Overview', icon: 'home', group: 'work' } },
+        { path: 'workspaces', detail: { label: 'Workspaces', icon: 'folder', group: 'work' } },
+        { path: 'code', detail: { label: 'Code', icon: 'code', group: 'work' } },
+        { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'work' } },
+        { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'work' } },
+        { path: 'designer', detail: { label: 'Designer', icon: 'design', group: 'work' } },
+        { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'work' } },
+        { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'work' } },
+        { path: 'models', detail: { label: 'Models', icon: 'chip', group: 'setup' } },
+        { path: 'admin', detail: { label: 'Administration', icon: 'shield', group: 'setup', adminOnly: true } },
+        { path: 'about', detail: { label: 'About', icon: 'info', group: 'setup' } },
         { path: 'account', detail: { label: 'Account', hidden: true } },
         // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
@@ -59,14 +59,46 @@ define(['knockout', './services/session', './services/updates', 'ojs/ojcontext',
 
       this.selection = new KnockoutRouterAdapter(router);
 
-      // Setup the navDataProvider with the routes, excluding the first redirected
-      // route.
-      // The Admin tab is shown only to administrators.
+      // The sidebar: the Administration page is shown only to administrators.
       const visibleRoutes = () => navData.slice(1)
         .filter((route) => !route.detail.hidden && (!route.detail.adminOnly || session.isAdmin()));
       const navItems = ko.observableArray(visibleRoutes());
       session.user.subscribe(() => navItems(visibleRoutes()));
-      this.navDataProvider = new ArrayDataProvider(navItems, {keyAttributes: "path"});
+      this.sidebarOpen = ko.observable(false);
+      const navGroup = (group) => ko.pureComputed(() => navItems().filter((route) => route.detail.group === group).map((route) => ({
+        label: route.detail.label,
+        href: '?ojr=' + route.path,
+        iconClass: 'factory-nav-icon factory-ico-' + route.detail.icon,
+        active: ko.pureComputed(() => this.selection.path() === route.path),
+        // A plain click opens the page here; Ctrl or Shift click opens it in a new tab.
+        open: (event) => {
+          if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            return;
+          }
+          event.preventDefault();
+          router.go({ path: route.path });
+          this.sidebarOpen(false);
+        }
+      })));
+      this.workNav = navGroup('work');
+      this.setupNav = navGroup('setup');
+      this.pageTitle = ko.pureComputed(() => {
+        const route = navData.find((r) => r.path === this.selection.path());
+        return route && route.detail ? route.detail.label : '';
+      });
+      // Collapsed (icons only) is remembered in this browser; on small screens the sidebar opens over the page.
+      const storedCollapsed = (() => {
+        try { return window.localStorage.getItem('factory.sidebarCollapsed') === '1'; } catch (e) { return false; }
+      })();
+      this.sidebarCollapsed = ko.observable(storedCollapsed);
+      this.sidebarCollapsed.subscribe((value) => {
+        try { window.localStorage.setItem('factory.sidebarCollapsed', value ? '1' : '0'); } catch (e) { /* not kept */ }
+      });
+      this.toggleCollapsed = () => this.sidebarCollapsed(!this.sidebarCollapsed());
+      this.toggleSidebar = () => this.sidebarOpen(!this.sidebarOpen());
+      this.closeSidebar = () => this.sidebarOpen(false);
+      this.shellClass = ko.pureComputed(() => 'factory-shell' + (this.sidebarCollapsed() ? ' factory-shell-collapsed' : '')
+        + (this.sidebarOpen() ? ' factory-shell-open' : ''));
 
       // "embed=1" shows a page without the header and navigation: the preview frame and customer review links.
       this.embedded = new URLSearchParams(window.location.search).get('embed') === '1';
@@ -79,6 +111,12 @@ define(['knockout', './services/session', './services/updates', 'ojs/ojcontext',
       this.appName = ko.observable("OBDX Development Factory");
       // User Info used in Global Navigation area
       this.userLogin = ko.pureComputed(() => (session.user() ? session.user().displayName : 'Not signed in'));
+      this.userInitials = ko.pureComputed(() => this.userLogin().split(/\s+/).filter(Boolean).slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase()).join('') || '?');
+      this.userRole = ko.pureComputed(() => {
+        const role = session.isAdmin() ? 'Administrator' : 'Member';
+        return role === this.userLogin() ? '' : role;
+      });
       this.canChangePassword = ko.pureComputed(() => !!session.user() && session.user().canChangePassword);
 
       // Sign-in: pages show only for a signed-in user, except the preview and customer review pages (embedded).
@@ -98,6 +136,8 @@ define(['knockout', './services/session', './services/updates', 'ojs/ojcontext',
           .catch((error) => this.loginError(error.message))
           .finally(() => this.signingIn(false));
       };
+      this.loginHint = ko.pureComputed(() => (this.authConfig() && this.authConfig().mode === 'ldap'
+        ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.'));
       // Update banner for administrators: checked after sign-in and every 30 minutes.
       this.updateBanner = updates.banner;
       this.updateAvailable = ko.pureComputed(() => !!updates.status() && updates.status().state === 'AVAILABLE');

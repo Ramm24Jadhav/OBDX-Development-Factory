@@ -337,7 +337,7 @@ npx ojet serve
 
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
-Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js`. `src/js/services/api.js` wraps calls to the backend.
+Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the sidebar (collapsible; it slides in on phones), the top bar with the user menu, and the sign-in page. Signing in opens the **Overview** page, which shows every workspace with its code index, requirements, screens, changes and what needs attention, from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.
 
 ## REST API (so far)
 

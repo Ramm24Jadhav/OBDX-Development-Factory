@@ -4,27 +4,6 @@
  Licensed under The Universal Permissive License (UPL), Version 1.0
  as shown at https://oss.oracle.com/licenses/upl/
  -->
-
-<!-- ************************ IMPORTANT INFORMATION ************************************
-  This web navigation bar template is provided as an example of how to configure
-  a JET web application with a navigation bar as a single page application
-  using ojRouter and oj-module.  It contains the Oracle JET framework and a default
-  requireJS configuration file to show how JET can be setup in a common application.
-  This project template can be used in conjunction with demo code from the JET
-  website to test JET component behavior and interactions.
-
-  Any CSS styling with the prefix "demo-" is for demonstration only and is not
-  provided as part of the JET framework.
-
-  Please see the demos under Cookbook/Patterns/App Shell: Web and the CSS documentation
-  under Support/API Docs/Non-Component Styling on the JET website for more information on how to use
-  the best practice patterns shown in this template.
-
-  Aria Landmark role attributes are added to the different sections of the application
-  for accessibility compliance. If you change the type of content for a specific
-  section from what is defined, you should also change the role value for that
-  section to represent the appropriate content type.
-  ***************************** IMPORTANT INFORMATION ************************************ -->
 <html lang="en-us">
   <head>
     <title>OBDX Development Factory</title>
@@ -43,94 +22,154 @@
 
   </head>
   <body class="oj-web-applayout-body">
-    <!-- Template for rendering navigation items -->
-    <script type="text/html" id="navTemplate">
-      <li><a href="#">
-        <oj-bind-text value="[[$data.detail.label]]"></oj-bind-text>
-      </a></li>
-    </script>
-
     <div id="globalBody" class="oj-web-applayout-page">
 
       <div id="announce" tabindex="-1" class="send-off-screen" :aria-live="[[manner]]" aria-atomic="true">
           <p id="ariaLiveMessage"><oj-bind-text value="[[message]]"></oj-bind-text></p>
       </div>
 
-      <!--
-         ** Oracle JET V21.0.0 web application navigation bar and header patterns.
-         ** Please see the demos under Cookbook/Patterns/App Shell: Web
-         ** and the CSS documentation under Support/API Docs/Non-Component Styling
-         ** on the JET website for more information on how to use this pattern.
-      -->
-      <oj-bind-if test="[[!embedded]]">
-      <header role="banner" class="oj-web-applayout-header">
-        <div class="oj-web-applayout-max-width oj-flex-bar oj-sm-align-items-center">
-          <div class="oj-flex-bar-middle oj-sm-align-items-baseline">
-                        <h1 class="oj-sm-only-hide oj-web-applayout-header-title" title="Application Name"><oj-bind-text value="[[appName]]"></oj-bind-text></h1>
+      <!-- Signed in: the sidebar, the top bar and the page -->
+      <oj-bind-if test="[[!embedded && signedIn()]]">
+      <div :class="[[shellClass]]">
+        <aside class="factory-sidebar" id="sidebar" role="navigation" aria-label="Main">
+          <div class="factory-brand">
+            <span class="factory-brand-mark" aria-hidden="true"></span>
+            <span class="factory-brand-text">
+              <span class="factory-brand-name">OBDX</span>
+              <span class="factory-brand-sub">Development Factory</span>
+            </span>
           </div>
-          <div class="oj-flex-bar-end">
-            <!-- Responsive Toolbar -->
-            <oj-toolbar>
-              <oj-bind-if test="[[signedIn()]]">
-              <oj-menu-button id="userMenu" display="[[smScreen() ? 'icons' : 'all']]" chroming="borderless">
-                <span><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
-                <span slot="endIcon" :class="[[{'oj-icon demo-appheader-avatar': smScreen(), 'oj-component-icon oj-button-menu-dropdown-icon': !smScreen()}]]"></span>
-                <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
-                  <oj-option id="account" value="account">Account</oj-option>
-                  <oj-option id="about" value="about">About</oj-option>
-                  <oj-option id="out" value="out">Sign out</oj-option>
-                </oj-menu>
-              </oj-menu-button>
+          <nav class="factory-nav">
+            <ul>
+              <oj-bind-for-each data="[[workNav]]">
+                <template>
+                  <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
+                         :title="[[$current.data.label]]" :aria-current="[[$current.data.active() ? 'page' : null]]"
+                         on-click="[[$current.data.open]]">
+                    <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span>
+                    <span class="factory-nav-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+                  </a></li>
+                </template>
+              </oj-bind-for-each>
+            </ul>
+            <p class="factory-nav-heading">Setup</p>
+            <ul>
+              <oj-bind-for-each data="[[setupNav]]">
+                <template>
+                  <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
+                         :title="[[$current.data.label]]" :aria-current="[[$current.data.active() ? 'page' : null]]"
+                         on-click="[[$current.data.open]]">
+                    <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span>
+                    <span class="factory-nav-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+                  </a></li>
+                </template>
+              </oj-bind-for-each>
+            </ul>
+          </nav>
+          <button type="button" class="factory-nav-collapse" id="collapseSidebar" on-click="[[toggleCollapsed]]"
+                  :aria-label="[[sidebarCollapsed() ? 'Expand the menu' : 'Collapse the menu']]">
+            <span class="factory-nav-icon factory-ico-collapse" aria-hidden="true"></span>
+            <span class="factory-nav-label">Collapse</span>
+          </button>
+        </aside>
+        <div class="factory-scrim" on-click="[[closeSidebar]]"></div>
+
+        <div class="factory-main">
+          <header role="banner" class="factory-topbar">
+            <button type="button" class="factory-menu-toggle" id="menuToggle" aria-label="Open the menu" on-click="[[toggleSidebar]]">
+              <span class="factory-nav-icon factory-ico-menu" aria-hidden="true"></span>
+            </button>
+            <div class="factory-topbar-title">
+              <span class="factory-topbar-app"><oj-bind-text value="[[appName]]"></oj-bind-text></span>
+              <span class="factory-topbar-sep" aria-hidden="true">/</span>
+              <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
+            </div>
+            <oj-menu-button id="userMenu" chroming="borderless" class="factory-user-button">
+              <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
+              <span class="factory-user-text">
+                <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
+                <span class="factory-user-role"><oj-bind-text value="[[userRole]]"></oj-bind-text></span>
+              </span>
+              <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
+                <oj-option id="account" value="account">Account</oj-option>
+                <oj-option id="about" value="about">About</oj-option>
+                <oj-option id="out" value="out">Sign out</oj-option>
+              </oj-menu>
+            </oj-menu-button>
+          </header>
+          <oj-bind-if test="[[updateBanner()]]">
+            <div class="factory-update-banner" role="status" id="updateBanner">
+              <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
+              <oj-bind-if test="[[updateAvailable()]]">
+                <oj-button id="updateNowButton" chroming="callToAction" on-oj-action="[[installUpdate]]">Update now</oj-button>
               </oj-bind-if>
-            </oj-toolbar>
-          </div>
-        </div>
-        <oj-bind-if test="[[signedIn()]]">
-        <div role="navigation" class="oj-web-applayout-max-width oj-web-applayout-navbar">
-          <oj-tab-bar id="navTabBar" data="[[navDataProvider]]"
-                              :class="[[{'oj-md-condense oj-md-justify-content-flex-end': !smScreen()}]]"
-                              display="all"
-                              edge="top"
-                              item.renderer="[[KnockoutTemplateUtils.getRenderer('navTemplate', true)]]"
-                              selection="{{selection.path}}">
-          </oj-tab-bar>
-        </div>
-        </oj-bind-if>
-      </header>
-      </oj-bind-if>
-      <oj-bind-if test="[[!embedded && signedIn() && updateBanner()]]">
-        <div class="factory-update-banner oj-web-applayout-max-width" role="status" id="updateBanner">
-          <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
-          <oj-bind-if test="[[updateAvailable()]]">
-            <oj-button id="updateNowButton" chroming="callToAction" on-oj-action="[[installUpdate]]">Update now</oj-button>
+            </div>
           </oj-bind-if>
+          <oj-module role="main" class="oj-web-applayout-content factory-page" config="[[moduleAdapter.koObservableConfig]]">
+          </oj-module>
         </div>
+      </div>
       </oj-bind-if>
+
+      <!-- Signed out: the sign-in page -->
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
-        <div role="main" class="oj-web-applayout-max-width oj-web-applayout-content factory-login">
-          <h2>Sign in</h2>
-          <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
-            <p>This installation uses your organization's single sign-on.</p>
-            <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">Sign in with single sign-on</a>
-          </oj-bind-if>
-          <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
-            <p class="oj-text-color-secondary">
-              <oj-bind-text value="[[authConfig().mode === 'ldap' ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.']]"></oj-bind-text>
-            </p>
-            <oj-form-layout max-columns="1">
-              <oj-input-text id="loginUsername" label-hint="Username" value="{{loginUsername}}" autocomplete="username"></oj-input-text>
-              <oj-input-password id="loginPassword" label-hint="Password" value="{{loginPassword}}" autocomplete="current-password"
-                                 on-oj-enter="[[signIn]]"></oj-input-password>
-            </oj-form-layout>
-            <oj-button id="signInButton" chroming="callToAction" on-oj-action="[[signIn]]" disabled="[[signingIn]]">Sign in</oj-button>
-          </oj-bind-if>
-          <oj-bind-if test="[[loginError()]]">
-            <p id="loginError" class="oj-text-color-danger"><oj-bind-text value="[[loginError]]"></oj-bind-text></p>
-          </oj-bind-if>
+        <div role="main" class="factory-login">
+          <section class="factory-login-intro">
+            <div class="factory-brand">
+              <span class="factory-brand-mark" aria-hidden="true"></span>
+              <span class="factory-brand-text">
+                <span class="factory-brand-name">OBDX</span>
+                <span class="factory-brand-sub">Development Factory</span>
+              </span>
+            </div>
+            <div class="factory-login-copy">
+              <p class="factory-login-kicker">Analyze · Design · Change · Check</p>
+              <h1>From requirements to OBDX code</h1>
+              <p class="factory-login-lead">
+                Turn prompts, BRDs and FSDs into changes for your bank's Oracle Banking Digital Experience code,
+                with AI models that run on your own servers.
+              </p>
+              <ul class="factory-login-points">
+                <li><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>
+                  <span><strong>Understand your code</strong>Detects the OBDX version, frameworks and bank conventions.</span></li>
+                <li><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span>
+                  <span><strong>Design screens</strong>Build and review screens in the OBDX look before any code is written.</span></li>
+                <li><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>
+                  <span><strong>Plan and generate changes</strong>See the impact, approve the plan, then get the code.</span></li>
+                <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>
+                  <span><strong>Keep code private</strong>Code and documents stay in the workspace they belong to.</span></li>
+              </ul>
+            </div>
+          </section>
+          <section class="factory-login-panel">
+            <div class="factory-login-card">
+              <p class="factory-login-welcome">Welcome to OBDX Development Factory</p>
+              <h2>Sign in</h2>
+              <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
+                <p class="oj-text-color-secondary">This installation uses your organization's single sign-on.</p>
+                <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">Sign in with single sign-on</a>
+              </oj-bind-if>
+              <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
+                <p class="oj-text-color-secondary"><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
+                <oj-form-layout max-columns="1">
+                  <oj-input-text id="loginUsername" label-hint="Username" value="{{loginUsername}}" autocomplete="username"></oj-input-text>
+                  <oj-input-password id="loginPassword" label-hint="Password" value="{{loginPassword}}" autocomplete="current-password"
+                                     mask-icon="visible" on-oj-enter="[[signIn]]"></oj-input-password>
+                </oj-form-layout>
+                <oj-button id="signInButton" class="factory-login-submit" chroming="callToAction" on-oj-action="[[signIn]]" disabled="[[signingIn]]">Sign in</oj-button>
+              </oj-bind-if>
+              <oj-bind-if test="[[loginError()]]">
+                <p id="loginError" class="oj-text-color-danger"><oj-bind-text value="[[loginError]]"></oj-bind-text></p>
+              </oj-bind-if>
+              <p class="factory-login-help">No account yet? Ask an administrator of this factory to add you.</p>
+            </div>
+          </section>
         </div>
       </oj-bind-if>
-      <oj-bind-if test="[[embedded || signedIn()]]">
-      <oj-module role="main" class="oj-web-applayout-max-width oj-web-applayout-content" config="[[moduleAdapter.koObservableConfig]]">
+
+      <!-- Embedded (preview frame, customer review link): the page alone -->
+      <oj-bind-if test="[[embedded]]">
+      <oj-module role="main" class="oj-web-applayout-content" config="[[moduleAdapter.koObservableConfig]]">
       </oj-module>
       </oj-bind-if>
     </div>
