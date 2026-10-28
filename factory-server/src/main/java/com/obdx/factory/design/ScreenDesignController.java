@@ -20,11 +20,13 @@ import java.util.UUID;
 public class ScreenDesignController {
 
     private final ScreenDesignService service;
+    private final ComponentPalette palette;
     private final AccessGuard guard;
     private final AuditLog audit;
 
-    public ScreenDesignController(ScreenDesignService service, AccessGuard guard, AuditLog audit) {
+    public ScreenDesignController(ScreenDesignService service, ComponentPalette palette, AccessGuard guard, AuditLog audit) {
         this.service = service;
+        this.palette = palette;
         this.guard = guard;
         this.audit = audit;
     }
@@ -32,6 +34,13 @@ public class ScreenDesignController {
     @GetMapping("/api/design/catalog")
     public List<ComponentCatalog.ComponentType> catalog() {
         return ComponentCatalog.TYPES;
+    }
+
+    /** The components to drag onto a screen: the standard ones and those found in the workspace's code. */
+    @GetMapping("/api/workspaces/{workspaceId}/design-palette")
+    public ComponentPalette.Palette palette(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return palette.palette(workspaceId);
     }
 
     @GetMapping("/api/workspaces/{workspaceId}/designs")

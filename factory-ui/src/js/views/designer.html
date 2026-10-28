@@ -43,6 +43,31 @@
   </oj-bind-if>
 
   <div class="factory-designer" :style.display="[[detail() ? 'flex' : 'none']]">
+    <div id="designPalette" class="factory-designer-palette" :style.display="[[editable() ? 'block' : 'none']]">
+      <h3>Components</h3>
+      <oj-input-text id="paletteFilter" label-hint="Search components" label-edge="inside" raw-value="{{paletteFilter}}"></oj-input-text>
+      <p class="oj-typography-body-xs oj-text-color-secondary">Drag a component onto a section or before a component, or click it to
+        add it after the selected one.</p>
+      <oj-bind-if test="[[paletteNote()]]">
+        <p class="factory-warning oj-typography-body-xs"><oj-bind-text value="[[paletteNote]]"></oj-bind-text></p>
+      </oj-bind-if>
+      <oj-bind-for-each data="[[paletteGroups]]" as="g">
+        <template>
+          <details class="factory-palette-group" :open="[[g.data.open]]">
+            <summary><oj-bind-text value="[[g.data.title + ' (' + g.data.items.length + ')']]"></oj-bind-text></summary>
+            <oj-bind-for-each data="[[g.data.items]]" as="p">
+              <template>
+                <div class="factory-palette-item" draggable="true" :data-pid="[[p.data.id]]" :title="[[p.data.title]]"
+                     on-dragstart="[[p.data.page.paletteDragStart]]" on-dragend="[[p.data.page.dragEnd]]" on-click="[[p.data.addAction]]">
+                  <span class="factory-palette-label"><oj-bind-text value="[[p.data.label]]"></oj-bind-text></span>
+                  <span class="factory-palette-detail oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[p.data.detail]]"></oj-bind-text></span>
+                </div>
+              </template>
+            </oj-bind-for-each>
+          </details>
+        </template>
+      </oj-bind-for-each>
+    </div>
     <div class="factory-designer-editor">
       <oj-bind-if test="[[detail()]]">
         <h2>
@@ -157,8 +182,12 @@
               <oj-input-text id="propPlaceholder" label-hint="Placeholder" value="{{propPlaceholder}}"></oj-input-text>
               <oj-input-text id="propHelp" label-hint="Help text" value="{{propHelp}}"></oj-input-text>
               <oj-switch id="propReadonly" label-hint="Read-only" value="{{propReadonly}}"></oj-switch>
+              <oj-bind-if test="[[selectedIsComponent()]]">
+                <oj-input-text id="propComponent" label-hint="Component (as named in the code)" value="{{propComponent}}"></oj-input-text>
+                <oj-text-area id="propParams" label-hint="Parameters (one per line, name: value)" value="{{propParams}}" rows="4"></oj-text-area>
+              </oj-bind-if>
               <oj-bind-if test="[[selectedHasOptions()]]">
-                <oj-text-area id="propOptions" label-hint="Options (one per line)" value="{{propOptions}}" rows="4"></oj-text-area>
+                <oj-text-area id="propOptions" label-hint="[[optionsLabel]]" value="{{propOptions}}" rows="4"></oj-text-area>
               </oj-bind-if>
               <oj-text-area id="propValidations" label-hint="Validations (one per line)" value="{{propValidations}}" rows="3"></oj-text-area>
             </oj-form-layout>

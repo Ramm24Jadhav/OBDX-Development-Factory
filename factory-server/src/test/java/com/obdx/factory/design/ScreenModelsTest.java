@@ -12,6 +12,26 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ScreenModelsTest {
 
     @Test
+    void keepsComponentsOfTheCodeAndTables() {
+        ScreenModel model = ScreenModels.parse("""
+                {"name": "Transfer", "sections": [{"components": [
+                  {"type": "component", "label": "From account", "component": " account-input ",
+                   "params": {"type": "balance", " ": "dropped", "value": null}},
+                  {"type": "component", "label": "No component named"},
+                  {"type": "text", "label": "Remarks", "component": "account-input", "params": {"x": "y"}},
+                  {"type": "table", "label": "Orders"}
+                ]}]}""");
+
+        List<ScreenModel.Component> components = model.sections().getFirst().components();
+        assertThat(components.get(0).component()).isEqualTo("account-input");
+        assertThat(components.get(0).params()).containsExactly(java.util.Map.entry("type", "balance"), java.util.Map.entry("value", ""));
+        assertThat(components.get(1).type()).as("a component needs its name").isEqualTo("text");
+        assertThat(components.get(2).component()).as("only type component names one").isNull();
+        assertThat(components.get(2).params()).isEmpty();
+        assertThat(components.get(3).options()).as("a table's options are its columns").containsExactly("Column 1", "Column 2");
+    }
+
+    @Test
     void buildsFirstDesignFromSpecScreen() {
         RequirementSpec.Screen screen = new RequirementSpec.Screen("Own Account Transfer", "enhance", "Add remarks", "2",
                 List.of(

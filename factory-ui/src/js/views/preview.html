@@ -55,6 +55,41 @@
                   <oj-input-text :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="[[c.data.displayValue]]"
                                  readonly="true"></oj-input-text>
                 </oj-bind-if>
+                <oj-bind-if test="[[c.data.type === 'table']]">
+                  <div :data-cid="[[c.data.id]]" :class="[[c.data.css]]" colspan="3">
+                    <div class="oj-typography-body-sm oj-text-color-secondary"><oj-bind-text value="[[c.data.label]]"></oj-bind-text></div>
+                    <oj-table :aria-label="[[c.data.label]]" data="[[c.data.table.rows]]" columns="[[c.data.table.columns]]"
+                              class="oj-sm-width-full"></oj-table>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.look === 'account']]">
+                  <oj-select-single :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label]]" value="{{c.data.value}}"
+                                    data="[[c.data.optionsProvider]]" required="[[c.data.required]]" readonly="[[c.data.readonly]]"
+                                    help.instruction="[[c.data.helpText]]"></oj-select-single>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.look === 'amount']]">
+                  <oj-input-number :data-cid="[[c.data.id]]" :class="[[c.data.css]]" label-hint="[[c.data.label + ' (INR)']]" value="{{c.data.value}}"
+                                   required="[[c.data.required]]" readonly="[[c.data.readonly]]" converter="[[c.data.converter]]"
+                                   help.instruction="[[c.data.helpText]]"></oj-input-number>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.look === 'section']]">
+                  <div :data-cid="[[c.data.id]]" :class="[[c.data.css + ' factory-page-section']]" colspan="3">
+                    <oj-bind-text value="[[c.data.label]]"></oj-bind-text>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.look === 'generic']]">
+                  <div :data-cid="[[c.data.id]]" :class="[[c.data.css + ' factory-code-component']]">
+                    <div><strong><oj-bind-text value="[[c.data.label]]"></oj-bind-text></strong></div>
+                    <div class="factory-code-component-tag"><oj-bind-text value="[[c.data.tag]]"></oj-bind-text></div>
+                    <oj-bind-if test="[[c.data.params.length > 0]]">
+                      <ul class="factory-code-component-params">
+                        <oj-bind-for-each data="[[c.data.params]]" as="p">
+                          <template><li><oj-bind-text value="[[p.data]]"></oj-bind-text></li></template>
+                        </oj-bind-for-each>
+                      </ul>
+                    </oj-bind-if>
+                  </div>
+                </oj-bind-if>
               </template>
             </oj-bind-for-each>
           </oj-form-layout>

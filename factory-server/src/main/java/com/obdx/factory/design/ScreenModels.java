@@ -9,9 +9,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,7 +51,7 @@ public final class ScreenModels {
             components.add(new ScreenModel.Component(null, type, field.name(),
                     field.label() != null ? field.label() : humanize(field.name()),
                     field.mandatory(), field.notes(), null, maxLength, field.defaultValue(),
-                    ComponentCatalog.find(type).orElseThrow().hasOptions() ? List.of("Option 1", "Option 2") : List.of(),
+                    ComponentCatalog.find(type).orElseThrow().hasOptions() ? defaultOptions(type) : List.of(),
                     field.validations(), "display".equals(type) ? true : null));
         }
         List<ScreenModel.ActionButton> actions = new ArrayList<>();
@@ -100,6 +102,21 @@ public final class ScreenModels {
             List<ScreenModel.Component> components = new ArrayList<>();
             for (ScreenModel.Component c : nullSafe(section.components())) {
                 String type = ComponentCatalog.normalize(c.type());
+                String component = blankToNull(c.component());
+                if ("component".equals(type) && component == null) {
+                    type = "text";
+                }
+                if (!"component".equals(type)) {
+                    component = null;
+                }
+                Map<String, String> params = new LinkedHashMap<>();
+                if (component != null && c.params() != null) {
+                    c.params().forEach((key, value) -> {
+                        if (key != null && !key.isBlank()) {
+                            params.put(key.trim(), value == null ? "" : value.trim());
+                        }
+                    });
+                }
                 String name = c.name() != null && !c.name().isBlank() ? c.name().trim() : camel(c.label());
                 if (name.isEmpty()) {
                     name = "field";
@@ -107,13 +124,13 @@ public final class ScreenModels {
                 List<String> options = new ArrayList<>(new LinkedHashSet<>(nullSafe(c.options()).stream()
                         .filter(o -> o != null && !o.isBlank()).map(String::trim).toList()));
                 if (ComponentCatalog.find(type).orElseThrow().hasOptions() && options.isEmpty()) {
-                    options = List.of("Option 1", "Option 2");
+                    options = defaultOptions(type);
                 }
                 components.add(new ScreenModel.Component(uniqueId(c.id(), "c-" + name, usedIds), type, name,
                         c.label() != null && !c.label().isBlank() ? c.label().trim() : humanize(name),
                         c.required(), blankToNull(c.helpText()), blankToNull(c.placeholder()),
                         c.maxLength() != null && c.maxLength() > 0 ? c.maxLength() : null,
-                        blankToNull(c.defaultValue()), options, nullSafe(c.validations()), c.readonly()));
+                        blankToNull(c.defaultValue()), options, nullSafe(c.validations()), c.readonly(), component, params));
             }
             sections.add(new ScreenModel.Section(uniqueId(section.id(), "s-" + sectionNumber, usedIds),
                     section.title() == null || section.title().isBlank() ? null : section.title().trim(),
@@ -134,6 +151,11 @@ public final class ScreenModels {
         String changeType = model.changeType() == null ? "unknown" : model.changeType().toLowerCase(Locale.ROOT);
         return new ScreenModel(model.name().trim(), model.title() == null || model.title().isBlank() ? model.name().trim() : model.title().trim(),
                 blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown", sections, actions);
+    }
+
+    /** Placeholder choices until the analyst fills them in; a table's options are its columns. */
+    private static List<String> defaultOptions(String type) {
+        return "table".equals(type) ? List.of("Column 1", "Column 2") : List.of("Option 1", "Option 2");
     }
 
     private static String uniqueId(String wanted, String fallback, Set<String> used) {

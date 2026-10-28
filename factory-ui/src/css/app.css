@@ -191,8 +191,74 @@
 }
 
 .factory-designer-editor {
-    flex: 0 0 44%;
+    flex: 0 0 38%;
     min-width: 0;
+}
+
+.factory-designer-palette {
+    flex: 0 0 220px;
+    min-width: 0;
+    position: sticky;
+    top: 8px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+}
+
+.factory-palette-group summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 6px 0;
+}
+
+.factory-palette-item {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 8px;
+    margin: 2px 0;
+    border: 1px solid var(--oj-core-divider-color, #ddd);
+    border-radius: 4px;
+    background: #fff;
+    cursor: grab;
+}
+
+.factory-palette-item:hover {
+    background: #e8eef7;
+    border-color: #2b6cb0;
+}
+
+.factory-palette-detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A component of the bank's code in the preview: OBDX look where known, else a labelled placeholder */
+.factory-code-component {
+    border: 1px solid #c7d3e3;
+    border-left: 4px solid #2b6cb0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: #f7f9fc;
+}
+
+.factory-code-component-tag {
+    font-family: monospace;
+    font-size: 12px;
+    color: #2b6cb0;
+}
+
+.factory-code-component-params {
+    font-size: 12px;
+    color: #555;
+    margin: 4px 0 0;
+    padding-left: 16px;
+}
+
+.factory-page-section {
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid #2b6cb0;
+    padding-bottom: 4px;
 }
 
 .factory-designer-preview {
@@ -326,6 +392,7 @@
     }
 
     .factory-designer-editor,
+    .factory-designer-palette,
     .factory-designer-preview {
         flex: 1 1 auto;
         width: 100%;

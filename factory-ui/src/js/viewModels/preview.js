@@ -5,17 +5,39 @@
  */
 define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojinputnumber', 'ojs/ojdatetimepicker',
-        'ojs/ojselectsingle', 'ojs/ojradioset', 'ojs/ojcheckboxset', 'ojs/ojswitch', 'ojs/ojbutton'],
+        'ojs/ojselectsingle', 'ojs/ojradioset', 'ojs/ojcheckboxset', 'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtable'],
   function (ko, ArrayDataProvider, NumberConverter) {
     const SAMPLE_ACCOUNTS = ['Savings xxxx1234 (INR)', 'Current xxxx5678 (INR)', 'Savings xxxx9012 (USD)'];
     const amountConverter = new NumberConverter.IntlNumberConverter({ style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // OBDX framework components the preview shows like the real ones; others appear as a labelled placeholder
+    const LOOKS = { 'account-input': 'account', 'amount-input': 'amount', 'page-section': 'section' };
+
+    /** Columns and two rows of sample data for a table; its options are the column headers. */
+    const table = (columns) => {
+      const headers = columns.length > 0 ? columns : ['Column 1', 'Column 2'];
+      const rows = [1, 2].map((n) => {
+        const row = { key: n };
+        headers.forEach((header, i) => { row['c' + i] = 'Sample ' + n; });
+        return row;
+      });
+      return {
+        columns: headers.map((header, i) => ({ headerText: header, field: 'c' + i })),
+        rows: new ArrayDataProvider(rows, { keyAttributes: 'key' })
+      };
+    };
 
     function toView(model, highlight) {
       const component = (c) => {
-        const options = c.type === 'account' && (!c.options || c.options.length === 0 || c.options[0] === 'Option 1')
+        const look = c.type === 'component' ? (LOOKS[c.component] || 'generic') : null;
+        const options = (c.type === 'account' || look === 'account') && (!c.options || c.options.length === 0 || c.options[0] === 'Option 1')
           ? SAMPLE_ACCOUNTS : (c.options || []);
         const optionItems = options.map((label) => ({ value: label, label: label }));
+        const params = c.params || {};
         return {
+          look: look,
+          tag: c.component ? '<' + c.component + '>' : '',
+          params: Object.keys(params).map((key) => key + (params[key] ? ': ' + params[key] : '')),
+          table: c.type === 'table' ? table(c.options || []) : null,
           id: c.id,
           type: c.type,
           label: c.label,
@@ -25,7 +47,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           helpText: c.helpText || '',
           maxLength: c.maxLength || null,
           counter: c.maxLength ? 'remaining' : 'none',
-          converter: c.type === 'amount' ? amountConverter : null,
+          converter: c.type === 'amount' || look === 'amount' ? amountConverter : null,
           value: ko.observable(c.type === 'number' || c.type === 'amount' || c.type === 'date' ? null : (c.defaultValue || null)),
           values: ko.observableArray([]),
           checked: ko.observable(c.defaultValue === 'true' || c.defaultValue === 'on'),

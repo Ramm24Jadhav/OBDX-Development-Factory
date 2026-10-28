@@ -35,11 +35,14 @@ public class ScreenDesignService {
     private final RequirementService requirements;
     private final ScreenModelEditor editor;
     private final TargetPacks targets;
+    private final ComponentPalette palette;
     private final SecureRandom random = new SecureRandom();
 
     public ScreenDesignService(ScreenDesignRepository designs, DesignStore store, WorkspaceRepository workspaces,
-                               RequirementService requirements, ScreenModelEditor editor, TargetPacks targets) {
+                               RequirementService requirements, ScreenModelEditor editor, TargetPacks targets,
+                               ComponentPalette palette) {
         this.designs = designs;
+        this.palette = palette;
         this.targets = targets;
         this.store = store;
         this.workspaces = workspaces;
@@ -135,7 +138,7 @@ public class ScreenDesignService {
         }
         ScreenDesign design = editable(find(id));
         ScreenModel current = currentModel(design);
-        ScreenModel changed = editor.apply(current, instruction.trim());
+        ScreenModel changed = editor.apply(current, instruction.trim(), palette.palette(design.getWorkspaceId()).items());
         if (changed.equals(current)) {
             throw new BadRequestException("The model made no change. Try describing it differently.");
         }

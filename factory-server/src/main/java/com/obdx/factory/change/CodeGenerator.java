@@ -127,6 +127,10 @@ public class CodeGenerator {
         user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
+            if (context.designsJson().contains("\"type\":\"component\"")) {
+                user.append("Components of type \"component\" are existing components of the bank's code: use the component named in")
+                        .append(" \"component\" exactly as the code uses it elsewhere, with the \"params\" given, instead of building it again.\n\n");
+            }
         }
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
         if (!targetGuidance.isEmpty()) {
