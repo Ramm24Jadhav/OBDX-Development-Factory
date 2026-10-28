@@ -70,6 +70,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_DB_URL` | `jdbc:postgresql://localhost:5432/factory` |
 | `FACTORY_DB_USER` / `FACTORY_DB_PASSWORD` | `factory` / `factory` |
 | `FACTORY_TRIAL_DATABASE` | `false`. `true`: the factory starts its own PostgreSQL (data in `FACTORY_DATA_DIR/trial-database`) and ignores the `FACTORY_DB_*` settings. For trials only |
+| `FACTORY_LOCAL_FOLDERS` | the value of `FACTORY_TRIAL_DATABASE`. `true`: workspaces can be created from folders on the factory's computer (see Creating a workspace) |
 | `FACTORY_SECRET_KEY` | none. Required before saving an SVN password. Generate with `openssl rand -base64 32` and keep it stable |
 | `FACTORY_DATA_DIR` | `data` (SVN working copies are kept under it) |
 | `FACTORY_SVN_COMMAND` | `svn` |
@@ -90,6 +91,26 @@ ollama pull nomic-embed-text
 ```
 
 Then open the **Models** page and send a prompt.
+
+## Creating a workspace
+
+On the Workspaces page, administrators choose where the code is, and the factory checks it before the workspace is
+created:
+
+- **SVN server (URL)**, with a username and password if the server asks. **Check** connects and reads the code.
+- **Folder on this computer** (the computer the factory runs on): a TortoiseSVN checkout (the factory imports from the
+  checkout's URL, so it sees what is committed), an SVN repository folder, or a plain folder, which the factory copies
+  into a new SVN repository under `FACTORY_DATA_DIR/local-repositories` so changes can still be delivered as branches.
+  **Browse...** opens the computer's folders; repositories in `demo-svn` and `local-repositories` are listed to pick.
+  This option exists when `FACTORY_LOCAL_FOLDERS` is true, which is the default with the trial database; on a shared
+  server it is off, because administrators would browse the server's folders, not their own.
+
+The check fills in the workspace name, bank and OBDX version from the code and says why, strongest evidence first:
+OBDX's `about.json` (`channel/framework/json/about.json` in 22.2), Oracle's OBDX libraries (`com.ofss.digx`) or an
+`obdx.version` in the build files, the Oracle JET version, the Java level (8 for 22.x, 11 for 25.x) and a version in
+the repository or folder name. The bank comes from the repository or folder name, the build's group id, or the most
+common Java package that is not Oracle's (`CodeDetector`). Everything can be changed before **Create workspace and
+import**, which also starts the import and opens the Code page.
 
 ## How SVN import and indexing work
 
@@ -308,6 +329,11 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `DELETE /api/workspaces/{id}` | Delete a workspace, its index and its working copy |
 | `PUT /api/workspaces/{id}/svn` | Set SVN URL, username and password (`svnPassword`: omit or null to keep, empty to remove) |
 | `POST /api/workspaces/{id}/svn/test` | Check the SVN connection; returns the latest revision |
+| `POST /api/sources/inspect-url` | Check an SVN URL (`svnUrl`, optional `svnUsername`, `svnPassword`) and suggest name, bank and OBDX version |
+| `GET /api/sources/local` | Whether folders on the factory's computer can be used, where to start browsing, SVN repositories found |
+| `GET /api/sources/local/folders?path=` | Subfolders of a folder, marked as SVN checkout or SVN repository |
+| `POST /api/sources/local/inspect` | What a folder is (`path`): SVN checkout, SVN repository or plain folder, its SVN URL and suggestions |
+| `POST /api/sources/local/repository` | Copy a plain folder (`path`, optional `name`) into a new SVN repository under `FACTORY_DATA_DIR/local-repositories` |
 | `POST /api/workspaces/{id}/imports` | Start an import (check out or update, then index) |
 | `GET /api/workspaces/{id}/imports` | Recent import jobs with progress |
 | `GET /api/workspaces/{id}/index` | Indexed revision and file/piece counts |

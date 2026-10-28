@@ -13,16 +13,120 @@
   </oj-bind-if>
   <oj-bind-if test="[[isAdmin()]]">
   <h2>New workspace</h2>
-  <oj-validation-group id="workspaceForm" valid="{{formValid}}">
-    <oj-form-layout max-columns="2" direction="row">
-      <oj-input-text id="name" label-hint="Workspace name" value="{{name}}" required></oj-input-text>
-      <oj-input-text id="bankName" label-hint="Bank" value="{{bankName}}" required></oj-input-text>
-      <oj-select-single id="obdxVersion" label-hint="OBDX version" data="[[versionProvider]]" value="{{obdxVersion}}" required></oj-select-single>
+  <h3>1. Where is the code?</h3>
+  <oj-radioset id="sourceKind" value="{{sourceKind}}" options="[[sourceProvider]]" class="oj-choice-direction-row"
+               label-hint="Where is the code?" label-edge="none"></oj-radioset>
+
+  <oj-bind-if test="[[sourceKind() === 'url']]">
+    <oj-form-layout max-columns="3" direction="row">
       <oj-input-text id="svnUrl" label-hint="SVN repository URL" value="{{svnUrl}}"
-                     help-hints.definition="For example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
+                     help-hints.definition="The folder with the bank's code, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
+      <oj-input-text id="svnUsername" label-hint="SVN username (if the server asks)" value="{{svnUsername}}"></oj-input-text>
+      <oj-input-password id="svnPassword" label-hint="SVN password" value="{{svnPassword}}" mask-icon="visible"></oj-input-password>
     </oj-form-layout>
-  </oj-validation-group>
-  <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
+    <oj-button id="checkUrlButton" on-oj-action="[[checkUrl]]" disabled="[[checking]]">Check</oj-button>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[sourceKind() === 'folder']]">
+    <oj-bind-if test="[[found().length > 0]]">
+      <p>SVN repositories found on this computer:</p>
+      <div class="factory-design-list" id="foundRepositories">
+        <oj-bind-for-each data="[[found]]">
+          <template>
+            <oj-button chroming="outlined" on-oj-action="[[$current.data.use]]">
+              <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
+            </oj-button>
+          </template>
+        </oj-bind-for-each>
+      </div>
+    </oj-bind-if>
+    <div class="factory-folder-row">
+      <oj-input-text id="folderPath" class="factory-grow" label-hint="Folder on this computer" value="{{folderPath}}"
+                     help-hints.definition="A TortoiseSVN checkout, an SVN repository, or any folder with the code, for example C:\svn\obdx\trunk"></oj-input-text>
+      <oj-bind-if test="[[!browsing()]]">
+        <oj-button id="browseButton" on-oj-action="[[toggleBrowse]]">Browse...</oj-button>
+      </oj-bind-if>
+      <oj-bind-if test="[[browsing()]]">
+        <oj-button id="browseButton" on-oj-action="[[toggleBrowse]]">Close</oj-button>
+      </oj-bind-if>
+      <oj-button id="checkFolderButton" on-oj-action="[[checkFolder]]" disabled="[[checking]]">Check</oj-button>
+    </div>
+    <oj-bind-if test="[[browsing() && listing()]]">
+      <div class="factory-browser" id="folderBrowser">
+        <div>
+          <oj-bind-for-each data="[[roots]]">
+            <template>
+              <oj-button chroming="borderless" on-oj-action="[[$current.data.open]]">
+                <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
+              </oj-button>
+            </template>
+          </oj-bind-for-each>
+        </div>
+        <div class="factory-browser-path">
+          <oj-button id="folderUpButton" chroming="borderless" on-oj-action="[[folderUp]]" disabled="[[!listing().parent]]">Up</oj-button>
+          <strong><oj-bind-text value="[[listing().path]]"></oj-bind-text></strong>
+          <oj-button id="chooseFolderButton" chroming="callToAction" on-oj-action="[[chooseFolder]]">Use this folder</oj-button>
+        </div>
+        <ul class="factory-folder-list">
+          <oj-bind-for-each data="[[listing().folders]]">
+            <template>
+              <li>
+                <oj-button chroming="borderless" on-oj-action="[[$current.data.open]]">
+                  <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
+                </oj-button>
+                <oj-bind-if test="[[$current.data.label]]">
+                  <span class="factory-badge"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+                  <oj-button chroming="borderless" on-oj-action="[[$current.data.use]]">Use</oj-button>
+                </oj-bind-if>
+              </li>
+            </template>
+          </oj-bind-for-each>
+          <oj-bind-if test="[[listing().folders.length === 0]]"><li class="oj-text-color-secondary">No folders here.</li></oj-bind-if>
+        </ul>
+      </div>
+    </oj-bind-if>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[checking()]]">
+    <p class="factory-result oj-text-color-secondary">Checking the code...</p>
+  </oj-bind-if>
+  <oj-bind-if test="[[inspection()]]">
+    <p class="factory-result" id="checkMessage"><oj-bind-text value="[[inspection().message]]"></oj-bind-text></p>
+    <oj-bind-if test="[[inspection().kind === 'FOLDER']]">
+      <oj-button id="makeRepositoryButton" on-oj-action="[[makeRepository]]" disabled="[[checking]]">Copy into a new SVN repository</oj-button>
+    </oj-bind-if>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[inspection() && inspection().svnUrl]]">
+    <h3>2. Workspace details</h3>
+    <oj-bind-if test="[[reasons().length > 0]]">
+      <div class="factory-suggestions" id="suggestions">Filled in from the code (change anything that is not right):
+        <ul>
+          <oj-bind-for-each data="[[reasons]]">
+            <template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </div>
+    </oj-bind-if>
+    <oj-bind-if test="[[reasons().length === 0]]">
+      <p class="oj-text-color-secondary">The bank and OBDX version could not be told from the code; enter them.</p>
+    </oj-bind-if>
+    <oj-validation-group id="workspaceForm" valid="{{formValid}}">
+      <oj-form-layout max-columns="2" direction="row">
+        <oj-input-text id="name" label-hint="Workspace name" value="{{name}}" required></oj-input-text>
+        <oj-input-text id="bankName" label-hint="Bank" value="{{bankName}}" required></oj-input-text>
+        <oj-select-single id="obdxVersion" label-hint="OBDX version" data="[[versionProvider]]" value="{{obdxVersion}}" required></oj-select-single>
+        <oj-switch id="importNow" label-hint="Import the code now" value="{{importNow}}"></oj-switch>
+      </oj-form-layout>
+    </oj-validation-group>
+    <!-- Two buttons, because a button keeps the label it was first rendered with -->
+    <oj-bind-if test="[[importNow()]]">
+      <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace and import</oj-button>
+    </oj-bind-if>
+    <oj-bind-if test="[[!importNow()]]">
+      <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
+    </oj-bind-if>
+  </oj-bind-if>
   </oj-bind-if>
 
   <h2>All workspaces</h2>

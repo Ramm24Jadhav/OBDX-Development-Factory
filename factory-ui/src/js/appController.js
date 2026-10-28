@@ -52,6 +52,8 @@ define(['knockout', './services/session', 'ojs/ojcontext', 'ojs/ojmodule-element
         urlAdapter: new UrlParamAdapter()
       });
       router.sync();
+      // Pages open another page with window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' })).
+      window.addEventListener('factory-navigate', (event) => router.go({ path: event.detail }));
 
       this.moduleAdapter = new ModuleRouterAdapter(router);
 

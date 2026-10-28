@@ -101,10 +101,39 @@ public class SvnClient {
         return Long.parseLong(matcher.group(1));
     }
 
+    /** Paths of the files and folders below the URL or working copy (folders end with "/"), at most limit of them. */
+    public List<String> list(String target, SvnCredentials credentials, int limit) {
+        return run(List.of("list", "--recursive", target), credentials, null, properties.commandTimeout())
+                .lines().map(String::strip).filter(line -> !line.isEmpty()).limit(limit).toList();
+    }
+
+    /** The content of one file in the repository. */
+    public String cat(String url, SvnCredentials credentials) {
+        return run(List.of("cat", url), credentials, null, properties.commandTimeout());
+    }
+
+    /**
+     * Creates a repository in the (new) directory with the usual layout and the folder's files as trunk, as
+     * create-demo-svn does. Returns the trunk URL.
+     */
+    public String createRepository(Path directory, Path folder, String message) {
+        run(tool("svnadmin"), List.of("create", directory.toString()), SvnCredentials.NONE, null, properties.commandTimeout(), false);
+        String root = directory.toAbsolutePath().toUri().toString().replaceAll("/+$", "");
+        run(List.of("mkdir", "--parents", "--message", "Repository layout", root + "/branches/factory", root + "/tags"),
+                SvnCredentials.NONE, null, properties.commandTimeout());
+        run(List.of("import", "--message", message, folder.toString(), root + "/trunk"), SvnCredentials.NONE, null, properties.checkoutTimeout());
+        return root + "/trunk";
+    }
+
     /** svnmucc lives next to svn. */
     private String mucc() {
+        return tool("svnmucc");
+    }
+
+    /** Another Subversion tool (svnmucc, svnadmin) from the same folder as svn. */
+    private String tool(String name) {
         String svn = properties.command();
-        return svn.endsWith("svn") ? svn.substring(0, svn.length() - 3) + "svnmucc" : "svnmucc";
+        return svn.endsWith("svn") ? svn.substring(0, svn.length() - 3) + name : name;
     }
 
     private String run(List<String> args, SvnCredentials credentials, Path workingDirectory, Duration timeout) {
@@ -112,12 +141,20 @@ public class SvnClient {
     }
 
     private String run(String executable, List<String> args, SvnCredentials credentials, Path workingDirectory, Duration timeout) {
+        return run(executable, args, credentials, workingDirectory, timeout, true);
+    }
+
+    /** @param clientOptions add the options of svn and svnmucc (svnadmin has none of them) */
+    private String run(String executable, List<String> args, SvnCredentials credentials, Path workingDirectory, Duration timeout,
+                       boolean clientOptions) {
         List<String> command = new ArrayList<>();
         command.add(executable);
         command.addAll(args);
-        command.add("--non-interactive");
-        command.add("--no-auth-cache");
-        if (properties.trustUnknownCa()) {
+        if (clientOptions) {
+            command.add("--non-interactive");
+            command.add("--no-auth-cache");
+        }
+        if (clientOptions && properties.trustUnknownCa()) {
             command.add("--trust-server-cert-failures=unknown-ca");
         }
         boolean sendPassword = credentials.present() && credentials.password() != null;
@@ -151,7 +188,7 @@ public class SvnClient {
             throw new SvnException("Could not send credentials to svn", e);
         }
 
-        String label = executable.endsWith("svnmucc") ? "svnmucc" : "svn " + args.get(0);
+        String label = executable.endsWith("svn") ? "svn " + args.get(0) : Path.of(executable).getFileName() + " " + args.get(0);
         CompletableFuture<String> stdout = readAsync(process.getInputStream());
         CompletableFuture<String> stderr = readAsync(process.getErrorStream());
         try {

@@ -452,3 +452,61 @@
 .factory-size-S { background-color: #e3f4e6; }
 .factory-size-M { background-color: #fdf1d6; }
 .factory-size-L { background-color: #f9dcdc; }
+
+/* New workspace: folder on this computer */
+.factory-folder-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 1000px;
+}
+
+.factory-browser {
+    margin-top: 8px;
+    padding: 8px 12px;
+    max-width: 1000px;
+    border: 1px solid var(--oj-core-divider-color, #ddd);
+    border-radius: 4px;
+}
+
+.factory-browser-path {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--oj-core-divider-color, #ddd);
+}
+
+.factory-folder-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.factory-folder-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.factory-badge {
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    background-color: #e3f4e6;
+}
+
+.factory-suggestions {
+    max-width: 1000px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-left: 4px solid #2c7a3f;
+    background-color: #eef7f0;
+}
+
+.factory-suggestions ul {
+    margin: 4px 0 0;
+}

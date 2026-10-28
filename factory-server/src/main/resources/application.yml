@@ -75,6 +75,11 @@ factory:
     directory: ${factory.storage.root}/trial-database
     # Demo SVN repositories made by create-demo-svn; they are added as workspaces and imported at startup.
     demo-svn: ${FACTORY_DEMO_SVN_DIR:demo-svn}
+  local-folders:
+    # Offer folders on the computer the factory runs on as workspace sources (an SVN checkout, an SVN repository or a
+    # plain folder). On by default with the trial database, where that computer is the user's own; on a shared server
+    # administrators would see the server's folders, so it is off there unless turned on.
+    enabled: ${FACTORY_LOCAL_FOLDERS:${FACTORY_TRIAL_DATABASE:false}}
   svn:
     command: ${FACTORY_SVN_COMMAND:svn}
     trust-unknown-ca: ${FACTORY_SVN_TRUST_UNKNOWN_CA:false}

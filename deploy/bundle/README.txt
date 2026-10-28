@@ -25,6 +25,11 @@ Try it with demo code
   demo-svn folder. Then start the factory, or stop and start it again if it was running: it adds them as the
   workspaces bank-a-22 (OBDX 22.x) and bank-b-25 (25.x) and imports their code.
 
+Your own code
+  On the Workspaces page choose "Folder on this computer" and pick your TortoiseSVN checkout (or any folder with
+  the code) with Browse..., or choose "SVN server (URL)". Press Check: the factory fills in the workspace name, bank
+  and OBDX version from the code. Then press "Create workspace and import".
+
 Your data
   Everything is kept in the data folder: the trial database, imported code and the key that encrypts stored SVN
   passwords (data\secret.key). To update the factory, unzip the new version and copy the data folder and
