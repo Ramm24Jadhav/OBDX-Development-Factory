@@ -77,6 +77,15 @@ class ScreenModelEditorTest {
     }
 
     @Test
+    void tellsTheModelWhichElementTheInstructionIsAbout() {
+        replies.add("{\"name\": \"Transfer\"}");
+
+        editor.apply(ScreenModels.blank("Transfer"), "make it optional", List.of(), "c-remarks");
+
+        assertThat(prompts.getFirst()).contains("about the element with id \"c-remarks\" only");
+    }
+
+    @Test
     void anImageNeedsAModelThatReadsImages() {
         DesignImporter.Design image = new DesignImporter.Design("image mock.png", null, new byte[]{1, 2}, "image/png");
 

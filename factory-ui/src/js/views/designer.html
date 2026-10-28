@@ -20,16 +20,22 @@
     </oj-bind-if>
     <span class="factory-dz-spacer"></span>
     <oj-bind-if test="[[detail()]]">
-      <div class="factory-dz-segmented" role="group" aria-label="Preview size">
-        <oj-bind-for-each data="[[viewports]]" as="vp">
-          <template>
-            <button type="button" :class="[['factory-dz-seg factory-vp-' + vp.data.key + (vp.data.active ? ' factory-dz-seg-active' : '')]]"
-                    :title="[[vp.data.label]]" :aria-pressed="[[vp.data.active ? 'true' : 'false']]" on-click="[[vp.data.selectAction]]">
-              <oj-bind-text value="[[vp.data.label]]"></oj-bind-text>
-            </button>
-          </template>
-        </oj-bind-for-each>
-      </div>
+      <oj-bind-if test="[[editable()]]">
+        <div class="factory-dz-segmented" role="group" aria-label="Undo and redo">
+          <button type="button" id="undoButton" class="factory-dz-seg" title="Undo (Ctrl+Z)" aria-label="Undo" on-click="[[undo]]" :disabled="[[!canUndo()]]">↶ Undo</button>
+          <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
+        </div>
+        <oj-bind-if test="[[canRestorePrevious()]]">
+          <button type="button" id="restorePreviousButton" class="factory-dz-btn factory-dz-btn-ghost" title="Save the previous version again as the newest"
+                  on-click="[[restorePrevious]]">↺ Previous</button>
+        </oj-bind-if>
+      </oj-bind-if>
+      <oj-select-single id="viewportSelect" class="factory-dz-select factory-dz-select-size" aria-label="Screen size" label-edge="none"
+                        data="[[viewportProvider]]" value="{{viewport}}"></oj-select-single>
+      <oj-bind-if test="[[viewport() === 'custom']]">
+        <input type="number" id="customWidth" class="factory-dz-input factory-dz-width" min="320" max="2560" step="10" aria-label="Width in pixels"
+               data-bind="value: customWidth"/>
+      </oj-bind-if>
       <oj-bind-if test="[[editable()]]">
         <button type="button" id="importButton" class="factory-dz-btn" on-click="[[openImport]]">Import</button>
         <button type="button" id="reviewLinkButton" class="factory-dz-btn" on-click="[[openShare]]" :disabled="[[dirty()]]">Share</button>
@@ -118,6 +124,49 @@
       <button type="button" class="factory-dz-icon factory-dz-drawer-close" aria-label="Close" on-click="[[closeDrawer]]">✕</button>
     </div>
   </oj-bind-if>
+  <oj-bind-if test="[[drawer() === 'component' && workspaceId()]]">
+    <div class="factory-dz-drawer" id="componentDrawer">
+      <div class="factory-dz-drawer-col">
+        <h3>Create a component</h3>
+        <p class="factory-dz-hint">AI writes it as HTML, CSS and JS. It is saved in this workspace's Custom components; placing it copies its
+          code into the screen, where you can still change it.</p>
+        <div class="factory-dz-segmented factory-dz-segmented-full" role="group" aria-label="Make it from">
+          <oj-bind-for-each data="[[componentSources]]" as="s">
+            <template>
+              <button type="button" :class="[[s.data.css]]" on-click="[[s.data.pick]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></button>
+            </template>
+          </oj-bind-for-each>
+        </div>
+        <input type="text" id="newComponentName" class="factory-dz-input" placeholder="Name, for example Exchange rate ticker" aria-label="Component name"
+               data-bind="textInput: newComponentName"/>
+        <oj-bind-if test="[[newComponentSource() === 'file']]">
+          <div class="factory-dz-row">
+            <oj-file-picker id="newComponentFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
+                            on-oj-select="[[newComponentFileSelected]]">
+              <button type="button" slot="trigger" class="factory-dz-btn">Choose image or PDF</button>
+            </oj-file-picker>
+            <span class="factory-dz-hint factory-dz-grow"><oj-bind-text value="[[newComponentFileName]]"></oj-bind-text></span>
+          </div>
+          <p class="factory-dz-hint">An image needs a chat model that reads images; a PDF works with any model.</p>
+        </oj-bind-if>
+        <oj-bind-if test="[[newComponentSource() === 'figma']]">
+          <input type="text" id="newComponentLink" class="factory-dz-input" placeholder="https://www.figma.com/design/…?node-id=12-34"
+                 aria-label="Figma frame link" data-bind="textInput: newComponentLink"/>
+          <oj-input-password id="newComponentToken" aria-label="Figma personal access token" label-edge="none" placeholder="Figma personal access token"
+                             value="{{figmaToken}}" mask-icon="visible"></oj-input-password>
+        </oj-bind-if>
+        <textarea id="newComponentPrompt" class="factory-dz-input factory-dz-textarea" rows="3" aria-label="What the component should be"
+                  data-bind="textInput: newComponentPrompt"
+                  placeholder="What it should be, for example: a card with the live INR exchange rates for USD, EUR and GBP, with a small up or down arrow"></textarea>
+        <div class="factory-dz-row">
+          <button type="button" id="makeComponentButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[createComponent]]" :disabled="[[busy()]]">
+            <oj-bind-text value="[[busy() ? 'Making…' : 'Create component']]"></oj-bind-text>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="factory-dz-icon factory-dz-drawer-close" aria-label="Close" on-click="[[closeDrawer]]">✕</button>
+    </div>
+  </oj-bind-if>
   <oj-bind-if test="[[drawer() === 'share' && detail()]]">
     <div class="factory-dz-drawer" id="shareDrawer">
       <div class="factory-dz-drawer-col">
@@ -169,8 +218,11 @@
         <oj-bind-if test="[[leftTab() === 'components']]">
           <div id="designPalette">
             <oj-bind-if test="[[editable()]]">
-              <input type="search" id="paletteFilter" class="factory-dz-input factory-dz-search" placeholder="Search components"
-                     aria-label="Search components" data-bind="textInput: paletteFilter"/>
+              <div class="factory-dz-row">
+                <input type="search" id="paletteFilter" class="factory-dz-input factory-dz-search factory-dz-grow" placeholder="Search components"
+                       aria-label="Search components" data-bind="textInput: paletteFilter"/>
+              </div>
+              <button type="button" id="createComponentButton" class="factory-dz-btn factory-dz-btn-full" on-click="[[openNewComponent]]">+ Create component</button>
               <p class="factory-dz-hint">Drag onto the canvas or a layer, or click to add after the selection.</p>
               <oj-bind-if test="[[paletteNote()]]">
                 <p class="factory-dz-note"><oj-bind-text value="[[paletteNote]]"></oj-bind-text></p>
@@ -190,6 +242,10 @@
                             <span class="factory-palette-label"><oj-bind-text value="[[p.data.label]]"></oj-bind-text></span>
                             <oj-bind-if test="[[!p.data.tile && p.data.detail]]">
                               <span class="factory-palette-detail"><oj-bind-text value="[[p.data.detail]]"></oj-bind-text></span>
+                            </oj-bind-if>
+                            <oj-bind-if test="[[p.data.custom]]">
+                              <button type="button" class="factory-palette-delete" title="Delete this custom component" aria-label="Delete this custom component"
+                                      on-click="[[p.data.deleteAction]]">✕</button>
                             </oj-bind-if>
                           </div>
                         </template>
@@ -331,16 +387,23 @@
       </oj-bind-if>
       <div class="factory-dz-stage" :style.display="[[detail() ? 'flex' : 'none']]">
         <div class="factory-dz-device" :style.width="[[frameWidth]]">
-          <iframe id="designerPreview" title="Screen canvas" :src="[[previewSrc]]" class="factory-dz-frame"></iframe>
+          <iframe id="designerPreview" title="Screen canvas" :src="[[previewSrc]]" class="factory-dz-frame"
+                  :style.width="[[frameInnerWidth]]" :style.height="[[frameInnerHeight]]" :style.transform="[[frameTransform]]"></iframe>
         </div>
-        <p id="previewNote" class="factory-dz-hint factory-dz-canvas-note"><oj-bind-text value="[[previewNote]]"></oj-bind-text>.
-          Click a component to select it.</p>
+        <p id="previewNote" class="factory-dz-hint factory-dz-canvas-note"><span id="viewportText"><oj-bind-text value="[[viewportText]]"></oj-bind-text></span>
+          · <oj-bind-text value="[[previewNote]]"></oj-bind-text>. Click a component to select it.</p>
         <oj-bind-if test="[[editable()]]">
           <div class="factory-dz-ai">
             <span class="factory-dz-ai-mark" aria-hidden="true">✦</span>
+            <span id="aiScope" :class="[[aiScoped() ? 'factory-dz-scope factory-dz-scope-element' : 'factory-dz-scope']]"
+                  :title="[[aiScoped() ? 'Only this element changes' : 'The whole screen can change']]">
+              <oj-bind-text value="[[aiScope]]"></oj-bind-text>
+              <oj-bind-if test="[[aiScoped()]]">
+                <button type="button" class="factory-dz-scope-clear" aria-label="Change the whole screen instead" on-click="[[clearAiScope]]">✕</button>
+              </oj-bind-if>
+            </span>
             <input type="text" id="aiInstruction" class="factory-dz-ai-input" aria-label="Ask AI to change the screen"
-                   placeholder="Ask AI: move remarks to the end and make it optional"
-                   data-bind="textInput: aiInstruction" on-keydown="[[aiKeydown]]"/>
+                   :placeholder="[[aiPlaceholder]]" data-bind="textInput: aiInstruction" on-keydown="[[aiKeydown]]"/>
             <button type="button" id="askAiButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[askAi]]"
                     :disabled="[[!aiInstruction() || busy()]]">
               <oj-bind-text value="[[busy() ? 'Working…' : 'Apply']]"></oj-bind-text>
@@ -578,7 +641,10 @@
                       <div class="factory-dz-version-note"><oj-bind-text value="[[v.data.note]]"></oj-bind-text></div>
                     </oj-bind-if>
                     <oj-bind-if test="[[v.data.loadable]]">
-                      <button type="button" class="factory-dz-link" on-click="[[v.data.loadAction]]">Load this version</button>
+                      <span class="factory-dz-version-actions">
+                        <button type="button" class="factory-dz-link" on-click="[[v.data.restoreAction]]">Restore this version</button>
+                        <button type="button" class="factory-dz-link" on-click="[[v.data.previewAction]]">Show on canvas</button>
+                      </span>
                     </oj-bind-if>
                   </div>
                 </div>

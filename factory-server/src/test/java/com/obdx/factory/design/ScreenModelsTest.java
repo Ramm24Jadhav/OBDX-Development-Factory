@@ -32,6 +32,39 @@ class ScreenModelsTest {
     }
 
     @Test
+    void anAiChangeOfOneElementChangesOnlyThatElement() {
+        ScreenModel current = ScreenModels.parse("""
+                {"name": "Transfer", "sections": [
+                  {"id": "s-1", "title": "Pay", "components": [
+                    {"id": "c-amount", "type": "amount", "label": "Amount"},
+                    {"id": "c-remarks", "type": "text", "label": "Remarks"}]},
+                  {"id": "s-2", "title": "More", "components": [{"id": "c-date", "type": "date", "label": "Date"}]}],
+                 "actions": [{"id": "a-submit", "label": "Submit", "kind": "primary"}]}""");
+        // The model also changed things it was not asked to, and added a hint after remarks
+        ScreenModel answer = ScreenModels.parse("""
+                {"name": "Transfer", "sections": [
+                  {"id": "s-1", "title": "Payment", "components": [
+                    {"id": "c-amount", "type": "amount", "label": "Amount to send"},
+                    {"id": "c-remarks", "type": "textarea", "label": "Remarks", "required": false},
+                    {"type": "display", "label": "Up to 35 characters"}]}],
+                 "actions": [{"id": "a-submit", "label": "Send", "kind": "primary"}]}""");
+
+        ScreenModel changed = ScreenModels.onlyChange(current, answer, "c-remarks");
+
+        assertThat(changed.sections()).extracting(ScreenModel.Section::title).containsExactly("Pay", "More");
+        assertThat(changed.sections().getFirst().components()).extracting(ScreenModel.Component::label)
+                .containsExactly("Amount", "Remarks", "Up to 35 characters");
+        assertThat(changed.sections().getFirst().components().get(1).type()).isEqualTo("textarea");
+        assertThat(changed.actions().getFirst().label()).isEqualTo("Submit");
+
+        assertThat(ScreenModels.onlyChange(current, answer, "a-submit").actions().getFirst().label()).isEqualTo("Send");
+        assertThat(ScreenModels.onlyChange(current, answer, "s-2").sections()).as("left out by the answer: removed")
+                .extracting(ScreenModel.Section::id).containsExactly("s-1");
+        assertThat(ScreenModels.contains(current, "c-date")).isTrue();
+        assertThat(ScreenModels.contains(current, "c-gone")).isFalse();
+    }
+
+    @Test
     void keepsAnElementsOwnCode() {
         ScreenModel model = ScreenModels.parse("""
                 {"name": "Transfer", "sections": [{"components": [

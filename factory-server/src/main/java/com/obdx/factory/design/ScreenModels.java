@@ -155,6 +155,69 @@ public final class ScreenModels {
                 blankToNull(model.description()), CHANGE_TYPES.contains(changeType) ? changeType : "unknown", sections, actions);
     }
 
+    /** Whether the model has a component, section or action button with this id. */
+    public static boolean contains(ScreenModel model, String id) {
+        return model.sections().stream().anyMatch(s -> s.id().equals(id) || s.components().stream().anyMatch(c -> c.id().equals(id)))
+                || model.actions().stream().anyMatch(a -> a.id().equals(id));
+    }
+
+    /**
+     * The current model with only one element changed as in the model's answer: a component, section or action takes
+     * the answer's version of it, or is removed when the answer left it out. Components the answer adds right after a
+     * changed component are kept with it. Everything else stays exactly as it was.
+     */
+    public static ScreenModel onlyChange(ScreenModel current, ScreenModel answer, String id) {
+        List<ScreenModel.Section> sections = new ArrayList<>();
+        List<ScreenModel.ActionButton> actions = new ArrayList<>(current.actions());
+        Set<String> existing = new HashSet<>();
+        current.sections().forEach(s -> s.components().forEach(c -> existing.add(c.id())));
+        for (ScreenModel.Section section : current.sections()) {
+            if (section.id().equals(id)) {
+                answer.sections().stream().filter(s -> s.id().equals(id)).findFirst().ifPresent(sections::add);
+                continue;
+            }
+            List<ScreenModel.Component> components = new ArrayList<>();
+            for (ScreenModel.Component c : section.components()) {
+                if (!c.id().equals(id)) {
+                    components.add(c);
+                    continue;
+                }
+                for (ScreenModel.Section answered : answer.sections()) {
+                    List<ScreenModel.Component> list = answered.components();
+                    for (int i = 0; i < list.size(); i++) {
+                        if (!list.get(i).id().equals(id)) {
+                            continue;
+                        }
+                        components.add(list.get(i));
+                        for (int j = i + 1; j < list.size() && !existing.contains(list.get(j).id()); j++) {
+                            components.add(list.get(j));
+                        }
+                    }
+                }
+            }
+            sections.add(new ScreenModel.Section(section.id(), section.title(), section.columns(), components));
+        }
+        int index = indexOfAction(current.actions(), id);
+        if (index >= 0) {
+            int answered = indexOfAction(answer.actions(), id);
+            if (answered >= 0) {
+                actions.set(index, answer.actions().get(answered));
+            } else {
+                actions.remove(index);
+            }
+        }
+        return normalize(new ScreenModel(current.name(), current.title(), current.description(), current.changeType(), sections, actions));
+    }
+
+    private static int indexOfAction(List<ScreenModel.ActionButton> actions, String id) {
+        for (int i = 0; i < actions.size(); i++) {
+            if (actions.get(i).id().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /** A designer's own HTML, CSS or script for an element: kept as written, without surrounding blank lines. */
     private static String code(String value, String what) {
         if (value == null || value.isBlank()) {

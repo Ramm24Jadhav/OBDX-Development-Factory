@@ -70,9 +70,19 @@ public class ScreenModelEditor {
         return apply(model, instruction, List.of());
     }
 
-    /** @param components the components of the bank's code the design may use (from the palette) */
     public ScreenModel apply(ScreenModel model, String instruction, List<ComponentPalette.Item> components) {
-        String user = "Screen model:\n" + json.writeValueAsString(model) + "\n\nInstruction: " + instruction;
+        return apply(model, instruction, components, null);
+    }
+
+    /**
+     * @param components the components of the bank's code the design may use (from the palette)
+     * @param targetId   the selected component, section or action the instruction is about, or null for the screen
+     */
+    public ScreenModel apply(ScreenModel model, String instruction, List<ComponentPalette.Item> components, String targetId) {
+        String scope = targetId == null ? "" : "\n\nThe instruction is about the element with id \"" + targetId
+                + "\" only. Change that element (a component, a section or a button) and nothing else; you may add new components"
+                + " right after it if the instruction asks for them.";
+        String user = "Screen model:\n" + json.writeValueAsString(model) + "\n\nInstruction: " + instruction + scope;
         return ask(SYSTEM + rules(components), user, null);
     }
 

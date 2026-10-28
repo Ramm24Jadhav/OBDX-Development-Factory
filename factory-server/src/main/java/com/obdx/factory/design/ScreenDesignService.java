@@ -130,15 +130,40 @@ public class ScreenDesignService {
         return detail(designs.save(design));
     }
 
-    /** Lets the model apply a plain-language change and saves the result as a new version. */
+    /** Saves an earlier version again as the newest one, so going back never loses a version. */
     @Transactional
+    public DesignDetail restore(UUID id, int version) {
+        ScreenDesign design = editable(find(id));
+        if (version == design.getCurrentVersion()) {
+            throw new BadRequestException("Version " + version + " is already the current version");
+        }
+        ScreenModel model = store.model(id, version).orElseThrow(() -> new NotFoundException("No version " + version));
+        design.newVersion(store.addVersion(id, DesignStore.Origin.RESTORED, "Restored version " + version, model), model.name());
+        return detail(designs.save(design));
+    }
+
     public DesignDetail aiChange(UUID id, String instruction) {
+        return aiChange(id, instruction, null);
+    }
+
+    /**
+     * Lets the model apply a plain-language change and saves the result as a new version.
+     *
+     * @param targetId the selected component, section or action: only it changes; null changes the whole screen
+     */
+    @Transactional
+    public DesignDetail aiChange(UUID id, String instruction, String targetId) {
         if (instruction == null || instruction.isBlank()) {
             throw new BadRequestException("Describe the change");
         }
         ScreenDesign design = editable(find(id));
         ScreenModel current = currentModel(design);
-        ScreenModel changed = editor.apply(current, instruction.trim(), palette.palette(design.getWorkspaceId()).items());
+        String target = blankToNull(targetId);
+        if (target != null && !ScreenModels.contains(current, target)) {
+            throw new BadRequestException("The selected element is no longer on the screen. Select it again.");
+        }
+        ScreenModel answer = editor.apply(current, instruction.trim(), palette.palette(design.getWorkspaceId()).items(), target);
+        ScreenModel changed = target == null ? answer : ScreenModels.onlyChange(current, answer, target);
         if (changed.equals(current)) {
             throw new BadRequestException("The model made no change. Try describing it differently.");
         }

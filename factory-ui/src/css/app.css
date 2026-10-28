@@ -1409,3 +1409,81 @@
     .factory-dz-right-open .factory-dz-canvas { padding-left: 0; padding-right: 0; }
     .factory-dz-rail { position: static; flex-direction: row; box-shadow: none; }
 }
+
+/* Designer: screen sizes, the AI's scope, custom components */
+
+.factory-dz-device { position: relative; }
+.factory-dz-frame { transform-origin: 0 0; }
+.factory-dz-width { width: 90px; }
+.factory-dz-topbar { gap: 6px; }
+.factory-dz-topbar .factory-dz-select { width: 150px; }
+.factory-dz-topbar .factory-dz-select-wide { width: 210px; }
+.factory-dz-topbar .factory-dz-select-size { width: 175px; }
+.factory-dz-topbar .factory-dz-btn { padding: 0 10px; }
+.factory-dz-btn-full { width: 100%; margin: 2px 0 6px; }
+
+.factory-dz-scope {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 220px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f1f2f4;
+    color: #374151;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.factory-dz-scope-element { background: var(--dz-accent-soft); color: var(--dz-accent); font-weight: 600; }
+
+.factory-dz-scope-clear {
+    border: none;
+    background: none;
+    padding: 0 0 0 2px;
+    color: inherit;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.factory-palette-item,
+.factory-palette-tile { position: relative; }
+
+.factory-palette-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+    color: #b42318;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.factory-palette-item:hover .factory-palette-delete,
+.factory-palette-item:focus-within .factory-palette-delete { display: block; }
+
+.factory-dz-version-actions { display: inline-flex; gap: 12px; margin-top: 2px; }
+
+/* The OBDX page in the preview at tablet and phone widths */
+@media (max-width: 900px) {
+    .factory-obdx-menu { display: none; }
+    .factory-obdx-header { justify-content: space-between; }
+    .factory-obdx-page { padding: 12px 16px 20px; }
+}
+
+@media (max-width: 600px) {
+    .factory-obdx-header { padding: 8px 12px; }
+    .factory-obdx-bank { font-size: 13px; }
+    .factory-obdx-page { padding: 10px 12px 16px; }
+    .factory-preview-title { font-size: 1.2rem; }
+    .factory-preview-section { padding: 12px; border-radius: 6px; }
+    .factory-preview-actions { flex-direction: column-reverse; align-items: stretch; }
+    .factory-preview-actions oj-button { width: 100%; }
+}

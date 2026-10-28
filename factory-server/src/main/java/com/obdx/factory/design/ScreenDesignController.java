@@ -91,7 +91,14 @@ public class ScreenDesignController {
     @PostMapping("/api/designs/{id}/ai-change")
     public ScreenDesignService.DesignDetail aiChange(@PathVariable UUID id, @RequestBody InstructionRequest request) {
         guard.requireForDesign(id, Permission.EDIT_DESIGNS);
-        return service.aiChange(id, request.instruction());
+        return service.aiChange(id, request.instruction(), request.targetId());
+    }
+
+    /** Saves an earlier version again as the newest one. */
+    @PostMapping("/api/designs/{id}/restore")
+    public ScreenDesignService.DesignDetail restore(@PathVariable UUID id, @RequestBody RestoreRequest request) {
+        guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        return service.restore(id, request.version());
     }
 
     /** A design file made in a design tool (image or PDF) becomes the screen's next version. */
@@ -185,7 +192,11 @@ public class ScreenDesignController {
     public record SaveRequest(ScreenModel model, String note) {
     }
 
-    public record InstructionRequest(String instruction) {
+    /** @param targetId the selected component, section or button the change is limited to; null for the whole screen */
+    public record InstructionRequest(String instruction, String targetId) {
+    }
+
+    public record RestoreRequest(int version) {
     }
 
     /** @param token a Figma personal access token; not stored */

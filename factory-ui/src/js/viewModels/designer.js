@@ -8,14 +8,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
         'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker'],
   function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider) {
+    // Screen sizes to check a design at; "fit" uses the canvas width, "custom" a width the designer types
     const VIEWPORTS = [
-      { key: 'desktop', label: 'Desktop', icon: '▭', width: '100%' },
-      { key: 'tablet', label: 'Tablet', icon: '▯', width: '768px' },
-      { key: 'phone', label: 'Phone', icon: '▮', width: '375px' }
+      { key: 'fit', label: 'Fit to canvas', width: null },
+      { key: 'desktop', label: 'Desktop · 1440', width: 1440 },
+      { key: 'laptop', label: 'Laptop · 1280', width: 1280 },
+      { key: 'tablet-landscape', label: 'Tablet landscape · 1024', width: 1024 },
+      { key: 'tablet', label: 'Tablet · 768', width: 768 },
+      { key: 'phone', label: 'Phone · 390', width: 390 },
+      { key: 'phone-small', label: 'Small phone · 360', width: 360 },
+      { key: 'custom', label: 'Custom width', width: null }
     ];
     const clone = (value) => JSON.parse(JSON.stringify(value));
     // Palette groups in the order of the OBDX UX Extensibility Toolkit
-    const GROUPS = ['Forms', 'Controls', 'OBDX framework components', 'Business components', 'JET composite components',
+    const GROUPS = ['Forms', 'Controls', 'Custom components', 'OBDX framework components', 'Business components', 'JET composite components',
       'Partials', 'JET components in this code', 'Other components used in this code'];
     // Groups shown as icon tiles; the others are lists, because their names are long
     const TILE_GROUPS = ['Forms', 'Controls'];
@@ -132,11 +138,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- canvas (the preview) ---
 
-      this.viewport = ko.observable('desktop');
-      this.viewports = ko.pureComputed(() => VIEWPORTS.map((vp) => ({
-        key: vp.key, label: vp.label, icon: vp.icon, active: vp.key === this.viewport(), selectAction: () => this.viewport(vp.key)
-      })));
-      this.frameWidth = ko.pureComputed(() => VIEWPORTS.find((vp) => vp.key === this.viewport()).width);
+      this.viewport = ko.observable('fit');
+      this.customWidth = ko.observable(1100);
+      this.viewportProvider = new ArrayDataProvider(VIEWPORTS.map((vp) => ({ value: vp.key, label: vp.label })), { keyAttributes: 'value' });
+      // The canvas shows the chosen width, scaled down when it is wider than the canvas
+      this.stageWidth = ko.observable(1000);
+      let stageObserver = null;
+      this.deviceWidth = ko.pureComputed(() => {
+        const vp = VIEWPORTS.find((v) => v.key === this.viewport());
+        const custom = Math.round(Number(this.customWidth()) || 0);
+        return vp.key === 'custom' ? Math.min(Math.max(custom, 320), 2560) : vp.width;
+      });
+      this.deviceScale = ko.pureComputed(() => {
+        const width = this.deviceWidth();
+        const room = Math.max(this.stageWidth() - 32, 200);
+        return width ? Math.min(1, room / width) : 1;
+      });
+      this.frameWidth = ko.pureComputed(() => (this.deviceWidth() ? Math.round(this.deviceWidth() * this.deviceScale()) + 'px' : '100%'));
+      this.frameInnerWidth = ko.pureComputed(() => (this.deviceWidth() ? this.deviceWidth() + 'px' : '100%'));
+      this.frameInnerHeight = ko.pureComputed(() => (100 / this.deviceScale()) + '%');
+      this.frameTransform = ko.pureComputed(() => (this.deviceScale() < 1 ? 'scale(' + this.deviceScale() + ')' : 'none'));
+      this.viewportText = ko.pureComputed(() => {
+        const width = this.deviceWidth();
+        return width ? width + ' px' + (this.deviceScale() < 1 ? ' · shown at ' + Math.round(this.deviceScale() * 100) + '%' : '')
+          : Math.round(this.stageWidth()) + ' px';
+      });
       const preview = new PreviewFrame((id) => this.selectedId(id), (targetId, sectionId) => dropOnCanvas(targetId, sectionId));
       // The workspace's UI target decides the renderer: JET, or the React Native / React app's own components.
       this.previewKind = ko.observable('jet');
@@ -162,15 +188,64 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- editing the working model ---
 
+      // Undo and redo of edits: the models before each change (cleared when another screen opens)
+      const undoStack = ko.observableArray([]);
+      const redoStack = ko.observableArray([]);
+      this.canUndo = ko.pureComputed(() => this.editable() && undoStack().length > 0);
+      this.canRedo = ko.pureComputed(() => this.editable() && redoStack().length > 0);
+      const sameAsSaved = (model) => !!this.detail() && JSON.stringify(model) === JSON.stringify(this.detail().model);
+
       /** Applies a change to a copy of the working model, so every change re-renders editor and preview. */
       const update = (change) => {
         if (!this.editable()) {
           return;
         }
-        const model = clone(this.working());
+        const before = this.working();
+        const model = clone(before);
         change(model);
+        if (JSON.stringify(model) === JSON.stringify(before)) {
+          return;
+        }
+        undoStack.push(before);
+        if (undoStack().length > 100) {
+          undoStack.shift();
+        }
+        redoStack([]);
         this.working(model);
-        this.dirty(true);
+        this.dirty(!sameAsSaved(model));
+      };
+      this.undo = () => {
+        if (!this.canUndo()) {
+          return;
+        }
+        redoStack.push(this.working());
+        const model = undoStack.pop();
+        this.working(model);
+        this.dirty(!sameAsSaved(model));
+      };
+      this.redo = () => {
+        if (!this.canRedo()) {
+          return;
+        }
+        undoStack.push(this.working());
+        const model = redoStack.pop();
+        this.working(model);
+        this.dirty(!sameAsSaved(model));
+      };
+      // Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z), except while typing in a box, which has its own undo
+      const onKeydown = (event) => {
+        const typing = event.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable);
+        if (typing || !(event.ctrlKey || event.metaKey) || !this.detail()) {
+          return;
+        }
+        const key = event.key.toLowerCase();
+        if (key === 'z' && !event.shiftKey) {
+          event.preventDefault();
+          this.undo();
+        } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+          event.preventDefault();
+          this.redo();
+        }
       };
 
       const locate = (model, id) => {
@@ -325,7 +400,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- palette: standard components and those found in the workspace's code ---
 
-      const paletteItems = ko.observableArray([]);
+      const codeItems = ko.observableArray([]);
+      // The workspace's own components, made in the designer: placing one copies its HTML, CSS and JS into the element
+      const customItems = ko.observableArray([]);
+      const paletteItems = ko.pureComputed(() => customItems().map((c) => ({
+        id: 'custom:' + c.id, customId: c.id, group: 'Custom components', label: c.name, type: 'component', tag: c.tag,
+        params: [], description: (c.description || c.name) + (c.source ? ' · from ' + c.source : ''),
+        html: c.html, css: c.css, script: c.script
+      })).concat(codeItems()));
       this.paletteNote = ko.observable('');
       this.paletteFilter = ko.observable('');
       this.paletteGroups = ko.pureComputed(() => {
@@ -344,14 +426,84 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             detail: [item.tag ? '<' + item.tag + '>' : '', item.module || '', item.uses ? 'used ' + item.uses + '×' : '']
               .filter(Boolean).join(' · '),
             title: item.description || item.label,
+            custom: !!item.customId,
+            deleteAction: (event) => {
+              if (event && event.stopPropagation) {
+                event.stopPropagation();
+              }
+              deleteCustom(item);
+            },
             addAction: () => addFromPalette(item, null)
           }))
         })).filter((group) => group.items.length > 0);
       });
-      const loadPalette = (id) => api.get('workspaces/' + id + '/design-palette').then((palette) => {
-        paletteItems(palette.items);
-        this.paletteNote(palette.note || '');
-      });
+      const loadCustom = (id) => api.get('workspaces/' + id + '/custom-components').then((list) => customItems(list));
+      const loadPalette = (id) => Promise.all([
+        api.get('workspaces/' + id + '/design-palette').then((palette) => {
+          codeItems(palette.items);
+          this.paletteNote(palette.note || '');
+        }),
+        loadCustom(id)
+      ]);
+
+      // --- making a custom component from a description, an image or a Figma frame ---
+
+      this.newComponentName = ko.observable('');
+      this.newComponentPrompt = ko.observable('');
+      this.newComponentSource = ko.observable('prompt');
+      this.newComponentFile = ko.observable(null);
+      this.newComponentFileName = ko.pureComputed(() => (this.newComponentFile() ? this.newComponentFile().name : 'No file chosen'));
+      this.newComponentFileSelected = (event) => this.newComponentFile(event.detail.files[0] || null);
+      this.newComponentLink = ko.observable('');
+      this.componentSources = ko.pureComputed(() => [['prompt', 'Describe it'], ['file', 'Image or PDF'], ['figma', 'Figma link']]
+        .map(([key, label]) => ({
+          label: label,
+          css: 'factory-dz-seg' + (this.newComponentSource() === key ? ' factory-dz-seg-active' : ''),
+          pick: () => this.newComponentSource(key)
+        })));
+      this.openNewComponent = () => this.drawer(this.drawer() === 'component' ? null : 'component');
+      this.createComponent = () => {
+        const id = this.workspaceId();
+        const source = this.newComponentSource();
+        const name = this.newComponentName().trim();
+        const prompt = this.newComponentPrompt().trim();
+        let call;
+        if (source === 'file') {
+          if (!this.newComponentFile()) {
+            showError(new Error('Choose an image or PDF of the component.'));
+            return;
+          }
+          const form = new FormData();
+          form.append('file', this.newComponentFile());
+          form.append('name', name);
+          form.append('prompt', prompt);
+          call = api.upload('workspaces/' + id + '/custom-components/file', form);
+        } else if (source === 'figma') {
+          call = api.post('workspaces/' + id + '/custom-components/figma', { name: name, prompt: prompt, link: this.newComponentLink(), token: this.figmaToken() });
+        } else {
+          call = api.post('workspaces/' + id + '/custom-components', { name: name, prompt: prompt });
+        }
+        this.busy(true);
+        showInfo('Making the component...');
+        call.then((component) => {
+          this.newComponentName('');
+          this.newComponentPrompt('');
+          this.newComponentFile(null);
+          this.newComponentLink('');
+          this.drawer(null);
+          this.leftTab('components');
+          this.leftOpen(true);
+          showInfo('"' + component.name + '" is in Custom components. Drag it onto the screen.');
+          return loadCustom(id);
+        }).catch(showError).finally(() => this.busy(false));
+      };
+      const deleteCustom = (item) => {
+        if (!window.confirm('Delete the custom component "' + item.label + '"? Screens that use it keep their copy.')) {
+          return;
+        }
+        api.del('workspaces/' + this.workspaceId() + '/custom-components/' + item.customId)
+          .then(() => loadCustom(this.workspaceId())).catch(showError);
+      };
 
       /** A new component (or action button) for a palette item; returns the component, or null for a button. */
       const fromPalette = (m, item) => {
@@ -372,7 +524,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           options: entry && entry.hasOptions ? (item.type === 'table' ? ['Column 1', 'Column 2'] : ['Option 1', 'Option 2']) : [],
           validations: [],
           component: item.type === 'component' ? item.tag : null,
-          params: item.type === 'component' ? params : {}
+          params: item.type === 'component' ? params : {},
+          html: item.html || null,
+          css: item.css || null,
+          script: item.script || null
         };
       };
 
@@ -485,6 +640,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const action = model && id ? model.actions.find((a) => a.id === id) : null;
         return action ? action.label + ' button' : 'Screen';
       });
+      // What Ask AI changes: the selected element only, or the whole screen
+      this.aiScope = ko.pureComputed(() => (this.selectedKind() === 'screen' ? 'Whole screen' : this.selectedTitle()));
+      this.aiScoped = ko.pureComputed(() => this.selectedKind() !== 'screen');
+      this.aiPlaceholder = ko.pureComputed(() => (this.aiScoped()
+        ? 'Ask AI to change ' + this.selectedTitle() + ' only, for example: make it optional and add help text'
+        : 'Ask AI to change the screen, for example: move remarks to the end and make it optional'));
+      this.clearAiScope = () => this.selectedId(null);
       this.selectedTypeLabel = ko.pureComputed(() => (this.selectedComponent() ? typeLabel(this.selectedComponent()) : ''));
       this.selectedHasOptions = ko.pureComputed(() => {
         const c = this.selectedComponent();
@@ -840,12 +1002,32 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         note: v.note || '',
         when: new Date(v.createdAt).toLocaleString(),
         loadable: this.editable() && v.version !== this.detail().currentVersion,
-        loadAction: () => api.get('designs/' + this.detail().id + '/versions/' + v.version).then((model) => {
+        // Restoring saves that version again as the newest one, so no version is ever lost
+        restoreAction: () => {
+          if (this.dirty()) {
+            showError(new Error('Save or discard your changes first.'));
+            return;
+          }
+          api.post('designs/' + this.detail().id + '/restore', { version: v.version })
+            .then((detail) => { show(detail, true); showInfo('Version ' + v.version + ' restored as version ' + detail.currentVersion + '.'); })
+            .catch(showError);
+        },
+        previewAction: () => api.get('designs/' + this.detail().id + '/versions/' + v.version).then((model) => {
+          undoStack.push(this.working());
+          redoStack([]);
           this.working(model);
-          this.dirty(true);
-          showInfo('Version ' + v.version + ' loaded. Save to make it the current version.');
+          this.dirty(!sameAsSaved(model));
+          showInfo('Version ' + v.version + ' is on the canvas. Save to keep it, or Undo to go back.');
         }).catch(showError)
       })));
+      /** Back to the version before the current one, saved as a new version. */
+      this.restorePrevious = () => {
+        const previous = this.versions().find((v) => v.version < this.detail().currentVersion);
+        if (previous) {
+          previous.restoreAction();
+        }
+      };
+      this.canRestorePrevious = ko.pureComputed(() => this.editable() && !this.dirty() && !!this.detail() && this.detail().currentVersion > 1);
       this.reviewUrl = ko.pureComputed(() => (this.detail() && this.detail().reviewToken
         ? window.location.origin + window.location.pathname + '?ojr=review&embed=1&token=' + this.detail().reviewToken : ''));
       this.reviewExpires = ko.pureComputed(() => (this.detail() && this.detail().reviewExpiresAt
@@ -907,6 +1089,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!this.detail() || this.detail().id !== detail.id) {
           this.codeFiles([]);
           loadRequirement(detail.requirementId);
+          undoStack([]);
+          redoStack([]);
         }
         this.detail(detail);
         this.designPick(detail.id);
@@ -951,7 +1135,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .then((detail) => { show(detail, true); showInfo('Saved as version ' + detail.currentVersion + '.'); })
         .catch(showError);
 
-      this.discard = () => { this.working(clone(this.detail().model)); this.dirty(false); this.clearMessages(); };
+      this.discard = () => {
+        if (this.dirty()) {
+          undoStack.push(this.working());
+          redoStack([]);
+        }
+        this.working(clone(this.detail().model));
+        this.dirty(false);
+        this.clearMessages();
+      };
 
       this.askAi = () => {
         if (!this.aiInstruction()) {
@@ -962,12 +1154,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.busy(true);
-        showInfo('Changing the screen...');
-        api.post(base() + '/ai-change', { instruction: this.aiInstruction() })
+        const targetId = this.selectedKind() === 'screen' ? null : this.selectedId();
+        showInfo(targetId ? 'Changing ' + this.selectedTitle() + '...' : 'Changing the screen...');
+        api.post(base() + '/ai-change', { instruction: this.aiInstruction(), targetId: targetId })
           .then((detail) => {
             show(detail, true);
             this.aiInstruction('');
-            showInfo('Changed and saved as version ' + detail.currentVersion + '. Check the result; History has the earlier versions.');
+            showInfo('Changed and saved as version ' + detail.currentVersion + '. Check the result; ↺ Previous brings the earlier version back.');
           })
           .catch(showError)
           .finally(() => this.busy(false));
@@ -1058,10 +1251,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         document.title = 'Screen designer';
         preview.attach('designerPreview');
         window.addEventListener('beforeunload', beforeUnload);
+        document.addEventListener('keydown', onKeydown);
+        if (window.ResizeObserver) {
+          stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
+          const stage = document.querySelector('.factory-dz-stage');
+          if (stage) {
+            stageObserver.observe(stage);
+          }
+        }
         api.get('design/catalog').then((types) => catalog(types.map((t) => ({ value: t.type, label: t.label, hasOptions: t.hasOptions }))))
           .catch(showError);
         const refreshPalette = () => {
-          paletteItems([]);
+          codeItems([]);
+          customItems([]);
           return this.workspaceId() ? loadPalette(this.workspaceId()) : Promise.resolve();
         };
         subscription = this.workspaceId.subscribe(() => {
@@ -1080,6 +1282,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.disconnected = () => {
         preview.detach();
         window.removeEventListener('beforeunload', beforeUnload);
+        document.removeEventListener('keydown', onKeydown);
+        if (stageObserver) {
+          stageObserver.disconnect();
+        }
         if (subscription) {
           subscription.dispose();
         }
