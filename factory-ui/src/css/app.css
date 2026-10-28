@@ -1322,6 +1322,9 @@
 
 .factory-dz-progress span { display: block; height: 100%; background: #2e8b57; }
 .factory-dz-btn-link { display: inline-flex; align-items: center; text-decoration: none; }
+/* A button made from a link keeps its button colours once the link is visited (the theme's a:visited is blue) */
+.factory-dz-btn-link:link, .factory-dz-btn-link:visited { color: #1f2937; }
+.factory-dz-btn-primary.factory-dz-btn-link:link, .factory-dz-btn-primary.factory-dz-btn-link:visited { color: #fff; }
 
 /* Designer: floating side panels that collapse to rails, and an element's own code */
 
