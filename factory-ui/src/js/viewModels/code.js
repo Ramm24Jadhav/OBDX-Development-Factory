@@ -2,11 +2,17 @@
  * Code page: SVN settings, UI target, Jenkins settings, quick check rules, import jobs, index status and code search for
  * one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
         'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch'],
-  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ArrayDataProvider) {
     const POLL_MS = 2000;
+
+    /** "4m 32s", "12s" */
+    function duration(ms) {
+      const seconds = Math.max(0, Math.round(ms / 1000));
+      return seconds >= 60 ? Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's' : seconds + 's';
+    }
 
     function CodeViewModel() {
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
@@ -64,6 +70,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Quick checks: the workspace's version pack rules, each of which can be turned off
       this.checksSummary = ko.observable('');
       this.checkRules = ko.observableArray([]);
+      this.ruleFilter = ko.observable('all');
+      this.ruleQuery = ko.observable('');
+      this.ruleCount = (severity) => ko.pureComputed(() => this.checkRules().filter((r) => severity === 'all' || r.severity === severity).length);
+      this.ruleFilters = [
+        { value: 'all', label: 'All', count: this.ruleCount('all') },
+        { value: 'error', label: 'Error', count: this.ruleCount('error') },
+        { value: 'warning', label: 'Warning', count: this.ruleCount('warning') }
+      ].map((f) => Object.assign(f, {
+        css: ko.pureComputed(() => 'factory-chip' + (this.ruleFilter() === f.value ? ' factory-chip-on' : '')),
+        pick: () => this.ruleFilter(f.value)
+      }));
+      this.visibleRules = ko.pureComputed(() => {
+        const text = this.ruleQuery().trim().toLowerCase();
+        return this.checkRules().filter((r) => (this.ruleFilter() === 'all' || r.severity === this.ruleFilter())
+          && (!text || (r.title + ' ' + r.message + ' ' + r.appliesTo + ' ' + r.files).toLowerCase().indexOf(text) >= 0));
+      });
+      this.rulesOn = ko.pureComputed(() => this.checkRules().filter((r) => r.enabled).length);
+
+      // The page's tabs
+      this.tab = ko.observable('repository');
+      this.tabs = [
+        { value: 'repository', label: 'Repository' },
+        { value: 'checks', label: 'Quick Checks' },
+        { value: 'index', label: 'Code Index' },
+        { value: 'history', label: 'Import History' },
+        { value: 'search', label: 'Search' },
+        { value: 'settings', label: 'Settings' }
+      ].map((t) => Object.assign(t, {
+        css: ko.pureComputed(() => 'factory-tab' + (this.tab() === t.value ? ' factory-tab-on' : '')),
+        selected: ko.pureComputed(() => this.tab() === t.value),
+        pick: () => this.tab(t.value)
+      }));
+      this.svnOk = ko.observable(false);
 
       // Jenkins settings
       this.jenkinsUrl = ko.observable('');
@@ -129,17 +168,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       this.indexStatus = ko.observable(null);
-      this.languageSummary = ko.pureComputed(() => {
-        const status = this.indexStatus();
-        if (!status) {
-          return '';
-        }
-        return Object.keys(status.filesByLanguage).sort()
-          .map((language) => language + ' ' + status.filesByLanguage[language]).join(', ') || 'none';
-      });
       const jobs = ko.observableArray([]);
       this.jobProvider = new ArrayDataProvider(jobs, { keyAttributes: 'id' });
       this.importRunning = ko.pureComputed(() => jobs().some((job) => job.status === 'QUEUED' || job.status === 'RUNNING'));
+      // The files of each language as a share of all indexed files, for the bars on the Code index tab.
+      this.languages = ko.pureComputed(() => {
+        const status = this.indexStatus();
+        if (!status || !status.files) {
+          return [];
+        }
+        return Object.keys(status.filesByLanguage).map((language) => ({ language: language, files: status.filesByLanguage[language] }))
+          .sort((a, b) => b.files - a.files)
+          .map((l) => Object.assign(l, { width: Math.max(2, Math.round(100 * l.files / status.files)) + '%' }));
+      });
+      this.embeddedShare = ko.pureComputed(() => {
+        const status = this.indexStatus();
+        return status && status.chunks ? Math.round(100 * status.chunksWithEmbedding / status.chunks) : 0;
+      });
+      this.embeddedWidth = ko.pureComputed(() => this.embeddedShare() + '%');
+      const lastDone = ko.pureComputed(() => jobs().find((job) => job.status === 'SUCCEEDED') || null);
+      this.lastIndexedText = ko.pureComputed(() => (lastDone() ? lastDone().finished : ''));
+      this.lastDurationText = ko.pureComputed(() => (lastDone() ? lastDone().duration : ''));
+      // The status pill in the page header
+      this.indexPill = ko.pureComputed(() => {
+        const status = this.indexStatus();
+        const failed = jobs().length > 0 && jobs()[0].status === 'FAILED';
+        if (this.importRunning()) {
+          return { text: 'Importing', css: 'factory-ov-pill factory-ov-pill-blue' };
+        }
+        if (failed) {
+          return { text: 'Last import failed', css: 'factory-ov-pill factory-ov-pill-red' };
+        }
+        if (!status || status.indexedRevision === null) {
+          return { text: 'Not imported', css: 'factory-ov-pill factory-ov-pill-grey' };
+        }
+        return { text: 'Up to date', css: 'factory-ov-pill factory-ov-pill-green' };
+      });
+      this.jobCount = ko.pureComputed(() => jobs().length);
 
       this.query = ko.observable('');
       this.results = ko.observableArray([]);
@@ -178,6 +243,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const loadWorkspace = (id) => {
         this.errorMessage('');
         this.svnMessage('');
+        this.svnOk(false);
         this.results([]);
         this.searchNote('');
         if (!id) {
@@ -219,7 +285,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               files: job.filesIndexed + ' / ' + job.filesRemoved + ' (of ' + job.filesScanned + ' scanned)',
               chunksIndexed: job.chunksIndexed,
               embeddingsCreated: job.embeddingsCreated,
-              message: job.message || ''
+              message: job.message || '',
+              progress: job.filesScanned ? Math.min(100, Math.round(100 * (job.filesIndexed + job.filesRemoved) / job.filesScanned)) : 5,
+              finished: job.finishedAt ? new Date(job.finishedAt).toLocaleString() : '',
+              duration: job.startedAt && job.finishedAt ? duration(new Date(job.finishedAt) - new Date(job.startedAt)) : ''
             })));
             this.indexStatus(status);
             schedulePoll();
@@ -235,6 +304,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       let subscription = null;
+      let searchSubscription = null;
 
       this.saveSvn = () => {
         this.busy(true);
@@ -256,8 +326,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.svnMessage('');
         this.errorMessage('');
         api.post('workspaces/' + this.workspaceId() + '/svn/test')
-          .then((info) => this.svnMessage('Connected. Latest revision r' + info.headRevision + ' in ' + info.repositoryRoot + '.'))
-          .catch(showError)
+          .then((info) => {
+            this.svnOk(true);
+            this.svnMessage('Connected. Latest revision r' + info.headRevision + ' in ' + info.repositoryRoot + '.');
+          })
+          .catch((error) => { this.svnOk(false); showError(error); })
           .finally(() => this.busy(false));
       };
 
@@ -281,19 +354,77 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .finally(() => this.searching(false));
       };
 
+      // The Repository tab's summary of the UI target and Jenkins (edited on the Settings tab), its search box and the
+      // latest imports
+      this.editSettings = () => this.tab('settings');
+      this.showHistory = () => this.tab('history');
+      this.showChecks = () => this.tab('checks');
+      this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8));
+      this.searchFromCard = () => {
+        if (this.query().trim()) {
+          this.tab('search');
+          this.search();
+        }
+      };
+      this.targetTitle = ko.pureComputed(() => {
+        const target = this.targets().find((t) => t.value === this.targetId());
+        return target ? target.label : this.targetId();
+      });
+      this.jenkinsRows = ko.pureComputed(() => (this.jenkinsSaved() ? [
+        { label: 'Jenkins URL', value: this.jenkinsUrl(), link: true },
+        { label: 'Jobs', value: this.jenkinsJobs() },
+        { label: 'Mode', value: this.jenkinsMode() === 'BRANCH' ? 'Build the change branch' : 'Send the patch to apply on trunk' },
+        { label: this.jenkinsMode() === 'BRANCH' ? 'Branch parameter' : 'Patch parameter',
+          value: this.jenkinsMode() === 'BRANCH' ? this.jenkinsBranchParameter() : this.jenkinsPatchParameter() },
+        { label: 'Username', value: this.jenkinsUsername() || 'None' }
+      ] : []));
+      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4));
+      // Indexing progress: the running import's files, or 100% once imported
+      this.indexProgress = ko.pureComputed(() => {
+        const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
+        if (running) {
+          return running.progress;
+        }
+        return this.indexStatus() && this.indexStatus().indexedRevision !== null ? 100 : 0;
+      });
+      this.indexProgressWidth = ko.pureComputed(() => this.indexProgress() + '%');
+
       this.connected = () => {
         accUtils.announce('Code page loaded.');
         document.title = 'Code';
         subscription = this.workspaceId.subscribe(loadWorkspace);
         const before = this.workspaceId();
+        // A search from the top bar opens the Search tab with its results.
+        const requested = pageRequests.codeSearch();
+        pageRequests.codeSearch('');
+        const searchRequested = () => {
+          if (requested) {
+            this.tab('search');
+            this.query(requested);
+            this.search();
+          }
+        };
         // If loading the list changed the selection, the subscription has already loaded the workspace.
-        workspaceSelection.load().then(() => { if (this.workspaceId() === before) { loadWorkspace(before); } }).catch(showError);
+        workspaceSelection.load().then(() => (this.workspaceId() === before ? loadWorkspace(before) : null))
+          .then(searchRequested).catch(showError);
+        // Searches from the top bar while this page is open
+        searchSubscription = pageRequests.codeSearch.subscribe((text) => {
+          if (text) {
+            pageRequests.codeSearch('');
+            this.tab('search');
+            this.query(text);
+            this.search();
+          }
+        });
       };
 
       this.disconnected = () => {
         clearTimeout(pollTimer);
         if (subscription) {
           subscription.dispose();
+        }
+        if (searchSubscription) {
+          searchSubscription.dispose();
         }
       };
     }

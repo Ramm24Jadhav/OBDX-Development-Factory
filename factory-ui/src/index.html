@@ -52,7 +52,7 @@
                 </template>
               </oj-bind-for-each>
             </ul>
-            <p class="factory-nav-heading">Setup</p>
+            <hr class="factory-nav-divider">
             <ul>
               <oj-bind-for-each data="[[setupNav]]">
                 <template>
@@ -79,17 +79,64 @@
             <button type="button" class="factory-menu-toggle" id="menuToggle" aria-label="Open the menu" on-click="[[toggleSidebar]]">
               <span class="factory-nav-icon factory-ico-menu" aria-hidden="true"></span>
             </button>
+            <div class="factory-topbar-workspace">
+              <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>
+              <oj-select-single id="topWorkspace" class="factory-topbar-select" label-hint="Workspace" label-edge="none"
+                                data="[[workspaceProvider]]" value="{{workspaceId}}" placeholder="Select a workspace"></oj-select-single>
+            </div>
             <div class="factory-topbar-title">
-              <span class="factory-topbar-app"><oj-bind-text value="[[appName]]"></oj-bind-text></span>
-              <span class="factory-topbar-sep" aria-hidden="true">/</span>
               <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
+              <oj-bind-if test="[[crumbWorkspace()]]">
+                <span class="factory-topbar-sep" aria-hidden="true">›</span>
+                <span class="factory-topbar-app"><oj-bind-text value="[[crumbWorkspace]]"></oj-bind-text></span>
+              </oj-bind-if>
+            </div>
+            <div class="factory-topbar-search" role="search">
+              <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+              <input id="globalSearch" type="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
+                     autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
+              <kbd class="factory-kbd">Ctrl K</kbd>
+            </div>
+            <div class="factory-topbar-icons">
+              <div class="factory-bell-wrap">
+                <button type="button" class="factory-icon-button" id="bellButton" on-click="[[toggleBell]]"
+                        :aria-label="[[attentionCount() + ' things need your attention']]" :aria-expanded="[[bellOpen() ? 'true' : 'false']]">
+                  <span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span>
+                  <oj-bind-if test="[[attentionCount() > 0]]">
+                    <span class="factory-bell-count"><oj-bind-text value="[[attentionCount]]"></oj-bind-text></span>
+                  </oj-bind-if>
+                </button>
+                <oj-bind-if test="[[bellOpen()]]">
+                  <div class="factory-bell-panel" id="bellPanel" role="dialog" aria-label="Needs your attention">
+                    <div class="factory-bell-head">Needs your attention</div>
+                    <oj-bind-if test="[[attentionCount() === 0]]">
+                      <p class="factory-bell-empty">Nothing is waiting on you.</p>
+                    </oj-bind-if>
+                    <ul>
+                      <oj-bind-for-each data="[[attention]]">
+                        <template>
+                          <li><button type="button" on-click="[[$current.data.open]]">
+                            <span :class="[['factory-bell-dot factory-bell-dot-' + $current.data.tone]]" aria-hidden="true"></span>
+                            <span class="factory-bell-text"><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
+                              <span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span>
+                            <span class="factory-bell-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
+                          </button></li>
+                        </template>
+                      </oj-bind-for-each>
+                    </ul>
+                  </div>
+                </oj-bind-if>
+              </div>
+              <a class="factory-icon-button" id="helpButton" href="?ojr=about" on-click="[[openHelp]]" title="Help" aria-label="Help">
+                <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>
+              </a>
             </div>
             <oj-menu-button id="userMenu" chroming="borderless" class="factory-user-button">
               <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
               <span class="factory-user-text">
                 <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
-                <span class="factory-user-role"><oj-bind-text value="[[userRole]]"></oj-bind-text></span>
               </span>
+              <span class="factory-nav-icon factory-ico-caret factory-user-caret" aria-hidden="true"></span>
               <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
                 <oj-option id="account" value="account">Account</oj-option>
                 <oj-option id="about" value="about">About</oj-option>

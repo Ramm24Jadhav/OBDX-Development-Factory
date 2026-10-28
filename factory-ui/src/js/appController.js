@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout'],
-  function (ko, session, updates, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', 'ojs/ojselectsingle', 'ojs/ojmenu'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -113,11 +113,60 @@ define(['knockout', './services/session', './services/updates', 'ojs/ojcontext',
       this.userLogin = ko.pureComputed(() => (session.user() ? session.user().displayName : 'Not signed in'));
       this.userInitials = ko.pureComputed(() => this.userLogin().split(/\s+/).filter(Boolean).slice(0, 2)
         .map((part) => part.charAt(0).toUpperCase()).join('') || '?');
-      this.userRole = ko.pureComputed(() => {
-        const role = session.isAdmin() ? 'Administrator' : 'Member';
-        return role === this.userLogin() ? '' : role;
-      });
       this.canChangePassword = ko.pureComputed(() => !!session.user() && session.user().canChangePassword);
+
+      // Top bar: the workspace the pages work on (shared with their own pickers), the page and workspace as a breadcrumb,
+      // search of the workspace's code (opens the Code page's Search tab), what needs attention, and help.
+      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
+      this.workspaceId = workspaceSelection.selectedId;
+      session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
+      const workspacePages = ['code', 'profile', 'requirements', 'designer', 'changes', 'modernization'];
+      this.crumbWorkspace = ko.pureComputed(() => {
+        if (workspacePages.indexOf(this.selection.path()) < 0) {
+          return '';
+        }
+        const option = workspaceSelection.options().find((o) => o.value === this.workspaceId());
+        return option ? option.label.split(' (')[0] : '';
+      });
+      this.globalQuery = ko.observable('');
+      this.globalQueryInput = (event) => this.globalQuery(event.target.value);
+      this.globalSearchKey = (event) => {
+        if (event.key === 'Enter' && this.globalQuery().trim()) {
+          pageRequests.codeSearch(this.globalQuery().trim());
+          this.globalQuery('');
+          event.target.value = '';
+          router.go({ path: 'code' });
+        }
+      };
+      document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
+          const input = document.getElementById('globalSearch');
+          if (input) {
+            event.preventDefault();
+            input.focus();
+          }
+        }
+      });
+      this.attention = dashboard.attention;
+      this.attentionCount = ko.pureComputed(() => this.attention().length);
+      this.bellOpen = ko.observable(false);
+      this.toggleBell = () => {
+        if (!this.bellOpen()) {
+          dashboard.load();
+        }
+        this.bellOpen(!this.bellOpen());
+      };
+      document.addEventListener('click', (event) => {
+        if (this.bellOpen() && !event.target.closest('.factory-bell-wrap')) {
+          this.bellOpen(false);
+        }
+      });
+      // Opening an item from the bell closes it.
+      window.addEventListener('factory-navigate', () => this.bellOpen(false));
+      this.openHelp = (event) => {
+        event.preventDefault();
+        router.go({ path: 'about' });
+      };
 
       // Sign-in: pages show only for a signed-in user, except the preview and customer review pages (embedded).
       this.signedIn = ko.pureComputed(() => session.user() !== null);

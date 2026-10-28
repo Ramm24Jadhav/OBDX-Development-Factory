@@ -3,17 +3,22 @@
  * from an SVN URL or a folder on the computer the factory runs on (/api/sources); the factory checks it and fills in
  * the name, bank and OBDX version from the code.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojtable', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
-        'ojs/ojbutton', 'ojs/ojvalidationgroup', 'ojs/ojradioset', 'ojs/ojswitch'],
-  function (ko, accUtils, api, session, workspaceSelection, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
+        '../services/pageRequests', 'ojs/ojarraydataprovider',
+        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
+        'ojs/ojbutton', 'ojs/ojvalidationgroup', 'ojs/ojswitch', 'ojs/ojmenu'],
+  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ArrayDataProvider) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
+    const WEEK_MS = 7 * 24 * 3600 * 1000;
+    const STATUS = {
+      ready: { text: 'Completed', css: 'factory-ws-status factory-ws-status-green', icon: 'factory-nav-icon factory-ico-check' },
+      importing: { text: 'In Progress', css: 'factory-ws-status factory-ws-status-amber', icon: 'factory-nav-icon factory-ico-clock' },
+      failed: { text: 'Check Required', css: 'factory-ws-status factory-ws-status-red', icon: 'factory-nav-icon factory-ico-alert' },
+      new: { text: 'Not imported', css: 'factory-ws-status factory-ws-status-grey', icon: 'factory-nav-icon factory-ico-clock' }
+    };
 
     function WorkspacesViewModel() {
       this.isAdmin = session.isAdmin;
-      const workspaces = ko.observableArray([]);
-      this.workspaceProvider = new ArrayDataProvider(workspaces, { keyAttributes: 'id' });
-
       this.versionProvider = new ArrayDataProvider([
         { value: '22.x', label: 'OBDX 22.x' },
         { value: '25.x', label: 'OBDX 25.x' }
@@ -119,10 +124,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.folderUp = () => this.listing() && this.listing().parent && openFolder(this.listing().parent);
       this.chooseFolder = () => this.listing() && useFolder(this.listing().path);
 
+      this.localEnabled = ko.observable(false);
       const loadLocal = () => api.get('sources/local').then((local) => {
         if (!local.enabled) {
           return;
         }
+        this.localEnabled(true);
         this.home = local.home;
         sources([{ value: 'folder', label: 'Folder on this computer' }, { value: 'url', label: 'SVN server (URL)' }]);
         this.sourceKind('folder');
@@ -130,19 +137,108 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.found(local.found.map((repository) => Object.assign({}, repository, { use: () => useFolder(repository.path) })));
       }).catch(() => null);
 
-      const load = () => api.get('workspaces')
-        .then((data) => workspaces(data.map((workspace) => Object.assign({}, workspace, {
-          createdAt: new Date(workspace.createdAt).toLocaleString(),
-          deleteAction: () => this.deleteWorkspace(workspace.id),
-          openAction: () => {
-            workspaceSelection.selectedId(workspace.id);
-            window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' }));
-          },
-          indexed: workspace.indexedRevision !== null && workspace.indexedRevision !== undefined
-            ? 'Revision ' + workspace.indexedRevision : 'Not imported',
-          canDelete: session.isAdmin()
-        }))))
-        .catch(showError);
+      // The source tabs of Create New Workspace, and the header's New Workspace menu that picks one
+      this.sourceTabs = [
+        { value: 'folder', label: 'Folder on this computer', icon: 'factory-nav-icon factory-ico-laptop' },
+        { value: 'url', label: 'SVN server (URL)', icon: 'factory-nav-icon factory-ico-link' }
+      ].map((t) => Object.assign(t, {
+        css: ko.pureComputed(() => 'factory-ws-tab' + (this.sourceKind() === t.value ? ' factory-ws-tab-on' : '')),
+        hidden: ko.pureComputed(() => t.value === 'folder' && !this.localEnabled()),
+        pick: () => this.sourceKind(t.value)
+      }));
+      const focusCreate = () => {
+        const card = document.getElementById('createWorkspaceCard');
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const input = document.getElementById(this.sourceKind() === 'folder' ? 'folderPath' : 'svnUrl');
+          if (input) {
+            window.setTimeout(() => input.focus(), 300);
+          }
+        }
+      };
+      this.newWorkspaceMenu = (event) => { this.sourceKind(event.detail.selectedValue); focusCreate(); };
+      this.startCreate = () => focusCreate();
+      this.folderPathInput = (event) => this.folderPath(event.target.value);
+      this.folderPathKey = (event) => { if (event.key === 'Enter') { this.checkFolder(); } };
+      this.go = (page) => dashboard.open(page);
+
+      // All workspaces, with their code state from the dashboard, filtered by the search box and the three lists
+      const data = dashboard.data;
+      this.filterText = ko.observable('');
+      this.filterBank = ko.observable('');
+      this.filterStatus = ko.observable('');
+      this.filterVersion = ko.observable('');
+      this.filterTextInput = (event) => this.filterText(event.target.value);
+      this.filterBankChange = (event) => this.filterBank(event.target.value);
+      this.filterStatusChange = (event) => this.filterStatus(event.target.value);
+      this.filterVersionChange = (event) => this.filterVersion(event.target.value);
+      this.banks = ko.pureComputed(() => Array.from(new Set(data().map((d) => d.workspace.bankName))).sort());
+      this.versions = ko.pureComputed(() => Array.from(new Set(data().map((d) => d.workspace.obdxVersion))).sort());
+      this.rows = ko.pureComputed(() => data().map((d) => {
+        const w = d.workspace;
+        const state = dashboard.codeState(d).key;
+        const job = d.imports.length ? d.imports[0] : null;
+        return {
+          id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, svnUrl: w.svnUrl || '', state: state,
+          status: STATUS[state], checked: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never',
+          canDelete: session.isAdmin(),
+          open: dashboard.open('code', w.id),
+          edit: dashboard.open('code', w.id),
+          remove: () => this.deleteWorkspace(w.id)
+        };
+      }).filter((r) => {
+        const text = this.filterText().trim().toLowerCase();
+        return (!text || (r.name + ' ' + r.bank + ' ' + r.svnUrl).toLowerCase().indexOf(text) >= 0)
+          && (!this.filterBank() || r.bank === this.filterBank())
+          && (!this.filterStatus() || r.state === this.filterStatus())
+          && (!this.filterVersion() || r.version === this.filterVersion());
+      }));
+      this.total = ko.pureComputed(() => data().length);
+      this.refresh = () => { dashboard.load(); };
+
+      // The four totals
+      this.tiles = ko.pureComputed(() => {
+        const d = data();
+        const ready = d.filter((e) => dashboard.codeState(e).key === 'ready').length;
+        const newThisWeek = d.filter((e) => Date.now() - new Date(e.workspace.createdAt).getTime() < WEEK_MS).length;
+        const banks = new Set(d.map((e) => e.workspace.bankName)).size;
+        const versions = Array.from(new Set(d.map((e) => e.workspace.obdxVersion))).sort();
+        return {
+          total: d.length, newThisWeek: newThisWeek, banks: banks === 1 ? 'Across 1 bank' : 'Across ' + banks + ' banks',
+          ready: ready, readyWidth: (d.length ? Math.round(100 * ready / d.length) : 0) + '%',
+          inProgress: d.length - ready,
+          versionCount: versions.length, versionList: versions.join(', ') || 'None yet'
+        };
+      });
+
+      // Recent activity: workspaces created and code imports
+      this.activity = ko.pureComputed(() => {
+        const items = [];
+        data().forEach((d) => {
+          const w = d.workspace;
+          items.push({ css: 'factory-ws-dot factory-ws-dot-violet', icon: 'factory-nav-icon factory-ico-cube', text: 'Workspace ' + w.name + ' created (OBDX ' + w.obdxVersion + ')', at: w.createdAt });
+          d.imports.forEach((j) => {
+            const done = j.status === 'SUCCEEDED';
+            const failed = j.status === 'FAILED';
+            items.push({
+              css: 'factory-ws-dot ' + (done ? 'factory-ws-dot-green' : (failed ? 'factory-ws-dot-amber' : 'factory-ws-dot-blue')),
+              icon: 'factory-nav-icon ' + (done ? 'factory-ico-check' : (failed ? 'factory-ico-alert' : 'factory-ico-info')),
+              text: done ? 'Workspace ' + w.name + ' code indexed at r' + j.toRevision : (failed ? 'Code import for ' + w.name + ' needs attention' : 'Code import started for ' + w.name),
+              at: j.finishedAt || j.createdAt
+            });
+          });
+        });
+        return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4).map((i) => Object.assign(i, { when: dashboard.ago(i.at) }));
+      });
+
+      this.quickActions = [
+        { title: 'Browse Code', text: 'Explore repositories and search code', icon: 'factory-nav-icon factory-ico-code', open: dashboard.open('code') },
+        { title: 'View Profile', text: 'Detected stack and conventions', icon: 'factory-nav-icon factory-ico-doc', open: dashboard.open('profile') },
+        { title: 'Add Requirement', text: 'Upload BRD/FSD or describe change', icon: 'factory-nav-icon factory-ico-list', open: dashboard.open('requirements') },
+        { title: 'Open Designer', text: 'Design and review screens', icon: 'factory-nav-icon factory-ico-design', open: dashboard.open('designer') }
+      ];
+
+      const load = () => Promise.all([dashboard.load(), workspaceSelection.load()]).catch(showError);
 
       this.createWorkspace = () => {
         const form = document.getElementById('workspaceForm');
@@ -195,7 +291,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         document.title = 'Workspaces';
         load();
         if (session.isAdmin()) {
-          loadLocal();
+          // A source started on the Overview page: check it here, or open the folder browser.
+          const request = pageRequests.newWorkspace();
+          pageRequests.newWorkspace(null);
+          loadLocal().then(() => {
+            if (!request) {
+              return;
+            }
+            this.sourceKind(request.kind === 'folder' && this.localEnabled() ? 'folder' : 'url');
+            if (this.sourceKind() === 'folder') {
+              this.folderPath(request.value);
+              if (request.browse) {
+                this.toggleBrowse();
+              } else if (request.value) {
+                this.checkFolder();
+              }
+            } else {
+              this.svnUrl(request.value);
+              if (request.value) {
+                this.checkUrl();
+              }
+            }
+            focusCreate();
+          });
         }
       };
     }

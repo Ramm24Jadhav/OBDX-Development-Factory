@@ -1,13 +1,22 @@
-<div class="factory-ov">
-  <div class="factory-ov-head">
+<div class="factory-ov2">
+  <div class="factory-ov2-head">
     <div>
-      <h1 id="overviewGreeting"><oj-bind-text value="[[greeting]]"></oj-bind-text></h1>
-      <p>Where your OBDX work stands across the workspaces you can see.</p>
+      <p class="factory-ov2-crumb">Overview</p>
+      <h1 id="overviewGreeting"><oj-bind-text value="[[greeting]]"></oj-bind-text> <span aria-hidden="true">👋</span></h1>
+      <p class="factory-ov2-lead">Here's what's happening in your OBDX development factory.</p>
     </div>
-    <div class="factory-ov-actions">
-      <oj-button id="overviewRefresh" chroming="outlined" on-oj-action="[[refresh]]" disabled="[[loading]]">Refresh</oj-button>
-      <oj-button id="overviewDesigner" chroming="outlined" on-oj-action="[[go('designer')]]">Open Designer</oj-button>
-      <oj-button id="overviewRequirement" chroming="callToAction" on-oj-action="[[go('requirements')]]">New requirement</oj-button>
+    <div class="factory-ov2-actions">
+      <oj-menu-button id="openWorkspaceButton" chroming="outlined">
+        <span slot="startIcon" class="factory-nav-icon factory-ico-folder factory-btn-icon" aria-hidden="true"></span>Open Workspace
+        <oj-menu id="openWorkspaceMenu" slot="menu" on-oj-menu-action="[[openWorkspace]]">
+          <oj-bind-for-each data="[[workspaceMenu]]">
+            <template><oj-option :value="[[$current.data.id]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></oj-option></template>
+          </oj-bind-for-each>
+        </oj-menu>
+      </oj-menu-button>
+      <oj-button id="overviewRequirement" chroming="callToAction" on-oj-action="[[go('requirements')]]">
+        <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>New Requirement
+      </oj-button>
     </div>
   </div>
 
@@ -15,150 +24,193 @@
     <p class="oj-text-color-danger"><oj-bind-text value="[[error]]"></oj-bind-text></p>
   </oj-bind-if>
 
-  <div class="factory-ov-tiles" id="overviewTiles">
+  <div class="factory-ov2-tiles" id="overviewTiles">
     <oj-bind-for-each data="[[tiles]]">
       <template>
-        <button type="button" class="factory-ov-tile" on-click="[[$current.data.open]]">
-          <span :class="[[$current.data.tone]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span>
+        <button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.open]]">
+          <span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
           <span>
-            <span class="factory-ov-tile-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-            <span class="factory-ov-tile-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-            <span class="factory-ov-tile-sub"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span>
+            <span class="factory-ov2-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+            <span class="factory-ov2-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+            <span :class="[[$current.data.subCss]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span>
           </span>
         </button>
       </template>
     </oj-bind-for-each>
   </div>
 
-  <div class="factory-ov-grid">
-    <div>
-      <section class="factory-ov-card" id="workspacesCard">
-        <h2>Workspaces <a href="?ojr=workspaces" on-click="[[go('workspaces')]]">All workspaces</a></h2>
-        <oj-bind-if test="[[loading() && rows().length === 0]]">
-          <p class="factory-ov-empty">Loading...</p>
+  <div class="factory-ov2-row factory-ov2-row-a">
+    <section class="factory-ov2-card" id="recentWorkspaces">
+      <h2>Recent Workspaces <a href="?ojr=workspaces" on-click="[[go('workspaces')]]">View All <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
+      <div class="factory-ov2-table-wrap">
+        <table class="factory-ov2-table">
+          <thead><tr><th>Name</th><th>Bank</th><th>OBDX Version</th><th>Code Location</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[recentWorkspaces]]">
+              <template>
+                <tr>
+                  <td><a href="?ojr=code" class="factory-ov2-link" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></a></td>
+                  <td><oj-bind-text value="[[$current.data.bank]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
+                  <td class="factory-ov2-path"><oj-bind-text value="[[$current.data.location]]"></oj-bind-text></td>
+                  <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                  <td><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></td>
+                  <td>
+                    <oj-menu-button :id="[['wsActions-' + $current.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
+                      <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
+                      <oj-bind-text value="[['Actions for ' + $current.data.name]]"></oj-bind-text>
+                      <oj-menu slot="menu" on-oj-menu-action="[[$current.data.menu]]">
+                        <oj-option value="code">Open code</oj-option>
+                        <oj-option value="profile">Project Profile</oj-option>
+                        <oj-option value="requirements">Requirements</oj-option>
+                        <oj-option value="designer">Designer</oj-option>
+                      </oj-menu>
+                    </oj-menu-button>
+                  </td>
+                </tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+        <oj-bind-if test="[[!loading() && recentWorkspaces().length === 0]]">
+          <p class="factory-ov-empty">No workspaces yet.</p>
         </oj-bind-if>
-        <oj-bind-if test="[[!loading() && !hasWorkspaces()]]">
-          <p class="factory-ov-empty">No workspaces yet.
-            <oj-bind-text value="[[isAdmin() ? 'Add one on the Workspaces page.' : 'Ask an administrator to add you to one.']]"></oj-bind-text></p>
-        </oj-bind-if>
-        <oj-bind-if test="[[rows().length > 0]]">
-          <table class="factory-ov-table">
-            <thead>
-              <tr>
-                <th>Workspace</th>
-                <th>OBDX</th>
-                <th>Code</th>
-                <th class="factory-ov-num factory-ov-hide-sm">Requirements</th>
-                <th class="factory-ov-num factory-ov-hide-sm">Screens</th>
-                <th class="factory-ov-num factory-ov-hide-sm">Open changes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <oj-bind-for-each data="[[rows]]">
-                <template>
-                  <tr>
-                    <td>
-                      <button type="button" class="factory-ov-name" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button>
-                      <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.bank]]"></oj-bind-text></span>
-                    </td>
-                    <td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
-                    <td>
-                      <span :class="[[$current.data.code.tone]]"><oj-bind-text value="[[$current.data.code.text]]"></oj-bind-text></span>
-                      <oj-bind-if test="[[$current.data.files]]">
-                        <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.files + ' files']]"></oj-bind-text></span>
-                      </oj-bind-if>
-                    </td>
-                    <td class="factory-ov-num factory-ov-hide-sm"><oj-bind-text value="[[$current.data.requirements]]"></oj-bind-text></td>
-                    <td class="factory-ov-num factory-ov-hide-sm">
-                      <oj-bind-text value="[[$current.data.screens]]"></oj-bind-text>
-                      <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.approvedScreens + ' approved']]"></oj-bind-text></span>
-                    </td>
-                    <td class="factory-ov-num factory-ov-hide-sm"><oj-bind-text value="[[$current.data.openChanges]]"></oj-bind-text></td>
-                  </tr>
-                </template>
-              </oj-bind-for-each>
-            </tbody>
-          </table>
-        </oj-bind-if>
-      </section>
+      </div>
+    </section>
 
-      <section class="factory-ov-card" id="activityCard">
-        <h2>Recent activity</h2>
-        <oj-bind-if test="[[!loading() && activity().length === 0]]">
-          <p class="factory-ov-empty">Nothing yet. Requirements, screens and changes show here as they are made.</p>
-        </oj-bind-if>
-        <ul class="factory-ov-list">
-          <oj-bind-for-each data="[[activity]]">
+    <section class="factory-ov2-card" id="setupWorkspace">
+      <h2>Setup New Workspace</h2>
+      <oj-bind-if test="[[isAdmin()]]">
+        <div class="factory-segs" role="group" aria-label="Where is the code?">
+          <oj-bind-for-each data="[[sourceTabs]]">
             <template>
-              <li>
-                <span :class="[[$current.data.icon]]" aria-hidden="true"></span>
-                <span class="factory-ov-list-main">
-                  <button type="button" class="factory-ov-list-title" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></button>
-                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-                </span>
-                <oj-bind-if test="[[$current.data.pill.text]]">
-                  <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span>
-                </oj-bind-if>
-                <span class="factory-ov-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
-              </li>
-            </template>
-          </oj-bind-for-each>
-        </ul>
-      </section>
-    </div>
-
-    <div>
-      <section class="factory-ov-card" id="attentionCard">
-        <h2>Needs attention</h2>
-        <oj-bind-if test="[[!loading() && attention().length === 0]]">
-          <p class="factory-ov-empty"><span class="factory-ov-ok">Nothing is waiting on you.</span></p>
-        </oj-bind-if>
-        <ul class="factory-ov-list">
-          <oj-bind-for-each data="[[attention]]">
-            <template>
-              <li>
-                <span :class="[[$current.data.icon]]" aria-hidden="true"></span>
-                <span class="factory-ov-list-main">
-                  <button type="button" class="factory-ov-list-title" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></button>
-                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span>
-                </span>
-              </li>
-            </template>
-          </oj-bind-for-each>
-        </ul>
-        <oj-bind-if test="[[attentionMore() > 0]]">
-          <p class="factory-ov-subtle"><oj-bind-text value="[[attentionMore() + ' more on the Requirements, Designer and Changes pages.']]"></oj-bind-text></p>
-        </oj-bind-if>
-      </section>
-
-      <section class="factory-ov-card" id="modelCard">
-        <h2>AI model <a href="?ojr=models" on-click="[[go('models')]]">Models</a></h2>
-        <oj-bind-if test="[[model()]]">
-          <p class="factory-ov-empty"><strong><oj-bind-text value="[[modelText]]"></oj-bind-text></strong></p>
-          <p class="factory-ov-subtle">
-            <oj-bind-text value="[[model().saved ? 'Chosen on the Models page' + (model().updatedBy ? ' by ' + model().updatedBy : '') + '.' : 'From the settings file.']]"></oj-bind-text>
-            <oj-bind-text value="[[' Code search: ' + (model().embeddingModel || 'not set') + '.']]"></oj-bind-text>
-          </p>
-        </oj-bind-if>
-        <oj-bind-if test="[[!model() && !loading()]]">
-          <p class="factory-ov-empty">The model settings could not be read.</p>
-        </oj-bind-if>
-      </section>
-
-      <section class="factory-ov-card">
-        <h2>Getting started</h2>
-        <div class="factory-ov-steps">
-          <oj-bind-for-each data="[[steps]]">
-            <template>
-              <button type="button" class="factory-ov-step" on-click="[[$current.data.open]]">
-                <span :class="[[$current.data.icon]]" aria-hidden="true"></span>
-                <span><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
-                  <span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span>
+              <button type="button" :class="[[$current.data.css]]" :disabled="[[$current.data.disabled]]" on-click="[[$current.data.pick]]">
+                <oj-bind-text value="[[$current.data.label]]"></oj-bind-text>
               </button>
             </template>
           </oj-bind-for-each>
         </div>
-      </section>
-    </div>
+        <p class="factory-ov2-field-label"><oj-bind-text value="[[sourceKind() === 'folder' ? 'Project folder' : 'SVN repository URL']]"></oj-bind-text></p>
+        <div class="factory-ov2-source">
+          <oj-input-text id="setupSource" class="factory-grow factory-ws-input" label-hint="Source" label-edge="none" autocomplete="off"
+                         placeholder="[[sourceKind() === 'folder' ? 'Select OBDX repository folder...' : 'https://svn.bank.local/repos/obdx/trunk']]"
+                         value="{{sourceValue}}" on-oj-enter="[[createWorkspace]]"></oj-input-text>
+          <oj-bind-if test="[[sourceKind() === 'folder']]">
+            <button type="button" class="factory-ov2-btn" on-click="[[browse]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Browse</button>
+          </oj-bind-if>
+        </div>
+        <oj-bind-if test="[[sourceKind() === 'folder']]">
+          <label class="factory-ov2-check"><input type="checkbox" :checked="[[scanRepositories]]" on-change="[[scanToggle]]">
+            Scan for SVN repositories (shortcuts)</label>
+          <oj-bind-if test="[[scanRepositories() && found().length > 0]]">
+            <div class="factory-ov2-found">
+              <oj-bind-for-each data="[[found]]">
+                <template><button type="button" class="factory-chip" on-click="[[$current.data.use]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </div>
+          </oj-bind-if>
+        </oj-bind-if>
+        <div class="factory-ov2-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>
+          The factory will detect OBDX version, modules, UI framework and bank conventions automatically.</div>
+        <button type="button" class="factory-ov2-primary" id="setupCreate" on-click="[[createWorkspace]]">Create Workspace</button>
+      </oj-bind-if>
+      <oj-bind-if test="[[!isAdmin()]]">
+        <p class="factory-ov-empty">Administrators set up workspaces. Ask one to add the bank's code and give you a role in it.</p>
+      </oj-bind-if>
+    </section>
+  </div>
+
+  <div class="factory-ov2-row factory-ov2-row-b">
+    <section class="factory-ov2-card" id="recentRequirements">
+      <h2>Recent Requirements <a href="?ojr=requirements" on-click="[[go('requirements')]]">View All <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
+      <div class="factory-ov2-table-wrap">
+        <table class="factory-ov2-table factory-ov2-table-grid">
+          <thead><tr><th>ID</th><th>Title</th><th>Workspace</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[recentRequirements]]">
+              <template>
+                <tr>
+                  <td><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
+                  <td><a href="?ojr=requirements" class="factory-ov2-link" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></a></td>
+                  <td><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td>
+                  <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                  <td><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></td>
+                </tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+        <oj-bind-if test="[[!loading() && recentRequirements().length === 0]]">
+          <p class="factory-ov-empty">No requirements yet.</p>
+        </oj-bind-if>
+      </div>
+    </section>
+
+    <section class="factory-ov2-card" id="developmentProgress">
+      <h2>Development Progress
+        <oj-select-single id="progressWorkspace" class="factory-ov2-mini-select" label-hint="Workspace" label-edge="none"
+                          data="[[progressProvider]]" value="{{progressWorkspace}}"></oj-select-single>
+      </h2>
+      <ul class="factory-ov2-progress">
+        <oj-bind-for-each data="[[progress]]">
+          <template>
+            <li>
+              <span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+              <span class="factory-ov2-prog-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+              <span class="factory-ov2-bar"><span :class="[[$current.data.barCss]]" :style.width="[[$current.data.width]]"></span></span>
+              <span class="factory-ov2-prog-n"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span>
+            </li>
+          </template>
+        </oj-bind-for-each>
+      </ul>
+    </section>
+  </div>
+
+  <div class="factory-ov2-row factory-ov2-row-c">
+    <section class="factory-ov2-card" id="recentBuilds">
+      <h2>Recent Builds <a href="?ojr=changes" on-click="[[go('changes')]]">View All <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
+      <div class="factory-ov2-table-wrap">
+        <table class="factory-ov2-table factory-ov2-table-grid">
+          <thead><tr><th>#</th><th>Workspace</th><th>Branch</th><th>Status</th><th>Duration</th><th>Completed</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[recentBuilds]]">
+              <template>
+                <tr>
+                  <td><a href="?ojr=changes" class="factory-ov2-link" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></a></td>
+                  <td><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></td>
+                  <td class="factory-ov2-path"><oj-bind-text value="[[$current.data.branch]]"></oj-bind-text></td>
+                  <td><span :class="[[$current.data.statusCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status]]"></oj-bind-text></span></td>
+                  <td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[$current.data.completed]]"></oj-bind-text></td>
+                </tr>
+              </template>
+            </oj-bind-for-each>
+          </tbody>
+        </table>
+        <oj-bind-if test="[[!loading() && recentBuilds().length === 0]]">
+          <p class="factory-ov-empty">No builds yet. Changes are built with Jenkins from the Changes page once Jenkins is set up on the Code page.</p>
+        </oj-bind-if>
+      </div>
+    </section>
+
+    <section class="factory-ov2-card" id="recentActivity">
+      <h2>Recent Activity <a href="?ojr=changes" on-click="[[go('changes')]]">View All <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
+      <ul class="factory-ov2-activity">
+        <oj-bind-for-each data="[[activity]]">
+          <template>
+            <li>
+              <span :class="[[$current.data.dotCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+              <button type="button" class="factory-ov2-activity-text" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button>
+              <span class="factory-ov2-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
+              <span class="factory-ov2-ws"><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></span>
+            </li>
+          </template>
+        </oj-bind-for-each>
+      </ul>
+      <oj-bind-if test="[[!loading() && activity().length === 0]]">
+        <p class="factory-ov-empty">Nothing yet.</p>
+      </oj-bind-if>
+    </section>
   </div>
 </div>
