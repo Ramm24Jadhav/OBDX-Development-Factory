@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', 'ojs/ojselectsingle', 'ojs/ojmenu'],
-  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', 'ojs/ojselectsingle', 'ojs/ojmenu'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -31,7 +31,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       // icon: the sidebar icon (css class factory-ico-<icon>); group: the sidebar section; parent: the sidebar entry
       // that stays highlighted for a page opened from another one.
       let navData = [
-        { path: '', redirect: 'overview' },
+        { path: '', redirect: preferences.landing() || 'overview' },
         { path: 'overview', detail: { label: 'Home', icon: 'home', group: 'work' } },
         { path: 'workspaces', detail: { label: 'Workspaces', icon: 'folder', group: 'work' } },
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'work' } },
@@ -58,6 +58,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
         { path: 'review', detail: { label: 'Review', hidden: true } }
       ];
+      preferences.apply();
       // Router setup
       let router = new CoreRouter(navData, {
         urlAdapter: new UrlParamAdapter()

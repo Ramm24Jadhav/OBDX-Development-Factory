@@ -1,0 +1,197 @@
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Version Packs &amp; Bank Standards</h1>
+      <p>Manage OBDX version packs, bank-specific standards, templates and reusable implementation patterns</p>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="packsError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+
+  <div class="factory-kpis">
+    <oj-bind-for-each data="[[kpis]]">
+      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+          <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="factory-tabbar" role="tablist" aria-label="Version pack views">
+    <oj-bind-for-each data="[[tabs]]">
+      <template><button type="button" role="tab" :id="[['pk-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+        <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <oj-bind-if test="[[tab() === 'packs']]">
+    <div class="factory-row factory-row-main">
+      <div class="factory-stack">
+        <section class="factory-card">
+          <h2>Version Packs</h2>
+          <p class="factory-card-sub">OBDX versions with their rules, Java level and implementation recipes</p>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table" id="packTable">
+              <thead><tr><th></th><th>Version</th><th>Status</th><th>Description</th><th>Java</th><th>Rules</th><th>Recipes</th><th>Workspaces</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[rows]]"><template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+                <td><input type="radio" name="packPick" :checked="[[$current.data.selected]]" :aria-label="[[$current.data.name]]"></td>
+                <td><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong></td>
+                <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.java]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[$current.data.rules]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.recipes]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[$current.data.workspaces]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+            </table>
+          </div>
+        </section>
+        <div class="factory-row factory-row-2">
+          <section class="factory-card">
+            <h2>Bank Standards <button type="button" class="factory-link-sm" on-click="[[showStandards]]">View All</button></h2>
+            <p class="factory-card-sub">Implementation rules the generated code must follow</p>
+            <div class="factory-ov2-table-wrap">
+              <table class="factory-ov2-table"><thead><tr><th>Standard ID</th><th>Category</th><th>Description</th><th>Status</th></tr></thead>
+                <tbody><oj-bind-for-each data="[[standards().slice(0, 6)]]"><template><tr><td class="factory-cp-link factory-mono"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[$current.data.area]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
+                  <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table>
+            </div>
+          </section>
+          <section class="factory-card">
+            <h2>Implementation Templates</h2>
+            <p class="factory-card-sub">Reusable recipes for common OBDX changes</p>
+            <ul class="factory-list">
+              <oj-bind-for-each data="[[recipes]]">
+                <template><li class="factory-clickable" on-click="[[$current.data.open]]"><span class="factory-step-dot factory-dot-violet"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+                  <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.layers]]"></oj-bind-text></span></span>
+                  <span class="factory-ov-pill factory-ov-pill-green">Version pack</span></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </section>
+        </div>
+        <div class="factory-row factory-row-2">
+          <section class="factory-card">
+            <h2>Compatibility Matrix</h2>
+            <p class="factory-card-sub">Moving a workspace between versions</p>
+            <div class="factory-ov2-table-wrap">
+              <table class="factory-ov2-table factory-ad-matrix"><thead><tr><th>From / To</th><th>OBDX 22.x</th><th>OBDX 25.x</th></tr></thead>
+                <tbody><oj-bind-for-each data="[[matrix]]"><template><tr><td><strong><oj-bind-text value="[[$current.data.from]]"></oj-bind-text></strong></td>
+                  <oj-bind-for-each data="[[$current.data.cells]]" as="cell"><template><td><span :class="[[cell.data.css]]" :title="[[cell.data.t]]"></span></td></template></oj-bind-for-each></tr></template></oj-bind-for-each></tbody></table>
+            </div>
+          </section>
+          <section class="factory-card">
+            <h2>Recent Updates</h2>
+            <p class="factory-card-sub">Changes to rules and reference examples</p>
+            <ul class="factory-list">
+              <oj-bind-for-each data="[[updates]]">
+                <template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span></span>
+                  <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span>
+                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <oj-bind-if test="[[updates().length === 0]]"><p class="factory-empty">No rules turned on or off, and no examples pinned yet.</p></oj-bind-if>
+          </section>
+        </div>
+      </div>
+      <section class="factory-card">
+        <oj-bind-if test="[[details()]]">
+          <h2>Version Details <span class="factory-ov-pill factory-ov-pill-green">Active</span></h2>
+          <div class="factory-pk-hero"><span class="factory-pk-mark" aria-hidden="true"></span>
+            <div><strong><oj-bind-text value="[[details().name]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[details().description]]"></oj-bind-text></span></div></div>
+          <dl class="factory-kv">
+            <dt>Version</dt><dd><oj-bind-text value="[[details().name]]"></oj-bind-text></dd>
+            <dt>Java level</dt><dd><oj-bind-text value="[[details().java]]"></oj-bind-text></dd>
+            <dt>Rules</dt><dd><oj-bind-text value="[[details().rules]]"></oj-bind-text></dd>
+            <dt>Recipes</dt><dd><oj-bind-text value="[[details().recipes]]"></oj-bind-text></dd>
+            <dt>Workspaces</dt><dd><oj-bind-text value="[[details().workspaces]]"></oj-bind-text></dd>
+            <dt>Examples from</dt><dd><oj-bind-text value="[[details().indexed]]"></oj-bind-text></dd>
+          </dl>
+          <h3>Key Features</h3>
+          <ul class="factory-pk-features"><oj-bind-for-each data="[[details().features]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <div class="factory-btn-row"><oj-button chroming="outlined" on-oj-action="[[openProfile]]">Reference examples in the Project Profile</oj-button></div>
+        </oj-bind-if>
+        <oj-bind-if test="[[!details()]]"><p class="factory-empty">Add a workspace to see its version pack.</p></oj-bind-if>
+      </section>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'standards' || tab() === 'rules']]">
+    <section class="factory-card">
+      <h2><oj-bind-text value="[[tab() === 'rules' ? 'Validation Rules' : 'Bank Standards']]"></oj-bind-text></h2>
+      <p class="factory-card-sub">Checked on every generated file and before each build. Turn a rule off when the bank's code deliberately does it differently.</p>
+      <div class="factory-ov2-table-wrap">
+        <table class="factory-ov2-table" id="ruleList">
+          <thead><tr><th>On</th><th>ID</th><th>Rule</th><th>Category</th><th>Severity</th><th>Applies to</th><th>Guidance</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[standards]]"><template><tr>
+            <td><oj-switch value="[[$current.data.enabled]]" disabled="[[!$current.data.canManage]]" on-value-changed="[[$current.data.toggle]]" label-hint="[[$current.data.title]]" label-edge="none"></oj-switch></td>
+            <td class="factory-mono"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td><td><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong></td>
+            <td><oj-bind-text value="[[$current.data.area]]"></oj-bind-text></td><td><span :class="[[$current.data.severity.css]]"><oj-bind-text value="[[$current.data.severity.text]]"></oj-bind-text></span></td>
+            <td><oj-bind-text value="[[$current.data.applies]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+        </table>
+      </div>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'templates']]">
+    <div class="factory-row factory-row-side">
+      <section class="factory-card">
+        <h2>Recipes</h2>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[recipes]]">
+            <template><li class="factory-clickable" on-click="[[$current.data.open]]"><span class="factory-step-dot factory-dot-violet"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+              <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.actions + ' · ' + $current.data.layers]]"></oj-bind-text></span></span><span></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+      <section class="factory-card">
+        <oj-bind-if test="[[recipe()]]">
+          <h2><oj-bind-text value="[[recipe().title]]"></oj-bind-text></h2>
+          <p class="factory-card-sub"><oj-bind-text value="[[recipe().when]]"></oj-bind-text></p>
+          <oj-bind-for-each data="[[recipe().parts]]">
+            <template>
+              <h3><oj-bind-text value="[[$current.data.name]]"></oj-bind-text> <span class="factory-ov-subtle factory-mono"><oj-bind-text value="[[$current.data.files]]"></oj-bind-text></span></h3>
+              <oj-bind-if test="[[$current.data.content]]"><pre class="factory-code"><oj-bind-text value="[[$current.data.content]]"></oj-bind-text></pre></oj-bind-if>
+              <oj-bind-if test="[[!$current.data.content]]"><p class="factory-ov-subtle"><oj-bind-text value="[[$current.data.examples + ' reference examples from the code, no template']]"></oj-bind-text></p></oj-bind-if>
+            </template>
+          </oj-bind-for-each>
+        </oj-bind-if>
+      </section>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'components']]">
+    <div class="factory-row factory-row-2">
+      <section class="factory-card">
+        <h2>Target pack components</h2>
+        <p class="factory-card-sub">How each Screen Model type becomes a component in each UI target</p>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table"><thead><tr><th>Target</th><th>Type</th><th>Component</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[components]]"><template><tr><td><oj-bind-text value="[[$current.data.pack]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td>
+              <td class="factory-mono"><oj-bind-text value="[[$current.data.component + ' ' + $current.data.props]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+        </div>
+      </section>
+      <section class="factory-card">
+        <h2>The workspace's own components</h2>
+        <p class="factory-card-sub">Made in the designer from a description, an image or Figma</p>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[customComponents]]">
+            <template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span></span>
+              <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></span>
+              <span class="factory-tag factory-mono"><oj-bind-text value="[[$current.data.tag]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[customComponents().length === 0]]"><p class="factory-empty">No custom components in this workspace yet.</p></oj-bind-if>
+      </section>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'upgrade']]">
+    <section class="factory-card">
+      <h2>Upgrade Guidance: OBDX 22.x → 25.x</h2>
+      <oj-bind-if test="[[upgrade()]]">
+        <dl class="factory-kv"><dt>Java</dt><dd><oj-bind-text value="[[upgrade().java]]"></oj-bind-text></dd></dl>
+        <h3>New rules in 25.x</h3>
+        <ul class="factory-pf-evlist"><oj-bind-for-each data="[[upgrade().added]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        <h3>Rules that only apply to 22.x</h3>
+        <ul class="factory-pf-evlist"><oj-bind-for-each data="[[upgrade().removed]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+      </oj-bind-if>
+      <oj-bind-if test="[[!upgrade()]]"><p class="factory-empty">Add a workspace on each version to compare the packs.</p></oj-bind-if>
+    </section>
+  </oj-bind-if>
+</div>

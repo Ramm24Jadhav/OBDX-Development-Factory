@@ -40,6 +40,7 @@ define(['knockout', './api'], function (ko, api) {
       input: input,
       busy: busy,
       send: () => send(),
+      ask: (text) => send(text),
       clear: () => messages([]),
       suggestions: (suggestions || []).map((s) => ({ text: s, ask: () => send(s) }))
     };

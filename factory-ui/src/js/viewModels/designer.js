@@ -1386,6 +1386,45 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           event.returnValue = '';
         }
       };
+      // The panel under the canvas: what the screen's requirement says (rules, APIs, host interfaces, roles) and the
+      // screen's own validations, comments and versions
+      this.contextTab = ko.observable('rules');
+      const specList = (key) => ko.pureComputed(() => (this.requirement() && this.requirement().spec ? this.requirement().spec[key] || [] : []));
+      this.ctxRules = specList('businessRules');
+      this.ctxApis = specList('apis');
+      this.ctxHosts = specList('hostInteractions');
+      this.ctxRoles = specList('roles');
+      this.ctxValidations = ko.pureComputed(() => {
+        const model = this.working ? this.working() : null;
+        const rows = [];
+        (model ? model.sections : []).forEach((s) => (s.components || []).forEach((c) => {
+          (c.validations || []).forEach((v) => rows.push({ field: c.label || c.name, rule: v, section: s.title || '' }));
+          if (c.required) {
+            rows.push({ field: c.label || c.name, rule: 'Required', section: s.title || '' });
+          }
+        }));
+        return rows;
+      });
+      this.ctxComments = ko.pureComputed(() => (this.detail() ? this.detail().comments.slice().reverse().map((c) => ({
+        author: c.author, text: c.text, version: 'v' + c.version, when: new Date(c.createdAt).toLocaleString(), from: c.fromReview ? 'Reviewer' : 'Team'
+      })) : []));
+      this.ctxVersions = ko.pureComputed(() => (this.detail() ? this.detail().versions.slice().reverse().map((v) => ({
+        version: 'v' + v.version, origin: v.origin.charAt(0) + v.origin.slice(1).toLowerCase(), note: v.note || '', when: new Date(v.createdAt).toLocaleString()
+      })) : []));
+      const ctxTab = (value, label, list) => ({
+        value: value, text: ko.pureComputed(() => label + (list ? ' (' + list().length + ')' : '')),
+        css: ko.pureComputed(() => 'factory-tab' + (this.contextTab() === value ? ' factory-tab-on' : '')), pick: () => this.contextTab(value)
+      });
+      this.contextTabs = [
+        ctxTab('rules', 'Business Rules', this.ctxRules), ctxTab('apis', 'APIs', this.ctxApis), ctxTab('hosts', 'Host Interfaces', this.ctxHosts),
+        ctxTab('roles', 'Roles', this.ctxRoles), ctxTab('validations', 'Validations', this.ctxValidations), ctxTab('comments', 'Comments', this.ctxComments),
+        ctxTab('history', 'History', this.ctxVersions)
+      ];
+      this.contextOpen = ko.observable(true);
+      this.toggleContext = () => this.contextOpen(!this.contextOpen());
+      this.hasRequirement = ko.pureComputed(() => !!(this.requirement() && this.requirement().spec));
+      this.specTabWithoutSpec = ko.pureComputed(() => !this.hasRequirement() && ['rules', 'apis', 'hosts', 'roles'].indexOf(this.contextTab()) >= 0);
+
       this.connected = () => {
         accUtils.announce('Screen designer loaded.');
         document.title = 'Screen designer';

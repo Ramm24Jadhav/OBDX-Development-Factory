@@ -2,7 +2,7 @@
  * Small helpers the redesigned pages share: tab bars, status pills, initials and input handlers for plain HTML
  * controls. Nothing here talks to the server.
  */
-define(['knockout'], function (ko) {
+define(['knockout', './preferences'], function (ko, preferences) {
   /** Tab bar items for an observable holding the selected value. Each tab: {value, label, icon?, count?}. */
   function tabs(selected, list) {
     return list.map((t) => Object.assign({}, t, {
@@ -50,7 +50,7 @@ define(['knockout'], function (ko) {
 
   /** Short date and time, for tables. */
   function when(value) {
-    return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: preferences.hour12() }) : '';
   }
 
   return { tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when };

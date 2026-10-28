@@ -357,6 +357,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // The Repository tab's summary of the UI target and Jenkins (edited on the Settings tab), its search box and the
       // latest imports
       this.editSettings = () => this.tab('settings');
+      this.openKnowledge = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'knowledge' }));
       this.showHistory = () => this.tab('history');
       this.showChecks = () => this.tab('checks');
       this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8));

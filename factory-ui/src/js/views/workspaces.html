@@ -240,7 +240,7 @@
         <tbody>
           <oj-bind-for-each data="[[rows]]">
             <template>
-              <tr>
+              <tr :class="[[$current.data.id === (selectedWs() ? selectedWs().id : null) ? 'factory-clickable factory-row-sel' : 'factory-clickable']]" on-click="[[$current.data.select]]">
                 <td><a href="?ojr=code" class="factory-ws-name" on-click="[[$current.data.open]]">
                   <span class="factory-nav-icon factory-ico-folder-fill" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></a></td>
                 <td><oj-bind-text value="[[$current.data.bank]]"></oj-bind-text></td>
@@ -267,6 +267,40 @@
       </oj-bind-if>
     </div>
   </section>
+
+  <oj-bind-if test="[[selectedWs()]]">
+  <section class="factory-ws-card" id="workspaceDetails">
+    <div class="factory-ag-dhead">
+      <span class="factory-name-cell"><span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span></span>
+        <span><span class="factory-in-title"><oj-bind-text value="[[selectedWs().name]]"></oj-bind-text></span><span class="factory-ov-subtle factory-ad-uname"><oj-bind-text value="[[selectedWs().bank + ' · ' + selectedWs().version]]"></oj-bind-text></span></span></span>
+      <span :class="[[selectedWs().status.css]]"><span :class="[[selectedWs().status.icon]]" aria-hidden="true"></span><oj-bind-text value="[[selectedWs().status.text]]"></oj-bind-text></span>
+    </div>
+    <div class="factory-row factory-ws-detailgrid">
+      <div>
+        <dl class="factory-kv">
+          <dt>Repository URL</dt><dd class="factory-mono"><oj-bind-text value="[[selectedWs().svnUrl]]"></oj-bind-text></dd>
+          <dt>Created On</dt><dd><oj-bind-text value="[[selectedWs().created]]"></oj-bind-text></dd>
+          <dt>Last Indexed</dt><dd><oj-bind-text value="[[selectedWs().lastIndexed]]"></oj-bind-text></dd>
+          <dt>Members</dt><dd><span class="factory-ws-members"><oj-bind-for-each data="[[selectedWs().members]]"><template><span class="factory-avatar-sm" :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span></template></oj-bind-for-each>
+            <oj-bind-if test="[[selectedWs().members.length === 0]]"><span class="factory-ov-subtle">Administrators only</span></oj-bind-if></span></dd>
+        </dl>
+        <div class="factory-btn-row">
+          <oj-button chroming="callToAction" on-oj-action="[[selectedWs().reindex]]" disabled="[[!selectedWs().canReindex]]"><span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Re-index Workspace</oj-button>
+          <oj-button chroming="outlined" on-oj-action="[[selectedWs().edit]]"><span slot="startIcon" class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Configuration</oj-button>
+        </div>
+      </div>
+      <div class="factory-ws-stats"><strong>Project Statistics</strong>
+        <dl class="factory-kv"><oj-bind-for-each data="[[selectedWs().stats]]"><template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template></oj-bind-for-each></dl></div>
+      <div><strong class="factory-ws-sub">Project Stack</strong>
+        <div class="factory-ws-stack"><oj-bind-for-each data="[[selectedWs().stack]]"><template><div><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><strong><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></strong>
+          <span><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></div></template></oj-bind-for-each></div></div>
+      <div><strong class="factory-ws-sub">Indexing Progress</strong>
+        <div class="factory-im-donutrow"><span class="factory-ring" :style="[[selectedWs().indexing.style]]"><span><oj-bind-text value="[[selectedWs().indexing.pct + '%']]"></oj-bind-text></span></span>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[selectedWs().indexing.text]]"></oj-bind-text></span></div>
+        <ul class="factory-ws-idx"><oj-bind-for-each data="[[selectedWs().indexing.rows]]"><template><li><span :class="[[$current.data.dot]]"></span><span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><b><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></b></li></template></oj-bind-for-each></ul></div>
+    </div>
+  </section>
+  </oj-bind-if>
 
   <div class="factory-ws-bottom">
     <section class="factory-ws-card">

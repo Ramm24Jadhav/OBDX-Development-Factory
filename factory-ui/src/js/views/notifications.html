@@ -1,0 +1,80 @@
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Notification Center</h1>
+      <p>Stay updated on important events, approvals, build results, agent runs and system activities</p>
+    </div>
+    <div class="factory-pg-actions">
+      <oj-button id="markAllReadButton" chroming="outlined" on-oj-action="[[markAllRead]]"><span slot="startIcon" class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Mark All as Read</oj-button>
+      <oj-button id="notificationSettingsButton" chroming="outlined" on-oj-action="[[settings]]"><span slot="startIcon" class="factory-nav-icon factory-ico-cog factory-btn-icon" aria-hidden="true"></span>Notification Settings</oj-button>
+    </div>
+  </div>
+
+  <div class="factory-kpis factory-kpis-6">
+    <oj-bind-for-each data="[[kpis]]">
+      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+          <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="factory-row factory-ag-main">
+    <section class="factory-card factory-ag-list">
+      <div class="factory-tabbar factory-ad-tabs" role="tablist" aria-label="Notification categories">
+        <oj-bind-for-each data="[[tabs]]">
+          <template><button type="button" role="tab" :id="[['no-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+            <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+        </oj-bind-for-each>
+      </div>
+      <div class="factory-filters">
+        <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search notifications..." aria-label="Search notifications" on-input="[[searchInput]]"></span>
+        <select class="factory-ws-select" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="unread">Unread</option><option value="read">Read</option></select>
+        <select class="factory-ws-select" aria-label="Priority" on-change="[[priorityChange]]"><option value="">All Priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+        <select class="factory-ws-select" aria-label="Time" on-change="[[timeChange]]"><option value="">All Time</option><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+      </div>
+      <oj-bind-if test="[[hasChecked()]]">
+        <div class="factory-btn-row factory-no-bulk"><oj-button chroming="outlined" on-oj-action="[[markSelectedRead]]">Mark selected as read</oj-button><oj-button chroming="borderless" on-oj-action="[[markSelectedUnread]]">Mark as unread</oj-button></div>
+      </oj-bind-if>
+      <div class="factory-ov2-table-wrap">
+        <table class="factory-ov2-table" id="notificationTable">
+          <thead><tr><th></th><th>Type</th><th>Notification</th><th>Related To</th><th>Time</th><th>Priority</th><th>Status</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[rows]]"><template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+            <td><input type="checkbox" :checked="[[$current.data.isChecked]]" on-click="[[$current.data.check]]" :aria-label="[['Select ' + $current.data.title]]"></td>
+            <td><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span></td>
+            <td><strong class="factory-no-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></td>
+            <td><span class="factory-cp-link"><oj-bind-text value="[[$current.data.related]]"></oj-bind-text></span><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[$current.data.relatedSub]]"></oj-bind-text></span></td>
+            <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td>
+            <td><span :class="[[$current.data.priorityPill.css]]"><oj-bind-text value="[[$current.data.priorityPill.text]]"></oj-bind-text></span></td>
+            <td><span :class="[[$current.data.statusPill.css]]"><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody>
+        </table>
+        <oj-bind-if test="[[rows().length === 0]]"><p class="factory-ov-empty">No notifications.</p></oj-bind-if>
+      </div>
+      <div class="factory-pager"><span><oj-bind-text value="[[pager.text() + ' notifications']]"></oj-bind-text></span>
+        <span><button type="button" class="factory-ov2-btn" on-click="[[pager.prev]]">‹</button><oj-bind-text value="[[pager.page() + ' / ' + pager.pages()]]"></oj-bind-text>
+          <button type="button" class="factory-ov2-btn" on-click="[[pager.next]]">›</button></span></div>
+    </section>
+
+    <section class="factory-card factory-ag-detail">
+      <h2>Notification Details <button type="button" class="factory-link-sm" on-click="[[closeDetails]]" aria-label="Close">✕</button></h2>
+      <oj-bind-if test="[[!selectedView()]]"><p class="factory-empty">Choose a notification.</p></oj-bind-if>
+      <oj-bind-if test="[[selectedView()]]">
+        <div class="factory-no-dhead"><span :class="[[selectedView().iconCss]]"><span :class="[[selectedView().iconClass]]" aria-hidden="true"></span></span>
+          <div><strong id="notificationTitle"><oj-bind-text value="[[selectedView().title]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[selectedView().when]]"></oj-bind-text></span></div>
+          <span :class="[[selectedView().priorityPill.css]]"><oj-bind-text value="[[selectedView().priorityPill.text]]"></oj-bind-text></span></div>
+        <p class="factory-no-dtext"><oj-bind-text value="[[selectedView().text]]"></oj-bind-text></p>
+        <dl class="factory-kv">
+          <dt>Category</dt><dd><oj-bind-text value="[[selectedView().category]]"></oj-bind-text></dd>
+          <oj-bind-for-each data="[[selectedView().details]]"><template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template></oj-bind-for-each>
+        </dl>
+        <oj-bind-if test="[[selectedView().errors.length > 0]]">
+          <div class="factory-note factory-note-bad factory-no-errors"><strong>Summary</strong>
+            <oj-bind-for-each data="[[selectedView().errors]]"><template><div><oj-bind-text value="[[$current.data]]"></oj-bind-text></div></template></oj-bind-for-each></div>
+        </oj-bind-if>
+        <div class="factory-btn-row">
+          <oj-button id="openRelatedButton" chroming="callToAction" on-oj-action="[[open]]">Open</oj-button>
+          <oj-bind-if test="[[selectedView().link]]"><a class="factory-link-button" :href="[[selectedView().link]]" target="_blank" rel="noopener">View in Jenkins</a></oj-bind-if>
+        </div>
+      </oj-bind-if>
+    </section>
+  </div>
+</div>

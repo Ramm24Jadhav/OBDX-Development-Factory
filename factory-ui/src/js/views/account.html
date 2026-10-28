@@ -1,29 +1,116 @@
-<div class="oj-hybrid-padding">
-  <h1>Account</h1>
-  <oj-bind-if test="[[user()]]">
-    <ul>
-      <li>Username: <oj-bind-text value="[[user().username]]"></oj-bind-text></li>
-      <li>Name: <oj-bind-text value="[[user().displayName]]"></oj-bind-text></li>
-      <li>Signs in with: <oj-bind-text value="[[sourceLabel]]"></oj-bind-text></li>
-      <li>Administrator: <oj-bind-text value="[[user().admin ? 'yes' : 'no']]"></oj-bind-text></li>
-      <li>Workspaces: <oj-bind-text value="[[workspaceSummary]]"></oj-bind-text></li>
-    </ul>
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Account &amp; Preferences</h1>
+      <p>Manage your profile, preferences and application settings</p>
+    </div>
+  </div>
 
-    <oj-bind-if test="[[user().canChangePassword]]">
-      <h2>Change password</h2>
-      <oj-form-layout max-columns="1" class="factory-narrow-form">
-        <oj-input-password id="currentPassword" label-hint="Current password" value="{{currentPassword}}" autocomplete="current-password"></oj-input-password>
-        <oj-input-password id="newPassword" label-hint="New password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></oj-input-password>
-        <oj-input-password id="repeatPassword" label-hint="Repeat new password" value="{{repeatPassword}}" autocomplete="new-password"></oj-input-password>
-      </oj-form-layout>
-      <oj-button id="changePasswordButton" chroming="callToAction" on-oj-action="[[changePassword]]"
-                 disabled="[[!currentPassword() || !newPassword()]]">Change password</oj-button>
-    </oj-bind-if>
-    <oj-bind-if test="[[!user().canChangePassword]]">
-      <p class="oj-text-color-secondary">Your password is managed by your organization's directory or single sign-on.</p>
-    </oj-bind-if>
-    <oj-bind-if test="[[message()]]">
-      <p id="accountMessage" :class="[[messageClass]]"><oj-bind-text value="[[message]]"></oj-bind-text></p>
-    </oj-bind-if>
+  <div class="factory-tabbar" role="tablist" aria-label="Account">
+    <oj-bind-for-each data="[[tabs]]">
+      <template><button type="button" role="tab" :id="[['ac-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+        <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <oj-bind-if test="[[user()]]">
+    <div class="factory-row factory-row-3">
+      <section class="factory-card" id="ac-sec-profile">
+        <h2>Profile Information</h2>
+        <p class="factory-card-sub">Your personal and role information</p>
+        <div class="factory-ac-person"><span class="factory-ac-avatar"><oj-bind-text value="[[initials]]"></oj-bind-text></span>
+          <div><strong id="accountName"><oj-bind-text value="[[user().displayName]]"></oj-bind-text></strong><span><oj-bind-text value="[[roleText]]"></oj-bind-text></span>
+            <span class="factory-ov-subtle"><oj-bind-text value="[[sourceLabel]]"></oj-bind-text></span></div></div>
+        <dl class="factory-kv factory-ac-kv">
+          <dt>Username</dt><dd><oj-bind-text value="[[user().username]]"></oj-bind-text></dd>
+          <dt>Email</dt><dd><oj-bind-text value="[[user().email || 'Not set']]"></oj-bind-text></dd>
+          <dt>Role</dt><dd><oj-bind-text value="[[roleText]]"></oj-bind-text></dd>
+          <dt>Default Workspace</dt><dd><oj-bind-text value="[[defaultWorkspaceName]]"></oj-bind-text></dd>
+          <dt>Timezone</dt><dd><oj-bind-text value="[[timezone]]"></oj-bind-text></dd>
+          <dt>Language</dt><dd><oj-bind-text value="[[language]]"></oj-bind-text></dd>
+        </dl>
+        <p class="factory-card-sub">Your name and email come from <oj-bind-text value="[[sourceLabel().toLowerCase()]]"></oj-bind-text>; administrators change them.</p>
+      </section>
+
+      <section class="factory-card" id="ac-sec-preferences">
+        <h2>Application Preferences <button type="button" class="factory-link-sm" on-click="[[resetPreferences]]">Reset</button></h2>
+        <p class="factory-card-sub">Customize your experience (kept in this browser)</p>
+        <dl class="factory-ac-prefs">
+          <dt>Theme</dt><dd><span class="factory-segs factory-ac-segs"><button type="button" class="factory-seg factory-seg-on">Light</button><button type="button" class="factory-seg" disabled title="Not available yet">Dark</button></span></dd>
+          <dt><label for="workspacePick">Default Workspace</label></dt>
+          <dd><select id="workspacePick" class="factory-ws-select" on-change="[[workspaceChange]]"><option value="">The first one</option>
+            <oj-bind-for-each data="[[workspaceOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === prefs.workspace()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
+          <dt><label for="landingPick">Default Landing Page</label></dt>
+          <dd><select id="landingPick" class="factory-ws-select" on-change="[[landingChange]]">
+            <oj-bind-for-each data="[[landingOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === prefs.landing()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
+          <dt>Time Format</dt><dd><span class="factory-segs factory-ac-segs"><button type="button" :class="[[hour12Css]]" on-click="[[hour12On]]">12 Hour</button><button type="button" :class="[[hour24Css]]" on-click="[[hour24On]]">24 Hour</button></span>
+            <span class="factory-ov-subtle factory-ac-sample"><oj-bind-text value="[[sample]]"></oj-bind-text></span></dd>
+          <dt><label for="textPick">Font Size</label></dt>
+          <dd><select id="textPick" class="factory-ws-select" on-change="[[textChange]]"><option value="normal" :selected="[[prefs.textSize() === 'normal']]">Normal</option><option value="large" :selected="[[prefs.textSize() === 'large']]">Large</option></select></dd>
+        </dl>
+        <p class="factory-card-sub">The landing page applies the next time the factory opens.</p>
+      </section>
+
+      <section class="factory-card" id="ac-sec-notifications">
+        <h2>Notification Preferences</h2>
+        <p class="factory-card-sub">Choose which events show in the Notification Center</p>
+        <ul class="factory-switch-list">
+          <oj-bind-for-each data="[[notifyRows]]">
+            <template><li><span class="factory-name-cell"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+              <input type="checkbox" class="factory-toggle" :checked="[[$current.data.value]]" on-change="[[$current.data.change]]" :aria-label="[[$current.data.label]]"></li></template>
+          </oj-bind-for-each>
+        </ul>
+        <p class="factory-card-sub">Notifications show in the factory; email and chat delivery are not available yet.</p>
+      </section>
+    </div>
+
+    <div class="factory-row factory-row-3">
+      <section class="factory-card" id="ac-sec-security">
+        <h2>Change Password</h2>
+        <p class="factory-card-sub">Update your account password</p>
+        <oj-bind-if test="[[canChange()]]">
+          <oj-form-layout max-columns="1" user-assistance-density="compact">
+            <oj-input-password id="currentPassword" label-hint="Current Password" value="{{currentPassword}}" autocomplete="current-password" mask-icon="visible"></oj-input-password>
+            <oj-input-password id="newPassword" label-hint="New Password" value="{{newPassword}}" raw-value="{{newPassword}}" autocomplete="new-password" mask-icon="visible"></oj-input-password>
+            <oj-input-password id="repeatPassword" label-hint="Confirm New Password" value="{{repeatPassword}}" raw-value="{{repeatPassword}}" autocomplete="new-password" mask-icon="visible"></oj-input-password>
+          </oj-form-layout>
+          <p class="factory-ac-reqtitle">Password Requirements:</p>
+          <ul class="factory-ac-reqs"><oj-bind-for-each data="[[rules]]"><template><li><span :class="[[$current.data.css]]"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <oj-button id="changePasswordButton" class="factory-md-save" chroming="callToAction" on-oj-action="[[changePassword]]">Update Password</oj-button>
+          <oj-bind-if test="[[message()]]"><p :class="[[messageClass]]" id="passwordMessage"><oj-bind-text value="[[message]]"></oj-bind-text></p></oj-bind-if>
+        </oj-bind-if>
+        <oj-bind-if test="[[!canChange()]]"><p class="factory-empty">You sign in with <oj-bind-text value="[[sourceLabel]]"></oj-bind-text>; change your password there.</p></oj-bind-if>
+      </section>
+
+      <div class="factory-stack">
+        <section class="factory-card">
+          <h2>Two-Factor Authentication <span class="factory-ov-pill factory-ov-pill-grey">Set by your bank</span></h2>
+          <p class="factory-card-sub">The factory has no second factor of its own. With single sign-on, your bank's identity provider asks for it.</p>
+        </section>
+        <section class="factory-card">
+          <h2>Active Sessions <button type="button" class="factory-link-sm" on-click="[[signOut]]">Sign Out</button></h2>
+          <p class="factory-card-sub">This session</p>
+          <ul class="factory-list"><li><span class="factory-step-dot factory-dot-green"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+            <span class="factory-list-title"><oj-bind-text value="[[browser]]"></oj-bind-text></span><span class="factory-ov-pill factory-ov-pill-green">Current Session</span></li></ul>
+        </section>
+      </div>
+
+      <div class="factory-stack">
+        <section class="factory-card">
+          <h2>Application Settings</h2>
+          <p class="factory-card-sub">Additional application preferences</p>
+          <ul class="factory-switch-list">
+            <li><span><strong>AI suggestions</strong><span class="factory-list-sub">Show the AI Assistant panels on the pages</span></span>
+              <input type="checkbox" class="factory-toggle" id="assistantToggle" :checked="[[prefs.assistant]]" on-change="[[assistantToggle]]" aria-label="AI suggestions"></li>
+          </ul>
+        </section>
+        <section class="factory-card">
+          <h2>Your Workspaces</h2>
+          <ul class="factory-list"><oj-bind-for-each data="[[workspaces]]"><template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>
+            <span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-tag"><oj-bind-text value="[[$current.data.role]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+          <oj-bind-if test="[[workspaces().length === 0]]"><p class="factory-empty">None yet; ask an administrator to add you.</p></oj-bind-if>
+        </section>
+      </div>
+    </div>
   </oj-bind-if>
 </div>

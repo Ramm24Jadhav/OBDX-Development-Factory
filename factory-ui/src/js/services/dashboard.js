@@ -3,7 +3,7 @@
  * see: each workspace with its requirements, screens, changes (with their Jenkins builds), code index and imports, plus
  * what needs the user's attention. Loaded from the same endpoints the other pages use; nothing here is stored.
  */
-define(['knockout', './api', './session', './workspaceSelection'], function (ko, api, session, workspaceSelection) {
+define(['knockout', './api', './session', './workspaceSelection', './preferences'], function (ko, api, session, workspaceSelection, preferences) {
   const OPEN_CHANGES = ['ANALYZING', 'PLAN_READY', 'GENERATING', 'GENERATED'];
   const data = ko.observableArray([]);
   const model = ko.observable(null);
@@ -32,7 +32,7 @@ define(['knockout', './api', './session', './workspaceSelection'], function (ko,
 
   /** "29 Oct 2026, 10:24" */
   function when(value) {
-    return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: preferences.hour12() }) : '';
   }
 
   /** "4m 32s" */

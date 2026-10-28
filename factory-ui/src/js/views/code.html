@@ -6,6 +6,8 @@
     </div>
     <oj-bind-if test="[[workspace()]]">
       <div class="factory-cp-head-actions">
+        <oj-button id="openKnowledgeButton" chroming="outlined" on-oj-action="[[openKnowledge]]">
+          <span slot="startIcon" class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Knowledge Explorer</oj-button>
         <oj-bind-if test="[[lastIndexedText()]]">
           <span class="factory-cp-last"><oj-bind-text value="[['Last indexed: ' + lastIndexedText()]]"></oj-bind-text></span>
         </oj-bind-if>

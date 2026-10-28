@@ -1,0 +1,164 @@
+<div class="factory-pg">
+  <div class="factory-pg-head">
+    <div>
+      <h1>OBDX Knowledge Explorer</h1>
+      <p>Search, explore and understand source code, APIs, UI components and business logic from your OBDX repositories</p>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="knowledgeError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[fallback()]]"><p class="factory-note factory-note-warn">This factory's server cannot list files yet; the tree shows files found by code search. Update the factory to see every file.</p></oj-bind-if>
+
+  <div class="factory-kpis">
+    <oj-bind-for-each data="[[kpis]]">
+      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+          <span class="factory-kpi-sub"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="factory-tabbar" role="tablist" aria-label="Explorer views">
+    <oj-bind-for-each data="[[tabs]]">
+      <template><button type="button" role="tab" :id="[['kn-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+        <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <oj-bind-if test="[[tab() === 'code']]">
+    <div class="factory-row factory-row-3w factory-kn-main">
+      <section class="factory-card factory-kn-tree">
+        <h2>Project Structure</h2>
+        <span class="factory-ws-search factory-rv-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search files and folders..." aria-label="Search files" on-input="[[treeFilterInput]]"></span>
+        <ul>
+          <oj-bind-for-each data="[[tree]]">
+            <template><li :class="[[$current.data.css]]" :style="[[$current.data.style]]" on-click="[[$current.data.toggle]]">
+              <span class="factory-kn-caret"><oj-bind-text value="[[$current.data.caret]]"></oj-bind-text></span><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></li></template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[tree().length === 0]]"><p class="factory-empty">No indexed files. Import the code on the Code page.</p></oj-bind-if>
+      </section>
+
+      <div class="factory-stack">
+        <section class="factory-card">
+          <div class="factory-kn-crumbs"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>
+            <oj-bind-for-each data="[[crumbs]]"><template><button type="button" class="factory-link-sm" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button><span class="factory-kn-sep">›</span></template></oj-bind-for-each></div>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table" id="folderFiles">
+              <thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[folderFiles]]"><template><tr :class="[[$current.data.css]]" on-click="[[$current.data.open]]">
+                <td class="factory-cp-link"><span class="factory-name-cell"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.size]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+            </table>
+            <oj-bind-if test="[[folderFiles().length === 0]]"><p class="factory-ov-empty">Choose a folder with files.</p></oj-bind-if>
+          </div>
+        </section>
+        <section class="factory-card">
+          <h2><oj-bind-text value="[[file() ? file().path.split('/').pop() : 'Code']]"></oj-bind-text>
+            <span class="factory-pg-actions"><oj-button id="explainButton" chroming="outlined" on-oj-action="[[explain]]" disabled="[[!file()]]">Explain</oj-button></span></h2>
+          <oj-bind-if test="[[loadingFile()]]"><p class="factory-empty">Loading...</p></oj-bind-if>
+          <oj-bind-if test="[[file()]]">
+            <div class="factory-ch-lines factory-kn-code" id="fileCode">
+              <oj-bind-for-each data="[[lines]]">
+                <template><div class="factory-ch-line factory-kn-line"><span class="factory-ch-n"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><span class="factory-ch-t"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></div></template>
+              </oj-bind-for-each>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[!file() && !loadingFile()]]"><p class="factory-empty">Choose a file.</p></oj-bind-if>
+        </section>
+      </div>
+
+      <div class="factory-stack">
+        <section class="factory-card">
+          <h2>File Details</h2>
+          <oj-bind-if test="[[fileInfo()]]">
+            <div class="factory-kn-fhead"><span class="factory-kpi-icon factory-ov2-icon-red"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+              <div><strong><oj-bind-text value="[[fileInfo().name]]"></oj-bind-text></strong><span class="factory-ov-subtle factory-mono"><oj-bind-text value="[[fileInfo().folder]]"></oj-bind-text></span></div></div>
+            <dl class="factory-kv">
+              <dt>Type</dt><dd><oj-bind-text value="[[fileInfo().type]]"></oj-bind-text></dd>
+              <dt>Size</dt><dd><oj-bind-text value="[[fileInfo().size]]"></oj-bind-text></dd>
+              <dt>Revision</dt><dd><oj-bind-text value="[[fileInfo().revision]]"></oj-bind-text></dd>
+              <dt>Lines of Code</dt><dd><oj-bind-text value="[[fileInfo().lines + (fileInfo().truncated ? ' (cut)' : '')]]"></oj-bind-text></dd>
+              <dt>Imports</dt><dd><oj-bind-text value="[[fileInfo().imports]]"></oj-bind-text></dd>
+              <dt>Used By</dt><dd><button type="button" class="factory-link-sm" on-click="[[searchUsages]]">Search usages</button></dd>
+              <dt>Related APIs</dt><dd><oj-bind-text value="[[fileInfo().endpoints.length + ' endpoints']]"></oj-bind-text></dd>
+            </dl>
+            <div class="factory-kn-tags"><oj-bind-for-each data="[[fileInfo().tags]]"><template><span class="factory-tag"><oj-bind-text value="[[$current.data]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[!fileInfo()]]"><p class="factory-empty">No file open.</p></oj-bind-if>
+        </section>
+        <section class="factory-card factory-ai">
+          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Code Insights</span>
+            <button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></h2>
+          <div class="factory-ai-suggest">
+            <oj-bind-for-each data="[[ai.suggestions]]">
+              <template><button type="button" class="factory-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+          <div class="factory-ai-log">
+            <oj-bind-for-each data="[[ai.messages]]">
+              <template><div :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text>
+                <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
+            </oj-bind-for-each>
+          </div>
+          <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+          <div class="factory-ai-input">
+            <oj-input-text id="knowledgeAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about this file..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
+            <oj-button chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]"><span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+          </div>
+          <oj-bind-if test="[[fileInfo() && fileInfo().endpoints.length > 0]]">
+            <h3>Key Endpoints</h3>
+            <ul class="factory-kn-endpoints"><oj-bind-for-each data="[[fileInfo().endpoints]]"><template><li><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span>
+              <span class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[fileInfo() && fileInfo().related.length > 0]]">
+            <h3>Related Business Requirements</h3>
+            <ul class="factory-kn-endpoints"><oj-bind-for-each data="[[fileInfo().related]]"><template><li><span class="factory-cp-link"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></span><span><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+        </section>
+      </div>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'apis' || tab() === 'ui' || tab() === 'dependencies']]">
+    <oj-bind-if test="[[inventoryMissing()]]">
+      <div class="factory-note">The API, screen and dependency views come from the modernization scan. <button type="button" class="factory-link-sm" on-click="[[openModernization]]">Run it on the Modernization page</button>.</div>
+    </oj-bind-if>
+  </oj-bind-if>
+  <oj-bind-if test="[[tab() === 'apis' && !inventoryMissing()]]">
+    <section class="factory-card"><h2>API Explorer</h2>
+      <div class="factory-ov2-table-wrap"><table class="factory-ov2-table" id="apiTable"><thead><tr><th>Method</th><th>Path</th><th>Implementation</th><th>Owner</th><th>Used by</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[endpoints]]"><template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
+          <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td class="factory-mono factory-cp-link"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[$current.data.owner]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.usedBy]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+        <oj-bind-if test="[[endpoints().length === 0]]"><p class="factory-ov-empty">No REST endpoints found in this code.</p></oj-bind-if></div></section>
+  </oj-bind-if>
+  <oj-bind-if test="[[tab() === 'ui' && !inventoryMissing()]]">
+    <section class="factory-card"><h2>UI Components</h2>
+      <div class="factory-ov2-table-wrap"><table class="factory-ov2-table" id="screenList"><thead><tr><th>Screen</th><th>Module</th><th>Kind</th><th>Fields</th><th>Files</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[screens]]"><template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.fields]]"></oj-bind-text></td>
+          <td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.files.join(', ')]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div></section>
+  </oj-bind-if>
+  <oj-bind-if test="[[tab() === 'dependencies' && !inventoryMissing()]]">
+    <section class="factory-card"><h2>Dependencies: services the screens call</h2>
+      <div class="factory-ov2-table-wrap"><table class="factory-ov2-table"><thead><tr><th>Method</th><th>Path</th><th>Implemented by</th><th>Called from</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[calls]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[$current.data.endpoint]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.screens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div></section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[tab() === 'search']]">
+    <section class="factory-card">
+      <h2>Search the code</h2>
+      <div class="factory-cp-search">
+        <oj-input-text id="knowledgeQuery" class="factory-grow" label-hint="Search" label-edge="none" placeholder="Search code, classes, APIs, UI components, services..." value="{{query}}" on-oj-enter="[[search]]" clear-icon="conditional"></oj-input-text>
+        <oj-button id="knowledgeSearchButton" chroming="callToAction" on-oj-action="[[search]]" disabled="[[searching]]">Search</oj-button>
+      </div>
+      <oj-bind-if test="[[searchNote()]]"><p class="factory-ov-subtle"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p></oj-bind-if>
+      <oj-bind-for-each data="[[results]]">
+        <template><div class="factory-cp-result"><button type="button" class="factory-link-sm factory-mono" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></button>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[' lines ' + $current.data.startLine + '-' + $current.data.endLine + ' · ' + $current.data.kind + ' · ' + $current.data.matchedBy]]"></oj-bind-text></span>
+          <pre class="factory-code factory-code-light"><oj-bind-text value="[[$current.data.snippet]]"></oj-bind-text></pre></div></template>
+      </oj-bind-for-each>
+    </section>
+  </oj-bind-if>
+</div>

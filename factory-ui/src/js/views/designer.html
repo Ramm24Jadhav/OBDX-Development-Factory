@@ -1,3 +1,9 @@
+<div class="factory-pg-head factory-dz-pagehead">
+  <div>
+    <h1>Visual Designer</h1>
+    <p>Design and configure OBDX screens with components, data bindings and business rules</p>
+  </div>
+</div>
 <div class="factory-dz">
   <!-- Top bar: where you are, the screen's state, and what you can do with it -->
   <div class="factory-dz-topbar">
@@ -413,6 +419,52 @@
           </div>
         </oj-bind-if>
       </div>
+      <oj-bind-if test="[[detail()]]">
+        <section class="factory-dz-context" id="designContext">
+          <div class="factory-dz-context-head">
+            <div class="factory-subtabs" role="tablist" aria-label="Screen context">
+              <oj-bind-for-each data="[[contextTabs]]">
+                <template><button type="button" role="tab" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </div>
+            <button type="button" class="factory-dz-icon" :aria-label="[[contextOpen() ? 'Hide the panel' : 'Show the panel']]" on-click="[[toggleContext]]"><oj-bind-text value="[[contextOpen() ? '▾' : '▴']]"></oj-bind-text></button>
+          </div>
+          <oj-bind-if test="[[contextOpen()]]">
+            <div class="factory-dz-context-body">
+              <oj-bind-if test="[[specTabWithoutSpec]]"><p class="factory-dz-hint">This screen has no requirement, so there are no rules, APIs or roles from a specification.</p></oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'rules' && hasRequirement()]]">
+                <table class="factory-ov2-table"><thead><tr><th>#</th><th>Rule</th><th>Screens</th><th>Source</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxRules]]"><template><tr><td><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[$current.data.screens.join(', ')]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.reference]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'apis' && hasRequirement()]]">
+                <table class="factory-ov2-table"><thead><tr><th>Method</th><th>API</th><th>Description</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxApis]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td><td class="factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'hosts' && hasRequirement()]]">
+                <table class="factory-ov2-table"><thead><tr><th>Host system</th><th>Interaction</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxHosts]]"><template><tr><td><oj-bind-text value="[[$current.data.system]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'roles' && hasRequirement()]]">
+                <table class="factory-ov2-table"><thead><tr><th>Role</th><th>Access</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxRoles]]"><template><tr><td><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.access]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'validations']]">
+                <table class="factory-ov2-table"><thead><tr><th>Field</th><th>Validation</th><th>Section</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxValidations]]"><template><tr><td><oj-bind-text value="[[$current.data.field]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.rule]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.section]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'comments']]">
+                <table class="factory-ov2-table"><thead><tr><th>From</th><th>Who</th><th>Comment</th><th>Version</th><th>When</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxComments]]"><template><tr><td><oj-bind-text value="[[$current.data.from]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.author]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td><td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+              <oj-bind-if test="[[contextTab() === 'history']]">
+                <table class="factory-ov2-table"><thead><tr><th>Version</th><th>Made by</th><th>Note</th><th>When</th></tr></thead>
+                  <tbody><oj-bind-for-each data="[[ctxVersions]]"><template><tr><td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.origin]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.note]]"></oj-bind-text></td><td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              </oj-bind-if>
+            </div>
+          </oj-bind-if>
+        </section>
+      </oj-bind-if>
     </main>
 
     <!-- Right: the inspector -->

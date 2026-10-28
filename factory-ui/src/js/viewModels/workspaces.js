@@ -184,7 +184,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           canDelete: session.isAdmin(),
           open: dashboard.open('code', w.id),
           edit: dashboard.open('code', w.id),
-          remove: () => this.deleteWorkspace(w.id)
+          remove: () => this.deleteWorkspace(w.id),
+          select: () => this.selectedWsId(w.id)
         };
       }).filter((r) => {
         const text = this.filterText().trim().toLowerCase();
@@ -230,6 +231,67 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
         return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4).map((i) => Object.assign(i, { when: dashboard.ago(i.at) }));
       });
+
+      // The selected workspace's details: overview, project statistics, stack from the profile and indexing
+      this.selectedWsId = ko.observable(null);
+      this.selectWs = (id) => () => this.selectedWsId(id);
+      const wsDetails = ko.observable({});
+      this.selectedWs = ko.pureComputed(() => {
+        const entry = data().find((d) => d.workspace.id === this.selectedWsId()) || data()[0];
+        if (!entry) {
+          return null;
+        }
+        const w = entry.workspace;
+        const extra = wsDetails()[w.id] || {};
+        const inv = extra.inventory ? extra.inventory.summary : null;
+        const fact = (key) => {
+          const f = extra.profile ? extra.profile.facts.find((x) => x.key === key) : null;
+          return f && f.value ? f.value : 'Not detected';
+        };
+        const job = entry.imports.length ? entry.imports[0] : null;
+        const index = entry.index;
+        const pct = index && index.chunks ? Math.round(100 * index.chunksWithEmbedding / index.chunks) : 0;
+        return {
+          id: w.id, name: w.name, bank: w.bankName, version: 'OBDX ' + w.obdxVersion, svnUrl: w.svnUrl || 'Not set', created: new Date(w.createdAt).toLocaleString(),
+          lastIndexed: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never', status: STATUS[dashboard.codeState(entry).key],
+          members: (extra.members || []).map((m) => ({ initials: m.displayName.split(/\s+/).map((p) => p.charAt(0)).join('').slice(0, 2).toUpperCase(), name: m.displayName + ' (' + m.role.toLowerCase() + ')' })),
+          stats: [
+            { label: 'Modules', value: inv ? inv.modules : '–' }, { label: 'UI Screens', value: inv ? inv.screens : '–' },
+            { label: 'APIs', value: inv ? inv.endpoints : '–' }, { label: 'Indexed Files', value: index ? index.files : '–' },
+            { label: 'Requirements', value: entry.requirements.length }, { label: 'Screen Designs', value: entry.designs.length }
+          ],
+          stack: [
+            { label: 'Frontend', value: fact('ui.architecture'), sub: fact('ui.jetVersion'), icon: 'monitor' },
+            { label: 'Backend', value: fact('backend.javaVersion'), sub: fact('backend.frameworks'), icon: 'code' },
+            { label: 'Database', value: fact('data.databaseType'), sub: '', icon: 'cube' },
+            { label: 'Build', value: fact('backend.buildTool'), sub: '', icon: 'cog' },
+            { label: 'App Server', value: fact('backend.appServer'), sub: '', icon: 'cube' },
+            { label: 'CI / CD', value: extra.jenkins ? 'Jenkins' : 'Not set up', sub: extra.jenkins ? extra.jenkins.jobs : '', icon: 'flask' }
+          ].map((s) => Object.assign(s, { iconClass: 'factory-nav-icon factory-ico-' + s.icon })),
+          indexing: {
+            pct: pct, style: { background: 'conic-gradient(#16a34a ' + pct + '%, #e5eaf1 0)' },
+            rows: [
+              { label: 'Files indexed', value: index ? index.files : 0, dot: 'factory-step-dot factory-dot-green' },
+              { label: 'Searchable pieces', value: index ? index.chunks : 0, dot: 'factory-step-dot factory-dot-blue' },
+              { label: 'With embeddings', value: index ? index.chunksWithEmbedding : 0, dot: 'factory-step-dot factory-dot-violet' },
+              { label: 'Indexed revision', value: w.indexedRevision ? 'r' + w.indexedRevision : '–', dot: 'factory-step-dot factory-dot-amber' }
+            ],
+            text: job && (job.status === 'RUNNING' || job.status === 'QUEUED') ? 'Indexing...' : 'Code search by meaning covers ' + pct + '% of the code'
+          },
+          reindex: () => api.post('workspaces/' + w.id + '/imports').then(() => dashboard.load()).catch(showError),
+          edit: dashboard.open('code', w.id), canReindex: session.can(w.id, 'MANAGE_CODE')
+        };
+      });
+      this.selectedWsId.subscribe((id) => this.loadWsDetails(id));
+      this.loadWsDetails = (id) => {
+        if (!id || wsDetails()[id]) {
+          return;
+        }
+        Promise.all([api.get('workspaces/' + id + '/profile').catch(() => null), api.get('workspaces/' + id + '/inventory').catch(() => null),
+          api.get('workspaces/' + id + '/members').catch(() => []), api.get('workspaces/' + id + '/jenkins').catch(() => null)])
+          .then(([profile, inventory, members, jenkins]) => { const m = Object.assign({}, wsDetails()); m[id] = { profile: profile, inventory: inventory, members: members, jenkins: jenkins }; wsDetails(m); });
+      };
+      data.subscribe((list) => { if (!this.selectedWsId() && list.length) { this.selectedWsId(list[0].workspace.id); } });
 
       this.quickActions = [
         { title: 'Browse Code', text: 'Explore repositories and search code', icon: 'factory-nav-icon factory-ico-code', open: dashboard.open('code') },
