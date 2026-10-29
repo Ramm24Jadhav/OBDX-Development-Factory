@@ -81,21 +81,55 @@
 
   <!-- Documents -->
   <oj-bind-if test="[[tab() === 'documents']]">
-    <oj-bind-if test="[[isAdmin()]]">
+    <oj-bind-if test="[[canImport()]]">
       <section class="fx-card factory-lb-import" aria-labelledby="lbImportTitle">
         <h2 class="fx-card-title" id="lbImportTitle">Add documents</h2>
-        <p class="fx-card-sub">PDF manuals for one OBDX version, from a folder on this factory's computer or uploaded. A file that is already there is skipped.</p>
+        <p class="fx-card-sub">Oracle's manuals, or the bank's own and patchset documents (PDF, Word, text, Markdown, HTML), for one OBDX version. A folder is watched: new and changed files there are picked up. A changed file replaces its older revision, and notes on changed sections come back for review.</p>
         <div class="factory-lb-importrow">
           <fx-input id="importVersion" class="factory-lb-version" label="OBDX version" value="{{importVersion}}" placeholder="25.2"></fx-input>
+          <fx-input id="importPatchset" class="factory-lb-version" label="Patchset (optional)" value="{{importPatchset}}" placeholder="25.2.0.1"></fx-input>
           <oj-bind-if test="[[folderImport()]]">
-            <fx-input id="importFolder" class="factory-grow" label="Folder with the PDF files" value="{{importFolder}}" placeholder="C:\work\OBDX-Development-Factory\oracle-docs\25.2"></fx-input>
+            <fx-input id="importFolder" class="factory-grow" label="Folder with the documents" value="{{importFolder}}" placeholder="C:\work\OBDX-Development-Factory\oracle-docs\25.2"></fx-input>
             <button type="button" class="fx-btn fx-btn--primary" id="importFolderButton" on-click="[[runFolderImport]]" :disabled="[[importBusy]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Import folder</button>
           </oj-bind-if>
-          <button type="button" class="fx-btn fx-btn--secondary" id="uploadButton" on-click="[[chooseFiles]]" :disabled="[[importBusy]]"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>Upload PDFs</button>
-          <input type="file" id="libraryUpload" accept=".pdf,application/pdf" multiple class="fx-visually-hidden" tabindex="-1" aria-hidden="true" on-change="[[upload]]">
+          <button type="button" class="fx-btn fx-btn--secondary" id="uploadButton" on-click="[[chooseFiles]]" :disabled="[[importBusy]]"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>Upload files</button>
+          <input type="file" id="libraryUpload" accept=".pdf,.docx,.doc,.txt,.md,.html,.htm" multiple class="fx-visually-hidden" tabindex="-1" aria-hidden="true" on-change="[[upload]]">
         </div>
-        <label class="fx-check factory-lb-bank"><input type="checkbox" :checked="[[importForBank]]" on-change="[[setImportForBank]]"><span>The bank's own documents, for <oj-bind-text value="[[workspaceName]]"></oj-bind-text> only</span></label>
+        <oj-bind-if test="[[isAdmin()]]">
+          <label class="fx-check factory-lb-bank"><input type="checkbox" :checked="[[importForBank]]" on-change="[[setImportForBank]]"><span>The bank's own documents, for <oj-bind-text value="[[workspaceName]]"></oj-bind-text> only</span></label>
+        </oj-bind-if>
+        <oj-bind-if test="[[!isAdmin()]]">
+          <p class="fx-muted factory-lb-bank">These become the bank's own documents for <oj-bind-text value="[[workspaceName]]"></oj-bind-text>.</p>
+        </oj-bind-if>
       </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[folders().length > 0]]">
+      <section class="fx-card" aria-labelledby="lbFoldersTitle">
+        <h2 class="fx-card-title" id="lbFoldersTitle">Watched folders</h2>
+        <p class="fx-card-sub">Checked again every few hours. Put Oracle's updated manuals or the bank's updated documents here, or check now.</p>
+        <ul class="factory-lb-folders">
+          <oj-bind-for-each data="[[folders]]" as="f">
+            <template>
+              <li class="factory-lb-folder">
+                <span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>
+                <span class="factory-lb-folderbody"><strong class="factory-lb-folderpath"><oj-bind-text value="[[f.data.folder]]"></oj-bind-text></strong>
+                  <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[f.data.about + ' · ' + f.data.last]]"></oj-bind-text></span></span>
+                <oj-bind-if test="[[f.data.canManage]]">
+                  <span class="factory-lb-actions">
+                    <button type="button" :class="[[f.data.busy() ? 'fx-btn fx-btn--secondary fx-btn--sm is-busy' : 'fx-btn fx-btn--secondary fx-btn--sm']]" :disabled="[[f.data.busy]]" :aria-busy="[[f.data.busy() ? 'true' : 'false']]" on-click="[[f.data.check]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Check now</button>
+                    <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Stop watching ' + f.data.folder]]" on-click="[[f.data.stop]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
+                  </span>
+                </oj-bind-if>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[olderCount() > 0]]">
+      <label class="fx-check factory-lb-older"><input type="checkbox" :checked="[[showOlder]]" on-change="[[setShowOlder]]"><span>Show older revisions (<oj-bind-text value="[[olderCount]]"></oj-bind-text>)</span></label>
     </oj-bind-if>
 
     <oj-bind-if test="[[versions().length === 0]]">
@@ -106,20 +140,20 @@
       <template>
         <section class="fx-card factory-lb-version-card">
           <h2 class="fx-card-title">OBDX <oj-bind-text value="[[v.data.version]]"></oj-bind-text>
-            <span class="fx-muted factory-lb-count"><oj-bind-text value="[[v.data.ready + ' of ' + v.data.documents.length + ' ready']]"></oj-bind-text></span></h2>
+            <span class="fx-muted factory-lb-count"><oj-bind-text value="[[v.data.summary]]"></oj-bind-text></span></h2>
           <div class="fx-table-wrap">
             <table class="fx-table factory-lb-table">
               <thead><tr><th scope="col">Document</th><th scope="col">Status</th><th scope="col">Pages</th><th scope="col">Sections</th><th scope="col">By meaning</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
               <tbody>
                 <oj-bind-for-each data="[[v.data.documents]]" as="d">
-                  <template><tr>
+                  <template><tr :class="[[d.data.rowCss]]">
                     <td><a :href="[[d.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[d.data.title]]"></oj-bind-text></a>
                       <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[d.data.scope]]"></oj-bind-text><oj-bind-if test="[[d.data.message]]"> · <oj-bind-text value="[[d.data.message]]"></oj-bind-text></oj-bind-if></span></td>
                     <td><span :class="[[d.data.statusCss]]"><span :class="[[d.data.statusIcon]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span></td>
                     <td><oj-bind-text value="[[d.data.pages || '–']]"></oj-bind-text></td>
                     <td><oj-bind-text value="[[d.data.sections || '–']]"></oj-bind-text></td>
-                    <td><span class="fx-progress factory-lb-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[d.data.progress]]" :aria-label="[['Embedded ' + d.data.progress + '%']]"><span :style="[[d.data.progressStyle]]"></span></span>
-                      <span class="fx-muted factory-lb-pct"><oj-bind-text value="[[d.data.progress + '%']]"></oj-bind-text></span></td>
+                    <td><oj-bind-if test="[[!d.data.older]]"><span class="fx-progress factory-lb-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[d.data.progress]]" :aria-label="[['Embedded ' + d.data.progress + '%']]"><span :style="[[d.data.progressStyle]]"></span></span>
+                      <span class="fx-muted factory-lb-pct"><oj-bind-text value="[[d.data.progress + '%']]"></oj-bind-text></span></oj-bind-if><oj-bind-if test="[[d.data.older]]">–</oj-bind-if></td>
                     <td class="factory-lb-actions">
                       <oj-bind-if test="[[d.data.canEmbed && d.data.admin]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[d.data.embed]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Embed again</button></oj-bind-if>
                       <oj-bind-if test="[[d.data.admin]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + d.data.title]]" on-click="[[d.data.remove]]"><span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span></button></oj-bind-if>
@@ -173,6 +207,9 @@
               <span :class="[[n.data.statusCss]]"><span :class="[[n.data.statusIcon]]" aria-hidden="true"></span><oj-bind-text value="[[n.data.statusText]]"></oj-bind-text></span>
             </header>
             <p class="fx-muted factory-lb-sub"><oj-bind-text value="[[n.data.origin + ' · ' + n.data.scope + ' · ' + (n.data.by || '') + ' · ' + n.data.when]]"></oj-bind-text></p>
+            <oj-bind-if test="[[n.data.needsReview && n.data.status !== 'REJECTED']]">
+              <div class="fx-alert fx-alert--warning factory-lb-notecheck" role="note"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[n.data.needsReview]]"></oj-bind-text></span></div>
+            </oj-bind-if>
             <div class="factory-lb-notebody"><oj-bind-text value="[[n.data.body]]"></oj-bind-text></div>
             <oj-bind-if test="[[n.data.sourceRows.length > 0]]">
               <ul class="factory-lb-notesources">

@@ -44,8 +44,10 @@ public class DocumentTextExtractor {
                 text = pdf(bytes);
             } else if (lower.endsWith(".txt") || lower.endsWith(".md")) {
                 text = new String(bytes, StandardCharsets.UTF_8);
+            } else if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+                text = html(new String(bytes, StandardCharsets.UTF_8));
             } else {
-                throw new BadRequestException("Unsupported file type. Upload a Word (.docx, .doc), PDF, .txt or .md file.");
+                throw new BadRequestException("Unsupported file type. Upload a Word (.docx, .doc), PDF, HTML, .txt or .md file.");
             }
             text = text.replace("\r\n", "\n").replaceAll("[ \\t]+\n", "\n").replaceAll("\n{3,}", "\n\n").trim();
             if (text.isEmpty()) {
@@ -119,6 +121,31 @@ public class DocumentTextExtractor {
             // Older Word files: table cells come out separated by tab-like cell marks.
             return extractor.getText().replace('\u0007', '\t');
         }
+    }
+
+    private static final Pattern HTML_DROP = Pattern.compile("(?is)<(script|style|head|nav)\\b.*?</\\1>|<!--.*?-->");
+    private static final Pattern HTML_HEADING = Pattern.compile("(?is)<h([1-4])\\b[^>]*>(.*?)</h\\1>");
+    private static final Pattern HTML_CELL = Pattern.compile("(?i)</t[dh]>\\s*");
+
+    /**
+     * An HTML page (an exported wiki or Confluence page, Oracle's HTML documentation) as text: headings become "#"
+     * lines, paragraphs, list items and table rows become lines, table cells are separated by "|".
+     */
+    static String html(String html) {
+        String text = HTML_DROP.matcher(html).replaceAll(" ");
+        Matcher h = HTML_HEADING.matcher(text);
+        StringBuilder out = new StringBuilder();
+        while (h.find()) {
+            String heading = h.group(2).replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").strip();
+            h.appendReplacement(out, Matcher.quoteReplacement("\n\n" + "#".repeat(Integer.parseInt(h.group(1))) + " " + heading + "\n\n"));
+        }
+        h.appendTail(out);
+        text = HTML_CELL.matcher(out).replaceAll(" | ");
+        text = text.replaceAll("(?i)<br\\s*/?>|</(p|div|li|tr|table|ul|ol|section|article|pre)>", "\n").replaceAll("(?i)<li\\b[^>]*>", "- ");
+        text = text.replaceAll("<[^>]+>", " ");
+        text = text.replace("&nbsp;", " ").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
+                .replace("&amp;", "&");
+        return text.replaceAll("[ \\t]+", " ").replaceAll(" *\n *", "\n");
     }
 
     private static String pdf(byte[] bytes) throws IOException {

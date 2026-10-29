@@ -10,9 +10,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class KnowledgeConfig {
 
     private final KnowledgeService knowledge;
+    private final KnowledgeImporter importer;
 
-    public KnowledgeConfig(@org.springframework.context.annotation.Lazy KnowledgeService knowledge) {
+    public KnowledgeConfig(@org.springframework.context.annotation.Lazy KnowledgeService knowledge,
+                           @org.springframework.context.annotation.Lazy KnowledgeImporter importer) {
         this.knowledge = knowledge;
+        this.importer = importer;
     }
 
     /** Reading and embedding manuals, one document at a time, apart from imports, changes and builds. */
@@ -32,5 +35,11 @@ public class KnowledgeConfig {
     @Scheduled(fixedDelayString = "PT2M", initialDelayString = "PT1M")
     public void embedNotes() {
         knowledge.embedNotes();
+    }
+
+    /** Watched folders are checked for new and changed documents (Oracle's updated manuals, the bank's own). */
+    @Scheduled(fixedDelayString = "${factory.knowledge.folder-check-interval:PT6H}", initialDelayString = "PT10M")
+    public void checkFolders() {
+        importer.rescanAll();
     }
 }

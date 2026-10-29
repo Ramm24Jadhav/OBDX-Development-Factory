@@ -259,7 +259,10 @@ the factory suggests one after each delivered change; an approver makes them tru
 the manuals and trusted notes only; the AI chat may also use suggested notes and says so. Feedback on answers is kept.
 The knowledge is internal to the bank: it is sent only to model servers on the bank's network (this computer, private
 addresses, or hosts the administrator lists), whatever models are configured; with models outside it, the factory
-works without the knowledge and says why.
+works without the knowledge and says why. It keeps itself current: imported folders are watched, a changed file
+becomes a newer revision of its document (the older one is kept as history), and notes whose cited sections changed go
+back to review. The bank's own and patchset-specific documents (PDF, Word, text, Markdown, HTML) belong to its
+workspace, rank above Oracle's generic manuals, and win where they differ.
 
 *Not yet:* a 22.x/25.x difference view, an evaluation set of test questions, and answers shown word by word.
 

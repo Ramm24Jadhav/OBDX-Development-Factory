@@ -33,7 +33,8 @@ public class KnowledgeService {
             Experience (OBDX) code. Answer the question from the numbered sources (sections of Oracle's OBDX manuals and \
             knowledge notes) and the page the user is looking at. Cite the sources you use in square brackets, like [2] or \
             [1][3], right after the statement they support. Notes marked "suggested" are not approved yet: say so when you \
-            rely on one. When the sources do not answer the question, say plainly that the manuals in the factory do not \
+            rely on one. Sources marked "Bank document" or "bank note" are the bank's own documentation of its customised \
+            system and patchset: where they differ from Oracle's manuals, follow them and say that the bank's version differs. When the sources do not answer the question, say plainly that the manuals in the factory do not \
             cover it, then add what you know in general, marked as general knowledge, without citations. Cite a source only \
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
             sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
@@ -68,8 +69,9 @@ public class KnowledgeService {
     }
 
     /** A cited source. n is its number in the answer ([n]); url opens a manual at its page. */
+    /** bank: the bank's own document or note; patchset: the patchset a document is for. pageFrom 0: no pages. */
     public record Source(int n, String kind, String title, String heading, String obdxVersion, int pageFrom, int pageTo,
-                         String status, UUID documentId, UUID noteId, String url, String excerpt) {
+                         String status, UUID documentId, UUID noteId, String url, String excerpt, boolean bank, String patchset) {
     }
 
     public record Answer(String answer, String model, long latencyMs, String versionLine, boolean grounded, List<Source> sources,
@@ -129,8 +131,8 @@ public class KnowledgeService {
             KnowledgeSearch.Result found = search.search(cap(query, 2000), versionLineOf(workspaceId), workspaceId, 6, false);
             StringBuilder out = new StringBuilder();
             for (KnowledgeSearch.Hit h : found.hits()) {
-                String block = "--- " + ("NOTE".equals(h.kind()) ? "Approved note: " + h.title() : h.title() + " " + h.obdxVersion()
-                        + (h.heading() == null ? "" : ", " + h.heading()) + ", " + pages(h.pageFrom(), h.pageTo())) + "\n" + cap(h.text(), 1400) + "\n";
+                String block = "--- " + ("NOTE".equals(h.kind()) ? (h.bank() ? "Approved bank note: " : "Approved note: ") + h.title()
+                        : documentLabel(h.bank(), h.title(), h.obdxVersion(), h.patchset(), h.heading(), h.pageFrom(), h.pageTo())) + "\n" + cap(h.text(), 1400) + "\n";
                 if (out.length() + block.length() > maxChars) {
                     break;
                 }
@@ -160,7 +162,7 @@ public class KnowledgeService {
         AppUser user = request.workspaceId() == null ? guard.current() : guard.require(request.workspaceId(), WorkspaceRole.Permission.VIEW);
         var note = new KnowledgeRepository.Note(UUID.randomUUID(), request.workspaceId(), lineOrNull(request.versionLine()),
                 cap(blankToNull(request.topic()), 200), cap(request.title().strip(), 300), request.body().strip(), "SUGGESTED", origin,
-                sourcesJson(request.sources()), user.getUsername(), null, null, null, null);
+                sourcesJson(request.sources()), user.getUsername(), null, null, null, null, null);
         repository.insertNote(note);
         return repository.findNote(note.id()).orElseThrow();
     }
@@ -222,7 +224,7 @@ public class KnowledgeService {
                     + (summary == null || summary.isBlank() ? "" : "\n\nWhat it did: " + summary.strip())
                     + (files.isEmpty() ? "" : "\n\nFiles it changed:\n" + files.stream().map(f -> "- " + f).collect(Collectors.joining("\n")));
             var note = new KnowledgeRepository.Note(UUID.randomUUID(), workspaceId, versionLineOf(workspaceId), cap(title, 200),
-                    cap("Delivered change: " + title, 300), body, "SUGGESTED", "AGENT", "[]", "factory", null, null, null, null);
+                    cap("Delivered change: " + title, 300), body, "SUGGESTED", "AGENT", "[]", "factory", null, null, null, null, null);
             repository.insertNote(note);
         } catch (RuntimeException e) {
             log.info("Could not record what change \"{}\" taught: {}", title, e.getMessage());
@@ -288,27 +290,33 @@ public class KnowledgeService {
             boolean manual = "MANUAL".equals(h.kind());
             out.add(new Source(i + 1, h.kind(), h.title(), h.heading(), h.obdxVersion(), h.pageFrom(), h.pageTo(), h.status(),
                     manual ? h.documentId() : null, manual ? null : h.id(),
-                    manual ? "api/knowledge/documents/" + h.documentId() + "/file#page=" + Math.max(1, h.pageFrom()) : null,
-                    cap(h.text(), 280)));
+                    manual ? "api/knowledge/documents/" + h.documentId() + "/file" + (h.pageFrom() > 0 ? "#page=" + h.pageFrom() : "") : null,
+                    cap(h.text(), 280), h.bank(), h.patchset()));
         }
         return out;
     }
 
     private static String label(Source s) {
         if ("NOTE".equals(s.kind())) {
-            return ("TRUSTED".equals(s.status()) ? "Approved note" : "Suggested note") + ": " + s.title();
+            return ("TRUSTED".equals(s.status()) ? "Approved " : "Suggested ") + (s.bank() ? "bank note" : "note") + ": " + s.title();
         }
-        return s.title() + " (OBDX " + s.obdxVersion() + ")" + (s.heading() == null ? "" : ", " + s.heading()) + ", " + pages(s.pageFrom(), s.pageTo());
+        return documentLabel(s.bank(), s.title(), s.obdxVersion(), s.patchset(), s.heading(), s.pageFrom(), s.pageTo());
+    }
+
+    /** "Bank document: Payments Customisation (OBDX 25.2, patchset 25.2.0.1), 4.2 Limits, p. 12" */
+    static String documentLabel(boolean bank, String title, String obdxVersion, String patchset, String heading, int pageFrom, int pageTo) {
+        return (bank ? "Bank document: " : "") + title + " (OBDX " + obdxVersion + (patchset == null ? "" : ", patchset " + patchset) + ")"
+                + (heading == null ? "" : ", " + heading) + pages(pageFrom, pageTo);
     }
 
     private static String pages(int from, int to) {
-        return from == to ? "p. " + from : "pp. " + from + "-" + to;
+        return from <= 0 ? "" : from == to ? ", p. " + from : ", pp. " + from + "-" + to;
     }
 
     private String sourcesJson(List<Source> sources) {
         return sources == null ? "[]" : json.writeValueAsString(sources.stream().map(s -> Map.of(
                 "title", nz(s.title()), "heading", nz(s.heading()), "obdxVersion", nz(s.obdxVersion()), "pageFrom", s.pageFrom(),
-                "pageTo", s.pageTo(), "url", nz(s.url()))).toList());
+                "pageTo", s.pageTo(), "url", nz(s.url()), "documentId", s.documentId() == null ? "" : s.documentId().toString())).toList());
     }
 
     private static String lineOrNull(String versionLine) {

@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * Splits a manual's pages into sections for search: a new section starts at a numbered heading ("4.3 Transfer
- * Limits"), long sections are cut at paragraph breaks, and each keeps the pages it spans so answers can cite them.
+ * Limits") or, in Word, Markdown and HTML documents, at a "#" heading, long sections are cut at paragraph breaks, and each keeps the pages it spans so answers can cite them.
  * The lines repeated on most pages (running headers, footers, copyright) and the table of contents are left out.
  */
 final class ManualSplitter {
@@ -18,6 +18,8 @@ final class ManualSplitter {
 
     static final int MAX_CHARS = 1800;
     private static final int MIN_CHARS = 120;
+    // A heading of a Word or Markdown document: "## Fund transfer limits"
+    private static final Pattern MARKDOWN_HEADING = Pattern.compile("^#{1,4}\\s+(\\S[^\\n]{0,200})$");
     private static final Pattern HEADING = Pattern.compile("^(\\d{1,2}(\\.\\d{1,2}){0,4})\\.?\\s+(\\p{Lu}[^\\n]{2,110})$");
     // A contents line: a title, dot leaders or spaces, and a page number at the end
     private static final Pattern CONTENTS_LINE = Pattern.compile(".*(\\.{3,}|\\s{2,}|…)\\s*\\d{1,4}\\s*$");
@@ -55,9 +57,10 @@ final class ManualSplitter {
                 if ((pages.size() > 4 && lineCounts.getOrDefault(line, 0) >= repeated) || PAGE_NUMBER.matcher(line).matches()) {
                     continue;
                 }
-                if (HEADING.matcher(line).matches() && !CONTENTS_LINE.matcher(line).matches()) {
+                var markdown = MARKDOWN_HEADING.matcher(line);
+                if (markdown.matches() || (HEADING.matcher(line).matches() && !CONTENTS_LINE.matcher(line).matches())) {
                     flush(sections, heading, from, last, text);
-                    heading = line;
+                    heading = markdown.matches() ? markdown.group(1).strip() : line;
                     from = pageNo;
                     text.setLength(0);
                 } else {

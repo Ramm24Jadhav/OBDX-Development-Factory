@@ -58,9 +58,12 @@ public class KnowledgeController {
         this.localFolders = localFolders;
     }
 
-    /** privacy: why the knowledge is not sent to the configured models (they are outside the bank); null when it is. */
+    /**
+     * privacy: why the knowledge is not sent to the configured models (they are outside the bank); null when it is.
+     * folders: the watched folders, checked again for new and changed documents.
+     */
     public record Overview(KnowledgeRepository.Stats stats, boolean folderImport, List<KnowledgeRepository.Document> documents,
-                           String privacy) {
+                           String privacy, List<KnowledgeRepository.Source> folders) {
     }
 
     @GetMapping("/api/knowledge")
@@ -68,12 +71,12 @@ public class KnowledgeController {
         guard.current();
         List<UUID> visible = knowledge.visibleWorkspaceIds();
         String privacy = policy.chatProblem() != null ? policy.chatProblem() : policy.embeddingProblem();
-        return new Overview(repository.stats(visible), localFolders, repository.documents(visible), privacy);
+        return new Overview(repository.stats(visible), localFolders, repository.documents(visible), privacy, repository.sources(visible));
     }
 
     // --- documents ---
 
-    public record FolderImport(String folder, String obdxVersion, UUID workspaceId) {
+    public record FolderImport(String folder, String obdxVersion, UUID workspaceId, String patchset) {
     }
 
     @PostMapping("/api/knowledge/import")
@@ -83,19 +86,21 @@ public class KnowledgeController {
             throw new BadRequestException("Importing from a folder is off on this factory. Upload the PDF files instead.");
         }
         if (request.folder() == null || request.folder().isBlank()) {
-            throw new BadRequestException("Enter the folder with the PDF files.");
+            throw new BadRequestException("Enter the folder with the documents.");
         }
         KnowledgeImporter.Imported imported = importer.importFolder(Path.of(request.folder().strip()), request.obdxVersion(),
-                request.workspaceId(), user.getUsername());
+                request.workspaceId(), request.patchset(), user.getUsername());
         audit.record("KNOWLEDGE_IMPORTED", request.workspaceId(), request.folder(), imported.queued().size() + " document(s) for OBDX " + request.obdxVersion());
         return imported;
     }
 
     @PostMapping(path = "/api/knowledge/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public KnowledgeImporter.Imported upload(@RequestParam("file") MultipartFile file, @RequestParam("obdxVersion") String obdxVersion,
-                                             @RequestParam(value = "workspaceId", required = false) UUID workspaceId) throws IOException {
+                                             @RequestParam(value = "workspaceId", required = false) UUID workspaceId,
+                                             @RequestParam(value = "patchset", required = false) String patchset) throws IOException {
         AppUser user = requireImporter(workspaceId);
-        KnowledgeImporter.Imported imported = importer.importFile(file.getOriginalFilename(), file.getBytes(), obdxVersion, workspaceId, user.getUsername());
+        KnowledgeImporter.Imported imported = importer.importFile(file.getOriginalFilename(), file.getBytes(), obdxVersion, workspaceId, patchset,
+                user.getUsername());
         audit.record("KNOWLEDGE_IMPORTED", workspaceId, file.getOriginalFilename(), "OBDX " + obdxVersion);
         return imported;
     }
@@ -115,7 +120,30 @@ public class KnowledgeController {
         importer.embedAgain(id);
     }
 
-    /** The stored PDF, shown in the browser (answers link here with #page=N). */
+    // --- watched folders ---
+
+    /** Checks a watched folder for new and changed documents now (they are also checked on a schedule). */
+    @PostMapping("/api/knowledge/folders/{id}/check")
+    public KnowledgeImporter.Imported checkFolder(@PathVariable UUID id) {
+        var source = repository.findSource(id).orElseThrow(() -> new NotFoundException("Folder not found"));
+        requireImporter(source.workspaceId());
+        KnowledgeImporter.Imported imported = importer.rescan(id);
+        if (!imported.queued().isEmpty()) {
+            audit.record("KNOWLEDGE_IMPORTED", source.workspaceId(), source.folder(), imported.queued().size() + " new or changed document(s)");
+        }
+        return imported;
+    }
+
+    /** Stops watching a folder; its documents stay. */
+    @DeleteMapping("/api/knowledge/folders/{id}")
+    public void stopWatching(@PathVariable UUID id) {
+        var source = repository.findSource(id).orElseThrow(() -> new NotFoundException("Folder not found"));
+        requireImporter(source.workspaceId());
+        importer.deleteSource(id);
+        audit.record("KNOWLEDGE_FOLDER_REMOVED", source.workspaceId(), source.folder(), "OBDX " + source.obdxVersion());
+    }
+
+    /** The stored file, shown in the browser when it is a PDF (answers link here with #page=N), else downloaded. */
     @GetMapping("/api/knowledge/documents/{id}/file")
     public ResponseEntity<Resource> file(@PathVariable UUID id) {
         var document = repository.findDocument(id).orElseThrow(() -> new NotFoundException("Document not found"));
@@ -128,8 +156,11 @@ public class KnowledgeController {
         if (!Files.exists(file)) {
             throw new NotFoundException("The file of this document is no longer in the factory's data folder. Import it again.");
         }
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(document.fileName(), StandardCharsets.UTF_8).build().toString())
+        boolean pdf = "pdf".equals(KnowledgeImporter.extension(document.fileName()));
+        ContentDisposition disposition = (pdf ? ContentDisposition.inline() : ContentDisposition.attachment())
+                .filename(document.fileName(), StandardCharsets.UTF_8).build();
+        return ResponseEntity.ok().contentType(pdf ? MediaType.APPLICATION_PDF : MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(new FileSystemResource(file));
     }
 

@@ -37,6 +37,6 @@ class KnowledgeVectorsTest {
 
     private static KnowledgeSearch.Hit hit(UUID documentId, int page) {
         return new KnowledgeSearch.Hit(documentId == null ? "NOTE" : "MANUAL", UUID.randomUUID(), documentId, "t", "h", "25.2", page, page,
-                null, "text", 0);
+                null, "text", 0, false, null);
     }
 }

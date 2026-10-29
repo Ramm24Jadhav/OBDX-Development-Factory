@@ -198,16 +198,30 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per version, a bank's own documents for one
 workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
 
-- **Import**: an administrator imports the manuals of a version from a folder on the factory's computer (needs
-  `factory.local-folders.enabled`) or by uploading PDFs (up to 150 MB each). With "bank's own document" ticked, the files
-  belong to the selected workspace only (Managers can import those). A file already imported for that version is skipped.
-  Each PDF is copied to `<storage>/knowledge/<id>.pdf`, read page by page (PDFBox), split at numbered headings into
-  sections of at most about 1,800 characters with their pages (headers, footers and contents pages dropped), and embedded
-  in the background, one document at a time. Without the embedding model a document is searched by keywords; **Embed
-  again** finishes it later. Imports the factory stopped in the middle carry on at the next start.
+- **Import**: an administrator imports Oracle's manuals of a version from a folder on the factory's computer (needs
+  `factory.local-folders.enabled`) or by uploading files (up to 150 MB each). With "bank's own documents" ticked, the
+  files belong to the selected workspace only; a workspace's Managers import those too. The bank's own and
+  patchset-specific documents can be PDF, Word (.docx, .doc), text, Markdown or HTML (an exported wiki page), and any
+  import can carry a **patchset** (25.2.0.1, a patch number), shown with every citation. Each file is copied to
+  `<storage>/knowledge/<id>.<type>`, read (PDF page by page with PDFBox; Word headings become sections), split at
+  numbered or Word/Markdown headings into sections of at most about 1,800 characters with their pages (headers, footers
+  and contents pages dropped), and embedded in the background, one document at a time. Without the embedding model a
+  document is searched by keywords; **Embed again** finishes it later. Imports the factory stopped carry on at the next
+  start.
+- **Keeping it current**: Oracle republishes manuals for patchsets and fixes, and banks update their own documents. A
+  file already imported (same content) is skipped. A changed file with the name of one already imported for that
+  version and owner is a **newer revision**: the older one answers until the newer one is ready, then it is kept as
+  history (Show older revisions) without its sections. Notes citing it move to the newer revision; a note whose cited
+  section changed or is gone gets a "to check after updates" reason, and an approved one goes back to suggested, so code
+  generation does not follow outdated guidance until someone approves it again. Every imported folder is **watched**:
+  checked again every `factory.knowledge.folder-check-interval` (default 6 hours, `FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL`)
+  and on **Check now**. Put Oracle's updated PDFs (or the bank's) in the folder, a shared drive works, and the factory does
+  the rest; it does not download from oracle.com itself, so nothing leaves the bank's network.
 - **Search** is hybrid, as in code search: PostgreSQL full text and embeddings merged by reciprocal rank fusion, limited
   to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
-  at most two sections of one document, so a long user manual does not crowd out the guide that answers. On the trial
+  at most two sections of one document, so a long user manual does not crowd out the guide that answers. The bank's own
+  documents and notes rank a little higher, and the model is told they describe the bank's customised system and
+  patchset and win where they differ from Oracle's manuals. On the trial
   database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2
   manuals) and compared there: a search takes well under a second instead of many seconds.
 - **Ask** (Library page and every AI Assistant panel): the question, the page the user is looking at (up to 3,000
@@ -530,10 +544,12 @@ object: compute those in the view model.
 | `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server) (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
-| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents you can see |
-| `POST /api/knowledge/import` | Import every PDF in a folder (`folder`, `obdxVersion`, `workspaceId`: null for the shared manuals) |
-| `POST /api/knowledge/documents` | Upload one PDF (multipart `file`, `obdxVersion`, `workspaceId`) |
+| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, and `privacy` when the models are outside the bank |
+| `POST /api/knowledge/import` | Import and watch a folder (`folder`, `obdxVersion`, `patchset`, `workspaceId`: null for Oracle's manuals) |
+| `POST /api/knowledge/documents` | Upload one file: PDF, Word, text, Markdown or HTML (multipart `file`, `obdxVersion`, `patchset`, `workspaceId`) |
 | `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
+| `POST /api/knowledge/folders/{id}/check` | Check a watched folder for new and changed documents now |
+| `DELETE /api/knowledge/folders/{id}` | Stop watching a folder (its documents stay) |
 | `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |

@@ -4,12 +4,14 @@ import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.requirements.DocumentTextExtractor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.task.TaskExecutor;
@@ -24,21 +26,25 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
  * Brings documents into the knowledge base: Oracle's OBDX manuals for a version (from a folder on the factory's
- * computer or uploaded), and a bank's own documents for one workspace. Each PDF is copied into the data folder (so
- * answers can open it at the cited page), read page by page, split into sections and embedded in the background.
- * Importing a file that is already there for that version is skipped. Without the embedding model a document is
- * still searched by keywords and can be embedded later.
+ * computer or uploaded), and a bank's own and patchset-specific documents for one workspace (PDF, Word, text, Markdown
+ * or HTML). Each file is copied into the data folder (so answers can open it at the cited page), read, split into
+ * sections and embedded in the background. A file already imported is skipped; a changed file with the name of one
+ * already imported becomes its newer revision ({@link KnowledgeRevisions}). Folders are remembered and checked again
+ * on a schedule, so the knowledge follows Oracle's updated manuals and the bank's updated documents. Without the
+ * embedding model a document is still searched by keywords and can be embedded later.
  */
 @Service
 public class KnowledgeImporter {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeImporter.class);
     private static final int EMBED_BATCH = 16;
+    static final Set<String> EXTENSIONS = Set.of("pdf", "docx", "doc", "txt", "md", "html", "htm");
 
     private final KnowledgeRepository repository;
     private final ModelGateway modelGateway;
@@ -46,70 +52,132 @@ public class KnowledgeImporter {
     private final TaskExecutor executor;
     private final KnowledgeVectors vectors;
     private final KnowledgePolicy policy;
+    private final KnowledgeRevisions revisions;
+    private final DocumentTextExtractor extractor;
+    private final boolean localFolders;
 
     public KnowledgeImporter(KnowledgeRepository repository, ModelGateway modelGateway, StorageProperties storage,
                              @Qualifier("knowledgeExecutor") TaskExecutor executor, KnowledgeVectors vectors,
-                             KnowledgePolicy policy) {
+                             KnowledgePolicy policy, KnowledgeRevisions revisions, DocumentTextExtractor extractor,
+                             @Value("${factory.local-folders.enabled}") boolean localFolders) {
         this.repository = repository;
-        this.policy = policy;
-        this.vectors = vectors;
         this.modelGateway = modelGateway;
         this.storage = storage;
         this.executor = executor;
+        this.vectors = vectors;
+        this.policy = policy;
+        this.revisions = revisions;
+        this.extractor = extractor;
+        this.localFolders = localFolders;
     }
 
+    /** queued: new documents and newer revisions being imported; skipped: unchanged or unreadable files, with why. */
     public record Imported(List<KnowledgeRepository.Document> queued, List<String> skipped) {
     }
 
-    /** Every PDF in a folder (not its subfolders) for one OBDX version. */
-    public Imported importFolder(Path folder, String obdxVersion, UUID workspaceId, String user) {
+    /**
+     * Every supported file in a folder (not its subfolders) for one OBDX version. The folder is remembered and checked
+     * again for new and changed files.
+     */
+    public Imported importFolder(Path folder, String obdxVersion, UUID workspaceId, String patchset, String user) {
+        String version = normalizeVersion(obdxVersion);
+        String p = patchset(patchset);
         if (!Files.isDirectory(folder)) {
-            throw new BadRequestException("No folder at " + folder + ". Enter the full path of the folder with the PDF files.");
+            throw new BadRequestException("No folder at " + folder + ". Enter the full path of the folder with the documents.");
         }
-        List<Path> pdfs;
-        try (Stream<Path> files = Files.list(folder)) {
-            pdfs = files.filter(f -> f.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".pdf")).sorted().toList();
-        } catch (IOException e) {
-            throw new BadRequestException("The folder cannot be read: " + e.getMessage());
-        }
-        if (pdfs.isEmpty()) {
-            throw new BadRequestException("There are no PDF files in " + folder + ".");
+        var source = repository.saveSource(folder.toAbsolutePath().normalize().toString(), version, workspaceId, p, user);
+        Imported imported = scan(folder, version, workspaceId, p, source.id(), user);
+        repository.sourceScanned(source.id(), result(imported));
+        return imported;
+    }
+
+    public Imported importFile(String fileName, byte[] bytes, String obdxVersion, UUID workspaceId, String patchset, String user) {
+        if (!supported(fileName)) {
+            throw new BadRequestException("Upload a PDF, Word (.docx, .doc), text, Markdown or HTML file.");
         }
         List<KnowledgeRepository.Document> queued = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
-        for (Path pdf : pdfs) {
+        add(fileName, bytes, normalizeVersion(obdxVersion), workspaceId, patchset(patchset), null, user, queued, skipped);
+        return new Imported(queued, skipped);
+    }
+
+    /** Checks a watched folder again now. */
+    public Imported rescan(UUID sourceId) {
+        var source = repository.findSource(sourceId).orElseThrow(() -> new NotFoundException("Folder not found"));
+        if (!localFolders) {
+            throw new BadRequestException("Importing from a folder is off on this factory.");
+        }
+        Imported imported;
+        try {
+            imported = scan(Path.of(source.folder()), source.obdxVersion(), source.workspaceId(), source.patchset(), source.id(),
+                    "factory (folder check)");
+        } catch (BadRequestException e) {
+            repository.sourceScanned(source.id(), e.getMessage());
+            throw e;
+        }
+        repository.sourceScanned(source.id(), result(imported));
+        return imported;
+    }
+
+    /** Checks every watched folder (on a schedule); a folder that cannot be read is reported on it, not thrown. */
+    public void rescanAll() {
+        if (!localFolders) {
+            return;
+        }
+        for (var source : repository.sources(null)) {
             try {
-                add(pdf.getFileName().toString(), Files.readAllBytes(pdf), obdxVersion, workspaceId, user, queued, skipped);
+                Imported imported = rescan(source.id());
+                if (!imported.queued().isEmpty()) {
+                    log.info("Knowledge folder {}: {}", source.folder(), result(imported));
+                }
+            } catch (RuntimeException e) {
+                log.info("Knowledge folder {} not checked: {}", source.folder(), e.getMessage());
+            }
+        }
+    }
+
+    public void deleteSource(UUID sourceId) {
+        repository.findSource(sourceId).orElseThrow(() -> new NotFoundException("Folder not found"));
+        repository.deleteSource(sourceId);
+    }
+
+    private Imported scan(Path folder, String version, UUID workspaceId, String patchset, UUID sourceId, String user) {
+        if (!Files.isDirectory(folder)) {
+            throw new BadRequestException("No folder at " + folder + ". Enter the full path of the folder with the documents.");
+        }
+        List<Path> files;
+        try (Stream<Path> list = Files.list(folder)) {
+            files = list.filter(f -> Files.isRegularFile(f) && supported(f.getFileName().toString())).sorted().toList();
+        } catch (IOException e) {
+            throw new BadRequestException("The folder cannot be read: " + e.getMessage());
+        }
+        if (files.isEmpty()) {
+            throw new BadRequestException("There are no PDF, Word, text, Markdown or HTML files in " + folder + ".");
+        }
+        List<KnowledgeRepository.Document> queued = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+        for (Path f : files) {
+            try {
+                add(f.getFileName().toString(), Files.readAllBytes(f), version, workspaceId, patchset, sourceId, user, queued, skipped);
             } catch (IOException e) {
-                skipped.add(pdf.getFileName() + " (cannot be read: " + e.getMessage() + ")");
+                skipped.add(f.getFileName() + " (cannot be read: " + e.getMessage() + ")");
             }
         }
         return new Imported(queued, skipped);
     }
 
-    public Imported importFile(String fileName, byte[] bytes, String obdxVersion, UUID workspaceId, String user) {
-        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
-            throw new BadRequestException("Upload a PDF file.");
-        }
-        List<KnowledgeRepository.Document> queued = new ArrayList<>();
-        List<String> skipped = new ArrayList<>();
-        add(fileName, bytes, obdxVersion, workspaceId, user, queued, skipped);
-        return new Imported(queued, skipped);
-    }
-
-    private void add(String fileName, byte[] bytes, String obdxVersion, UUID workspaceId, String user,
+    private void add(String fileName, byte[] bytes, String version, UUID workspaceId, String patchset, UUID sourceId, String user,
                      List<KnowledgeRepository.Document> queued, List<String> skipped) {
-        String version = normalizeVersion(obdxVersion);
         String sha = sha256(bytes);
         var existing = repository.findDocument(version, sha, workspaceId);
         if (existing.isPresent() && !"FAILED".equals(existing.get().status())) {
-            skipped.add(fileName + " (already imported)");
+            skipped.add(fileName + ("SUPERSEDED".equals(existing.get().status()) ? " (an older revision, already replaced)" : " (unchanged)"));
             return;
         }
         existing.ifPresent(d -> repository.deleteDocument(d.id()));
         UUID id = UUID.randomUUID();
         try {
-            Path file = file(id);
+            Path file = file(id, fileName);
             Files.createDirectories(file.getParent());
             Files.write(file, bytes);
         } catch (IOException e) {
@@ -117,7 +185,7 @@ public class KnowledgeImporter {
             return;
         }
         var document = new KnowledgeRepository.Document(id, workspaceId, version, versionLine(version), title(fileName), fileName, sha,
-                0, 0, 0, "QUEUED", null, user, null, null);
+                0, 0, 0, "QUEUED", null, user, null, null, patchset, null, null, sourceId);
         repository.insertDocument(document);
         queued.add(document);
         executor.execute(() -> read(id));
@@ -126,22 +194,31 @@ public class KnowledgeImporter {
     /** Embeds the sections still without an embedding (after the model was unavailable), in the background. */
     public void embedAgain(UUID documentId) {
         var document = repository.findDocument(documentId).orElseThrow(() -> new NotFoundException("Document not found"));
+        if (document.supersededBy() != null) {
+            throw new BadRequestException("This is an older revision; a newer one replaced it.");
+        }
         if (!"READY".equals(document.status()) && !"FAILED".equals(document.status())) {
             throw new BadRequestException("The document is still being imported.");
         }
         executor.execute(() -> embed(documentId));
     }
 
+    /** The stored copy of a document, in its own file type (documents imported before were all PDF). */
     public Path file(UUID documentId) {
-        return storage.root().resolve("knowledge").resolve(documentId + ".pdf").toAbsolutePath();
+        return file(documentId, repository.findDocument(documentId).map(KnowledgeRepository.Document::fileName).orElse("x.pdf"));
+    }
+
+    private Path file(UUID documentId, String fileName) {
+        return storage.root().resolve("knowledge").resolve(documentId + "." + extension(fileName)).toAbsolutePath();
     }
 
     public void delete(UUID documentId) {
+        Path file = file(documentId);
         repository.findDocument(documentId).orElseThrow(() -> new NotFoundException("Document not found"));
         repository.deleteDocument(documentId);
         vectors.changed();
         try {
-            Files.deleteIfExists(file(documentId));
+            Files.deleteIfExists(file);
         } catch (IOException e) {
             log.warn("Could not delete the stored file of document {}: {}", documentId, e.getMessage());
         }
@@ -155,8 +232,38 @@ public class KnowledgeImporter {
             return;
         }
         repository.updateDocument(id, "READING", null, null, null, null);
+        List<ManualSplitter.Section> sections;
+        int pages;
+        try {
+            Path file = file(id, document.fileName());
+            if ("pdf".equals(extension(document.fileName()))) {
+                List<String> pageTexts = pdfPages(file);
+                pages = pageTexts.size();
+                sections = ManualSplitter.split(pageTexts);
+            } else {
+                // Word, text and HTML have no pages: their sections are cited by heading
+                String text = extractor.extract(document.fileName(), Files.readAllBytes(file));
+                pages = 0;
+                sections = ManualSplitter.split(List.of(text)).stream()
+                        .map(s -> new ManualSplitter.Section(s.heading(), 0, 0, s.content())).toList();
+            }
+        } catch (IOException | RuntimeException e) {
+            repository.updateDocument(id, "FAILED", "The file cannot be read: " + e.getMessage(), null, null, null);
+            return;
+        }
+        if (sections.isEmpty()) {
+            repository.updateDocument(id, "FAILED", "No text found. If it is a scanned PDF, it needs OCR first.", pages, 0, 0);
+            return;
+        }
+        repository.replaceSections(id, document.workspaceId(), document.versionLine(), sections);
+        vectors.changed();
+        repository.updateDocument(id, "EMBEDDING", null, pages, sections.size(), 0);
+        embed(id);
+    }
+
+    private static List<String> pdfPages(Path file) throws IOException {
         List<String> pages = new ArrayList<>();
-        try (PDDocument pdf = Loader.loadPDF(file(id).toFile())) {
+        try (PDDocument pdf = Loader.loadPDF(file.toFile())) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             for (int p = 1; p <= pdf.getNumberOfPages(); p++) {
@@ -164,26 +271,15 @@ public class KnowledgeImporter {
                 stripper.setEndPage(p);
                 pages.add(stripper.getText(pdf));
             }
-        } catch (IOException | RuntimeException e) {
-            repository.updateDocument(id, "FAILED", "The PDF cannot be read: " + e.getMessage(), null, null, null);
-            return;
         }
-        List<ManualSplitter.Section> sections = ManualSplitter.split(pages);
-        if (sections.isEmpty()) {
-            repository.updateDocument(id, "FAILED", "No text found. If it is a scanned PDF, it needs OCR first.", pages.size(), 0, 0);
-            return;
-        }
-        repository.replaceSections(id, document.workspaceId(), document.versionLine(), sections);
-        vectors.changed();
-        repository.updateDocument(id, "EMBEDDING", null, pages.size(), sections.size(), 0);
-        embed(id);
+        return pages;
     }
 
     private void embed(UUID id) {
         String problem = policy.embeddingProblem();
         if (problem != null) {
             // The bank's documents are not sent to an embedding model outside the bank
-            repository.updateDocument(id, "READY", "Searched by keywords only. " + problem, null, null, repository.embeddedSections(id));
+            ready(id, "Searched by keywords only. " + problem);
             return;
         }
         try {
@@ -203,12 +299,26 @@ public class KnowledgeImporter {
             problem = "Searched by keywords only: the embedding model is unavailable (" + e.getMessage() + "). Use Embed again when it is back.";
             log.info("Knowledge document {}: {}", id, problem);
         }
-        repository.updateDocument(id, "READY", problem, null, null, repository.embeddedSections(id));
+        ready(id, problem);
+    }
+
+    /** The document is searchable: it replaces its older revisions, and the notes citing them are checked. */
+    private void ready(UUID id, String message) {
+        repository.updateDocument(id, "READY", message, null, null, repository.embeddedSections(id));
+        try {
+            int flagged = revisions.replaceEarlier(id);
+            if (flagged > 0) {
+                String check = flagged + " note(s) cite sections this revision changed: check them on the Notes tab.";
+                repository.updateDocument(id, "READY", message == null ? check : message + " " + check, null, null, null);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Knowledge document {}: the older revision was not replaced: {}", id, e.getMessage());
+        }
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void resumeUnfinished() {
-        // The files are kept, so imports the factory stopped in the middle of carry on: documents that were being
+        // The files are kept, so imports the factory stopped in the middle carry on: documents that were being
         // embedded have all their sections and finish their embeddings; the others are read again
         List<UUID> unfinished = repository.unfinished();
         for (UUID id : unfinished) {
@@ -216,7 +326,7 @@ public class KnowledgeImporter {
             if (document == null) {
                 continue;
             }
-            if (!Files.exists(file(id))) {
+            if (!Files.exists(file(id, document.fileName()))) {
                 repository.updateDocument(id, "FAILED", "The factory stopped during the import and the file is gone. Import it again.", null, null, null);
             } else if ("EMBEDDING".equals(document.status())) {
                 executor.execute(() -> embed(id));
@@ -230,6 +340,27 @@ public class KnowledgeImporter {
     }
 
     // --- helpers ---
+
+    static String result(Imported imported) {
+        long unchanged = imported.skipped().stream().filter(s -> s.endsWith("(unchanged)") || s.endsWith("already replaced)")).count();
+        boolean unreadable = imported.skipped().stream().anyMatch(s -> s.contains("cannot be"));
+        return imported.queued().size() + " new or changed, " + unchanged + " unchanged" + (unreadable ? ", some could not be read" : "");
+    }
+
+    static boolean supported(String fileName) {
+        return fileName != null && EXTENSIONS.contains(extension(fileName));
+    }
+
+    static String extension(String fileName) {
+        int dot = fileName == null ? -1 : fileName.lastIndexOf('.');
+        return dot < 0 ? "" : fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
+    }
+
+    /** "25.2.0.1", "Patch 37012345": kept as entered; blank: the release itself. */
+    static String patchset(String patchset) {
+        String p = patchset == null ? "" : patchset.strip();
+        return p.isEmpty() ? null : p.length() > 100 ? p.substring(0, 100) : p;
+    }
 
     /** "25.2", "25.2.0.0.0" and "OBDX 25.2" all become 25.2; the major version alone (25) is accepted too. */
     static String normalizeVersion(String version) {
@@ -254,7 +385,7 @@ public class KnowledgeImporter {
 
     /** "Oracle Banking Digital Experience Extensibility Guide.pdf" becomes "Extensibility Guide". */
     static String title(String fileName) {
-        String t = fileName.replaceAll("(?i)\\.pdf$", "").replace('_', ' ').replace('-', ' ').replaceAll("\\s+", " ").strip();
+        String t = fileName.replaceAll("(?i)\\.(pdf|docx?|txt|md|html?)$", "").replace('_', ' ').replace('-', ' ').replaceAll("\\s+", " ").strip();
         t = t.replaceFirst("(?i)^Oracle Banking Digital Experience\\s+", "").replaceFirst("(?i)^User Manual Oracle Banking Digital Experience\\s+", "User Manual ");
         if (t.equals(t.toLowerCase(Locale.ROOT))) {
             t = java.util.Arrays.stream(t.split(" ")).map(w -> w.isEmpty() ? w : Character.toUpperCase(w.charAt(0)) + w.substring(1))

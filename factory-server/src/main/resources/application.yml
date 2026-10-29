@@ -79,6 +79,8 @@ factory:
     answer-sources: ${FACTORY_KNOWLEDGE_ANSWER_SOURCES:5}
     source-chars: ${FACTORY_KNOWLEDGE_SOURCE_CHARS:1000}
     page-context-chars: ${FACTORY_KNOWLEDGE_PAGE_CONTEXT_CHARS:3000}
+    # How often the folders documents were imported from are checked for new and changed files (ISO-8601 duration)
+    folder-check-interval: ${FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL:PT6H}
   trial-database:
     # true: the factory starts its own PostgreSQL (data in FACTORY_DATA_DIR/trial-database) and ignores FACTORY_DB_*.
     # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.

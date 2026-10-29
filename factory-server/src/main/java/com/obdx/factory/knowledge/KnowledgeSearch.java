@@ -29,6 +29,7 @@ public class KnowledgeSearch {
     private static final int CANDIDATES = 40;
     private static final int RRF_K = 60;
     private static final int PER_DOCUMENT = 2;
+    private static final double BANK_BOOST = 1.2;
     private static final Set<String> STOP_WORDS = Set.of("a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "is",
             "are", "was", "be", "it", "this", "that", "where", "what", "which", "how", "who", "when", "does", "do", "with",
             "from", "by", "as", "at", "can", "i", "we", "my", "our", "me", "you", "obdx", "oracle", "banking", "digital", "experience");
@@ -47,9 +48,11 @@ public class KnowledgeSearch {
 
     /**
      * One search result. kind: MANUAL (a section of a document) or NOTE; status is the note's (TRUSTED, SUGGESTED).
+     * bank: the bank's own document or note (of the workspace); patchset: the patchset a document is for (null: the
+     * release). pageFrom 0: a document without pages (Word, text, HTML), cited by heading.
      */
     public record Hit(String kind, UUID id, UUID documentId, String title, String heading, String obdxVersion, int pageFrom,
-                      int pageTo, String status, String text, double score) {
+                      int pageTo, String status, String text, double score, boolean bank, String patchset) {
     }
 
     public record Result(List<Hit> hits, boolean semanticUsed, String note) {
@@ -141,30 +144,31 @@ public class KnowledgeSearch {
         }
         Map<String, Hit> byKey = new HashMap<>();
         if (!chunkIds.isEmpty()) {
-            jdbc.query("SELECT c.id, c.document_id, d.title, d.obdx_version, c.heading, c.page_from, c.page_to, c.content "
+            jdbc.query("SELECT c.id, c.document_id, d.title, d.obdx_version, d.patchset, d.workspace_id, c.heading, c.page_from, c.page_to, c.content "
                             + "FROM knowledge_chunk c JOIN knowledge_document d ON d.id = c.document_id WHERE c.id = ANY (?)",
                     rs -> {
                         UUID id = rs.getObject("id", UUID.class);
                         byKey.put("M" + id, new Hit("MANUAL", id, rs.getObject("document_id", UUID.class), rs.getString("title"),
                                 rs.getString("heading"), rs.getString("obdx_version"), rs.getInt("page_from"), rs.getInt("page_to"),
-                                null, rs.getString("content"), 0));
+                                null, rs.getString("content"), 0, rs.getObject("workspace_id") != null, rs.getString("patchset")));
                     }, (Object) chunkIds.toArray(new UUID[0]));
         }
         if (!noteIds.isEmpty()) {
-            jdbc.query("SELECT id, title, topic, version_line, status, body FROM knowledge_note WHERE id = ANY (?)",
+            jdbc.query("SELECT id, title, topic, version_line, status, body, workspace_id FROM knowledge_note WHERE id = ANY (?)",
                     rs -> {
                         UUID id = rs.getObject("id", UUID.class);
                         byKey.put("N" + id, new Hit("NOTE", id, null, rs.getString("title"), rs.getString("topic"),
-                                rs.getString("version_line"), 0, 0, rs.getString("status"), rs.getString("body"), 0));
+                                rs.getString("version_line"), 0, 0, rs.getString("status"), rs.getString("body"), 0, rs.getObject("workspace_id") != null, null));
                     }, (Object) noteIds.toArray(new UUID[0]));
         }
         List<Hit> hits = new ArrayList<>();
         for (Map.Entry<String, Double> e : top) {
             Hit h = byKey.get(e.getKey());
             if (h != null) {
-                double boost = "TRUSTED".equals(h.status()) ? 1.15 : 1.0;
+                // Approved notes are the distilled knowledge; the bank's own documents describe its customised system
+                double boost = ("TRUSTED".equals(h.status()) ? 1.15 : 1.0) * (h.bank() ? BANK_BOOST : 1.0);
                 hits.add(new Hit(h.kind(), h.id(), h.documentId(), h.title(), h.heading(), h.obdxVersion(), h.pageFrom(), h.pageTo(),
-                        h.status(), h.text(), Math.round(e.getValue() * boost * 100000) / 100000.0));
+                        h.status(), h.text(), Math.round(e.getValue() * boost * 100000) / 100000.0, h.bank(), h.patchset()));
             }
         }
         hits.sort(Comparator.comparingDouble(Hit::score).reversed());
