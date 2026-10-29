@@ -147,10 +147,6 @@ define(['knockout', './services/session', './services/updates', './services/dash
         }
         navEdges(sideNav);
       };
-      this.pageTitle = ko.pureComputed(() => {
-        const route = navData.find((r) => r.path === this.selection.path());
-        return route && route.detail ? route.detail.label : '';
-      });
       // Collapsed (icons only) is remembered in this browser; on tablets (768 to 1099 pixels) the menu starts collapsed so
       // the page has room, and Expand opens it until the window changes size; on phones it opens over the page.
       const storedCollapsed = (() => {
@@ -193,14 +189,6 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.workspaceOptions = workspaceSelection.options;
       this.workspaceId = workspaceSelection.selectedId;
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
-      const workspacePages = ['code', 'profile', 'requirements', 'designer', 'changes', 'build', 'modernization', 'knowledge', 'impact', 'reviews', 'packs', 'prompts'];
-      this.crumbWorkspace = ko.pureComputed(() => {
-        if (workspacePages.indexOf(this.selection.path()) < 0) {
-          return '';
-        }
-        const option = workspaceSelection.options().find((o) => o.value === this.workspaceId());
-        return option ? option.label.split(' (')[0] : '';
-      });
       // Search and jump: the command palette (Ctrl K, '/', or the top bar search button)
       this.palette = palette;
       palette.init(navData.slice(1).filter((r) => r.detail && !r.detail.hidden).map((r) => ({ path: r.path, label: r.detail.label, icon: r.detail.icon })),

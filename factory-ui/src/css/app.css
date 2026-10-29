@@ -9063,3 +9063,49 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 }
 /* A press squeezes the icon (after the hover rules, which it must win over while the button is held) */
 :is(.fx-btn, .factory-icon-button, .fx-carousel-btn, .factory-menu-toggle, .fx-chip):not(:disabled):not([aria-disabled="true"]):active .factory-nav-icon { scale: 0.88; }
+
+/* ======================================================================================================
+   Tab selection line, elastic controls, menu items that lift out. --fx-ease-elastic overshoots a little and
+   settles. Reduced motion makes all of it instant.
+   ====================================================================================================== */
+:root { --fx-ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1); --fx-dur-elastic: 420ms; }
+
+/* Tabs (services/strips): one selection line glides from the old tab to the new one; the selected tab's own
+   underline is hidden while the line is there */
+.fx-strip--ink { position: relative; }
+.fx-strip--ink > :not(.fx-tab-ink) { border-bottom-color: transparent !important; }
+.fx-tab-ink { position: absolute; z-index: 1; border-radius: 2px; pointer-events: none; opacity: 0; }
+.fx-tab-ink.is-moving { transition: left var(--fx-dur-elastic) var(--fx-ease-elastic), width var(--fx-dur-elastic) var(--fx-ease-elastic), top var(--fx-dur-panel) var(--fx-ease-out); }
+
+/* Switches: the knob springs across and stretches while pressed */
+.fx-switch::after { transition: transform var(--fx-dur-elastic) var(--fx-ease-elastic), width var(--fx-dur-pop) var(--fx-ease-out); }
+.fx-switch:not(:disabled):active::after { width: 20px; }
+.fx-switch[aria-checked="true"]:not(:disabled):active::after { transform: translateX(12px); }
+
+/* Segmented controls and toggle groups, checkboxes, radios and check options: the choice pops into place */
+@keyframes fx-elastic-pop { 0% { scale: 0.88; } 55% { scale: 1.06; } 100% { scale: 1; } }
+.fx-toggle-group > button[aria-pressed="true"], .fx-toggle-group > button[aria-checked="true"], .fx-toggle-group > button.is-selected,
+.fx-check input:checked, input[type="checkbox"]:checked, input[type="radio"]:checked, .fx-option--check.is-selected .fx-checkmark {
+    animation: fx-elastic-pop var(--fx-dur-elastic) var(--fx-ease-out);
+}
+.fx-toggle-group > button { transition: background-color var(--fx-dur-pop) var(--fx-ease-out), color var(--fx-dur-pop), box-shadow var(--fx-dur-pop), scale var(--fx-dur-pop) var(--fx-ease-elastic); }
+.fx-toggle-group > button:not(:disabled):active { scale: 0.94; }
+/* The sidebar's Setup section chevron and the collapse notch spring too */
+.factory-nav-group-chevron, .factory-nav-notch-icon { transition-timing-function: var(--fx-ease-elastic); }
+
+/* Menus and lists: the item under the pointer lifts out a little, with a shadow, for depth */
+.fx-menu [role="menuitem"], .fx-menu > button, .fx-option, .fx-cmd [role="option"] {
+    position: relative;
+    transition: translate var(--fx-dur-pop) var(--fx-ease-elastic), scale var(--fx-dur-pop) var(--fx-ease-elastic), box-shadow var(--fx-dur-pop) var(--fx-ease-out), background-color var(--fx-dur-hover);
+}
+@media (hover: hover) {
+    .fx-menu [role="menuitem"]:not(:disabled):hover, .fx-menu > button:not(:disabled):hover, .fx-option:not(.is-disabled):not(.is-empty):hover {
+        z-index: 1; translate: 0 -1px; scale: 1.025; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14), 0 1px 3px rgba(15, 23, 42, 0.08);
+        background-color: var(--fx-surface);
+    }
+    :root[data-theme="dark"] .fx-menu [role="menuitem"]:not(:disabled):hover, :root[data-theme="dark"] .fx-menu > button:not(:disabled):hover,
+    :root[data-theme="dark"] .fx-option:not(.is-disabled):not(.is-empty):hover { background-color: var(--fx-surface-3); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); }
+}
+/* Room for a lifted item: menus show it whole; lists keep their scrolling and get a little inner padding */
+.fx-menu { overflow: visible; }
+.fx-listbox { padding: 3px 4px; }

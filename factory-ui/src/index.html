@@ -107,13 +107,6 @@
               <fx-select id="topWorkspace" class="factory-topbar-select" label="Workspace" hide-label searchable
                          options="[[workspaceOptions]]" value="{{workspaceId}}" placeholder="Select a workspace"></fx-select>
             </div>
-            <div class="factory-topbar-title">
-              <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
-              <oj-bind-if test="[[crumbWorkspace()]]">
-                <span class="factory-topbar-sep" aria-hidden="true">›</span>
-                <span class="factory-topbar-app"><oj-bind-text value="[[crumbWorkspace]]"></oj-bind-text></span>
-              </oj-bind-if>
-            </div>
             <button type="button" class="factory-topbar-search" id="globalSearch" on-click="[[openPalette]]" aria-haspopup="dialog"
                     aria-label="Search pages, actions, requirements, changes and code (Ctrl K)">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>

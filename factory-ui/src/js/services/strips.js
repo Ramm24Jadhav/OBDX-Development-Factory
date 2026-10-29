@@ -52,7 +52,44 @@ define([], function () {
     strip.addEventListener('pointercancel', end);
   }
 
-  const resized = window.ResizeObserver ? new window.ResizeObserver((entries) => entries.forEach((e) => edges(e.target))) : null;
+  // The selection line of a tab strip: one line that glides from the old tab to the new one. It takes the selected
+  // tab's own underline (colour and thickness), which is then hidden, so the strip looks as designed when still.
+  // Strips that mark the selection another way (a filled pill) keep it.
+  function selectedTab(strip) {
+    return [...strip.children].find((t) => t.getAttribute('aria-selected') === 'true' || t.classList.contains('factory-tab-on'));
+  }
+  function placeInk(strip, animate) {
+    const tab = selectedTab(strip);
+    let ink = strip.fxInk;
+    if (!tab) { if (ink) { ink.style.opacity = '0'; } return; }
+    // The underline is read once, before it is hidden
+    if (!strip.fxInkLook) {
+      const cs = getComputedStyle(tab);
+      const w = parseFloat(cs.borderBottomWidth);
+      const visible = w >= 2 && cs.borderBottomStyle !== 'none' && !/rgba\(\d+, \d+, \d+, 0\)|transparent/.test(cs.borderBottomColor);
+      strip.fxInkLook = visible ? { width: w, color: cs.borderBottomColor } : { none: true };
+    }
+    if (strip.fxInkLook.none) { return; }
+    const width = strip.fxInkLook.width;
+    const cs = { borderBottomColor: strip.fxInkLook.color };
+    if (!ink) {
+      ink = document.createElement('span');
+      ink.className = 'fx-tab-ink';
+      ink.setAttribute('aria-hidden', 'true');
+      strip.appendChild(ink);
+      strip.fxInk = ink;
+    }
+    ink.classList.toggle('is-moving', !!animate && ink.style.opacity === '1');
+    ink.style.background = cs.borderBottomColor;
+    ink.style.height = width + 'px';
+    ink.style.left = tab.offsetLeft + 'px';
+    ink.style.width = tab.offsetWidth + 'px';
+    ink.style.top = (tab.offsetTop + tab.offsetHeight - width) + 'px';
+    ink.style.opacity = '1';
+    strip.classList.add('fx-strip--ink');
+  }
+
+  const resized = window.ResizeObserver ? new window.ResizeObserver((entries) => entries.forEach((e) => { edges(e.target); placeInk(e.target, false); })) : null;
 
   function enhance(strip) {
     if (strip.fxStrip) { return; }
@@ -62,6 +99,14 @@ define([], function () {
     if (resized) { resized.observe(strip); }
     draggable(strip);
     edges(strip);
+    if (strip.matches('[role="tablist"], .fx-tabs, .factory-tabs, .factory-tabbar, .factory-subtabs, .factory-ch-filetabs')) {
+      placeInk(strip, false);
+      // A new selection (the attribute or class changes) glides the line over
+      // (its own class changes and the line's do not count)
+      new MutationObserver((list) => {
+        if (list.some((m) => m.target !== strip && m.target !== strip.fxInk)) { placeInk(strip, true); }
+      }).observe(strip, { attributes: true, subtree: true, attributeFilter: ['aria-selected', 'class'] });
+    }
   }
 
   let queued = false;
