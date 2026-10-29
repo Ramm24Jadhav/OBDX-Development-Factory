@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', './services/busy', './services/strips', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
-  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, busy, strips, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', './services/busy', './services/strips', './services/reveal', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, busy, strips, reveal, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -274,12 +274,13 @@ define(['knockout', './services/session', './services/updates', './services/dash
       // The start screen (index.html) fades once the page is bound and the session is known; it never stays longer than
       // 15 seconds, so a slow or failed check still shows the page and its message.
       this.markReady = () => {
-        const reveal = () => document.body.classList.add('fx-ready');
-        if (session.checked()) { window.setTimeout(reveal, 0); } else {
-          const sub = session.checked.subscribe((v) => { if (v) { sub.dispose(); window.setTimeout(reveal, 0); } });
-          window.setTimeout(reveal, 15000);
+        const showPage = () => document.body.classList.add('fx-ready');
+        if (session.checked()) { window.setTimeout(showPage, 0); } else {
+          const sub = session.checked.subscribe((v) => { if (v) { sub.dispose(); window.setTimeout(showPage, 0); } });
+          window.setTimeout(showPage, 15000);
         }
         strips.init();
+        reveal.init();
       };
       this.authConfig = session.config;
       this.loginUsername = ko.observable('');

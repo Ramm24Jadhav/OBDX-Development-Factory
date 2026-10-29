@@ -8973,3 +8973,58 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 
 /* Home: the progress card names the workspace it shows (chosen in the top bar) */
 .factory-ov2-scope { font-size: var(--fx-text-sm); font-weight: var(--fx-weight-medium, 500); color: var(--fx-text-muted); }
+
+/* ======================================================================================================
+   Scroll reveal and data motion (services/reveal.js). Sections and cards below the window rise in as they scroll
+   into view; bars, rings and charts grow from zero when they appear, and keep their real values (the animations
+   only fill backwards, so nothing is left transformed afterwards). Reduced motion turns all of it off (above).
+   ====================================================================================================== */
+@keyframes fx-grow-x { from { transform: scaleX(0); } }
+@keyframes fx-grow-y { from { transform: scaleY(0); } }
+@keyframes fx-spin-in { from { opacity: 0; transform: rotate(-90deg) scale(0.9); } }
+@keyframes fx-art-in { from { opacity: 0; transform: translateX(28px); } }
+@keyframes fx-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+
+/* The rise moves the card with top, not transform: a transformed card would be the box that screen-positioned dropdowns
+   inside it are placed against, so one opened while the card was still rising would land in the wrong place */
+.fx-reveal { position: relative; top: 18px; opacity: 0; transition: opacity 520ms var(--fx-ease-out), top 640ms var(--fx-ease-out); }
+.fx-reveal.is-in { top: 0; opacity: 1; }
+
+/* Bars grow from their start, columns from the bottom, rings sweep to their value, donuts turn in */
+.fx-progress > span, .factory-ov2-bar-fill, .factory-cp-bar > span, .factory-cp-lang-bar > span {
+    transform-origin: left center; animation: fx-grow-x 900ms var(--fx-ease-out) 120ms backwards;
+}
+.factory-ws-bars span, .factory-mo-bar { transform-origin: center bottom; animation: fx-grow-y 800ms var(--fx-ease-out) backwards; }
+.factory-ws-bars span:nth-child(2), .factory-mo-bar:nth-child(2) { animation-delay: 60ms; }
+.factory-ws-bars span:nth-child(3), .factory-mo-bar:nth-child(3) { animation-delay: 120ms; }
+.factory-ws-bars span:nth-child(4), .factory-mo-bar:nth-child(4) { animation-delay: 180ms; }
+/* Rings and donuts draw their value with an inline conic gradient, so they turn in rather than sweep */
+.factory-ring { animation: fx-spin-in 900ms var(--fx-ease-out) 120ms backwards; }
+/* Inside a section that has not scrolled into view yet, they wait */
+.fx-reveal:not(.is-in) :is(.fx-progress > span, .factory-ov2-bar-fill, .factory-cp-bar > span, .factory-cp-lang-bar > span, .factory-ws-bars span, .factory-mo-bar, .factory-ring) { animation-play-state: paused; }
+
+/* Images fade in as they load */
+.factory-page img { animation: fx-fade 500ms ease-out backwards; }
+
+/* Sign-in: the text comes in line by line, the illustration slides in, its three steps rise one after another and
+   then float gently; the sign-in card rises */
+.factory-login-kicker, .factory-login-intro h1, .factory-login-lead, .factory-login-points > li, .factory-login-benefits > li, .factory-login-strip > * {
+    animation: fx-rise 600ms var(--fx-ease-out) backwards;
+}
+.factory-login-intro h1 { animation-delay: 80ms; }
+.factory-login-lead { animation-delay: 160ms; }
+.factory-login-points > li:nth-child(1) { animation-delay: 240ms; }
+.factory-login-points > li:nth-child(2) { animation-delay: 300ms; }
+.factory-login-points > li:nth-child(3) { animation-delay: 360ms; }
+.factory-login-points > li:nth-child(4) { animation-delay: 420ms; }
+.factory-login-benefits > li:nth-child(1), .factory-login-strip > :nth-child(1) { animation-delay: 480ms; }
+.factory-login-benefits > li:nth-child(2), .factory-login-strip > :nth-child(2) { animation-delay: 540ms; }
+.factory-login-benefits > li:nth-child(3), .factory-login-strip > :nth-child(3) { animation-delay: 600ms; }
+.factory-login-benefits > li:nth-child(4), .factory-login-strip > :nth-child(4) { animation-delay: 660ms; }
+.factory-login-art { animation: fx-art-in 800ms var(--fx-ease-out) 200ms backwards; }
+.factory-login-step { animation: fx-rise 600ms var(--fx-ease-out) backwards, fx-float 6s ease-in-out infinite; }
+.factory-login-step:nth-of-type(1) { animation-delay: 500ms, 1.4s; }
+.factory-login-step:nth-of-type(2) { animation-delay: 620ms, 2.4s; }
+.factory-login-step:nth-of-type(3) { animation-delay: 740ms, 3.4s; }
+.factory-login-card { animation: fx-rise 650ms var(--fx-ease-out) 120ms backwards; }
+@media print { .fx-reveal { opacity: 1; top: 0; } }
