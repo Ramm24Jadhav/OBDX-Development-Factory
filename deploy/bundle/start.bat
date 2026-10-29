@@ -36,9 +36,20 @@ if /i not "%~1"=="/background" start "" /b powershell -NoProfile -WindowStyle Hi
 
 :run
 rem A new version downloaded with "Update now" is installed here; the factory stops with exit code 75 to ask for it.
-if exist "update\obdx-factory.jar" (
-  move /y "update\obdx-factory.jar" obdx-factory.jar >nul && echo Installed the new version.
-)
+if exist "update\obdx-factory.jar" call :install
 "%JAVA%" -Xmx2g -Djava.net.useSystemProxies=true -jar obdx-factory.jar --spring.config.additional-location=file:./settings.properties
 if %errorlevel%==75 goto run
 pause
+exit /b
+
+:install
+rem Windows cannot replace obdx-factory.jar while another program has it open (another factory started from this
+rem folder, a backup or a virus scan), so this tries for half a minute.
+for /l %%i in (1,1,15) do (
+  move /y "update\obdx-factory.jar" obdx-factory.jar >nul 2>&1 && (echo Installed the new version.& exit /b 0)
+  ping -n 3 127.0.0.1 >nul
+)
+echo The new version could not be installed: another program is using obdx-factory.jar (is the factory running in
+echo another window?). Close that program, then start the factory again. Starting the current version for now.
+echo.
+exit /b 0

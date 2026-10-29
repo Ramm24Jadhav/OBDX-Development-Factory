@@ -39,8 +39,9 @@
               <span class="factory-brand-ai">Powered by AI</span>
             </span>
           </a>
-          <nav class="factory-nav">
-            <ul>
+          <nav class="factory-nav" aria-label="Main menu">
+            <h2 class="factory-nav-heading" id="navWorkHeading">Workflow</h2>
+            <ul aria-labelledby="navWorkHeading">
               <oj-bind-for-each data="[[workNav]]">
                 <template>
                   <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
@@ -53,7 +54,13 @@
               </oj-bind-for-each>
             </ul>
 
-            <ul>
+            <div :class="[[setupGroupClass]]">
+            <button type="button" class="factory-nav-heading factory-nav-group-toggle" id="navSetupHeading" on-click="[[toggleSetup]]"
+                    aria-controls="navSetupList" :aria-expanded="[[setupShown() ? 'true' : 'false']]">
+              <span class="factory-nav-group-name">Setup</span>
+              <span class="factory-nav-group-chevron" aria-hidden="true"></span>
+            </button>
+            <ul id="navSetupList" aria-labelledby="navSetupHeading">
               <oj-bind-for-each data="[[setupNav]]">
                 <template>
                   <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
@@ -65,6 +72,7 @@
                 </template>
               </oj-bind-for-each>
             </ul>
+            </div>
           </nav>
           <section class="factory-nav-promo" aria-label="Build smarter with AI">
             <span class="factory-brand-mark factory-nav-promo-mark" aria-hidden="true"></span>

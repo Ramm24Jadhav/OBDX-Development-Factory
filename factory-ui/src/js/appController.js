@@ -98,6 +98,43 @@ define(['knockout', './services/session', './services/updates', './services/dash
       })));
       this.workNav = navGroup('work');
       this.setupNav = navGroup('setup');
+      // The Setup section folds away (remembered in this browser) and opens by itself on one of its pages.
+      const setupActive = ko.pureComputed(() => this.setupNav().some((item) => item.active()));
+      const storedSetup = (() => {
+        try { return window.localStorage.getItem('factory.navSetupOpen'); } catch (e) { return null; }
+      })();
+      this.setupOpen = ko.observable(storedSetup === null ? setupActive() : storedSetup === '1');
+      this.setupOpen.subscribe((value) => {
+        try { window.localStorage.setItem('factory.navSetupOpen', value ? '1' : '0'); } catch (e) { /* not kept */ }
+      });
+      setupActive.subscribe((value) => { if (value) { this.setupOpen(true); } });
+      this.setupShown = ko.pureComputed(() => this.setupOpen() || setupActive() || this.sidebarCollapsed());
+      this.toggleSetup = () => this.setupOpen(!this.setupShown());
+      this.setupGroupClass = ko.pureComputed(() => 'factory-nav-group' + (this.setupShown() ? ' is-open' : ''));
+
+      // No scrollbar on the menu: an edge fades while more items are hidden past it.
+      const navEdges = (nav) => {
+        nav.classList.toggle('factory-nav-more-up', nav.scrollTop > 2);
+        nav.classList.toggle('factory-nav-more-down', nav.scrollTop + nav.clientHeight < nav.scrollHeight - 2);
+      };
+      // The menu is drawn after sign-in, so this waits for it and attaches once.
+      this.watchNav = (tries) => {
+        const sideNav = document.querySelector('.factory-nav');
+        if (!sideNav) {
+          if ((tries || 0) < 40) { window.setTimeout(() => this.watchNav((tries || 0) + 1), 250); }
+          return;
+        }
+        if (sideNav.dataset.edges) { return; }
+        sideNav.dataset.edges = '1';
+        sideNav.addEventListener('scroll', () => navEdges(sideNav), { passive: true });
+        window.addEventListener('resize', () => navEdges(sideNav));
+        if (window.ResizeObserver) {
+          const watch = new window.ResizeObserver(() => navEdges(sideNav));
+          watch.observe(sideNav);
+          sideNav.querySelectorAll('ul').forEach((list) => watch.observe(list));
+        }
+        navEdges(sideNav);
+      };
       this.pageTitle = ko.pureComputed(() => {
         const route = navData.find((r) => r.path === this.selection.path());
         return route && route.detail ? route.detail.label : '';
@@ -187,6 +224,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
 
       // Sign-in: pages show only for a signed-in user, except the preview and customer review pages (embedded).
       this.signedIn = ko.pureComputed(() => session.user() !== null);
+      this.signedIn.subscribe((value) => { if (value) { this.watchNav(); } });
+      if (this.signedIn()) { this.watchNav(); }
       this.sessionChecked = session.checked;
       this.authConfig = session.config;
       this.loginUsername = ko.observable('');

@@ -143,6 +143,13 @@ public class UpdateService {
             boolean newer = isNewer(latest.build(), currentBuild());
             state = newer ? State.AVAILABLE : State.UP_TO_DATE;
             message = newer ? "Build " + latest.build() + " is available" : "This is the latest version";
+            // A downloaded jar still in the update folder was not installed at the restart: on Windows the start
+            // script cannot replace obdx-factory.jar while another program has it open.
+            if (newer && Files.exists(folder.resolve("obdx-factory.jar"))) {
+                message = "Build " + latest.build() + " was downloaded but not installed when the factory restarted: another "
+                        + "program was using obdx-factory.jar (for example a second factory started from the same folder). "
+                        + "Close it, then click Update now again.";
+            }
         } catch (IOException | RuntimeException e) {
             state = State.FAILED;
             message = "Could not check for updates at " + baseUrl + ": " + e.getMessage();

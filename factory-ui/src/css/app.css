@@ -56,6 +56,7 @@
     --fx-nav-bg: #0f172a;
     --fx-nav-bg-2: #1e1b4b;
     --fx-nav-text: #cbd5e1;
+    --fx-nav-muted: #8b97b8;
     --fx-nav-text-strong: #ffffff;
     --fx-nav-active: linear-gradient(90deg, #4f46e5, #6366f1);
     --fx-nav-hover: rgba(255, 255, 255, 0.07);
@@ -8238,8 +8239,6 @@ a.fx-btn--primary, a.fx-btn--primary:link, a.fx-btn--primary:visited, a.fx-btn--
     .factory-topbar-wslabel { display: none; }
     .factory-topbar-workspace .factory-topbar-select { padding-top: 0; }
 }
-/* The sidebar list scrolls on short screens with a thin dark scrollbar */
-.factory-nav { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
 
 /* Top bar workspace picker (fx-select) */
 .factory-topbar-workspace fx-select { flex: 1 1 auto; min-width: 0; }
@@ -8680,4 +8679,35 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 @media (min-width: 768px) and (max-width: 900px) {
     .factory-shell .factory-topbar-search { flex: 0 0 38px; width: 38px; padding: 0; justify-content: center; }
     .factory-topbar-search-text { display: none; }
+}
+
+/* Side menu: section labels, a folding Setup section, no scrollbar (an edge fades while items are hidden past it),
+   and tighter rows on short screens so the whole menu usually fits */
+.factory-nav { position: relative; padding: 2px 12px 6px; scrollbar-width: none; overscroll-behavior: contain; scroll-padding: 28px 0; }
+.factory-nav::-webkit-scrollbar { display: none; }
+.factory-nav.factory-nav-more-down { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent); }
+.factory-nav.factory-nav-more-up { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px); mask-image: linear-gradient(to bottom, transparent, #000 36px); }
+.factory-nav.factory-nav-more-up.factory-nav-more-down { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to bottom, transparent, #000 36px, #000 calc(100% - 44px), transparent); }
+.factory-shell .factory-nav-heading { display: flex; align-items: center; width: 100%; margin: 6px 0 4px; padding: 6px 12px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--fx-nav-muted); }
+.factory-nav-group { margin-top: 10px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.factory-nav-group-toggle { border: 0; border-radius: var(--fx-radius); background: none; font-family: inherit; text-align: left; cursor: pointer; }
+.factory-nav-group-toggle:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.factory-nav-group-toggle:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 1px; }
+.factory-nav-group-name { flex: 1 1 auto; }
+.factory-nav-group-chevron { width: 7px; height: 7px; margin-right: 3px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(-45deg); transition: transform var(--fx-duration); }
+.factory-nav-group.is-open .factory-nav-group-chevron { transform: rotate(45deg); margin-top: -3px; }
+.factory-nav-group:not(.is-open) > ul { display: none; }
+.factory-shell-collapsed .factory-nav-heading { visibility: visible; height: auto; margin: 6px 0 4px; padding: 0; justify-content: center; font-size: 0; }
+.factory-shell-collapsed .factory-nav-heading::before { content: ""; width: 18px; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.factory-shell-collapsed .factory-nav-group-toggle { pointer-events: none; }
+.factory-shell-collapsed .factory-nav-group-chevron, .factory-shell-collapsed .factory-nav-group-name { display: none; }
+.factory-shell-collapsed .factory-nav-group { border-top: 0; margin-top: 4px; }
+@media (max-height: 860px) {
+    .factory-shell .factory-nav-link { padding-top: 6px; padding-bottom: 6px; }
+    .factory-brand { padding-top: 14px; padding-bottom: 10px; }
+}
+@media (max-height: 700px) {
+    .factory-shell .factory-nav-link { padding-top: 5px; padding-bottom: 5px; font-size: 0.85rem; }
+    .factory-shell .factory-nav-heading { margin: 2px 0; padding-top: 4px; padding-bottom: 4px; }
+    .factory-nav-collapse { margin-top: 4px; margin-bottom: 8px; padding-top: 10px; padding-bottom: 6px; }
 }

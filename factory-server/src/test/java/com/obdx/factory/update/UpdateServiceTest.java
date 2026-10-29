@@ -94,6 +94,16 @@ class UpdateServiceTest {
     }
 
     @Test
+    void saysWhenADownloadedBuildWasNotInstalledAtTheRestart() throws Exception {
+        Files.write(folder.resolve("obdx-factory.jar"), JAR);
+
+        UpdateService.Status status = service("5").status(true);
+
+        assertThat(status.state()).as("Update now can try again").isEqualTo(UpdateService.State.AVAILABLE);
+        assertThat(status.message()).contains("downloaded but not installed").contains("Update now");
+    }
+
+    @Test
     void theLatestBuildAndDevelopmentBuildsAreNotReplaced() {
         assertThat(service("7").status(true).state()).isEqualTo(UpdateService.State.UP_TO_DATE);
         assertThat(service("dev").status(true).state()).isEqualTo(UpdateService.State.UP_TO_DATE);
