@@ -38,11 +38,18 @@
             <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
         </oj-bind-for-each>
       </div>
-      <span class="factory-ag-dates" title="Show runs started in this date range">
-        <span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>
-        <input type="date" id="runFrom" aria-label="Started from" on-change="[[fromChange]]">
-        <span>-</span>
-        <input type="date" id="runTo" aria-label="Started until" on-change="[[toChange]]">
+      <span class="factory-ag-range" on-keydown="[[dateKey]]">
+        <button type="button" class="factory-ag-rangebtn" id="runDateRange" title="Show runs started in this date range" aria-haspopup="dialog" :aria-expanded="[[dateOpen() ? 'true' : 'false']]" on-click="[[toggleDates]]">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
+          <span><oj-bind-text value="[[dateRangeText]]"></oj-bind-text></span></button>
+        <oj-bind-if test="[[dateOpen()]]">
+          <div class="factory-ag-rangepop" role="dialog" aria-label="Date range">
+            <label>From<input type="date" id="runFrom" :value="[[fromDate]]" on-change="[[fromChange]]"></label>
+            <label>To<input type="date" id="runTo" :value="[[toDate]]" on-change="[[toChange]]"></label>
+            <div class="factory-ag-rangeact"><button type="button" class="factory-link-sm" on-click="[[clearDates]]">Clear</button>
+              <button type="button" class="factory-ov2-btn factory-ag-rangedone" on-click="[[closeDates]]">Done</button></div>
+          </div>
+        </oj-bind-if>
       </span>
     </div>
     <div class="factory-filters factory-ag-filters">

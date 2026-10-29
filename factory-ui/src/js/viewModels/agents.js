@@ -190,6 +190,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.modelChange = ui.value(this.modelFilter);
       this.fromChange = ui.value(this.fromDate);
       this.toChange = ui.value(this.toDate);
+      // Date range button: shows the chosen range and opens the two date pickers in a small popup
+      this.dateOpen = ko.observable(false);
+      this.toggleDates = () => this.dateOpen(!this.dateOpen());
+      this.closeDates = () => this.dateOpen(false);
+      this.clearDates = () => { this.fromDate(''); this.toDate(''); };
+      const dayText = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      this.dateRangeText = ko.pureComputed(() => (!this.fromDate() && !this.toDate() ? 'All dates'
+        : (this.fromDate() ? dayText(this.fromDate()) : 'Any date') + ' – ' + (this.toDate() ? dayText(this.toDate()) : 'Today')));
+      this.dateKey = (event) => { if (event.key === 'Escape') { this.dateOpen(false); } return true; };
       this.modelOptions = ko.pureComputed(() => Array.from(new Set(this.runs().map((r) => r.model))).sort());
       this.searchInput = ui.value(this.search);
       this.statusChange = ui.value(this.statusFilter);

@@ -64,7 +64,7 @@
         <template>
           <section class="factory-card factory-pf-card">
             <h2><span class="factory-cp-h"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span>
-              <span class="factory-pf2-cardtools"><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
+              <span class="factory-pf2-cardtools"><span :class="[[$current.data.status.css + ' factory-pf2-status']]"><span :class="[[$current.data.status.icon]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
                 <button type="button" class="factory-pf2-chev" :aria-label="[['All facts of ' + $current.data.title]]" title="See every fact of this section" on-click="[[$current.data.open]]">
                   <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button></span></h2>
             <table class="factory-pf-table">
@@ -81,14 +81,15 @@
               </tbody>
             </table>
             <oj-bind-if test="[[$current.data.sparse]]">
-              <p class="factory-pf2-sparse">Click a fact to confirm or correct it. Refresh discovery after importing more code to find the rest.</p>
+              <p class="factory-pf2-sparse">Click a fact to confirm or correct it.</p>
             </oj-bind-if>
             <div class="factory-pf-evidence factory-pf2-evidence">
               <strong><oj-bind-text value="[[$current.data.evidenceTitle]]"></oj-bind-text></strong>
               <div class="factory-pf2-evrow">
                 <oj-bind-for-each data="[[$current.data.evidence]]" as="ev">
-                  <template><span class="factory-pf-file" :title="[[ev.data.path]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><oj-bind-text value="[[ev.data.name]]"></oj-bind-text></span></template>
+                  <template><span class="factory-pf-file" :title="[[ev.data.path]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><span class="factory-pf2-evname"><oj-bind-text value="[[ev.data.name]]"></oj-bind-text></span></span></template>
                 </oj-bind-for-each>
+                <oj-bind-if test="[[$current.data.evidence.length === 0]]"><span class="factory-pf2-noev">No files found for this section yet.</span></oj-bind-if>
                 <oj-bind-if test="[[$current.data.more]]"><span class="factory-tag"><oj-bind-text value="[[$current.data.more]]"></oj-bind-text></span></oj-bind-if>
                 <button type="button" class="factory-pf2-chev factory-pf2-evchev" title="See the facts and their evidence files" :aria-label="[['Evidence of ' + $current.data.title]]" on-click="[[$current.data.open]]">
                   <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button>

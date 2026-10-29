@@ -332,7 +332,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.allModels = ko.pureComputed(() => {
         const rows = [];
         this.providers().forEach((p) => p.models().forEach((m) => rows.push({
-          id: m.id, provider: p.short, admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding' : 'Chat',
+          id: m.id, provider: p.short, logo: p.logo + ' factory-md-logo-sm', admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding' : 'Chat',
           caps: m.embedding ? 'Code search' : 'Chat, Code' + (/coder|code/i.test(m.id) ? ' (tuned)' : ''),
           menuAction: (event) => {
             const action = event.detail.selectedValue;
@@ -370,17 +370,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Capabilities per provider, from the models each one lists
       this.matrixProviders = this.providers;
       this.matrix = ko.pureComputed(() => {
-        const cell = (p, on) => (!p.state() && !p.models().length ? { text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
-          : on ? { text: '✓', css: 'factory-md-cell factory-md-cell-yes', title: 'Yes' } : { text: '✕', css: 'factory-md-cell factory-md-cell-no', title: 'Not in its model list' });
+        // A test returns true (yes), false (no) or 'limited'
+        const cell = (p, on) => (!p.state() && !p.models().length ? { kind: 'unknown', text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
+          : on === 'limited' ? { kind: 'limited', text: 'Limited', css: 'factory-md-cell factory-md-cell-limited', title: 'Chat models only; no code-tuned model listed' }
+          : on ? { kind: 'yes', text: 'Yes', css: 'factory-md-cell factory-md-cell-yes', title: 'Yes' } : { kind: 'no', text: 'No', css: 'factory-md-cell factory-md-cell-no', title: 'Not in its model list' });
+        const coder = (p) => p.chatModels().some((m) => /coder|code/i.test(m));
         const rows = [
           { label: 'Chat / Completion', test: (p) => p.chatModels().length > 0 },
-          { label: 'Code Generation', test: (p) => p.chatModels().length > 0 },
+          { label: 'Code Generation', test: (p) => (coder(p) ? true : p.chatModels().length > 0 ? 'limited' : false) },
           { label: 'Code-tuned model', test: (p) => p.chatModels().some((m) => /coder|code/i.test(m)) },
           { label: 'Embeddings', test: (p) => p.models().some((m) => m.embedding) }
         ];
         return rows.map((r) => ({ label: r.label, cells: this.providers().map((p) => cell(p, r.test(p))) }))
-          .concat([{ label: 'Models listed', cells: this.providers().map((p) => (!p.state() && !p.models().length ? { text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
-            : { text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
+          .concat([{ label: 'Models listed', cells: this.providers().map((p) => (!p.state() && !p.models().length ? { kind: 'unknown', text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
+            : { kind: 'count', text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
       });
       this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
         name: p.short, pill: p.state() === 'ok' ? ui.pill('Healthy', 'green') : ui.pill('Unavailable', 'red'),

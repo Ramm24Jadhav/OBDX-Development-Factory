@@ -260,10 +260,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .finally(() => this.loading(false));
       };
 
+      // The preview page keeps scrolling but shows no scrollbar, like a phone
+      const hideScrollbar = () => {
+        const frame = document.getElementById('reviewFrame');
+        const doc = frame && frame.contentDocument;
+        if (doc && doc.head && !doc.getElementById('factoryNoScrollbar')) {
+          const style = doc.createElement('style');
+          style.id = 'factoryNoScrollbar';
+          style.textContent = 'html, body { scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }';
+          doc.head.appendChild(style);
+        }
+      };
       let subscription = null;
       this.connected = () => {
         accUtils.announce('External Review page loaded.');
         document.title = 'External Review';
+        const frame = document.getElementById('reviewFrame');
+        if (frame) {
+          frame.addEventListener('load', hideScrollbar);
+          hideScrollbar();
+        }
         preview.attach('reviewFrame');
         subscription = this.workspaceId.subscribe(load);
         workspaceSelection.load().then(load).catch(showError);

@@ -259,22 +259,25 @@
             <oj-bind-if test="[[paletteNote()]]">
               <p class="factory-dz-note"><oj-bind-text value="[[paletteNote]]"></oj-bind-text></p>
             </oj-bind-if>
+            <div class="factory-dz-treehead">
+              <button type="button" id="paletteTreeToggle" class="factory-dz-treehead-btn" :aria-expanded="[[paletteOpen() ? 'true' : 'false']]" on-click="[[togglePalette]]">
+                <span>OBDX Components</span>
+                <span :class="[[paletteOpen() ? 'factory-dz-chev factory-dz-chev-up' : 'factory-dz-chev']]" aria-hidden="true"></span></button>
+            </div>
+            <div class="factory-dz-tree" :style.display="[[paletteOpen() ? 'block' : 'none']]">
             <oj-bind-for-each data="[[paletteGroups]]" as="g">
               <template>
-                <details class="factory-palette-group" :open="[[g.data.open]]">
-                  <summary><oj-bind-text value="[[g.data.title]]"></oj-bind-text>
+                <details class="factory-palette-group factory-dz-treegroup" :open="[[g.data.open]]">
+                  <summary><span class="factory-dz-chev factory-dz-chev-sm" aria-hidden="true"></span><oj-bind-text value="[[g.data.title]]"></oj-bind-text>
                     <span class="factory-dz-count"><oj-bind-text value="[[g.data.items.length]]"></oj-bind-text></span></summary>
-                  <div :class="[[g.data.tiles ? 'factory-palette-tiles' : 'factory-palette-list']]">
+                  <div class="factory-dz-treelist">
                     <oj-bind-for-each data="[[g.data.items]]" as="p">
                       <template>
-                        <div :class="[[(p.data.tile ? 'factory-palette-tile' : 'factory-palette-item') + (p.data.page.editable() ? '' : ' factory-dz-palette-off')]]" :draggable="[[p.data.page.editable() ? 'true' : 'false']]" :aria-disabled="[[p.data.page.editable() ? 'false' : 'true']]" tabindex="0" role="button"
-                             :data-pid="[[p.data.id]]" :title="[[p.data.title]]"
+                        <div :class="[['factory-palette-item factory-dz-treeitem' + (p.data.page.editable() ? '' : ' factory-dz-palette-off')]]" :draggable="[[p.data.page.editable() && p.data.drag ? 'true' : 'false']]" :aria-disabled="[[p.data.page.editable() ? 'false' : 'true']]" tabindex="0" role="button"
+                             :data-pid="[[p.data.id]]" :title="[[p.data.title + (p.data.detail ? ' · ' + p.data.detail : '')]]"
                              on-dragstart="[[p.data.page.paletteDragStart]]" on-dragend="[[p.data.page.dragEnd]]" on-click="[[p.data.addAction]]">
                           <span class="factory-palette-icon" aria-hidden="true"><oj-bind-text value="[[p.data.icon]]"></oj-bind-text></span>
                           <span class="factory-palette-label"><oj-bind-text value="[[p.data.label]]"></oj-bind-text></span>
-                          <oj-bind-if test="[[!p.data.tile && p.data.detail]]">
-                            <span class="factory-palette-detail"><oj-bind-text value="[[p.data.detail]]"></oj-bind-text></span>
-                          </oj-bind-if>
                           <oj-bind-if test="[[p.data.custom]]">
                             <button type="button" class="factory-palette-delete" title="Delete this custom component" aria-label="Delete this custom component"
                                     on-click="[[p.data.deleteAction]]">✕</button>
@@ -286,6 +289,7 @@
                 </details>
               </template>
             </oj-bind-for-each>
+            </div>
           </div>
         </oj-bind-if>
         <oj-bind-if test="[[leftTab() === 'layers']]">

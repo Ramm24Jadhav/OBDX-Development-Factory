@@ -144,7 +144,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             pill: state === 'connected' ? ui.pill('Connected', 'green') : state === 'configured' ? ui.pill('Configured', 'blue') : state === 'issue' ? ui.pill('Connection Issue', 'amber') : ui.pill('Inactive', 'grey'),
             last: t ? ui.when(t.at) : (i.lastAt ? ui.when(i.lastAt) : '–'), testText: t ? t.text : '',
             descText: keep(i.description), wsShort: i.workspace === 'All workspaces' ? 'All' : keep(i.workspace),
-            targetShort: middle(i.target, 40), hasTarget: !!i.target && i.target !== 'Not set' && i.target !== 'Not set up',
+            targetShort: middle(i.target, 40), targetWrap: middle(i.target, 70), hasTarget: !!i.target && i.target !== 'Not set' && i.target !== 'Not set up',
             history: (t ? [{ text: 'Test on this page: ' + (t.ok ? 'connected' : 'failed') + '. ' + t.text, when: ui.when(t.at), dot: 'factory-in-hdot factory-dot-' + (t.ok ? 'green' : 'red') }] : []).concat(i.history)
           });
         });
@@ -309,6 +309,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return rows;
       });
       this.editEnvironment = () => navigate('models');
+      this.viewEnvironment = () => navigate('about');
 
       // Add Integration
       this.addDefault = () => navigate('code');

@@ -32,7 +32,7 @@
         <span class="factory-ws-search factory-rv-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search files and folders..." aria-label="Search files" on-input="[[treeFilterInput]]"></span>
         <ul>
           <li :class="[[rootCss]]" on-click="[[pickRoot]]"><span class="factory-nav-icon factory-ico-caret factory-kn-chev" aria-hidden="true"></span><span class="factory-nav-icon factory-ico-bank factory-kn-folder" aria-hidden="true"></span>
-            <strong><oj-bind-text value="[[rootName]]"></oj-bind-text></strong><span class="factory-kn-rooturl" :title="[[workspace() ? workspace().svnUrl : '']]"><oj-bind-text value="[[rootUrl() ? '(' + rootUrl() + ')' : '']]"></oj-bind-text></span></li>
+            <strong><oj-bind-text value="[[rootName]]"></oj-bind-text></strong><span class="factory-kn-rooturl" :title="[[workspace() ? workspace().svnUrl : '']]" :aria-label="[[workspace() ? workspace().svnUrl : '']]"><oj-bind-text value="[[rootUrl() ? '(' + rootUrl() + ')' : '']]"></oj-bind-text></span></li>
           <oj-bind-for-each data="[[tree]]">
             <template><li :class="[[$current.data.css]]" :style="[[$current.data.style]]" on-click="[[$current.data.toggle]]">
               <span :class="[[$current.data.caretCss]]" aria-hidden="true"></span><span :class="[[$current.data.folderCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></li></template>
@@ -133,7 +133,7 @@
         </section>
         <section class="factory-card factory-kn-insights">
           <div class="factory-kn-cardhead"><h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Code Insights</span></h2>
-            <button type="button" id="generateButton" class="factory-kn-generate" on-click="[[generate]]" :disabled="[[!file() || ai.busy()]]"><oj-bind-text value="[[ai.busy() ? 'Generating...' : 'Generate']]"></oj-bind-text></button></div>
+            <span class="factory-kn-split"><button type="button" id="generateButton" class="factory-kn-generate" on-click="[[generate]]" :disabled="[[!file() || ai.busy()]]"><oj-bind-text value="[[ai.busy() ? 'Generating...' : 'Generate']]"></oj-bind-text></button><button type="button" id="generateMenuButton" class="factory-kn-generate factory-kn-gencaret" on-click="[[toggleGenMenu]]" :disabled="[[!file() || ai.busy()]]" aria-label="Choose what to generate"><span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button></span></div>
           <div class="factory-subtabs factory-kn-subtabs">
             <oj-bind-for-each data="[[insightTabs]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
           </div>
@@ -241,6 +241,11 @@
       <button type="button" role="menuitem" on-click="[[copyPath]]">Copy path</button>
       <button type="button" role="menuitem" on-click="[[menuSearch]]">Search usages</button>
       <button type="button" role="menuitem" on-click="[[menuExplain]]">Explain this file</button>
+    </div>
+  </oj-bind-if>
+  <oj-bind-if test="[[genMenuOpen()]]">
+    <div class="factory-kn-menu" role="menu" :style="[[genMenuStyle]]">
+      <oj-bind-for-each data="[[genOptions]]" as="opt"><template><button type="button" role="menuitem" on-click="[[opt.data.run]]"><oj-bind-text value="[[opt.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
     </div>
   </oj-bind-if>
 </div>

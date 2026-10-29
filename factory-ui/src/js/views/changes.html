@@ -182,7 +182,7 @@
                 </oj-bind-if>
                 <oj-bind-if test="[[fileMode() !== 'edit' && canManage() && detail().status !== 'CLOSED']]">
                   <div class="factory-ai-input factory-ch-fileactions">
-                    <oj-input-text class="factory-grow" id="regenerateNote" label-hint="What to change" label-edge="none" placeholder="Write this file again, with a note for the model (optional)" value="{{regenerateNote}}"></oj-input-text>
+                    <oj-input-text class="factory-grow" id="regenerateNote" label-hint="What to change" label-edge="none" placeholder="Note for the model (optional)" value="{{regenerateNote}}"></oj-input-text>
                     <oj-button id="regenerateButton" on-oj-action="[[regenerate]]">Write again</oj-button>
                     <oj-button id="editFileButton" chroming="outlined" on-oj-action="[[startEdit]]" disabled="[[!file().generated]]">Edit</oj-button>
                   </div>

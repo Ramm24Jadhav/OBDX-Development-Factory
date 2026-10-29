@@ -12,7 +12,7 @@
   <div class="factory-kpis">
     <oj-bind-for-each data="[[kpis]]">
       <template><button type="button" class="factory-kpi" on-click="[[$current.data.open]]"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
-        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span :class="[[$current.data.valueCss]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
           <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></button></template>
     </oj-bind-for-each>
   </div>
@@ -61,7 +61,7 @@
             <oj-bind-for-each data="[[userPager.rows]]">
               <template><tr :class="[[$current.data.rowCss]]">
                 <td class="factory-ad-check"><input type="checkbox" :aria-label="[['Select ' + $current.data.username]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></td>
-                <td><span class="factory-name-cell"><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
+                <td><span class="factory-name-cell"><span class="factory-avatar-sm" :style="[[$current.data.avatarStyle]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
                   <span><oj-bind-text value="[[$current.data.displayName]]"></oj-bind-text><span class="factory-ov-subtle factory-ad-uname"><oj-bind-text value="[[$current.data.username]]"></oj-bind-text></span></span></span></td>
                 <td><oj-bind-text value="[[$current.data.email || '–']]"></oj-bind-text></td>
                 <td><span :class="[[$current.data.rolePill.css]]"><oj-bind-text value="[[$current.data.rolePill.text]]"></oj-bind-text></span></td>
@@ -104,7 +104,7 @@
           <table class="factory-ov2-table" id="memberTable">
             <thead><tr><th>Member</th><th>Role</th><th>Can</th><th>Actions</th></tr></thead>
             <tbody><oj-bind-for-each data="[[members]]"><template><tr>
-              <td><span class="factory-name-cell"><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></td>
+              <td><span class="factory-name-cell"><span class="factory-avatar-sm" :style="[[$current.data.avatarStyle]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></td>
               <td><span :class="[[$current.data.rolePill.css]]"><oj-bind-text value="[[$current.data.rolePill.text]]"></oj-bind-text></span></td>
               <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.can]]"></oj-bind-text></td>
               <td><button type="button" class="factory-link-sm" on-click="[[$current.data.removeAction]]">Remove</button></td></tr></template></oj-bind-for-each></tbody>
@@ -124,7 +124,7 @@
       <p class="factory-card-sub">Users added in advance who have not signed in. Share the factory address with them.</p>
       <ul class="factory-list">
         <oj-bind-for-each data="[[invited]]">
-          <template><li><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
+          <template><li><span class="factory-avatar-sm" :style="[[$current.data.avatarStyle]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
             <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.displayName]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.username + ' · added ' + $current.data.createdAt.slice(0, 10)]]"></oj-bind-text></span></span>
             <span :class="[[$current.data.rolePill.css]]"><oj-bind-text value="[[$current.data.rolePill.text]]"></oj-bind-text></span></li></template>
         </oj-bind-for-each>

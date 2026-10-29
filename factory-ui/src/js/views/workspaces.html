@@ -329,7 +329,9 @@
 
   <div class="factory-kpis" id="registryKpis">
     <oj-bind-for-each data="[[regKpis]]">
-      <template><button type="button" class="factory-kpi" on-click="[[$current.data.open]]"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+      <template><button type="button" class="factory-kpi" on-click="[[$current.data.open]]"><span :class="[[$current.data.iconCss]]">
+        <oj-bind-if test="[[$current.data.db]]"><svg class="factory-ws3-dbicon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-13"/><path d="M4.5 12c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8"/></svg></oj-bind-if>
+        <oj-bind-if test="[[!$current.data.db]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></oj-bind-if></span>
         <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
           <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></button></template>
     </oj-bind-for-each>
@@ -445,7 +447,7 @@
                 <dt>Workspace Code</dt><dd><oj-bind-text value="[[selectedWs().code]]"></oj-bind-text></dd>
                 <dt>Description</dt><dd><oj-bind-text value="[[selectedWs().description]]"></oj-bind-text></dd>
                 <dt>Environment</dt><dd><span class="factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></dd>
-                <dt>Repository URL</dt><dd><span class="factory-ws3-copyrow"><span class="factory-ws3-ellipsis factory-mono" :title="[[selectedWs().svnUrl]]"><oj-bind-text value="[[selectedWs().shortUrl]]"></oj-bind-text></span>
+                <dt>Repository URL</dt><dd><span class="factory-ws3-copyrow"><span class="factory-ws3-urlwrap factory-mono" :title="[[selectedWs().svnUrl]]"><oj-bind-text value="[[selectedWs().svnUrl]]"></oj-bind-text></span>
                   <button type="button" class="factory-ws3-iconbtn" title="Copy the repository URL" aria-label="Copy the repository URL" on-click="[[copyUrl]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></dd>
                 <dt>Created On</dt><dd><oj-bind-text value="[[selectedWs().created]]"></oj-bind-text></dd>
                 <dt>Last Indexed</dt><dd><oj-bind-text value="[[selectedWs().lastIndexed]]"></oj-bind-text></dd>

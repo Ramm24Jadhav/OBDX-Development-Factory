@@ -131,6 +131,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ];
       });
 
+      const copyText = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text || '').catch(() => null); } };
+      this.copyMessage = () => copyText(this.failure() ? this.failure().message : '');
       // Failures: build errors and failed quick checks, each with its file
       const findFile = (path) => (path ? files().find((x) => x.path === path || x.path.endsWith('/' + path) || path.endsWith(x.path)) : null);
       const layerOf = (path) => (findFile(path) ? findFile(path).layer : '');
@@ -152,7 +154,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }));
         return list.map((x, i) => Object.assign(x, {
           index: i, status: x.kind === 'Warning' ? ui.pill('WARNING', 'amber') : ui.pill('FAILED', 'red'),
-          pick: () => this.selectedFailure(i)
+          name: x.file ? x.file.split('/').pop() : '–',
+          pick: () => this.selectedFailure(i),
+          stop: (event) => event.stopPropagation(),
+          action: (event) => {
+            const value = event.detail.selectedValue;
+            this.selectedFailure(i);
+            if (value === 'code') {
+              this.detailTab('code');
+            } else if (value === 'copy') {
+              copyText(x.message);
+            } else if (value === 'fix') {
+              this.fixWithAi();
+            } else if (value === 'ask') {
+              this.aiTab('chat');
+              this.ai.ask('Explain this failure and how to fix it: ' + x.message);
+            } else {
+              this.detailTab('message');
+            }
+          }
         }));
       });
       this.failureTabs = ui.tabs(this.failureFilter, [

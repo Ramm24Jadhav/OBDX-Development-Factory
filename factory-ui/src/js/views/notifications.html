@@ -47,7 +47,7 @@
             <td><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span></td>
             <td><strong class="factory-no-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></td>
             <td><span class="factory-cp-link factory-no-rel" :title="[[$current.data.related]]"><oj-bind-text value="[[$current.data.related]]"></oj-bind-text></span><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[$current.data.relatedSub]]"></oj-bind-text></span></td>
-            <td class="factory-no-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td>
+            <td class="factory-no-when" :title="[[$current.data.when]]"><span><oj-bind-text value="[[$current.data.whenDate]]"></oj-bind-text></span><span><oj-bind-text value="[[$current.data.whenTime]]"></oj-bind-text></span></td>
             <td><span :class="[[$current.data.priorityPill.css]]"><oj-bind-text value="[[$current.data.priorityPill.text]]"></oj-bind-text></span></td>
             <td><span :class="[[$current.data.statusPill.css]]"><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span></td>
             <td class="factory-no-more"><button type="button" class="factory-no-kebab" on-click="[[$current.data.menu]]" :aria-label="[['Actions for ' + $current.data.title]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button></td></tr></template></oj-bind-for-each></tbody>
@@ -55,8 +55,9 @@
         <oj-bind-if test="[[rows().length === 0]]"><p class="factory-ov-empty">No notifications.</p></oj-bind-if>
       </div>
       <div class="factory-pager"><span><oj-bind-text value="[[pager.text() + ' notifications']]"></oj-bind-text></span>
-        <span><button type="button" class="factory-ov2-btn" on-click="[[pager.prev]]">‹</button><oj-bind-text value="[[pager.page() + ' / ' + pager.pages()]]"></oj-bind-text>
-          <button type="button" class="factory-ov2-btn" on-click="[[pager.next]]">›</button></span></div>
+        <span class="factory-no-pages"><button type="button" class="factory-no-pgbtn" on-click="[[pager.prev]]" aria-label="Previous page">‹</button>
+          <oj-bind-for-each data="[[pageButtons]]" as="pg"><template><button type="button" :class="[[pg.data.css]]" on-click="[[pg.data.go]]" :aria-label="[['Page ' + pg.data.n]]"><oj-bind-text value="[[pg.data.n]]"></oj-bind-text></button></template></oj-bind-for-each>
+          <button type="button" class="factory-no-pgbtn" on-click="[[pager.next]]" aria-label="Next page">›</button></span></div>
     </section>
 
     <section class="factory-card factory-ag-detail factory-no-detail">

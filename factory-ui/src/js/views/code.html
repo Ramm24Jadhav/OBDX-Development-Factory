@@ -64,17 +64,25 @@
             <label><input type="radio" name="codeSourceKind" value="url" :checked="[[sourceKind() === 'url']]" :disabled="[[!canManage()]]" on-change="[[pickKind]]">SVN server (URL)</label>
           </div>
           <oj-bind-if test="[[sourceKind() === 'url']]">
-            <oj-text-area id="svnUrl" class="factory-cp2-url" label-hint="SVN repository URL" label-edge="inside" rows="2" resize-behavior="none" value="{{svnUrl}}" required readonly="[[!canManage()]]"
-                          help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-text-area>
+            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
+              <oj-input-text id="svnUrl" class="factory-cp2-url" label-hint="SVN repository URL" value="{{svnUrl}}" :title="[[svnUrl]]" required readonly="[[!canManage()]]"
+                             help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
+            </oj-form-layout>
           </oj-bind-if>
           <oj-bind-if test="[[sourceKind() === 'folder']]">
-            <oj-text-area id="svnFolder" class="factory-cp2-url" label-hint="Folder (a local SVN repository or checkout)" label-edge="inside" rows="2" resize-behavior="none" value="{{folderPath}}" required readonly="[[!canManage()]]"
-                          help-hints.definition="For example C:\svn\obdx\trunk. It is saved as a file:/// SVN URL."></oj-text-area>
+            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
+              <oj-input-text id="svnFolder" class="factory-cp2-url" label-hint="Folder (a local SVN repository or checkout)" value="{{folderPath}}" :title="[[folderPath]]" required readonly="[[!canManage()]]"
+                             help-hints.definition="For example C:\svn\obdx\trunk. It is saved as a file:/// SVN URL."></oj-input-text>
+            </oj-form-layout>
           </oj-bind-if>
           <div class="factory-cp2-pair">
-            <oj-input-text id="svnUsername" autocomplete="off" label-hint="Username" label-edge="inside" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
-            <oj-input-password id="svnPassword" autocomplete="new-password" label-hint="Password" label-edge="inside" value="{{svnPassword}}" mask-icon="visible"
-                               placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
+            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
+              <oj-input-text id="svnUsername" autocomplete="off" label-hint="Username" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
+            </oj-form-layout>
+            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
+              <oj-input-password id="svnPassword" autocomplete="new-password" label-hint="Password" value="{{svnPassword}}" mask-icon="visible"
+                                 placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
+            </oj-form-layout>
           </div>
           <div class="factory-cp-actions">
             <oj-button id="testSvnButton" chroming="callToAction" on-oj-action="[[testSvn]]" disabled="[[busy() || !canManage()]]">

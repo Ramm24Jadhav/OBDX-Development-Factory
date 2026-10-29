@@ -24,8 +24,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     // Palette groups in the order of the OBDX UX Extensibility Toolkit
     const GROUPS = ['Forms', 'Controls', 'Custom components', 'OBDX framework components', 'Business components', 'JET composite components',
       'Partials', 'JET components in this code', 'Other components used in this code'];
-    // Groups shown as icon tiles; the others are lists, because their names are long
-    const TILE_GROUPS = ['Forms', 'Controls'];
+    // The built-in Forms and Controls items, listed under the design's group names by their type
+    const BUILT_IN_GROUPS = [
+      { title: 'Form Controls', types: ['text', 'textarea', 'number', 'amount', 'date', 'select', 'account', 'radio', 'checkbox', 'switch'] },
+      { title: 'Data Display', types: ['display', 'table'] },
+      { title: 'Actions', types: ['action'] }
+    ];
     const ICONS = {
       text: 'Aa', textarea: '¶', number: '123', amount: '₹', date: '▦', select: '▾', account: '◧', radio: '◉',
       checkbox: '☑', switch: '◐', display: '≡', table: '▤', action: '▭', component: '⧉'
@@ -447,32 +451,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       })).concat(codeItems()));
       this.paletteNote = ko.observable('');
       this.paletteFilter = ko.observable('');
+      const paletteRow = (item) => ({
+        id: item.id,
+        page: self,
+        drag: true,
+        label: SHORT_LABELS[item.label] || item.label,
+        icon: ICONS[item.type] || '⧉',
+        detail: [item.tag ? '<' + item.tag + '>' : '', item.module || '', item.uses ? 'used ' + item.uses + '×' : '']
+          .filter(Boolean).join(' · '),
+        title: item.description || item.label,
+        custom: !!item.customId,
+        deleteAction: (event) => {
+          if (event && event.stopPropagation) {
+            event.stopPropagation();
+          }
+          deleteCustom(item);
+        },
+        addAction: () => addFromPalette(item, null)
+      });
+      // The whole "OBDX Components" tree folds away
+      this.paletteOpen = ko.observable(true);
+      this.togglePalette = () => this.paletteOpen(!this.paletteOpen());
       this.paletteGroups = ko.pureComputed(() => {
         const filter = (this.paletteFilter() || '').trim().toLowerCase();
         const matches = (item) => !filter || (item.label + ' ' + (item.tag || '') + ' ' + (item.module || '')).toLowerCase().includes(filter);
-        return GROUPS.map((group) => ({
-          title: group,
-          tiles: TILE_GROUPS.includes(group),
-          open: group !== 'Other components used in this code' || !!filter,
-          items: paletteItems().filter((item) => item.group === group && matches(item)).map((item) => ({
-            id: item.id,
-            page: self,
-            tile: TILE_GROUPS.includes(group),
-            label: SHORT_LABELS[item.label] || item.label,
-            icon: ICONS[item.type] || '⧉',
-            detail: [item.tag ? '<' + item.tag + '>' : '', item.module || '', item.uses ? 'used ' + item.uses + '×' : '']
-              .filter(Boolean).join(' · '),
-            title: item.description || item.label,
-            custom: !!item.customId,
-            deleteAction: (event) => {
-              if (event && event.stopPropagation) {
-                event.stopPropagation();
-              }
-              deleteCustom(item);
-            },
-            addAction: () => addFromPalette(item, null)
-          }))
-        })).filter((group) => group.items.length > 0);
+        const builtIn = paletteItems().filter((item) => (item.group === 'Forms' || item.group === 'Controls') && matches(item));
+        // Layout: a section of the screen; it is added with a click, not dragged into another section
+        const layout = !filter || 'section layout'.includes(filter) ? [{
+          id: 'layout:section', page: self, drag: false, label: 'Section', icon: '▭', detail: '', custom: false,
+          title: 'A section of the screen with its own title and columns. Click to add one.',
+          deleteAction: () => {},
+          addAction: () => {
+            if (this.editable()) {
+              this.addSection();
+            }
+          }
+        }] : [];
+        return [{ title: 'Layout', open: true, items: layout }]
+          .concat(BUILT_IN_GROUPS.map((g) => ({
+            title: g.title, open: true, items: builtIn.filter((item) => g.types.includes(item.type)).map(paletteRow)
+          })))
+          .concat(GROUPS.filter((group) => group !== 'Forms' && group !== 'Controls').map((group) => ({
+            title: group,
+            open: group !== 'Other components used in this code' || !!filter,
+            items: paletteItems().filter((item) => item.group === group && matches(item)).map(paletteRow)
+          })))
+          .filter((group) => group.items.length > 0);
       });
       const loadCustom = (id) => api.get('workspaces/' + id + '/custom-components').then((list) => customItems(list));
       const loadPalette = (id) => Promise.all([
@@ -681,8 +705,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.aiScope = ko.pureComputed(() => (this.selectedKind() === 'screen' ? 'Whole screen' : this.selectedTitle()));
       this.aiScoped = ko.pureComputed(() => this.selectedKind() !== 'screen');
       this.aiPlaceholder = ko.pureComputed(() => (this.aiScoped()
-        ? 'Ask AI to change ' + this.selectedTitle() + ' only, for example: make it optional and add help text'
-        : 'Ask AI to change the screen, for example: move remarks to the end and make it optional'));
+        ? 'Ask AI to change ' + this.selectedTitle() + ' only…'
+        : 'Ask AI to change this screen, e.g. make remarks optional'));
       this.clearAiScope = () => this.selectedId(null);
       this.selectedTypeLabel = ko.pureComputed(() => (this.selectedComponent() ? typeLabel(this.selectedComponent()) : ''));
       this.selectedHasOptions = ko.pureComputed(() => {

@@ -62,14 +62,15 @@
               <thead><tr><th><input type="checkbox" id="packSelectAll" aria-label="Select all version packs" :checked="[[allSelected]]" on-click="[[toggleAll]]"></th>
                 <th>Version</th><th>Status</th><th>Release Date</th><th>Bank Customization</th><th>Rules / Recipes</th><th>Java</th><th>Compatibility</th><th>Actions</th></tr></thead>
               <tbody><oj-bind-for-each data="[[rows]]"><template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-                <td on-click="[[$current.data.stop]]"><input type="checkbox" :checked="[[$current.data.isChecked]]" :aria-label="[['Select ' + $current.data.name]]" on-click="[[$current.data.toggle]]"></td>
+                <td on-click="[[$current.data.stop]]"><oj-bind-if test="[[$current.data.selected()]]"><input type="radio" name="packCurrent" checked :aria-label="[[$current.data.name + ' is shown in Version Details']]" on-click="[[$current.data.pick]]"></oj-bind-if>
+                  <oj-bind-if test="[[!$current.data.selected()]]"><input type="checkbox" :checked="[[$current.data.isChecked]]" :aria-label="[['Select ' + $current.data.name]]" on-click="[[$current.data.toggle]]"></oj-bind-if></td>
                 <td class="factory-cp-nowrap"><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong></td>
                 <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
-                <td class="factory-ov-subtle factory-cp-nowrap" title="Version packs ship with the factory; no release date is recorded for them">Not recorded</td>
+                <td class="factory-cp-nowrap" title="Version packs ship with the factory; no release date is recorded for them"><span class="factory-pk-muted">Not recorded</span></td>
                 <td class="factory-pk-ell" :title="[[$current.data.custom]]"><oj-bind-text value="[[$current.data.custom]]"></oj-bind-text></td>
                 <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.rules + ' / ' + $current.data.recipes]]"></oj-bind-text></td>
                 <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.java]]"></oj-bind-text></td>
-                <td><span class="factory-ov-pill factory-ov-pill-green" :title="[[$current.data.compatTitle]]"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></span></td>
+                <td><span class="factory-ov-pill factory-ov-pill-blue" :title="[[$current.data.compatTitle]]"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></span></td>
                 <td on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
                   <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.name]]"></oj-bind-text>
                   <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
@@ -90,9 +91,9 @@
             <div class="factory-ov2-table-wrap">
               <table class="factory-ov2-table factory-pk-std2"><thead><tr><th>Standard ID</th><th>Category</th><th>Description</th><th>Version</th><th>Status</th><th></th></tr></thead>
                 <tbody><oj-bind-for-each data="[[topStandards]]"><template><tr>
-                  <td class="factory-cp-link factory-mono factory-pk-ell" :title="[[$current.data.id]]"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
+                  <td class="factory-cp-link factory-mono factory-pk-stdid" :title="[[$current.data.id]]"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
                   <td class="factory-pk-ell"><oj-bind-text value="[[$current.data.area]]"></oj-bind-text></td>
-                  <td class="factory-pk-ell" :title="[[$current.data.title + ': ' + $current.data.message]]"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
+                  <td class="factory-pk-stddesc" :title="[[$current.data.title + ': ' + $current.data.message]]"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
                   <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
                   <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
                   <td><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
@@ -172,7 +173,7 @@
               <dt>Release Date</dt><dd class="factory-ov-subtle" title="Version packs ship with the factory; no release date is recorded">Not recorded</dd>
               <dt>Status</dt><dd><span :class="[[details().pillCss]]"><oj-bind-text value="[[details().statusText]]"></oj-bind-text></span></dd>
               <dt>Java level</dt><dd><oj-bind-text value="[[details().javaFull]]"></oj-bind-text></dd>
-              <dt class="factory-pk-grey">Description</dt><dd class="factory-pk-grey"><oj-bind-text value="[[details().description]]"></oj-bind-text></dd>
+              <dt>Description</dt><dd><oj-bind-text value="[[details().description]]"></oj-bind-text></dd>
               <dt>Key Features</dt><dd><ul class="factory-pk-features"><oj-bind-for-each data="[[details().features]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul></dd>
               <dt>Supported Environments</dt><dd><span class="factory-pk-envs" title="Workspaces on this version. The factory has no DEV, SIT or UAT environments.">
                 <oj-bind-for-each data="[[details().using]]"><template><span class="factory-ov-pill factory-ov-pill-blue"><oj-bind-text value="[[$current.data]]"></oj-bind-text></span></template></oj-bind-for-each>

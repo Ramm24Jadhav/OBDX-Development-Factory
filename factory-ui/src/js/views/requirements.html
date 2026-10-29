@@ -95,7 +95,7 @@
           <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
             <input type="search" id="reqSearch" placeholder="Search requirements..." aria-label="Search requirements" on-input="[[searchInput]]"></span>
           <button type="button" id="reqFilterButton" :class="[[filterButtonCss]]" title="More filters" aria-label="More filters" :aria-pressed="[[moreFilters() ? 'true' : 'false']]" on-click="[[toggleFilters]]">
-            <span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span></button>
+            <svg class="factory-rq-funnel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 4.5h17l-6.5 8v6l-4 2v-8z"/></svg></button>
         </div>
         <div class="factory-rq-selects">
           <select class="factory-ws-select" id="reqStatusFilter" aria-label="Status" on-change="[[statusChange]]">

@@ -37,7 +37,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       + '[label-hint]{display:block;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;color:#94a3b8}'
       + '[label-hint]::before{content:attr(label-hint);display:block;font-size:10px;color:#475569}'
       + 'oj-button{display:inline-block;margin:6px 6px 0 0;padding:6px 14px;border-radius:4px;background:#2563eb;color:#fff}'
-      + 'oj-bind-text::before{content:attr(value)}oj-form-layout,oj-bind-if,oj-bind-for-each{display:block}h1,h2,h3{font-size:14px;margin:6px 0}';
+      + 'oj-bind-text::before{content:attr(value)}oj-form-layout,oj-bind-if,oj-bind-for-each{display:block}h1,h2,h3{font-size:14px;margin:6px 0}'
+      // Drawn as a sample screen that fills the preview: a top bar, the fields, the action button across the bottom
+      + 'html,body{height:100%}body{margin:0;background:#f8fafc;font-size:14px}.pv-frame{display:flex;flex-direction:column;box-sizing:border-box;height:100%;margin:0 auto;max-width:420px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#fff}'
+      + '.pv-bar{padding:12px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a}.pv-body{display:flex;flex-direction:column;flex:1;padding:12px 14px}.pv-body>div:last-child{margin-top:auto}'
+      + '.pv-body [label-hint]{margin:8px 0;padding:10px 12px;font-size:13px}.pv-body [label-hint]::before{font-size:11px;margin-bottom:4px}'
+      + '.pv-body oj-button{display:block;margin:12px 0 0;padding:11px 14px;border-radius:6px;text-align:center;font-weight:600}';
 
     function PromptsViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
@@ -192,15 +197,46 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ]);
       this.description = ko.pureComputed(() => {
         const x = this.selected();
-        return x ? x.guidance.split('\n').map((l) => l.replace(/^\s*-\s*/, '')).find((l) => l.trim()) || '' : '';
+        if (!x) {
+          return '';
+        }
+        // The first point of the guidance in full, with the lines that continue it
+        const lines = x.guidance.split('\n');
+        const start = lines.findIndex((l) => l.trim());
+        const out = [];
+        for (let i = start; i >= 0 && i < lines.length; i++) {
+          if (i > start && (!lines[i].trim() || /^\s*-\s/.test(lines[i]))) {
+            break;
+          }
+          out.push(lines[i].trim().replace(/^-\s*/, ''));
+        }
+        return out.join(' ');
       });
+      // Show the full prompt in the detail panel and bring it into view
+      this.showFullPrompt = () => {
+        this.detailTab('prompt');
+        const el = document.querySelector('.factory-pr-detail');
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      };
+      this.showAllVariables = () => {
+        this.detailTab('variables');
+        const el = document.querySelector('.factory-pr-detail');
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      };
       this.openProfile = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'profile' }));
 
       // Prompt Template card
       this.promptTab = ko.observable('system');
       this.promptTabs = ui.tabs(this.promptTab, [{ value: 'system', label: 'System Prompt' }, { value: 'user', label: 'User Prompt' }]);
       this.promptText = ko.pureComputed(() => (this.promptTab() === 'user' ? USER_PROMPT : (this.selected() ? this.selected().guidance : '')));
-      this.promptLines = ko.pureComputed(() => this.promptText().split('\n').map((t, i) => ({ n: i + 1, text: t })));
+      // The card is a fixed panel: the first lines, one per prompt line; the rest are in the detail panel
+      const PROMPT_ROWS = 12;
+      const VAR_ROWS = 6;
+      this.allPromptLines = ko.pureComputed(() => this.promptText().split('\n'));
+      this.promptLines = ko.pureComputed(() => this.allPromptLines().slice(0, PROMPT_ROWS).map((t, i) => ({ n: i + 1, text: t })));
+      this.morePromptLines = ko.pureComputed(() => Math.max(0, this.allPromptLines().length - PROMPT_ROWS));
+      this.varRows = ko.pureComputed(() => (this.selected() ? this.selected().variables.slice(0, VAR_ROWS) : []));
+      this.moreVars = ko.pureComputed(() => (this.selected() ? Math.max(0, this.selected().variables.length - VAR_ROWS) : 0));
       this.copied = ko.observable('');
       const copy = (text) => (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard')))
         .then(() => { this.copied('Copied'); window.setTimeout(() => this.copied(''), 1500); }).catch(() => window.prompt('Copy the prompt:', text));
@@ -219,7 +255,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const t = this.htmlTemplate();
         // A binding such as [[nls.screen.labels.<<fieldName>>]] shows as its last part
         const body = t ? t.content.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\[\[([^\]]*)\]\]/g, (m, e) => e.split('.').pop().replace(/[<>'"]/g, '')) : '';
-        return t ? '<!doctype html><html><head><style>' + PREVIEW_CSS + '</style></head><body>' + body + '</body></html>' : '';
+        // The screen title from the template's first comment, as the top bar of a sample screen
+        const head = t ? /<!--\s*([^:]*?)\s*:/.exec(t.content) : null;
+        const title = head ? head[1].replace(/[<>'"&]/g, '') : 'Screen';
+        return t ? '<!doctype html><html><head><style>' + PREVIEW_CSS + '</style></head><body><div class="pv-frame"><div class="pv-bar">&#8249;&nbsp; '
+          + title + '</div><div class="pv-body">' + body + '</div></div></body></html>' : '';
       });
 
       this.useTemplate = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));

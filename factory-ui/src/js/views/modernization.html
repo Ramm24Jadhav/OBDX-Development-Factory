@@ -35,7 +35,8 @@
         <oj-bind-for-each data="[[kpis]]">
           <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
             <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-              <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+              <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span>
+            <oj-bind-if test="[[$current.data.glyph]]"><span class="factory-mo-kpi-glyph" aria-hidden="true"><span class="factory-nav-icon factory-ico-chart"></span></span></oj-bind-if></div></template>
         </oj-bind-for-each>
         <div class="factory-kpi" title="Share of screens of small or medium complexity">
           <span class="factory-ring factory-mo-ring" :style="[[readinessStyle]]"><span><oj-bind-text value="[[readiness() + '%']]"></oj-bind-text></span></span>

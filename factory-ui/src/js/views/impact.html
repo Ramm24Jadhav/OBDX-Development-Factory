@@ -116,14 +116,14 @@
               <select class="factory-ws-select" aria-label="Impact" id="impactLevel" on-change="[[impactChange]]">
                 <option value="">All Impact</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
               <button type="button" class="factory-ov2-btn factory-im-iconbtn factory-im-filterbtn" id="clearFiltersButton" on-click="[[clearFilters]]" title="Clear the filters" aria-label="Clear the filters">
-                <span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg></button>
             </div>
             <div class="factory-ov2-table-wrap">
               <table class="factory-ov2-table factory-im-ftable" id="affectedFiles">
                 <thead><tr><th>File Path</th><th class="factory-im-c2">Type</th><th class="factory-im-c3">Module</th><th class="factory-im-c4" title="Estimated from the change type and whether the file is shared">Impact</th><th class="factory-im-c5">Change Type</th></tr></thead>
                 <tbody>
                   <oj-bind-for-each data="[[filePager.rows]]">
-                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-cp-link factory-mono factory-im-path" :title="[[$current.data.path]]"><bdi><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></bdi></td>
+                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-cp-link factory-mono factory-im-path" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.pathWrap]]"></oj-bind-text></td>
                       <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td class="factory-im-mod" :title="[[$current.data.module]]"><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
                       <td><span :class="[[$current.data.impact.css]]"><oj-bind-text value="[[$current.data.impact.text]]"></oj-bind-text></span></td>
                       <td><span :class="[[$current.data.change.css]]"><oj-bind-text value="[[$current.data.change.text]]"></oj-bind-text></span></td></tr></template>

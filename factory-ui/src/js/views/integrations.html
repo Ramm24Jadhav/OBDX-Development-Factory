@@ -89,9 +89,12 @@
         <div class="factory-in-cardhead">
           <div><h2>Environment Configuration</h2>
             <p class="factory-card-sub">Settings this factory runs with. It is one environment: DEV, SIT and UAT profiles are not part of the factory.</p></div>
-          <button type="button" id="editEnvironment" class="factory-in-primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]"
-                  :title="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
-            <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button>
+          <div class="factory-in-envactions">
+            <button type="button" class="factory-link-sm" id="envViewAll" on-click="[[viewEnvironment]]" title="See the factory's build, version and setup on the About page">View All →</button>
+            <button type="button" id="editEnvironment" class="factory-in-primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]"
+                    :title="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
+              <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button>
+          </div>
         </div>
         <div class="factory-subtabs factory-in-envtabs">
           <button type="button" class="factory-tab factory-tab-on">This factory</button>
@@ -135,7 +138,7 @@
               <dt>Name</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
               <dt>Type</dt><dd><oj-bind-text value="[[selected().typeLabel]]"></oj-bind-text></dd>
               <dt>Description</dt><dd><oj-bind-text value="[[selected().description]]"></oj-bind-text></dd>
-              <dt>Server URL</dt><dd class="factory-mono factory-in-url" :title="[[selected().target]]"><oj-bind-text value="[[selected().targetShort]]"></oj-bind-text></dd>
+              <dt>Server URL</dt><dd class="factory-mono factory-in-url factory-in-urlwrap" :title="[[selected().target]]"><oj-bind-text value="[[selected().targetWrap]]"></oj-bind-text></dd>
               <dt><oj-bind-text value="[[selected().envLabel]]"></oj-bind-text></dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
               <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
               <dt>Last Connected</dt><dd><oj-bind-text value="[[selected().last]]"></oj-bind-text></dd>

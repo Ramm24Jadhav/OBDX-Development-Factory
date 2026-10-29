@@ -76,7 +76,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           { label: 'Modules Scanned', value: s.modules, sub: s.screens + ' screens', tone: 'blue', icon: 'cube', css: 'factory-kpi-sub' },
           { label: 'Deprecated Usage', value: this.findings().length, sub: critical() + ' critical', tone: 'red', icon: 'alert', css: 'factory-kpi-sub factory-bad' },
           { label: 'Large Screens', value: s.complexity.L, sub: 'need the most rework', tone: 'amber', icon: 'monitor', css: 'factory-kpi-sub factory-warn' },
-          { label: 'Migration Effort', value: this.phases().filter((p) => p.screens).length, sub: 'phases (estimate)', tone: 'violet', icon: 'list', css: 'factory-kpi-sub' }
+          { label: 'Migration Effort', value: this.phases().filter((p) => p.screens).length, sub: 'phases (estimate)', tone: 'violet', icon: 'list', css: 'factory-kpi-sub', glyph: true }
         ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
       });
 
@@ -184,34 +184,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           { name: 'Roles', detail: s.roles + ' found', color: '#0891b2' },
           { name: 'User flows', detail: s.flows + ' found', color: '#64748b' }
         ]);
-        const W = 380;
-        const H = 284;
+        const W = 316;
+        const H = 312;
         const cx = W / 2;
         const cy = H / 2;
         const parts = [];
         const nodes = [];
         sats.forEach((n, i) => {
           const a = (2 * Math.PI * i) / sats.length - Math.PI / 2;
-          const x = cx + 128 * Math.cos(a);
-          const y = cy + 96 * Math.sin(a);
-          const ex = cx + 46 * Math.cos(a);
-          const ey = cy + 46 * Math.sin(a);
-          parts.push('<line x1="' + ex.toFixed(1) + '" y1="' + ey.toFixed(1) + '" x2="' + (x - 12 * Math.cos(a)).toFixed(1) + '" y2="' + (y - 12 * Math.sin(a)).toFixed(1)
-            + '" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#h)"/>');
-          const anchor = 'middle';
-          const tx = Math.min(W - 52, Math.max(52, x));
-          const ty = Math.sin(a) < -0.2 ? y - 27 : y + 23;
-          nodes.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="10" fill="#fff" stroke="' + n.color + '" stroke-width="3"/>'
-            + '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4" fill="' + n.color + '"/>'
-            + '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="' + anchor + '" font-size="12" font-weight="600" fill="#0f172a">' + esc(n.name.length > 16 ? n.name.slice(0, 15) + '…' : n.name) + '</text>'
-            + '<text x="' + tx.toFixed(1) + '" y="' + (ty + 13).toFixed(1) + '" text-anchor="' + anchor + '" font-size="11" fill="#64748b">' + esc(n.detail) + '</text>');
+          const x = cx + 104 * Math.cos(a);
+          const y = cy + 100 * Math.sin(a);
+          const ex = cx + 52 * Math.cos(a);
+          const ey = cy + 52 * Math.sin(a);
+          parts.push('<line x1="' + ex.toFixed(1) + '" y1="' + ey.toFixed(1) + '" x2="' + (x - 22 * Math.cos(a)).toFixed(1) + '" y2="' + (y - 22 * Math.sin(a)).toFixed(1)
+            + '" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#h)"/>');
+          const tx = Math.min(W - 56, Math.max(56, x));
+          const ty = Math.sin(a) < -0.2 ? y - 40 : y + 38;
+          const px = x.toFixed(1);
+          const py = y.toFixed(1);
+          nodes.push('<circle cx="' + px + '" cy="' + py + '" r="21" fill="' + n.color + '" fill-opacity="0.16"/>'
+            + '<circle cx="' + px + '" cy="' + py + '" r="15" fill="' + n.color + '"/>'
+            + '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="none" stroke="#fff" stroke-width="2.2"/>'
+            + '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="middle" font-size="14.5" font-weight="600" fill="#0f172a">' + esc(n.name.length > 17 ? n.name.slice(0, 16) + '…' : n.name) + '</text>'
+            + '<text x="' + tx.toFixed(1) + '" y="' + (ty + 16).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="600" fill="' + n.color + '">' + esc(n.detail) + '</text>');
         });
         const title = this.workspace() ? this.workspace().name : 'Workspace';
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" font-family="Segoe UI, Arial, sans-serif">'
-          + '<defs><marker id="h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>'
-          + parts.join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="50" fill="#dbe7fe"/><circle cx="' + cx + '" cy="' + cy + '" r="42" fill="#2563eb"/>'
-          + '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">' + esc(title.length > 14 ? title.slice(0, 13) + '…' : title) + '</text>'
-          + '<text x="' + cx + '" y="' + (cy + 13) + '" text-anchor="middle" font-size="10" fill="#dbeafe">' + s.screens + ' screens</text>'
+          + '<defs><marker id="h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>'
+          + parts.join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="54" fill="#dbe7fe"/><circle cx="' + cx + '" cy="' + cy + '" r="46" fill="#2563eb"/>'
+          + '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">' + esc(title.length > 14 ? title.slice(0, 13) + '…' : title) + '</text>'
+          + '<text x="' + cx + '" y="' + (cy + 15) + '" text-anchor="middle" font-size="11" fill="#dbeafe">' + s.screens + ' screens</text>'
           + nodes.join('') + '</svg>';
         return { src: 'data:image/svg+xml,' + encodeURIComponent(svg), alt: title + ': ' + sats.map((n) => n.name + ' ' + n.detail).join(', ') };
       });

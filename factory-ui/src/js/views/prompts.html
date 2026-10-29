@@ -146,19 +146,21 @@
         <div class="factory-pr-codewrap">
           <button type="button" class="factory-pr-copy" id="copyPromptButton" on-click="[[copyPrompt]]"><oj-bind-text value="[[copied() || 'Copy']]"></oj-bind-text></button>
           <div class="factory-code factory-pr-lines">
-            <oj-bind-for-each data="[[promptLines]]"><template><div class="factory-pr-line"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></div></template></oj-bind-for-each>
+            <oj-bind-for-each data="[[promptLines]]"><template><div class="factory-pr-line" :title="[[$current.data.text]]"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></div></template></oj-bind-for-each>
           </div>
         </div>
+        <oj-bind-if test="[[morePromptLines() > 0]]"><button type="button" class="factory-link-sm factory-pr-more" on-click="[[showFullPrompt]]"><oj-bind-text value="[['+ ' + morePromptLines() + ' more lines: show the full prompt']]"></oj-bind-text></button></oj-bind-if>
       </section>
       <section class="factory-card">
         <h2>Template Variables</h2>
         <p class="factory-card-sub">Input variables used in this template</p>
         <div class="factory-ov2-table-wrap factory-pr-varwrap">
           <table class="factory-ov2-table factory-pr-vars"><thead><tr><th>Variable Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[selected().variables]]"><template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td>
+            <tbody><oj-bind-for-each data="[[varRows]]"><template><tr><td class="factory-mono" :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td>
               <td><span class="factory-ad-yes" title="Required"></span></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
           <oj-bind-if test="[[selected().variables.length === 0]]"><p class="factory-ov-empty">This prompt has no template variables.</p></oj-bind-if>
         </div>
+        <oj-bind-if test="[[moreVars() > 0]]"><button type="button" class="factory-link-sm factory-pr-more" on-click="[[showAllVariables]]"><oj-bind-text value="[['+ ' + moreVars() + ' more variables: show all']]"></oj-bind-text></button></oj-bind-if>
       </section>
       <section class="factory-card">
         <h2>Example Output</h2>

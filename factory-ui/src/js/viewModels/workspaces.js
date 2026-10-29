@@ -390,7 +390,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const thisMonth = d.filter((e) => Date.now() - new Date(e.workspace.createdAt).getTime() < MONTH_MS).length;
         const repositories = new Set(d.map((e) => e.workspace.svnUrl).filter(Boolean)).size;
         const kpi = (label, value, sub, icon, tone, subCss, status) => ({
-          label: label, value: value, sub: sub, iconCss: 'factory-kpi-icon factory-ov2-icon-' + tone, iconClass: 'factory-nav-icon factory-ico-' + icon,
+          label: label, value: value, sub: sub, iconCss: 'factory-kpi-icon factory-ov2-icon-' + tone, iconClass: 'factory-nav-icon factory-ico-' + icon, db: icon === 'database',
           css: 'factory-kpi-sub' + (subCss ? ' factory-' + subCss : ''),
           open: () => { this.regTab('workspaces'); this.regStatus(status || ''); }
         });
@@ -399,7 +399,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           kpi('Active', n('ready'), (d.length ? Math.round(100 * n('ready') / d.length) : 0) + '% of total', 'check', 'green', '', 'ready'),
           kpi('Indexing', n('importing'), 'In progress', 'clock', 'amber', '', 'importing'),
           kpi('Issues', n('failed'), 'Needs attention', 'alert', 'red', n('failed') ? 'bad' : '', 'failed'),
-          kpi('Total Repositories', repositories, 'Across all workspaces', 'cube', 'violet', '')
+          kpi('Total Repositories', repositories, 'Across all workspaces', 'database', 'violet', '')
         ];
       });
 

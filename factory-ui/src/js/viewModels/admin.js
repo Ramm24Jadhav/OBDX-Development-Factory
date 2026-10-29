@@ -97,11 +97,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         ['userSearch', 'roleFilter', 'statusFilter', 'workspaceFilter'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
         this.search(''); this.roleFilter(''); this.statusFilter(''); this.workspaceFilter('');
       };
+      // A steady avatar colour per person, picked from the name
+      const AVATAR_COLORS = ['#1e40af', '#7c3aed', '#0f766e', '#c2410c', '#be185d', '#15803d', '#0369a1', '#a16207', '#4338ca', '#b91c1c'];
+      const avatarStyle = (name) => {
+        let h = 0;
+        String(name || '').split('').forEach((c) => { h = (h * 31 + c.charCodeAt(0)) % 997; });
+        return { background: AVATAR_COLORS[h % AVATAR_COLORS.length] };
+      };
       this.users = ko.pureComputed(() => rawUsers().map((u) => {
         const role = roleOf(u);
         const list = memberships()[u.id] || [];
         return Object.assign({}, u, {
-          initials: ui.initials(u.displayName || u.username), role: role, rolePill: ROLE_PILL[role] || ROLE_PILL.NONE,
+          initials: ui.initials(u.displayName || u.username), avatarStyle: avatarStyle(u.username), role: role, rolePill: ROLE_PILL[role] || ROLE_PILL.NONE,
           workspaceText: u.admin ? 'All (' + workspaces().length + ')' : list.length === 1 ? '1 workspace' : list.length + ' workspaces',
           workspaceIds: list.map((m) => m.workspace),
           status: u.enabled ? ui.pill('Active', 'green') : ui.pill('Inactive', 'red'),
@@ -156,8 +163,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           { label: 'Active Users', value: active, sub: (all.length ? Math.round(100 * active / all.length) : 0) + '% of total', css: 'factory-kpi-sub', tone: 'blue', icon: 'user' },
           { label: 'Roles', value: 4, sub: '3 workspace roles', css: 'factory-kpi-sub', tone: 'violet', icon: 'shield' },
           { label: 'Workspaces', value: workspaces().length, sub: Object.keys(memberships()).length + ' users with access', css: 'factory-kpi-sub', tone: 'green', icon: 'folder' },
-          { label: 'Not Signed In Yet', value: this.invited().length, sub: 'View users →', css: 'factory-kpi-sub factory-link', tone: 'amber', icon: 'clock', open: () => this.tab('invitations') }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, open: k.open || (() => null) }));
+          { label: 'Not Signed In Yet', value: this.invited().length, sub: 'View users →', css: 'factory-kpi-sub factory-link', tone: 'amber', icon: 'clock', valueCss: 'factory-kpi-value factory-ad-orange', open: () => this.tab('invitations') }
+        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, valueCss: k.valueCss || 'factory-kpi-value', open: k.open || (() => null) }));
       });
       this.tabs = ui.tabs(this.tab, [
         { value: 'users', label: 'Users', icon: 'user' }, { value: 'roles', label: 'Roles & Permissions', icon: 'shield' },
@@ -230,7 +237,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.memberWorkspaceId = ko.observable(null);
       const rawMembers = ko.observableArray([]);
       this.members = ko.pureComputed(() => rawMembers().map((m) => ({
-        label: m.displayName + ' (' + m.username + ')', initials: ui.initials(m.displayName || m.username),
+        label: m.displayName + ' (' + m.username + ')', initials: ui.initials(m.displayName || m.username), avatarStyle: avatarStyle(m.username),
         rolePill: ROLE_PILL[m.role], can: PERMISSIONS[m.role],
         removeAction: () => api.del('workspaces/' + this.memberWorkspaceId() + '/members/' + m.userId).then((list) => { rawMembers(list); loadAllMembers(); }).catch(showError)
       })));

@@ -291,7 +291,8 @@
     margin: 12px 0;
 }
 
-.factory-row {
+/* Clickable list rows (the designer's lists); other .factory-row elements are the page layout grid */
+.factory-row:has(> .factory-row-label) {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -300,7 +301,7 @@
     cursor: pointer;
 }
 
-.factory-row:hover {
+.factory-row:has(> .factory-row-label):hover {
     background: #f3f2f0;
 }
 
@@ -1832,7 +1833,7 @@
 .factory-login-kicker span { margin: 0 8px; }
 .factory-login-intro h1 { margin: 0 0 18px; max-width: 560px; font-size: 3.1rem; line-height: 1.08; font-weight: 800; color: #0b1430; letter-spacing: -0.02em; }
 .factory-login-lead { margin: 0 0 26px; max-width: 560px; font-size: 1.08rem; line-height: 1.55; color: #3b4a63; }
-.factory-login-hero { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+.factory-login-hero { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .factory-login-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
 .factory-login-points li { display: flex; gap: 18px; align-items: center; }
 .factory-login-points strong { display: block; margin-bottom: 3px; color: #0b1430; font-size: 1.05rem; }
@@ -1847,13 +1848,14 @@
     justify-content: center;
 }
 .factory-login-tile .factory-nav-icon { width: 28px; height: 28px; }
-.factory-login-tile-blue { background: #dfeafe; color: #2563eb; }
-.factory-login-tile-violet { background: #ece4fe; color: #7c3aed; }
-.factory-login-tile-green { background: #dcf5e6; color: #16a34a; }
-.factory-login-tile-amber { background: #fdf0d5; color: #d97706; }
+.factory-login-tile-blue { background: #d6e4fd; color: #1d4ed8; }
+.factory-login-tile-violet { background: #e6dafd; color: #6d28d9; }
+.factory-login-tile-green { background: #d1f2de; color: #15803d; }
+.factory-login-tile-amber { background: #fce9c4; color: #c2410c; }
+.factory-login-tile .factory-nav-icon { width: 30px; height: 30px; }
 
 /* The illustration: a code editor with the analyze, generate and validate flow in front of it */
-.factory-login-art { position: relative; min-height: 400px; }
+.factory-login-art { position: relative; min-height: 380px; margin-top: -70px; }
 .factory-login-editor {
     position: absolute;
     inset: 0 -20px 60px 10px;
@@ -1867,7 +1869,7 @@
 .factory-login-editor-dots span { width: 8px; height: 8px; border-radius: 50%; background: #3a4766; }
 .factory-login-editor-body { display: grid; grid-template-columns: 150px 1fr; height: 100%; }
 .factory-login-tree { list-style: none; margin: 0; padding: 4px 0 0 14px; font-size: 0.74rem; color: #c7d2e6; }
-.factory-login-tree li { padding: 4px 6px; border-radius: 4px; }
+.factory-login-tree li { padding: 4px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .factory-login-tree li::before { content: "▸ ■ "; color: #f2b84b; font-size: 0.62rem; }
 .factory-login-tree .factory-login-tree-root { font-weight: 700; color: #fff; }
 .factory-login-tree .factory-login-tree-root::before { content: ""; }
@@ -1877,7 +1879,9 @@
 .factory-login-code-tabs { display: flex; gap: 6px; margin: 0 -12px 8px; padding: 0 8px; border-bottom: 1px solid #243150; }
 .factory-login-code-tabs span { padding: 6px 10px; font-family: inherit; color: #9fb0cc; }
 .factory-login-code-tabs span:first-child { background: #1d2a47; color: #e2e8f0; border-radius: 6px 6px 0 0; }
+.factory-login-code { counter-reset: factory-line; }
 .factory-login-code p { margin: 0; }
+.factory-login-code p::before { counter-increment: factory-line; content: counter(factory-line); display: inline-block; width: 22px; margin-right: 10px; color: #56658a; text-align: right; }
 .factory-login-code i { font-style: normal; color: #c084fc; }
 .factory-login-code-line { height: 6px; margin: 10px 0 !important; border-radius: 3px; background: #26334f; width: 80%; }
 .factory-login-code-short { width: 50%; }
@@ -1898,7 +1902,7 @@
     box-shadow: 0 16px 34px rgba(30, 64, 175, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.35);
 }
-.factory-login-step .factory-nav-icon { width: 30px; height: 30px; padding: 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.25); }
+.factory-login-step .factory-nav-icon { width: 30px; height: 30px; flex-basis: 30px; background-color: #fff; }
 .factory-login-step-blue { background: linear-gradient(160deg, #4f8df7, #2a5fd8); }
 .factory-login-step-violet { background: linear-gradient(160deg, #8b6cf6, #6142d9); }
 .factory-login-step-green { background: linear-gradient(160deg, #34c38f, #0f9a6a); }
@@ -1919,8 +1923,9 @@
     padding: 0 30px;
     color: #3b4a63;
     font-size: 0.95rem;
-    border-left: 1px solid #dfe6f1;
-    max-width: 200px;
+    border-left: 1px solid #cdd6e4;
+    max-width: 170px;
+    line-height: 1.35;
 }
 .factory-login-benefits li:first-child { padding-left: 4px; border-left: 0; }
 .factory-login-benefits .factory-nav-icon { flex: 0 0 32px; width: 32px; height: 32px; color: #0f172a; }
@@ -3359,151 +3364,15 @@ body.factory-no-assistant .factory-ai { display: none; }
 .factory-pk-std th, .factory-pk-std td { padding-left: 6px; padding-right: 6px; }
 form.factory-topbar-search { margin: 0; }
 
-/* ---------- Shell as designed: a dark top bar across the page, the sidebar under it ---------- */
-
-.factory-shell {
-    display: grid;
-    grid-template-columns: var(--factory-sidebar-width) minmax(0, 1fr);
-    grid-template-rows: 64px minmax(0, 1fr);
-    grid-template-areas: "top top" "side main";
-    min-height: 100vh;
-    background: #0e1a31;
-}
-.factory-shell-collapsed { grid-template-columns: 68px minmax(0, 1fr); }
-.factory-shell > .factory-topbar {
-    grid-area: top;
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    height: 64px;
-    gap: 14px;
-    padding: 0 22px 0 16px;
-    background: #0e1a31;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    color: #e2e8f0;
-}
-.factory-shell > .factory-sidebar {
-    grid-area: side;
-    top: 64px;
-    height: calc(100vh - 64px);
-    width: auto;
-    background: #0e1a31;
-}
-.factory-shell > .factory-main {
-    grid-area: main;
-    background: var(--factory-page-bg, #f5f7fb);
-    border-top-left-radius: 18px;
-    min-height: calc(100vh - 64px);
-}
-.factory-topbar .factory-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0;
-    margin-right: 18px;
-    color: #fff;
-    text-decoration: none;
-    white-space: nowrap;
-}
-.factory-topbar .factory-brand:link, .factory-topbar .factory-brand:visited { color: #fff; }
-.factory-topbar .factory-brand-mark { width: 36px; height: 36px; flex-basis: 36px; border-radius: 8px; }
-.factory-topbar .factory-brand-name { font-size: 1.22rem; font-weight: 700; letter-spacing: -0.01em; }
-.factory-topbar-page { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.factory-shell .factory-topbar-workspace {
-    flex: 0 0 210px;
-    padding-left: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-}
-.factory-shell .factory-topbar-select {
-    --oj-text-field-bg-color: transparent;
-    --oj-text-field-bg-color-hover: transparent;
-    --oj-text-field-border-color: transparent;
-    --oj-text-field-border-color-hover: transparent;
-    --oj-text-field-text-color: #f1f5f9;
-    --oj-text-field-placeholder-color: #a9b8cf;
-    --oj-core-text-color-secondary: #cbd5e1;
-    --oj-core-text-color-primary: #f1f5f9;
-    --oj-text-field-height: 38px;
-    font-size: 0.88rem;
-}
-.factory-shell .factory-topbar-search {
-    max-width: 380px;
-    border-color: rgba(255, 255, 255, 0.16);
-    background: rgba(255, 255, 255, 0.06);
-    color: #a9b8cf;
-}
-.factory-shell .factory-topbar-search:focus-within { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
-.factory-shell .factory-topbar-search input { color: #f1f5f9; }
-.factory-shell .factory-topbar-search input::placeholder { color: #a9b8cf; }
-.factory-shell .factory-kbd { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.06); color: #cbd5e1; }
-.factory-shell .factory-topbar-icons { gap: 6px; padding: 0 6px; }
-.factory-shell .factory-topbar .factory-icon-button,
-.factory-shell .factory-topbar .factory-icon-button:link,
-.factory-shell .factory-topbar .factory-icon-button:visited { color: #e2e8f0; }
-.factory-shell .factory-topbar .factory-icon-button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-.factory-shell .factory-topbar .factory-user-name { color: #f1f5f9; }
-.factory-shell .factory-topbar .factory-user-caret { color: #cbd5e1; }
-.factory-shell .factory-topbar .factory-user-button { padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, 0.12); }
-.factory-shell .factory-menu-toggle { border-color: rgba(255, 255, 255, 0.2); background: transparent; color: #e2e8f0; }
+/* The bell links to the Notification Center */
 .factory-bell-all { display: block; padding: 10px 14px; border-top: 1px solid #eef1f5; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--factory-accent); text-decoration: none; }
 .factory-bell-all:link, .factory-bell-all:visited { color: var(--factory-accent); }
-
-/* Sidebar: the work pages, then the Administration group */
-.factory-shell .factory-nav { padding: 14px 12px; }
-.factory-shell .factory-nav-link { padding: 10px 14px; font-size: 0.95rem; }
-.factory-nav-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    margin: 14px 0 4px;
-    padding: 12px 14px 8px;
-    border: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: none;
-    color: var(--factory-nav-text);
-    font: inherit;
-    font-size: 0.95rem;
-    text-align: left;
-    cursor: pointer;
-}
-.factory-nav-group:hover { color: #fff; }
-.factory-nav-group:focus-visible { outline: 2px solid #60a5fa; outline-offset: -2px; border-radius: 8px; }
-.factory-nav-group .factory-nav-label { flex: 1 1 auto; }
-.factory-nav-group-chev {
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-    transition: transform 0.15s ease;
-}
-.factory-nav-group-open { transform: rotate(-135deg) translate(-2px, 0); }
-.factory-nav-sub .factory-nav-link { padding: 8px 14px; font-size: 0.9rem; }
-.factory-shell-collapsed .factory-nav-group { justify-content: center; padding-left: 0; padding-right: 0; }
-.factory-shell-collapsed .factory-nav-group-chev { display: none; }
 
 /* Headings: semibold, as in the designs */
 .factory-main h1 { font-weight: 650; letter-spacing: -0.015em; }
 .factory-main h2, .factory-main h3 { font-weight: 650; }
 .factory-main h4, .factory-main h5, .factory-main h6 { font-weight: 600; }
 
-@media (max-width: 1100px) {
-    .factory-topbar .factory-brand-name { display: none; }
-    .factory-topbar .factory-brand { margin-right: 4px; }
-}
-@media (max-width: 767px) {
-    .factory-shell, .factory-shell-collapsed { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "main"; }
-    .factory-shell > .factory-sidebar { position: fixed; top: 64px; left: 0; height: calc(100vh - 64px); width: var(--factory-sidebar-width); }
-    .factory-shell > .factory-main { border-top-left-radius: 0; }
-    .factory-shell .factory-topbar-workspace { flex-basis: 140px; }
-    .factory-shell .factory-topbar-search { display: none; }
-    .factory-shell .factory-topbar .factory-user-button { padding-left: 4px; border-left: 0; }
-}
-.factory-shell .factory-topbar-select .oj-searchselect-arrow, .factory-shell .factory-topbar-select .oj-searchselect-open-icon { color: #cbd5e1; }
-.factory-shell .factory-topbar-workspace { flex-basis: 232px; }
 
 /* ---------- Overview page, as designed ---------- */
 /* Cards in a row share the row height; the tables fill the card and a short note fills what the rows leave */
@@ -5540,3 +5409,507 @@ form.factory-topbar-search { margin: 0; }
 .factory-ab-phone { right: 21%; top: 44px; }
 #ab-sec-version { display: flex; flex-direction: column; }
 #ab-sec-version .factory-ab-rows { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+
+/* ---------- Overview page, refinements ---------- */
+/* Open Workspace: the theme has no chevron glyph, so draw one */
+#openWorkspaceButton .oj-button-icon.oj-end { width: 16px; min-width: 16px; align-items: center; justify-content: center; }
+#openWorkspaceButton .oj-button-icon.oj-end::before {
+  content: ""; display: block; width: 6px; height: 6px; margin-top: -3px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg);
+}
+
+/* ---------- Workspaces page, refinements ---------- */
+/* Total Repositories: database cylinder icon */
+.factory-ws3-dbicon { display: block; width: 22px; height: 22px; }
+/* detail panel: the repository URL on up to two lines */
+.factory-ws3-urlwrap { flex: 1 1 auto; min-width: 0; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.factory-ws3-copyrow { align-items: flex-start; }
+/* Manage Members at the right edge of the panel, on the Members row */
+.factory-ws3-ovgrid { position: relative; }
+.factory-ws3-ovgrid .factory-ws3-manage { position: absolute; right: 0; }
+/* Recent Activity: each line in full */
+.factory-ws3-activity li { align-items: start; }
+.factory-ws3-activity .factory-ws-activity-text { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; overflow-wrap: anywhere; }
+.factory-ws3-activity .factory-ws-when { white-space: nowrap; padding-top: 1px; }
+/* Project Stack: larger tiles with their full text, filling the card */
+.factory-ws3-bottom > .factory-ws-card { display: flex; flex-direction: column; }
+.factory-ws3-bottom .factory-ws3-stack:not(.factory-ws3-stack-sm) { flex: 1 1 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 10px; }
+.factory-ws3-bottom .factory-ws3-stack > div { padding: 10px 12px; gap: 10px; align-items: center; }
+.factory-ws3-bottom .factory-ws3-stack > div > .factory-nav-icon { width: 26px; height: 26px; flex: 0 0 26px; }
+.factory-ws3-bottom .factory-ws3-stack-text span { display: block; overflow: visible; text-overflow: clip; white-space: normal; -webkit-line-clamp: unset; overflow-wrap: anywhere; line-height: 1.3; }
+
+/* ---------- Code page, refinements ---------- */
+/* Repository Configuration: single-line fields with their labels above */
+.factory-cp-form { width: 100%; margin-bottom: 6px; }
+.factory-cp-form .oj-form-layout, .factory-cp-form .oj-form { width: 100%; }
+.factory-cp2-url input { text-overflow: ellipsis; font-size: 0.85rem; }
+
+/* Rules: names show in full (wrap when long) */
+.factory-cp2-rules th:nth-child(2) { width: 25%; }
+.factory-cp2-rules th:nth-child(6) { width: 9%; }
+.factory-cp2-name { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.3; }
+
+/* Enable toggles: rounded blue pills */
+.factory-cp2-rules oj-switch .oj-switch-track,
+.factory-cp-rules oj-switch .oj-switch-track { border-radius: 999px !important; width: 36px; height: 20px; }
+.factory-cp2-rules oj-switch .oj-switch-thumb,
+.factory-cp-rules oj-switch .oj-switch-thumb { border-radius: 50% !important; }
+.factory-cp2-rules oj-switch.oj-selected .oj-switch-track,
+.factory-cp-rules oj-switch.oj-selected .oj-switch-track { background-color: #2563eb !important; border-color: #2563eb !important; }
+.factory-cp2-rules oj-switch:not(.oj-selected) .oj-switch-track,
+.factory-cp-rules oj-switch:not(.oj-selected) .oj-switch-track { background-color: #cbd5e1 !important; border-color: #cbd5e1 !important; }
+.factory-cp-form { --oj-text-field-height: 36px; }
+.factory-cp-form .oj-label, .factory-cp-form .oj-label label { font-weight: 400; color: #334155; font-size: 0.85rem; }
+.factory-cp2-pair .factory-cp-form { margin-bottom: 0; }
+
+/* ---------- Profile page, refinements ---------- */
+/* Short cards: a one-line muted note instead of a large dashed filler; the evidence footer stays at the bottom */
+.factory-pf2-sparse { flex: 0 0 auto; display: block; margin: 8px 0 12px; padding: 0; border: 0; border-radius: 0; font-size: 0.78rem; color: #94a3b8; text-align: left; }
+.factory-pf-card .factory-pf2-evidence { margin-top: auto; }
+
+/* Evidence chips: long file names end with an ellipsis (full path in the title) */
+.factory-pf2-evrow .factory-pf-file { display: inline-flex; min-width: 0; }
+.factory-pf2-evname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Card status pills: leading check or warning icon */
+.factory-pf2-status { display: inline-flex; align-items: center; gap: 4px; }
+.factory-pf2-status .factory-nav-icon { width: 13px; height: 13px; flex: 0 0 13px; }
+/* Cards in a row line up at the top; short cards end after their facts instead of growing a blank middle */
+.factory-pf-cards { align-items: start; }
+.factory-pf-card .factory-pf2-evidence { margin-top: 0; }
+.factory-pf2-noev { flex: 1 1 auto; font-size: 0.78rem; color: #94a3b8; }
+.factory-pf2-evrow .factory-pf2-evchev { margin-left: auto; }
+
+/* ---------- Requirements page, refinements ---------- */
+/* The list panel runs the full height of the detail panel */
+.factory-rq-layout { align-items: stretch; }
+.factory-rq-listcard { position: static; align-self: stretch; }
+.factory-rq-layout > .factory-stack { min-width: 0; }
+
+/* Acceptance Criteria: the footnote follows the list */
+.factory-rq-note { margin: 0; padding-top: 10px; }
+
+/* Overview bullets (Decisions, Scope) wrap in full */
+.factory-rq-bullets li { display: block; -webkit-line-clamp: unset; overflow: visible; overflow-wrap: anywhere; }
+
+/* Filter button: a funnel drawn inline */
+.factory-rq-funnel { width: 16px; height: 16px; display: block; }
+
+/* ---------- Designer page, refinements ---------- */
+/* designer page: loaded after app.css */
+
+/* Title row on one line: a smaller subtitle and a tighter toolbar */
+.factory-dz-pagehead { align-items: flex-start; margin-bottom: 10px; }
+.factory-dz-pagehead p { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-dz-headactions { gap: 6px; }
+.factory-dz-mode { min-width: 54px; padding: 0 10px; }
+.factory-dz-size { width: 32px; }
+.factory-dz-zoom { min-width: 0; width: 72px; padding: 0 4px 0 8px; }
+.factory-dz-hbtn { gap: 6px; padding: 0 11px; }
+.factory-dz-split-main { gap: 6px; padding: 0 11px; }
+
+/* The workspace fills the window: the palette runs the full height; canvas and inspector share the top row,
+   the rules and the AI Assistant the bottom row. The canvas scrolls inside. */
+.factory-dz { display: flex; flex-direction: column; height: calc(100vh - 166px); min-height: 640px; }
+.factory-dz > .factory-dz-message, .factory-dz > .factory-dz-drawer { flex: 0 0 auto; }
+.factory-dz-body { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr) 224px; }
+.factory-dz-body.factory-dz-nodetail { grid-template-rows: minmax(0, 1fr) !important; }
+.factory-dz-body .factory-dz-left, .factory-dz-body .factory-dz-right { overflow: hidden; }
+.factory-dz-body .factory-dz-canvas { overflow: hidden; }
+.factory-dz-body .factory-dz-stage { overflow: hidden; }
+.factory-dz-body .factory-dz-device { flex: 1 1 auto; min-height: 0; }
+.factory-dz-body .factory-dz-codeview { min-height: 0; }
+
+/* Palette: the "OBDX Components" tree */
+.factory-dz-treehead { margin: 10px 0 2px; }
+.factory-dz-treehead-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 6px 2px; border: 0; background: none;
+    font: inherit; font-size: 0.84rem; font-weight: 700; color: #0f172a; cursor: pointer; }
+.factory-dz-chev { display: inline-block; width: 7px; height: 7px; border-right: 1.6px solid #475569; border-bottom: 1.6px solid #475569; transform: rotate(45deg) translate(-2px, -2px); flex: 0 0 auto; }
+.factory-dz-chev-up { transform: rotate(-135deg) translate(-2px, -2px); }
+.factory-dz-chev-sm { width: 6px; height: 6px; margin: 0 8px 0 4px; transform: rotate(-45deg); transition: transform 0.15s ease; }
+.factory-dz-treegroup[open] > summary .factory-dz-chev-sm { transform: rotate(45deg) translate(-2px, -1px); }
+.factory-dz-treegroup { margin: 0; }
+.factory-dz-treegroup > summary { justify-content: flex-start; align-items: center; padding: 6px 2px 4px; font-size: 0.8rem; font-weight: 600; color: #0f172a; }
+.factory-dz-treegroup > summary::-webkit-details-marker { display: none; }
+.factory-dz-treegroup > summary .factory-dz-count { margin-left: auto; font-size: 0.72rem; }
+.factory-dz-treelist { display: flex; flex-direction: column; padding: 0 0 4px 18px; }
+.factory-dz-body .factory-dz-treeitem { display: flex; flex-direction: row; align-items: center; gap: 9px; margin: 0; padding: 4px 6px; border: 1px solid transparent;
+    border-radius: 6px; background: none; min-width: 0; }
+.factory-dz-body .factory-dz-treeitem:hover { border-color: transparent; background: #eef4ff; }
+.factory-dz-treeitem .factory-palette-icon { min-width: 18px; width: 18px; height: 18px; border: 1.4px solid #64748b; border-radius: 4px; background: #fff;
+    color: #475569; font-size: 9px; font-weight: 700; line-height: 1; flex: 0 0 18px; overflow: hidden; }
+.factory-dz-treeitem .factory-palette-label { font-size: 0.8rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; }
+.factory-dz-treeitem .factory-palette-delete { position: static; margin-left: auto; }
+.factory-dz-body .factory-dz-palette-off:hover { background: none; }
+#designPalette .factory-dz-btn-full { margin-top: 8px; }
+#designPalette > .factory-dz-hint { margin: 6px 0 0; font-size: 0.72rem; }
+
+/* AI Assistant send button: a white arrow on blue */
+.factory-dz-assist-send { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; background: #2563eb; }
+.factory-dz-assist-send:disabled { background: #7ea4f0; }
+.factory-dz-assist-send .factory-nav-icon { display: inline-block; color: #fff; background-color: #fff; }
+
+/* History: room for the version dot */
+.factory-dz-history .factory-dz-version { padding-left: 14px; }
+
+@media (max-width: 1250px) {
+    .factory-dz { height: auto; min-height: 0; }
+    .factory-dz-body { grid-template-rows: auto; }
+    .factory-dz-body .factory-dz-context, .factory-dz-body .factory-dz-assist { min-height: 224px; }
+    .factory-dz-pagehead p { white-space: normal; }
+}
+
+/* ---------- Changes page, refinements ---------- */
+/* Code editor: a narrower file tree so the code fits */
+.factory-ch-files { grid-template-columns: minmax(200px, 28%) minmax(0, 1fr); }
+.factory-ch-lines { font-size: 0.75rem; overflow-x: auto; }
+
+/* Stepper: labels wrap onto two lines with space between them */
+.factory-ch-stepper .factory-st-label { max-width: 104px; margin: 0 auto; padding: 0 6px; line-height: 1.3; }
+
+/* AI Assistant: the chat takes the free height, so no blank band sits above the input */
+.factory-ch-chat { flex: 1 1 auto; display: flex; flex-direction: column; }
+.factory-ch-chat .factory-ai-log { flex: 1 1 auto; max-height: 560px; }
+/* Tree names stay on one line and end with an ellipsis; the full path is in the title */
+.factory-ch-tree li { min-width: 0; }
+.factory-ch-tree .factory-ch-fname { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.factory-ch-stepper .factory-st-label { max-width: 86px; }
+
+/* ---------- Build page, refinements ---------- */
+/* build page: overrides loaded after app.css */
+
+/* Failures table: status (with kind), file name, full message, actions */
+.factory-bt-ftable { font-size: 0.75rem; }
+.factory-bt-ftable th, .factory-bt-ftable td { padding: 8px 6px; }
+.factory-bt-ftable th.factory-bt-c1 { width: 80px; }
+.factory-bt-ftable th.factory-bt-c3 { width: 26%; }
+.factory-bt-ftable th.factory-bt-c4 { width: 30px; padding: 0; }
+.factory-bt-ftable td { vertical-align: middle; }
+.factory-bt-ftable td.factory-bt-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; font-size: 0.76rem; color: #0f172a; }
+.factory-bt-ftable .factory-bt-msg div { -webkit-line-clamp: 4; line-height: 1.3; word-break: break-word; }
+.factory-bt-ftable td.factory-bt-more { padding: 0; text-align: center; }
+.factory-bt-ftable .factory-ov2-more { --oj-button-height: 26px; max-width: 28px; }
+.factory-bt-ftable .factory-ov2-more .oj-button-icon.oj-end { display: none; }
+.factory-bt-kind { display: block; margin-top: 3px; font-size: 0.7rem; color: #64748b; }
+
+/* Failure Details: copy button in the error box */
+.factory-bt-errbox { position: relative; }
+.factory-bt-errbox .factory-bt-err { padding-right: 36px; }
+.factory-bt-copy { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #fecaca; border-radius: 6px; background: #fff; color: #64748b; cursor: pointer; }
+.factory-bt-copy:hover { color: #1d4ed8; border-color: #bfdbfe; }
+
+/* Build Logs: bordered Download button with an icon */
+.factory-bt-logbtns .factory-bt-small { border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+.factory-bt-dl { gap: 5px; color: #334155; }
+.factory-bt-iconbtn svg, .factory-bt-iconlink svg { display: block; }
+
+/* AI Assistant runs to the bottom of the page */
+.factory-bt .factory-row-main { align-items: stretch; }
+.factory-bt .factory-row-main > .factory-stack:last-child { display: flex; flex-direction: column; }
+.factory-bt .factory-row-main > .factory-stack:last-child > .factory-bt-ai { flex: 1 1 auto; display: flex; flex-direction: column; }
+.factory-bt-ai .factory-bt-ailog { flex: 1 1 0; min-height: 200px; max-height: none; overflow-y: auto; }
+.factory-bt-ai .factory-ai-suggest, .factory-bt-ai .factory-ai-input { flex: 0 0 auto; }
+
+/* ---------- Impact page, refinements ---------- */
+/* header: the subtitle keeps one line; the Change picker row sits under the buttons, across the full width */
+.factory-im .factory-pg-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 8px; }
+.factory-im .factory-im-headright { display: contents; }
+.factory-im .factory-pg-head > div:first-child { grid-column: 1; grid-row: 1; }
+.factory-im .factory-pg-head p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-im .factory-im-headright > .factory-pg-actions:first-child { grid-column: 2; grid-row: 1; align-self: start; }
+.factory-im .factory-im-headright > .factory-pg-actions + .factory-pg-actions { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
+/* no hover band behind the card rows */
+.factory-im .factory-row { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-im .factory-row:hover { background: transparent; }
+/* dependency graph: full file names on up to two lines */
+.factory-im .factory-im-node { padding: 6px 8px; }
+.factory-im-nodetext { flex: 1 1 auto; }
+.factory-im-nodetext strong { white-space: normal; overflow: hidden; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* affected files: paths and modules wrap (at "/"), readable in full */
+.factory-im-ftable td.factory-im-path { white-space: normal; overflow: visible; text-overflow: clip; direction: ltr; overflow-wrap: anywhere; line-height: 1.35; }
+.factory-im-ftable td.factory-im-mod { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.3; }
+.factory-im-filterbtn svg { display: block; }
+.factory-im-ftable td.factory-im-path { font-family: inherit; font-size: 0.78rem; }
+.factory-im-ftable th.factory-im-c3 { width: 16%; }
+.factory-im-ftable th.factory-im-c2 { width: 48px; }
+.factory-im-ftable th.factory-im-c5 { width: 90px; }
+
+/* ---------- Models page, refinements ---------- */
+/* models page: overrides loaded after app.css */
+
+/* Provider cards: same field size everywhere, description of a fixed height so rows line up */
+.factory-md-desc { height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.factory-md-rows oj-input-password input.oj-text-field-input { font-size: 0.78rem; padding-left: 8px; }
+.factory-md-rows oj-input-password input.oj-text-field-input::placeholder { font-size: 0.78rem; }
+.factory-md-rows oj-input-password .oj-text-field-end .oj-component-icon { font-size: 16px; width: 26px; }
+.factory-md-url { height: auto; min-height: 32px; box-sizing: border-box; display: flex; align-items: center; padding: 5px 8px; font-family: inherit; font-size: 0.76rem;
+  line-height: 1.25; white-space: normal; overflow-wrap: anywhere; overflow: visible; }
+.factory-md-btn-blue { color: #1d4ed8; border: 1px solid #2563eb; }
+.factory-md-btn-blue:hover:not(:disabled) { background: #eff6ff; }
+
+/* Default Model Settings: native selects and oj-select-single look the same */
+.factory-md-form .factory-ws-select { -webkit-appearance: none; appearance: none; padding: 0 28px 0 10px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") right 9px center / 13px no-repeat; }
+.factory-md-form .factory-ws-select:disabled { background-color: #f8fafc; opacity: 0.8; }
+.factory-md-form oj-select-single { --oj-text-field-height: 34px; --oj-text-field-border-color: var(--factory-card-border); --oj-text-field-border-radius: 6px; }
+.factory-md-form oj-select-single .oj-text-field-container { border-radius: 6px; }
+.factory-md-form oj-select-single input.oj-text-field-input { font-size: 0.8rem; padding-left: 10px; }
+.factory-md-form oj-select-single .oj-searchselect-arrow { width: 28px; min-width: 28px; font-size: 0; color: transparent;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") left 6px center / 13px no-repeat; }
+.factory-md-form oj-select-single .oj-searchselect-arrow::before { content: none; }
+
+/* Model Capabilities Comparison icons */
+.factory-md-ic { display: inline-block; vertical-align: middle; }
+.factory-md-limited { display: inline-flex; align-items: center; gap: 3px; color: #b45309; font-weight: 500; font-size: 0.7rem; }
+.factory-md-matrix td.factory-md-cell-limited { overflow: visible; }
+
+/* Available Models: provider icon */
+.factory-md-prov { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.factory-md-logo.factory-md-logo-sm { width: 18px; height: 18px; flex: 0 0 18px; border-radius: 5px; background-size: 12px; }
+.factory-md .factory-md-rows { grid-template-columns: 84px minmax(0, 1fr); }
+.factory-md-rows dt { font-size: 0.77rem; white-space: nowrap; }
+.factory-md-rows dt:nth-last-of-type(1) { white-space: normal; }
+.factory-md-url { font-size: 0.7rem; letter-spacing: -0.1px; padding: 5px 6px; }
+.factory-md-setdefault { white-space: nowrap; }
+.factory-md-table td, .factory-md-table th { white-space: nowrap; }
+.factory-md-table td.factory-md-mname { white-space: normal; overflow-wrap: anywhere; }
+
+/* ---------- Modernization page, refinements ---------- */
+/* modernization page: overrides loaded after app.css */
+
+/* Deprecated APIs table: room for Name and Replacement, text wraps */
+.factory-mo-midrow { grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr); }
+.factory-mo-table th, .factory-mo-table td { padding: 6px 4px; vertical-align: middle; }
+.factory-mo-table th { font-size: 0.66rem; white-space: nowrap; overflow: visible; }
+.factory-mo-table th.factory-mo-c1 { width: 19%; }
+.factory-mo-table th:nth-child(2) { width: 32px; }
+.factory-mo-table th:nth-child(3) { width: 72px; }
+.factory-mo-table th.factory-mo-c4 { width: auto; }
+.factory-mo-table th:nth-child(5) { width: 38px; }
+.factory-mo-table th:nth-child(6) { width: 48px; }
+.factory-mo-table th:nth-child(7) { width: 54px; }
+.factory-mo-table th.factory-mo-c8 { width: 36px; }
+.factory-mo-table td:first-child, .factory-mo-table td:nth-child(4) { white-space: normal; }
+.factory-mo-fname { white-space: normal; line-height: 1.25; overflow-wrap: anywhere; }
+.factory-mo-fpath { margin-top: 2px; white-space: nowrap; }
+.factory-mo .factory-mo-repl { white-space: normal; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; }
+.factory-mo-table td:nth-child(8) { overflow: visible; }
+.factory-mo-table .factory-mo-more { max-width: 28px; }
+.factory-mo-table .factory-mo-more .oj-button-icon.oj-end { display: none; }
+
+/* Migration Effort KPI: bar-chart glyph on the right */
+.factory-mo-kpi-chart { position: relative; }
+.factory-mo-kpi-glyph { display: inline-flex; margin-left: auto; align-self: center; color: #2563eb; }
+.factory-mo-kpi-glyph .factory-nav-icon { display: inline-block; width: 26px; height: 26px; flex: 0 0 26px; }
+
+/* Dependency Impact: a bigger graph */
+.factory-mo-radial { max-width: none; width: 100%; height: auto; margin-top: 2px; flex: 0 0 auto; }
+
+/* ---------- Admin page, refinements ---------- */
+/* admin page: overrides loaded after app.css */
+
+/* Not Signed In Yet: the number in orange */
+.factory-kpi-value.factory-ad-orange { color: #ea580c; }
+
+/* ---------- Agents page, refinements ---------- */
+/* agents page: overrides loaded after app.css */
+
+/* Date range: one button that shows the range, with the two date pickers in a popup */
+.factory-ag-range { position: relative; flex: 0 0 auto; }
+.factory-ag-rangebtn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--factory-card-border); border-radius: 6px;
+  background: #fff; font: inherit; font-size: 0.84rem; color: #0f172a; cursor: pointer; white-space: nowrap; }
+.factory-ag-rangebtn svg { color: #475569; flex: 0 0 auto; }
+.factory-ag-rangebtn:hover, .factory-ag-rangebtn[aria-expanded="true"] { border-color: #93b4f5; }
+.factory-ag-rangepop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; display: grid; gap: 10px; width: 230px; padding: 12px;
+  background: #fff; border: 1px solid var(--factory-card-border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14); }
+.factory-ag-rangepop label { display: grid; gap: 4px; font-size: 0.76rem; color: #475569; }
+.factory-ag-rangepop input { height: 32px; padding: 0 8px; border: 1px solid var(--factory-card-border); border-radius: 6px; font: inherit; font-size: 0.82rem; color: #0f172a; }
+.factory-ag-rangeact { display: flex; justify-content: space-between; align-items: center; }
+.factory-ag-rangedone { height: 30px; padding: 0 14px; font-size: 0.8rem; }
+
+/* Runs table: Agent and Model wrap instead of being cut off */
+.factory-ag-table th:nth-child(2) { width: 98px; }
+.factory-ag-table th:nth-child(4) { width: 132px; }
+.factory-ag-table th:nth-child(5) { width: 96px; }
+.factory-ag-table th:nth-child(7) { width: 100px; }
+.factory-ag-table td { vertical-align: middle; }
+.factory-ag-table td .factory-ag-ell { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25; }
+.factory-ag-table .factory-ag-agentcell { align-items: center; }
+
+/* Recent Agent Activity: lines wrap */
+.factory-ag-timeline li { align-items: start; }
+.factory-ag-timeline .factory-ag-time, .factory-ag-timeline .factory-step-dot { margin-top: 1px; }
+.factory-ag-tltext { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; overflow-wrap: anywhere; }
+
+/* ---------- Reviews page, refinements ---------- */
+/* reviews page: overrides loaded after app.css */
+
+/* Device toggle icons (inline SVG) */
+.factory-rv-devico { flex: 0 0 auto; display: block; }
+
+/* Phone status bar: time, notch, then signal, wifi and battery */
+.factory-rv-statusbar { height: 28px; flex-basis: 28px; padding: 0 16px 0 20px; }
+.factory-rv-sysicons { display: inline-flex; align-items: center; gap: 4px; }
+.factory-rv-sysicons svg { display: block; }
+
+/* ---------- Integrations page, refinements ---------- */
+/* integrations page: overrides loaded after app.css */
+
+/* Environment Configuration: View All above Edit Environment */
+.factory-in-envactions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: 0 0 auto; }
+
+/* Detail panel: the Server URL wraps onto two lines */
+.factory-in-kv dd.factory-in-urlwrap { white-space: normal; overflow: hidden; text-overflow: clip; overflow-wrap: anywhere; word-break: break-all; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ---------- Packs page, refinements ---------- */
+/* packs page: overrides loaded after app.css */
+
+/* Version Packs table: cells centred in their row; radio on the row shown in Version Details */
+.factory-pk-table td { vertical-align: middle; }
+.factory-pk-muted { font-size: 0.78rem; color: var(--factory-muted); }
+.factory-pk-table input[type="radio"] { width: 15px; height: 15px; margin: 0; vertical-align: middle; accent-color: #1d4ed8; cursor: pointer; }
+
+/* Bank Standards: full descriptions, a smaller ID */
+.factory-pk-std2 th:nth-child(1) { width: 25%; }
+.factory-pk-std2 th { font-size: 0.7rem; text-overflow: clip; padding-left: 4px; padding-right: 4px; }
+.factory-pk-std2 th:nth-child(2) { width: 56px; }
+.factory-pk-std2 th:nth-child(4) { width: 50px; }
+.factory-pk-std2 th:nth-child(5) { width: 56px; }
+.factory-pk-std2 th:nth-child(6) { width: 32px; }
+.factory-pk-std2 td { vertical-align: middle; }
+.factory-pk-std2 td.factory-pk-stdid { font-size: 0.66rem; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.factory-pk-std2 td.factory-pk-stddesc { white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
+.factory-pk-std2 .factory-ov2-more { max-width: 28px; }
+.factory-pk-std2 .factory-ov2-more .oj-button-icon.oj-end { display: none; }
+
+/* Implementation Templates: names wrap */
+.factory-pk-tpl .factory-pk-tplname { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }
+.factory-pk-std2 td { padding-left: 4px; padding-right: 4px; }
+
+/* ---------- Knowledge page, refinements ---------- */
+/* no hover band behind the card row */
+.factory-kn-main { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-kn-main:hover { background: transparent; }
+/* the tree and the code viewer fill their cards */
+.factory-kn-tree ul { flex: 1 1 auto; min-height: 420px; }
+.factory-kn-codecard .factory-kn-code { flex: 1 1 auto; height: auto; min-height: 420px; max-height: 760px;
+  background: linear-gradient(to right, #f8fafc 0, #f8fafc 44px, #eef1f5 44px, #eef1f5 45px, #fff 45px); }
+.factory-kn-codecard .factory-kn-line .factory-ch-n { background: transparent; }
+.factory-kn-markerline { background: #eef4ff; border-top: 1px solid #dbe5f6; border-bottom: 1px solid #dbe5f6; }
+.factory-kn-markerline .factory-ch-t { padding-left: 8px; }
+.factory-kn-marker { color: #1e40af; font-style: normal; font-weight: 600; font-family: system-ui, sans-serif; font-size: 0.74rem; }
+/* boxed sub-tabs, as in the mockup */
+.factory-kn-codecard .factory-kn-subtabs { gap: 4px; margin: 0 0 10px; padding: 0; border-bottom: 1px solid #e2e8f0; }
+.factory-kn-codecard .factory-kn-subtabs .factory-tab { margin-bottom: -1px; padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 6px 6px 0 0; background: #f8fafc; color: #475569; }
+.factory-kn-codecard .factory-kn-subtabs .factory-tab.factory-tab-on { border-color: #e2e8f0; border-bottom: 2px solid #2563eb; background: #fff; color: #1d4ed8; font-weight: 600; }
+/* Generate as a split button */
+.factory-kn-split { display: inline-flex; border-radius: 6px; overflow: hidden; }
+.factory-kn-split .factory-kn-generate { border-radius: 0; }
+.factory-kn-gencaret { display: inline-flex; align-items: center; padding: 0 9px; border-left: 1px solid rgba(255, 255, 255, 0.4); }
+.factory-kn-gencaret .factory-nav-icon { width: 14px; height: 14px; }
+/* every file tag as a pill */
+.factory-kn-page .factory-ov-pill-violet { background: #f1eafe; color: #6d28d9; }
+.factory-kn-tags .factory-kn-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 500; }
+/* the tree root: name, then the repository on its own line */
+.factory-kn-tree li.factory-kn-root, .factory-kn-tree ul > li:first-child { flex-wrap: wrap; }
+.factory-kn-rooturl { flex: 1 0 100%; padding-left: 40px; white-space: normal; overflow: visible; overflow-wrap: anywhere; line-height: 1.3; }
+.factory-kn-codecard .factory-kn-line { min-height: 1.55em; }
+
+/* ---------- Prompts page, refinements ---------- */
+/* no grey hover band behind the main row */
+.factory-pr-main, .factory-pr-bottom { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-pr-main:hover, .factory-pr-bottom:hover { background: transparent; }
+/* column balance: category list, prompt table, detail panel */
+.factory-pr-main { grid-template-columns: 200px minmax(0, 1.6fr) minmax(320px, 0.9fr); }
+.factory-pr-cats label span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.factory-pr-table th:nth-child(2) { min-width: 150px; }
+.factory-pr-table th:nth-child(4), .factory-pr-table td:nth-child(4) { white-space: nowrap; }
+.factory-pr-table th:nth-child(6), .factory-pr-table th:nth-child(7) { white-space: nowrap; }
+.factory-pr-table td:nth-child(7) { text-align: center; }
+/* rounded, softly filled pills */
+.factory-pr-page .factory-ov-pill-violet { background: #f1eafe; color: #6d28d9; }
+.factory-pr-table .factory-ov-pill.factory-pr-cat { max-width: 116px; padding: 2px 9px; border: 0; border-radius: 999px; font-weight: 500; }
+.factory-pr-table .factory-ov-pill { border-radius: 999px; font-weight: 500; }
+.factory-pr-kv .factory-pr-tag { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 500; }
+.factory-pr-dhead .factory-ov-pill { border-radius: 999px; }
+/* the detail description in full */
+.factory-pr-desc { white-space: normal; overflow: visible; text-overflow: clip; }
+/* bottom row: prompt template a little wider, as in the mockup */
+.factory-pr-bottom { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.1fr); }
+/* fixed panels: one line per prompt line, no inner scrolling */
+.factory-pr-lines { height: auto; min-height: 0; max-height: none; overflow: hidden; padding: 34px 12px 10px; font-size: 0.74rem; line-height: 1.6; }
+.factory-pr-line { white-space: pre; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.factory-pr-line > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.factory-pr-varwrap { height: auto; overflow: visible; }
+.factory-pr-vars { font-size: 0.76rem; }
+.factory-pr-vars th, .factory-pr-vars td { padding: 6px 6px; }
+.factory-pr-vars th:nth-child(1) { width: 30%; }
+.factory-pr-vars th:nth-child(2) { width: 10%; }
+.factory-pr-vars th:nth-child(3) { width: 15%; }
+.factory-pr-vars td:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-pr-vars td:last-child { line-height: 1.3; }
+.factory-pr-more { align-self: flex-start; margin-top: 8px; font-size: 0.78rem; }
+/* example output: the preview fills the panel */
+.factory-pr-out { flex: 1 1 auto; display: flex; flex-direction: column; height: auto; overflow: visible; }
+.factory-pr-out .factory-pr-preview { flex: 0 0 auto; height: 262px; }
+.factory-pr-table th { font-size: 0.74rem; }
+.factory-pr-table th:last-child, .factory-pr-table td:last-child { padding-left: 2px; padding-right: 2px; }
+.factory-pr-table .factory-ov-pill.factory-pr-cat { max-width: 112px; padding: 2px 8px; }
+.factory-pr-dbtns .factory-pr-btn { padding: 0 8px; gap: 6px; font-size: 0.84rem; white-space: nowrap; }
+.factory-pr-kv { grid-template-columns: 118px minmax(0, 1fr); }
+.factory-pr-kv dt { white-space: normal; }
+.factory-pr-bottom .factory-pr-codewrap { flex: 1 1 auto; display: flex; flex-direction: column; }
+.factory-pr-bottom .factory-pr-lines { flex: 1 1 auto; }
+
+/* ---------- Notifications page, refinements ---------- */
+/* no hover band behind the main row */
+.factory-no-main { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-no-main:hover { background: transparent; }
+/* Time: date over time, each kept on one line */
+.factory-no-when { min-width: 96px; }
+.factory-no-when > span { display: block; white-space: nowrap; }
+/* Unread: rounded light-blue pill; Read: soft grey pill */
+.factory-no-table .factory-ov-pill.factory-no-pill-unread { padding: 3px 12px; border: 1px solid #bfdbfe; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-weight: 500; }
+.factory-no-table .factory-ov-pill.factory-no-pill-read { padding: 3px 12px; border: 1px solid #e2e8f0; border-radius: 999px; background: #f1f5f9; color: #475569; font-weight: 500; }
+/* numbered page buttons */
+.factory-no-pages { display: inline-flex; align-items: center; gap: 6px; }
+.factory-no-pgbtn { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--factory-card-border); border-radius: 6px; background: #fff; font: inherit; font-size: 0.82rem; color: #334155; cursor: pointer; }
+.factory-no-pgbtn:hover { background: #f8fafc; }
+.factory-no-pgbtn-on { border-color: #2563eb; color: #1d4ed8; font-weight: 600; box-shadow: 0 0 0 1px #2563eb inset; }
+
+/* ---------- Account page, refinements ---------- */
+/* no hover band behind the card rows */
+.factory-ac-row { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-ac-row:hover { background: transparent; }
+/* profile values wrap; the workspaces show one per line */
+.factory-ac-rows strong { white-space: pre-line; overflow-wrap: anywhere; overflow: visible; line-height: 1.35; }
+/* rows spread over the card height so the footnotes sit right under them */
+#ac-sec-profile .factory-ac-rows { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; }
+#ac-sec-profile > .factory-card-sub { margin-top: 6px; }
+#ac-sec-notifications .factory-ac-notify { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 6px; }
+#ac-sec-notifications .factory-ac-foot { margin-top: 0; }
+/* active sessions: this session's details fill the card */
+.factory-ac-sessions li { padding: 4px 0 8px; border-bottom: 1px solid #f0f2f6; }
+.factory-ac-sessrows { margin-top: 4px; }
+.factory-ac-sessrows li { padding: 7px 0; }
+.factory-ac-sessnote { margin-top: auto; padding-top: 8px; }
+
+/* ---------- About page, refinements ---------- */
+/* card rows line up with the hero edges */
+.factory-ab-row { padding-left: 0; padding-right: 0; cursor: default; }
+.factory-ab-row:hover { background: transparent; }
+/* top row slightly uneven, bottom row about 40/30/30, as in the mockup */
+.factory-ab-hero + .factory-ab-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1fr); }
+.factory-ab-row + .factory-ab-row { grid-template-columns: minmax(0, 1.34fr) minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1280px) {
+  .factory-ab-hero + .factory-ab-row, .factory-ab-row + .factory-ab-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 1000px) {
+  .factory-ab-hero + .factory-ab-row, .factory-ab-row + .factory-ab-row { grid-template-columns: 1fr; }
+}
+/* the two license buttons fit the narrower card */
+.factory-ab-license-btns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.factory-ab-license-btns oj-button { min-width: 0; font-size: 0.8rem; }
+.factory-ab-license-btns oj-button .oj-button-button { padding-left: 6px; padding-right: 6px; }

@@ -68,7 +68,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           { label: 'Username', value: me.username, icon: 'user' },
           { label: 'Email', value: me.email || 'Not set', icon: 'doc' },
           { label: 'Role', value: this.roleText(), icon: 'users' },
-          { label: 'Workspaces', value: names.length ? names.join(', ') : 'None yet; ask an administrator', icon: 'folder' },
+          { label: 'Workspaces', value: names.length ? names.join('\n') : 'None yet; ask an administrator', icon: 'folder' },
           { label: 'Default Workspace', value: this.defaultWorkspaceName(), icon: 'bank' },
           { label: 'Timezone', value: this.timezone, icon: 'clock' },
           { label: 'Language', value: this.language, icon: 'info' }

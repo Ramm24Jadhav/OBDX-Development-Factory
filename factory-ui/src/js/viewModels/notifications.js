@@ -60,6 +60,11 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
           && (!text || (n.title + ' ' + n.text + ' ' + n.related).toLowerCase().indexOf(text) >= 0));
       });
       this.pager = ui.pager(this.visible, 10);
+      this.pageButtons = ko.pureComputed(() => Array.from({ length: this.pager.pages() }, (v, i) => i + 1).map((p) => ({
+        n: p, css: p === this.pager.page() ? 'factory-no-pgbtn factory-no-pgbtn-on' : 'factory-no-pgbtn', go: () => this.pager.page(p)
+      })));
+      // Date over time in the Time column, so the time never breaks apart
+      const whenParts = (text) => { const i = text.lastIndexOf(', '); return i > 0 ? [text.slice(0, i), text.slice(i + 2)] : [text, '']; };
       this.selectedId = ko.observable(null);
       this.checked = ko.observable({});
       this.selected = ko.pureComputed(() => all().find((n) => n.id === this.selectedId()) || (this.selectedId() === 'none' ? null : this.visible()[0]) || null);
@@ -71,7 +76,8 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       this.closeMenu = () => this.menuId(null);
 
       this.rows = ko.pureComputed(() => this.pager.rows().map((n) => Object.assign({}, n, {
-        iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
+        whenDate: whenParts(n.when)[0], whenTime: whenParts(n.when)[1],
+        iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone,iconClass: 'factory-nav-icon factory-ico-' + n.icon,
         priorityPill: PRIORITY[n.priority], statusPill: n.unread() ? { text: 'Unread', css: 'factory-ov-pill factory-no-pill-unread' } : { text: 'Read', css: 'factory-ov-pill factory-no-pill-read' },
         css: this.selected() && this.selected().id === n.id ? 'factory-clickable factory-row-sel' : (n.unread() ? 'factory-clickable factory-no-unread' : 'factory-clickable'),
         // The open row shows checked, as in the design

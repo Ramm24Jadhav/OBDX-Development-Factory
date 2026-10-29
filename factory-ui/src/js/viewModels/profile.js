@@ -67,14 +67,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         detected: f.detectedValue || '', evidence: f.evidence,
         open: () => { this.editing(f); this.editValue(f.value || ''); }
       });
+      // A card's status pill, with a leading check (or a warning sign when facts wait for confirmation)
+      const statusPill = (text, tone, icon) => Object.assign(ui.pill(text, tone), { icon: 'factory-nav-icon factory-ico-' + icon });
       const cardStatus = (list) => {
         if (list.length && list.every((f) => f.status === 'confirmed' || f.status === 'corrected')) {
-          return ui.pill('Verified', 'green');
+          return statusPill('Verified', 'green', 'check');
         }
         if (list.some((f) => f.status === 'missing')) {
-          return ui.pill('Partially Detected', 'blue');
+          return statusPill('Partially Detected', 'blue', 'check');
         }
-        return list.some((f) => f.status === 'detected') ? ui.pill('Needs Confirmation', 'amber') : ui.pill('Detected', 'blue');
+        return list.some((f) => f.status === 'detected') ? statusPill('Needs Confirmation', 'amber', 'alert') : statusPill('Detected', 'blue', 'check');
       };
       this.cards = ko.pureComputed(() => SECTIONS.map((s) => {
         const list = facts().filter((f) => f.section === s.key);

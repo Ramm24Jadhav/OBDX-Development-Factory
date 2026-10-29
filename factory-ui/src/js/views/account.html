@@ -123,6 +123,12 @@
           <ul class="factory-ac-sessions"><li><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>
             <span class="factory-list-title"><oj-bind-text value="[[browser]]"></oj-bind-text></span><span class="factory-ov-pill factory-ov-pill-green">Current Session</span>
             <span class="factory-ov-subtle"><oj-bind-text value="[[timezone]]"></oj-bind-text></span></li></ul>
+          <ul class="factory-ac-rows factory-ac-sessrows">
+            <li><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span><span>Signed in as</span><strong><oj-bind-text value="[[user().username]]"></oj-bind-text></strong></li>
+            <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span><span>Sign-in method</span><strong><oj-bind-text value="[[sourceLabel]]"></oj-bind-text></strong></li>
+            <li><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span>Language</span><strong><oj-bind-text value="[[language]]"></oj-bind-text></strong></li>
+          </ul>
+          <p class="factory-card-sub factory-ac-sessnote">Sessions on other devices are not listed: the factory does not keep a list of them yet. Sign Out ends this session only.</p>
         </section>
       </div>
 

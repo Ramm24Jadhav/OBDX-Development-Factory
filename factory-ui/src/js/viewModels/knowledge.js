@@ -355,8 +355,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
                 shown.push(r.snippet);
                 const rows = r.snippet.split('\n');
                 const exact = rows.length === r.endLine - r.startLine + 1;
-                pieceLines.push({ n: '', text: '··· indexed ' + r.kind + (r.kind === 'class' && !exact ? ' outline' : '') + ', lines ' + r.startLine + '-' + r.endLine + ' ···', marker: true });
-                rows.forEach((t, i) => pieceLines.push({ n: exact ? r.startLine + i : '', text: t, marker: false }));
+                // Pieces can overlap (a method inside its class), so their lines carry no numbers; the label says where each piece is
+                pieceLines.push({ n: '', text: 'Indexed piece ' + shown.length + ': ' + r.kind + (r.kind === 'class' && !exact ? ' outline' : '') + ', lines ' + r.startLine + ' to ' + r.endLine + ' of the file', marker: true });
+                rows.forEach((t) => pieceLines.push({ n: '', text: t, marker: false }));
               });
               this.file({ path: path, language: pieces.length ? pieces[0].language : '', sizeBytes: 0, revision: 0, truncated: false, partial: true,
                 content: pieceLines.filter((l) => !l.marker).map((l) => l.text).join('\n') || '(no content in the index)',
@@ -508,6 +509,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.explain = () => { this.insightTab('explain'); this.generate(); };
       this.explainLogic = () => { this.insightTab('explain'); this.generate(); };
+      // The Generate split button: its arrow picks what to generate
+      this.genMenuOpen = ko.observable(false);
+      this.genMenuStyle = ko.observable({});
+      this.toggleGenMenu = (event) => {
+        event.stopPropagation();
+        const r = event.currentTarget.getBoundingClientRect();
+        this.genMenuStyle({ top: (r.bottom + 4) + 'px', left: Math.max(8, r.right - 190) + 'px' });
+        this.genMenuOpen(!this.genMenuOpen());
+      };
+      this.genOptions = [{ value: 'summary', label: 'Summary' }, { value: 'explain', label: 'Explain' }, { value: 'usage', label: 'Find usage' }, { value: 'suggest', label: 'Suggest changes' }]
+        .map((o) => Object.assign(o, { run: () => { this.genMenuOpen(false); this.insightTab(o.value); this.generate(); } }));
       this.relatedReqs = ko.pureComputed(() => (this.fileInfo() ? this.fileInfo().related : []).map((r) => Object.assign({}, r, { open: this.openRequirements })));
 
       // Opens the first Java file (or the first file) with its folders
@@ -565,8 +577,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (this.menuOpen() && !(event.target.closest && event.target.closest('.factory-kn-menu'))) {
           this.menuOpen(false);
         }
+        if (this.genMenuOpen() && !(event.target.closest && event.target.closest('.factory-kn-menu'))) {
+          this.genMenuOpen(false);
+        }
       };
-      const closeMenu = () => this.menuOpen(false);
+      const closeMenu = () => { this.menuOpen(false); this.genMenuOpen(false); };
       let subscription = null;
       this.connected = () => {
         accUtils.announce('Knowledge Explorer page loaded.');

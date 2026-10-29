@@ -131,6 +131,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.graphWidth(wrap.clientWidth - 2);
         }
       };
+      // A file name that can wrap onto two lines: break points after . - _ and between camelCase words
+      const breakable = (name) => name.replace(/([._-])/g, '$1\u200B').replace(/([a-z0-9])([A-Z])/g, '$1\u200B$2');
       this.graph = ko.pureComputed(() => {
         const columns = LAYERS.filter((l) => l.key !== 'test').map((l) => ({ layer: l, files: items().filter((i) => i.layer === l.key) })).filter((c) => c.files.length);
         const n = Math.max(1, columns.length);
@@ -138,8 +140,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const width = Math.max(n * 150 + (n - 1) * gap + 20, this.graphWidth());
         const nodeW = Math.min(210, Math.floor((width - 20 - (n - 1) * gap) / n));
         const step = n > 1 ? Math.floor((width - 20 - nodeW) / (n - 1)) : 0;
-        const rowH = 70;
-        const nodeH = 52;
+        const rowH = 76;
+        const nodeH = 60;
         const most = Math.max.apply(null, columns.map((c) => c.files.length).concat([1]));
         const height = most * rowH + 16;
         const nodes = [];
@@ -150,7 +152,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             const y = top + fi * rowH;
             nodes.push({
               x: x, y: y, w: nodeW, h: nodeH, ci: ci, kind: c.layer.label,
-              name: f.path.split('/').pop(), path: f.path, action: f.action === 'create' ? 'new' : 'modified',
+              name: breakable(f.path.split('/').pop()), path: f.path, action: f.action === 'create' ? 'new' : 'modified',
               icon: 'factory-nav-icon factory-ico-' + c.layer.icon, iconStyle: { background: c.layer.bg, color: c.layer.color },
               style: { left: x + 'px', top: y + 'px', width: nodeW + 'px', height: nodeH + 'px', borderColor: c.layer.color, background: '#fff' }
             });
@@ -207,7 +209,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const shared = /common|shared|util|base/i.test(i.path);
           const impact = i.action === 'modify' ? (shared ? ui.pill('High', 'red') : ui.pill('Medium', 'amber')) : ui.pill('Low', 'green');
           return {
-            path: i.path, type: (i.path.split('.').pop() || '').toUpperCase(), module: moduleOf(i.path), layer: i.layer, impact: impact,
+            path: i.path, pathWrap: i.path.replace(/\//g, '/\u200B'), type: (i.path.split('.').pop() || '').toUpperCase(), module: moduleOf(i.path), layer: i.layer, impact: impact,
             change: i.action === 'create' ? ui.pill('New', 'blue') : ui.pill('Modified', 'violet'), purpose: i.purpose
           };
         }).filter((f) => !this.impactFilter() || f.impact.text === this.impactFilter());

@@ -102,7 +102,7 @@
             <thead><tr><th>Model Name</th><th>Provider</th><th>Type</th><th title="Model servers do not report the context length">Context Length</th><th>Capabilities</th><th>Status</th><th>Actions</th><th class="factory-md-menucol"><span class="oj-helper-hidden-accessible">More</span></th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[allModels]]" as="m">
-                <template><tr><td class="factory-md-mname" :title="[[m.data.id]]"><oj-bind-text value="[[m.data.id]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.provider]]"></oj-bind-text></td>
+                <template><tr><td class="factory-md-mname" :title="[[m.data.id]]"><oj-bind-text value="[[m.data.id]]"></oj-bind-text></td><td><span class="factory-md-prov"><span :class="[[m.data.logo]]" aria-hidden="true"></span><oj-bind-text value="[[m.data.provider]]"></oj-bind-text></span></td>
                   <td><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
                   <td title="The model server does not report the context length"><span class="factory-ov-subtle">–</span></td>
                   <td><oj-bind-text value="[[m.data.caps]]"></oj-bind-text></td>
@@ -218,7 +218,11 @@
             <tbody>
               <oj-bind-for-each data="[[matrix]]" as="row">
                 <template><tr><td><oj-bind-text value="[[row.data.label]]"></oj-bind-text></td>
-                  <oj-bind-for-each data="[[row.data.cells]]" as="cell"><template><td :class="[[cell.data.css]]" :title="[[cell.data.title]]"><oj-bind-text value="[[cell.data.text]]"></oj-bind-text></td></template></oj-bind-for-each></tr></template>
+                  <oj-bind-for-each data="[[row.data.cells]]" as="cell"><template><td :class="[[cell.data.css]]" :title="[[cell.data.title]]">
+                    <oj-bind-if test="[[cell.data.kind === 'yes']]"><svg class="factory-md-ic" viewBox="0 0 16 16" width="14" height="14" role="img" aria-label="Yes"><circle cx="8" cy="8" r="8" fill="#16a34a"></circle><path d="M4.6 8.2l2.3 2.3 4.5-4.7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></oj-bind-if>
+                    <oj-bind-if test="[[cell.data.kind === 'no']]"><svg class="factory-md-ic" viewBox="0 0 16 16" width="13" height="13" role="img" aria-label="No"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round"></path></svg></oj-bind-if>
+                    <oj-bind-if test="[[cell.data.kind === 'limited']]"><span class="factory-md-limited"><svg class="factory-md-ic" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 1.5l7 12.5H1z" fill="#f59e0b"></path><path d="M8 6v3.6M8 11.6v.1" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg>Limited</span></oj-bind-if>
+                    <oj-bind-if test="[[cell.data.kind === 'unknown' || cell.data.kind === 'count']]"><oj-bind-text value="[[cell.data.text]]"></oj-bind-text></oj-bind-if></td></template></oj-bind-for-each></tr></template>
               </oj-bind-for-each>
             </tbody>
           </table>

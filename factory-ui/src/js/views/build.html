@@ -109,14 +109,23 @@
                 <button type="button" class="factory-link-sm" on-click="[[clearLayer]]">Show all</button></p></oj-bind-if>
               <div class="factory-ov2-table-wrap">
                 <table class="factory-ov2-table factory-bt-ftable" id="failureTable">
-                  <thead><tr><th class="factory-bt-c1">Status</th><th class="factory-bt-c2">Kind</th><th class="factory-bt-c3">File</th><th>Error Message</th></tr></thead>
+                  <thead><tr><th class="factory-bt-c1">Status</th><th class="factory-bt-c3">File</th><th>Error Message</th><th class="factory-bt-c4"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
                   <tbody>
                     <oj-bind-for-each data="[[visibleFailures]]">
                       <template><tr :class="[[$current.data.index === selectedFailure() ? 'factory-clickable factory-row-sel' : 'factory-clickable']]" on-click="[[$current.data.pick]]">
-                        <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
-                        <td><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></td>
-                        <td class="factory-mono factory-bt-path" :title="[[$current.data.file]]"><bdi><oj-bind-text value="[[$current.data.file]]"></oj-bind-text></bdi></td>
-                        <td class="factory-bt-msg" :title="[[$current.data.message]]"><div><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></div></td></tr></template>
+                        <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
+                          <span class="factory-bt-kind"><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></span></td>
+                        <td class="factory-bt-path" :title="[[$current.data.file]]"><bdi><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></bdi></td>
+                        <td class="factory-bt-msg" :title="[[$current.data.message]]"><div><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></div></td>
+                        <td class="factory-bt-more" on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
+                          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>Failure actions
+                          <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
+                            <oj-option value="details">View details</oj-option>
+                            <oj-option value="code">Show the code</oj-option>
+                            <oj-option value="copy">Copy error message</oj-option>
+                            <oj-option value="ask">Ask the AI Assistant</oj-option>
+                            <oj-option value="fix" disabled="[[!canManage()]]">Generate fix with AI</oj-option>
+                          </oj-menu></oj-menu-button></td></tr></template>
                     </oj-bind-for-each>
                   </tbody>
                 </table>
@@ -136,7 +145,9 @@
                     <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
                   </oj-bind-for-each>
                 </div>
-                <oj-bind-if test="[[detailTab() === 'message']]"><pre class="factory-code factory-code-light factory-bt-err"><oj-bind-text value="[[failure().message]]"></oj-bind-text></pre></oj-bind-if>
+                <oj-bind-if test="[[detailTab() === 'message']]"><div class="factory-bt-errbox"><pre class="factory-code factory-code-light factory-bt-err"><oj-bind-text value="[[failure().message]]"></oj-bind-text></pre>
+                  <button type="button" class="factory-bt-copy" id="copyErrorButton" on-click="[[copyMessage]]" title="Copy the error message" aria-label="Copy the error message">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path></svg></button></div></oj-bind-if>
                 <oj-bind-if test="[[detailTab() === 'stack']]"><pre class="factory-code factory-code-light factory-bt-pre"><oj-bind-text value="[[stackTrace]]"></oj-bind-text></pre></oj-bind-if>
                 <oj-bind-if test="[[detailTab() === 'code']]"><pre class="factory-code factory-code-light factory-bt-pre"><oj-bind-text value="[[failureCode]]"></oj-bind-text></pre></oj-bind-if>
                 <oj-bind-if test="[[detailTab() === 'log']]"><pre class="factory-code factory-bt-pre"><oj-bind-text value="[[failure().log || '(no log for this failure)']]"></oj-bind-text></pre></oj-bind-if>
@@ -155,9 +166,11 @@
               <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Build Logs</span>
                 <span class="factory-bt-logbtns">
                   <button type="button" class="factory-ov2-btn factory-bt-small" id="rawLogButton" on-click="[[rawLog]]">Raw</button>
-                  <a class="factory-ov2-btn factory-bt-small" :href="[[logDownload]]" download="build-log.txt">Download</a>
+                  <a class="factory-ov2-btn factory-bt-small factory-bt-dl" :href="[[logDownload]]" download="build-log.txt">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>Download</a>
                   <button type="button" class="factory-ov2-btn factory-bt-small factory-bt-iconbtn" id="expandLogButton" on-click="[[toggleLog]]" :title="[[logExpanded() ? 'Collapse the log' : 'Expand the log']]" :aria-label="[[logExpanded() ? 'Collapse the log' : 'Expand the log']]">
-                    <span :class="[[logExpanded() ? 'factory-nav-icon factory-ico-collapse' : 'factory-nav-icon factory-ico-monitor']]" aria-hidden="true"></span></button>
+                    <oj-bind-if test="[[!logExpanded()]]"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if>
+                    <oj-bind-if test="[[logExpanded()]]"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"></path><path d="M20 10h-6V4"></path><path d="M14 10l7-7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if></button>
                 </span></h2>
               <div class="factory-subtabs factory-bt-logtabs">
                 <oj-bind-for-each data="[[logTypeTabs]]">
@@ -296,7 +309,8 @@
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
             <span class="factory-bt-aihead"><button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button>
               <button type="button" class="factory-bt-iconlink" id="aiExpandButton" on-click="[[toggleAi]]" :title="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]" :aria-label="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]">
-                <span :class="[[aiExpanded() ? 'factory-nav-icon factory-ico-collapse' : 'factory-nav-icon factory-ico-monitor']]" aria-hidden="true"></span></button></span></h2>
+                <oj-bind-if test="[[!aiExpanded()]]"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if>
+                <oj-bind-if test="[[aiExpanded()]]"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"></path><path d="M20 10h-6V4"></path><path d="M14 10l7-7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if></button></span></h2>
           <div class="factory-subtabs">
             <oj-bind-for-each data="[[aiTabs]]">
               <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
