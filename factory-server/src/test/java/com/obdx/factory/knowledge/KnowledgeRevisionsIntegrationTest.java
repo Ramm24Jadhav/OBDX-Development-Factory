@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.nio.charset.StandardCharsets;
@@ -25,9 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Keeping the knowledge current: a newer file of a document replaces the older revision, the notes citing it move to
  * the newer one, and those whose cited section changed go back to review; watched folders pick up changed files.
- * Runs when FACTORY_TEST_DB_URL is set.
+ * Runs when FACTORY_TEST_DB_URL is set. Its own context (the fixed embeddings) closes afterwards and uses a small pool,
+ * so the contexts the other integration tests keep do not run the database out of connections.
  */
 @SpringBootTest
+@DirtiesContext
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
 class KnowledgeRevisionsIntegrationTest {
 
@@ -42,6 +45,7 @@ class KnowledgeRevisionsIntegrationTest {
         registry.add("factory.storage.root", () -> temp.resolve("data").toString());
         registry.add("factory.security.secret-key", () -> Base64.getEncoder().encodeToString(new byte[32]));
         registry.add("factory.local-folders.enabled", () -> "true");
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "3");
     }
 
     @TestConfiguration

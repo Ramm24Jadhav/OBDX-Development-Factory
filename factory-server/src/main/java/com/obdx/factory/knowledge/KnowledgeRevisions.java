@@ -37,10 +37,13 @@ public class KnowledgeRevisions {
         this.json = json;
     }
 
-    /** Called when a document is ready: retires the revisions it replaces. Returns how many notes need checking. */
+    /**
+     * Called when a document has all its sections, just before it is marked ready: retires the revisions it replaces.
+     * Returns how many notes need checking.
+     */
     public int replaceEarlier(UUID newerId) {
         var newer = repository.findDocument(newerId).orElse(null);
-        if (newer == null || !"READY".equals(newer.status())) {
+        if (newer == null || newer.sections() == 0 || "FAILED".equals(newer.status()) || newer.supersededBy() != null) {
             return 0;
         }
         int flagged = 0;

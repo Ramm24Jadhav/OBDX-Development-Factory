@@ -304,16 +304,18 @@ public class KnowledgeImporter {
 
     /** The document is searchable: it replaces its older revisions, and the notes citing them are checked. */
     private void ready(UUID id, String message) {
-        repository.updateDocument(id, "READY", message, null, null, repository.embeddedSections(id));
+        // The older revisions go first, so a document is never ready while the one it replaces is still current
+        String check = null;
         try {
             int flagged = revisions.replaceEarlier(id);
             if (flagged > 0) {
-                String check = flagged + " note(s) cite sections this revision changed: check them on the Notes tab.";
-                repository.updateDocument(id, "READY", message == null ? check : message + " " + check, null, null, null);
+                check = flagged + " note(s) cite sections this revision changed: check them on the Notes tab.";
             }
         } catch (RuntimeException e) {
             log.warn("Knowledge document {}: the older revision was not replaced: {}", id, e.getMessage());
         }
+        String text = message == null ? check : check == null ? message : message + " " + check;
+        repository.updateDocument(id, "READY", text, null, null, repository.embeddedSections(id));
     }
 
     @EventListener(ApplicationReadyEvent.class)
