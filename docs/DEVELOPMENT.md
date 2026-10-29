@@ -335,6 +335,19 @@ npm install
 npx ojet serve
 ```
 
+To check every page at phone, tablet, laptop and desktop sizes (and at 200% browser zoom) against a running factory,
+with the local Edge or Chrome and no extra packages:
+
+```bash
+FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... npm run check:responsive -- --url http://localhost:8080 --out responsive-report
+```
+
+It signs in, opens each page at each size, and fails when a page scrolls sideways, an element runs past the window, a
+table spills out of its card, controls overlap, a label is cut off, a popup leaves the window or the console shows an
+error. It writes `report.json` and a screenshot per page and size. It only reads: nothing is saved or deleted.
+`--pages`, `--sizes` (for example `375x667,1440x900`, or `640x400@2` for 200% zoom), `--workspace` and `--theme dark`
+narrow or vary the run.
+
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
 Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the dark sidebar with the product name (collapsible; it slides in on phones), the top bar, and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), a bell listing what needs attention (with a link to the Notification Center), Help (the About page) and the user menu. Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.

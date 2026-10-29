@@ -28,6 +28,7 @@
     "build:release": "node scripts/check-tokens.js && ojet build --release && node scripts/build-previews.js",
     "serve": "ojet serve",
     "build:previews": "node scripts/build-previews.js",
-    "check:tokens": "node scripts/check-tokens.js"
+    "check:tokens": "node scripts/check-tokens.js",
+    "check:responsive": "node scripts/check-responsive.js"
   }
 }

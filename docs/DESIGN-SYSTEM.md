@@ -115,5 +115,40 @@ changes and the code. Arrow keys move, Enter runs, Escape closes; `>` narrows to
 requirements and changes. `g` then a letter jumps to a page (G O overview, G R requirements, G H changes, ...), and `?`
 lists every shortcut. Single-letter shortcuts never fire while typing in a field.
 
+## Responsive design
+
+**Breakpoints** (content-driven, in `app.css`):
+
+| Range | Layout |
+|---|---|
+| Phones, up to 767px | The menu opens over the page from the top bar's menu button. The top bar keeps every control, with the workspace picker on its own full-width row. Grids are one column, rows of controls wrap, and tab strips take a full row and scroll sideways. |
+| Tablets, 768 to 1099px | The menu starts as icons, and Expand opens it until the window changes size. The breadcrumb and user name hide, and search becomes its icon. |
+| Laptops, 1100 to 1439px | The full menu shows. A list with a detail panel (Integrations, Version Packs) puts the detail under the list. |
+| Desktops, 1440px and up | The layouts as designed. |
+
+**Type** is a fluid scale (`--fx-text-*`):
+- headings use `clamp()`, so a page title runs from 24px on a phone to 32px on a desktop, and card titles from 16px to 17px;
+- body, caption and badge text stay fixed (14, 13, 12 and 11px), so text never gets smaller than 11px and reads the same at any zoom;
+- every font size in `app.css` is a token.
+
+**Spacing:** `--fx-gutter`, `--fx-gap` and `--fx-card-pad` scale with the window.
+
+**Touch:** `--fx-touch` (44px) is the minimum size of buttons and fields on touch screens.
+
+**Rules that keep layouts stable:**
+- flex and grid children get `min-width: 0` or `minmax(0, 1fr)`;
+- wide tables, code and logs scroll inside their own box, never the whole page;
+- images, video and canvases never exceed their container;
+- dialogs and sheets stay inside the window and scroll inside;
+- long names, paths and ids wrap (`overflow-wrap: break-word`).
+
+**Checking:** `npm run check:responsive` (see `docs/DEVELOPMENT.md`) opens every page at:
+- 320, 375 and 430px (phones);
+- 768 and 1024px (tablets);
+- 1280, 1440 and 1920px (laptops and desktops);
+- 200% browser zoom.
+
+It reports anything that breaks these rules, with a screenshot of each page at each size.
+
 See also `docs/DESIGN-TOKENS.md` (every token with its light and dark value) and `docs/DESIGN-REFERENCE-AUDIT.md`
 (the Linear, Vercel, shadcn/ui and Figma guidance this follows).

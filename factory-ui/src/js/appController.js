@@ -139,15 +139,23 @@ define(['knockout', './services/session', './services/updates', './services/dash
         const route = navData.find((r) => r.path === this.selection.path());
         return route && route.detail ? route.detail.label : '';
       });
-      // Collapsed (icons only) is remembered in this browser; on small screens the sidebar opens over the page.
+      // Collapsed (icons only) is remembered in this browser; on tablets (768 to 1099 pixels) the menu starts collapsed so
+      // the page has room, and Expand opens it until the window changes size; on phones it opens over the page.
       const storedCollapsed = (() => {
         try { return window.localStorage.getItem('factory.sidebarCollapsed') === '1'; } catch (e) { return false; }
       })();
-      this.sidebarCollapsed = ko.observable(storedCollapsed);
-      this.sidebarCollapsed.subscribe((value) => {
+      const collapsedChoice = ko.observable(storedCollapsed);
+      collapsedChoice.subscribe((value) => {
         try { window.localStorage.setItem('factory.sidebarCollapsed', value ? '1' : '0'); } catch (e) { /* not kept */ }
       });
-      this.toggleCollapsed = () => this.sidebarCollapsed(!this.sidebarCollapsed());
+      const tabletQuery = window.matchMedia('(min-width: 768px) and (max-width: 1099px)');
+      const tablet = ko.observable(tabletQuery.matches);
+      const tabletExpanded = ko.observable(false);
+      tabletQuery.addEventListener('change', (event) => { tabletExpanded(false); tablet(event.matches); });
+      this.sidebarCollapsed = ko.pureComputed(() => (tablet() ? !tabletExpanded() : collapsedChoice()));
+      this.toggleCollapsed = () => {
+        if (tablet()) { tabletExpanded(!tabletExpanded()); } else { collapsedChoice(!collapsedChoice()); }
+      };
       this.toggleSidebar = () => this.sidebarOpen(!this.sidebarOpen());
       this.closeSidebar = () => this.sidebarOpen(false);
       this.shellClass = ko.pureComputed(() => 'factory-shell' + (this.sidebarCollapsed() ? ' factory-shell-collapsed' : '')

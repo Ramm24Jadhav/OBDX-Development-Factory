@@ -65,6 +65,7 @@ strong colour for fills and icons, `-text` for text (WCAG AA on surfaces and tin
 | `--fx-nav-bg` | `#0f172a` | `#070b16` |  |
 | `--fx-nav-bg-2` | `#1e1b4b` | `#151338` |  |
 | `--fx-nav-text` | `#cbd5e1` | same |  |
+| `--fx-nav-muted` | `#8b97b8` | same |  |
 | `--fx-nav-text-strong` | `#ffffff` | same |  |
 | `--fx-nav-active` | `linear-gradient(90deg, #4f46e5, #6366f1)` | same |  |
 | `--fx-nav-hover` | `rgba(255, 255, 255, 0.07)` | same |  |
@@ -75,15 +76,19 @@ strong colour for fills and icons, `-text` for text (WCAG AA on surfaces and tin
 |---|---|---|---|
 | `--fx-font` | `Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif` | same |  |
 | `--fx-font-mono` | `"Cascadia Mono", "JetBrains Mono", Consolas, "Courier New", monospace` | same |  |
-| `--fx-text-h1` | `2rem` | same |  |
-| `--fx-text-h2` | `1.5rem` | same |  |
-| `--fx-text-h3` | `1.25rem` | same |  |
+| `--fx-text-display` | `clamp(2rem, 3vw + 1rem, 3.1rem)` | same |  |
+| `--fx-text-h1` | `clamp(1.5rem, 1.4vw + 1.05rem, 2rem)` | same |  |
+| `--fx-text-h2` | `clamp(1.25rem, 0.9vw + 1rem, 1.5rem)` | same |  |
+| `--fx-text-h3` | `clamp(1.0625rem, 0.45vw + 0.95rem, 1.25rem)` | same |  |
+| `--fx-text-lg` | `clamp(1rem, 0.2vw + 0.95rem, 1.0625rem)` | same |  |
 | `--fx-text-h4` | `1rem` | same |  |
+| `--fx-text-md` | `0.9375rem` | same |  |
 | `--fx-text-h5` | `0.875rem` | same |  |
 | `--fx-text-base` | `0.875rem` | same |  |
 | `--fx-text-sm` | `0.8125rem` | same |  |
 | `--fx-text-caption` | `0.75rem` | same |  |
-| `--fx-text-overline` | `0.625rem` | same |  |
+| `--fx-text-2xs` | `0.6875rem` | same |  |
+| `--fx-text-overline` | `0.6875rem` | same |  |
 | `--fx-weight-semibold` | `600` | same |  |
 | `--fx-weight-medium` | `500` | same |  |
 
