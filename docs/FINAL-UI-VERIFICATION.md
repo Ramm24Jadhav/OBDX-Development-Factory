@@ -88,6 +88,6 @@ The harness was fixed, and the affected pages were rerun at all sizes.
 - **Real devices and browsers:** real phones and tablets, Safari and Firefox were not tested. Edge only, with emulated sizes and touch events.
 - **Screen readers:** not run. `aria-busy`, `role="status"`, `aria-expanded` and the focus order were checked in the page, but how a screen reader announces them was not heard.
 - **Committing a change to SVN:** the blocking overlay's real operation was not run, because it writes to SVN. The overlay was exercised with read-only requests.
-- **The palette after the fix:** the latest full interaction pass ran before the carousel fix; that fix was verified on its own (above).
+- **The carousel after the fix:** the latest full interaction pass ran before the carousel fix; that fix was verified on its own (above).
 - **Real browser zoom:** checked through the equivalent CSS widths (640 and 720 pixels at scale 2), not the browser's zoom control.
 - **The sign-in fields in the test browser:** they showed the test account. Chromium's password manager in that browser profile previews saved logins (`:autofill`, with the page reading the fields as empty). The app never fills them.
