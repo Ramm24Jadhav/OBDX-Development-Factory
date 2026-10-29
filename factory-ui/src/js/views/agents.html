@@ -49,8 +49,6 @@
       <fx-multiselect id="runAgent" class="factory-ag-multi" label="Agent" hide-label placeholder="All Agents" options="[[agentOptions]]" value="{{agentFilter}}"></fx-multiselect>
       <select class="fx-select" id="runModel" aria-label="Model" on-change="[[modelChange]]"><option value="">All Models</option>
         <oj-bind-for-each data="[[modelOptions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-      <select class="fx-select" id="runWorkspace" aria-label="Workspace" on-change="[[workspaceChange]]"><option value="">All Workspaces</option>
-        <oj-bind-for-each data="[[workspaceOptions]]"><template><option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select>
       <button type="button" class="fx-btn fx-btn--tertiary" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
     </div>
   </section>

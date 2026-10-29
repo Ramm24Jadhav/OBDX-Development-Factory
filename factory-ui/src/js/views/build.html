@@ -280,10 +280,8 @@
         <section class="factory-card">
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Quick Actions</span></h2>
           <div class="factory-bt-actions">
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaRebuild" :disabled="[[!canBuild()]]" :data-fx-tip="[[rebuildTip]]" on-click="[[rebuild]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Rebuild with Jenkins</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaChecks" :disabled="[[!canManage() || checking()]]" :data-fx-tip="[[canManage() ? null : 'You need the Manage code permission']]" on-click="[[checkAgain]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Run quick checks</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaFix" :disabled="[[!canManage() || !failure()]]" :data-fx-tip="[[!canManage() ? 'You need the Manage code permission' : !failure() ? 'Nothing failed' : null]]" on-click="[[fixWithAi]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Generate Fix with AI</button>
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaWorkbench" on-click="[[openWorkbench]]"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Open the workbench</button>
           </div>
           <oj-bind-if test="[[buildHint()]]"><p class="factory-card-sub"><oj-bind-text value="[[buildHint]]"></oj-bind-text></p></oj-bind-if>
         </section>

@@ -176,10 +176,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(() => toast.success('Link copied.'))
           .catch(() => toast.warning('The browser did not allow copying. Open the link and copy it from the address bar.', { action: { label: 'Open link', run: () => window.open(url, '_blank', 'noopener') } }));
       };
-      this.newMenu = ui.menu();
       this.newMenu2 = ui.menu();
       this.withoutLink = ko.pureComputed(() => this.links().filter((l) => (l.state === 'none' || l.state === 'expired' || l.state === 'review') && !l.hasLink).map((l) => Object.assign({}, l, {
-        createFor: () => { this.newMenu.close(); this.newMenu2.close(); this.selectedId(l.id); this.createLink(); }
+        createFor: () => { this.newMenu2.close(); this.selectedId(l.id); this.createLink(); }
       })));
       this.createTip = ko.pureComputed(() => (!this.canEdit() ? 'You need the Edit designs permission in this workspace'
         : this.withoutLink().length === 0 ? 'Every screen already has an active review link' : null));

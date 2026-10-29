@@ -181,12 +181,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           }
         }
       };
-      this.newWorkspaceItems = ko.pureComputed(() => [
-        { value: 'folder', label: 'Folder on this computer', icon: 'laptop', disabled: !this.localEnabled() },
-        { value: 'url', label: 'SVN server (URL)', icon: 'link' }
-      ]);
-      this.newWorkspaceMenu = (event) => { this.sourceKind(event.detail.value); focusCreate(); };
-      this.startCreate = () => focusCreate();
       this.folderPathInput = (event) => this.folderPath(event.target.value);
       this.folderPathKey = (event) => { if (event.key === 'Enter') { this.checkFolder(); } };
       this.go = (page) => dashboard.open(page);
@@ -415,15 +409,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
       data.subscribe((list) => { if (!this.selectedWsId() && list.length) { this.selectedWsId(list[0].workspace.id); } });
 
-      this.quickActions = [
-        { title: 'Browse Code', text: 'Explore repositories and search code', icon: 'code', tone: 'blue', open: dashboard.open('code') },
-        { title: 'View Profile', text: 'Detected stack and conventions', icon: 'doc', tone: 'blue', open: dashboard.open('profile') },
-        { title: 'Add Requirement', text: 'Upload BRD/FSD or describe change', icon: 'list', tone: 'violet', open: dashboard.open('requirements') },
-        { title: 'Open Designer', text: 'Design and review screens', icon: 'design', tone: 'violet', open: dashboard.open('designer') }
-      ].map((q, i) => Object.assign(q, {
-        icon: 'factory-nav-icon factory-ico-' + q.icon + ' factory-ws3-q-' + q.tone,
-        css: 'factory-ws-quick-card' + (i === 0 ? ' factory-ws3-quick-first' : '')
-      }));
 
       // Screen 17, the workspace registry: opened by selecting a workspace or the registry link
       this.view = ko.observable('main');

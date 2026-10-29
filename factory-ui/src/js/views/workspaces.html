@@ -16,14 +16,6 @@
       <h1>Workspaces</h1>
       <p>Manage your OBDX code bases, versions and settings. Create, discover and enhance new workspaces.</p>
     </div>
-    <oj-bind-if test="[[isAdmin()]]">
-      <div class="factory-ov2-actions">
-        <fx-menu-button id="newWorkspaceButton" class="factory-ws3-menu-btn" label="New Workspace" icon="folder" variant="secondary" align="end"
-                        items="[[newWorkspaceItems]]" on-fx-action="[[newWorkspaceMenu]]"></fx-menu-button>
-        <button type="button" id="startCreateButton" class="fx-btn fx-btn--primary" on-click="[[startCreate]]">
-          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Workspace</button>
-      </div>
-    </oj-bind-if>
   </div>
 
   <div class="factory-ws-tiles" id="workspaceTiles">
@@ -276,21 +268,6 @@
         </oj-bind-for-each>
       </ul>
       <oj-bind-if test="[[activity().length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span>Nothing yet.</div></oj-bind-if>
-    </section>
-    <section class="factory-ws-card">
-      <h2>Quick Actions</h2>
-      <div class="factory-ws-quick">
-        <oj-bind-for-each data="[[quickActions]]">
-          <template>
-            <button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.open]]">
-              <span :class="[[$current.data.icon]]" aria-hidden="true"></span>
-              <strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
-              <span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span>
-              <span class="factory-nav-icon factory-ico-arrow factory-ws-quick-arrow" aria-hidden="true"></span>
-            </button>
-          </template>
-        </oj-bind-for-each>
-      </div>
     </section>
   </div>
   </oj-bind-if>

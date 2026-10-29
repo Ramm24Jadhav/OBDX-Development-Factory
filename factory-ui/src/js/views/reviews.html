@@ -4,21 +4,6 @@
       <h1>External Review &amp; Approval</h1>
       <p>Share screens and changes with business stakeholders, collect feedback and track approvals</p>
     </div>
-    <div class="factory-pg-actions">
-      <div class="fx-menu-wrap" :data-fx-tip="[[createTip]]">
-        <button type="button" id="createReviewLink" class="fx-btn fx-btn--primary fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[newMenu.open() ? 'true' : 'false']]"
-                on-click="[[newMenu.toggle]]" :disabled="[[!canEdit()]]">
-          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Review Link<span class="fx-caret" aria-hidden="true"></span></button>
-        <oj-bind-if test="[[newMenu.open()]]">
-          <div class="fx-menu" role="menu" aria-label="Screens without an active link" on-keydown="[[newMenu.key]]">
-            <oj-bind-for-each data="[[withoutLink]]" as="w">
-              <template><button type="button" role="menuitem" on-click="[[w.data.createFor]]"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span><oj-bind-text value="[[w.data.name + ' ' + w.data.version]]"></oj-bind-text></button></template>
-            </oj-bind-for-each>
-            <oj-bind-if test="[[withoutLink().length === 0]]"><button type="button" role="menuitem" disabled>Every screen has an active link or is approved</button></oj-bind-if>
-          </div>
-        </oj-bind-if>
-      </div>
-    </div>
   </div>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-rv-alert" id="reviewsError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
@@ -100,7 +85,7 @@
               </template>
             </oj-bind-for-each>
             <oj-bind-if test="[[!loading() && visibleLinks().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></span>
-              <strong>No review links yet</strong>Use Create Review Link, or the Share button in the designer.</div></oj-bind-if>
+              <strong>No review links yet</strong>Use New Review Link, or the Share button in the designer.</div></oj-bind-if>
           </div>
         </section>
         <section class="fx-card factory-rv-settings">

@@ -201,7 +201,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Status and agent take several values (fx-multiselect); none chosen means all
       this.statusFilter = ko.observableArray([]);
       this.agentFilter = ko.observableArray([]);
-      this.workspaceFilter = ko.observable('');
+      // The runs of the workspace chosen in the top bar (runs that belong to no workspace always show)
+      this.workspaceFilter = ko.pureComputed(() => workspaceSelection.selectedId() || '');
       this.modelFilter = ko.observable('');
       // Started between (fx-date-range, yyyy-mm-dd)
       this.fromDate = ko.observable('');
@@ -209,13 +210,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.modelChange = ui.value(this.modelFilter);
       this.modelOptions = ko.pureComputed(() => Array.from(new Set(this.runs().map((r) => r.model))).sort());
       this.searchInput = ui.value(this.search);
-      this.workspaceChange = ui.value(this.workspaceFilter);
       this.statusOptions = [{ value: 'completed', label: 'Completed' }, { value: 'failed', label: 'Failed' }, { value: 'running', label: 'Running' }, { value: 'queued', label: 'Queued' }];
       this.agentOptions = Object.keys(AGENTS).map((k) => ({ value: k, label: AGENTS[k].name }));
-      this.workspaceOptions = ko.pureComputed(() => dashboard.data().map((d) => ({ value: d.workspace.id, label: d.workspace.name })));
       this.resetFilters = () => {
         ['runSearch', 'runModel', 'runWorkspace'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
-        this.search(''); this.statusFilter([]); this.agentFilter([]); this.workspaceFilter(''); this.modelFilter(''); this.fromDate(''); this.toDate('');
+        this.search(''); this.statusFilter([]); this.agentFilter([]);  this.modelFilter(''); this.fromDate(''); this.toDate('');
         this.tab('all');
       };
       this.visibleRuns = ko.pureComputed(() => {
@@ -224,7 +223,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const agents = this.agentFilter() || [];
         return this.runs().filter((r) => (this.tab() === 'all' || r.status === this.tab())
           && (!statuses.length || statuses.indexOf(r.status) >= 0) && (!agents.length || agents.indexOf(r.agent) >= 0)
-          && (!this.workspaceFilter() || r.workspaceId === this.workspaceFilter()) && (!this.modelFilter() || r.model === this.modelFilter())
+          && (!this.workspaceFilter() || !r.workspaceId || r.workspaceId === this.workspaceFilter()) && (!this.modelFilter() || r.model === this.modelFilter())
           && (!this.fromDate() || new Date(r.started) >= new Date(this.fromDate() + 'T00:00:00'))
           && (!this.toDate() || new Date(r.started) <= new Date(this.toDate() + 'T23:59:59'))
           && (!text || (r.id + ' ' + r.task + ' ' + r.requirement + ' ' + r.model + ' ' + r.agentName).toLowerCase().indexOf(text) >= 0));

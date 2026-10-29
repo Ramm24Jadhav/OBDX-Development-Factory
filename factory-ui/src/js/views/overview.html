@@ -6,7 +6,6 @@
       <p class="factory-ov2-lead">Here's what's happening in your OBDX development factory.</p>
     </div>
     <div class="factory-ov2-actions">
-      <fx-menu-button id="openWorkspaceButton" label="Open Workspace" icon="folder" variant="secondary" items="[[workspaceMenu]]" on-fx-action="[[openWorkspace]]"></fx-menu-button>
       <button type="button" id="overviewRequirement" class="fx-btn fx-btn--primary" on-click="[[go('requirements')]]">
         <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Requirement
       </button>
@@ -140,8 +139,7 @@
 
     <section class="factory-ov2-card" id="developmentProgress">
       <h2>Development Progress
-        <fx-select id="progressWorkspace" class="factory-ov2-mini-select" label="Workspace" hide-label
-                   options="[[progressOptions]]" value="{{progressWorkspace}}"></fx-select>
+        <span class="factory-ov2-scope" id="progressScope"><oj-bind-text value="[[progressScope]]"></oj-bind-text></span>
       </h2>
       <ul class="factory-ov2-progress">
         <oj-bind-for-each data="[[progress]]">

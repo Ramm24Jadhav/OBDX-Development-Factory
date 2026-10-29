@@ -8965,3 +8965,11 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 }
 .fx-select-button.is-open::after { rotate: 180deg; background-color: var(--fx-primary-text); }
 .fx-select-button.is-readonly::after { display: none; }
+
+/* Workspaces: Recent Activity has the bottom row to itself (the Quick Actions card repeated the menu), and the header
+   cubes sit at the far right where the removed buttons were, clear of the subtitle */
+.factory-ws-bottom { grid-template-columns: minmax(0, 1fr); }
+.factory-ws3-deco { left: auto; right: 8px; }
+
+/* Home: the progress card names the workspace it shows (chosen in the top bar) */
+.factory-ov2-scope { font-size: var(--fx-text-sm); font-weight: var(--fx-weight-medium, 500); color: var(--fx-text-muted); }
