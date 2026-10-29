@@ -378,7 +378,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const day = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
       this.usageFrom = day(new Date(Date.now() - 29 * 86400000));
       this.usageTo = day(new Date());
-      const colors = ['#2563eb', '#f59e0b', '#ea580c', '#16a34a', '#7c3aed'];
+      const colors = ['#4f46e5', '#f59e0b', '#ea580c', '#16a34a', '#7c3aed'];
       this.usageLegend = ko.pureComputed(() => this.providers().map((p, i) => ({ name: p.short, dot: { background: colors[i % colors.length] } })));
       // Capabilities per provider, from the models each one lists
       this.matrixProviders = this.providers;

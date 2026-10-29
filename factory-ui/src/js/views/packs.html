@@ -100,7 +100,7 @@
 
         <div class="factory-pk-grid">
           <section class="fx-card">
-            <div class="factory-pk-head"><h2 class="fx-card-title">Bank Standards</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showStandards]]">View All →</button></div>
+            <div class="factory-pk-head"><h2 class="fx-card-title">Bank Standards</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[showStandards]]">View All →</button></div>
             <p class="fx-card-sub factory-pk-sub">Implementation rules the generated code must follow</p>
             <div class="fx-table-wrap factory-pk-menuwrap">
               <table class="fx-table factory-pk-std2"><thead><tr><th scope="col">Standard ID</th><th scope="col">Category</th><th scope="col">Description</th><th scope="col">Version</th><th scope="col">Status</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
@@ -125,7 +125,7 @@
             </div>
           </section>
           <section class="fx-card">
-            <div class="factory-pk-head"><h2 class="fx-card-title">Implementation Templates</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showTemplates]]">View All →</button></div>
+            <div class="factory-pk-head"><h2 class="fx-card-title">Implementation Templates</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[showTemplates]]">View All →</button></div>
             <p class="fx-card-sub factory-pk-sub">Reusable recipes for common OBDX changes</p>
             <ul class="factory-pk-tpl">
               <oj-bind-for-each data="[[topRecipes]]" as="c">
@@ -150,7 +150,7 @@
           <section class="fx-card">
             <div class="factory-pk-head"><h2 class="fx-card-title">Recent Updates</h2>
               <span :data-fx-tip="[[isAdmin() ? 'Opens Administration; the Audit Log tab lists every change' : 'Only administrators can see the audit log']]">
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[viewAudit]]" :disabled="[[!isAdmin()]]">View All →</button></span></div>
+                <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewAudit]]" :disabled="[[!isAdmin()]]">View All →</button></span></div>
             <p class="fx-card-sub factory-pk-sub">Latest changes to rules and reference examples</p>
             <ul class="factory-pk-updates">
               <oj-bind-for-each data="[[updates]]" as="u">

@@ -13,7 +13,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     };
     const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
     const ROLE_PILL = {
-      ADMIN: badge('Administrator', 'danger'), LEAD: badge('Lead', 'violet'), DEVELOPER: badge('Developer', 'primary'),
+      ADMIN: badge('Administrator', 'primary'), LEAD: badge('Lead', 'violet'), DEVELOPER: badge('Developer', 'primary'),
       ANALYST: badge('Business Analyst', 'success'), NONE: badge('No role yet', '')
     };
     const RANK = { LEAD: 3, DEVELOPER: 2, ANALYST: 1 };

@@ -8,7 +8,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         '../services/dialog', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
   function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const LAYERS = [
-      { key: 'ui', label: 'UI Component', color: '#3b82f6', icon: 'monitor' },
+      { key: 'ui', label: 'UI Component', color: '#6366f1', icon: 'monitor' },
       { key: 'service', label: 'Service', color: '#16a34a', icon: 'cog' },
       { key: 'integration', label: 'Integration', color: '#8b5cf6', icon: 'plug' },
       { key: 'data', label: 'Database', color: '#ea580c', icon: 'cube' },

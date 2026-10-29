@@ -45,7 +45,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const c = {
         text: token('--fx-text', '#0f172a'), muted: token('--fx-text-muted', '#475569'), faint: token('--fx-text-faint', '#94a3b8'),
         bg: token('--fx-surface-2', '#f8fafc'), surface: token('--fx-surface', '#ffffff'), border: token('--fx-border', '#e2e8f0'),
-        strong: token('--fx-border-strong', '#cbd5e1'), primary: token('--fx-primary', '#2563eb')
+        strong: token('--fx-border-strong', '#cbd5e1'), primary: token('--fx-primary', '#4f46e5')
       };
       return 'body{font:12px/1.4 system-ui,sans-serif;margin:10px;color:' + c.text + '}*{max-width:100%}'
         + '[label-hint]{display:block;margin:6px 0;padding:6px 8px;border:1px solid ' + c.strong + ';border-radius:4px;background:' + c.surface + ';color:' + c.faint + '}'

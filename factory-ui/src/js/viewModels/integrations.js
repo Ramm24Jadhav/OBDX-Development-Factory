@@ -9,7 +9,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
   function (ko, accUtils, api, session, dashboard, workspaceSelection, ui, toast) {
     const TYPES = {
       svn: { label: 'Source Control', tone: 'violet', icon: 'branch' },
-      jenkins: { label: 'CI / CD', tone: 'danger', icon: 'cog' },
+      jenkins: { label: 'CI / CD', tone: 'warning', icon: 'cog' },
       model: { label: 'Model Provider', tone: 'primary', icon: 'chip' },
       other: { label: 'Other Tools', tone: 'neutral', icon: 'plug' }
     };

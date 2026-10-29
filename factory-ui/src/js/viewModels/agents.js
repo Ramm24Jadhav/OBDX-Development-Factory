@@ -304,7 +304,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       })));
       // Model usage this month: runs per model (the factory does not record tokens)
       this.byModel = ko.pureComputed(() => {
-        const colors = ['#2563eb', '#16a34a', '#7c3aed', '#f59e0b', '#db2777', '#0891b2'];
+        const colors = ['#4f46e5', '#16a34a', '#7c3aed', '#f59e0b', '#db2777', '#0891b2'];
         const month = this.runs().filter((r) => Date.now() - new Date(r.started).getTime() < MONTH_MS);
         const total = month.length || 1;
         let at = 0;

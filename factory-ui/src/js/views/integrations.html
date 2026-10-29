@@ -115,7 +115,7 @@
           <div><h2 class="fx-card-title">Environment Configuration</h2>
             <p class="fx-card-sub">Settings this factory runs with. It is one environment: DEV, SIT and UAT profiles are not part of the factory.</p></div>
           <div class="factory-in-envactions">
-            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="envViewAll" on-click="[[viewEnvironment]]" data-fx-tip="See the factory's build, version and setup on the About page">View All →</button>
+            <button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="envViewAll" on-click="[[viewEnvironment]]" data-fx-tip="See the factory's build, version and setup on the About page">View All →</button>
             <span :data-fx-tip="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
               <button type="button" id="editEnvironment" class="fx-btn fx-btn--primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]">
                 <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button></span>
@@ -216,7 +216,7 @@
           </div>
         </oj-bind-if>
         <div class="factory-in-builds">
-          <div class="factory-in-bhead"><h2 class="fx-card-title factory-in-h3">Recent Builds</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[viewBuilds]]">View All →</button></div>
+          <div class="factory-in-bhead"><h2 class="fx-card-title factory-in-h3">Recent Builds</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewBuilds]]">View All →</button></div>
           <div class="fx-table-wrap">
             <table class="fx-table factory-in-btable"><thead><tr><th scope="col">Build #</th><th scope="col">Branch</th><th scope="col">Status</th><th scope="col">Started</th><th scope="col">Duration</th></tr></thead>
               <tbody><oj-bind-for-each data="[[builds]]" as="b"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[b.data.number]]"></oj-bind-text></td>
@@ -228,7 +228,7 @@
       </section>
 
       <section class="fx-card factory-in-health">
-        <div class="factory-in-bhead"><h2 class="fx-card-title">Integration Health</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[healthDetails]]">View Details →</button></div>
+        <div class="factory-in-bhead"><h2 class="fx-card-title">Integration Health</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[healthDetails]]">View Details →</button></div>
         <p class="fx-card-sub">Configured and connected integrations of each kind</p>
         <ul class="factory-in-hlist">
           <oj-bind-for-each data="[[health]]" as="h">

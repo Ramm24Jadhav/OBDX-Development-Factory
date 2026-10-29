@@ -186,14 +186,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const ink = token('--fx-text', '#0f172a');
         const line = token('--fx-text-faint', '#94a3b8');
         const paper = token('--fx-surface', '#ffffff');
-        const hub = token('--fx-primary', '#2563eb');
+        const hub = token('--fx-primary', '#4f46e5');
         const halo = token('--fx-primary-soft', '#dbe7fe');
         const s = inv.summary;
         const sats = inv.modules.slice(0, 6).map((m) => ({
           name: m.name, detail: m.screens + ' screen' + (m.screens === 1 ? '' : 's'),
           color: m.complexity.L > 0 ? '#ef4444' : m.complexity.M ? '#f59e0b' : '#22c55e'
         })).concat([
-          { name: 'Backend services', detail: s.endpoints + ' in this code', color: '#2563eb' },
+          { name: 'Backend services', detail: s.endpoints + ' in this code', color: '#4f46e5' },
           { name: 'Product services', detail: s.callsWithoutBackend + ' called by the UI', color: '#7c3aed' },
           { name: 'Roles', detail: s.roles + ' found', color: '#0891b2' },
           { name: 'User flows', detail: s.flows + ' found', color: '#64748b' }
