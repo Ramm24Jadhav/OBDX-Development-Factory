@@ -31,12 +31,14 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
   // Popups (select lists, calendars, menus) are positioned against the viewport so cards and tables do not clip them
   function place(popup, anchor, align) {
     const r = anchor.getBoundingClientRect();
-    const width = Math.max(r.width, popup.offsetWidth);
+    // The minimum width first, then measure: setting it after measuring changed the width the position was worked out
+    // from, so menus aligned to a button's end opened short of it
+    popup.style.minWidth = r.width + 'px';
+    const width = popup.offsetWidth;
     let left = align === 'end' ? r.right - width : r.left;
     left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
     const below = window.innerHeight - r.bottom;
     popup.style.left = left + 'px';
-    popup.style.minWidth = r.width + 'px';
     if (below < popup.offsetHeight + 12 && r.top > popup.offsetHeight + 12) {
       popup.style.top = (r.top - popup.offsetHeight - 6) + 'px';
     } else {

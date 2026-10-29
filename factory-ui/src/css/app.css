@@ -8817,18 +8817,20 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
 @keyframes fx-bar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 
 /* Pages: a short rise when a page opens (only when it is inserted, so updates inside a page do not replay it) */
-.factory-page > *:not(script) { animation: fx-rise var(--fx-dur-page) var(--fx-ease-out) both; }
+/* Entrance animations fill backwards only: a transform left on an element after its animation (fill "both") makes it
+   the box that screen-positioned dropdowns and menus inside it are placed against, so they opened in the wrong place */
+.factory-page > *:not(script) { animation: fx-rise var(--fx-dur-page) var(--fx-ease-out) backwards; }
 /* Summary cards follow one another */
-.factory-page [class*="-kpis"] > * { animation: fx-rise var(--fx-dur-panel) var(--fx-ease-out) both; }
+.factory-page [class*="-kpis"] > * { animation: fx-rise var(--fx-dur-panel) var(--fx-ease-out) backwards; }
 .factory-page [class*="-kpis"] > :nth-child(2) { animation-delay: calc(var(--fx-stagger) * 1); }
 .factory-page [class*="-kpis"] > :nth-child(3) { animation-delay: calc(var(--fx-stagger) * 2); }
 .factory-page [class*="-kpis"] > :nth-child(4) { animation-delay: calc(var(--fx-stagger) * 3); }
 .factory-page [class*="-kpis"] > :nth-child(n+5) { animation-delay: calc(var(--fx-stagger) * 4); }
 
 /* Popups enter: menus and lists drop in, dialogs and the palette zoom in, backdrops fade */
-.fx-menu, .fx-popup, .factory-bell-panel, .fx-popover-panel { animation: fx-pop var(--fx-dur-pop) var(--fx-ease-out) both; transform-origin: top right; }
-.fx-dialog, .fx-cmd, .fx-shortcuts { animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) both; }
-.fx-dialog-backdrop, .fx-cmd-backdrop, .fx-sheet-backdrop { animation: fx-fade var(--fx-dur-pop) ease-out both; }
+.fx-menu, .fx-popup, .factory-bell-panel, .fx-popover-panel { animation: fx-pop var(--fx-dur-pop) var(--fx-ease-out) backwards; transform-origin: top right; }
+.fx-dialog, .fx-cmd, .fx-shortcuts { animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) backwards; }
+.fx-dialog-backdrop, .fx-cmd-backdrop, .fx-sheet-backdrop { animation: fx-fade var(--fx-dur-pop) ease-out backwards; }
 
 /* Buttons: colour and shadow ease, a press moves the button 1px, arrows nudge forward on hover */
 .fx-btn, .factory-icon-button, .factory-menu-toggle, .fx-carousel-btn, .fx-tabs > button, .factory-tab, .fx-chip, .fx-toggle-group > button, .factory-nav-link {
@@ -8865,9 +8867,9 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
 /* Blocking overlay: a translucent cover with a card; it stays inside the window and its safe areas */
 .fx-overlay { position: fixed; inset: 0; z-index: 1300; display: flex; align-items: center; justify-content: center;
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    background: rgba(15, 23, 42, 0.35); backdrop-filter: blur(2px); animation: fx-fade var(--fx-dur-pop) ease-out both; outline: none; }
+    background: rgba(15, 23, 42, 0.35); backdrop-filter: blur(2px); animation: fx-fade var(--fx-dur-pop) ease-out backwards; outline: none; }
 .fx-overlay-card { display: flex; align-items: center; gap: 14px; max-width: min(420px, 100%); padding: 18px 22px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius-xl);
-    background: var(--fx-surface); box-shadow: var(--fx-shadow-lg); animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) both; }
+    background: var(--fx-surface); box-shadow: var(--fx-shadow-lg); animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) backwards; }
 .fx-overlay-text { margin: 0; font-size: var(--fx-text-base); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
 
 /* Start screen until the app is bound and the session is known */
@@ -8941,3 +8943,25 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 /* Resizer handles: focus shows the standard ring and a wider grip (a 2px colour change alone was too faint to see) */
 .fx-resizer:focus-visible { outline: none; border-radius: var(--fx-radius-sm); box-shadow: var(--fx-focus); }
 .fx-resizer:focus-visible .fx-resizer-grip { width: 4px; }
+
+/* Arrows follow their menu: while a dropdown, menu or split button is open its caret or chevron turns over (and the
+   dots of a "more" button turn upright); they turn back when it closes. Select boxes draw their chevron as a
+   pseudo-element (a background image cannot turn). The rotate property adds to an icon's own transform (the caret is
+   a square turned 45 degrees), so the arrow keeps its shape. */
+[aria-expanded] .factory-ico-caret, [aria-expanded] .fx-caret, [aria-expanded] .factory-ico-chevron,
+[aria-expanded] .factory-ico-chevron-down, [aria-expanded] .factory-ico-more, [aria-expanded] .factory-ico-dots {
+    transition: rotate var(--fx-dur-pop) var(--fx-ease-out);
+}
+[aria-expanded="true"] .factory-ico-caret, [aria-expanded="true"] .fx-caret,
+[aria-expanded="true"] .factory-ico-chevron, [aria-expanded="true"] .factory-ico-chevron-down { rotate: 180deg; }
+[aria-expanded="true"] .factory-ico-more, [aria-expanded="true"] .factory-ico-dots { rotate: 90deg; }
+.fx-select-button { position: relative; background-image: none; }
+.fx-select-button::after {
+    content: ""; position: absolute; right: 11px; top: 50%; width: 16px; height: 16px; margin-top: -8px; pointer-events: none;
+    background-color: var(--fx-text-muted);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+    transition: rotate var(--fx-dur-pop) var(--fx-ease-out), background-color var(--fx-dur-hover);
+}
+.fx-select-button.is-open::after { rotate: 180deg; background-color: var(--fx-primary-text); }
+.fx-select-button.is-readonly::after { display: none; }
