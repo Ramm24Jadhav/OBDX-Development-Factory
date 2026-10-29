@@ -8840,8 +8840,6 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
 .fx-btn:not(:disabled):not([aria-disabled="true"]):active, .factory-icon-button:active, .fx-carousel-btn:not(:disabled):active,
 .fx-chip:is(button, a):active, .factory-nav-link:active { transform: translateY(1px) scale(0.985); }
 .fx-btn--primary:not(:disabled):hover { box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28); }
-.fx-btn .factory-ico-arrow { transition: transform var(--fx-dur-hover) var(--fx-ease-out); }
-.fx-btn:not(:disabled):hover .factory-ico-arrow { transform: translateX(2px); }
 .fx-check input, .fx-radio input, .fx-switch { transition: background-color var(--fx-dur-hover), border-color var(--fx-dur-hover), box-shadow var(--fx-dur-hover); }
 .fx-tabs > button[aria-selected] { transition: color var(--fx-dur-hover), border-color var(--fx-dur-panel) var(--fx-ease-out); }
 
@@ -9028,3 +9026,40 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-login-step:nth-of-type(3) { animation-delay: 740ms, 3.4s; }
 .factory-login-card { animation: fx-rise 650ms var(--fx-ease-out) 120ms backwards; }
 @media print { .fx-reveal { opacity: 1; top: 0; } }
+
+/* ======================================================================================================
+   Icon motion in buttons. On hover the icon lifts a little and acts out what the button does; a press squeezes it.
+   Uses the separate translate, rotate and scale properties, which add to an icon's own transform (the flipped
+   "previous" arrow, the caret turned 45 degrees, an open menu's turned arrow) instead of replacing it. Disabled
+   buttons stay still; reduced motion makes every change instant.
+   ====================================================================================================== */
+:is(.fx-btn, .factory-icon-button, .fx-carousel-btn, .factory-menu-toggle, .fx-chip, .fx-menu [role="menuitem"], .factory-nav-link, .fx-tabs > button, .factory-tab, .fx-toggle-group > button) .factory-nav-icon {
+    transition: translate var(--fx-dur-pop) var(--fx-ease-out), rotate var(--fx-dur-panel) var(--fx-ease-out), scale var(--fx-dur-pop) var(--fx-ease-out), background-color var(--fx-dur-hover);
+}
+/* Icons that act out their action */
+@keyframes fx-ring-bell { 0%, 100% { rotate: 0deg; } 20% { rotate: 14deg; } 40% { rotate: -12deg; } 60% { rotate: 8deg; } 80% { rotate: -4deg; } }
+@keyframes fx-wiggle { 0%, 100% { rotate: 0deg; } 25% { rotate: -10deg; } 75% { rotate: 10deg; } }
+@keyframes fx-twinkle { 0%, 100% { scale: 1; rotate: 0deg; } 50% { scale: 1.2; rotate: 15deg; } }
+/* Hover motion only where there is a real hover (on touch screens a tap would leave an icon turned) */
+@media (hover: hover) {
+    :is(.fx-btn, .factory-icon-button, .fx-carousel-btn, .factory-menu-toggle, .fx-chip):not(:disabled):not([aria-disabled="true"]):hover .factory-nav-icon { scale: 1.1; }
+    /* Sidebar and menu items: the icon steps toward the label */
+    :is(.factory-nav-link, .fx-menu [role="menuitem"]:not(:disabled)):hover .factory-nav-icon { translate: 2px 0; }
+    .fx-tabs > button:hover .factory-nav-icon, .factory-tab:hover .factory-nav-icon { scale: 1.12; }
+    :is(.fx-btn, .factory-icon-button, .fx-carousel-btn):not(:disabled):hover :is(.factory-ico-arrow, .factory-ico-chevron-right) { translate: 3px 0; }
+    .fx-carousel-btn--prev:not(:disabled):hover .factory-nav-icon { translate: -3px 0; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover :is(.factory-ico-plus, .factory-ico-x) { rotate: 90deg; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-refresh { rotate: 180deg; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-edit { rotate: -12deg; translate: 0 -1px; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-download { translate: 0 2px; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover :is(.factory-ico-upload, .factory-ico-send, .factory-ico-rocket) { translate: 0 -2px; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover :is(.factory-ico-search, .factory-ico-link, .factory-ico-copy) { scale: 1.18; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-check { scale: 1.2; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover :is(.factory-ico-cog) { rotate: 60deg; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover :is(.factory-ico-sun, .factory-ico-moon) { rotate: 30deg; }
+    .factory-icon-button:not(:disabled):hover .factory-ico-bell { animation: fx-ring-bell 700ms ease-in-out; transform-origin: 50% 10%; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-trash { animation: fx-wiggle 400ms ease-in-out; }
+    :is(.fx-btn, .factory-icon-button):not(:disabled):hover .factory-ico-sparkle { animation: fx-twinkle 700ms ease-in-out; }
+}
+/* A press squeezes the icon (after the hover rules, which it must win over while the button is held) */
+:is(.fx-btn, .factory-icon-button, .fx-carousel-btn, .factory-menu-toggle, .fx-chip):not(:disabled):not([aria-disabled="true"]):active .factory-nav-icon { scale: 0.88; }
