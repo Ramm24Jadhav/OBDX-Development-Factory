@@ -5913,3 +5913,32 @@ form.factory-topbar-search { margin: 0; }
 .factory-ab-license-btns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .factory-ab-license-btns oj-button { min-width: 0; font-size: 0.8rem; }
 .factory-ab-license-btns oj-button .oj-button-button { padding-left: 6px; padding-right: 6px; }
+
+/* ---------- Final check ---------- */
+/* Prompt Library: the prompt text and variable names show in full */
+.factory-pr-line { white-space: pre-wrap; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.factory-pr-line > span:last-child { overflow: visible; text-overflow: clip; }
+.factory-pr-vars td:first-child { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+/* About: the two License & Support buttons stack so their labels fit */
+.factory-ab-license-btns { grid-template-columns: minmax(0, 1fr); }
+.factory-ab-license-btns oj-button { width: 100%; font-size: 0.86rem; }
+/* Code: Quick Check Rules gives Description the most room */
+.factory-cp2-rules th:nth-child(1) { width: 44px; }
+.factory-cp2-rules th:nth-child(2) { width: 19%; }
+.factory-cp2-rules th:nth-child(3) { width: 9%; }
+.factory-cp2-rules th:nth-child(4) { width: 8%; }
+.factory-cp2-rules th:nth-child(6) { width: 11%; }
+.factory-cp2-rules th:nth-child(7) { width: 9%; }
+.factory-cp2-rules th:nth-child(8) { width: 40px; }
+.factory-cp2-rules td:nth-child(5), .factory-cp2-rules td:nth-child(5) > * { white-space: normal; overflow: visible; text-overflow: clip; -webkit-line-clamp: unset; max-height: none; }
+/* Project Profile: the cards in a row are one height, with Evidence at the bottom */
+.factory-pf-cards { align-items: stretch; }
+.factory-pf-card { display: flex; flex-direction: column; }
+.factory-pf-card .factory-pf2-evidence { margin-top: auto; }
+.factory-pf-value { overflow-wrap: break-word; word-break: normal; }
+/* Overview: Recent Builds is the wider card, as in the design */
+.factory-ov2-row-c { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+/* Changes: the file tree shows full names */
+.factory-ch-files { grid-template-columns: minmax(250px, 31%) minmax(0, 1fr); }
+/* Sign-in: the method this factory does not offer is shown greyed out */
+.factory-login-tab-off { color: #94a3b8; border-bottom-color: transparent; font-weight: 500; cursor: not-allowed; }

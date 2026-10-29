@@ -227,8 +227,14 @@
               <p class="factory-login-sub">Sign in to continue to your development workspace.</p>
               <!-- One tab per sign-in method this installation offers -->
               <div class="factory-login-tabs" role="tablist" aria-label="Sign-in method">
-                <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]"><span role="tab" aria-selected="true" class="factory-login-tab">Single Sign-On</span></oj-bind-if>
-                <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]"><span role="tab" aria-selected="true" class="factory-login-tab"><oj-bind-text value="[[loginTabLabel]]"></oj-bind-text></span></oj-bind-if>
+                <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
+                  <span role="tab" aria-selected="true" class="factory-login-tab">Single Sign-On</span>
+                  <span role="tab" aria-selected="false" aria-disabled="true" class="factory-login-tab factory-login-tab-off" title="This factory uses single sign-on">Username &amp; Password</span>
+                </oj-bind-if>
+                <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
+                  <span role="tab" aria-selected="false" aria-disabled="true" class="factory-login-tab factory-login-tab-off" title="Single sign-on is not set up for this factory; an administrator can turn it on">Single Sign-On</span>
+                  <span role="tab" aria-selected="true" class="factory-login-tab"><oj-bind-text value="[[loginTabLabel]]"></oj-bind-text></span>
+                </oj-bind-if>
               </div>
               <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
                 <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">
