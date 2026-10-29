@@ -9,8 +9,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
   function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast) {
     // Asks before an action (design system dialog); resolves true when confirmed
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
-    // Status badges (design system fx-badge)
-    const STATUS_BADGE = { DRAFT: 'fx-badge', IN_REVIEW: 'fx-badge fx-badge--warning', APPROVED: 'fx-badge fx-badge--success' };
+    // A screen's status in the shared categories (ui.status): {text, css, iconCss}
+    const screenStatus = (status, words) => ui.status(status, words);
     const DISCARD = ['Discard your unsaved changes?', 'The changes since the last saved version are lost.', 'Discard'];
     // Screen sizes to check a design at; "fit" uses the canvas width, "custom" a width the designer types
     const VIEWPORTS = [
@@ -75,6 +75,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const d = this.detail();
         return d ? d.status.replace('_', ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase()) + ' · v' + d.currentVersion : '';
       });
+
+      this.headerStatus = ko.pureComputed(() => screenStatus(this.detail() ? this.detail().status : '', this.statusText()));
+      // The approval group in the title row: the review link and Approve, apart from Save Version and Ask AI
+      this.shareBlocked = ko.pureComputed(() => {
+        if (!this.editable()) {
+          return this.detail() && this.detail().status === 'APPROVED' ? 'An approved screen cannot be shared for review. Reopen it first.' : 'You cannot change screens in this workspace.';
+        }
+        return this.dirty() ? 'Save the changes first: the link shows a saved version.' : '';
+      });
+      this.approveBlocked = ko.pureComputed(() => {
+        if (!this.canApprove()) {
+          return 'You cannot approve screens in this workspace.';
+        }
+        if (!this.editable()) {
+          return 'You cannot change screens in this workspace.';
+        }
+        return this.dirty() ? 'Save the changes first: approval locks a saved version.' : '';
+      });
+      this.isApproved = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED');
+      this.shareOpen = ko.pureComputed(() => this.drawer() === 'share');
 
       // Panels: the left one shows components or layers; the right one the selection, comments or history; the top bar
       // opens one drawer at a time (a new screen, an import, the review link)
@@ -1135,8 +1155,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.screenMenuItems = ko.pureComputed(() => {
         const approved = !!this.detail() && this.detail().status === 'APPROVED';
         return [
-          { value: 'share', label: 'Share for customer review', disabled: !this.editable() || this.dirty() },
-          { value: 'approve', label: 'Approve', disabled: !(this.editable() && this.canApprove()) || this.dirty() },
           { value: 'reopen', label: 'Reopen for changes', disabled: !(approved && this.canApprove()) },
           { value: 'flow', label: 'Create review and confirmation screens', disabled: !this.canMakeFlow() || this.busy() },
           { value: 'comment', label: 'Comment on the screen' },
@@ -1225,8 +1243,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return rawDesigns().map((d) => ({
           name: d.name,
           meta: d.components + ' components · v' + d.currentVersion,
-          statusText: statusLabel(d.status),
-          statusClass: STATUS_BADGE[d.status] || 'fx-badge',
+          status: screenStatus(d.status, statusLabel(d.status)),
           css: 'factory-dz-scr' + (d.id === current ? ' factory-dz-scr-on' : ''),
           openAction: () => { if (d.id !== current) { this.open(d.id); } }
         }));
@@ -1242,17 +1259,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const steps = this.journey().length ? this.journey().map((st) => ({
           name: st.name, current: st.current, openable: !st.current, openAction: st.openAction, stage: st.stage,
           statusText: st.statusText + (st.stage ? ' · ' + (STAGE_NAMES[st.stage] || st.stage) : ''),
+          status: screenStatus(st.status, st.statusText + (st.stage ? ' · ' + (STAGE_NAMES[st.stage] || st.stage) : '')),
           done: st.status === 'APPROVED', ghost: false, title: st.current ? 'This screen' : 'Open ' + st.name
         })) : [{
           name: this.screenHeading() || d.name, current: true, openable: false, openAction: () => {}, done: d.status === 'APPROVED', ghost: false,
           stage: this.working() ? this.working().stage : null, title: 'This screen',
-          statusText: statusLabel(d.status) + (this.working() && this.working().stage ? ' · ' + STAGE_NAMES[this.working().stage] : '')
+          statusText: statusLabel(d.status) + (this.working() && this.working().stage ? ' · ' + STAGE_NAMES[this.working().stage] : ''),
+          status: screenStatus(d.status, statusLabel(d.status) + (this.working() && this.working().stage ? ' · ' + STAGE_NAMES[this.working().stage] : ''))
         }];
         const stages = steps.map((st) => st.stage);
         if (stages.includes('initiate')) {
           ['review', 'confirm'].filter((stage) => !stages.includes(stage)).forEach((stage) => steps.push({
             name: STAGE_NAMES[stage], current: false, openable: false, openAction: () => {}, done: false, ghost: true, stage: stage,
-            statusText: 'Not made yet', title: 'An OBDX transaction has a ' + STAGE_NAMES[stage].toLowerCase() + ' screen. Create it with Create review and confirmation screens.'
+            statusText: 'Not made yet', status: screenStatus('NEW', 'Not made yet'), title: 'An OBDX transaction has a ' + STAGE_NAMES[stage].toLowerCase() + ' screen. Create it with Create review and confirmation screens.'
           }));
         }
         return steps.map((st, i) => Object.assign(st, {
@@ -1397,6 +1416,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + (c.required === true ? ', mandatory' : '') + ((c.validations || []).length ? ', ' + c.validations.join('; ') : '')
           + (c.dataSource && c.dataSource.api ? ', from ' + c.dataSource.api : '') + ']').join(', ')));
         lines.push('Buttons: ' + (model.actions.map((a) => a.label + ' (' + a.kind + ')').join(', ') || 'none'));
+        const picked = this.selectedComponent();
+        if (picked) {
+          lines.push('Selected element: ' + (picked.label || picked.name || '') + ' [' + picked.type + (picked.name ? ', name ' + picked.name : '')
+            + (picked.required === true ? ', mandatory' : '') + ((picked.validations || []).length ? ', ' + picked.validations.join('; ') : '')
+            + (picked.dataSource && picked.dataSource.api ? ', from ' + picked.dataSource.api : '') + ']');
+        }
         const requirement = this.requirement();
         if (requirement && requirement.spec) {
           const spec = requirement.spec;
@@ -1409,6 +1434,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         lines.push('Other screens in the workspace: ' + (rawDesigns().filter((x) => x.id !== this.detail().id).map((x) => x.name + ' (' + x.components + ' components)').join(', ') || 'none'));
         return lines.join('\n');
       };
+      // The chips above the assistant: exactly the parts assistantContext sends
+      this.aiContext = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model) {
+          return [];
+        }
+        const chips = [{ kind: 'Screen', text: model.title || this.detail().name, title: 'This screen: its sections, fields and buttons' }];
+        const picked = this.selectedComponent();
+        if (picked) {
+          chips.push({ kind: 'Selected element', text: picked.label || picked.name || picked.type, title: 'The selected element and its settings' });
+        }
+        const requirement = this.requirement();
+        if (requirement && requirement.spec) {
+          chips.push({ kind: 'Requirement', text: requirement.title, title: 'The requirement: its summary, business rules, APIs, host interfaces and roles' });
+        }
+        const others = rawDesigns().filter((x) => x.id !== this.detail().id).length;
+        if (others) {
+          chips.push({ kind: 'Other screens', text: '+' + others + ' screen' + (others === 1 ? '' : 's'), title: 'The names and sizes of the other screens in the workspace' });
+        }
+        return chips;
+      });
       this.ai = assistant.create(assistantContext, ['Explain this screen', 'Suggest validations', 'Find similar screen', 'Generate API interface', 'Create test cases']);
       this.aiChatKeydown = (event) => {
         if (event.key === 'Enter') {
@@ -1471,8 +1517,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             screens: g.designs.map((d) => ({
               name: d.name,
               meta: d.components + ' components · v' + d.currentVersion,
-              statusText: statusLabel(d.status),
-              statusClass: STATUS_BADGE[d.status] || 'fx-badge',
+              status: screenStatus(d.status, statusLabel(d.status)),
               openAction: () => this.open(d.id)
             }))
           };
@@ -1559,8 +1604,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             requirements(requirementList);
             const current = this.detail() ? this.detail().id : null;
             this.designs(designList.map((d) => ({
-              name: d.name, status: d.status, statusClass: STATUS_BADGE[d.status] || 'fx-badge',
-              statusText: d.status.replace('_', ' ').toLowerCase(), selected: d.id === current, openAction: () => this.open(d.id)
+              name: d.name, status: d.status, statusPill: screenStatus(d.status, d.status.replace('_', ' ').toLowerCase()), selected: d.id === current, openAction: () => this.open(d.id)
             })));
             designOptions(designList.map((d) => ({ value: d.id, label: d.name + ' (' + d.status.replace('_', ' ').toLowerCase() + ')' })));
             requirementOptions(requirementList.filter((r) => r.status === 'APPROVED').map((r) => ({ value: r.id, label: r.title })));

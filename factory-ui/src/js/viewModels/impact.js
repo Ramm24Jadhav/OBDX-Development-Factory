@@ -17,6 +17,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     ].map((l) => Object.assign(l, { bg: 'color-mix(in srgb, ' + l.color + ' 16%, transparent)' }));
     // A status badge (design system fx-badge): tone is success, warning, danger, info, primary, violet or neutral
     const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone && tone !== 'neutral' ? ' fx-badge--' + tone : '') });
+    // The change's status in the words of the Changes page; ui.status gives the colour and the icon
+    const STATUS_WORDS = { ANALYZING: 'Analyzing', PLAN_READY: 'Plan to review', GENERATING: 'Writing code', GENERATED: 'Code to review', DELIVERED: 'Delivered', FAILED: 'Failed', CLOSED: 'Closed' };
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
     const moduleOf = (path) => {
       const parts = path.split('/').filter(Boolean);
@@ -76,7 +78,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           version: this.workspace() ? 'OBDX ' + this.workspace().obdxVersion : '–',
           // Neither the change nor its requirement records a priority
           priority: Object.assign(badge('Not set', 'neutral'), { title: 'The requirement and the plan do not record a priority.' }),
-          status: badge(d.status.replace('_', ' ').toLowerCase(), d.status === 'PLAN_READY' ? 'warning' : 'primary')
+          status: ui.status(d.status, STATUS_WORDS[d.status])
         };
       });
       this.scope = ko.pureComputed(() => {
@@ -266,8 +268,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return [];
         }
         return [
-          { step: 'Impact analysis', state: d.plan ? badge('Done', 'success') : badge('Running', 'info'), who: 'AI agent', when: ui.when(d.createdAt) },
-          { step: 'Plan approval', state: d.planApprovedAt ? badge('Approved', 'success') : badge('Waiting', 'warning'), who: d.planApprovedBy || '–', when: ui.when(d.planApprovedAt) }
+          { step: 'Impact analysis', state: d.plan ? ui.status('PASSED', 'Done') : (d.status === 'FAILED' ? ui.status('FAILED', 'Failed') : ui.status('ANALYZING', 'Running')), who: 'AI agent', when: ui.when(d.createdAt) },
+          { step: 'Plan approval', state: d.planApprovedAt ? ui.status('APPROVED', 'Approved') : ui.status(d.plan ? 'PLAN_READY' : 'QUEUED', 'Waiting'), who: d.planApprovedBy || '–', when: ui.when(d.planApprovedAt) }
         ];
       });
       this.reqCode = ko.pureComputed(() => (this.detail() ? code('REQ', this.detail().requirementId, 4) : ''));
@@ -320,6 +322,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       let subscription = null;
+      let paneObserver = null;
+      let paneWatches = [];
       this.connected = () => {
         accUtils.announce('Impact Analysis page loaded.');
         document.title = 'Impact Analysis';
@@ -327,8 +331,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         workspaceSelection.load().then(loadList).catch(showError);
         window.addEventListener('resize', measureGraph);
         this.tab.subscribe(() => setTimeout(measureGraph, 60));
+        // The graph fits its card again when the card is resized against the side column
+        if (window.ResizeObserver) {
+          let frame = 0;
+          paneObserver = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measureGraph); });
+          const watchPanes = () => setTimeout(() => {
+            const wrap = document.getElementById('dependencyGraphWrap');
+            paneObserver.disconnect();
+            if (wrap) {
+              paneObserver.observe(wrap);
+            }
+          }, 60);
+          paneWatches = [this.detail.subscribe(watchPanes), this.tab.subscribe(watchPanes)];
+          watchPanes();
+        }
       };
       this.disconnected = () => {
+        if (paneObserver) {
+          paneObserver.disconnect();
+          paneWatches.forEach((s) => s.dispose());
+        }
         window.removeEventListener('resize', measureGraph);
         if (subscription) {
           subscription.dispose();

@@ -39,26 +39,14 @@
             <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
         </oj-bind-for-each>
       </div>
-      <span class="factory-ag-range" on-keydown="[[dateKey]]">
-        <button type="button" class="fx-btn fx-btn--tertiary factory-ag-rangebtn" id="runDateRange" data-fx-tip="Show runs started in this date range" aria-haspopup="dialog" :aria-expanded="[[dateOpen() ? 'true' : 'false']]" on-click="[[toggleDates]]">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
-          <span><oj-bind-text value="[[dateRangeText]]"></oj-bind-text></span></button>
-        <oj-bind-if test="[[dateOpen()]]">
-          <div class="factory-ag-rangepop" role="dialog" aria-label="Date range">
-            <div class="fx-field"><label class="fx-label" for="runFrom">From</label><input type="date" class="fx-input" id="runFrom" :value="[[fromDate]]" on-change="[[fromChange]]"></div>
-            <div class="fx-field"><label class="fx-label" for="runTo">To</label><input type="date" class="fx-input" id="runTo" :value="[[toDate]]" on-change="[[toChange]]"></div>
-            <div class="factory-ag-rangeact"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearDates]]">Clear</button>
-              <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[closeDates]]">Done</button></div>
-          </div>
-        </oj-bind-if>
+      <span class="factory-ag-range" data-fx-tip="Show runs started in this date range">
+        <fx-date-range id="runDateRange" label="Started" hide-label placeholder="All dates" from="{{fromDate}}" to="{{toDate}}"></fx-date-range>
       </span>
     </div>
     <div class="factory-filters factory-ag-filters">
       <span class="fx-control factory-ag-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="runSearch" placeholder="Search by run ID, task, requirement or model..." aria-label="Search runs" on-input="[[searchInput]]"></span>
-      <select class="fx-select" id="runStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="completed">Completed</option>
-        <option value="failed">Failed</option><option value="running">Running</option><option value="queued">Queued</option></select>
-      <select class="fx-select" id="runAgent" aria-label="Agent" on-change="[[agentChange]]"><option value="">All Agents</option>
-        <oj-bind-for-each data="[[agentOptions]]"><template><option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+      <fx-multiselect id="runStatus" class="factory-ag-multi" label="Status" hide-label placeholder="All Status" options="[[statusOptions]]" value="{{statusFilter}}"></fx-multiselect>
+      <fx-multiselect id="runAgent" class="factory-ag-multi" label="Agent" hide-label placeholder="All Agents" options="[[agentOptions]]" value="{{agentFilter}}"></fx-multiselect>
       <select class="fx-select" id="runModel" aria-label="Model" on-change="[[modelChange]]"><option value="">All Models</option>
         <oj-bind-for-each data="[[modelOptions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
       <select class="fx-select" id="runWorkspace" aria-label="Workspace" on-change="[[workspaceChange]]"><option value="">All Workspaces</option>
@@ -70,19 +58,25 @@
   <div class="factory-ag-layout">
     <div class="factory-ag-left">
       <section class="factory-card factory-ag-list" id="runList">
+        <oj-bind-if test="[[checked().length > 0]]">
+          <div class="fx-bulkbar factory-ag-bulk" role="region" aria-label="Selected rows" id="runBulkBar"><oj-bind-text value="[[bulkText]]"></oj-bind-text>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="copyRunIds" on-click="[[copyIds]]">Copy run IDs</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="clearRunSelection" on-click="[[clearChecked]]">Clear selection</button></div>
+        </oj-bind-if>
         <div class="fx-table-wrap">
-          <table class="fx-table factory-ag-table" id="runTable">
+          <table class="fx-table factory-ag-table" id="runTable" aria-describedby="runKeysHint">
             <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" id="runSelectAll" aria-label="Select all runs on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></label></th>
               <th>Run ID</th><th>Task / Prompt</th><th>Agent</th><th>Model</th><th>Status</th><th>Started</th><th>Duration</th><th class="fx-table-actions">Actions</th></tr></thead>
-            <tbody>
+            <tbody on-keydown="[[keys.key]]">
               <oj-bind-for-each data="[[rows]]">
-                <template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+                <template><tr :class="[[$current.data.css]]" tabindex="0" :aria-label="[[$current.data.id + ', ' + $current.data.pill.text + ', ' + $current.data.task]]" on-click="[[$current.data.pick]]">
                   <td class="fx-col-check" on-click="[[$current.data.stop]]"><label class="fx-check"><input type="checkbox" :aria-label="[['Select ' + $current.data.id]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></label></td>
                   <td class="factory-cp-link factory-cp-nowrap"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
                   <td class="factory-ag-task"><span class="factory-ag-clamp" :title="[[$current.data.task]]"><oj-bind-text value="[[$current.data.task]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></span></td>
                   <td><span class="factory-ag-agentcell" :title="[[$current.data.agentName]]"><span :class="[[$current.data.agentCss]]"><span :class="[[$current.data.agentIcon]]" aria-hidden="true"></span></span><span class="factory-ag-ell"><oj-bind-text value="[[$current.data.agentName]]"></oj-bind-text></span></span></td>
                   <td><span class="factory-ag-ell" :title="[[$current.data.model]]"><oj-bind-text value="[[$current.data.model]]"></oj-bind-text></span></td>
-                  <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+                  <td><span class="factory-ag-statuscell"><span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[$current.data.isLive]]"><span class="fx-live">Live</span></oj-bind-if></span></td>
                   <td class="factory-cp-nowrap" :title="[[$current.data.startedText]]"><oj-bind-text value="[[$current.data.startedShort]]"></oj-bind-text></td>
                   <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
                   <td class="fx-table-actions" on-click="[[$current.data.stop]]"><fx-menu-button class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only :label="[['Actions for ' + $current.data.id]]"
@@ -103,7 +97,8 @@
           <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button>
           <select class="fx-select" id="runPageSize" aria-label="Runs per page" on-change="[[pager.sizeChange]]"><oj-bind-for-each data="[[pager.sizes]]" as="s"><template><option :value="[[s.data]]" :selected="[[s.data === pager.size()]]"><oj-bind-text value="[[s.data + ' / page']]"></oj-bind-text></option></template></oj-bind-for-each></select>
         </div>
-        <p class="factory-card-sub factory-ag-note">Durations with ~ are from the record's created and updated times. <oj-bind-text value="[[modelNote]]"></oj-bind-text></p>
+        <p class="factory-card-sub factory-ag-note" id="runKeysHint">Keys: ↑/↓ or J/K move, Enter opens the details, X selects. Durations with ~ are from the record's created and updated times. <oj-bind-text value="[[modelNote]]"></oj-bind-text>
+          <oj-bind-if test="[[anyBusy()]]"> The list updates every 5 seconds while a run is queued or running.</oj-bind-if></p>
       </section>
 
       <div class="factory-ag-bottom">
@@ -139,7 +134,9 @@
       <oj-bind-if test="[[run()]]">
         <div class="factory-ag-dhead">
           <h2 id="runId"><oj-bind-text value="[[run().id]]"></oj-bind-text></h2>
-          <span :class="[[run().pill.css]]"><oj-bind-text value="[[run().pill.text]]"></oj-bind-text></span>
+          <span :class="[[run().pill.css]]"><span :class="[[run().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[run().pill.text]]"></oj-bind-text></span>
+          <oj-bind-if test="[[run().isLive]]"><span class="fx-live" id="runLive">Live</span></oj-bind-if>
+          <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-ag-logbtn" id="viewRunLog" on-click="[[openLog]]"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>View log</button>
         </div>
         <p class="factory-ag-dtitle"><oj-bind-text value="[[run().task]]"></oj-bind-text></p>
         <p class="factory-card-sub"><oj-bind-text value="[[run().message]]"></oj-bind-text></p>
@@ -152,7 +149,7 @@
           <oj-bind-if test="[[detailTab() === 'overview']]">
             <dl class="factory-kv factory-ag-kv">
               <dt>Run ID</dt><dd><oj-bind-text value="[[run().id]]"></oj-bind-text></dd>
-              <dt>Status</dt><dd><span :class="[[run().pill.css]]"><oj-bind-text value="[[run().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Status</dt><dd><span :class="[[run().pill.css]]"><span :class="[[run().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[run().pill.text]]"></oj-bind-text></span></dd>
               <dt>Agent</dt><dd><span class="factory-ag-agentcell"><span :class="[[run().agentCss]]"><span :class="[[run().agentIcon]]" aria-hidden="true"></span></span><oj-bind-text value="[[run().agentName]]"></oj-bind-text></span></dd>
               <dt>Model</dt><dd><oj-bind-text value="[[run().model]]"></oj-bind-text></dd>
               <dt>Workspace</dt><dd><oj-bind-text value="[[run().workspace]]"></oj-bind-text></dd>
@@ -179,14 +176,19 @@
             </div>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'steps']]">
-            <ul class="factory-steps">
-              <oj-bind-for-each data="[[steps]]">
-                <template><li><span :class="[[$current.data.css]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span><span><oj-bind-text value="[[$current.data.n + '. ' + $current.data.name]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.state]]"></oj-bind-text></span></li></template>
+            <ol class="fx-timeline factory-ag-tl" id="runSteps">
+              <oj-bind-for-each data="[[steps]]" as="s">
+                <template><li><span :class="[[s.data.dotCss]]"><span :class="[[s.data.icon]]" aria-hidden="true"></span></span>
+                  <span class="factory-ag-tlname"><oj-bind-text value="[[s.data.n + '. ' + s.data.name]]"></oj-bind-text><oj-bind-if test="[[s.data.live]]"> <span class="fx-live">Live</span></oj-bind-if></span>
+                  <span class="fx-timeline-time"><oj-bind-text value="[[s.data.state]]"></oj-bind-text></span></li></template>
               </oj-bind-for-each>
-            </ul>
+            </ol>
+            <oj-bind-if test="[[steps().length === 0]]"><div class="fx-empty">No steps recorded for this run.</div></oj-bind-if>
+            <p class="fx-help">The steps show their real state. The factory does not record the time of each step.</p>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'logs']]">
-            <pre class="factory-code factory-ag-log"><oj-bind-text value="[[run().message || 'No messages for this run.']]"></oj-bind-text></pre>
+            <pre class="fx-log factory-ag-log" id="runLogPreview"><oj-bind-text value="[[run().logText]]"></oj-bind-text></pre>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-ag-logmore" on-click="[[openLog]]"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>View log</button>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'files']]">
             <ul class="factory-pf-evlist"><oj-bind-for-each data="[[run().files]]"><template><li class="factory-mono"><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
@@ -198,7 +200,7 @@
               <oj-bind-for-each data="[[related]]">
                 <template><li class="factory-clickable" on-click="[[$current.data.pick]]"><span :class="[[$current.data.agentCss]]"><span :class="[[$current.data.agentIcon]]" aria-hidden="true"></span></span>
                   <span class="factory-ag-ell"><b><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></b> <oj-bind-text value="[[$current.data.task]]"></oj-bind-text></span>
-                  <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
+                  <span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
               </oj-bind-for-each>
             </ul>
             <oj-bind-if test="[[related().length === 0]]"><div class="fx-empty">No related runs.</div></oj-bind-if>
@@ -212,4 +214,35 @@
       </oj-bind-if>
     </section>
   </div>
+
+  <fx-sheet id="runLogSheet" open="{{logOpen}}" heading="[[logHeading]]" subtitle="[[logSubtitle]]" wide>
+    <oj-bind-if test="[[run()]]">
+      <div class="factory-ag-sheet">
+        <div class="factory-ag-sheethead"><span :class="[[run().pill.css]]"><span :class="[[run().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[run().pill.text]]"></oj-bind-text></span>
+          <oj-bind-if test="[[run().isLive]]"><span class="fx-live">Live, updates every 5 seconds</span></oj-bind-if>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[run().agentName + ' · ' + run().workspace]]"></oj-bind-text></span></div>
+        <h3>Messages</h3>
+        <pre class="fx-log" id="runLogText"><oj-bind-text value="[[run().logText]]"></oj-bind-text></pre>
+        <oj-bind-if test="[[run().activity.length > 0]]">
+          <h3>File activity</h3>
+          <div class="fx-table-wrap">
+            <table class="fx-table factory-ag-activity" id="runActivity">
+              <thead><tr><th>Action</th><th>File</th><th>Result</th><th>Checks</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[run().activity]]" as="a"><template><tr><td><oj-bind-text value="[[a.data.action]]"></oj-bind-text></td>
+                <td class="factory-mono"><bdi><oj-bind-text value="[[a.data.path]]"></oj-bind-text></bdi></td><td><oj-bind-text value="[[a.data.result]]"></oj-bind-text></td>
+                <td class="factory-ov-subtle"><oj-bind-text value="[[a.data.check || '–']]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+            </table>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[run().buildLog]]">
+          <h3>Jenkins console excerpt</h3>
+          <pre class="fx-log" id="runBuildLog"><oj-bind-text value="[[run().buildLog]]"></oj-bind-text></pre>
+        </oj-bind-if>
+        <oj-bind-if test="[[run().consoleUrl]]">
+          <p><a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[run().consoleUrl]]" target="_blank" rel="noopener noreferrer"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Open the Jenkins console</a></p>
+        </oj-bind-if>
+        <p class="fx-alert fx-alert--info factory-ag-notrec" id="runNotRecorded"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text"><b>Not recorded: </b><oj-bind-text value="[[run().notRecorded]]"></oj-bind-text></span></p>
+      </div>
+    </oj-bind-if>
+  </fx-sheet>
 </div>

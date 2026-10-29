@@ -18,8 +18,10 @@
             </oj-bind-for-each>
           </select></label>
         <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="analyzeAgainButton" on-click="[[analyzeAgain]]" :disabled="[[!canAnalyze()]]" :data-fx-tip="[[analyzeTip]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Analyze Again</button>
-        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="approvePlanButton" on-click="[[approvePlan]]" :disabled="[[!canApprovePlan()]]"
-          :data-fx-tip="[[approveTip]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve Plan</button>
+        <span class="fx-approval factory-im-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+          <span class="fx-tip-wrap" :tabindex="[[canApprovePlan() ? null : '0']]" :data-fx-tip="[[approveTip]]">
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="approvePlanButton" on-click="[[approvePlan]]" :disabled="[[!canApprovePlan()]]">
+              <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve Change Plan</button></span></span>
       </div>
     </div>
   </div>
@@ -64,7 +66,7 @@
               <dt>Module</dt><dd><oj-bind-text value="[[proposed().module]]"></oj-bind-text></dd>
               <dt>Target Version</dt><dd><oj-bind-text value="[[proposed().version]]"></oj-bind-text></dd>
               <dt>Priority</dt><dd><span :class="[[proposed().priority.css]]" :title="[[proposed().priority.title]]"><oj-bind-text value="[[proposed().priority.text]]"></oj-bind-text></span></dd>
-              <dt>Status</dt><dd><span :class="[[proposed().status.css]]"><oj-bind-text value="[[proposed().status.text]]"></oj-bind-text></span></dd>
+              <dt>Status</dt><dd><span :class="[[proposed().status.css]]" id="impactStatus"><span :class="[[proposed().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[proposed().status.text]]"></oj-bind-text></span></dd>
             </dl>
           </section>
           <section class="factory-card">
@@ -78,7 +80,9 @@
           </section>
         </div>
 
-        <div class="factory-stack">
+        <!-- The graph and files column and the side column, with a resizer between them -->
+        <div class="factory-im-panes" data-fx-panes id="impactPanes">
+        <div class="factory-stack factory-im-maincol">
           <section class="factory-card factory-im-graphcard" id="dependencyGraphCard">
             <h2><span>Dependency Graph</span>
               <span class="factory-im-graphtools">
@@ -144,7 +148,9 @@
           </section>
         </div>
 
-        <div class="factory-stack">
+        <fx-resizer storage-key="impact-graph" next-min="290" min="420" max="1400" label="Resize the dependency graph and the side column"></fx-resizer>
+
+        <div class="factory-stack factory-im-sidecol">
           <section class="factory-card">
             <h2>Impact Summary</h2>
             <div class="factory-im-donutrow">
@@ -181,6 +187,7 @@
               </oj-bind-for-each>
             </ol>
           </section>
+        </div>
         </div>
       </div>
     </oj-bind-if>
@@ -256,7 +263,7 @@
           <table class="fx-table">
             <thead><tr><th>Step</th><th>State</th><th>By</th><th>When</th></tr></thead>
             <tbody><oj-bind-for-each data="[[approvals]]"><template><tr><td><oj-bind-text value="[[$current.data.step]]"></oj-bind-text></td>
-              <td><span :class="[[$current.data.state.css]]"><oj-bind-text value="[[$current.data.state.text]]"></oj-bind-text></span></td>
+              <td><span :class="[[$current.data.state.css]]"><span :class="[[$current.data.state.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.state.text]]"></oj-bind-text></span></td>
               <td><oj-bind-text value="[[$current.data.who]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
           </table>
         </div>

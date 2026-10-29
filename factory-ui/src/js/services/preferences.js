@@ -6,7 +6,7 @@
  */
 define(['knockout'], function (ko) {
   const KEY = 'factory.preferences';
-  const DEFAULTS = { theme: 'light', landing: 'overview', workspace: '', hour12: true, textSize: 'normal', assistant: true, sidebarCollapsed: false,
+  const DEFAULTS = { theme: 'light', density: 'comfortable', landing: 'overview', workspace: '', hour12: true, textSize: 'normal', assistant: true, sidebarCollapsed: false,
     notify: { build: true, agent: true, review: true, system: true } };
   const stored = (() => { try { return JSON.parse(window.localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } })();
   const values = Object.assign({}, DEFAULTS, stored, { notify: Object.assign({}, DEFAULTS.notify, stored.notify || {}) });
@@ -31,6 +31,7 @@ define(['knockout'], function (ko) {
   const apply = () => {
     document.documentElement.setAttribute('data-theme', isDark() ? 'dark' : 'light');
     document.body.classList.toggle('factory-text-large', prefs.textSize() === 'large');
+    document.body.classList.toggle('fx-compact', prefs.density() === 'compact');
     document.body.classList.toggle('factory-no-assistant', !prefs.assistant());
   };
   Object.keys(DEFAULTS).filter((k) => k !== 'notify').forEach((k) => prefs[k].subscribe(() => { save(); apply(); }));

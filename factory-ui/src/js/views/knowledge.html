@@ -25,7 +25,7 @@
   </div>
 
   <oj-bind-if test="[[tab() === 'code']]">
-    <div class="factory-row factory-row-3w factory-kn-main">
+    <div class="factory-row factory-row-3w factory-kn-main" data-fx-panes>
       <section class="factory-card factory-kn-tree">
         <div class="factory-kn-cardhead"><h2>Project Structure</h2>
           <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" on-click="[[collapseTree]]" data-fx-tip="Close all folders" aria-label="Close all folders"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></div>
@@ -40,7 +40,9 @@
         </ul>
         <oj-bind-if test="[[tree().length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>No indexed files. Import the code on the Code page.</div></oj-bind-if>
       </section>
+      <fx-resizer storage-key="knowledge-tree" min="200" max="560" label="Resize the project tree"></fx-resizer>
 
+      <div class="factory-kn-inner" data-fx-panes>
       <div class="factory-stack factory-kn-mid">
         <section class="factory-card factory-kn-filescard">
           <div class="factory-kn-crumbs"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>
@@ -107,6 +109,7 @@
           <oj-bind-if test="[[!file() && !loadingFile()]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>Choose a file.</div></oj-bind-if>
         </section>
       </div>
+      <fx-resizer storage-key="knowledge-viewer" variable="--fx-pane-2" min="360" max="1600" label="Resize the code viewer against the file details"></fx-resizer>
 
       <div class="factory-stack factory-kn-side">
         <section class="factory-card">
@@ -151,6 +154,10 @@
                 </div>
               </oj-bind-if>
             </div></div>
+          <div class="fx-context" id="insightContext" aria-label="What the AI uses">Answers from:
+            <oj-bind-for-each data="[[aiContext]]" as="cx"><template><span class="fx-chip" :title="[[cx.data.title]]"><oj-bind-text value="[[cx.data.label]]"></oj-bind-text></span></template></oj-bind-for-each>
+            <oj-bind-if test="[[aiContext().length === 0]]"><span class="factory-ov-subtle">nothing yet; open a file</span></oj-bind-if>
+          </div>
           <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="Insight kinds">
             <oj-bind-for-each data="[[insightTabs]]"><template><button type="button" role="tab" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
           </div>
@@ -171,6 +178,7 @@
           </oj-bind-if>
           <oj-bind-if test="[[relatedReqs().length === 0]]"><p class="factory-kn-none">No requirement links this file yet.</p></oj-bind-if>
         </section>
+      </div>
       </div>
     </div>
   </oj-bind-if>
@@ -244,8 +252,20 @@
         <fx-input id="knowledgeQuery" class="factory-grow" label="Search" hide-label icon="search" clearable placeholder="Search code, classes, APIs, UI components, services..." value="{{query}}" on-fx-enter="[[search]]"></fx-input>
         <button type="button" id="knowledgeSearchButton" class="fx-btn fx-btn--primary" on-click="[[search]]" :disabled="[[searching]]">Search</button>
       </div>
+      <div class="factory-cp2-searchopts factory-cp2-searchopts-wide factory-kn5-searchopts">
+        <div class="factory-cp2-checks">
+          <label class="fx-check"><input type="checkbox" :checked="[[inContent]]" on-change="[[inContentChange]]"><span>Search in file content</span></label>
+          <label class="fx-check"><input type="checkbox" :checked="[[inNames]]" on-change="[[inNamesChange]]"><span>Search in class &amp; method names</span></label>
+          <label class="fx-check"><input type="checkbox" :checked="[[inComments]]" on-change="[[inCommentsChange]]"><span>Search in comments</span></label>
+        </div>
+        <select class="fx-select factory-cp2-modules" aria-label="Module (limits results to a top-level folder of the code)" :value="[[module]]" on-change="[[moduleChange]]" title="Limit results to a top-level folder of the code">
+          <option value="">All Modules</option>
+          <oj-bind-for-each data="[[modules]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
+        </select>
+      </div>
       <oj-bind-if test="[[searchNote()]]"><p class="factory-ov-subtle"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p></oj-bind-if>
-      <oj-bind-for-each data="[[results]]">
+      <oj-bind-if test="[[results().length > 0 && filteredResults().length === 0]]"><p class="factory-ov-subtle">No results match the options above.</p></oj-bind-if>
+      <oj-bind-for-each data="[[filteredResults]]">
         <template><div class="factory-cp-result"><button type="button" class="factory-link-sm factory-mono" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></button>
           <span class="factory-ov-subtle"><oj-bind-text value="[[' lines ' + $current.data.startLine + '-' + $current.data.endLine + ' · ' + $current.data.kind + ' · ' + $current.data.matchedBy]]"></oj-bind-text></span>
           <pre class="factory-code factory-code-light"><oj-bind-text value="[[$current.data.snippet]]"></oj-bind-text></pre></div></template>

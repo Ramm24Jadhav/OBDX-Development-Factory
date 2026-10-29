@@ -403,6 +403,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then((res) => { this.results(res.results.map((r) => Object.assign({}, r, { open: () => { this.tab('code'); this.openFile(r.path); } }))); this.searchNote(res.results.length ? (res.semanticNote || '') : 'No matches.'); })
           .catch(showError).finally(() => this.searching(false));
       };
+      // Search options, the same as on the Code page: kinds of result and the top-level folder, applied to the results here
+      this.inContent = ko.observable(true);
+      this.inNames = ko.observable(true);
+      this.inComments = ko.observable(false);
+      this.inContentChange = ui.checked(this.inContent);
+      this.inNamesChange = ui.checked(this.inNames);
+      this.inCommentsChange = ui.checked(this.inComments);
+      this.module = ko.observable('');
+      this.moduleChange = ui.value(this.module);
+      const topFolder = (path) => (path.indexOf('/') > 0 ? path.split('/')[0] : '');
+      this.modules = ko.pureComputed(() => Array.from(new Set(this.files().map((f) => topFolder(f.path))
+        .concat(this.results().map((r) => topFolder(r.path))).filter(Boolean))).sort());
+      const COMMENT = /(\/\/|\/\*|^\s*\*|<!--|^\s*#)(.*)$/;
+      const inComment = (r) => {
+        const words = this.query().toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+        return (r.snippet || '').split('\n').some((line) => {
+          const m = COMMENT.exec(line);
+          return m && words.some((w) => m[2].toLowerCase().indexOf(w) >= 0);
+        });
+      };
+      this.filteredResults = ko.pureComputed(() => this.results().filter((r) => {
+        const named = r.kind === 'class' || r.kind === 'method';
+        const kindOk = (named && this.inNames()) || (!named && this.inContent()) || (this.inComments() && inComment(r));
+        return kindOk && (!this.module() || topFolder(r.path) === this.module());
+      }));
 
       // Inventory views
       this.endpoints = ko.pureComputed(() => (this.inventory() ? this.inventory().endpoints : []).map((e) => ({
@@ -471,9 +496,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.ai = assistant.create(() => {
         const f = this.file();
+        const w = this.workspace();
         const users = this.usedBy() && this.usedBy().length ? '\nFiles that mention it: ' + this.usedBy().map((u) => u.path).join(', ') : '';
-        return f ? 'File ' + f.path + ' (' + f.language + ', ' + (f.lines || 'some') + ' lines):\n' + f.content.slice(0, 15000) + users : '';
+        const where = w ? 'Workspace: ' + w.name + ' (' + w.bankName + ', OBDX ' + w.obdxVersion + ')\n' : '';
+        return f ? where + 'File ' + f.path + ' (' + f.language + ', ' + (f.lines || 'some') + ' lines):\n' + f.content.slice(0, 15000) + users : '';
       }, []);
+      // The chips above AI Code Insights: exactly what the context above sends (nothing is sent without an open file)
+      this.aiContext = ko.pureComputed(() => {
+        const f = this.file();
+        const w = this.workspace();
+        if (!f) {
+          return [];
+        }
+        const chips = [];
+        if (w) {
+          chips.push({ label: w.name + ' · OBDX ' + w.obdxVersion, title: 'Workspace ' + w.name + ' (' + w.bankName + ', OBDX ' + w.obdxVersion + ')' });
+        }
+        chips.push({ label: f.path.split('/').pop(), title: f.path + (f.content.length > 15000 ? ' (the first 15,000 characters)' : '') + (f.partial ? ' (indexed pieces only)' : '') });
+        if (this.usedBy() && this.usedBy().length) {
+          chips.push({ label: this.usedBy().length + ' file' + (this.usedBy().length === 1 ? '' : 's') + ' that mention it', title: this.usedBy().map((u) => u.path).join(', ') });
+        }
+        return chips;
+      });
       this.insightTab = ko.observable('summary');
       this.insightTabs = ui.tabs(this.insightTab, [
         { value: 'summary', label: 'Summary' }, { value: 'explain', label: 'Explain' }, { value: 'usage', label: 'Find Usage' }, { value: 'suggest', label: 'Suggest Changes' }

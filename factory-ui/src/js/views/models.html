@@ -32,7 +32,7 @@
             <div class="factory-md-head">
               <span :class="[[p.data.logo]]" aria-hidden="true"></span>
               <div class="factory-md-name"><strong><oj-bind-text value="[[p.data.name]]"></oj-bind-text></strong></div>
-              <span class="factory-md-headright"><span :class="[[p.data.pill().css]]"><oj-bind-text value="[[p.data.pill().text]]"></oj-bind-text></span>
+              <span class="factory-md-headright"><span :class="[[p.data.pill().css]]"><span :class="[[p.data.pill().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[p.data.pill().text]]"></oj-bind-text></span>
                 <fx-menu-button class="factory-md-more" :label="[['Actions for ' + p.data.name]]" icon="more" icon-only variant="ghost" size="sm"
                   items="[[p.data.menuItems]]" on-fx-action="[[p.data.menuAction]]"></fx-menu-button></span>
               <span class="factory-ov-subtle factory-md-desc"><oj-bind-text value="[[p.data.description]]"></oj-bind-text></span>
@@ -49,7 +49,7 @@
                 <oj-bind-if test="[[p.data.chatModels().length === 0]]"><option value="">Test to list models</option></oj-bind-if>
                 <oj-bind-for-each data="[[p.data.chatModels]]" as="m"><template><option :value="[[m.data]]" :selected="[[m.data === p.data.defaultModel()]]"><oj-bind-text value="[[m.data]]"></oj-bind-text></option></template></oj-bind-for-each>
               </select></dd>
-              <dt>Status</dt><dd><span :class="[[p.data.statusPill().css]]" :title="[[p.data.statusText]]"><oj-bind-text value="[[p.data.statusPill().text]]"></oj-bind-text></span></dd>
+              <dt>Status</dt><dd><span :class="[[p.data.statusPill().css]]" :title="[[p.data.statusText]]"><span :class="[[p.data.statusPill().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[p.data.statusPill().text]]"></oj-bind-text></span></dd>
               <dt>Last Checked</dt><dd><oj-bind-text value="[[p.data.checked() || '–']]"></oj-bind-text></dd>
               <oj-bind-if test="[[p.data.local]]">
                 <dt>Supported Capabilities</dt>
@@ -99,7 +99,7 @@
                   <td><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
                   <td title="The model server does not report the context length"><span class="factory-ov-subtle">–</span></td>
                   <td><oj-bind-text value="[[m.data.caps]]"></oj-bind-text></td>
-                  <td><span class="fx-badge fx-badge--success">Available</span></td>
+                  <td><span :class="[[available.css]]"><span :class="[[available.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[available.text]]"></oj-bind-text></span></td>
                   <td><oj-bind-if test="[[m.data.isDefault]]"><span class="fx-badge fx-badge--primary">Default</span></oj-bind-if>
                     <oj-bind-if test="[[!m.data.isDefault && m.data.admin()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-md-setdefault" on-click="[[m.data.setDefault]]">Set Default</button></oj-bind-if></td>
                   <td class="factory-md-menucol fx-table-actions"><fx-menu-button class="factory-md-more" :label="[['Actions for ' + m.data.id]]" icon="more" icon-only variant="ghost" size="sm"
@@ -140,35 +140,48 @@
               <span class="factory-md-lbl">Default Model</span>
               <div><fx-select id="chatModel" label="Default model" hide-label options="[[chatOptions]]" value="{{chatModel}}" searchable></fx-select>
                 </div>
-              <label for="embeddingSourceSelect">Code Search</label>
-              <select class="fx-select" id="embeddingSourceSelect" on-change="[[embeddingSourceChange]]">
-                <option value="same" :selected="[[embeddingSource() === 'same']]">On the same server</option>
-                <option value="other" :selected="[[embeddingSource() === 'other']]">On another server</option>
-              </select>
-              <oj-bind-if test="[[embeddingSource() === 'other']]">
-                <span class="factory-md-lbl">Search Server</span>
-                <div class="factory-md-stack">
-                  <fx-input id="embeddingUrl" label="Code search server URL" hide-label type="url" placeholder="http://localhost:11434/v1" value="{{embeddingUrl}}"></fx-input>
-                  <fx-input id="embeddingApiKey" type="password" label="Code search API key" hide-label placeholder="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" autocomplete="new-password"></fx-input>
-                  <button type="button" id="getEmbeddingModelsButton" class="fx-btn fx-btn--secondary" on-click="[[getEmbeddingModels]]" :disabled="[[searching]]">Get models</button>
-                </div>
-              </oj-bind-if>
               <oj-bind-if test="[[embeddingCandidates().length > 0]]">
-                <span class="factory-md-lbl">Embedding Model</span>
-                <div><fx-select id="embeddingModel" label="Embedding model" hide-label options="[[embeddingOptions]]" value="{{embeddingModel}}" searchable></fx-select>
-                  <oj-bind-if test="[[!hasEmbeddingModel()]]"><span class="factory-md-hint factory-md-warn">No embedding model on this server; choose another server for code search.</span></oj-bind-if></div>
+                <span class="factory-md-lbl">Code Search Model</span>
+                <div><fx-select id="embeddingModel" label="Code search model" hide-label options="[[embeddingOptions]]" value="{{embeddingModel}}" searchable></fx-select>
+                  <oj-bind-if test="[[!hasEmbeddingModel()]]"><span class="factory-md-hint factory-md-warn">No embedding model on this server; choose another server for code search in Advanced settings.</span></oj-bind-if></div>
+              </oj-bind-if>
+              <oj-bind-if test="[[embeddingCandidates().length === 0 && embeddingSource() === 'other']]">
+                <span class="factory-md-lbl">Code Search Model</span>
+                <span class="factory-md-hint">Get the models of the code search server in Advanced settings.</span>
               </oj-bind-if>
             </oj-bind-if>
-            <label for="fallbackProvider">Fallback Provider</label>
-            <select class="fx-select" id="fallbackProvider" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
-            <label for="fallbackModel">Fallback Model</label>
-            <div><select class="fx-select" id="fallbackModel" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
-              <span class="factory-md-hint">Fallback needs a server change; not available yet</span></div>
           </div>
-          <div class="factory-md-toggle" title="Not available yet: the factory has no fallback provider.">
-            <div><strong>Auto Fallback on Failure</strong><span class="factory-md-hint">Switch to the fallback provider if the primary fails</span></div>
-            <fx-switch id="autoFallback" aria-label="Auto Fallback on Failure" value="[[false]]" disabled></fx-switch>
-          </div>
+          <details class="fx-disclosure factory-md-advanced" id="advancedModelSettings" :open="[[advancedOpen()]]">
+            <summary>Advanced settings <span class="fx-disclosure-hint"><oj-bind-text value="[[advancedHint]]"></oj-bind-text></span></summary>
+            <div class="fx-disclosure-body">
+              <div class="factory-md-form">
+                <oj-bind-if test="[[models().length > 0]]">
+                  <label for="embeddingSourceSelect">Code Search</label>
+                  <select class="fx-select" id="embeddingSourceSelect" on-change="[[embeddingSourceChange]]">
+                    <option value="same" :selected="[[embeddingSource() === 'same']]">On the same server</option>
+                    <option value="other" :selected="[[embeddingSource() === 'other']]">On another server</option>
+                  </select>
+                  <oj-bind-if test="[[embeddingSource() === 'other']]">
+                    <span class="factory-md-lbl">Search Server</span>
+                    <div class="factory-md-stack">
+                      <fx-input id="embeddingUrl" label="Code search server URL" hide-label type="url" placeholder="http://localhost:11434/v1" value="{{embeddingUrl}}"></fx-input>
+                      <fx-input id="embeddingApiKey" type="password" label="Code search API key" hide-label placeholder="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" autocomplete="new-password"></fx-input>
+                      <button type="button" id="getEmbeddingModelsButton" class="fx-btn fx-btn--secondary" on-click="[[getEmbeddingModels]]" :disabled="[[searching]]">Get models</button>
+                    </div>
+                  </oj-bind-if>
+                </oj-bind-if>
+                <label for="fallbackProvider">Fallback Provider</label>
+                <select class="fx-select" id="fallbackProvider" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
+                <label for="fallbackModel">Fallback Model</label>
+                <div><select class="fx-select" id="fallbackModel" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
+                  <span class="factory-md-hint">Fallback needs a server change; not available yet</span></div>
+              </div>
+              <div class="factory-md-toggle" title="Not available yet: the factory has no fallback provider.">
+                <div><strong>Auto Fallback on Failure</strong><span class="factory-md-hint">Switch to the fallback provider if the primary fails</span></div>
+                <fx-switch id="autoFallback" aria-label="Auto Fallback on Failure" value="[[false]]" disabled></fx-switch>
+              </div>
+            </div>
+          </details>
           <oj-bind-if test="[[models().length > 0]]">
             <button type="button" id="saveModelsButton" class="fx-btn fx-btn--primary factory-md-save" on-click="[[save]]" :disabled="[[saving]]">Save Settings</button>
           </oj-bind-if>
@@ -224,7 +237,7 @@
           <table class="fx-table factory-md-health">
             <thead><tr><th>Provider</th><th>Status</th><th>Latency</th><th>Last Checked</th></tr></thead>
             <tbody><oj-bind-for-each data="[[health]]"><template><tr><td :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
-              <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+              <td><span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
               <td><oj-bind-text value="[[$current.data.latency]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
           </table>
           <oj-bind-if test="[[health().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>Test the providers to see their health.</div></oj-bind-if>

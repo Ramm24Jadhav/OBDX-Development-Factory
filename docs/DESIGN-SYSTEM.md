@@ -92,3 +92,28 @@ Buttons are plain `<button class="fx-btn fx-btn--primary|secondary|tertiary|ghos
 are `<div class="fx-form fx-form--2">`; file pickers are a native file input with a button label; tables are `fx-table`.
 Popups (select lists, calendars, menus) are positioned against the window so cards and tables never clip them, and close
 on Escape, an outside click or scrolling.
+
+## Workflow components (`js/components/fx-more.js`) and helpers
+
+| Element / helper | Use |
+|---|---|
+| `fx-multiselect` | several values as removable chips, with a searchable checklist (`value` is an array; Backspace removes the last) |
+| `fx-radio-group` | one of a few options, native radios (`options`, `value`, `inline`) |
+| `fx-segmented` | a segmented control with radiogroup semantics and arrow keys |
+| `fx-date-range` | `from` / `to` with presets (Today, Last 7 days, Last 30 days, This month, All dates) |
+| `fx-popover` | a button that opens rich content (slot) next to it; Escape closes |
+| `fx-sheet` | a side panel for details and logs (slot); traps focus, Escape and the backdrop close it |
+| `fx-resizer` | drag or arrow keys to resize the column before it, inside a grid marked `data-fx-panes`; remembered per `storage-key`; double-click or Enter resets |
+| `ui.status(serverStatus, words?)` | one look per status category for every page: draft, queued, in progress, needs review, done, closed, failed (icon and words, never colour alone) |
+| `ui.tableKeys(rows, {open, toggle})` | list tables: ↑/↓ or J/K move, Enter opens, X selects |
+| `.fx-bulkbar`, `.fx-approval`, `.fx-context`, `.fx-disclosure`, `.fx-timeline`, `.fx-log`, `.fx-live` | bulk actions on selected rows; approval actions set apart from generate and validate; what the AI assistant answers from; advanced settings folded away; steps and activity; log text; a live indicator while real polling runs |
+
+## Command palette and shortcuts (`js/services/palette.js`)
+
+Ctrl or Cmd K, `/`, or the top bar search button opens one search across pages, actions, workspaces, requirements,
+changes and the code. Arrow keys move, Enter runs, Escape closes; `>` narrows to actions, `@` to workspaces, `#` to
+requirements and changes. `g` then a letter jumps to a page (G O overview, G R requirements, G H changes, ...), and `?`
+lists every shortcut. Single-letter shortcuts never fire while typing in a field.
+
+See also `docs/DESIGN-TOKENS.md` (every token with its light and dark value) and `docs/DESIGN-REFERENCE-AUDIT.md`
+(the Linear, Vercel, shadcn/ui and Figma guidance this follows).

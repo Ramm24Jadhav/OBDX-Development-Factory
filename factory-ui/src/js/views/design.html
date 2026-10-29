@@ -306,4 +306,52 @@
       </div>
     </section>
   </div>
+  <!-- Row 6: workflow components -->
+  <div class="factory-ds-row factory-ds-row-6">
+    <section class="fx-card" aria-labelledby="dsMore">
+      <h2 class="fx-card-title" id="dsMore">Multi-select, radio group, segmented</h2>
+      <div class="fx-stack">
+        <fx-multiselect id="dsMulti" label="Modules (fx-multiselect)" placeholder="Choose modules" options="[[moduleOptions]]" value="{{modules}}" help="Backspace removes the last one."></fx-multiselect>
+        <fx-radio-group id="dsRadioGroup" label="Delivery (fx-radio-group)" options="[[deliveryOptions]]" value="{{delivery}}" inline></fx-radio-group>
+        <div class="fx-row"><span class="factory-ds-label">Density (fx-segmented)</span><fx-segmented id="dsDensity" label="Density" options="[[densityOptions]]" value="{{density}}"></fx-segmented></div>
+        <p class="fx-help">Modules: <oj-bind-text value="[[modulesText]]"></oj-bind-text> · delivery: <oj-bind-text value="[[delivery]]"></oj-bind-text></p>
+      </div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsRange">
+      <h2 class="fx-card-title" id="dsRange">Date range, popover, sheet</h2>
+      <div class="fx-stack">
+        <fx-date-range id="dsDateRange" label="Runs between (fx-date-range)" from="{{rangeFrom}}" to="{{rangeTo}}"></fx-date-range>
+        <div class="fx-row">
+          <fx-popover id="dsPopover" label="What is a change?" icon="info" title="Changes">
+            <p class="fx-help">A change is the plan, the generated files and their checks for one approved requirement.</p>
+          </fx-popover>
+          <button type="button" class="fx-btn fx-btn--secondary" id="dsOpenSheet" on-click="[[openSheet]]"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Open a sheet</button>
+        </div>
+      </div>
+      <fx-sheet id="dsSheet" open="{{sheetOpen}}" heading="Run details (fx-sheet)" subtitle="Escape or the backdrop closes it">
+        <ol class="fx-timeline">
+          <li><span class="fx-timeline-dot fx-timeline-dot--success"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><span>Plan the change</span><span class="fx-timeline-time">2 min</span></li>
+          <li><span class="fx-timeline-dot fx-timeline-dot--running"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></span><span>Write the files <span class="fx-live">Live</span></span><span class="fx-timeline-time">running</span></li>
+          <li><span class="fx-timeline-dot"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span><span>Quick checks</span><span class="fx-timeline-time">waiting</span></li>
+        </ol>
+        <pre class="fx-log">[12:04:01] Planning the change (example log)
+[12:05:13] Writing ui/js/viewModels/fund-transfer.js</pre>
+      </fx-sheet>
+    </section>
+    <section class="fx-card" aria-labelledby="dsStatus">
+      <h2 class="fx-card-title" id="dsStatus">Status categories (ui.status)</h2>
+      <div class="fx-row"><oj-bind-for-each data="[[statuses]]" as="s"><template><span :class="[[s.data.css]]"><span :class="[[s.data.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[s.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+      <p class="fx-help">Pages map their server states to these seven categories, so a state always looks the same.</p>
+      <details class="fx-disclosure"><summary>Advanced settings <span class="fx-disclosure-hint">progressive disclosure</span></summary><div class="fx-disclosure-body"><p class="fx-help">Rarely used settings stay folded until needed.</p></div></details>
+      <div class="fx-row factory-ds-approval"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clicked('Validate')]]">Validate</button><span class="fx-approval"><span class="fx-approval-label">Approval</span><button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[clicked('Approve')]]">Approve plan</button></span></div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsPanes">
+      <h2 class="fx-card-title" id="dsPanes">Resizable panels (fx-resizer)</h2>
+      <div class="factory-ds-panes" data-fx-panes>
+        <div class="factory-ds-pane">Files</div>
+        <fx-resizer storage-key="design-demo" min="120" max="420" label="Resize the file list"></fx-resizer>
+        <div class="factory-ds-pane">Code: drag the handle, or focus it and use the arrow keys; double-click resets.</div>
+      </div>
+    </section>
+  </div>
 </div>

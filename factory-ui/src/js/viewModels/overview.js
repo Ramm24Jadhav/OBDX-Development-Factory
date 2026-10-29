@@ -4,13 +4,15 @@
  * dashboard service (the same endpoints the other pages use).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard',
-        '../services/pageRequests'],
-  function (ko, accUtils, api, session, dashboard, pageRequests) {
+        '../services/pageRequests', '../services/ui'],
+  function (ko, accUtils, api, session, dashboard, pageRequests, ui) {
     const WEEK_MS = 7 * 24 * 3600 * 1000;
-    // Status badges of the design system (fx-badge carries a dot, so status is not colour alone)
-    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
-    const REQUIREMENT = { PROCESSING: pill('In Progress', 'primary'), READY: pill('Review', 'warning'), APPROVED: pill('Approved', 'success'), FAILED: pill('Failed', 'danger') };
-    const CODE = { ready: pill('Ready', 'success'), importing: pill('Indexing', 'primary'), failed: pill('Check Required', 'warning'), new: pill('Not imported', '') };
+    // Status chips of the design system (ui.status: one colour and icon per category, the page's own words)
+    const REQUIREMENT_WORDS = { PROCESSING: 'In Progress', READY: 'Review', APPROVED: 'Approved', FAILED: 'Failed' };
+    const CODE = {
+      ready: ui.status('SUCCEEDED', 'Ready'), importing: ui.status('IMPORTING', 'Indexing'),
+      failed: ui.status('FAILED', 'Check Required'), new: ui.status('NEW', 'Not imported')
+    };
     const count = (list, test) => list.filter(test).length;
     const all = (data, key) => data.reduce((sum, d) => sum.concat(d[key]), []);
     const shortId = (id) => 'REQ-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
@@ -108,7 +110,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Recent requirements
       this.recentRequirements = ko.pureComputed(() => data().reduce((list, d) => list.concat(d.requirements.map((r) => ({
         id: shortId(r.id), title: r.title, workspace: d.workspace.name, type: r.fileName ? 'Document' : 'Described',
-        status: REQUIREMENT[r.status] || pill(r.status, ''),
+        status: ui.status(r.status, REQUIREMENT_WORDS[r.status]),
         updated: new Date(r.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
         at: r.updatedAt, open: dashboard.open('requirements', d.workspace.id)
       }))), []).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4));
@@ -147,34 +149,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return {
           number: b.buildNumber ? '#' + b.buildNumber : '–', workspace: b.workspaceName,
           branch: b.branchUrl ? b.branchUrl.split('/').slice(-2).join('/') : 'patch',
-          status: running ? 'Running' : (ok ? 'Success' : 'Failed'),
-          statusCss: 'factory-ov2-build ' + (running ? 'factory-ov2-build-run' : (ok ? 'factory-ov2-build-ok' : 'factory-ov2-build-bad')),
-          iconClass: 'factory-nav-icon ' + (running ? 'factory-ico-clock' : (ok ? 'factory-ico-check' : 'factory-ico-x')),
+          status: running ? ui.status('RUNNING', 'Running') : (ok ? ui.status('SUCCEEDED', 'Success') : ui.status('FAILED', 'Failed')),
           duration: dashboard.duration(b.startedAt, b.finishedAt), completed: dashboard.when(b.finishedAt), at: b.finishedAt || b.startedAt,
           open: dashboard.open('changes', b.workspaceId)
         };
       }).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4));
 
-      // Recent activity across workspaces
+      // Recent activity across workspaces, as a timeline: the dot says how it ended (done, failed, still running)
       this.activity = ko.pureComputed(() => {
         const items = [];
-        const add = (tone, icon, text, workspace, at, open) => items.push({
-          dotCss: 'factory-ov2-dot factory-ov2-icon-' + tone, iconClass: 'factory-nav-icon factory-ico-' + icon,
-          text: text, workspace: '[' + workspace + ']', at: at, when: dashboard.ago(at), open: open
+        const DOT = { done: ' fx-timeline-dot--success', failed: ' fx-timeline-dot--danger', running: ' fx-timeline-dot--running', none: '' };
+        const add = (state, icon, text, workspace, at, open) => items.push({
+          dotCss: 'fx-timeline-dot' + DOT[state], iconClass: 'factory-nav-icon factory-ico-' + icon,
+          text: text, workspace: workspace, at: at, when: dashboard.ago(at), whenTitle: dashboard.when(at), open: open
         });
         data().forEach((d) => {
           const w = d.workspace;
-          add('amber', 'folder', 'Workspace "' + w.name + '" created', w.name, w.createdAt, dashboard.open('workspaces'));
-          d.imports.forEach((j) => add(j.status === 'FAILED' ? 'red' : 'blue', 'cube',
+          add('none', 'folder', 'Workspace "' + w.name + '" created', w.name, w.createdAt, dashboard.open('workspaces'));
+          d.imports.forEach((j) => add(j.status === 'FAILED' ? 'failed' : (j.status === 'SUCCEEDED' ? 'done' : 'running'), 'cube',
             j.status === 'FAILED' ? 'Code import failed' : (j.status === 'SUCCEEDED' ? 'Code indexed at r' + j.toRevision : 'Code import started'),
             w.name, j.finishedAt || j.createdAt, dashboard.open('code', w.id)));
-          d.requirements.forEach((r) => add('violet', 'doc', 'Requirement "' + r.title + '" ' + (r.status === 'APPROVED' ? 'approved' : 'updated'),
-            w.name, r.updatedAt, dashboard.open('requirements', w.id)));
-          d.designs.forEach((s) => add('green', 'monitor', 'Screen "' + s.name + '" ' + (s.status === 'APPROVED' ? 'approved' : 'updated'),
+          d.requirements.forEach((r) => add(r.status === 'APPROVED' ? 'done' : (r.status === 'FAILED' ? 'failed' : 'none'), 'doc',
+            'Requirement "' + r.title + '" ' + (r.status === 'APPROVED' ? 'approved' : 'updated'), w.name, r.updatedAt, dashboard.open('requirements', w.id)));
+          d.designs.forEach((s) => add(s.status === 'APPROVED' ? 'done' : 'none', 'monitor', 'Screen "' + s.name + '" ' + (s.status === 'APPROVED' ? 'approved' : 'updated'),
             w.name, s.updatedAt, dashboard.open('designer', w.id)));
-          d.changes.forEach((c) => add('blue', 'code', 'Change "' + c.title + '" ' + c.status.toLowerCase().replace(/_/g, ' '),
-            w.name, c.updatedAt, dashboard.open('changes', w.id)));
-          d.builds.forEach((b) => add(b.result === 'SUCCESS' ? 'green' : 'red', b.result === 'SUCCESS' ? 'check' : 'x',
+          d.changes.forEach((c) => add(c.status === 'FAILED' ? 'failed' : (c.status === 'DELIVERED' || c.status === 'MERGED' ? 'done' : 'none'), 'code',
+            'Change "' + c.title + '" ' + c.status.toLowerCase().replace(/_/g, ' '), w.name, c.updatedAt, dashboard.open('changes', w.id)));
+          d.builds.forEach((b) => add(b.result === 'SUCCESS' ? 'done' : (b.result ? 'failed' : 'running'), b.result === 'SUCCESS' ? 'check' : (b.result ? 'x' : 'refresh'),
             'Build ' + (b.buildNumber ? '#' + b.buildNumber + ' ' : '') + (b.result === 'SUCCESS' ? 'completed successfully' : (b.result ? 'failed' : 'started')),
             w.name, b.finishedAt || b.startedAt, dashboard.open('changes', w.id)));
         });

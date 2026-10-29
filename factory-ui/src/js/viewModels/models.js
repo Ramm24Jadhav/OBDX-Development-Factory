@@ -5,10 +5,10 @@
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, session, ui, toast) {
-    // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
-    const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
-    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '') });
+    // Provider and model states use the shared status categories (ui.status) with this page's words
+    const TESTING = ui.status('RUNNING', 'Testing');
     function ModelsViewModel() {
+      this.available = ui.status('PASSED', 'Available');
       this.isAdmin = session.isAdmin;
       this.status = ko.observable(null);
       this.statusSource = ko.pureComputed(() => {
@@ -61,6 +61,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.embeddingServerModels = ko.observableArray([]);
       this.embeddingCandidates = ko.pureComputed(() => (this.embeddingSource() === 'same' ? this.models() : this.embeddingServerModels()));
       this.hasEmbeddingModel = ko.pureComputed(() => this.embeddingCandidates().some((m) => m.embedding));
+      // Advanced settings (separate code search server, fallback) stay folded unless one is in use or needs a fix
+      this.advancedOpen = ko.pureComputed(() => this.embeddingSource() === 'other' || (this.embeddingCandidates().length > 0 && !this.hasEmbeddingModel()));
+      this.advancedHint = ko.pureComputed(() => (this.embeddingSource() === 'other' ? 'Code search on another server' : 'Code search server, fallback'));
 
       // The model in use, also when the server lists it with ":latest" (Ollama treats both names the same)
       const find = (models, name) => models.map((m) => m.id).find((id) => name && id.replace(/:latest$/, '') === name.replace(/:latest$/, ''));
@@ -223,15 +226,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           testing: ko.observable(false), admin: session.isAdmin
         };
         p.active = ko.pureComputed(() => !!this.status() && same(this.status().baseUrl, p.baseUrl()));
-        p.pill = ko.pureComputed(() => (p.active() ? pill('In use', 'green') : p.state() === 'ok' ? pill('Connected', 'green')
-          : p.state() === 'failed' ? pill('Not reachable', 'red') : pill('Not tested', 'grey')));
+        p.pill = ko.pureComputed(() => (p.testing() ? TESTING : p.active() ? ui.status('APPROVED', 'In use') : p.state() === 'ok' ? ui.status('PASSED', 'Connected')
+          : p.state() === 'failed' ? ui.status('FAILED', 'Not reachable') : ui.status('NOT_CHECKED', 'Not tested')));
         p.statusText = ko.pureComputed(() => (p.state() === 'ok' ? p.models().length + ' models available' : p.state() === 'failed' ? 'Failed: ' + p.error : (p.active() ? 'In use' : 'Not tested')));
         p.chatModels = ko.pureComputed(() => p.models().filter((m) => !m.embedding).map((m) => m.id));
         p.defaultModel = ko.pureComputed(() => p.selectedModel()
           || (p.active() ? find(p.models(), this.status().chatModel) || this.status().chatModel : (p.chatModels()[0] || '–')));
         p.modelChange = (event) => p.selectedModel(event.target.value);
-        p.statusPill = ko.pureComputed(() => (p.state() === 'failed' ? pill('Not reachable', 'red')
-          : (p.state() === 'ok' || p.active()) ? pill('Available', 'green') : pill('Not tested', 'grey')));
+        p.statusPill = ko.pureComputed(() => (p.testing() ? TESTING : p.state() === 'failed' ? ui.status('FAILED', 'Not reachable')
+          : (p.state() === 'ok' || p.active()) ? ui.status('PASSED', 'Available') : ui.status('NOT_CHECKED', 'Not tested')));
         p.selectedAsDefault = ko.pureComputed(() => same(this.modelsUrl() || (this.status() || {}).baseUrl, p.baseUrl()));
         // What the listed models can do: chat models write specs and code, embedding models search code
         p.caps = ko.pureComputed(() => [
@@ -403,7 +406,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             : { kind: 'count', text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
       });
       this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
-        name: p.short, pill: p.state() === 'ok' ? pill('Healthy', 'green') : pill('Unavailable', 'red'),
+        name: p.short, pill: p.state() === 'ok' ? ui.status('PASSED', 'Healthy') : ui.status('FAILED', 'Unavailable'),
         latency: p.latency() !== null ? p.latency() + ' ms' : '–', checked: p.checked() || '–'
       })));
       this.routing = ko.pureComputed(() => {

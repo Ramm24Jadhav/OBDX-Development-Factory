@@ -145,6 +145,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
       this.brand.concat(this.neutrals, this.semantic).forEach((s) => { s.copy = () => ui.copy('var(' + s.token + ')').then(() => toast.success('Copied var(' + s.token + ').')).catch((e) => toast.error(e.message)); });
       this.switchText = ko.pureComputed(() => (this.switchOn() ? 'true' : 'false'));
 
+      // Workflow components
+      this.moduleOptions = ['accounts', 'payments', 'cards', 'service-requests', 'loans'].map((m) => ({ value: m, label: m }));
+      this.modules = ko.observableArray(['payments']);
+      this.modulesText = ko.pureComputed(() => (this.modules() || []).join(', ') || 'none');
+      this.deliveryOptions = [{ value: 'branch', label: 'SVN branch' }, { value: 'patch', label: 'Patch file' }];
+      this.delivery = ko.observable('branch');
+      this.densityOptions = [{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }];
+      this.density = preferences.density;
+      this.rangeFrom = ko.observable('');
+      this.rangeTo = ko.observable('');
+      this.sheetOpen = ko.observable(false);
+      this.openSheet = () => this.sheetOpen(true);
+      this.statuses = ['DRAFT', 'QUEUED', 'GENERATING', 'PLAN_READY', 'APPROVED', 'CLOSED', 'FAILED'].map((x) => ui.status(x));
+
       this.connected = () => {
         accUtils.announce('Design System page loaded.');
         document.title = 'Design System';

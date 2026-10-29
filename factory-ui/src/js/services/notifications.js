@@ -20,7 +20,7 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
         if (running) {
           return;
         }
-        add({ id: 'build-' + b.id, category: 'build', title: ok ? 'Build Completed' : 'Build Failed', icon: ok ? 'check' : 'alert', tone: ok ? 'green' : 'red',
+        add({ id: 'build-' + b.id, category: 'build', subjectStatus: ok ? 'SUCCEEDED' : 'FAILED', subjectWords: ok ? 'Build passed' : 'Build failed', title: ok ? 'Build Completed' : 'Build Failed', icon: ok ? 'check' : 'alert', tone: ok ? 'green' : 'red',
           text: w.name + ' ' + b.job + (ok ? ' built successfully.' : ' failed: ' + (b.errors[0] || b.result)), related: (b.buildNumber ? 'Build #' + b.buildNumber : b.job),
           relatedSub: b.changeTitle, at: b.finishedAt || b.startedAt, priority: ok ? 'low' : 'high', action: !ok, page: 'build', workspaceId: w.id,
           details: [{ label: 'Workspace', value: w.name }, { label: 'Job', value: b.job }, { label: 'Branch', value: b.branchUrl || 'patch' }, { label: 'Round', value: String(b.round) }],
@@ -28,37 +28,37 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
       });
       d.requirements.forEach((r) => {
         if (r.status === 'FAILED') {
-          add({ id: 'req-failed-' + r.id + r.updatedAt, category: 'agent', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: 'Drafting the specification of ' + r.title + ' failed.',
+          add({ id: 'req-failed-' + r.id + r.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: 'Drafting the specification of ' + r.title + ' failed.',
             related: r.title, relatedSub: w.name, at: r.updatedAt, priority: 'high', action: true, page: 'requirements', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Message', value: r.message || '' }], errors: [] });
         } else if (r.status === 'READY') {
-          add({ id: 'req-ready-' + r.id + r.updatedAt, category: 'review', title: r.openQuestions ? 'Questions to Answer' : 'Review Pending', icon: 'doc', tone: 'amber',
+          add({ id: 'req-ready-' + r.id + r.updatedAt, category: 'review', subjectStatus: 'READY', subjectWords: 'Ready for review', title: r.openQuestions ? 'Questions to Answer' : 'Review Pending', icon: 'doc', tone: 'amber',
             text: r.title + (r.openQuestions ? ' has ' + r.openQuestions + ' open questions.' : ' is drafted and waits for approval.'), related: r.title, relatedSub: w.name,
             at: r.updatedAt, priority: 'medium', action: true, page: 'requirements', workspaceId: w.id, details: [{ label: 'Workspace', value: w.name }, { label: 'Screens', value: String(r.screens) }], errors: [] });
         } else if (r.status === 'APPROVED') {
-          add({ id: 'req-ok-' + r.id, category: 'review', title: 'Requirement Approved', icon: 'check', tone: 'green', text: r.title + ' was approved.', related: r.title, relatedSub: w.name,
+          add({ id: 'req-ok-' + r.id, category: 'review', subjectStatus: 'APPROVED', title: 'Requirement Approved', icon: 'check', tone: 'green', text: r.title + ' was approved.', related: r.title, relatedSub: w.name,
             at: r.updatedAt, priority: 'low', action: false, page: 'requirements', workspaceId: w.id, details: [{ label: 'Workspace', value: w.name }], errors: [] });
         }
       });
-      d.designs.filter((s) => s.status === 'IN_REVIEW').forEach((s) => add({ id: 'design-review-' + s.id + s.updatedAt, category: 'review', title: 'Review Pending', icon: 'doc', tone: 'amber',
+      d.designs.filter((s) => s.status === 'IN_REVIEW').forEach((s) => add({ id: 'design-review-' + s.id + s.updatedAt, category: 'review', subjectStatus: 'IN_REVIEW', subjectWords: 'In review', title: 'Review Pending', icon: 'doc', tone: 'amber',
         text: 'Screen ' + s.name + ' waits for review.', related: s.name, relatedSub: w.name, at: s.updatedAt, priority: 'high', action: true, page: 'reviews', workspaceId: w.id,
         details: [{ label: 'Workspace', value: w.name }, { label: 'Version', value: 'v' + s.currentVersion }], errors: [] }));
       d.changeDetails.forEach((c) => {
         if (c.status === 'PLAN_READY') {
-          add({ id: 'plan-' + c.id + c.updatedAt, category: 'review', title: 'Plan Waiting for Approval', icon: 'branch', tone: 'amber', text: 'The plan of ' + c.title + ' is ready.',
+          add({ id: 'plan-' + c.id + c.updatedAt, category: 'review', subjectStatus: 'PLAN_READY', subjectWords: 'Plan ready', title: 'Plan Waiting for Approval', icon: 'branch', tone: 'amber', text: 'The plan of ' + c.title + ' is ready.',
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'high', action: true, page: 'impact', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: c.plan ? String(c.plan.items.length) : '0' }], errors: c.plan ? c.plan.risks.slice(0, 3) : [] });
         } else if (c.status === 'GENERATED') {
-          add({ id: 'gen-' + c.id + c.updatedAt, category: 'agent', title: 'Agent Run Completed', icon: 'robot', tone: 'violet', text: 'Code generation for ' + c.title + ' completed.',
+          add({ id: 'gen-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'GENERATED', title: 'Agent Run Completed', icon: 'robot', tone: 'violet', text: 'Code generation for ' + c.title + ' completed.',
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'medium', action: false, page: 'changes', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: String(c.files.length) }], errors: [] });
         } else if (c.status === 'FAILED') {
-          add({ id: 'chg-failed-' + c.id + c.updatedAt, category: 'agent', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: c.title + ': ' + (c.message || 'the change failed.'),
+          add({ id: 'chg-failed-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: c.title + ': ' + (c.message || 'the change failed.'),
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'high', action: true, page: 'changes', workspaceId: w.id, details: [{ label: 'Workspace', value: w.name }], errors: [] });
         }
       });
       d.imports.filter((j) => j.status === 'SUCCEEDED' || j.status === 'FAILED').forEach((j) => add({
-        id: 'import-' + j.id, category: 'system', title: j.status === 'FAILED' ? 'Import Failed' : 'New Workspace Indexed', icon: j.status === 'FAILED' ? 'alert' : 'info', tone: j.status === 'FAILED' ? 'red' : 'blue',
+        id: 'import-' + j.id, category: 'system', subjectStatus: j.status === 'FAILED' ? 'FAILED' : 'SUCCEEDED', subjectWords: j.status === 'FAILED' ? 'Import failed' : 'Indexed', title: j.status === 'FAILED' ? 'Import Failed' : 'New Workspace Indexed', icon: j.status === 'FAILED' ? 'alert' : 'info', tone: j.status === 'FAILED' ? 'red' : 'blue',
         text: j.status === 'FAILED' ? 'Importing the code of ' + w.name + ' failed.' : 'Indexing completed for ' + w.name + ' at r' + j.toRevision + '.', related: w.name, relatedSub: 'Workspace',
         at: j.finishedAt || j.createdAt, priority: j.status === 'FAILED' ? 'high' : 'low', action: j.status === 'FAILED', page: 'code', workspaceId: w.id,
         details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: j.filesIndexed + ' indexed, ' + j.filesRemoved + ' removed' }], errors: j.message && j.status === 'FAILED' ? [j.message] : [] }));

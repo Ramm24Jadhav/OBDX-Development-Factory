@@ -6,18 +6,20 @@
  * delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
+        '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast, pageRequests) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
     const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (TONES[tone] ? ' fx-badge--' + TONES[tone] : '') });
-    const STATUS = { PROCESSING: pill('In Progress', 'blue'), READY: pill('In Review', 'amber'), APPROVED: pill('Approved', 'green'), FAILED: pill('Failed', 'red') };
-    const DESIGN = { DRAFT: pill('Draft', 'grey'), IN_REVIEW: pill('In Review', 'amber'), APPROVED: pill('Approved', 'green') };
-    const CHANGE = {
-      ANALYZING: pill('Analyzing', 'blue'), PLAN_READY: pill('Plan ready', 'amber'), GENERATING: pill('Generating', 'blue'),
-      GENERATED: pill('Generated', 'amber'), DELIVERED: pill('Delivered', 'green'), FAILED: pill('Failed', 'red'), CLOSED: pill('Closed', 'grey')
+    // Server statuses in the shared categories (ui.status), with this page's own words
+    const WORDS = { PROCESSING: 'In Progress', READY: 'In Review', APPROVED: 'Approved', FAILED: 'Failed' };
+    const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In Review', APPROVED: 'Approved' };
+    const CHANGE_WORDS = {
+      ANALYZING: 'Analyzing', PLAN_READY: 'Plan ready', GENERATING: 'Generating', GENERATED: 'Generated',
+      DELIVERED: 'Delivered', FAILED: 'Failed', CLOSED: 'Closed'
     };
+    const reqStatus = (s) => ui.status(s, WORDS[s]);
     const shortId = (id) => 'REQ-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
     const fileType = (name) => {
       if (!name) {
@@ -138,7 +140,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'trace', label: 'Traceability' }
       ]);
       this.code = ko.pureComputed(() => (this.detail() ? shortId(this.detail().id) : ''));
-      this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS[this.detail().status] : STATUS.PROCESSING));
+      this.statusPill = ko.pureComputed(() => reqStatus(this.detail() ? this.detail().status : 'PROCESSING'));
+      // While the spec is drafted the page polls the requirement; this is when it last did
+      this.drafting = ko.pureComputed(() => !!this.detail() && this.detail().status === 'PROCESSING');
+      this.lastChecked = ko.observable('');
+      this.draftingText = ko.pureComputed(() => 'Drafting the specification. The page checks every ' + (POLL_MS / 1000)
+        + ' seconds' + (this.lastChecked() ? ', last at ' + this.lastChecked() : '') + ', and tells you when it is ready.');
+      this.canMakeScreens = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && this.canEdit());
       this.typeText = ko.pureComputed(() => (this.detail() ? fileType(this.detail().fileName) : ''));
       this.modulePill = ko.pureComputed(() => {
         const s = this.spec();
@@ -232,7 +240,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         s.roles.filter((r) => r.access).forEach((r) => items.push(r.name + ': ' + r.access));
         return {
           items: items,
-          note: items.length ? 'Worked out from the screens, messages and roles: the specification has no acceptance criteria yet. Add them with Edit Requirement.' : ''
+          note: items.length ? 'Worked out from the screens, messages and roles: the specification has no acceptance criteria yet. Add them with Edit the specification (JSON) in the requirement actions menu.' : ''
         };
       });
       this.rules = ko.pureComputed(() => (this.spec() ? this.spec().businessRules : []));
@@ -341,18 +349,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return {
             screen: screen.name,
             design: design ? design.name + ' v' + design.currentVersion : 'Not designed yet',
-            designStatus: design ? DESIGN[design.status] : pill('Not started', 'grey'),
+            designStatus: design ? ui.status(design.status, DESIGN_WORDS[design.status]) : ui.status('NOT_STARTED', 'Not started'),
             code: screen.relatedCode.slice(0, 3).join(', ') || 'No related code found',
             change: this.changes().length ? this.changes().map((c) => c.title).join(', ') : 'No change yet'
           };
         });
       });
       this.changeRows = ko.pureComputed(() => this.changes().map((c) => ({
-        title: c.title, status: CHANGE[c.status] || pill(c.status, 'grey'), files: c.files.length + ' files', updated: day(c.updatedAt),
+        title: c.title, status: ui.status(c.status, CHANGE_WORDS[c.status]), files: c.files.length + ' files', updated: day(c.updatedAt),
         open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }))
       })));
       this.designRows = ko.pureComputed(() => this.designs().map((d) => ({
-        name: d.name, status: DESIGN[d.status], version: 'v' + d.currentVersion, updated: day(d.updatedAt),
+        name: d.name, status: ui.status(d.status, DESIGN_WORDS[d.status]), version: 'v' + d.currentVersion, updated: day(d.updatedAt),
         open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' }))
       })));
 
@@ -385,7 +393,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return api.get('workspaces/' + id + '/requirements').then((list) => {
           items(list.map((r) => Object.assign({}, r, {
-            code: shortId(r.id), type: fileType(r.fileName), statusPill: STATUS[r.status] || pill(r.status, 'grey'),
+            code: shortId(r.id), type: fileType(r.fileName), statusPill: reqStatus(r.status),
             updated: new Date(r.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
             openAction: () => { this.tab('all'); this.open(r.id); }
           })));
@@ -449,6 +457,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!same) {
           this.showingText(false);
         }
+        // Drafting finished while the page was watching it
+        if (same && this.detail().status === 'PROCESSING' && detail.status !== 'PROCESSING') {
+          if (detail.status === 'FAILED') {
+            toast.error('Drafting failed for ' + shortId(detail.id) + (detail.message ? ': ' + detail.message : '. Use Try again.'));
+          } else {
+            toast.success('The specification for ' + shortId(detail.id) + ' is ready to review.');
+          }
+        }
+        this.lastChecked(new Date().toLocaleTimeString());
         this.detail(detail);
         this.errorMessage('');
         this.questions(detail.spec ? detail.spec.openQuestions.map((q) => question(q, detail.status === 'READY' && this.canEdit())) : []);
@@ -524,9 +541,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.detailMenuItems = ko.pureComputed(() => {
         const d = this.detail();
         const approved = !!d && d.status === 'APPROVED' && this.canEdit();
+        // Editing the JSON is rarely needed, so it waits here rather than beside Approve
         return [
           { value: 'screens', label: 'Make screens in the designer', disabled: !approved },
           { value: 'change', label: 'Plan the change', disabled: !approved },
+          { separator: true },
+          { value: 'json', label: this.editingJson() ? 'Close the JSON editor' : 'Edit the specification (JSON)', id: 'editJsonButton',
+            disabled: !this.canEditSpec() && !this.editingJson(), title: this.canEditSpec() ? null : this.editBlockedReason() },
           { value: 'copy', label: 'Copy the specification (JSON)' },
           { value: 'delete', label: 'Delete', disabled: !this.canEdit(), danger: true }
         ];
@@ -537,6 +558,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.makeScreens();
         } else if (value === 'change') {
           this.planChange();
+        } else if (value === 'json') {
+          this.toggleJson();
         } else if (value === 'copy') {
           copy(JSON.stringify(this.spec(), null, 2)).then(() => toast.success('Specification copied.')).catch(failed);
         } else if (value === 'delete') {
@@ -552,7 +575,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         accUtils.announce('Requirements page loaded.');
         document.title = 'Requirements';
         subscription = this.workspaceId.subscribe(() => { this.detail(null); this.designs([]); this.changes([]); loadList(); });
-        workspaceSelection.load().then(loadList).catch(showError);
+        // A requirement asked for from another page (the command palette)
+        workspaceSelection.load().then(loadList).then(() => {
+          const wanted = pageRequests.requirement();
+          if (wanted) { pageRequests.requirement(null); this.open(wanted); }
+        }).catch(showError);
       };
       this.disconnected = () => {
         clearTimeout(pollTimer);

@@ -8,15 +8,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
   function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
     const WEEK_MS = 7 * 24 * 3600 * 1000;
-    const STATUS = {
-      ready: { text: 'Completed', css: 'fx-badge fx-badge--plain fx-badge--success factory-ws4-status', icon: 'factory-nav-icon factory-ico-check' },
-      importing: { text: 'In Progress', css: 'fx-badge fx-badge--plain fx-badge--warning factory-ws4-status', icon: 'factory-nav-icon factory-ico-clock' },
-      failed: { text: 'Check Required', css: 'fx-badge fx-badge--plain fx-badge--danger factory-ws4-status', icon: 'factory-nav-icon factory-ico-alert' },
-      new: { text: 'Not imported', css: 'fx-badge fx-badge--plain factory-ws4-status', icon: 'factory-nav-icon factory-ico-clock' }
+    const POLL_MS = 3000;
+    // A workspace's code state as a design-system status (ui.status), in the page's own words
+    const SERVER_STATE = { ready: 'SUCCEEDED', importing: 'IMPORTING', failed: 'FAILED', new: 'NEW' };
+    const stateStatus = (words) => {
+      const out = {};
+      Object.keys(SERVER_STATE).forEach((key) => {
+        const s = ui.status(SERVER_STATE[key], words[key]);
+        out[key] = Object.assign({}, s, { css: s.css + ' factory-ws4-status' });
+      });
+      return out;
     };
+    const STATUS = stateStatus({ ready: 'Completed', importing: 'In Progress', failed: 'Check Required', new: 'Not imported' });
     // The registry's status pills
-    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
-    const REGISTRY = { ready: badge('Active', 'success'), importing: badge('Indexing', 'warning'), failed: badge('Error', 'danger'), new: badge('Not imported', '') };
+    const REGISTRY = stateStatus({ ready: 'Active', importing: 'Indexing', failed: 'Error', new: 'Not imported' });
+    const isRunning = (job) => !!job && (job.status === 'QUEUED' || job.status === 'RUNNING');
     // A long URL on one line: its start and its end, which tells workspaces apart
     const midUrl = (url, max) => {
       const text = url || '';
@@ -203,7 +209,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const job = d.imports.length ? d.imports[0] : null;
         return {
           id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, svnUrl: w.svnUrl || '', shortUrl: midUrl(w.svnUrl, 48), state: state,
-          status: STATUS[state], checked: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never',
+          status: STATUS[state], checked: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never', running: state === 'importing',
           canDelete: session.isAdmin(),
           open: stopping(dashboard.open('code', w.id)),
           edit: stopping(dashboard.open('code', w.id)),
@@ -216,7 +222,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (!this.filterBank() || r.bank === this.filterBank())
           && (!this.filterStatus() || r.state === this.filterStatus())
           && (!this.filterVersion() || r.version === this.filterVersion());
-      }));
+      }).map((r, i) => Object.assign(r, {
+        // The keyboard cursor row (ui.tableKeys): arrows or J/K move it, Enter opens the registry
+        css: ko.pureComputed(() => 'factory-clickable' + (this.wsKeys.cursor() === i ? ' is-cursor' : '')),
+        focus: () => { this.wsKeys.cursor(i); return true; }
+      })));
+      this.wsKeys = ui.tableKeys(this.rows, { open: (row) => row.select() });
+      // Enter on the row's name link follows the link (opens the code), not the registry
+      this.wsKey = (a, b) => {
+        const e = a && typeof a.preventDefault === 'function' ? a : b;
+        return e && e.target && e.target.tagName === 'A' ? true : this.wsKeys.key(a, b);
+      };
       this.total = ko.pureComputed(() => data().length);
       this.refresh = () => { dashboard.load(); };
 
@@ -255,6 +271,56 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4).map((i) => Object.assign(i, { when: dashboard.ago(i.at) }));
       });
 
+      // Live import progress: while a workspace's import is queued or running, its latest job is read every few
+      // seconds from GET /workspaces/{id}/imports; once it ends, the dashboard reloads and polling stops.
+      const liveJobs = ko.observable({});
+      const liveText = (job) => {
+        if (job.status === 'QUEUED') {
+          return 'Queued; waiting for the import to start.';
+        }
+        const done = job.filesIndexed + job.filesRemoved;
+        return job.filesScanned
+          ? done.toLocaleString() + ' of ' + job.filesScanned.toLocaleString() + ' scanned files processed, ' + job.chunksIndexed.toLocaleString() + ' searchable pieces so far'
+          : 'Running; the server has not counted the files yet.';
+      };
+      let pollTimer = null;
+      let polling = false;
+      const runningIds = () => data().filter((d) => isRunning(liveJobs()[d.workspace.id] || d.imports[0])).map((d) => d.workspace.id);
+      const poll = () => {
+        clearTimeout(pollTimer);
+        if (!polling || !runningIds().length) {
+          return;
+        }
+        pollTimer = window.setTimeout(() => {
+          const ids = runningIds();
+          Promise.all(ids.map((id) => api.get('workspaces/' + id + '/imports').then((list) => [id, list[0] || null]).catch(() => [id, null])))
+            .then((results) => {
+              if (!polling) {
+                return null;
+              }
+              const m = Object.assign({}, liveJobs());
+              let ended = false;
+              results.forEach(([id, job]) => {
+                if (job) {
+                  m[id] = job;
+                  ended = ended || !isRunning(job);
+                }
+              });
+              liveJobs(m);
+              if (!ended) {
+                return null;
+              }
+              return dashboard.load().then(() => {
+                const left = Object.assign({}, liveJobs());
+                Object.keys(left).forEach((id) => { if (!isRunning(left[id])) { delete left[id]; } });
+                liveJobs(left);
+              });
+            })
+            .finally(poll);
+        }, POLL_MS);
+      };
+      this.runningCount = ko.pureComputed(() => data().filter((d) => dashboard.codeState(d).key === 'importing').length);
+
       // The selected workspace's details: overview, project statistics, stack from the profile and indexing
       this.selectedWsId = ko.observable(null);
       this.selectWs = (id) => () => this.selectedWsId(id);
@@ -283,9 +349,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const w = entry.workspace;
         const extra = wsDetails()[w.id] || {};
         const inv = extra.inventory ? extra.inventory.summary : null;
-        const job = entry.imports.length ? entry.imports[0] : null;
+        // While an import runs, its job comes from the live poll (GET /imports), not the last dashboard load
+        const job = liveJobs()[w.id] || (entry.imports.length ? entry.imports[0] : null);
         const index = entry.index;
-        const running = job && (job.status === 'RUNNING' || job.status === 'QUEUED');
+        const running = isRunning(job);
         const pct = index && index.chunks ? Math.round(100 * index.chunksWithEmbedding / index.chunks) : 0;
         const state = dashboard.codeState(entry).key;
         const members = (extra.members || []).map((m) => ({
@@ -320,7 +387,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               { label: 'Indexed revision', value: w.indexedRevision ? 'r' + w.indexedRevision : '–', dot: 'factory-step-dot factory-dot-amber' }
             ],
             title: running ? 'Indexing...' : (job ? (job.status === 'FAILED' ? 'Last indexing failed' : 'Indexing complete') : 'Not indexed yet'),
-            text: running ? 'Processing source files and extracting components' : 'Code search by meaning covers ' + pct + '% of the code'
+            text: running ? liveText(job) : 'Code search by meaning covers ' + pct + '% of the code',
+            live: running
           },
           reindex: () => api.post('workspaces/' + w.id + '/imports')
             .then(() => { toast.success('Re-indexing of ' + w.name + ' started.'); return dashboard.load(); })
@@ -604,7 +672,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.connected = () => {
         accUtils.announce('Workspaces page loaded.');
         document.title = 'Workspaces';
-        load();
+        polling = true;
+        liveSubscription = data.subscribe(poll);
+        load().then(poll);
         if (session.isAdmin()) {
           // A source started on the Overview page: check it here, or open the folder browser.
           const request = pageRequests.newWorkspace();
@@ -629,6 +699,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             }
             focusCreate();
           });
+        }
+      };
+
+      let liveSubscription = null;
+      this.disconnected = () => {
+        polling = false;
+        clearTimeout(pollTimer);
+        if (liveSubscription) {
+          liveSubscription.dispose();
         }
       };
     }

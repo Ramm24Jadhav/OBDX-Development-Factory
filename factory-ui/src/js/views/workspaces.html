@@ -204,7 +204,8 @@
 
   <section class="factory-ws-card" id="allWorkspaces">
     <div class="factory-ws-list-head">
-      <h2><oj-bind-text value="[['All Workspaces (' + total() + ')']]"></oj-bind-text></h2>
+      <h2><oj-bind-text value="[['All Workspaces (' + total() + ')']]"></oj-bind-text>
+        <oj-bind-if test="[[runningCount() > 0]]"><span class="fx-live factory-ws5-live"><oj-bind-text value="[[runningCount() === 1 ? '1 import running' : runningCount() + ' imports running']]"></oj-bind-text></span></oj-bind-if></h2>
       <div class="factory-ws-filters">
         <span class="fx-control factory-ws4-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
           <input id="workspaceSearch" class="fx-input" type="search" placeholder="Search workspaces..." aria-label="Search workspaces" on-input="[[filterTextInput]]"></span>
@@ -230,16 +231,16 @@
     <div class="fx-table-wrap factory-ov2-table-wrap">
       <table class="fx-table factory-ov2-table factory-ws-table" id="workspaceTable">
         <thead><tr><th scope="col">Name</th><th scope="col">Bank</th><th scope="col">OBDX Version</th><th scope="col">SVN URL / Path</th><th scope="col">Status</th><th scope="col">Last Checked</th><th scope="col">Actions</th></tr></thead>
-        <tbody>
+        <tbody on-keydown="[[wsKey]]">
           <oj-bind-for-each data="[[rows]]">
             <template>
-              <tr class="factory-clickable" title="Open the workspace in the registry" on-click="[[$current.data.select]]">
+              <tr :class="[[$current.data.css]]" tabindex="0" title="Open the workspace in the registry (Enter)" on-click="[[$current.data.select]]" on-focus="[[$current.data.focus]]">
                 <td><a href="?ojr=code" class="factory-ws-name" on-click="[[$current.data.open]]">
                   <span class="factory-nav-icon factory-ico-folder-fill" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></a></td>
                 <td><oj-bind-text value="[[$current.data.bank]]"></oj-bind-text></td>
                 <td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
                 <td class="factory-ws3-url" :title="[[$current.data.svnUrl]]"><oj-bind-text value="[[$current.data.shortUrl]]"></oj-bind-text></td>
-                <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.icon]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
                 <td class="factory-ws-nowrap"><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td>
                 <td class="factory-ws-actions">
                   <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[$current.data.open]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Open</button>
@@ -370,7 +371,7 @@
                   <td class="factory-ws3-url" :title="[[r.data.svnUrl]]"><oj-bind-text value="[[r.data.shortUrl]]"></oj-bind-text></td>
                   <td><span class="fx-badge fx-badge--plain factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></td>
                   <td class="factory-ws3-when"><oj-bind-text value="[[r.data.indexedDay]]"></oj-bind-text><br><oj-bind-text value="[[r.data.indexedTime]]"></oj-bind-text></td>
-                  <td><span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
+                  <td><span :class="[[r.data.pill.css]]"><span :class="[[r.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-ws3-act">
                     <fx-menu-button :id="[['regActions-' + r.data.id]]" class="factory-ov2-more" icon="more" icon-only variant="ghost" size="sm"
                                     label="[['Actions for ' + r.data.name]]" items="[[r.data.menuItems]]" on-fx-action="[[r.data.menu]]"></fx-menu-button>
@@ -397,7 +398,7 @@
           <span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span></span>
           <span class="factory-grow"><strong class="factory-ws3-dname"><oj-bind-text value="[[selectedWs().name]]"></oj-bind-text></strong>
             <span class="factory-ws3-dsub"><oj-bind-text value="[[selectedWs().description]]"></oj-bind-text></span></span>
-          <span :class="[[selectedWs().pill.css]]"><oj-bind-text value="[[selectedWs().pill.text]]"></oj-bind-text></span>
+          <span :class="[[selectedWs().pill.css]]"><span :class="[[selectedWs().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selectedWs().pill.text]]"></oj-bind-text></span>
           <fx-menu-button id="detailMoreMenu" class="factory-ov2-more" icon="more" icon-only variant="ghost" size="sm" label="More for this workspace"
                           items="[[detailMoreItems]]" on-fx-action="[[detailMenu]]"></fx-menu-button>
         </div>
@@ -451,7 +452,7 @@
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'indexing']]">
             <div class="factory-im-donutrow"><span class="factory-ring" :style="[[selectedWs().indexing.style]]"><span><oj-bind-text value="[[selectedWs().indexing.pct + '%']]"></oj-bind-text></span></span>
-              <span class="factory-ov-subtle"><oj-bind-text value="[[selectedWs().indexing.text]]"></oj-bind-text></span></div>
+              <span class="factory-ov-subtle"><oj-bind-if test="[[selectedWs().indexing.live]]"><span class="fx-live">Live</span> </oj-bind-if><oj-bind-text value="[[selectedWs().indexing.text]]"></oj-bind-text></span></div>
             <ul class="factory-ws-idx"><oj-bind-for-each data="[[selectedWs().indexing.rows]]"><template><li><span :class="[[$current.data.dot]]"></span><span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><b><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></b></li></template></oj-bind-for-each></ul>
             <p class="factory-ws3-note"><oj-bind-text value="[[selectedWs().importMessage]]"></oj-bind-text></p>
           </oj-bind-if>
@@ -515,7 +516,7 @@
             <oj-bind-for-each data="[[regAll]]" as="w">
               <template><tr>
                 <td class="factory-ws-nowrap"><strong><oj-bind-text value="[[w.data.name]]"></oj-bind-text></strong></td>
-                <td><span :class="[[w.data.pill.css]]"><oj-bind-text value="[[w.data.pill.text]]"></oj-bind-text></span></td>
+                <td><span :class="[[w.data.pill.css]]"><span :class="[[w.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[w.data.pill.text]]"></oj-bind-text></span></td>
                 <td><oj-bind-text value="[[w.data.files]]"></oj-bind-text></td>
                 <td><oj-bind-text value="[[w.data.chunks]]"></oj-bind-text></td>
                 <td><oj-bind-text value="[[w.data.embedded]]"></oj-bind-text></td>
@@ -606,7 +607,7 @@
       </oj-bind-if>
     </section>
     <section class="factory-ws-card">
-      <h2 class="factory-ws-h2-row">Indexing Progress <a href="?ojr=code" on-click="[[openCode]]">View Details <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
+      <h2 class="factory-ws-h2-row"><span class="factory-ws5-title">Indexing Progress<oj-bind-if test="[[selectedWs() && selectedWs().indexing.live]]"><span class="fx-live">Live</span></oj-bind-if></span> <a href="?ojr=code" on-click="[[openCode]]">View Details <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>
       <oj-bind-if test="[[selectedWs()]]">
         <div class="factory-im-donutrow factory-ws3-ringrow"><span class="factory-ring" :style="[[selectedWs().indexing.style]]"><span><oj-bind-text value="[[selectedWs().indexing.pct + '%']]"></oj-bind-text></span></span>
           <span><strong class="factory-ws3-ringtitle"><oj-bind-text value="[[selectedWs().indexing.title]]"></oj-bind-text></strong>

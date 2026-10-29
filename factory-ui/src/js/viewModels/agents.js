@@ -16,12 +16,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       debug: { name: 'Debug Agent', icon: 'flask', tone: 'blue' },
       indexing: { name: 'Indexing Agent', icon: 'cube', tone: 'green' }
     };
-    // Status badges (design system .fx-badge)
+    // Run statuses in the shared status categories (ui.status), with this page's words
     const STATUS = {
-      completed: { text: 'Completed', css: 'fx-badge fx-badge--success' }, failed: { text: 'Failed', css: 'fx-badge fx-badge--danger' },
-      running: { text: 'Running', css: 'fx-badge fx-badge--info' }, queued: { text: 'Queued', css: 'fx-badge fx-badge--violet' }
+      completed: ui.status('SUCCEEDED', 'Completed'), failed: ui.status('FAILED', 'Failed'),
+      running: ui.status('RUNNING', 'Running'), queued: ui.status('QUEUED', 'Queued')
     };
     const MONTH_MS = 30 * 24 * 3600 * 1000;
+    // While a run is queued or running, the page reloads the real data this often
+    const POLL_MS = 5000;
+    const busy = (status) => status === 'running' || status === 'queued';
+    const words = (status) => String(status || '').toLowerCase().replace(/_/g, ' ');
+    const httpUrl = (url) => (url && /^https?:\/\//i.test(url) ? url : '');
     const hash = (text) => {
       let h = 0;
       for (let i = 0; i < text.length; i++) {
@@ -60,7 +65,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               { name: 'Draft screens, rules, APIs and questions', done: r.status !== 'PROCESSING' && r.status !== 'FAILED', failed: r.status === 'FAILED' },
               { name: r.openQuestions + ' open questions to answer', done: r.status === 'APPROVED' || (r.status === 'READY' && r.openQuestions === 0) }
             ],
-            files: [], rerun: r.status === 'FAILED' ? () => again(api.post('requirements/' + r.id + '/retry'), 'The specification draft') : null
+            files: [], rerun: r.status === 'FAILED' ? () => again(api.post('requirements/' + r.id + '/retry'), 'The specification draft') : null,
+            log: [{ at: r.createdAt, text: 'Document added: ' + (r.fileName || r.title) },
+              { at: r.updatedAt, text: 'Status ' + words(r.status) + (r.message ? ': ' + r.message : '') + (r.status === 'PROCESSING' ? '' : ' (' + r.openQuestions + ' open questions)') }],
+            activity: [], notRecorded: 'The factory keeps the latest status and message of a specification draft, not a step-by-step log, the time of each step or the model output.'
           }));
           // Screens generated from a requirement, one run per requirement
           const byRequirement = {};
@@ -73,7 +81,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               key: 'ui' + rid, agent: 'ui', task: 'Generate screens for ' + (req ? req.title : 'a requirement'), workspace: w.name, workspaceId: w.id,
               status: 'completed', started: first, finished: first, approx: true, requirement: req ? req.title : '', message: list.length + ' screens designed', page: 'designer',
               steps: list.map((s) => ({ name: s.name + ' (v' + s.currentVersion + ', ' + s.status.toLowerCase().replace('_', ' ') + ')', done: true })),
-              files: [], rerun: null
+              files: [], rerun: null,
+              log: list.slice().sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt))
+                .map((s) => ({ at: s.updatedAt, text: s.name + ': version ' + s.currentVersion + ', ' + words(s.status) })),
+              activity: [], notRecorded: 'Screen generation keeps each screen\'s latest version and status (the times are the last update), not a log of the model\'s work.'
             });
           });
           d.changeDetails.forEach((c) => {
@@ -90,7 +101,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
                 { name: 'Plan approved' + (c.planApprovedBy ? ' by ' + c.planApprovedBy : ''), done: !!c.planApprovedAt }
               ],
               files: c.plan ? c.plan.items.map((i) => i.action + ' ' + i.path) : [],
-              rerun: c.status !== 'ANALYZING' && ['PLAN_READY', 'FAILED'].indexOf(c.status) >= 0 ? () => again(api.post('changes/' + c.id + '/analyze'), 'The impact analysis') : null
+              rerun: c.status !== 'ANALYZING' && ['PLAN_READY', 'FAILED'].indexOf(c.status) >= 0 ? () => again(api.post('changes/' + c.id + '/analyze'), 'The impact analysis') : null,
+              log: [{ at: c.createdAt, text: 'Change requested' + (c.createdBy ? ' by ' + c.createdBy : '') }]
+                .concat(c.plan ? [{ at: null, text: 'Plan: ' + c.plan.summary }].concat((c.plan.risks || []).map((x) => ({ at: null, text: 'Risk: ' + x }))) : [])
+                .concat(c.planApprovedAt ? [{ at: c.planApprovedAt, text: 'Plan approved' + (c.planApprovedBy ? ' by ' + c.planApprovedBy : '') }] : [])
+                .concat(c.message ? [{ at: c.updatedAt, text: c.message }] : []),
+              activity: c.plan ? c.plan.items.map((i) => ({ action: i.action, path: i.path, result: 'Planned', check: i.layer || '' })) : [],
+              notRecorded: 'The analysis keeps its plan and the change\'s latest message. The searches it ran and the time of each step are not recorded.'
             });
             if (c.planApprovedAt) {
               const failedFiles = c.files.filter((f) => f.status === 'FAILED');
@@ -101,7 +118,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
                 requirement: req ? req.title : '', message: c.message || (c.files.filter((f) => f.status === 'GENERATED').length + ' files written'), page: 'changes', by: c.planApprovedBy,
                 steps: c.files.map((f) => ({ name: (f.action === 'create' ? 'Create ' : 'Modify ') + f.path.split('/').pop() + (f.attempts > 1 ? ' (' + f.attempts + ' attempts)' : '')
                   + (f.checkStatus ? ' · checks ' + f.checkStatus.toLowerCase().replace('_', ' ') : ''), done: f.status === 'GENERATED' || f.status === 'UNCHANGED', failed: f.status === 'FAILED' })),
-                files: c.files.map((f) => f.path + ' +' + f.linesAdded + ' -' + f.linesRemoved), rerun: null
+                files: c.files.map((f) => f.path + ' +' + f.linesAdded + ' -' + f.linesRemoved), rerun: null,
+                log: [{ at: c.planApprovedAt, text: 'Plan approved; writing ' + c.files.length + ' files' }]
+                  .concat(c.files.map((f) => ({ at: null, text: (f.action === 'create' ? 'Create ' : 'Modify ') + f.path + ': ' + words(f.status)
+                    + (f.attempts > 1 ? ', ' + f.attempts + ' attempts' : '') + (f.checkStatus ? '; checks ' + words(f.checkStatus) + (f.checkMessage ? ' - ' + f.checkMessage : '') : '') })))
+                  .concat([{ at: c.updatedAt, text: c.message || 'Last update: ' + words(c.status) }]),
+                activity: c.files.map((f) => ({ action: f.action, path: f.path, result: words(f.status) + ' +' + f.linesAdded + ' -' + f.linesRemoved + (f.edited ? ', edited by a reviewer' : ''),
+                  check: (f.checkStatus ? words(f.checkStatus) : 'not checked') + (f.checkMessage ? ': ' + f.checkMessage : '') + (f.attempts > 1 ? ' (' + f.attempts + ' attempts)' : '') })),
+                notRecorded: 'The time each file was written and the model output are not recorded; each file shows its latest result.'
               });
             }
             c.builds.filter((b) => b.fixedFiles.length).forEach((b) => add({
@@ -110,7 +134,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               message: b.errors.slice(0, 3).join(' | '), page: 'build',
               steps: [{ name: b.job + ' ' + (b.result || ''), done: true }, { name: b.errors.length + ' errors sent to the model', done: true },
                 { name: b.fixedFiles.length + ' files fixed', done: true }],
-              files: b.fixedFiles, rerun: null
+              files: b.fixedFiles, rerun: null,
+              log: [{ at: b.startedAt, text: b.job + (b.buildNumber ? ' #' + b.buildNumber : '') + ' started (round ' + b.round + ')' }]
+                .concat(b.errors.map((e) => ({ at: null, text: 'Error: ' + e })))
+                .concat(b.fixedFiles.map((f) => ({ at: null, text: 'Fixed ' + f })))
+                .concat(b.finishedAt ? [{ at: b.finishedAt, text: 'Finished: ' + (b.result || 'no result') }] : []),
+              activity: b.fixedFiles.map((f) => ({ action: 'fix', path: f, result: 'Written again', check: '' })),
+              buildLog: b.logExcerpt || '', consoleUrl: httpUrl(b.buildUrl) ? b.buildUrl.replace(/\/?$/, '/console') : '',
+              notRecorded: 'The factory keeps an excerpt of the Jenkins console, the errors and the fixed files. The full console is in Jenkins.'
             }));
           });
           d.imports.forEach((j) => add({
@@ -119,7 +150,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             started: j.startedAt || j.createdAt, finished: j.finishedAt, approx: false, requirement: '', message: j.message || '', page: 'code', model: embedding(),
             steps: [{ name: j.filesScanned + ' files scanned', done: j.status !== 'QUEUED' }, { name: j.filesIndexed + ' files indexed, ' + j.filesRemoved + ' removed', done: j.status === 'SUCCEEDED' },
               { name: j.chunksIndexed + ' pieces, ' + j.embeddingsCreated + ' embeddings', done: j.status === 'SUCCEEDED', failed: j.status === 'FAILED' }],
-            files: [], rerun: j.status === 'FAILED' ? () => again(api.post('workspaces/' + w.id + '/imports'), 'The code import') : null
+            files: [], rerun: j.status === 'FAILED' ? () => again(api.post('workspaces/' + w.id + '/imports'), 'The code import') : null,
+            log: [{ at: j.createdAt, text: 'Queued' + (j.toRevision ? ' (r' + (j.fromRevision || 0) + ' to r' + j.toRevision + ')' : '') }]
+              .concat(j.startedAt ? [{ at: j.startedAt, text: 'Started' }] : [])
+              .concat(j.status !== 'QUEUED' ? [{ at: null, text: j.filesScanned + ' files scanned, ' + j.filesIndexed + ' indexed, ' + j.filesRemoved + ' removed; '
+                + j.chunksIndexed + ' pieces, ' + j.embeddingsCreated + ' embeddings' }] : [])
+              .concat(j.message ? [{ at: j.finishedAt, text: j.message }] : [])
+              .concat(j.finishedAt ? [{ at: j.finishedAt, text: 'Finished: ' + words(j.status) }] : []),
+            activity: [], notRecorded: 'Import progress is kept as counts and the latest message, not as a line-by-line log or a list of files.'
           }));
         });
         return runs.filter((r) => r.started).sort((a, b) => new Date(b.started) - new Date(a.started)).map((r) => {
@@ -130,7 +168,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             agentCss: 'factory-ag-agent factory-ov2-icon-' + agent.tone, agentIcon: 'factory-nav-icon factory-ico-' + agent.icon,
             pill: STATUS[r.status], startedText: ui.when(r.started), startedShort: shortWhen(r.started),
             finishedText: r.finished ? ui.when(r.finished) + (r.approx ? ' (last update)' : '') : (r.status === 'running' || r.status === 'queued' ? 'Not finished yet' : '–'),
-            byInitials: ui.initials(r.by || ''),
+            byInitials: ui.initials(r.by || ''), isLive: busy(r.status), buildLog: r.buildLog || '', consoleUrl: r.consoleUrl || '',
+            logText: (r.log || []).map((x) => '[' + (x.at ? ui.when(x.at) : 'time not recorded') + '] ' + x.text).join('\n') || 'No messages for this run.',
             duration: ms === null ? '–' : (r.approx ? '~' : '') + (Math.round(ms / 1000) >= 60 ? Math.floor(Math.round(ms / 1000) / 60) + 'm ' + (Math.round(ms / 1000) % 60) + 's' : Math.max(0, Math.round(ms / 1000)) + 's')
           });
         });
@@ -159,40 +198,32 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'queued', label: 'Queued', icon: 'list', count: ko.pureComputed(() => c('queued')) }
       ]);
       this.search = ko.observable('');
-      this.statusFilter = ko.observable('');
-      this.agentFilter = ko.observable('');
+      // Status and agent take several values (fx-multiselect); none chosen means all
+      this.statusFilter = ko.observableArray([]);
+      this.agentFilter = ko.observableArray([]);
       this.workspaceFilter = ko.observable('');
       this.modelFilter = ko.observable('');
+      // Started between (fx-date-range, yyyy-mm-dd)
       this.fromDate = ko.observable('');
       this.toDate = ko.observable('');
       this.modelChange = ui.value(this.modelFilter);
-      this.fromChange = ui.value(this.fromDate);
-      this.toChange = ui.value(this.toDate);
-      // Date range button: shows the chosen range and opens the two date pickers in a small popup
-      this.dateOpen = ko.observable(false);
-      this.toggleDates = () => this.dateOpen(!this.dateOpen());
-      this.closeDates = () => this.dateOpen(false);
-      this.clearDates = () => { this.fromDate(''); this.toDate(''); };
-      const dayText = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      this.dateRangeText = ko.pureComputed(() => (!this.fromDate() && !this.toDate() ? 'All dates'
-        : (this.fromDate() ? dayText(this.fromDate()) : 'Any date') + ' – ' + (this.toDate() ? dayText(this.toDate()) : 'Today')));
-      this.dateKey = (event) => { if (event.key === 'Escape') { this.dateOpen(false); } return true; };
       this.modelOptions = ko.pureComputed(() => Array.from(new Set(this.runs().map((r) => r.model))).sort());
       this.searchInput = ui.value(this.search);
-      this.statusChange = ui.value(this.statusFilter);
-      this.agentChange = ui.value(this.agentFilter);
       this.workspaceChange = ui.value(this.workspaceFilter);
+      this.statusOptions = [{ value: 'completed', label: 'Completed' }, { value: 'failed', label: 'Failed' }, { value: 'running', label: 'Running' }, { value: 'queued', label: 'Queued' }];
       this.agentOptions = Object.keys(AGENTS).map((k) => ({ value: k, label: AGENTS[k].name }));
       this.workspaceOptions = ko.pureComputed(() => dashboard.data().map((d) => ({ value: d.workspace.id, label: d.workspace.name })));
       this.resetFilters = () => {
-        ['runSearch', 'runStatus', 'runAgent', 'runModel', 'runWorkspace', 'runFrom', 'runTo'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
-        this.search(''); this.statusFilter(''); this.agentFilter(''); this.workspaceFilter(''); this.modelFilter(''); this.fromDate(''); this.toDate('');
+        ['runSearch', 'runModel', 'runWorkspace'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
+        this.search(''); this.statusFilter([]); this.agentFilter([]); this.workspaceFilter(''); this.modelFilter(''); this.fromDate(''); this.toDate('');
         this.tab('all');
       };
       this.visibleRuns = ko.pureComputed(() => {
         const text = this.search().trim().toLowerCase();
+        const statuses = this.statusFilter() || [];
+        const agents = this.agentFilter() || [];
         return this.runs().filter((r) => (this.tab() === 'all' || r.status === this.tab())
-          && (!this.statusFilter() || r.status === this.statusFilter()) && (!this.agentFilter() || r.agent === this.agentFilter())
+          && (!statuses.length || statuses.indexOf(r.status) >= 0) && (!agents.length || agents.indexOf(r.agent) >= 0)
           && (!this.workspaceFilter() || r.workspaceId === this.workspaceFilter()) && (!this.modelFilter() || r.model === this.modelFilter())
           && (!this.fromDate() || new Date(r.started) >= new Date(this.fromDate() + 'T00:00:00'))
           && (!this.toDate() || new Date(r.started) <= new Date(this.toDate() + 'T23:59:59'))
@@ -209,17 +240,32 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.checked(event.target.checked ? Array.from(new Set(this.checked().concat(keys))) : this.checked().filter((k) => keys.indexOf(k) < 0));
       };
       this.selectedText = ko.pureComputed(() => (this.checked().length ? ' · ' + this.checked().length + ' selected' : ''));
-      this.rows = ko.pureComputed(() => this.pager.rows().map((r) => Object.assign({}, r, {
-        css: this.selectedKey() === r.key ? 'factory-clickable is-selected' : 'factory-clickable', pick: () => pickRun(r.key),
+      const toggleKey = (key) => { if (this.checked.indexOf(key) >= 0) { this.checked.remove(key); } else { this.checked.push(key); } };
+      // Bulk bar while runs are checked
+      this.bulkText = ko.pureComputed(() => this.checked().length + (this.checked().length === 1 ? ' run selected' : ' runs selected'));
+      this.copyIds = () => {
+        const ids = this.runs().filter((r) => this.checked.indexOf(r.key) >= 0).map((r) => r.id);
+        ui.copy(ids.join('\n')).then(() => toast.success('Copied ' + ids.length + (ids.length === 1 ? ' run ID.' : ' run IDs.')),
+          () => toast.error('Could not copy. Select the text and copy it instead.'));
+      };
+      this.clearChecked = () => this.checked([]);
+      // Keyboard on the runs table: arrows or J/K move, Enter opens the details, X checks the row
+      this.keys = ui.tableKeys(ko.pureComputed(() => this.rows()), { open: (row) => row.pick(), toggle: (row) => toggleKey(row.key) });
+      this.rows = ko.pureComputed(() => this.pager.rows().map((r, i) => Object.assign({}, r, {
+        css: ko.pureComputed(() => 'factory-clickable' + (this.selectedKey() === r.key ? ' is-selected' : '') + (this.keys.cursor() === i ? ' is-cursor' : '')),
+        pick: () => { this.keys.cursor(i); pickRun(r.key); },
         isSelected: ko.pureComputed(() => this.checked.indexOf(r.key) >= 0),
         toggle: (event) => { if (event.target.checked) { this.checked.push(r.key); } else { this.checked.remove(r.key); } },
         stop: (event) => event.stopPropagation(),
-        menuItems: [{ value: 'details', label: 'View details' }, { value: 'open', label: 'Open result' }, { value: 'copy', label: 'Copy run ID' },
+        menuItems: [{ value: 'details', label: 'View details' }, { value: 'log', label: 'View log' }, { value: 'open', label: 'Open result' }, { value: 'copy', label: 'Copy run ID' },
           { value: 'rerun', label: 'Re-run', disabled: !r.rerun }],
         action: (event) => {
           const value = event.detail.value;
           if (value === 'details') {
             pickRun(r.key);
+          } else if (value === 'log') {
+            pickRun(r.key);
+            this.logOpen(true);
           } else if (value === 'open') {
             workspaceSelection.selectedId(r.workspaceId);
             navigate(r.page);
@@ -241,14 +287,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'related', label: 'Related', count: ko.pureComputed(() => this.related().length) }
       ]);
       this.openSteps = ko.observableArray([]);
-      this.steps = ko.pureComputed(() => (this.run() ? this.run().steps.map((s, i) => ({
+      // The first unfinished step of a running run is the one in progress; the others wait
+      this.steps = ko.pureComputed(() => {
+        const r = this.run();
+        if (!r) {
+          return [];
+        }
+        const now = r.status === 'running' ? r.steps.findIndex((s) => !s.done && !s.failed) : -1;
+        return r.steps.map((s, i) => ({
         n: i + 1, name: s.name, css: 'factory-step-dot ' + (s.failed ? 'factory-dot-red' : s.done ? 'factory-dot-green' : 'factory-dot-grey'),
-        icon: 'factory-nav-icon factory-ico-' + (s.failed ? 'x' : s.done ? 'check' : 'clock'),
-        state: s.failed ? 'Failed' : s.done ? 'Done' : 'Waiting',
+        icon: 'factory-nav-icon factory-ico-' + (s.failed ? 'x' : s.done ? 'check' : i === now ? 'refresh' : 'clock'),
+        state: s.failed ? 'Failed' : s.done ? 'Done' : i === now ? 'In progress' : 'Waiting',
+        live: i === now,
+        dotCss: 'fx-timeline-dot' + (s.failed ? ' fx-timeline-dot--danger' : s.done ? ' fx-timeline-dot--success' : i === now ? ' fx-timeline-dot--running' : ''),
         open: ko.pureComputed(() => this.openSteps.indexOf(i) >= 0),
         liCss: ko.pureComputed(() => (this.openSteps.indexOf(i) >= 0 ? 'factory-ag-open' : '')),
         toggle: () => { if (this.openSteps.indexOf(i) >= 0) { this.openSteps.remove(i); } else { this.openSteps.push(i); } }
-      })) : []));
+        }));
+      });
+      // The log sheet: the run's recorded messages, file activity and build console excerpt
+      this.logOpen = ko.observable(false);
+      this.openLog = () => this.logOpen(true);
+      this.logHeading = ko.pureComputed(() => (this.run() ? 'Log: ' + this.run().id : 'Log'));
+      this.logSubtitle = ko.pureComputed(() => (this.run() ? this.run().task : ''));
       // Runs for the same requirement (or, without one, the same workspace)
       this.related = ko.pureComputed(() => {
         const r = this.run();
@@ -259,7 +320,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .slice(0, 12).map((x) => Object.assign({}, x, { pick: () => pickRun(x.key) }));
       });
       this.resultLabel = ko.pureComputed(() => (this.run() && this.run().page === 'changes' ? 'View Changes' : 'View Result'));
-      this.moreItems = [{ value: 'steps', label: 'Show execution steps' }, { value: 'logs', label: 'Show logs' }, { value: 'files', label: 'Show files' },
+      this.moreItems = [{ value: 'steps', label: 'Show execution steps' }, { value: 'logs', label: 'Show logs' }, { value: 'log', label: 'View full log' }, { value: 'files', label: 'Show files' },
         { value: 'copy', label: 'Copy run ID' }, { value: 'workspace', label: 'Open the workspace' }];
       this.moreAction = (event) => {
         const value = event.detail.value;
@@ -267,7 +328,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         if (!r) {
           return;
         }
-        if (value === 'copy') {
+        if (value === 'log') {
+          this.logOpen(true);
+        } else if (value === 'copy') {
           copy(r.id);
         } else if (value === 'workspace') {
           workspaceSelection.selectedId(r.workspaceId);
@@ -322,10 +385,50 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
       this.modelNote = ko.pureComputed(() => 'Model in use now: ' + model() + '; code search: ' + embedding() + '.');
 
+      // Live updates: while a run is queued or running, reload the real data every few seconds; stop when nothing runs
+      // or the page is left. A run that finishes meanwhile shows a toast.
+      this.anyBusy = ko.pureComputed(() => this.runs().some((r) => busy(r.status)));
+      let attached = false;
+      let timer = null;
+      let lastStatus = null;
+      const schedule = () => {
+        window.clearTimeout(timer);
+        timer = null;
+        if (attached && this.anyBusy()) {
+          timer = window.setTimeout(() => dashboard.load().then(schedule), POLL_MS);
+        }
+      };
+      const watchFinished = (runs) => {
+        const now = {};
+        runs.forEach((r) => { now[r.key] = r; });
+        if (attached && lastStatus) {
+          runs.filter((r) => !busy(r.status) && busy(lastStatus[r.key])).forEach((r) => {
+            if (r.status === 'failed') {
+              toast.error(r.id + ' failed: ' + r.task);
+            } else {
+              toast.success(r.id + ' finished: ' + r.task);
+            }
+          });
+        }
+        lastStatus = {};
+        Object.keys(now).forEach((k) => { lastStatus[k] = now[k].status; });
+      };
+      const subscriptions = [];
       this.connected = () => {
         accUtils.announce('Agent Runs page loaded.');
         document.title = 'Agent Runs';
-        dashboard.load();
+        attached = true;
+        lastStatus = null;
+        subscriptions.push(this.runs.subscribe(watchFinished));
+        subscriptions.push(this.anyBusy.subscribe((value) => { if (value && !timer) { schedule(); } }));
+        dashboard.load().then(() => { watchFinished(this.runs()); schedule(); });
+      };
+      this.disconnected = () => {
+        attached = false;
+        window.clearTimeout(timer);
+        timer = null;
+        this.logOpen(false);
+        subscriptions.splice(0).forEach((s) => s.dispose());
       };
     }
 

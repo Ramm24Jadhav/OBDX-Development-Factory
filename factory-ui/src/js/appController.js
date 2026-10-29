@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements'],
-  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -144,27 +144,12 @@ define(['knockout', './services/session', './services/updates', './services/dash
         const option = workspaceSelection.options().find((o) => o.value === this.workspaceId());
         return option ? option.label.split(' (')[0] : '';
       });
-      this.globalQuery = ko.observable('');
-      this.globalQueryInput = (event) => this.globalQuery(event.target.value);
-      // The search box has its own form, so browsers do not take it for the username of a password on the page
-      this.globalSearchSubmit = (event) => event.preventDefault();
-      this.globalSearchKey = (event) => {
-        if (event.key === 'Enter' && this.globalQuery().trim()) {
-          pageRequests.codeSearch(this.globalQuery().trim());
-          this.globalQuery('');
-          event.target.value = '';
-          router.go({ path: 'code' });
-        }
-      };
-      document.addEventListener('keydown', (event) => {
-        if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
-          const input = document.getElementById('globalSearch');
-          if (input) {
-            event.preventDefault();
-            input.focus();
-          }
-        }
-      });
+      // Search and jump: the command palette (Ctrl K, '/', or the top bar search button)
+      this.palette = palette;
+      palette.init(navData.slice(1).filter((r) => r.detail && !r.detail.hidden).map((r) => ({ path: r.path, label: r.detail.label, icon: r.detail.icon })),
+        (path) => router.go({ path: path }));
+      this.openPalette = () => palette.show('');
+      this.closeShortcutsBackdrop = (event) => { if (event.target === event.currentTarget) { palette.closeHelp(); } };
       this.attention = dashboard.attention;
       this.attentionCount = ko.pureComputed(() => this.attention().length);
       this.bellOpen = ko.observable(false);

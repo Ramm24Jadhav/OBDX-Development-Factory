@@ -16,6 +16,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ADMIN: badge('Administrator', 'primary'), LEAD: badge('Lead', 'violet'), DEVELOPER: badge('Developer', 'primary'),
       ANALYST: badge('Business Analyst', 'success'), NONE: badge('No role yet', '')
     };
+    // User states in the shared status categories (ui.status)
+    const ACTIVE = ui.status('SUCCEEDED', 'Active');
+    const INACTIVE = ui.status('CLOSED', 'Inactive');
     const RANK = { LEAD: 3, DEVELOPER: 2, ANALYST: 1 };
     const MONTH_MS = 30 * 24 * 3600 * 1000;
     const ACTIVITY = {
@@ -85,7 +88,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           initials: ui.initials(u.displayName || u.username), avatarCss: avatarCss(u.username), role: role, rolePill: ROLE_PILL[role] || ROLE_PILL.NONE,
           workspaceText: u.admin ? 'All (' + workspaces().length + ')' : list.length === 1 ? '1 workspace' : list.length + ' workspaces',
           workspaceIds: list.map((m) => m.workspace),
-          status: u.enabled ? badge('Active', 'success') : badge('Inactive', 'danger'),
+          status: u.enabled ? ACTIVE : INACTIVE,
           lastLogin: u.lastLoginAt ? ui.when(u.lastLoginAt) : 'Never',
           menu: menu,
           doAdmin: () => {
@@ -112,7 +115,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           enabledLabel: u.enabled ? 'Deactivate' : 'Activate',
           isLocal: u.source === 'LOCAL',
           isSelected: ko.pureComputed(() => this.selected.indexOf(u.id) >= 0),
-          rowCss: ko.pureComputed(() => (this.selected.indexOf(u.id) >= 0 ? 'is-selected' : '')),
+          rowCss: ko.pureComputed(() => {
+            const cursorRow = this.userPager.rows()[this.keys.cursor()];
+            return (this.selected.indexOf(u.id) >= 0 ? 'is-selected' : '') + (cursorRow && cursorRow.id === u.id ? ' is-cursor' : '');
+          }),
+          focus: () => { this.keys.cursor(this.userPager.rows().findIndex((r) => r.id === u.id)); return true; },
           toggle: (event) => { if (event.target.checked) { this.selected.push(u.id); } else { this.selected.remove(u.id); } return true; }
         });
       }));
@@ -130,6 +137,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.selected(event.target.checked ? Array.from(new Set(this.selected().concat(ids))) : this.selected().filter((id) => ids.indexOf(id) < 0));
       };
       this.selectedText = ko.pureComputed(() => (this.selected().length ? ' · ' + this.selected().length + ' selected' : ''));
+      // Keyboard: arrows or J/K move, Enter opens the user's actions menu, X selects
+      this.keys = ui.tableKeys(this.userPager.rows, {
+        open: () => {
+          const tr = document.querySelectorAll('#userTable tbody tr')[this.keys.cursor()];
+          const button = tr && tr.querySelector('.fx-menu-toggle');
+          if (button) { button.click(); }
+        },
+        toggle: (u) => { if (this.selected.indexOf(u.id) >= 0) { this.selected.remove(u.id); } else { this.selected.push(u.id); } }
+      });
+      // Bulk bar: copy the usernames of the selected users, or clear the selection (nothing here changes users)
+      this.clearSelected = () => this.selected([]);
+      this.copyUsernames = () => {
+        const names = this.users().filter((u) => this.selected.indexOf(u.id) >= 0).map((u) => u.username);
+        ui.copy(names.join('\n')).then(() => toast.success(names.length + (names.length === 1 ? ' username' : ' usernames') + ' copied.'))
+          .catch(() => toast.error('The browser did not allow copying. Select the usernames in the table and copy them.'));
+      };
       this.invited = ko.pureComputed(() => this.users().filter((u) => !u.lastLoginAt));
       this.kpis = ko.pureComputed(() => {
         const all = rawUsers();

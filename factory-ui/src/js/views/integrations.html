@@ -66,20 +66,24 @@
             <option value="configured">Configured</option><option value="issue">Connection Issue</option><option value="inactive">Inactive</option></select>
           <button type="button" class="fx-btn fx-btn--secondary" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
         </div>
+        <oj-bind-if test="[[checked().length > 0]]">
+          <div class="fx-bulkbar factory-in-bulk" role="region" aria-label="Selected rows"><span><oj-bind-text value="[[checked().length + ' selected']]"></oj-bind-text></span>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[copyUrls]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy URLs</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearChecked]]">Clear selection</button></div>
+        </oj-bind-if>
         <div class="fx-table-wrap factory-in-menuwrap">
           <table class="fx-table factory-in-table" id="integrationTable">
             <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" id="intSelectAll" aria-label="Select all integrations on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></label></th>
               <th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th><th scope="col">Workspace</th><th scope="col">Status</th><th scope="col">Last Connected</th><th scope="col" class="fx-table-actions">Actions</th></tr></thead>
-            <tbody>
+            <tbody on-keydown="[[keys.key]]">
               <oj-bind-for-each data="[[rows]]" as="r">
-                <template><tr :class="[[r.data.css]]" on-click="[[r.data.pick]]">
+                <template><tr :class="[[r.data.css]]" tabindex="0" on-click="[[r.data.pick]]" on-focus="[[r.data.focus]]">
                   <td class="fx-col-check" on-click="[[r.data.stop]]"><label class="fx-check"><input type="checkbox" :aria-label="[['Select ' + r.data.name + ' ' + r.data.workspace]]" :checked="[[r.data.isSelected]]" on-click="[[r.data.toggle]]"></label></td>
                   <td><span class="factory-name-cell"><span :class="[[r.data.iconCss]]"><span :class="[[r.data.iconClass]]" aria-hidden="true"></span></span>
                     <button type="button" class="factory-in-namebtn" :aria-label="[['Show details of ' + r.data.name + ', ' + r.data.workspace]]" on-click="[[r.data.pick]]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></button></span></td>
                   <td><span :class="[[r.data.typeCss]]"><oj-bind-text value="[[r.data.typeLabel]]"></oj-bind-text></span></td>
                   <td class="factory-ov-subtle factory-in-desc"><oj-bind-text value="[[r.data.descText]]"></oj-bind-text></td>
                   <td><span class="fx-chip factory-in-ws" :title="[[r.data.workspace]]"><oj-bind-text value="[[r.data.wsShort]]"></oj-bind-text></span></td>
-                  <td><span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
+                  <td><span :class="[[r.data.pill.css]]"><span :class="[[r.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-in-last"><oj-bind-text value="[[r.data.last]]"></oj-bind-text></td>
                   <td class="fx-table-actions" on-click="[[r.data.stop]]"><div class="fx-menu-wrap">
                     <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[r.data.menu.open() ? 'true' : 'false']]"
@@ -144,7 +148,7 @@
           <div class="factory-in-dhead">
             <span :class="[[selected().iconCss]]"><span :class="[[selected().iconClass]]" aria-hidden="true"></span></span>
             <span class="factory-in-dname"><span class="factory-in-title"><oj-bind-text value="[[selected().name]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[selected().typeLabel + ' · ' + selected().workspace]]"></oj-bind-text></span></span>
-            <span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
+            <span :class="[[selected().pill.css]]"><span :class="[[selected().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
             <div class="fx-menu-wrap">
               <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[headMenu.open() ? 'true' : 'false']]" aria-label="More actions"
                       on-click="[[headMenu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
@@ -169,7 +173,7 @@
               <dt>Description</dt><dd><oj-bind-text value="[[selected().description]]"></oj-bind-text></dd>
               <dt>Server URL</dt><dd class="factory-mono factory-in-url factory-in-urlwrap" :title="[[selected().target]]"><oj-bind-text value="[[selected().targetWrap]]"></oj-bind-text></dd>
               <dt><oj-bind-text value="[[selected().envLabel]]"></oj-bind-text></dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
-              <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><span :class="[[selected().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
               <dt>Last Connected</dt><dd><oj-bind-text value="[[selected().last]]"></oj-bind-text></dd>
               <dt>Authentication</dt><dd><oj-bind-text value="[[selected().auth]]"></oj-bind-text></dd>
             </dl>
@@ -220,7 +224,7 @@
           <div class="fx-table-wrap">
             <table class="fx-table factory-in-btable"><thead><tr><th scope="col">Build #</th><th scope="col">Branch</th><th scope="col">Status</th><th scope="col">Started</th><th scope="col">Duration</th></tr></thead>
               <tbody><oj-bind-for-each data="[[builds]]" as="b"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[b.data.number]]"></oj-bind-text></td>
-                <td class="factory-in-branch" :title="[[b.data.branch]]"><oj-bind-text value="[[b.data.branch]]"></oj-bind-text></td><td><span :class="[[b.data.pill.css]]"><oj-bind-text value="[[b.data.pill.text]]"></oj-bind-text></span></td>
+                <td class="factory-in-branch" :title="[[b.data.branch]]"><oj-bind-text value="[[b.data.branch]]"></oj-bind-text></td><td><span :class="[[b.data.pill.css]]"><span :class="[[b.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[b.data.pill.text]]"></oj-bind-text></span></td>
                 <td class="factory-cp-nowrap"><oj-bind-text value="[[b.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[b.data.duration]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
             <oj-bind-if test="[[builds().length === 0]]"><div class="fx-empty factory-in-bempty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span></span><oj-bind-text value="[[buildsEmpty]]"></oj-bind-text></div></oj-bind-if>
           </div>

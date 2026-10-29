@@ -21,8 +21,9 @@
       <span class="fx-tip-wrap" :tabindex="[[canBuild() ? null : '0']]" :data-fx-tip="[[rebuildTip]]">
         <button type="button" id="rebuildButton" class="fx-btn fx-btn--secondary" on-click="[[rebuild]]" :disabled="[[!canBuild()]]">
           <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Rebuild</button></span>
-      <button type="button" id="submitReviewButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[!detail() || detail().status !== 'GENERATED' || !canManage()]]">
-        <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button>
+      <span class="fx-approval" id="buildApproval"><span class="fx-approval-label">Approval</span>
+        <button type="button" id="submitReviewButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[!detail() || detail().status !== 'GENERATED' || !canManage()]]">
+          <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button></span>
       <fx-menu-button id="buildMoreButton" variant="ghost" icon="more" icon-only label="More actions" :disabled="[[!detail()]]"
                       items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
     </div>
@@ -53,6 +54,7 @@
             <div class="factory-bt-head">
               <span :class="[[headCss]]"><span :class="[[headIcon]]" aria-hidden="true"></span></span>
               <div><strong id="buildHeadline"><oj-bind-text value="[[headline().text]]"></oj-bind-text></strong>
+                <oj-bind-if test="[[isLive()]]"><span class="fx-live" id="buildLive">Live</span></oj-bind-if>
                 <span class="factory-ov-subtle"><oj-bind-text value="[[headline().note]]"></oj-bind-text></span></div>
             </div>
             <div class="factory-bt-kpis">
@@ -76,7 +78,8 @@
               <template><div class="factory-card factory-bt-stage"><span :class="[[$current.data.css]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span>
                 <div><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.detail]]"></oj-bind-text></span>
                   <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span>
-                  <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></div></div></template>
+                  <span class="factory-bt-stagestate"><span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[$current.data.live]]"><span class="fx-live">Live</span></oj-bind-if></span></div></div></template>
             </oj-bind-for-each>
           </div>
           <div class="factory-row factory-bt-row">
@@ -101,7 +104,7 @@
                   <tbody>
                     <oj-bind-for-each data="[[visibleFailures]]">
                       <template><tr :class="[[$current.data.index === selectedFailure() ? 'factory-clickable is-selected' : 'factory-clickable']]" on-click="[[$current.data.pick]]">
-                        <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
+                        <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
                           <span class="factory-bt-kind"><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></span></td>
                         <td class="factory-bt-path" :title="[[$current.data.file]]"><bdi><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></bdi></td>
                         <td class="factory-bt-msg" :title="[[$current.data.message]]"><div><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></div></td>
@@ -115,7 +118,7 @@
             </section>
             <section class="factory-card">
               <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>Failure Details</span>
-                <oj-bind-if test="[[failure()]]"><span class="factory-bt-nav"><span :class="[[failure().status.css]]"><oj-bind-text value="[[failure().status.text]]"></oj-bind-text></span>
+                <oj-bind-if test="[[failure()]]"><span class="factory-bt-nav"><span :class="[[failure().status.css]]"><span :class="[[failure().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[failure().status.text]]"></oj-bind-text></span>
                   <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[prevFailure]]" aria-label="Previous failure">‹</button><oj-bind-text value="[[failurePosition]]"></oj-bind-text>
                   <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[nextFailure]]" aria-label="Next failure">›</button></span></oj-bind-if></h2>
               <oj-bind-if test="[[!failure()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>Nothing failed</strong>Failures from the quick checks and Jenkins show here.</div></oj-bind-if>
@@ -146,6 +149,7 @@
             <section class="factory-card">
               <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Build Logs</span>
                 <span class="factory-bt-logbtns">
+                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="fullLogButton" on-click="[[openFullLog]]">View full log</button>
                   <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="rawLogButton" on-click="[[rawLog]]">Raw</button>
                   <a class="fx-btn fx-btn--secondary fx-btn--sm factory-bt-dl" :href="[[logDownload]]" download="build-log.txt">
                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>Download</a>
@@ -165,11 +169,7 @@
                   </oj-bind-for-each>
                 </div>
               </oj-bind-if>
-              <div :class="[[logExpanded() ? 'factory-code factory-bt-log factory-bt-log-big' : 'factory-code factory-bt-log']]" id="buildLog">
-                <oj-bind-for-each data="[[logLines]]">
-                  <template><div :class="[[$current.data.css]]"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></div></template>
-                </oj-bind-for-each>
-              </div>
+              <div :class="[[logExpanded() ? 'fx-log factory-bt-log factory-bt-log-big' : 'fx-log factory-bt-log']]" id="buildLog" role="log" aria-label="Build log" tabindex="0"><oj-bind-for-each data="[[logLines]]"><template><div :class="[[$current.data.css]]"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></div></template></oj-bind-for-each></div>
             </section>
             <section class="factory-card factory-bt-cov">
               <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-chart" aria-hidden="true"></span>Test Coverage</span></h2>
@@ -190,7 +190,8 @@
         <oj-bind-if test="[[tab() === 'static' || tab() === 'obdx']]">
           <section class="factory-card">
             <h2><oj-bind-text value="[[tab() === 'obdx' ? 'OBDX Checks' : 'Static Analysis']]"></oj-bind-text>
-              <button type="button" id="checkAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!canManage()]]">Run quick checks</button></h2>
+              <span class="factory-bt-checkhead"><oj-bind-if test="[[checking()]]"><span class="fx-live">Checking</span></oj-bind-if>
+                <button type="button" id="checkAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!canManage() || checking()]]">Run quick checks</button></span></h2>
             <p class="factory-card-sub">Syntax at the bank's Java level and the version pack rules, on the lines each file adds.</p>
             <div class="fx-table-wrap">
               <table class="fx-table" id="checkTable">
@@ -198,7 +199,7 @@
                 <tbody>
                   <oj-bind-for-each data="[[fileRows]]">
                     <template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.layer]]"></oj-bind-text></td>
-                      <td><span :class="[[$current.data.check.css]]"><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
+                      <td><span :class="[[$current.data.check.css]]"><span :class="[[$current.data.check.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
                       <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.attempts]]"></oj-bind-text></td></tr></template>
                   </oj-bind-for-each>
                 </tbody>
@@ -217,7 +218,7 @@
                 <table class="fx-table">
                   <thead><tr><th>File</th><th>Result</th><th>Message</th></tr></thead>
                   <tbody><oj-bind-for-each data="[[securityRows]]"><template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
-                    <td><span :class="[[$current.data.check.css]]"><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
+                    <td><span :class="[[$current.data.check.css]]"><span :class="[[$current.data.check.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
                     <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
                 </table>
               </div>
@@ -269,7 +270,7 @@
       <div class="factory-stack">
         <section class="factory-card">
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Change Information</span>
-            <span :class="[[headStatus().css]]"><oj-bind-text value="[[headStatus().text]]"></oj-bind-text></span></h2>
+            <span :class="[[headStatus().css]]"><span :class="[[headStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[headStatus().text]]"></oj-bind-text></span></h2>
           <dl class="factory-kv">
             <oj-bind-for-each data="[[info]]">
               <template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd :class="[[$current.data.link ? 'factory-cp-link' : '']]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template>
@@ -280,7 +281,7 @@
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Quick Actions</span></h2>
           <div class="factory-bt-actions">
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaRebuild" :disabled="[[!canBuild()]]" :data-fx-tip="[[rebuildTip]]" on-click="[[rebuild]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Rebuild with Jenkins</button>
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaChecks" :disabled="[[!canManage()]]" :data-fx-tip="[[canManage() ? null : 'You need the Manage code permission']]" on-click="[[checkAgain]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Run quick checks</button>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaChecks" :disabled="[[!canManage() || checking()]]" :data-fx-tip="[[canManage() ? null : 'You need the Manage code permission']]" on-click="[[checkAgain]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Run quick checks</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaFix" :disabled="[[!canManage() || !failure()]]" :data-fx-tip="[[!canManage() ? 'You need the Manage code permission' : !failure() ? 'Nothing failed' : null]]" on-click="[[fixWithAi]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Generate Fix with AI</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaWorkbench" on-click="[[openWorkbench]]"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Open the workbench</button>
           </div>
@@ -328,4 +329,17 @@
       </div>
     </div>
   </oj-bind-if>
+
+  <fx-sheet id="buildLogSheet" open="{{fullLogOpen}}" heading="[[fullLogTitle]]" subtitle="[[fullLogSubtitle]]" wide>
+    <div class="factory-bt-sheet">
+      <div class="factory-bt-sheethead">
+        <oj-bind-if test="[[logStatus()]]"><span :class="[[logStatus().css]]"><span :class="[[logStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[logStatus().text]]"></oj-bind-text></span></oj-bind-if>
+        <oj-bind-if test="[[isLive()]]"><span class="fx-live">Live, updates while it runs</span></oj-bind-if>
+        <oj-bind-if test="[[consoleUrl()]]"><a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[consoleUrl]]" target="_blank" rel="noopener noreferrer"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Open the Jenkins console</a></oj-bind-if>
+        <a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[logDownload]]" download="build-log.txt">Download</a>
+      </div>
+      <pre class="fx-log factory-bt-fulllog" id="buildFullLog"><oj-bind-text value="[[logText]]"></oj-bind-text></pre>
+      <oj-bind-if test="[[logRoundBuild()]]"><p class="fx-help">The factory keeps an excerpt of each Jenkins console (the end of the log and the error lines). The full console is in Jenkins.</p></oj-bind-if>
+    </div>
+  </fx-sheet>
 </div>

@@ -4,8 +4,8 @@
  * changing the password of a factory account, this session, and signing out.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/preferences',
-        '../services/ui', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, session, workspaceSelection, preferences, ui, toast) {
+        '../services/ui', '../services/toast', '../services/palette', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, workspaceSelection, preferences, ui, toast, palette) {
     // A design system switch (button role=switch) for an observable, or a fixed value when it cannot change yet
     const switchFor = (value) => ({
       checkedText: ko.pureComputed(() => (ko.unwrap(value) ? 'true' : 'false')),
@@ -108,6 +108,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.textChange = ui.value(preferences.textSize);
       this.hour12On = () => preferences.hour12(true);
       this.hour24On = () => preferences.hour12(false);
+      // Density: compact rows and controls everywhere (the fx-compact body class)
+      this.densityOptions = [{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }];
+      // The shortcuts sheet of the command palette (also on "?")
+      this.showShortcuts = () => palette.helpOpen(true);
       // Theme: the same preference as the top bar's light / dark toggle
       this.themes = [
         { value: 'light', label: 'Light', icon: 'sun', tip: 'Light theme' },

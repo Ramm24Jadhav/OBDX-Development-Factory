@@ -17,7 +17,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     const HEALTH_TONE = { svn: 'violet', jenkins: 'danger', model: 'primary', other: 'neutral' };
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const copy = (text) => { if (text) { ui.copy(text).then(() => toast.success('Server URL copied.')).catch(() => toast.error('The browser did not allow copying. Select the URL in the details and copy it.')); } };
-    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
+    // Integration states in the shared status categories (ui.status), with this page's words
+    const STATE = {
+      connected: ui.status('PASSED', 'Connected'), configured: ui.status('NOT_CHECKED', 'Configured'),
+      issue: ui.status('WARNING', 'Connection Issue'), inactive: ui.status('CLOSED', 'Inactive')
+    };
     // Long URLs and paths keep their start and end
     const middle = (text, max) => (!text || text.length <= max ? text : text.slice(0, Math.ceil(max * 0.45)) + '…' + text.slice(-Math.floor(max * 0.55)));
     // Hyphens in names do not break lines
@@ -25,7 +29,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
     const buildRow = (b) => ({
       number: b.buildNumber ? '#' + b.buildNumber : '–', branch: b.branchUrl ? b.branchUrl.split('/').slice(-2).join('/') : 'patch', at: b.startedAt,
-      pill: b.result === 'SUCCESS' ? badge('Success', 'success') : (b.result === 'RUNNING' || b.result === 'QUEUED' || !b.result) ? badge('Running', 'info') : badge('Failed', 'danger'),
+      pill: b.result === 'SUCCESS' ? ui.status('SUCCEEDED', 'Success') : (b.result === 'RUNNING' || b.result === 'QUEUED' || !b.result) ? ui.status(b.result || 'RUNNING', b.result === 'QUEUED' ? 'Queued' : 'Running') : ui.status('FAILED'),
       started: ui.when(b.startedAt), duration: dashboard.duration(b.startedAt, b.finishedAt) || '–'
     });
 
@@ -116,7 +120,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           return Object.assign(i, {
             state: state, typeLabel: type.label, typeCss: 'fx-badge fx-badge--plain' + (type.tone === 'neutral' ? '' : ' fx-badge--' + type.tone),
             iconCss: 'fx-kpi-icon factory-in-logo factory-in-tone-' + type.tone, iconClass: 'factory-nav-icon factory-ico-' + type.icon,
-            pill: state === 'connected' ? badge('Connected', 'success') : state === 'configured' ? badge('Configured', 'info') : state === 'issue' ? badge('Connection Issue', 'warning') : badge('Inactive', ''),
+            pill: STATE[state],
             last: t ? ui.when(t.at) : (i.lastAt ? ui.when(i.lastAt) : '–'), testText: t ? t.text : '',
             descText: keep(i.description), wsShort: i.workspace === 'All workspaces' ? 'All' : keep(i.workspace),
             targetShort: middle(i.target, 40), targetWrap: middle(i.target, 70), hasTarget: !!i.target && i.target !== 'Not set' && i.target !== 'Not set up',
@@ -213,10 +217,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           navigate(i.open);
         }
       };
-      this.rows = ko.pureComputed(() => this.pager.rows().map((i) => {
+      this.rows = ko.pureComputed(() => this.pager.rows().map((i, index) => {
         const menu = ui.menu();
         return Object.assign({}, i, {
-          css: (this.selected() && this.selected().key === i.key ? 'factory-clickable is-selected' : 'factory-clickable') + (this.checked.indexOf(i.key) >= 0 ? ' factory-in-checked' : ''),
+          // Its own computed, so selecting, checking or moving the keyboard cursor does not redraw the rows (and lose focus)
+          css: ko.pureComputed(() => (this.selected() && this.selected().key === i.key ? 'factory-clickable is-selected' : 'factory-clickable')
+            + (this.checked.indexOf(i.key) >= 0 ? ' factory-in-checked' : '') + (this.keys.cursor() === index ? ' is-cursor' : '')),
+          focus: () => { this.keys.cursor(index); return true; },
           pick: () => pick(i.key),
           isSelected: ko.pureComputed(() => this.checked.indexOf(i.key) >= 0),
           toggle: (event) => { if (event.target.checked) { this.checked.push(i.key); } else { this.checked.remove(i.key); } return true; },
@@ -228,6 +235,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           doCopy: () => { menu.close(); copy(i.target); }
         });
       }));
+      // Keyboard: arrows or J/K move, Enter shows the details, X selects
+      this.keys = ui.tableKeys(this.rows, {
+        open: (row) => row.pick(),
+        toggle: (row) => { if (this.checked.indexOf(row.key) >= 0) { this.checked.remove(row.key); } else { this.checked.push(row.key); } }
+      });
+      // Bulk bar: copy the server URLs of the selected integrations, or clear the selection
+      this.clearChecked = () => this.checked([]);
+      this.copyUrls = () => {
+        const urls = this.items().filter((i) => this.checked.indexOf(i.key) >= 0 && i.hasTarget).map((i) => i.target).filter((u, n, list) => list.indexOf(u) === n);
+        if (!urls.length) {
+          toast.info('None of the selected integrations has a server URL.');
+          return;
+        }
+        ui.copy(urls.join('\n')).then(() => toast.success(urls.length + (urls.length === 1 ? ' server URL' : ' server URLs') + ' copied.'))
+          .catch(() => toast.error('The browser did not allow copying. Select the URL in the details and copy it.'));
+      };
       this.selected = ko.pureComputed(() => this.items().find((i) => i.key === this.selectedKey()) || this.items().find((i) => i.state === 'issue') || this.items()[0] || null);
       this.testSelected = () => test(this.selected());
       this.editSelected = () => edit(this.selected());

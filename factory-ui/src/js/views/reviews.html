@@ -79,7 +79,7 @@
                   <span class="factory-rq-item-main"><strong :title="[[l.data.name]]"><oj-bind-text value="[[l.data.name]]"></oj-bind-text></strong>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.version]]"></oj-bind-text></span>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.reviewers]]"></oj-bind-text></span></span>
-                  <span class="factory-rq-item-side"><span :class="[[l.data.pill.css]]"><oj-bind-text value="[[l.data.pill.text]]"></oj-bind-text></span>
+                  <span class="factory-rq-item-side"><span :class="[[l.data.pill.css]]"><span :class="[[l.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[l.data.pill.text]]"></oj-bind-text></span>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.expires]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[l.data.comments]]"></oj-bind-text></span></span>
                   <div class="fx-menu-wrap" on-click="[[l.data.stop]]" on-keydown="[[l.data.stopKey]]">
                     <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[l.data.menu.open() ? 'true' : 'false']]"
@@ -91,7 +91,8 @@
                         <button type="button" role="menuitem" on-click="[[l.data.doDesigner]]"><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span>Open in the designer</button>
                         <div class="fx-menu-sep" role="separator"></div>
                         <button type="button" role="menuitem" :disabled="[[!l.data.canCreate]]" on-click="[[l.data.doCreate]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create a new link</button>
-                        <button type="button" role="menuitem" :disabled="[[!l.data.canRevoke]]" on-click="[[l.data.doRevoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
+                        <div class="fx-menu-sep" role="separator"></div>
+                        <button type="button" role="menuitem" class="fx-menu-danger" :disabled="[[!l.data.canRevoke]]" on-click="[[l.data.doRevoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
                       </div>
                     </oj-bind-if>
                   </div>
@@ -135,7 +136,8 @@
                   <div class="fx-menu factory-rv-upmenu" role="menu" on-keydown="[[linkMenu.key]]">
                     <button type="button" role="menuitem" :disabled="[[!reviewUrl()]]" on-click="[[linkDo.open]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Open as a reviewer</button>
                     <button type="button" role="menuitem" :disabled="[[!canEdit()]]" on-click="[[linkDo.create]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span><oj-bind-text value="[[reviewUrl() ? 'Create a new link' : 'Create link']]"></oj-bind-text></button>
-                    <button type="button" role="menuitem" :disabled="[[!reviewUrl() || !canEdit()]]" on-click="[[linkDo.revoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
+                    <div class="fx-menu-sep" role="separator"></div>
+                    <button type="button" role="menuitem" class="fx-menu-danger" :disabled="[[!reviewUrl() || !canEdit()]]" on-click="[[linkDo.revoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
                   </div>
                 </oj-bind-if>
               </div>
@@ -219,7 +221,8 @@
             <dl class="factory-kv factory-rv-details">
               <dt>Screen</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
               <dt>Version</dt><dd><oj-bind-text value="[['v' + selected().currentVersion + ' (' + selected().versions.length + ' saved)']]"></oj-bind-text></dd>
-              <dt>Status</dt><dd><span :class="[[details().pill.css]]"><oj-bind-text value="[[details().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Design</dt><dd><span :class="[[details().designPill.css]]"><span :class="[[details().designPill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[details().designPill.text]]"></oj-bind-text></span></dd>
+              <dt>Review link</dt><dd><span :class="[[details().pill.css]]"><span :class="[[details().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[details().pill.text]]"></oj-bind-text></span></dd>
               <dt>Requirement</dt><dd><oj-bind-text value="[[details().requirement]]"></oj-bind-text></dd>
               <dt>Sections</dt><dd><oj-bind-text value="[[details().sections]]"></oj-bind-text></dd>
               <dt>Link expires</dt><dd><oj-bind-text value="[[expiryText]]"></oj-bind-text></dd>

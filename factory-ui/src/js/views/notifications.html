@@ -37,17 +37,18 @@
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg></button></span>
       </div>
       <oj-bind-if test="[[hasChecked()]]">
-        <div class="fx-row factory-no-bulk"><span class="fx-muted"><oj-bind-text value="[[checkedCount() + ' selected']]"></oj-bind-text></span>
-          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[markSelectedRead]]">Mark selected as read</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[markSelectedUnread]]">Mark as unread</button></div>
+        <div class="fx-bulkbar factory-no-bulk" role="region" aria-label="Selected rows"><span><oj-bind-text value="[[checkedCount() + ' selected']]"></oj-bind-text></span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[markSelectedRead]]">Mark selected as read</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[markSelectedUnread]]">Mark as unread</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearChecked]]">Clear selection</button></div>
       </oj-bind-if>
       <div class="fx-table-wrap factory-no-tablewrap">
         <table class="fx-table factory-no-table" id="notificationTable">
           <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[allChecked]]" on-click="[[checkAll]]" aria-label="Select all notifications on this page"></label></th><th scope="col">Type</th><th scope="col">Notification</th><th scope="col">Related To</th><th scope="col">Time</th><th scope="col">Priority</th><th scope="col">Status</th><th class="fx-table-actions"><span class="factory-sr">Actions</span></th></tr></thead>
-          <tbody><oj-bind-for-each data="[[rows]]" as="row"><template><tr :class="[[row.data.css]]" on-click="[[row.data.pick]]">
+          <tbody on-keydown="[[keys.key]]"><oj-bind-for-each data="[[rows]]" as="row"><template><tr :class="[[row.data.rowCss]]" tabindex="0" on-click="[[row.data.pick]]" on-focus="[[row.data.focus]]">
             <td class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[row.data.isChecked]]" on-click="[[row.data.check]]" :aria-label="[['Select ' + row.data.title]]"></label></td>
             <td><span :class="[[row.data.iconCss]]" :title="[[row.data.categoryText]]"><span :class="[[row.data.iconClass]]" aria-hidden="true"></span></span></td>
             <td><strong class="factory-no-title"><oj-bind-text value="[[row.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[row.data.text]]"></oj-bind-text></span></td>
-            <td><span class="factory-cp-link factory-no-rel" :title="[[row.data.related]]"><oj-bind-text value="[[row.data.related]]"></oj-bind-text></span><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[row.data.relatedSub]]"></oj-bind-text></span></td>
+            <td><span class="factory-cp-link factory-no-rel" :title="[[row.data.related]]"><oj-bind-text value="[[row.data.related]]"></oj-bind-text></span><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[row.data.relatedSub]]"></oj-bind-text></span>
+              <oj-bind-if test="[[row.data.subject]]"><span :class="[[row.data.subject.css + ' factory-no-subject']]"><span :class="[[row.data.subject.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[row.data.subject.text]]"></oj-bind-text></span></oj-bind-if></td>
             <td class="factory-no-when" :title="[[row.data.when]]"><span><oj-bind-text value="[[row.data.whenDate]]"></oj-bind-text></span><span><oj-bind-text value="[[row.data.whenTime]]"></oj-bind-text></span></td>
             <td><span :class="[[row.data.priorityBadge.css]]"><oj-bind-text value="[[row.data.priorityBadge.text]]"></oj-bind-text></span></td>
             <td><span :class="[[row.data.statusBadge.css]]"><oj-bind-text value="[[row.data.statusBadge.text]]"></oj-bind-text></span></td>
@@ -92,6 +93,7 @@
         <p class="factory-no-dtext"><oj-bind-text value="[[selectedView().text]]"></oj-bind-text></p>
         <dl class="factory-kv factory-no-kv">
           <dt>Category</dt><dd><oj-bind-text value="[[selectedView().category]]"></oj-bind-text></dd>
+          <oj-bind-if test="[[selectedView().subject]]"><dt>Status</dt><dd><span :class="[[selectedView().subject.css]]"><span :class="[[selectedView().subject.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selectedView().subject.text]]"></oj-bind-text></span></dd></oj-bind-if>
           <oj-bind-for-each data="[[selectedView().details]]"><template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd :title="[[$current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template></oj-bind-for-each>
         </dl>
         <oj-bind-if test="[[selectedView().errors.length > 0]]">

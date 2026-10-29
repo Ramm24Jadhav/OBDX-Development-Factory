@@ -15,8 +15,19 @@
             <span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Save Draft</button></span>
         <button type="button" id="validateButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!hasCode() || !canManage()]]">
           <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Validate</button>
-        <button type="button" id="deliverButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[busy() || !canManage() || !detail() || detail().status !== 'GENERATED']]">
-          <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button>
+        <!-- Approving, delivering and closing stay apart from writing and checking the code -->
+        <span class="fx-approval factory-ch-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+          <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
+            <button type="button" id="approvePlanHeadButton" class="fx-btn fx-btn--primary" on-click="[[approvePlan]]">
+              <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve Plan</button>
+          </oj-bind-if>
+          <button type="button" id="deliverButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[busy() || !canManage() || !detail() || detail().status !== 'GENERATED']]">
+            <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button>
+          <oj-bind-if test="[[detail().status === 'DELIVERED' && canClose()]]">
+            <button type="button" id="closeMergedButton" class="fx-btn fx-btn--secondary" on-click="[[closeMerged]]" :disabled="[[busy()]]">
+              <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Close as Merged</button>
+          </oj-bind-if>
+        </span>
         <fx-menu-button id="moreButton" label="More actions" icon="more" icon-only variant="ghost" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
       </oj-bind-if>
     </div>
@@ -57,8 +68,19 @@
         <div class="factory-ch-info-head">
           <div><span class="factory-ov-subtle"><oj-bind-text value="[[changeCode]]"></oj-bind-text></span>
             <h2 class="factory-ch-title"><oj-bind-text value="[[detail().title]]"></oj-bind-text></h2></div>
-          <span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span>
+          <span class="factory-ch-statuswrap">
+            <oj-bind-if test="[[running()]]"><span class="fx-live">Live</span></oj-bind-if>
+            <span :class="[[statusPill().css]]" id="changeStatus"><span :class="[[statusPill().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span></span>
         </div>
+        <oj-bind-if test="[[progress()]]">
+          <div class="factory-ch-progress" id="changeProgress" role="status">
+            <span class="factory-ch-progresstext"><oj-bind-text value="[[progress().text]]"></oj-bind-text></span>
+            <oj-bind-if test="[[progress().max]]">
+              <span class="fx-progress factory-ch-progressbar" role="progressbar" :aria-valuenow="[[progress().value]]" aria-valuemin="0" :aria-valuemax="[[progress().max]]" :aria-label="[[progress().label]]"><span :style="[[progress().style]]"></span></span>
+            </oj-bind-if>
+            <span class="factory-ov-subtle"><oj-bind-text value="[[progress().note]]"></oj-bind-text></span>
+          </div>
+        </oj-bind-if>
         <dl class="factory-ch-infogrid">
           <oj-bind-for-each data="[[infoRows]]">
             <template><div><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd :title="[[$current.data.title || $current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></div></template>
@@ -67,9 +89,12 @@
       </section>
     </div>
 
-    <div :class="[[gridCss]]">
+    <div :class="[[gridCss]]" data-fx-panes id="workbenchGrid">
       <div class="factory-card factory-ch-work">
         <div class="factory-ch-workhead">
+          <!-- On narrow screens the assistant leaves the grid and opens in a side panel -->
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-ch-aibtn" id="assistantSheetButton" on-click="[[openAiSheet]]" aria-haspopup="dialog">
+            <span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Assistant</button>
           <div class="fx-tabs factory-ch-tabs" role="tablist" aria-label="Workbench">
             <oj-bind-for-each data="[[tabs]]">
               <template><button type="button" role="tab" :id="[['wb-' + $current.data.value]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
@@ -89,7 +114,7 @@
 
         <!-- Files: tree and code -->
         <oj-bind-if test="[[tab() === 'files']]">
-          <div class="factory-ch-files">
+          <div class="factory-ch-files" data-fx-panes>
             <div class="factory-ch-tree">
               <div class="factory-ch-treesearch">
                 <span class="fx-control factory-ch-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
@@ -116,6 +141,7 @@
               </ul>
               <oj-bind-if test="[[tree().length === 0]]"><p class="fx-muted factory-ch-none">No files match.</p></oj-bind-if>
             </div>
+            <fx-resizer storage-key="changes-tree" min="180" max="520" label="Resize the file tree"></fx-resizer>
             <div class="factory-ch-code">
               <oj-bind-if test="[[!file()]]">
                 <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><oj-bind-text value="[[detail().files.length ? 'Opening the first file...' : 'The plan has no files yet.']]"></oj-bind-text></div>
@@ -129,7 +155,12 @@
                       <button type="button" class="factory-ch-filetab-x" :aria-label="[['Close ' + $current.data.name]]" on-click="[[$current.data.close]]">✕</button></span></template>
                   </oj-bind-for-each>
                 </div>
-                <div class="factory-ov-subtle factory-mono factory-ch-path" :title="[[file().path]]"><oj-bind-text value="[[file().path]]"></oj-bind-text></div>
+                <div class="factory-ch-pathrow">
+                  <div class="factory-ov-subtle factory-mono factory-ch-path" :title="[[file().path]]"><oj-bind-text value="[[file().path]]"></oj-bind-text></div>
+                  <oj-bind-if test="[[fileStatus()]]">
+                    <span :class="[[fileStatus().css]]" id="openFileStatus"><span :class="[[fileStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[fileStatus().text]]"></oj-bind-text></span>
+                  </oj-bind-if>
+                </div>
                 <oj-bind-if test="[[fileMode() === 'diff' || fileMode() === 'full']]">
                   <div class="factory-ch-lines" id="codeLines">
                     <oj-bind-for-each data="[[codeLines]]">
@@ -190,13 +221,14 @@
               <ul class="factory-ch-risks"><oj-bind-for-each data="[[risks]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
             </oj-bind-if>
             <div class="factory-btn-row">
-              <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
-                <button type="button" id="approvePlanButton" class="fx-btn fx-btn--primary" on-click="[[approvePlan]]">Approve the plan and write the code</button>
-              </oj-bind-if>
               <oj-bind-if test="[[detail().status === 'PLAN_READY' && canManage()]]">
                 <button type="button" id="editPlanButton" class="fx-btn fx-btn--secondary" on-click="[[togglePlanJson]]">Edit the plan</button>
               </oj-bind-if>
               <a class="fx-btn fx-btn--tertiary" :href="[[patchUrl]]" id="patchLink">Download patch</a>
+              <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
+                <span class="fx-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+                  <button type="button" id="approvePlanButton" class="fx-btn fx-btn--primary" on-click="[[approvePlan]]">Approve the plan and write the code</button></span>
+              </oj-bind-if>
             </div>
             <oj-bind-if test="[[editingPlan()]]">
               <fx-textarea id="planJson" label="Plan (JSON)" mono value="{{planJson}}" rows="16"></fx-textarea>
@@ -296,7 +328,8 @@
               <tbody>
                 <oj-bind-for-each data="[[fileRows]]">
                   <template><tr class="factory-clickable" on-click="[[$current.data.openAction]]"><td class="factory-mono factory-ch-pathcell" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.statusText]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.check]]"></oj-bind-text></td>
+                    <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                    <td><span :class="[[$current.data.checkState.css]]"><span :class="[[$current.data.checkState.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.checkState.text]]"></oj-bind-text></span></td>
                     <td class="fx-muted factory-ch-msgcell"><oj-bind-text value="[[$current.data.checkMessage]]"></oj-bind-text></td>
                     <td><span class="factory-ch-plus"><oj-bind-text value="[[$current.data.added]]"></oj-bind-text></span> <span class="factory-ch-minus"><oj-bind-text value="[[$current.data.removed]]"></oj-bind-text></span></td></tr></template>
                 </oj-bind-for-each>
@@ -320,7 +353,7 @@
                 <oj-bind-for-each data="[[buildRows]]">
                   <template><tr><td><oj-bind-text value="[[$current.data.round]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.job]]"></oj-bind-text></td>
                     <td><oj-bind-if test="[[$current.data.buildUrl]]"><a :href="[[$current.data.buildUrl]]" target="_blank" rel="noopener"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></a></oj-bind-if></td>
-                    <td><oj-bind-text value="[[$current.data.result]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[$current.data.errors]]"></oj-bind-text></td>
+                    <td><span :class="[[$current.data.resultState.css]]"><span :class="[[$current.data.resultState.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.resultState.text]]"></oj-bind-text></span></td><td class="fx-muted"><oj-bind-text value="[[$current.data.errors]]"></oj-bind-text></td>
                     <td class="factory-mono"><oj-bind-text value="[[$current.data.fixed]]"></oj-bind-text></td></tr></template>
                 </oj-bind-for-each>
               </tbody>
@@ -330,6 +363,8 @@
         </oj-bind-if>
       </section>
 
+      <fx-resizer class="factory-ch-airesizer" storage-key="changes-assistant" variable="--fx-pane-2" min="420" max="1400" label="Resize the code and the assistant"></fx-resizer>
+
       <!-- Assistant, the full height on the right -->
       <section class="factory-card factory-ai factory-ch-ai">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
@@ -337,6 +372,8 @@
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-ch-iconbtn" id="aiWideButton" :data-fx-tip="[[aiWide() ? 'Narrow the assistant' : 'Widen the assistant']]" aria-label="Wide assistant" :aria-pressed="[[aiWide() ? 'true' : 'false']]" on-click="[[toggleAiWide]]"><span aria-hidden="true">⤢</span></button>
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-ch-iconbtn" id="aiMaxButton" :data-fx-tip="[[aiMax() ? 'Show the code again' : 'Assistant only']]" aria-label="Assistant only" :aria-pressed="[[aiMax() ? 'true' : 'false']]" on-click="[[toggleAiMax]]"><span aria-hidden="true">⛶</span></button>
           </span></h2>
+        <div class="fx-context" id="aiContext">Answers from:
+          <oj-bind-for-each data="[[aiContext]]" as="chip"><template><span class="fx-chip" :title="[[chip.data.title]]"><oj-bind-text value="[[chip.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></div>
         <div class="fx-tabs factory-ch-tabs factory-ch-aitabs" role="tablist" aria-label="Assistant">
           <oj-bind-for-each data="[[aiTabs]]">
             <template><button type="button" role="tab" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
@@ -409,5 +446,34 @@
         </div>
       </section>
     </div>
+
+    <!-- The same conversation in a side panel, for screens too narrow for the assistant column -->
+    <fx-sheet id="assistantSheet" open="{{aiSheetOpen}}" heading="AI Assistant" subtitle="Answers about this change">
+      <div class="factory-ch-sheetai">
+        <div class="fx-context">Answers from:
+          <oj-bind-for-each data="[[aiContext]]" as="chip"><template><span class="fx-chip" :title="[[chip.data.title]]"><oj-bind-text value="[[chip.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+        <div class="factory-ai-log factory-ch-sheetlog">
+          <oj-bind-for-each data="[[ai.messages]]" as="msg">
+            <template><div :class="[[msg.data.css]]"><oj-bind-text value="[[msg.data.text]]"></oj-bind-text>
+              <oj-bind-if test="[[msg.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[msg.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
+          </oj-bind-for-each>
+          <oj-bind-if test="[[ai.messages().length === 0]]">
+            <p class="factory-ch-chatempty">Ask about this change: the assistant answers from its plan, files, checks and the open file.</p>
+          </oj-bind-if>
+        </div>
+        <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+        <div class="factory-ch-suggest">
+          <oj-bind-for-each data="[[ai.suggestions]]" as="s">
+            <template><button type="button" class="fx-chip factory-ch-pill" on-click="[[s.data.ask]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><oj-bind-text value="[[s.data.text]]"></oj-bind-text></button></template>
+          </oj-bind-for-each>
+        </div>
+        <div class="factory-ai-input factory-ch-askrow">
+          <fx-input id="changeAskSheet" class="factory-grow" label="Ask" hide-label placeholder="Ask something about the changes..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+          <button type="button" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" data-fx-tip="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+            <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
+        </div>
+        <oj-bind-if test="[[ai.messages().length > 0]]"><button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></oj-bind-if>
+      </div>
+    </fx-sheet>
   </oj-bind-if>
 </div>

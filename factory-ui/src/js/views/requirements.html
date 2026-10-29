@@ -124,7 +124,7 @@
                   </span>
                 </span>
                 <span class="factory-rq-item-side">
-                  <span :class="[[$current.data.statusPill.css]]"><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span>
+                  <span :class="[[$current.data.statusPill.css]]"><span :class="[[$current.data.statusPill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span>
                   <span class="factory-ov-subtle">Updated</span>
                   <span><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></span>
                 </span>
@@ -150,7 +150,8 @@
                   <span class="factory-ov-subtle"><oj-bind-text value="[[code]]"></oj-bind-text></span>
                   <h2 class="factory-rq-name"><oj-bind-text value="[[detail().title]]"></oj-bind-text>
                     <span :class="[[modulePill().css]]" :title="[[modulePill().title]]"><oj-bind-text value="[[modulePill().text]]"></oj-bind-text></span>
-                    <span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span></h2>
+                    <span :class="[[statusPill().css]]"><span :class="[[statusPill().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[drafting()]]"><span class="fx-live" id="requirementLive">Live</span></oj-bind-if></h2>
                 </div>
               </div>
               <ol class="factory-stepper factory-rq-stepper">
@@ -167,24 +168,25 @@
             <div class="factory-rq-summaryrow">
               <p class="factory-rq-summary"><oj-bind-text value="[[spec() ? (spec().summary || '') : (detail().message || 'The specification is being drafted.')]]"></oj-bind-text></p>
               <div class="factory-rq-detail-actions">
-                <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
-                  <button type="button" id="approveButton" class="fx-btn fx-btn--primary" on-click="[[approve]]">Approve</button>
-                </oj-bind-if>
                 <oj-bind-if test="[[detail().status === 'FAILED' && canEdit()]]">
                   <button type="button" id="retryButton" class="fx-btn fx-btn--primary" on-click="[[retry]]">Try again</button>
                 </oj-bind-if>
-                <oj-bind-if test="[[canEditSpec()]]">
-                  <button type="button" id="editJsonButton" class="fx-btn fx-btn--secondary factory-rq-upload-btn" on-click="[[toggleJson]]">
-                    <span class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</button>
-                </oj-bind-if>
-                <oj-bind-if test="[[!canEditSpec()]]">
-                  <span class="fx-tip-wrap" :data-fx-tip="[[editBlockedReason]]" tabindex="0"><button type="button" id="editJsonButtonOff" class="fx-btn fx-btn--secondary" disabled>
-                    <span class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</button></span>
+                <oj-bind-if test="[[canMakeScreens()]]">
+                  <button type="button" id="makeScreensButton" class="fx-btn fx-btn--secondary" on-click="[[makeScreens]]">
+                    <span class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Make screens</button>
                 </oj-bind-if>
                 <fx-menu-button id="requirementMore" class="factory-rq-more" label="Requirement actions" icon="more" icon-only variant="ghost"
                   items="[[detailMenuItems]]" on-fx-action="[[detailMenu]]"></fx-menu-button>
+                <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
+                  <span class="fx-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+                    <button type="button" id="approveButton" class="fx-btn fx-btn--primary" on-click="[[approve]]">
+                      <span class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Approve spec</button></span>
+                </oj-bind-if>
               </div>
             </div>
+            <oj-bind-if test="[[drafting()]]">
+              <p class="factory-rq-livenote" role="status"><oj-bind-text value="[[draftingText]]"></oj-bind-text></p>
+            </oj-bind-if>
             <div class="factory-rq-meta">
               <div><span>Created</span><strong><oj-bind-text value="[[createdText]]"></oj-bind-text></strong></div>
               <div><span>Updated</span><strong><oj-bind-text value="[[updatedText]]"></oj-bind-text></strong>
@@ -236,7 +238,7 @@
                         <template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
                       </oj-bind-for-each>
                     </ol>
-                    <oj-bind-if test="[[criteria().items.length === 0]]"><p class="fx-muted factory-rq-none">No acceptance criteria yet. Add them to the specification with Edit Requirement.</p></oj-bind-if>
+                    <oj-bind-if test="[[criteria().items.length === 0]]"><p class="fx-muted factory-rq-none">No acceptance criteria yet. Add them with Edit the specification (JSON) in the requirement actions menu.</p></oj-bind-if>
                     <oj-bind-if test="[[criteria().note]]"><p class="factory-rq-note"><oj-bind-text value="[[criteria().note]]"></oj-bind-text></p></oj-bind-if>
                   </section>
                 </div>
@@ -293,7 +295,7 @@
                         <oj-bind-for-each data="[[related]]">
                           <template><tr class="factory-clickable" on-click="[[$current.data.openAction]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td>
                             <td><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.relationship]]"></oj-bind-text></td>
-                            <td><span :class="[[$current.data.statusPill.css]]"><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span></td></tr></template>
+                            <td><span :class="[[$current.data.statusPill.css]]"><span :class="[[$current.data.statusPill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.statusPill.text]]"></oj-bind-text></span></td></tr></template>
                         </oj-bind-for-each>
                       </tbody>
                     </table>
@@ -320,12 +322,12 @@
                           <oj-bind-for-each data="[[designRows]]">
                             <template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td>Screen</td>
                               <td class="factory-rq-wrap"><oj-bind-text value="[[$current.data.version + ' · ' + $current.data.updated]]"></oj-bind-text></td>
-                              <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
+                              <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
                           </oj-bind-for-each>
                           <oj-bind-for-each data="[[changeRows]]">
                             <template><tr class="factory-clickable" on-click="[[$current.data.open]]"><td class="factory-cp-link"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td><td>Change</td>
                               <td class="factory-rq-wrap"><oj-bind-text value="[[$current.data.files + ' · ' + $current.data.updated]]"></oj-bind-text></td>
-                              <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
+                              <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template>
                           </oj-bind-for-each>
                         </tbody>
                       </table>
@@ -459,7 +461,7 @@
                     <tbody>
                       <oj-bind-for-each data="[[trace]]">
                         <template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.design]]"></oj-bind-text></td>
-                          <td><span :class="[[$current.data.designStatus.css]]"><oj-bind-text value="[[$current.data.designStatus.text]]"></oj-bind-text></span></td>
+                          <td><span :class="[[$current.data.designStatus.css]]"><span :class="[[$current.data.designStatus.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.designStatus.text]]"></oj-bind-text></span></td>
                           <td class="factory-mono factory-ov2-path"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.change]]"></oj-bind-text></td></tr></template>
                       </oj-bind-for-each>
                     </tbody>

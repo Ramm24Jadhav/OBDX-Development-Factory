@@ -209,6 +209,71 @@ define(['knockout', './preferences'], function (ko, preferences) {
     };
   }
 
+  /*
+   * One set of status categories for every page (draft, queued, in progress, needs review, warning, done, closed, failed) (requirements, designs, changes, jobs, runs, builds, checks), so the
+   * same state always looks the same: the category gives the colour and the icon, the page keeps its own words.
+   */
+  const CATEGORY = {
+    draft: { label: 'Draft', tone: '', icon: 'edit' },
+    queued: { label: 'Queued', tone: '', icon: 'clock' },
+    progress: { label: 'In progress', tone: 'primary', icon: 'refresh' },
+    review: { label: 'Needs review', tone: 'warning', icon: 'eye' },
+    warning: { label: 'Warning', tone: 'warning', icon: 'alert' },
+    done: { label: 'Done', tone: 'success', icon: 'check' },
+    closed: { label: 'Closed', tone: '', icon: 'x' },
+    failed: { label: 'Failed', tone: 'danger', icon: 'alert' }
+  };
+  const STATUS_CATEGORY = {
+    DRAFT: 'draft', PENDING: 'draft', NOT_CHECKED: 'draft', NEW: 'draft',
+    QUEUED: 'queued',
+    ANALYZING: 'progress', GENERATING: 'progress', BUILDING: 'progress', CHECKING: 'progress', PROCESSING: 'progress', RUNNING: 'progress', IMPORTING: 'progress', INDEXING: 'progress',
+    PLAN_READY: 'review', READY: 'review', IN_REVIEW: 'review', GENERATED: 'review', WARNING: 'warning', UNSTABLE: 'warning',
+    APPROVED: 'done', SUCCEEDED: 'done', SUCCESS: 'done', PASSED: 'done', DELIVERED: 'done', MERGED: 'done',
+    CLOSED: 'closed', UNCHANGED: 'closed', ABANDONED: 'closed', CANCELLED: 'closed',
+    FAILED: 'failed', FAILURE: 'failed', ERROR: 'failed', ABORTED: 'closed'
+  };
+  /** {text, css, icon, iconCss, category, categoryLabel} for a server status; text defaults to the status in words. */
+  function status(raw, text) {
+    const key = String(raw || '').toUpperCase();
+    const cat = STATUS_CATEGORY[key] || 'draft';
+    const c = CATEGORY[cat];
+    const words = text || (key ? key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ') : '–');
+    return {
+      text: words, category: cat, categoryLabel: c.label, icon: c.icon,
+      css: 'fx-badge fx-badge--plain fx-status' + (c.tone ? ' fx-badge--' + c.tone : ''),
+      iconCss: 'factory-nav-icon factory-ico-' + c.icon + (cat === 'progress' ? ' fx-status-spin' : '')
+    };
+  }
+
+  /*
+   * Keyboard for list tables (Linear-style): ↑/↓ or J/K move a cursor row, Enter opens it, X selects it.
+   * rows: observable list; options: {open(row), toggle(row)}. Bind the table's keydown to `key`; mark the cursor row
+   * with `cursor()` (its index) and give rows tabindex so focus can land on them.
+   */
+  function tableKeys(rows, options) {
+    const cursor = ko.observable(-1);
+    const move = (d, table) => {
+      const n = ko.unwrap(rows).length;
+      if (!n) { return; }
+      cursor(Math.max(0, Math.min(n - 1, (cursor() < 0 ? (d > 0 ? -1 : n) : cursor()) + d)));
+      window.setTimeout(() => { const tr = table && table.querySelectorAll('tbody tr')[cursor()]; if (tr && tr.focus) { tr.focus(); } }, 0);
+    };
+    return {
+      cursor: cursor,
+      key: (a, b) => {
+        const e = a && typeof a.preventDefault === 'function' ? a : b;
+        if (!e || (e.target && /^(input|textarea|select|button)$/i.test(e.target.tagName) && e.key !== 'Escape')) { return true; }
+        const table = e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('table') || e.currentTarget : null;
+        const row = ko.unwrap(rows)[cursor()];
+        if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); move(1, table); }
+        else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); move(-1, table); }
+        else if (e.key === 'Enter' && row && options && options.open) { e.preventDefault(); options.open(row); }
+        else if ((e.key === 'x' || e.key === ' ') && row && options && options.toggle) { e.preventDefault(); options.toggle(row); }
+        return true;
+      }
+    };
+  }
+
   /** A stable avatar colour class for a name (fx-avatar--1 … --8). */
   function avatarTone(name) {
     let hash = 0;
@@ -240,6 +305,6 @@ define(['knockout', './preferences'], function (ko, preferences) {
 
   return {
     tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when,
-    badge: pill, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy
+    badge: pill, status: status, tableKeys: tableKeys, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy
   };
 });

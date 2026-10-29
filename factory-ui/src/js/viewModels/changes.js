@@ -5,8 +5,8 @@
  * build, deliver as a patch or an SVN branch, close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast) {
+        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
@@ -16,6 +16,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
       DELIVERED: 'delivered', FAILED: 'failed', CLOSED: 'closed'
     };
+    // The page's words for a file's state and its quick check; ui.status gives the colour and the icon
+    const FILE_WORDS = { PENDING: 'Not written', GENERATED: 'Written', UNCHANGED: 'Unchanged', FAILED: 'Failed' };
+    const CHECK_WORDS = { PASSED: 'Passed', WARNING: 'Warning', FAILED: 'Failed', NOT_CHECKED: 'Not checked' };
+    // Jenkins results in the status categories ui.status knows
+    const BUILD_RESULT = { SUCCESS: 'PASSED', FAILURE: 'FAILED', UNSTABLE: 'WARNING', ABORTED: 'CANCELLED', NOT_BUILT: 'CANCELLED' };
+    const RUNNING = ['ANALYZING', 'GENERATING'];
 
     function ChangesViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
@@ -64,14 +70,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.buildRows = ko.pureComputed(() => (this.detail() ? this.detail().builds : []).map((b) => ({
         round: b.round, job: b.job, number: b.buildNumber ? '#' + b.buildNumber : '', buildUrl: b.buildUrl,
-        result: b.result, errors: b.errors.slice(0, 3).join(' | ') + (b.errors.length > 3 ? ' (+' + (b.errors.length - 3) + ' more)' : ''),
+        result: b.result, resultState: ui.status(BUILD_RESULT[b.result] || b.result, b.result ? b.result.charAt(0) + b.result.slice(1).toLowerCase() : 'Not reported'),
+        errors: b.errors.slice(0, 3).join(' | ') + (b.errors.length > 3 ? ' (+' + (b.errors.length - 3) + ' more)' : ''),
         log: b.logExcerpt || '', fixed: b.fixedFiles.join(', ')
       })));
       this.hasCode = ko.pureComputed(() => !!this.detail() && this.detail().files.some((f) => f.status !== 'PENDING'));
       this.fileRows = ko.pureComputed(() => (this.detail() ? this.detail().files : []).map((f) => ({
         path: f.path,
-        statusText: f.status.toLowerCase() + (f.edited ? ' (edited)' : '') + (f.attempts > 1 ? ', ' + f.attempts + ' attempts' : ''),
-        check: (f.checkStatus || 'NOT_CHECKED').toLowerCase().replace('_', ' '),
+        status: ui.status(f.status, FILE_WORDS[f.status] + (f.edited ? ' (edited)' : '') + (f.attempts > 1 ? ', ' + f.attempts + ' attempts' : '')),
+        checkState: ui.status(f.checkStatus || 'NOT_CHECKED', CHECK_WORDS[f.checkStatus || 'NOT_CHECKED']),
         checkMessage: f.checkMessage || '',
         added: '+' + f.linesAdded,
         removed: '-' + f.linesRemoved,
@@ -136,6 +143,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
         } else if (this.file()) {
           this.openFile(this.file().path, true);
+        }
+        // A toast when a background step this page was watching ends
+        if (previous && previous.id === detail.id && RUNNING.indexOf(previous.status) >= 0 && previous.status !== detail.status) {
+          if (detail.status === 'FAILED' || /^Code generation failed/.test(detail.message || '')) {
+            toast.error('Failed: ' + (detail.message || 'the step did not finish.'));
+          } else if (detail.status === 'PLAN_READY') {
+            toast.success('Plan ready');
+          } else if (detail.status === 'GENERATED') {
+            toast.success('Code written');
+          }
         }
         clearTimeout(pollTimer);
         if (detail.status === 'ANALYZING' || detail.status === 'GENERATING' || detail.buildStatus === 'BUILDING') {
@@ -243,7 +260,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
       this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
-      this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : pill('', 'grey')));
+      this.statusPill = ko.pureComputed(() => (this.detail() ? ui.status(this.detail().status, STATUS_PILLS[this.detail().status].text) : ui.status('', '–')));
+      // Live progress of the background step, from the polled change: its files and its message
+      this.running = ko.pureComputed(() => !!this.detail() && RUNNING.indexOf(this.detail().status) >= 0);
+      this.progress = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!this.running()) {
+          return null;
+        }
+        const note = 'Checked every ' + (POLL_MS / 1000) + ' s · last update ' + ui.when(d.updatedAt);
+        if (d.status === 'ANALYZING') {
+          return { text: (d.message || 'Analyzing the impact on the codebase...') + ' The server reports no step counts while it analyzes.', max: 0, note: note };
+        }
+        const planned = d.files.length;
+        const pending = d.files.filter((f) => f.status === 'PENDING').length;
+        if (!planned || !pending) {
+          // Writing one file again: every file already has a result, so only the message says what is happening
+          return { text: d.message || 'Writing the code...', max: 0, note: note };
+        }
+        const written = planned - pending;
+        const failedFiles = d.files.filter((f) => f.status === 'FAILED').length;
+        return {
+          text: written + ' of ' + planned + ' files written' + (failedFiles ? ', ' + failedFiles + ' failed' : ''),
+          value: written, max: planned, label: 'Files written', style: { width: Math.round(100 * written / planned) + '%' }, note: note
+        };
+      });
       // The header menus: switch to another change, start one from an approved requirement, more actions
       this.changeMenu = ko.pureComputed(() => (this.changes().length
         ? this.changes().map((c) => ({ value: c.id, label: c.label, icon: c.selected ? 'check' : '' }))
@@ -311,6 +352,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.aiMax = ko.observable(false);
       this.toggleAiWide = () => { this.aiWide(!this.aiWide()); this.aiMax(false); };
       this.toggleAiMax = () => { this.aiMax(!this.aiMax()); this.aiWide(false); };
+      this.aiSheetOpen = ko.observable(false);
+      this.openAiSheet = () => this.aiSheetOpen(true);
       this.gridCss = ko.pureComputed(() => 'factory-ch-grid' + (this.aiWide() ? ' factory-ch-grid-wide' : '') + (this.aiMax() ? ' factory-ch-grid-max' : ''));
       this.fileFilter = ko.observable('');
       this.fileFilterInput = ui.value(this.fileFilter);
@@ -497,6 +540,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return rows;
       });
       const fileOf = (path) => (this.detail() ? this.detail().files.find((f) => f.path === path) : null);
+      this.fileStatus = ko.pureComputed(() => {
+        const f = this.file() ? fileOf(this.file().path) : null;
+        return f ? ui.status(f.status, FILE_WORDS[f.status] + (f.edited ? ' (edited)' : '')) : null;
+      });
       this.fileTabs = ko.pureComputed(() => this.openTabs().map((path) => {
         const f = fileOf(path);
         const created = f && f.action === 'create';
@@ -720,12 +767,32 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + (file ? '\n\nSelected file ' + file.path + ' diff:\n' + (file.diff || '').slice(0, 9000) : '');
       }, ['Add unit tests for validation', 'Update error message in UI', 'Check impact on other screens', 'Explain this code']);
 
+      // What the assistant answers from: the same parts the context above sends to the model
+      this.aiContext = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const file = this.file();
+        const chips = [{ label: this.changeCode(), title: 'Change "' + d.title + '" and its status' },
+          { label: d.plan ? 'Plan, ' + d.plan.items.length + ' files' : 'No plan yet', title: d.plan ? 'The plan summary, its risks and its files' : 'The plan is not ready, so the model is told there is none' },
+          { label: 'Quick checks', title: 'The quick check result of each file' }];
+        if (file) {
+          chips.push({ label: file.path.split('/').pop() + ' (diff)', title: 'The diff of the open file ' + file.path + ((file.diff || '').length > 9000 ? ', its first 9,000 characters' : '') });
+        }
+        return chips;
+      });
+
       let subscription = null;
       this.connected = () => {
         accUtils.announce('Changes page loaded.');
         document.title = 'Changes';
         subscription = this.workspaceId.subscribe(() => { this.detail(null); this.file(null); loadList(); });
-        workspaceSelection.load().then(loadList).catch(showError);
+        // A change asked for from another page (the command palette)
+        workspaceSelection.load().then(loadList).then(() => {
+          const wanted = pageRequests.change();
+          if (wanted) { pageRequests.change(null); this.open(wanted); }
+        }).catch(showError);
       };
       this.disconnected = () => {
         clearTimeout(pollTimer);

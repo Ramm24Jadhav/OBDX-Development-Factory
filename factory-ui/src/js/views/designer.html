@@ -186,7 +186,7 @@
     </div>
   </oj-bind-if>
 
-  <div :class="[[bodyClass]]">
+  <div :class="[[bodyClass]]" data-fx-panes>
     <!-- Rails: the collapsed side panels -->
     <div id="leftRail" class="factory-dz-rail factory-dz-rail-left" :style.display="[[detail() && !leftOpen() ? 'flex' : 'none']]">
       <button type="button" class="factory-dz-rail-btn" title="Components" aria-label="Show components" on-click="[[railComponents]]">⧉<span>Components</span></button>
@@ -225,7 +225,7 @@
                       <span class="factory-dz-scr-icon" aria-hidden="true">▭</span>
                       <span class="factory-dz-scr-text"><span class="factory-dz-scr-name"><oj-bind-text value="[[sc.data.name]]"></oj-bind-text></span>
                         <span class="factory-dz-hint"><oj-bind-text value="[[sc.data.meta]]"></oj-bind-text></span></span>
-                      <span :class="[[sc.data.statusClass]]"><oj-bind-text value="[[sc.data.statusText]]"></oj-bind-text></span>
+                      <span :class="[[sc.data.status.css]]"><span :class="[[sc.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sc.data.status.text]]"></oj-bind-text></span>
                     </button>
                   </template>
                 </oj-bind-for-each>
@@ -286,7 +286,7 @@
                     <span class="factory-dz-scr-icon" aria-hidden="true">▭</span>
                     <span class="factory-dz-scr-text"><span class="factory-dz-scr-name"><oj-bind-text value="[[sc.data.name]]"></oj-bind-text></span>
                       <span class="factory-dz-hint"><oj-bind-text value="[[sc.data.meta]]"></oj-bind-text></span></span>
-                    <span :class="[[sc.data.statusClass]]"><oj-bind-text value="[[sc.data.statusText]]"></oj-bind-text></span>
+                    <span :class="[[sc.data.status.css]]"><span :class="[[sc.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sc.data.status.text]]"></oj-bind-text></span>
                   </button>
                 </template>
               </oj-bind-for-each>
@@ -345,6 +345,8 @@
         </oj-bind-if>
       </div>
     </aside>
+    <fx-resizer class="factory-dz-resizer" storage-key="designer-left" min="200" max="420" label="Resize the components panel"
+                :style.display="[[detail() && leftOpen() && !previewMode() ? '' : 'none']]"></fx-resizer>
 
     <!-- Centre: the canvas -->
     <main class="factory-dz-canvas">
@@ -372,7 +374,7 @@
                           <button type="button" class="factory-dz-screen-card" on-click="[[d.data.openAction]]">
                             <span class="factory-dz-screen-name"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></span>
                             <span class="factory-dz-hint"><oj-bind-text value="[[d.data.meta]]"></oj-bind-text></span>
-                            <span :class="[[d.data.statusClass]]"><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span>
+                            <span :class="[[d.data.status.css]]"><span :class="[[d.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.status.text]]"></oj-bind-text></span>
                           </button>
                         </template>
                       </oj-bind-for-each>
@@ -397,7 +399,7 @@
         <div class="factory-dz-cardhead">
           <span class="factory-dz-cardicon" aria-hidden="true"><span class="factory-nav-icon factory-ico-design"></span></span>
           <strong class="factory-dz-cardname" :title="[[screenHeading]]"><oj-bind-text value="[[screenHeading]]"></oj-bind-text></strong>
-          <span :class="[[detail().status === 'APPROVED' ? 'fx-badge fx-badge--success' : (detail().status === 'IN_REVIEW' ? 'fx-badge fx-badge--warning' : 'fx-badge')]]"><oj-bind-text value="[[statusText]]"></oj-bind-text></span>
+          <span id="screenStatus" :class="[[headerStatus().css]]"><span :class="[[headerStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[headerStatus().text]]"></oj-bind-text></span>
           <oj-bind-if test="[[dirty()]]">
             <span class="fx-badge fx-badge--warning factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
           </oj-bind-if>
@@ -414,6 +416,18 @@
               <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
             </div>
           </oj-bind-if>
+          <!-- Approval: kept apart from Save Version and Ask AI -->
+          <span class="fx-approval factory-dz-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+            <span class="fx-tip-wrap" :tabindex="[[shareBlocked() ? 0 : null]]" :data-fx-tip="[[shareBlocked() || 'Create or copy a link the customer can open to comment and approve']]">
+              <button type="button" id="reviewLinkButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openShare]]" :disabled="[[!!shareBlocked()]]"
+                      :aria-expanded="[[shareOpen() ? 'true' : 'false']]" aria-controls="shareDrawer">
+                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Review link</button></span>
+            <oj-bind-if test="[[!isApproved()]]">
+              <span class="fx-tip-wrap" :tabindex="[[approveBlocked() ? 0 : null]]" :data-fx-tip="[[approveBlocked() || 'Approve this version for development; its components are then locked']]">
+                <button type="button" id="approveScreenButton" class="fx-btn fx-btn--secondary fx-btn--sm factory-dz-approvebtn" on-click="[[approve]]" :disabled="[[!!approveBlocked()]]">
+                  <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve screen</button></span>
+            </oj-bind-if>
+          </span>
           <fx-menu-button id="screenMore" class="factory-dz-cardmore" label="Screen actions" icon="more" icon-only variant="ghost" size="sm"
                           items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
         </div>
@@ -426,7 +440,7 @@
                           :aria-current="[[st.data.current ? 'step' : 'false']]">
                     <span class="factory-dz-stepdot"><oj-bind-text value="[[st.data.mark]]"></oj-bind-text></span>
                     <span class="factory-dz-steplabel"><oj-bind-text value="[[st.data.number + '. ' + st.data.name]]"></oj-bind-text></span>
-                    <span class="factory-dz-stepsub"><oj-bind-text value="[[st.data.statusText]]"></oj-bind-text></span>
+                    <span :class="[[st.data.status.css + ' factory-dz-stepsub']]"><span :class="[[st.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[st.data.status.text]]"></oj-bind-text></span>
                   </button>
                 </li>
               </template>
@@ -969,6 +983,11 @@
         <div class="factory-dz-assist-head">
           <span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span><strong>AI Assistant</strong></span>
           <button type="button" id="newChatButton" class="factory-dz-newchat" on-click="[[ai.clear]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>New Chat</button>
+        </div>
+        <div class="fx-context factory-dz-aicontext" id="designAiContext">Answers from:
+          <oj-bind-for-each data="[[aiContext]]" as="cx">
+            <template><span class="fx-chip" :title="[[cx.data.title]]"><span class="fx-visually-hidden"><oj-bind-text value="[[cx.data.kind + ': ']]"></oj-bind-text></span><oj-bind-text value="[[cx.data.text]]"></oj-bind-text></span></template>
+          </oj-bind-for-each>
         </div>
         <oj-bind-if test="[[ai.messages().length > 0 || ai.busy()]]">
           <div class="factory-ai-log factory-dz-assist-log">

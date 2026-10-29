@@ -12,6 +12,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const pillCss = (tone) => 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '');
     const pill = (text, tone) => ({ text: text, css: pillCss(tone) });
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
+    // Build, Jenkins and check states in the shared status categories (ui.status)
+    const BUILD_STATE = { BUILDING: 'RUNNING', SUCCESS: 'SUCCEEDED', FAILURE: 'FAILED', UNSTABLE: 'FAILED', ABORTED: 'CANCELLED', NOT_BUILT: 'DRAFT' };
+    const status = (raw, words) => ui.status(BUILD_STATE[raw] || raw, words);
+    const httpUrl = (url) => (url && /^https?:\/\//i.test(url) ? url : '');
 
     function BuildViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
@@ -21,6 +25,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.changeId = ko.observable('');
       this.detail = ko.observable(null);
       this.jenkins = ko.observable(null);
+      // True while the quick checks request runs (the server checks every file before it answers)
+      this.checking = ko.observable(false);
       this.changeChange = (event) => this.changeId(event.target.value);
       // Requirement picker: narrows the change list to the changes made from one requirement
       this.requirements = ko.observableArray([]);
@@ -74,21 +80,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const b = this.lastBuild();
         const when = b ? ui.when(b.finishedAt || b.startedAt) : '';
         if (d.buildStatus === 'BUILDING') {
-          return { text: 'Build Running', tone: 'blue', icon: 'clock', note: d.buildMessage || 'Quick checks and Jenkins are running.' };
+          return { text: 'Build Running', tone: 'blue', icon: 'clock', raw: 'RUNNING', note: d.buildMessage || 'Quick checks and Jenkins are running.' };
+        }
+        if (this.checking()) {
+          return { text: 'Quick Checks Running', tone: 'blue', icon: 'clock', raw: 'RUNNING', note: 'Checking every file again.' };
+        }
+        if (d.status === 'GENERATING') {
+          return { text: 'Code Generating', tone: 'blue', icon: 'clock', raw: 'GENERATING', note: d.message || 'The model is writing the files.' };
         }
         if (d.buildStatus === 'PASSED') {
-          return { text: 'Build Successful', tone: 'green', icon: 'check', note: 'Completed ' + when };
+          return { text: 'Build Successful', tone: 'green', icon: 'check', raw: 'PASSED', note: 'Completed ' + when };
         }
         if (d.buildStatus === 'FAILED') {
-          return { text: 'Build Failed', tone: 'red', icon: 'x', note: (d.buildMessage || 'See the failures below.') + (when ? ' · ' + when : '') };
+          return { text: 'Build Failed', tone: 'red', icon: 'x', raw: 'FAILED', note: (d.buildMessage || 'See the failures below.') + (when ? ' · ' + when : '') };
         }
         const k = this.checks();
         if (k.failed) {
-          return { text: 'Quick Checks Failed', tone: 'red', icon: 'x', note: k.failed + ' file(s) break the version pack rules.' };
+          return { text: 'Quick Checks Failed', tone: 'red', icon: 'x', raw: 'FAILED', note: k.failed + ' file(s) break the version pack rules.' };
         }
         return k.passed
-          ? { text: 'Quick Checks Passed', tone: 'green', icon: 'check', note: 'No Jenkins build yet.' }
-          : { text: 'Not Validated Yet', tone: 'grey', icon: 'clock', note: 'Generate the code, then check or build it.' };
+          ? { text: 'Quick Checks Passed', tone: 'green', icon: 'check', raw: 'PASSED', note: 'No Jenkins build yet.' }
+          : { text: 'Not Validated Yet', tone: 'grey', icon: 'clock', raw: 'NOT_CHECKED', note: 'Generate the code, then check or build it.' };
       });
       this.headCss = ko.pureComputed(() => 'factory-step-dot factory-bt-big factory-dot-' + (this.headline().tone || 'grey'));
       this.headIcon = ko.pureComputed(() => 'factory-nav-icon factory-ico-' + (this.headline().icon || 'clock'));
@@ -125,13 +137,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           title: title, detail: detail, sub: sub,
           css: 'factory-step-dot factory-bt-mid factory-dot-' + ({ ok: 'green', bad: 'red', warn: 'amber', run: 'blue' }[state] || 'grey'),
           icon: 'factory-nav-icon factory-ico-' + (state === 'ok' ? 'check' : state === 'bad' ? 'x' : state === 'warn' ? 'alert' : 'clock'),
-          pill: pill(state === 'ok' ? 'Success' : state === 'bad' ? 'Failed' : state === 'warn' ? 'Warnings' : state === 'run' ? 'Running' : 'Not run',
-            state === 'ok' ? 'green' : state === 'bad' ? 'red' : state === 'warn' ? 'amber' : state === 'run' ? 'blue' : 'grey')
+          live: state === 'run',
+          pill: status({ ok: 'SUCCEEDED', bad: 'FAILED', warn: 'WARNING', run: 'RUNNING' }[state] || 'NOT_CHECKED',
+            state === 'ok' ? 'Success' : state === 'bad' ? 'Failed' : state === 'warn' ? 'Warnings' : state === 'run' ? 'Running' : 'Not run')
         });
         const dur = (x) => (x && x.finishedAt ? Math.max(1, Math.round((new Date(x.finishedAt) - new Date(x.startedAt)) / 1000)) + 's' : '');
         return [
-          card('1. Syntax and rules', k.failed ? 'bad' : k.warning ? 'warn' : k.passed ? 'ok' : 'none', 'Quick checks on generated files', k.passed + ' passed · ' + k.failed + ' failed'),
-          card('2. Jenkins build', !b ? 'none' : b.result === 'SUCCESS' ? 'ok' : (b.result === 'RUNNING' || b.result === 'QUEUED') ? 'run' : 'bad', b ? b.job + (b.buildNumber ? ' #' + b.buildNumber : '') : 'Not run', dur(b)),
+          card('1. Syntax and rules', this.checking() ? 'run' : k.failed ? 'bad' : k.warning ? 'warn' : k.passed ? 'ok' : 'none', 'Quick checks on generated files', k.passed + ' passed · ' + k.failed + ' failed'),
+          card('2. Jenkins build', !b ? (this.detail().buildStatus === 'BUILDING' ? 'run' : 'none') : b.result === 'SUCCESS' ? 'ok' : (!b.result || b.result === 'RUNNING' || b.result === 'QUEUED') ? 'run' : 'bad',
+            b ? b.job + (b.buildNumber ? ' #' + b.buildNumber : '') : 'Not run', dur(b)),
           card('3. Fix rounds', builds().length > 1 ? (this.detail().buildStatus === 'PASSED' ? 'ok' : 'warn') : 'none', builds().length + ' round(s)', builds().reduce((s, x) => s + x.fixedFiles.length, 0) + ' files fixed'),
           card('4. Review', this.detail() && (this.detail().status === 'DELIVERED' || this.detail().status === 'CLOSED') ? 'ok' : 'none', 'Delivered for review', this.detail() && this.detail().branchUrl ? 'branch' : 'patch')
         ];
@@ -163,7 +177,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           line: ((f.checkMessage || '').match(/^Line (\d+)/) || [])[1] || '', log: '', layer: f.layer
         }));
         return list.map((x, i) => Object.assign(x, {
-          index: i, status: x.kind === 'Warning' ? pill('WARNING', 'amber') : pill('FAILED', 'red'),
+          index: i, status: x.kind === 'Warning' ? status('WARNING', 'Warning') : status('FAILED', 'Failed'),
           name: x.file ? x.file.split('/').pop() : '–',
           pick: () => this.selectedFailure(i),
           stop: (event) => event.stopPropagation(),
@@ -267,10 +281,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.logLines = ko.pureComputed(() => this.logText().split('\n').map((t, i) => ({ n: i + 1, text: t, css: /ERROR|FAIL/i.test(t) ? 'factory-bt-logline factory-bt-logerr' : 'factory-bt-logline' })));
       this.logDownload = ko.pureComputed(() => 'data:text/plain;charset=utf-8,' + encodeURIComponent(this.logText()));
+      // Full log in a side sheet, with the Jenkins console link of the chosen round when Jenkins gave one
+      this.fullLogOpen = ko.observable(false);
+      this.openFullLog = () => this.fullLogOpen(true);
+      this.logRoundBuild = ko.pureComputed(() => (this.logType() === 'build' ? builds()[this.logRound()] || null : null));
+      this.fullLogTitle = ko.pureComputed(() => {
+        const b = this.logRoundBuild();
+        const tab = this.logTypeTabs.find((t) => t.value === this.logType());
+        return b ? 'Build log: ' + b.job + ' #' + (b.buildNumber || b.round) : (tab ? tab.label : 'Log');
+      });
+      this.fullLogSubtitle = ko.pureComputed(() => {
+        const b = this.logRoundBuild();
+        return b ? 'Round ' + b.round + (b.result ? ' · ' + b.result : '') + (b.startedAt ? ' · ' + ui.when(b.startedAt) : '') : (this.detail() ? this.detail().title : '');
+      });
+      this.consoleUrl = ko.pureComputed(() => {
+        const b = this.logRoundBuild();
+        return b && httpUrl(b.buildUrl) ? b.buildUrl.replace(/\/?$/, '/console') : '';
+      });
+      this.logStatus = ko.pureComputed(() => {
+        const b = this.logRoundBuild();
+        return b ? status(b.result || (b.finishedAt ? 'NOT_BUILT' : 'RUNNING'), b.result ? b.result.charAt(0) + b.result.slice(1).toLowerCase() : (b.finishedAt ? 'No result' : 'Running')) : null;
+      });
 
       this.fileRows = ko.pureComputed(() => files().map((f) => ({
-        path: f.path, layer: f.layer, check: f.checkStatus === 'PASSED' ? pill('Passed', 'green') : f.checkStatus === 'FAILED' ? pill('Failed', 'red')
-          : f.checkStatus === 'WARNING' ? pill('Warning', 'amber') : pill('Not checked', 'grey'),
+        path: f.path, layer: f.layer, check: status(f.checkStatus || 'NOT_CHECKED', { PASSED: 'Passed', FAILED: 'Failed', WARNING: 'Warning' }[f.checkStatus] || 'Not checked'),
         message: f.checkMessage || '', attempts: f.attempts
       })));
       this.info = ko.pureComputed(() => {
@@ -306,7 +340,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.securityRows = ko.pureComputed(() => this.fileRows().filter((r) => /sql|injection|secret|password|security|xss/i.test(r.message)));
       this.reviewRows = ko.pureComputed(() => files().map((f) => ({ path: f.path, layer: f.layer, pill: f.edited ? pill('Edited', 'blue') : pill('Not edited', 'grey') })));
-      this.headStatus = ko.pureComputed(() => pill(this.headline().text, this.headline().tone));
+      this.headStatus = ko.pureComputed(() => status(this.headline().raw, this.headline().text));
+      // Live: a Jenkins build, a quick check or code generation is running; the page polls the change until it ends
+      this.isLive = ko.pureComputed(() => {
+        const d = this.detail();
+        return this.checking() || (!!d && (d.status === 'GENERATING' || d.buildStatus === 'BUILDING'));
+      });
 
       // Quick actions
       this.canBuild = ko.pureComputed(() => {
@@ -328,7 +367,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       const base = () => 'changes/' + this.detail().id;
       this.rebuild = () => api.post(base() + '/build').then((d) => { show(d); toast.info('Build started. This page updates when Jenkins finishes.'); }).catch(actionError);
-      this.checkAgain = () => api.post(base() + '/check').then((d) => { show(d); toast.success('Checked every file again.'); }).catch(actionError);
+      this.checkAgain = () => {
+        if (this.checking()) {
+          return;
+        }
+        this.checking(true);
+        api.post(base() + '/check').then((d) => {
+          this.checking(false);
+          show(d);
+          const k = this.checks();
+          if (k.failed) {
+            toast.error('Quick checks done: ' + k.failed + ' file(s) failed, ' + k.passed + ' passed.');
+          } else {
+            toast.success('Quick checks done: ' + k.passed + ' passed' + (k.warning ? ', ' + k.warning + ' with warnings.' : '.'));
+          }
+        }).catch((error) => { this.checking(false); actionError(error); });
+      };
       this.fixWithAi = () => {
         const f = this.failure();
         if (!f || !f.file) {
@@ -387,12 +441,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { text: 'Summarize the build for the reviewer', icon: 'factory-nav-icon factory-ico-doc', disabled: false, title: '', run: askChat('Summarize the checks and build of this change for the reviewer.') }
       ]);
 
+      // Polls the change while it generates or builds, and says when that ends
       let pollTimer = null;
+      let attached = false;
+      const running = (d) => d.status === 'GENERATING' || d.buildStatus === 'BUILDING';
       const show = (d) => {
+        const before = this.detail();
         this.detail(d);
         this.errorMessage('');
         clearTimeout(pollTimer);
-        if (d.status === 'GENERATING' || d.buildStatus === 'BUILDING') {
+        pollTimer = null;
+        if (before && before.id === d.id && running(before) && !running(d)) {
+          if (before.buildStatus === 'BUILDING' && d.buildStatus === 'PASSED') {
+            toast.success('Build passed: ' + d.title);
+          } else if (before.buildStatus === 'BUILDING' && d.buildStatus === 'FAILED') {
+            toast.error('Build failed: ' + (d.buildMessage || d.title));
+          } else if (before.status === 'GENERATING') {
+            toast.info(d.status === 'FAILED' ? 'Code generation failed: ' + (d.message || d.title) : 'Code generated: ' + d.title);
+          } else {
+            toast.info('The build of ' + d.title + ' finished.');
+          }
+        }
+        if (attached && running(d)) {
           pollTimer = setTimeout(() => this.load(), POLL_MS);
         }
       };
@@ -434,10 +504,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.connected = () => {
         accUtils.announce('Build, Test and Review page loaded.');
         document.title = 'Build, Test & Review';
+        attached = true;
         subscription = this.workspaceId.subscribe(loadList);
         workspaceSelection.load().then(loadList).catch(showError);
       };
       this.disconnected = () => {
+        attached = false;
+        this.fullLogOpen(false);
         clearTimeout(pollTimer);
         if (subscription) {
           subscription.dispose();

@@ -5,11 +5,9 @@
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast',
         'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, toast) {
-    // Status badges of the design system; with an icon the dot is left out, so status is never colour alone
-    const badge = (text, tone, icon, title) => ({
-      text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') + (icon ? ' fx-badge--plain factory-cp4-badge' : ''),
-      icon: icon ? 'factory-nav-icon factory-ico-' + icon : '', title: title || ''
-    });
+    // Server statuses as design-system status chips (ui.status: the category gives colour and icon), in this page's words
+    const status = (raw, words, title) => Object.assign(ui.status(raw, words), { title: title || '' });
+    const JOB_WORDS = { SUCCEEDED: 'Succeeded', FAILED: 'Failed', RUNNING: 'Running', QUEUED: 'Queued' };
     const failed = (error) => toast.error(error.message);
     const POLL_MS = 2000;
 
@@ -59,6 +57,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.svnUsername = ko.observable('');
       this.svnPassword = ko.observable('');
       this.svnMessage = ko.observable('');
+      // SVN credentials sit in an Advanced settings section: open when the workspace has a username or a stored password
+      this.svnAdvancedOpen = ko.observable(false);
       this.busy = ko.observable(false);
       this.errorMessage = ko.observable('');
 
@@ -153,6 +153,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.jenkinsSaved = ko.observable(false);
       this.jenkinsMessage = ko.observable('');
       this.jenkinsWarnings = ko.observableArray([]);
+      this.jenkinsAdvancedOpen = ko.observable(false);
       this.jenkinsModes = [
         { value: 'BRANCH', label: 'Build the change branch' }, { value: 'PATCH', label: 'Send the patch to apply on trunk' }
       ];
@@ -172,6 +173,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.jenkinsUsername(settings.username || '');
         this.jenkinsToken('');
         this.jenkinsTokenSet(!!settings.tokenSet);
+        // Advanced settings start open when a value inside differs from the default
+        this.jenkinsAdvancedOpen(this.jenkinsBranchParameter() !== 'BRANCH' || this.jenkinsBranchValue() !== 'PATH' || this.jenkinsPatchParameter() !== 'PATCH');
       };
 
       this.saveJenkins = () => {
@@ -227,18 +230,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.lastDurationText = ko.pureComputed(() => (lastDone() ? lastDone().duration : ''));
       // The status pill in the page header
       this.indexPill = ko.pureComputed(() => {
-        const status = this.indexStatus();
+        const index = this.indexStatus();
         const importFailed = jobs().length > 0 && jobs()[0].status === 'FAILED';
         if (this.importRunning()) {
-          return badge('Importing', 'primary', 'refresh');
+          return status('IMPORTING', 'Importing');
         }
         if (importFailed) {
-          return badge('Last import failed', 'danger', 'x');
+          return status('FAILED', 'Last import failed');
         }
-        if (!status || status.indexedRevision === null) {
-          return badge('Not imported', '', 'clock');
+        if (!index || index.indexedRevision === null) {
+          return status('NEW', 'Not imported');
         }
-        return badge('Up to date', 'success', 'check');
+        return status('SUCCEEDED', 'Up to date');
       });
       this.jobCount = ko.pureComputed(() => jobs().length);
 
@@ -248,6 +251,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.searching = ko.observable(false);
 
       let pollTimer = null;
+      let jobsWorkspace = null;
       const showError = (error) => this.errorMessage(error.message);
 
       const showChecks = (checks) => {
@@ -312,6 +316,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           loadFiles(id);
           this.svnUsername(workspace.svnUsername || '');
           this.svnPassword('');
+          this.svnAdvancedOpen(!!(workspace.svnUsername || workspace.svnPasswordSet));
           this.jenkinsMessage('');
           this.jenkinsWarnings([]);
           return Promise.all([refreshImports(), api.get('workspaces/' + id + '/jenkins').then(showJenkins),
@@ -334,6 +339,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             if (id !== this.workspaceId()) {
               return;
             }
+            // A reindex this page watched has ended: say how it went
+            const watched = jobsWorkspace === id && this.importRunning();
+            jobsWorkspace = id;
             jobs(jobList.map((job) => ({
               id: job.id,
               status: job.status,
@@ -345,9 +353,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               message: job.message || '',
               progress: job.filesScanned ? Math.min(100, Math.round(100 * (job.filesIndexed + job.filesRemoved) / job.filesScanned)) : 5,
               finished: job.finishedAt ? new Date(job.finishedAt).toLocaleString() : '',
-              duration: job.startedAt && job.finishedAt ? duration(new Date(job.finishedAt) - new Date(job.startedAt)) : ''
+              duration: job.startedAt && job.finishedAt ? duration(new Date(job.finishedAt) - new Date(job.startedAt)) : '',
+              raw: job
             })));
             this.indexStatus(status);
+            if (watched && !this.importRunning() && jobs().length) {
+              const last = jobs()[0];
+              if (last.status === 'SUCCEEDED') {
+                toast.success('Reindexing finished: ' + last.raw.filesIndexed + ' files indexed, ' + last.raw.filesRemoved + ' removed, revision ' + (last.raw.toRevision === null ? '?' : 'r' + last.raw.toRevision) + '.');
+              } else {
+                toast.error('Reindexing failed' + (last.message ? ': ' + last.message : '.'));
+              }
+            }
             schedulePoll();
           })
           .catch(showError);
@@ -427,15 +444,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const ruleStatus = (r) => {
         const files = checkedFiles().filter((f) => r.include.some((x) => x.test(f.path)) && !r.exclude.some((x) => x.test(f.path)));
         if (!files.length) {
-          return badge('Not run', '', '', 'No generated file of this kind has been checked yet');
+          return status('NOT_CHECKED', 'Not run', 'No generated file of this kind has been checked yet');
         }
         const hits = files.filter((f) => (f.checkMessage || '').indexOf('(' + r.id + ',') >= 0);
         if (hits.length) {
           return r.severity === 'error'
-            ? badge('Failed', 'danger', 'x', 'Found in ' + hits.map((f) => f.path).join(', '))
-            : badge('Warning', 'warning', 'alert', 'Found in ' + hits.map((f) => f.path).join(', '));
+            ? status('FAILED', 'Failed', 'Found in ' + hits.map((f) => f.path).join(', '))
+            : status('WARNING', 'Warning', 'Found in ' + hits.map((f) => f.path).join(', '));
         }
-        return badge('Passed', 'success', 'check', files.length + ' generated file(s) checked');
+        return status('PASSED', 'Passed', files.length + ' generated file(s) checked');
       };
       this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8).map((r) => Object.assign({}, r, { status: ruleStatus(r) })));
       this.ruleQueryInput = ui.value(this.ruleQuery);
@@ -584,9 +601,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           value: this.jenkinsMode() === 'BRANCH' ? this.jenkinsBranchParameter() : this.jenkinsPatchParameter() },
         { label: 'Username', value: this.jenkinsUsername() || 'None' }
       ] : []));
-      const JOB_PILL = { SUCCEEDED: badge('Succeeded', 'success'), FAILED: badge('Failed', 'danger'), RUNNING: badge('Running', 'primary'), QUEUED: badge('Queued', '') };
-      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || badge(j.status, '') })));
-      this.historyJobs = ko.pureComputed(() => jobs().map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || badge(j.status, '') })));
+      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: status(j.status, JOB_WORDS[j.status]) })));
+      this.historyJobs = ko.pureComputed(() => jobs().map((j) => Object.assign({}, j, { pill: status(j.status, JOB_WORDS[j.status]) })));
       // Indexing progress: the running import's files, or 100% once imported
       this.indexProgress = ko.pureComputed(() => {
         const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
@@ -596,6 +612,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return this.indexStatus() && this.indexStatus().indexedRevision !== null ? 100 : 0;
       });
       this.indexProgressWidth = ko.pureComputed(() => this.indexProgress() + '%');
+      // The running import, as GET /imports reports it while the page polls (every 2 seconds)
+      this.liveImport = ko.pureComputed(() => {
+        const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
+        if (!running) {
+          return null;
+        }
+        const j = running.raw;
+        const started = j.startedAt ? ui.when(j.startedAt) : '';
+        return {
+          pill: status(j.status, JOB_WORDS[j.status]),
+          text: j.status === 'QUEUED' ? 'Waiting for the import to start.'
+            : (j.filesScanned ? (j.filesIndexed + j.filesRemoved).toLocaleString() + ' of ' + j.filesScanned.toLocaleString() + ' scanned files processed'
+              : 'Running; the server has not counted the files yet.'),
+          rows: [
+            { label: 'Files indexed', value: j.filesIndexed.toLocaleString() }, { label: 'Files removed', value: j.filesRemoved.toLocaleString() },
+            { label: 'Searchable pieces', value: j.chunksIndexed.toLocaleString() }, { label: 'Embeddings', value: j.embeddingsCreated.toLocaleString() },
+            { label: 'Revisions', value: running.revisions }, { label: 'Started', value: started || 'Not yet' }
+          ],
+          message: j.message || ''
+        };
+      });
 
       this.connected = () => {
         accUtils.announce('Code page loaded.');

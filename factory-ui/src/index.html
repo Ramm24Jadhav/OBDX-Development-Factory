@@ -98,12 +98,12 @@
                 <span class="factory-topbar-app"><oj-bind-text value="[[crumbWorkspace]]"></oj-bind-text></span>
               </oj-bind-if>
             </div>
-            <form class="factory-topbar-search" role="search" autocomplete="off" on-submit="[[globalSearchSubmit]]">
+            <button type="button" class="factory-topbar-search" id="globalSearch" on-click="[[openPalette]]" aria-haspopup="dialog"
+                    aria-label="Search pages, actions, requirements, changes and code (Ctrl K)">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-              <input id="globalSearch" name="codeSearch" type="search" enterkeyhint="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
-                     autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
+              <span class="factory-topbar-search-text">Search or jump to…</span>
               <kbd class="factory-kbd">Ctrl K</kbd>
-            </form>
+            </button>
             <div class="factory-topbar-icons">
               <button type="button" class="factory-icon-button" id="themeButton" on-click="[[toggleTheme]]" :title="[[themeLabel]]" :aria-label="[[themeLabel]]">
                 <span :class="[[themeIcon]]" aria-hidden="true"></span>
@@ -175,6 +175,51 @@
       </div>
       </oj-bind-if>
 
+      <!-- Command palette (services/palette.js) and the keyboard shortcuts sheet -->
+      <oj-bind-if test="[[signedIn() && palette.open()]]">
+        <div class="fx-cmd-backdrop" on-mousedown="[[palette.onBackdrop]]">
+          <div class="fx-cmd" role="dialog" aria-modal="true" aria-label="Command palette">
+            <div class="fx-cmd-search">
+              <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+              <input id="fxCommandInput" type="text" role="combobox" aria-expanded="true" aria-controls="fxCommandList" aria-autocomplete="list"
+                     :aria-activedescendant="[[palette.activeId]]" placeholder="Search pages, actions, workspaces, requirements, changes or code…"
+                     autocomplete="off" spellcheck="false" on-input="[[palette.onInput]]" on-keydown="[[palette.onKey]]">
+              <kbd class="factory-kbd">Esc</kbd>
+            </div>
+            <ul class="fx-cmd-list" id="fxCommandList" role="listbox" aria-label="Results">
+              <oj-bind-for-each data="[[palette.rows]]" as="r">
+                <template>
+                  <oj-bind-if test="[[r.data.heading]]"><li class="fx-cmd-group" role="presentation"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></li></oj-bind-if>
+                  <oj-bind-if test="[[!r.data.heading]]">
+                    <li role="option" :id="[[r.data.id]]" :class="[[r.data.css]]" :aria-selected="[[r.data.css.indexOf('is-active') >= 0 ? 'true' : 'false']]"
+                        on-click="[[r.data.pick]]" on-mousemove="[[r.data.hover]]">
+                      <span :class="[[r.data.iconCss]]" aria-hidden="true"></span>
+                      <span class="fx-cmd-label"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></span>
+                      <span class="fx-cmd-hint"><oj-bind-text value="[[r.data.hint]]"></oj-bind-text></span>
+                      <oj-bind-if test="[[r.data.keys]]"><kbd class="factory-kbd"><oj-bind-text value="[[r.data.keys]]"></oj-bind-text></kbd></oj-bind-if>
+                    </li>
+                  </oj-bind-if>
+                </template>
+              </oj-bind-for-each>
+              <oj-bind-if test="[[palette.results().length === 0]]"><li class="fx-cmd-empty" role="presentation">Nothing matches. Try fewer words.</li></oj-bind-if>
+            </ul>
+            <div class="fx-cmd-foot"><span><kbd class="factory-kbd">↑↓</kbd> move</span><span><kbd class="factory-kbd">Enter</kbd> open</span>
+              <span><kbd class="factory-kbd">&gt;</kbd> actions</span><span><kbd class="factory-kbd">@</kbd> workspaces</span><span><kbd class="factory-kbd">#</kbd> requirements and changes</span></div>
+          </div>
+        </div>
+      </oj-bind-if>
+      <oj-bind-if test="[[signedIn() && palette.helpOpen()]]">
+        <div class="fx-dialog-backdrop" on-mousedown="[[closeShortcutsBackdrop]]">
+          <div class="fx-dialog fx-shortcuts" role="dialog" aria-modal="true" aria-labelledby="fxShortcutsTitle">
+            <div class="fx-dialog-head"><span class="fx-dialog-icon"><span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span></span>
+              <h2 class="fx-dialog-title" id="fxShortcutsTitle">Keyboard shortcuts</h2>
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-shortcuts-close" id="fxShortcutsClose" aria-label="Close" on-click="[[palette.closeHelp]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></div>
+            <dl class="fx-shortcuts-list">
+              <oj-bind-for-each data="[[palette.shortcuts]]" as="k"><template><div><dt><kbd class="factory-kbd"><oj-bind-text value="[[k.data.keys]]"></oj-bind-text></kbd></dt><dd><oj-bind-text value="[[k.data.label]]"></oj-bind-text></dd></div></template></oj-bind-for-each>
+            </dl>
+          </div>
+        </div>
+      </oj-bind-if>
       <!-- Signed out: the sign-in page -->
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
         <div class="factory-login">

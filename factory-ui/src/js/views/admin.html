@@ -67,20 +67,24 @@
           <oj-bind-for-each data="[[workspaceList]]" as="w"><template><option :value="[[w.data.value]]"><oj-bind-text value="[[w.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select>
         <button type="button" class="fx-btn fx-btn--secondary" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
       </div>
+      <oj-bind-if test="[[selected().length > 0]]">
+        <div class="fx-bulkbar factory-ad-bulk" role="region" aria-label="Selected rows"><span><oj-bind-text value="[[selected().length + ' selected']]"></oj-bind-text></span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[copyUsernames]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Copy usernames</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearSelected]]">Clear selection</button></div>
+      </oj-bind-if>
       <div class="fx-table-wrap factory-ad-menuwrap">
         <table class="fx-table factory-ad-users" id="userTable">
           <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" id="userSelectAll" aria-label="Select all users on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></label></th>
             <th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Workspaces</th><th scope="col">Status</th><th scope="col">Last Login</th><th scope="col" class="fx-table-actions">Actions</th></tr></thead>
-          <tbody>
+          <tbody on-keydown="[[keys.key]]">
             <oj-bind-for-each data="[[userPager.rows]]" as="u">
-              <template><tr :class="[[u.data.rowCss]]">
+              <template><tr :class="[[u.data.rowCss]]" tabindex="0" on-focus="[[u.data.focus]]">
                 <td class="fx-col-check"><label class="fx-check"><input type="checkbox" :aria-label="[['Select ' + u.data.username]]" :checked="[[u.data.isSelected]]" on-click="[[u.data.toggle]]"></label></td>
                 <td><span class="factory-name-cell"><span :class="[[u.data.avatarCss]]" aria-hidden="true"><oj-bind-text value="[[u.data.initials]]"></oj-bind-text></span>
                   <span><oj-bind-text value="[[u.data.displayName]]"></oj-bind-text><span class="factory-ov-subtle factory-ad-uname"><oj-bind-text value="[[u.data.username]]"></oj-bind-text></span></span></span></td>
                 <td><oj-bind-text value="[[u.data.email || '–']]"></oj-bind-text></td>
                 <td><span :class="[[u.data.rolePill.css]]"><oj-bind-text value="[[u.data.rolePill.text]]"></oj-bind-text></span></td>
                 <td class="factory-cp-link"><oj-bind-text value="[[u.data.workspaceText]]"></oj-bind-text></td>
-                <td><span :class="[[u.data.status.css]]"><oj-bind-text value="[[u.data.status.text]]"></oj-bind-text></span></td>
+                <td><span :class="[[u.data.status.css]]"><span :class="[[u.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[u.data.status.text]]"></oj-bind-text></span></td>
                 <td><oj-bind-text value="[[u.data.lastLogin]]"></oj-bind-text></td>
                 <td class="fx-table-actions"><div class="fx-menu-wrap">
                   <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[u.data.menu.open() ? 'true' : 'false']]"

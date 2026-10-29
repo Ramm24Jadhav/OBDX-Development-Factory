@@ -10,6 +10,20 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
     const PRIORITY = { high: { text: 'High', css: 'fx-badge fx-badge--danger' }, medium: { text: 'Medium', css: 'fx-badge fx-badge--warning' }, low: { text: 'Low', css: 'fx-badge fx-badge--success' } };
     const UNREAD = { text: 'Unread', css: 'fx-badge fx-badge--primary' };
     const READ = { text: 'Read', css: 'fx-badge' };
+    // The state of the thing a notification is about, from how the notifications service builds its id
+    const SUBJECT = [
+      ['build-', (n) => (n.tone === 'green' ? ui.status('SUCCEEDED', 'Build passed') : ui.status('FAILED', 'Build failed'))],
+      ['req-failed-', () => ui.status('FAILED')], ['req-ready-', () => ui.status('READY', 'Ready for review')], ['req-ok-', () => ui.status('APPROVED')],
+      ['design-review-', () => ui.status('IN_REVIEW', 'In review')], ['plan-', () => ui.status('PLAN_READY', 'Plan ready')],
+      ['gen-', () => ui.status('GENERATED')], ['chg-failed-', () => ui.status('FAILED')],
+      ['import-', (n) => (n.tone === 'red' ? ui.status('FAILED', 'Import failed') : ui.status('SUCCEEDED', 'Indexed'))]
+    ];
+    // The service gives each notification its subject's status; the id prefixes are only a fallback for older items
+    const subjectStatus = (n) => {
+      if (n.subjectStatus) { return ui.status(n.subjectStatus, n.subjectWords); }
+      const m = SUBJECT.find((s) => String(n.id).indexOf(s[0]) === 0);
+      return m ? m[1](n) : null;
+    };
     // The page each notification opens, as the user knows it
     const PAGE = {
       build: ['Build & Test', 'flask'], requirements: ['Requirement', 'list'], reviews: ['Screen review', 'design'], impact: ['Change plan', 'branch'],
@@ -78,13 +92,17 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       this.menuKey = (event) => this.rowMenu.key(event);
       this.stop = (event) => { event.stopPropagation(); return true; };
 
-      this.rows = ko.pureComputed(() => this.pager.rows().map((n) => Object.assign({}, n, {
+      this.rows = ko.pureComputed(() => this.pager.rows().map((n, index) => Object.assign({}, n, {
         whenDate: whenParts(n.when)[0], whenTime: whenParts(n.when)[1],
         iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
         categoryText: CATEGORY[n.category],
-        priorityBadge: PRIORITY[n.priority], statusBadge: n.unread() ? UNREAD : READ,
+        priorityBadge: PRIORITY[n.priority], statusBadge: n.unread() ? UNREAD : READ, subject: subjectStatus(n),
         css: 'factory-clickable' + (this.selected() && this.selected().id === n.id ? ' is-selected' : '') + (n.unread() ? ' factory-no-unread' : ''),
         menuOpen: ko.pureComputed(() => this.rowMenu.open() && this.menuId() === n.id),
+        // The keyboard cursor (ui.tableKeys) in its own computed, so moving it does not redraw the rows
+        rowCss: ko.pureComputed(() => 'factory-clickable' + (this.selected() && this.selected().id === n.id ? ' is-selected' : '') + (n.unread() ? ' factory-no-unread' : '')
+          + (this.keys.cursor() === index ? ' is-cursor' : '')),
+        focus: () => { this.keys.cursor(index); return true; },
         // The open row shows checked, as in the design
         isChecked: ko.pureComputed(() => !!this.checked()[n.id] || (!!this.selected() && this.selected().id === n.id)),
         check: (event) => { event.stopPropagation(); const m = Object.assign({}, this.checked()); m[n.id] = event.target.checked; this.checked(m); return true; },
@@ -105,6 +123,15 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
           this.rowMenu.toggle(event);
         }
       })));
+      // Keyboard: arrows or J/K move, Enter opens the details, X selects; focus returns to the row after the redraw
+      const focusCursor = () => window.setTimeout(() => {
+        const tr = document.querySelectorAll('#notificationTable tbody tr')[this.keys.cursor()];
+        if (tr) { tr.focus(); }
+      }, 0);
+      this.keys = ui.tableKeys(this.rows, {
+        open: (row) => { row.pick(); focusCursor(); },
+        toggle: (row) => { const m = Object.assign({}, this.checked()); m[row.id] = !m[row.id]; this.checked(m); }
+      });
       this.allChecked = ko.pureComputed(() => this.pager.rows().length > 0 && this.pager.rows().every((n) => this.checked()[n.id]));
       this.checkAll = (event) => {
         const m = Object.assign({}, this.checked());
@@ -150,7 +177,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         }
         return Object.assign({}, n, {
           iconCss: 'factory-kpi-icon factory-no-bigicon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
-          priorityBadge: PRIORITY[n.priority], category: CATEGORY[n.category], primary: primary, secondary: secondary,
+          priorityBadge: PRIORITY[n.priority], category: CATEGORY[n.category], subject: subjectStatus(n), primary: primary, secondary: secondary,
           errorsCss: 'fx-alert ' + (n.tone === 'red' ? 'fx-alert--danger' : 'fx-alert--warning') + ' factory-no-errors',
           relatedItems: related.map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }))
         });
@@ -170,6 +197,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       this.markSelectedRead = () => { const ids = checkedIds(); notifications.markRead(ids); toast.success(plural(ids.length) + ' marked as read.'); };
       this.markSelectedUnread = () => { const ids = checkedIds(); notifications.markUnread(ids); toast.success(plural(ids.length) + ' marked as unread.'); };
       this.settings = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'account' }));
+      this.clearChecked = () => this.checked({});
       this.checkedCount = ko.pureComputed(() => checkedIds().length);
       this.hasChecked = ko.pureComputed(() => this.checkedCount() > 0);
 

@@ -44,6 +44,8 @@
                 <span :class="[[th.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[th.data.label]]"></oj-bind-text></button>
             </template></oj-bind-for-each>
           </dd>
+          <dt id="densityLabel">Density</dt>
+          <dd><fx-segmented id="densityPick" label="Density" options="[[densityOptions]]" value="{{prefs.density}}"></fx-segmented></dd>
           <dt><label for="workspacePick">Default Workspace</label></dt>
           <dd><select id="workspacePick" class="fx-select" on-change="[[workspaceChange]]"><option value="" :selected="[[prefs.workspace() === '']]">The first one</option>
             <oj-bind-for-each data="[[workspaceOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === prefs.workspace()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
@@ -62,6 +64,9 @@
           <dd><select id="editorThemePick" class="fx-select" on-change="[[editorThemeChange]]"><option value="light" :selected="[[extra.editorTheme() === 'light']]">Light</option><option value="dark" :selected="[[extra.editorTheme() === 'dark']]">Dark</option></select></dd>
           <dt><label for="textPick">Font Size</label></dt>
           <dd><select id="textPick" class="fx-select" on-change="[[textChange]]"><option value="normal" :selected="[[prefs.textSize() === 'normal']]">Normal</option><option value="large" :selected="[[prefs.textSize() === 'large']]">Large</option></select></dd>
+          <dt id="shortcutsLabel">Keyboard Shortcuts</dt>
+          <dd class="factory-ac-shortcuts"><button type="button" id="shortcutsButton" class="fx-btn fx-btn--secondary fx-btn--sm" aria-describedby="shortcutsLabel" on-click="[[showShortcuts]]"><span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Show Shortcuts</button>
+            <span class="factory-ov-subtle">or press <kbd class="factory-kbd">?</kbd></span></dd>
         </dl>
         <p class="factory-card-sub">The landing page applies the next time the factory opens. Items per page, date format and code editor theme are saved here; the pages do not use them yet.</p>
       </section>

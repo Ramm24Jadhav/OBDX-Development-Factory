@@ -24,18 +24,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const designs = ko.observableArray([]);
       this.loading = ko.observable(false);
 
+      // A link's state in the shared status categories (ui.status): an active link is out with the reviewers
       const linkState = (d) => {
         if (d.status === 'APPROVED') {
-          return { key: 'approved', pill: badge('Approved', 'success') };
+          return { key: 'approved', pill: ui.status('APPROVED', 'Approved') };
         }
         if (d.reviewToken && d.reviewExpiresAt && new Date(d.reviewExpiresAt) < new Date()) {
-          return { key: 'expired', pill: badge('Expired', '') };
+          return { key: 'expired', pill: ui.status('CLOSED', 'Expired') };
         }
         if (d.reviewToken) {
-          return { key: 'active', pill: badge('Active', 'success') };
+          return { key: 'active', pill: ui.status('IN_REVIEW', 'Active') };
         }
-        return d.status === 'IN_REVIEW' ? { key: 'review', pill: badge('In Review', 'info') } : { key: 'none', pill: badge('No link', '') };
+        return d.status === 'IN_REVIEW' ? { key: 'review', pill: ui.status('IN_REVIEW', 'In Review') } : { key: 'none', pill: ui.status('DRAFT', 'No link') };
       };
+      const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In Review', APPROVED: 'Approved' };
+      const designStatus = (d) => ui.status(d.status, DESIGN_WORDS[d.status]);
       this.links = ko.pureComputed(() => designs().map((d) => {
         const state = linkState(d);
         const reviewers = Array.from(new Set(d.comments.filter((c) => c.fromReview).map((c) => c.author)));
@@ -219,6 +222,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const sections = d.model && d.model.sections ? d.model.sections : [];
         return {
           pill: linkState(d).pill,
+          designPill: designStatus(d),
           requirement: d.requirementId ? 'Linked to a requirement' : 'Not linked to a requirement',
           sections: sections.length + (sections.length === 1 ? ' section' : ' sections') + ', ' + sections.reduce((n, s) => n + (s.components ? s.components.length : 0), 0) + ' fields',
           reviewers: reviewers.size ? Array.from(reviewers).join(', ') : 'No reviewer has commented yet',
