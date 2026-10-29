@@ -9109,3 +9109,56 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 /* Room for a lifted item: menus show it whole; lists keep their scrolling and get a little inner padding */
 .fx-menu { overflow: visible; }
 .fx-listbox { padding: 3px 4px; }
+
+/* ---------- OBDX Library (knowledge base): ask, documents, notes ---------- */
+.factory-ico-book { --factory-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5z'/%3E%3Cpath d='M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5z'/%3E%3C/svg%3E"); }
+.factory-lb-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.factory-lb-kpitext { display: flex; flex-direction: column; min-width: 0; }
+.factory-lb-kpisub { font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-lb-tabs { margin: var(--fx-gap) 0 12px; }
+.factory-lb .fx-card + .fx-card { margin-top: var(--fx-gap); }
+.factory-lb-askrow { display: flex; gap: 12px; align-items: flex-end; margin-top: 12px; }
+.factory-lb-askrow .fx-btn { flex: 0 0 auto; }
+.factory-lb-examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.factory-lb-examples .fx-chip { height: auto; min-height: 28px; white-space: normal; text-align: left; }
+.factory-lb-thinking { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-lb-answer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--fx-border); }
+.factory-lb-answer .fx-alert { margin-bottom: 12px; }
+.factory-lb-answertext { white-space: pre-wrap; line-height: 1.6; color: var(--fx-text); font-size: var(--fx-text-base); }
+.factory-lb-meta { margin: 8px 0 0; font-size: var(--fx-text-caption); }
+.factory-lb-h3 { margin: 16px 0 8px; font-size: var(--fx-text-h5); color: var(--fx-text); }
+.factory-lb-sources { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.factory-lb-source { display: flex; gap: 10px; padding: 10px 12px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); }
+.factory-lb-source.is-suggested { border-style: dashed; }
+.factory-lb-n { flex: 0 0 auto; font-weight: var(--fx-weight-semibold); color: var(--fx-primary-text); font-size: var(--fx-text-sm); }
+.factory-lb-sourcebody { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fx-text-sm); }
+.factory-lb-sourcebody a { font-weight: var(--fx-weight-semibold); }
+.factory-lb-excerpt { color: var(--fx-text-body); font-size: var(--fx-text-caption); line-height: 1.5; }
+.factory-lb-answerbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; font-size: var(--fx-text-sm); }
+.factory-lb-save { margin-left: auto; }
+.factory-lb-importrow { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+.factory-lb-version { flex: 0 0 140px; }
+.factory-lb-bank { margin-top: 10px; }
+.factory-lb-count { margin-left: 8px; font-size: var(--fx-text-sm); font-weight: 400; }
+.factory-lb-table td { vertical-align: middle; }
+.factory-lb-sub { display: block; margin: 2px 0 0; font-size: var(--fx-text-caption); }
+.factory-lb-progress { display: inline-block; width: 90px; vertical-align: middle; }
+.factory-lb-pct { margin-left: 6px; font-size: var(--fx-text-caption); }
+.factory-lb-actions { white-space: nowrap; text-align: right; }
+.factory-lb-summary { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.factory-lb-newnote { display: grid; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--fx-border); }
+.factory-lb-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--fx-gap) 0 12px; }
+.factory-lb-notes { display: grid; gap: var(--fx-gap); }
+.factory-lb .factory-lb-notes .fx-card + .fx-card { margin-top: 0; }
+.factory-lb-notehead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.factory-lb-notetitle { margin: 0; font-size: var(--fx-text-lg); color: var(--fx-text); }
+.factory-lb-notebody { margin-top: 10px; white-space: pre-wrap; line-height: 1.55; font-size: var(--fx-text-sm); color: var(--fx-text-body); max-height: 320px; overflow: auto; }
+.factory-lb-notesources { margin: 10px 0 0; padding-left: 18px; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-lb-review { margin-top: 12px; }
+@media (max-width: 1100px) { .factory-lb-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+    .factory-lb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .factory-lb-askrow, .factory-lb-summary { flex-direction: column; align-items: stretch; }
+    .factory-lb-version { flex: 1 1 100%; }
+    .factory-lb-save { margin-left: 0; }
+}

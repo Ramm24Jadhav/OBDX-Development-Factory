@@ -31,8 +31,9 @@ spring:
     password: ${FACTORY_DB_PASSWORD:factory}
   servlet:
     multipart:
-      max-file-size: 25MB
-      max-request-size: 26MB
+      # Large enough for OBDX manuals uploaded to the knowledge base (requirement documents are much smaller)
+      max-file-size: 150MB
+      max-request-size: 151MB
   jpa:
     open-in-view: false
     hibernate:
@@ -68,6 +69,16 @@ factory:
     secret-key: ${FACTORY_SECRET_KEY:}
   storage:
     root: ${FACTORY_DATA_DIR:data}
+  knowledge:
+    # The knowledge base (manual excerpts, the bank's documents, notes) is sent only to model servers on the bank's
+    # network: this computer, private addresses, or the hosts below. true also allows servers outside it.
+    external-models: ${FACTORY_KNOWLEDGE_EXTERNAL_MODELS:false}
+    # Comma-separated model server hosts that belong to the bank but resolve to public addresses (llm.bank.com, .bank.com)
+    internal-hosts: ${FACTORY_KNOWLEDGE_INTERNAL_HOSTS:}
+    # What goes with a question. Sized for a model with a 4k-token context; raise them for larger models.
+    answer-sources: ${FACTORY_KNOWLEDGE_ANSWER_SOURCES:5}
+    source-chars: ${FACTORY_KNOWLEDGE_SOURCE_CHARS:1000}
+    page-context-chars: ${FACTORY_KNOWLEDGE_PAGE_CONTEXT_CHARS:3000}
   trial-database:
     # true: the factory starts its own PostgreSQL (data in FACTORY_DATA_DIR/trial-database) and ignores FACTORY_DB_*.
     # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.

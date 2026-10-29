@@ -5,6 +5,7 @@ import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.profile.ProjectProfileService;
+import com.obdx.factory.knowledge.KnowledgeService;
 import com.obdx.factory.search.CodeSearchService;
 import com.obdx.factory.workspace.WorkspaceRepository;
 import org.slf4j.Logger;
@@ -52,11 +53,12 @@ public class RequirementService {
     private final CodeSearchService codeSearch;
     private final StorageProperties storage;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
 
     public RequirementService(RequirementRepository requirements, RequirementSpecRepository specs,
                               WorkspaceRepository workspaces, DocumentTextExtractor textExtractor, SpecDrafter drafter,
                               ProjectProfileService profiles, CodeSearchService codeSearch, StorageProperties storage,
-                              @Qualifier("requirementExecutor") TaskExecutor executor) {
+                              @Qualifier("requirementExecutor") TaskExecutor executor, KnowledgeService knowledge) {
         this.requirements = requirements;
         this.specs = specs;
         this.workspaces = workspaces;
@@ -66,6 +68,7 @@ public class RequirementService {
         this.codeSearch = codeSearch;
         this.storage = storage;
         this.executor = executor;
+        this.knowledge = knowledge;
     }
 
     public record RequirementSummary(UUID id, String title, String fileName, Requirement.Status status, String message,
@@ -230,7 +233,8 @@ public class RequirementService {
     void runDraft(UUID id) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId()));
+            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId(),
+                    requirement.getTitle() + "\n" + head(requirement.getDocumentText(), 1500)));
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
@@ -245,7 +249,7 @@ public class RequirementService {
     void runRefine(UUID id, RequirementSpec withDecisions) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId()));
+            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId(), requirement.getTitle()));
             // Decisions are kept exactly as the analyst gave them, and answered questions must not come back.
             Set<String> decided = withDecisions.decisions().stream().map(d -> SpecMerger.normalize(d.question())).collect(Collectors.toSet());
             List<RequirementSpec.OpenQuestion> stillOpen = refined.openQuestions().stream()
@@ -268,16 +272,27 @@ public class RequirementService {
 
     // --- helpers ---
 
-    /** Facts from the confirmed Project Profile, so the model knows what the bank runs. Empty if there is no profile. */
-    private String systemContext(UUID workspaceId) {
+    private static String head(String text, int max) {
+        return text == null ? "" : text.length() <= max ? text : text.substring(0, max);
+    }
+
+    /**
+     * Facts from the confirmed Project Profile, so the model knows what the bank runs, and what the OBDX knowledge base
+     * (manuals and approved notes for the workspace's version) says about the requirement. Empty if there is neither.
+     */
+    private String systemContext(UUID workspaceId, String about) {
+        String facts;
         try {
-            return profiles.get(workspaceId).facts().stream()
+            facts = profiles.get(workspaceId).facts().stream()
                     .filter(f -> CONTEXT_FACTS.contains(f.key()) && f.value() != null)
                     .map(f -> "- " + f.label() + ": " + f.value())
                     .collect(Collectors.joining("\n"));
         } catch (NotFoundException e) {
-            return "";
+            facts = "";
         }
+        String known = knowledge.contextFor(workspaceId, about, 4000);
+        return known.isBlank() ? facts : facts + (facts.isEmpty() ? "" : "\n\n")
+                + "OBDX knowledge (Oracle manuals and approved notes; use it for how OBDX does this):\n" + known;
     }
 
     /** Adds up to three existing files that look related to each screen, found by code search. */

@@ -1,9 +1,10 @@
 /*
  * The AI Assistant panel on the redesigned pages: sends the question with the page's context (what the user is looking
- * at, as text) to the configured chat model through /api/model/chat, and keeps the conversation for the panel.
- * The context is built from data the page already shows, so nothing new is sent beyond what the user can see.
+ * at, as text) to /api/knowledge/ask, which adds what the OBDX knowledge base says (the manuals for the workspace's
+ * OBDX version, and the approved and suggested notes) and answers with numbered citations, listed under the answer.
+ * The page context is built from data the page already shows.
  */
-define(['knockout', './api'], function (ko, api) {
+define(['knockout', './api', './workspaceSelection'], function (ko, api, workspaceSelection) {
   const MAX_PROMPT = 19000;
 
   /**
@@ -23,14 +24,19 @@ define(['knockout', './api'], function (ko, api) {
       input('');
       messages.push({ mine: true, text: question, css: 'factory-ai-msg factory-ai-mine' });
       busy(true);
-      let prompt = 'You are the assistant of OBDX Development Factory, a tool for changing a bank\'s Oracle Banking '
-        + 'Digital Experience code. Answer briefly and only from the information below; say so when it does not '
-        + 'contain the answer.\n\n' + (context() || '(no data on this page yet)') + '\n\nQuestion: ' + question;
-      if (prompt.length > MAX_PROMPT) {
-        prompt = prompt.slice(0, MAX_PROMPT - question.length - 20) + '\n\nQuestion: ' + question;
-      }
-      api.post('model/chat', { prompt: prompt })
-        .then((result) => messages.push({ mine: false, text: result.reply, meta: result.model + ' · ' + Math.round(result.latencyMs / 100) / 10 + 's', css: 'factory-ai-msg' }))
+      const page = (context() || '').slice(0, MAX_PROMPT);
+      api.post('knowledge/ask', { question: question, workspaceId: workspaceSelection.selectedId() || null, context: page })
+        .then((result) => {
+          // The sources the answer cites, listed under it: [n] the manual, its section and page (or the note)
+          const cited = (result.sources || []).map((s) => '[' + s.n + '] ' + (s.kind === 'NOTE'
+            ? (s.status === 'TRUSTED' ? 'Approved note: ' : 'Suggested note: ') + s.title
+            : s.title + ' ' + s.obdxVersion + (s.heading ? ', ' + s.heading : '') + ', p. ' + s.pageFrom));
+          messages.push({
+            mine: false, text: result.answer + (cited.length ? '\n\nSources:\n' + cited.join('\n') : ''),
+            meta: result.model + ' · ' + Math.round(result.latencyMs / 100) / 10 + 's' + (cited.length ? ' · ' + cited.length + ' sources' : ' · not from the manuals'),
+            css: 'factory-ai-msg'
+          });
+        })
         .catch((error) => messages.push({ mine: false, text: error.message, meta: 'Not answered', css: 'factory-ai-msg factory-ai-error' }))
         .finally(() => busy(false));
     };

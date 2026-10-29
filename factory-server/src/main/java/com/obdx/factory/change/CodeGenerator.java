@@ -130,6 +130,10 @@ public class CodeGenerator {
         user.append(plan.items().stream().map(i -> "- " + i.action() + " " + i.path() + ": " + nullToDash(i.purpose()))
                 .collect(Collectors.joining("\n"))).append("\n\n");
         user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
+        if (!context.knowledge().isBlank()) {
+            user.append("OBDX knowledge (Oracle manuals and approved notes for this OBDX version; follow it where it applies):\n")
+                    .append(ChangeContext.cap(context.knowledge(), 4000)).append("\n\n");
+        }
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
             String designs = context.designsJson();

@@ -43,6 +43,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'work' } },
         { path: 'models', detail: { label: 'Models & AI Providers', icon: 'chip', group: 'work' } },
         { path: 'agents', detail: { label: 'Agent Runs', icon: 'robot', group: 'work' } },
+        { path: 'library', detail: { label: 'OBDX Library', icon: 'book', group: 'work' } },
         { path: 'admin', detail: { label: 'Administration', icon: 'cog', group: 'setup', adminOnly: true } },
         { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'setup' } },
         { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'setup' } },

@@ -193,6 +193,44 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
 6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
 
+## OBDX Library (knowledge base)
+
+The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per version, a bank's own documents for one
+workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
+
+- **Import**: an administrator imports the manuals of a version from a folder on the factory's computer (needs
+  `factory.local-folders.enabled`) or by uploading PDFs (up to 150 MB each). With "bank's own document" ticked, the files
+  belong to the selected workspace only (Managers can import those). A file already imported for that version is skipped.
+  Each PDF is copied to `<storage>/knowledge/<id>.pdf`, read page by page (PDFBox), split at numbered headings into
+  sections of at most about 1,800 characters with their pages (headers, footers and contents pages dropped), and embedded
+  in the background, one document at a time. Without the embedding model a document is searched by keywords; **Embed
+  again** finishes it later. Imports the factory stopped in the middle carry on at the next start.
+- **Search** is hybrid, as in code search: PostgreSQL full text and embeddings merged by reciprocal rank fusion, limited
+  to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
+  at most two sections of one document, so a long user manual does not crowd out the guide that answers. On the trial
+  database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2
+  manuals) and compared there: a search takes well under a second instead of many seconds.
+- **Ask** (Library page and every AI Assistant panel): the question, the page the user is looking at (up to 3,000
+  characters) and the best five sources (up to 1,000 characters each) go to the chat model, which answers with [n]
+  citations; each source links to the PDF at its page. Answers can be rated (Helpful / Not helpful, kept for review) or
+  saved as a suggested note. The prompt is sized for small local models with a 4k context; for larger models raise
+  `factory.knowledge.answer-sources`, `source-chars` and `page-context-chars` (`FACTORY_KNOWLEDGE_*`). On a laptop with 8 GB of
+  memory a local 3B model needs one to two minutes per answer; a model server with a GPU or a cloud model answers in
+  seconds.
+- **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
+  topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
+  *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
+  The AI chat may use suggested notes and says so; code generation and analysis use only approved notes and the manuals.
+- **It stays inside the bank**: the knowledge (manual excerpts, the bank's documents, notes) and the questions to embed
+  go only to model servers on the bank's network: this computer, private addresses (the host name is resolved and every
+  address must be private), or hosts listed in `factory.knowledge.internal-hosts` (`FACTORY_KNOWLEDGE_INTERNAL_HOSTS`,
+  for example `llm.bank.com,.ai.bank.com`). With a chat model outside, questions are refused with that reason and
+  generation runs without the knowledge; with an embedding model outside, documents are searched by keywords only. The
+  Library page shows why. `factory.knowledge.external-models=true` lifts this. It works with whichever OpenAI-compatible
+  models are chosen on the Models page.
+- **In generation**: impact analysis, code generation and requirement drafting get up to 4,000 to 5,000 characters of
+  the most relevant manual sections and approved notes for the workspace's OBDX version.
+
 ## Quick checks and version packs
 
 Every generated file is checked on the factory server in milliseconds, before reviewers see it and again before each Jenkins build:
@@ -492,6 +530,18 @@ object: compute those in the view model.
 | `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server) (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
+| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents you can see |
+| `POST /api/knowledge/import` | Import every PDF in a folder (`folder`, `obdxVersion`, `workspaceId`: null for the shared manuals) |
+| `POST /api/knowledge/documents` | Upload one PDF (multipart `file`, `obdxVersion`, `workspaceId`) |
+| `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
+| `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
+| `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
+| `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
+| `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
+| `GET` / `POST /api/knowledge/notes`, `PUT` / `DELETE /api/knowledge/notes/{id}` | Knowledge notes (`status` filter) |
+| `POST /api/knowledge/notes/{id}/review` | Approve or reject a note (`status`: TRUSTED, REJECTED, SUGGESTED) |
+| `POST /api/knowledge/summaries` | Draft a suggested note on a topic from the manuals (`topic`, `workspaceId`) |
+| `POST /api/knowledge/feedback` | Rate an answer (`question`, `answer`, `helpful`, `comment`, `sources`) |
 | `GET /actuator/health` | Health check |
 
 Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.
@@ -635,5 +685,9 @@ With a context path, every factory URL starts with it: the health check is `/fac
 Several factory servers can sit behind one OHS for availability: list them in a `<Proxy balancer://factory>` block with sticky sessions (`stickysession=JSESSIONID`), since the signed-in session lives on the server that created it.
 
 ## Not built yet
+
+For the OBDX Library: a view of what differs between the 22.x and 25.x manuals; a set of test questions with expected
+sources to measure answers; when Oracle publishes new manuals, re-importing them should keep the notes and flag the notes
+whose cited pages changed; answers shown word by word as the model writes them.
 
 The rest of modernization (section 6 of the architecture): reverse-engineering existing JET screens into Screen Models, wave planning on top of the inventory, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -70,6 +70,10 @@ public class ImpactAnalyzer {
             user.append("Version pack recipes (kinds of work, the files each needs, and reference examples in this codebase):\n")
                     .append(ChangeContext.cap(context.recipes(), 5000)).append('\n');
         }
+        if (!context.knowledge().isBlank()) {
+            user.append("OBDX knowledge (Oracle manuals and approved notes for this OBDX version; follow it where it applies):\n")
+                    .append(ChangeContext.cap(context.knowledge(), 5000)).append('\n');
+        }
         user.append("Relevant existing code:\n");
         if (candidates.isEmpty()) {
             user.append("(no matches found; the code may not be imported yet)\n");

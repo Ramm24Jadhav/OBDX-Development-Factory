@@ -8,6 +8,7 @@ import com.obdx.factory.design.ScreenDesign;
 import com.obdx.factory.design.ScreenDesignRepository;
 import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.importing.StorageProperties;
+import com.obdx.factory.knowledge.KnowledgeService;
 import com.obdx.factory.pack.CheckScope;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.PackService;
@@ -87,6 +88,7 @@ public class ChangeService {
     private final TargetService targets;
     private final TargetPacks targetPacks;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
@@ -94,7 +96,7 @@ public class ChangeService {
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
-                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor) {
+                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -118,6 +120,7 @@ public class ChangeService {
         this.targets = targets;
         this.targetPacks = targetPacks;
         this.executor = executor;
+        this.knowledge = knowledge;
     }
 
     public record FileView(String path, String action, String layer, String purpose, ChangeFileStore.Status status,
@@ -466,7 +469,12 @@ public class ChangeService {
                     + ", plan approved by " + change.getPlanApprovedBy() + ")";
             long revision = svn.multiCommit(root, message, operations, credentials);
             change.delivered(root + "/" + branch, revision);
-            return detail(changes.save(change));
+            ChangeDetail delivered = detail(changes.save(change));
+            // What this change touched becomes a suggested knowledge note, for the next similar change
+            ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
+            knowledge.learnFromChange(change.getWorkspaceId(), change.getTitle(), plan == null ? null : plan.summary(),
+                    deliverable.stream().map(ChangeFileStore.ChangeFile::path).toList());
+            return delivered;
         } catch (IOException e) {
             throw new UncheckedIOException("Could not prepare the files for delivery", e);
         } finally {
@@ -557,7 +565,8 @@ public class ChangeService {
         }
         return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
                 structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
-                targets.planGuide(change.getWorkspaceId()), models);
+                targets.planGuide(change.getWorkspaceId()), models,
+                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(json.writeValueAsString(requirement.spec()), 1500), 5000));
     }
 
     /**
