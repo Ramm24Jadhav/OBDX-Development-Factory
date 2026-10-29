@@ -16,11 +16,11 @@
     </oj-bind-if>
   </div>
 
-  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="modelError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-md-alert" role="alert" id="modelError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
 
   <div class="factory-tabbar" role="tablist" aria-label="Model settings">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['md-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      <template><button type="button" role="tab" :id="[['md-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
 
@@ -52,7 +52,7 @@
                   <oj-bind-if test="[[!p.data.admin()]]"><span class="factory-ov-subtle">Administrators only</span></oj-bind-if></dd>
               </oj-bind-if>
               <dt><oj-bind-text value="[[p.data.local ? 'Model' : 'Default Model']]"></oj-bind-text></dt>
-              <dd><select class="factory-ws-select factory-md-select" :aria-label="[['Default model of ' + p.data.name]]" on-change="[[p.data.modelChange]]" :disabled="[[p.data.chatModels().length === 0]]">
+              <dd><select class="fx-select factory-md-select" :aria-label="[['Default model of ' + p.data.name]]" on-change="[[p.data.modelChange]]" :disabled="[[p.data.chatModels().length === 0]]">
                 <oj-bind-if test="[[p.data.chatModels().length === 0]]"><option value="">Test to list models</option></oj-bind-if>
                 <oj-bind-for-each data="[[p.data.chatModels]]" as="m"><template><option :value="[[m.data]]" :selected="[[m.data === p.data.defaultModel()]]"><oj-bind-text value="[[m.data]]"></oj-bind-text></option></template></oj-bind-for-each>
               </select></dd>
@@ -65,8 +65,8 @@
             </dl>
             <oj-bind-if test="[[p.data.admin()]]">
               <div class="factory-md-btns">
-                <button type="button" class="factory-ov2-btn factory-md-btn factory-md-btn-blue" on-click="[[p.data.test]]" :disabled="[[p.data.testing]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Test Connection</button>
-                <button type="button" class="factory-ov2-btn factory-md-btn" on-click="[[p.data.use]]" title="Choose this provider's models in Default Model Settings"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Settings</button>
+                <button type="button" :class="[[p.data.testing() ? 'fx-btn fx-btn--secondary fx-btn--sm factory-md-btn is-loading' : 'fx-btn fx-btn--secondary fx-btn--sm factory-md-btn']]" on-click="[[p.data.test]]" :disabled="[[p.data.testing]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Test Connection</button>
+                <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm factory-md-btn" on-click="[[p.data.use]]" data-fx-tip="Choose this provider's models in Default Model Settings"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Settings</button>
               </div>
             </oj-bind-if>
           </section>
@@ -77,12 +77,12 @@
           <div class="factory-md-head">
             <span class="factory-md-logo factory-md-logo-custom" aria-hidden="true"></span>
             <div class="factory-md-name"><strong>Custom Provider</strong><span class="factory-ov-subtle">Any OpenAI-compatible server, for example vLLM or the bank's own gateway</span></div>
-            <button type="button" class="factory-link-sm" on-click="[[cancelProvider]]">Cancel</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[cancelProvider]]">Cancel</button>
           </div>
           <oj-input-text id="customUrl" label-hint="Base URL" value="{{remoteUrl}}" placeholder="https://.../v1"></oj-input-text>
           <oj-input-password id="customKey" label-hint="[[apiKeyLabel]]" value="{{apiKey}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
           <div class="factory-md-btns">
-            <button type="button" class="factory-ov2-btn factory-md-btn factory-md-btn-blue" id="customTestButton" on-click="[[useCustom]]" :disabled="[[searching]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Get Models</button>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-md-btn" id="customTestButton" on-click="[[useCustom]]" :disabled="[[searching]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Get Models</button>
           </div>
           <p class="factory-card-sub factory-md-note">Its models appear in Default Model Settings, where Save Settings makes it the provider in use.</p>
         </section>
@@ -93,23 +93,23 @@
       <section class="factory-card factory-md-models" id="availableModels">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-chip" aria-hidden="true"></span>Available Models</span>
           <span class="factory-md-filters">
-            <select class="factory-ws-select" id="modelProviderFilter" aria-label="Provider" on-change="[[providerFilterChange]]"><option value="">All Providers</option>
+            <select class="fx-select" id="modelProviderFilter" aria-label="Provider" on-change="[[providerFilterChange]]"><option value="">All Providers</option>
               <oj-bind-for-each data="[[providerNames]]"><template><option :value="[[$current.data]]" :selected="[[$current.data === providerFilter()]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-            <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search models..." aria-label="Search models" on-input="[[modelSearchInput]]"></span>
+            <span class="fx-control factory-md-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" placeholder="Search models..." aria-label="Search models" on-input="[[modelSearchInput]]"></span>
           </span></h2>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-md-table" id="modelTable">
-            <thead><tr><th>Model Name</th><th>Provider</th><th>Type</th><th title="Model servers do not report the context length">Context Length</th><th>Capabilities</th><th>Status</th><th>Actions</th><th class="factory-md-menucol"><span class="oj-helper-hidden-accessible">More</span></th></tr></thead>
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-md-table" id="modelTable">
+            <thead><tr><th>Model Name</th><th>Provider</th><th>Type</th><th title="Model servers do not report the context length">Context Length</th><th>Capabilities</th><th>Status</th><th>Actions</th><th class="factory-md-menucol fx-table-actions"><span class="oj-helper-hidden-accessible">More</span></th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[allModels]]" as="m">
                 <template><tr><td class="factory-md-mname" :title="[[m.data.id]]"><oj-bind-text value="[[m.data.id]]"></oj-bind-text></td><td><span class="factory-md-prov"><span :class="[[m.data.logo]]" aria-hidden="true"></span><oj-bind-text value="[[m.data.provider]]"></oj-bind-text></span></td>
                   <td><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
                   <td title="The model server does not report the context length"><span class="factory-ov-subtle">–</span></td>
                   <td><oj-bind-text value="[[m.data.caps]]"></oj-bind-text></td>
-                  <td><span class="factory-ov-pill factory-ov-pill-green">Available</span></td>
-                  <td><oj-bind-if test="[[m.data.isDefault]]"><span class="factory-ov-pill factory-ov-pill-blue">Default</span></oj-bind-if>
-                    <oj-bind-if test="[[!m.data.isDefault && m.data.admin()]]"><button type="button" class="factory-ov2-btn factory-md-setdefault" on-click="[[m.data.setDefault]]">Set Default</button></oj-bind-if></td>
-                  <td class="factory-md-menucol"><oj-menu-button chroming="borderless" display="icons" class="factory-md-more">
+                  <td><span class="fx-badge fx-badge--success">Available</span></td>
+                  <td><oj-bind-if test="[[m.data.isDefault]]"><span class="fx-badge fx-badge--primary">Default</span></oj-bind-if>
+                    <oj-bind-if test="[[!m.data.isDefault && m.data.admin()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-md-setdefault" on-click="[[m.data.setDefault]]">Set Default</button></oj-bind-if></td>
+                  <td class="factory-md-menucol fx-table-actions"><oj-menu-button chroming="borderless" display="icons" class="factory-md-more">
                     <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + m.data.id]]"></oj-bind-text>
                     <oj-menu slot="menu" on-oj-menu-action="[[m.data.menuAction]]">
                       <oj-option value="default" disabled="[[m.data.isDefault || !m.data.admin()]]">Set as default</oj-option>
@@ -119,7 +119,7 @@
               </oj-bind-for-each>
             </tbody>
           </table>
-          <oj-bind-if test="[[allModels().length === 0]]"><p class="factory-ov-empty">No models listed yet. Use Test Connection on a provider card to list its models.</p></oj-bind-if>
+          <oj-bind-if test="[[allModels().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-chip" aria-hidden="true"></span></span><strong>No models listed yet</strong>Use Test Connection on a provider card to list its models.</div></oj-bind-if>
         </div>
         <p class="factory-md-tablefoot"><oj-bind-text value="[[modelsSummary]]"></oj-bind-text></p>
       </section>
@@ -137,7 +137,7 @@
         <oj-bind-if test="[[isAdmin()]]">
           <div class="factory-md-form">
             <label for="defaultProvider">Default Provider</label>
-            <select class="factory-ws-select" id="defaultProvider" on-change="[[defaultProviderChange]]">
+            <select class="fx-select" id="defaultProvider" on-change="[[defaultProviderChange]]">
               <oj-bind-for-each data="[[providers]]" as="dp"><template><option :value="[[dp.data.baseUrl]]" :selected="[[dp.data.selectedAsDefault()]]"><oj-bind-text value="[[dp.data.name]]"></oj-bind-text></option></template></oj-bind-for-each>
             </select>
             <oj-bind-if test="[[serverKind() === 'remote' && models().length === 0]]">
@@ -153,7 +153,7 @@
               <div><oj-select-single id="chatModel" label-hint="Default model" label-edge="none" data="[[chatProvider]]" value="{{chatModel}}"></oj-select-single>
                 </div>
               <label for="embeddingSourceSelect">Code Search</label>
-              <select class="factory-ws-select" id="embeddingSourceSelect" on-change="[[embeddingSourceChange]]">
+              <select class="fx-select" id="embeddingSourceSelect" on-change="[[embeddingSourceChange]]">
                 <option value="same" :selected="[[embeddingSource() === 'same']]">On the same server</option>
                 <option value="other" :selected="[[embeddingSource() === 'other']]">On another server</option>
               </select>
@@ -172,9 +172,9 @@
               </oj-bind-if>
             </oj-bind-if>
             <label for="fallbackProvider">Fallback Provider</label>
-            <select class="factory-ws-select" id="fallbackProvider" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
+            <select class="fx-select" id="fallbackProvider" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
             <label for="fallbackModel">Fallback Model</label>
-            <div><select class="factory-ws-select" id="fallbackModel" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
+            <div><select class="fx-select" id="fallbackModel" disabled title="The factory uses one model server; it has no fallback yet."><option>None</option></select>
               <span class="factory-md-hint">Fallback needs a server change; not available yet</span></div>
           </div>
           <div class="factory-md-toggle" title="Not available yet: the factory has no fallback provider.">
@@ -188,7 +188,7 @@
             <p class="factory-card-sub">Choose a provider above, or use Settings on a card, to choose its models here.</p>
           </oj-bind-if>
           <p class="factory-md-source"><oj-bind-text value="[[statusSource]]"></oj-bind-text></p>
-          <oj-bind-if test="[[savedMessage()]]"><p class="factory-note" id="savedMessage"><oj-bind-text value="[[savedMessage]]"></oj-bind-text></p></oj-bind-if>
+
         </oj-bind-if>
       </section>
     </div>
@@ -212,8 +212,8 @@
       </section>
       <section class="factory-card">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Model Capabilities Comparison</span></h2>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-md-matrix" id="capabilityMatrix">
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-md-matrix" id="capabilityMatrix">
             <thead><tr><th>Capability</th><oj-bind-for-each data="[[matrixProviders]]"><template><th :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.tiny]]"></oj-bind-text></th></template></oj-bind-for-each></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[matrix]]" as="row">
@@ -231,15 +231,15 @@
       </section>
       <section class="factory-card">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>Provider Health</span>
-          <button type="button" class="factory-link-sm" on-click="[[testAll]]"><span class="factory-nav-icon factory-ico-refresh factory-md-refresh" aria-hidden="true"></span>Refresh</button></h2>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-md-health">
+          <oj-bind-if test="[[isAdmin()]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[testAll]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Refresh</button></oj-bind-if></h2>
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-md-health">
             <thead><tr><th>Provider</th><th>Status</th><th>Latency</th><th>Last Checked</th></tr></thead>
             <tbody><oj-bind-for-each data="[[health]]"><template><tr><td :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
               <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
               <td><oj-bind-text value="[[$current.data.latency]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
           </table>
-          <oj-bind-if test="[[health().length === 0]]"><p class="factory-ov-empty">Test the providers to see their health.</p></oj-bind-if>
+          <oj-bind-if test="[[health().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>Test the providers to see their health.</div></oj-bind-if>
         </div>
       </section>
     </div>
@@ -249,8 +249,8 @@
     <section class="factory-card">
       <h2>Model Routing</h2>
       <p class="factory-card-sub">Which model does each kind of work. The factory uses the default model for all writing and the code search model for embeddings.</p>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table"><thead><tr><th>Task</th><th>Model</th><th>Server</th></tr></thead>
+      <div class="fx-table-wrap">
+        <table class="fx-table"><thead><tr><th>Task</th><th>Model</th><th>Server</th></tr></thead>
           <tbody><oj-bind-for-each data="[[routing]]"><template><tr><td><oj-bind-text value="[[$current.data.task]]"></oj-bind-text></td><td class="factory-mono"><oj-bind-text value="[[$current.data.model]]"></oj-bind-text></td>
             <td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.server]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
       </div>
@@ -259,7 +259,7 @@
 
   <oj-bind-if test="[[tab() === 'usage']]">
     <section class="factory-card"><h2>Usage &amp; Cost</h2>
-      <p class="factory-empty">The factory does not record token usage or costs yet. Each provider's own console shows the usage of its API key; models on this computer or the bank's network cost nothing per token.</p></section>
+      <p class="fx-alert fx-alert--info factory-md-note2">The factory does not record token usage or costs yet. Each provider's own console shows the usage of its API key; models on this computer or the bank's network cost nothing per token.</p></section>
   </oj-bind-if>
 
   <oj-bind-if test="[[tab() === 'prompts']]">

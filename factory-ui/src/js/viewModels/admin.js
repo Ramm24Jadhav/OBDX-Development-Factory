@@ -3,17 +3,18 @@
  * permission matrix, workspace access (members and roles), users who have not signed in yet, the audit log and the
  * sign-in settings. Only administrators see this page.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle', 'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, ui, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojarraydataprovider',
+        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle', 'ojs/ojswitch'],
+  function (ko, accUtils, api, session, ui, toast, dialog, ArrayDataProvider) {
     const PERMISSIONS = {
       ANALYST: 'view, comment, requirements, designs',
       DEVELOPER: 'view, comment, SVN and imports, profile, designs',
       LEAD: 'everything, including approvals'
     };
+    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
     const ROLE_PILL = {
-      ADMIN: ui.pill('Administrator', 'red'), LEAD: ui.pill('Lead', 'violet'), DEVELOPER: ui.pill('Developer', 'blue'),
-      ANALYST: ui.pill('Business Analyst', 'green'), NONE: ui.pill('No role yet', 'grey')
+      ADMIN: badge('Administrator', 'danger'), LEAD: badge('Lead', 'violet'), DEVELOPER: badge('Developer', 'primary'),
+      ANALYST: badge('Business Analyst', 'success'), NONE: badge('No role yet', '')
     };
     const RANK = { LEAD: 3, DEVELOPER: 2, ANALYST: 1 };
     const MONTH_MS = 30 * 24 * 3600 * 1000;
@@ -26,37 +27,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
     const ROLE_NAME = { LEAD: 'Lead', DEVELOPER: 'Developer', ANALYST: 'Business Analyst' };
 
-    /** Pages of a list with numbered page buttons and a page size: {rows, page, pages, text, prev, next, buttons, sizeChange}. */
-    function numberedPager(list, initialSize) {
-      const size = ko.observable(initialSize);
-      const page = ko.observable(1);
-      const pages = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
-      const current = ko.pureComputed(() => Math.min(page(), pages()));
-      const rows = ko.pureComputed(() => ko.unwrap(list).slice((current() - 1) * size(), current() * size()));
-      const text = ko.pureComputed(() => {
-        const total = ko.unwrap(list).length;
-        return total === 0 ? 'Showing 0' : 'Showing ' + ((current() - 1) * size() + 1) + ' to ' + Math.min(total, current() * size()) + ' of ' + total;
-      });
-      const buttons = ko.pureComputed(() => {
-        const out = [];
-        for (let n = 1; n <= pages(); n++) {
-          out.push({ n: n, css: 'factory-ad-pg' + (n === current() ? ' factory-ad-pg-on' : ''), pick: () => page(n) });
-        }
-        return out;
-      });
-      return {
-        rows: rows, page: current, pages: pages, text: text, buttons: buttons,
-        prev: () => page(Math.max(1, current() - 1)),
-        next: () => page(Math.min(pages(), current() + 1)),
-        sizeChange: (event) => { size(Number(event.target.value) || initialSize); page(1); }
-      };
-    }
-
     function AdminViewModel() {
+      // Loading failures stay on the page; the result of an action is a toast
       this.errorMessage = ko.observable('');
-      this.infoMessage = ko.observable('');
-      const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); };
-      const showInfo = (text) => { this.errorMessage(''); this.infoMessage(text); };
+      const showError = (error) => this.errorMessage(error.message);
+      const actionError = (error) => toast.error(error.message);
+      this.busy = ko.observable(false);
+      this.busyCss = ko.pureComputed(() => 'fx-btn fx-btn--primary' + (this.busy() ? ' is-loading' : ''));
+      const run = (promise) => { this.busy(true); return promise.finally(() => this.busy(false)); };
       this.tab = ko.observable('users');
 
       this.localMode = ko.pureComputed(() => !session.config() || session.config().mode === 'local');
@@ -98,44 +76,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.search(''); this.roleFilter(''); this.statusFilter(''); this.workspaceFilter('');
       };
       // A steady avatar colour per person, picked from the name
-      const AVATAR_COLORS = ['#1e40af', '#7c3aed', '#0f766e', '#c2410c', '#be185d', '#15803d', '#0369a1', '#a16207', '#4338ca', '#b91c1c'];
-      const avatarStyle = (name) => {
-        let h = 0;
-        String(name || '').split('').forEach((c) => { h = (h * 31 + c.charCodeAt(0)) % 997; });
-        return { background: AVATAR_COLORS[h % AVATAR_COLORS.length] };
-      };
+      const avatarCss = (name) => ui.avatarTone(name) + ' fx-avatar--sm factory-ad-avatar';
       this.users = ko.pureComputed(() => rawUsers().map((u) => {
         const role = roleOf(u);
         const list = memberships()[u.id] || [];
+        const menu = ui.menu();
         return Object.assign({}, u, {
-          initials: ui.initials(u.displayName || u.username), avatarStyle: avatarStyle(u.username), role: role, rolePill: ROLE_PILL[role] || ROLE_PILL.NONE,
+          initials: ui.initials(u.displayName || u.username), avatarCss: avatarCss(u.username), role: role, rolePill: ROLE_PILL[role] || ROLE_PILL.NONE,
           workspaceText: u.admin ? 'All (' + workspaces().length + ')' : list.length === 1 ? '1 workspace' : list.length + ' workspaces',
           workspaceIds: list.map((m) => m.workspace),
-          status: u.enabled ? ui.pill('Active', 'green') : ui.pill('Inactive', 'red'),
+          status: u.enabled ? badge('Active', 'success') : badge('Inactive', 'danger'),
           lastLogin: u.lastLoginAt ? ui.when(u.lastLoginAt) : 'Never',
-          action: (event) => {
-            const value = event.detail.selectedValue;
-            if (value === 'admin') {
-              updateUser(u.id, { admin: !u.admin });
-            } else if (value === 'enabled') {
-              updateUser(u.id, { enabled: !u.enabled });
-            } else if (value === 'password') {
-              const password = window.prompt('New password for ' + u.username + ' (at least 12 characters):');
-              if (password) {
-                api.post('admin/users/' + u.id + '/password', { newPassword: password })
-                  .then(() => showInfo('Password of ' + u.username + ' reset. Tell them to change it after signing in.'))
-                  .catch(showError);
-              }
-            } else if (value === 'access') {
-              this.memberUserId(u.id);
-              this.tab('access');
+          menu: menu,
+          doAdmin: () => {
+            menu.close();
+            dialog.confirm({
+              title: u.admin ? 'Remove administrator?' : 'Make administrator?',
+              message: u.admin ? u.username + ' keeps only the roles they have in workspaces.' : u.username + ' can then see every workspace and manage users.',
+              confirmLabel: u.admin ? 'Remove administrator' : 'Make administrator', danger: u.admin
+            }).then((ok) => ok && updateUser(u.id, { admin: !u.admin }, u.username + (u.admin ? ' is no longer an administrator.' : ' is now an administrator.')));
+          },
+          doEnabled: () => {
+            menu.close();
+            const go = () => updateUser(u.id, { enabled: !u.enabled }, u.username + (u.enabled ? ' deactivated.' : ' activated.'));
+            if (u.enabled) {
+              dialog.confirm({ title: 'Deactivate ' + u.username + '?', message: 'They can no longer sign in until you activate them again.', confirmLabel: 'Deactivate', danger: true })
+                .then((ok) => ok && go());
+            } else {
+              go();
             }
           },
+          doPassword: () => { menu.close(); this.resetPassword(''); this.resetUser(u); },
+          doAccess: () => { menu.close(); this.memberUserId(u.id); this.tab('access'); },
           adminLabel: u.admin ? 'Remove administrator' : 'Make administrator',
           enabledLabel: u.enabled ? 'Deactivate' : 'Activate',
           isLocal: u.source === 'LOCAL',
           isSelected: ko.pureComputed(() => this.selected.indexOf(u.id) >= 0),
-          rowCss: ko.pureComputed(() => (this.selected.indexOf(u.id) >= 0 ? 'factory-ad-picked' : '')),
+          rowCss: ko.pureComputed(() => (this.selected.indexOf(u.id) >= 0 ? 'is-selected' : '')),
           toggle: (event) => { if (event.target.checked) { this.selected.push(u.id); } else { this.selected.remove(u.id); } return true; }
         });
       }));
@@ -146,7 +123,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (!this.statusFilter() || (this.statusFilter() === 'active') === u.enabled)
           && (!this.workspaceFilter() || u.admin || u.workspaceIds.indexOf(this.workspaceFilter()) >= 0));
       });
-      this.userPager = numberedPager(this.visibleUsers, 10);
+      this.userPager = ui.pages(this.visibleUsers, 10, [10, 25, 50]);
       this.allSelected = ko.pureComputed(() => this.userPager.rows().length > 0 && this.userPager.rows().every((u) => this.selected.indexOf(u.id) >= 0));
       this.toggleAll = (event) => {
         const ids = this.userPager.rows().map((u) => u.id);
@@ -158,13 +135,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const all = rawUsers();
         const active = all.filter((u) => u.enabled).length;
         const recent = all.filter((u) => Date.now() - new Date(u.createdAt).getTime() < MONTH_MS).length;
+        const showUsers = (status) => () => {
+          this.tab('users');
+          this.statusFilter(status);
+          window.setTimeout(() => { const el = document.getElementById('statusFilter'); if (el) { el.value = status; } }, 0);
+        };
         return [
-          { label: 'Total Users', value: all.length, sub: '↑ ' + recent + ' this month', css: 'factory-kpi-sub factory-up', tone: 'blue', icon: 'user' },
-          { label: 'Active Users', value: active, sub: (all.length ? Math.round(100 * active / all.length) : 0) + '% of total', css: 'factory-kpi-sub', tone: 'blue', icon: 'user' },
-          { label: 'Roles', value: 4, sub: '3 workspace roles', css: 'factory-kpi-sub', tone: 'violet', icon: 'shield' },
-          { label: 'Workspaces', value: workspaces().length, sub: Object.keys(memberships()).length + ' users with access', css: 'factory-kpi-sub', tone: 'green', icon: 'folder' },
-          { label: 'Not Signed In Yet', value: this.invited().length, sub: 'View users →', css: 'factory-kpi-sub factory-link', tone: 'amber', icon: 'clock', valueCss: 'factory-kpi-value factory-ad-orange', open: () => this.tab('invitations') }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, valueCss: k.valueCss || 'factory-kpi-value', open: k.open || (() => null) }));
+          { label: 'Total Users', value: all.length, sub: '↑ ' + recent + ' this month', css: 'factory-ad-kpisub fx-trend--up', tone: 'primary', icon: 'user', open: showUsers(''), target: 'show all users' },
+          { label: 'Active Users', value: active, sub: (all.length ? Math.round(100 * active / all.length) : 0) + '% of total', tone: 'info', icon: 'user', open: showUsers('active'), target: 'show active users' },
+          { label: 'Roles', value: 4, sub: '3 workspace roles', tone: 'violet', icon: 'shield', open: () => this.tab('roles'), target: 'show roles and permissions' },
+          { label: 'Workspaces', value: workspaces().length, sub: Object.keys(memberships()).length + ' users with access', tone: 'success', icon: 'folder', open: () => this.tab('access'), target: 'show workspace access' },
+          { label: 'Not Signed In Yet', value: this.invited().length, sub: 'View users →', css: 'factory-ad-kpisub factory-ad-kpilink', tone: 'warning', icon: 'clock', valueCss: 'fx-kpi-value factory-ad-warn', open: () => this.tab('invitations'), target: 'show users who have not signed in' }
+        ].map((k) => Object.assign(k, {
+          cardCss: 'fx-card fx-card--interactive fx-kpi factory-ad-kpi', aria: k.label + ' ' + k.value + ', ' + k.target,
+          iconCss: 'fx-kpi-icon factory-ad-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon,
+          valueCss: k.valueCss || 'fx-kpi-value', css: k.css || 'factory-ad-kpisub'
+        }));
       });
       this.tabs = ui.tabs(this.tab, [
         { value: 'users', label: 'Users', icon: 'user' }, { value: 'roles', label: 'Roles & Permissions', icon: 'shield' },
@@ -203,7 +189,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const a = ACTIVITY[e.action];
         return {
           title: a.title, text: activityText(e), when: ui.when(e.at),
-          iconCss: 'factory-kpi-icon factory-ad-acticon factory-ov2-icon-' + ({ green: 'green', blue: 'blue', amber: 'amber', red: 'red', violet: 'violet' }[a.tone]),
+          iconCss: 'fx-kpi-icon factory-ad-acticon factory-ad-tone-' + ({ green: 'success', blue: 'primary', amber: 'warning', red: 'danger', violet: 'violet' }[a.tone]),
           iconClass: 'factory-nav-icon factory-ico-' + a.icon
         };
       }));
@@ -216,7 +202,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           return Object.assign({}, e, { when: ui.when(e.at), workspace: workspace ? workspace.label : (e.workspaceId ? 'deleted workspace' : '') });
         }).filter((e) => !text || (e.action + ' ' + (e.username || '') + ' ' + (e.target || '') + ' ' + (e.detail || '')).toLowerCase().indexOf(text) >= 0);
       });
-      this.auditPager = ui.pager(this.auditEvents, 15);
+      this.auditPager = ui.pages(this.auditEvents, 15, [15, 30, 50]);
 
       // Add user
       this.adding = ko.observable(false);
@@ -228,6 +214,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.newPassword = ko.observable('');
       this.newAdmin = ko.observable(false);
 
+      // Reset password (factory accounts only)
+      this.resetUser = ko.observable(null);
+      this.resetPassword = ko.observable('');
+      this.cancelReset = () => { this.resetUser(null); this.resetPassword(''); };
+      this.savePassword = () => {
+        const u = this.resetUser();
+        return run(api.post('admin/users/' + u.id + '/password', { newPassword: this.resetPassword() }))
+          .then(() => { toast.success('Password of ' + u.username + ' reset. Tell them to change it after signing in.'); this.cancelReset(); loadAudit(); })
+          .catch(actionError);
+      };
+
       // Workspace access
       const userOptions = ko.observableArray([]);
       rawUsers.subscribe((list) => userOptions(list.filter((u) => u.enabled && !u.admin).map((u) => ({ value: u.id, label: u.displayName + ' (' + u.username + ')' }))));
@@ -237,9 +234,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.memberWorkspaceId = ko.observable(null);
       const rawMembers = ko.observableArray([]);
       this.members = ko.pureComputed(() => rawMembers().map((m) => ({
-        label: m.displayName + ' (' + m.username + ')', initials: ui.initials(m.displayName || m.username), avatarStyle: avatarStyle(m.username),
+        label: m.displayName + ' (' + m.username + ')', initials: ui.initials(m.displayName || m.username), avatarCss: avatarCss(m.username),
         rolePill: ROLE_PILL[m.role], can: PERMISSIONS[m.role],
-        removeAction: () => api.del('workspaces/' + this.memberWorkspaceId() + '/members/' + m.userId).then((list) => { rawMembers(list); loadAllMembers(); }).catch(showError)
+        removeAction: () => {
+          const workspaceId = this.memberWorkspaceId();
+          const workspace = workspaces().find((w) => w.value === workspaceId);
+          dialog.confirm({
+            title: 'Remove ' + m.username + ' from this workspace?',
+            message: 'They no longer see ' + (workspace ? workspace.label : 'this workspace') + '. You can give access again later.',
+            confirmLabel: 'Remove', danger: true
+          }).then((ok) => ok && api.del('workspaces/' + workspaceId + '/members/' + m.userId)
+            .then((list) => { rawMembers(list); loadAllMembers(); loadAudit(); toast.success(m.username + ' removed from the workspace.'); })
+            .catch(actionError));
+        }
       })));
       this.memberUserId = ko.observable(null);
       this.memberRole = ko.observable('ANALYST');
@@ -258,22 +265,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
       this.memberWorkspaceId.subscribe(loadMembers);
 
-      const updateUser = (id, change) => api.put('admin/users/' + id, change)
-        .then(() => { loadUsers(); loadAudit(); })
-        .catch(showError);
-      this.addUser = () => api.post('admin/users', {
+      const updateUser = (id, change, done) => api.put('admin/users/' + id, change)
+        .then(() => { toast.success(done); loadUsers(); loadAudit(); })
+        .catch(actionError);
+      this.addUser = () => run(api.post('admin/users', {
         username: this.newUsername(), displayName: this.newDisplayName() || null, email: this.newEmail() || null,
         password: this.localMode() ? this.newPassword() : null, admin: this.newAdmin()
-      }).then((user) => {
-        showInfo('User ' + user.username + ' added.');
+      })).then((user) => {
+        toast.success('User ' + user.username + ' added.');
         this.newUsername(''); this.newDisplayName(''); this.newEmail(''); this.newPassword(''); this.newAdmin(false);
         this.adding(false);
         loadUsers();
         loadAudit();
-      }).catch(showError);
-      this.setMember = () => api.put('workspaces/' + this.memberWorkspaceId() + '/members/' + this.memberUserId(), { role: this.memberRole() })
-        .then((members) => { rawMembers(members); this.memberUserId(null); loadAudit(); loadAllMembers(); })
-        .catch(showError);
+      }).catch(actionError);
+      this.setMember = () => {
+        const user = rawUsers().find((u) => u.id === this.memberUserId());
+        return run(api.put('workspaces/' + this.memberWorkspaceId() + '/members/' + this.memberUserId(), { role: this.memberRole() }))
+          .then((members) => {
+            rawMembers(members); this.memberUserId(null); loadAudit(); loadAllMembers();
+            toast.success((user ? user.username : 'The user') + ' now has access as ' + ROLE_NAME[this.memberRole()] + '.');
+          })
+          .catch(actionError);
+      };
 
       this.connected = () => {
         accUtils.announce('Administration page loaded.');

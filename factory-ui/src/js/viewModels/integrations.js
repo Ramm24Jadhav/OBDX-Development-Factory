@@ -5,52 +5,27 @@
  * settings this factory runs with. Credentials stay on the server and are never shown.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard', '../services/workspaceSelection',
-        '../services/ui', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, dashboard, workspaceSelection, ui) {
+        '../services/ui', '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, dashboard, workspaceSelection, ui, toast) {
     const TYPES = {
       svn: { label: 'Source Control', tone: 'violet', icon: 'branch' },
-      jenkins: { label: 'CI / CD', tone: 'red', icon: 'cog' },
-      model: { label: 'Model Provider', tone: 'blue', icon: 'chip' },
-      other: { label: 'Other Tools', tone: 'grey', icon: 'plug' }
+      jenkins: { label: 'CI / CD', tone: 'danger', icon: 'cog' },
+      model: { label: 'Model Provider', tone: 'primary', icon: 'chip' },
+      other: { label: 'Other Tools', tone: 'neutral', icon: 'plug' }
     };
     const HEALTH_ICON = { svn: 'branch', jenkins: 'rocket', model: 'chip', other: 'plug' };
-    const HEALTH_TONE = { svn: 'violet', jenkins: 'red', model: 'blue', other: 'grey' };
+    const HEALTH_TONE = { svn: 'violet', jenkins: 'danger', model: 'primary', other: 'neutral' };
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
-    const copy = (text) => { if (navigator.clipboard && text) { navigator.clipboard.writeText(text).catch(() => null); } };
+    const copy = (text) => { if (text) { ui.copy(text).then(() => toast.success('Server URL copied.')).catch(() => toast.error('The browser did not allow copying. Select the URL in the details and copy it.')); } };
+    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
     // Long URLs and paths keep their start and end
     const middle = (text, max) => (!text || text.length <= max ? text : text.slice(0, Math.ceil(max * 0.45)) + '…' + text.slice(-Math.floor(max * 0.55)));
     // Hyphens in names do not break lines
     const keep = (text) => (text || '').replace(/-/g, '‑');
 
-    /** Pages of a list with numbered page buttons and a page size. */
-    function numberedPager(list, initialSize) {
-      const size = ko.observable(initialSize);
-      const page = ko.observable(1);
-      const pages = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
-      const current = ko.pureComputed(() => Math.min(page(), pages()));
-      const rows = ko.pureComputed(() => ko.unwrap(list).slice((current() - 1) * size(), current() * size()));
-      const text = ko.pureComputed(() => {
-        const total = ko.unwrap(list).length;
-        return total === 0 ? 'Showing 0' : 'Showing ' + ((current() - 1) * size() + 1) + ' to ' + Math.min(total, current() * size()) + ' of ' + total;
-      });
-      const buttons = ko.pureComputed(() => {
-        const out = [];
-        for (let n = 1; n <= pages(); n++) {
-          out.push({ n: n, css: 'factory-in-pg' + (n === current() ? ' factory-in-pg-on' : ''), pick: () => page(n) });
-        }
-        return out;
-      });
-      return {
-        rows: rows, page: current, pages: pages, text: text, buttons: buttons,
-        prev: () => page(Math.max(1, current() - 1)),
-        next: () => page(Math.min(pages(), current() + 1)),
-        sizeChange: (event) => { size(Number(event.target.value) || initialSize); page(1); }
-      };
-    }
-
     const buildRow = (b) => ({
       number: b.buildNumber ? '#' + b.buildNumber : '–', branch: b.branchUrl ? b.branchUrl.split('/').slice(-2).join('/') : 'patch', at: b.startedAt,
-      pill: b.result === 'SUCCESS' ? ui.pill('Success', 'green') : (b.result === 'RUNNING' || b.result === 'QUEUED' || !b.result) ? ui.pill('Running', 'blue') : ui.pill('Failed', 'red'),
+      pill: b.result === 'SUCCESS' ? badge('Success', 'success') : (b.result === 'RUNNING' || b.result === 'QUEUED' || !b.result) ? badge('Running', 'info') : badge('Failed', 'danger'),
       started: ui.when(b.startedAt), duration: dashboard.duration(b.startedAt, b.finishedAt) || '–'
     });
 
@@ -139,9 +114,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const state = t ? (t.ok ? 'connected' : 'issue') : i.baseState;
           const type = TYPES[i.type];
           return Object.assign(i, {
-            state: state, typeLabel: type.label, typeCss: 'factory-ov-pill factory-ov-pill-' + type.tone,
-            iconCss: 'factory-kpi-icon factory-in-logo factory-ov2-icon-' + type.tone, iconClass: 'factory-nav-icon factory-ico-' + type.icon,
-            pill: state === 'connected' ? ui.pill('Connected', 'green') : state === 'configured' ? ui.pill('Configured', 'blue') : state === 'issue' ? ui.pill('Connection Issue', 'amber') : ui.pill('Inactive', 'grey'),
+            state: state, typeLabel: type.label, typeCss: 'fx-badge fx-badge--plain' + (type.tone === 'neutral' ? '' : ' fx-badge--' + type.tone),
+            iconCss: 'fx-kpi-icon factory-in-logo factory-in-tone-' + type.tone, iconClass: 'factory-nav-icon factory-ico-' + type.icon,
+            pill: state === 'connected' ? badge('Connected', 'success') : state === 'configured' ? badge('Configured', 'info') : state === 'issue' ? badge('Connection Issue', 'warning') : badge('Inactive', ''),
             last: t ? ui.when(t.at) : (i.lastAt ? ui.when(i.lastAt) : '–'), testText: t ? t.text : '',
             descText: keep(i.description), wsShort: i.workspace === 'All workspaces' ? 'All' : keep(i.workspace),
             targetShort: middle(i.target, 40), targetWrap: middle(i.target, 70), hasTarget: !!i.target && i.target !== 'Not set' && i.target !== 'Not set up',
@@ -156,12 +131,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const active = count('connected') + count('configured');
         const issue = this.items().find((i) => i.state === 'issue');
         return [
-          { label: 'Total Integrations', value: this.items().length, sub: dashboard.data().length + ' workspaces', css: 'factory-kpi-sub', tone: 'blue', icon: 'link' },
-          { label: 'Active', value: active, sub: Math.round(100 * active / total) + '% of total', css: 'factory-kpi-sub', tone: 'green', icon: 'check' },
-          { label: 'Inactive', value: count('inactive'), sub: Math.round(100 * count('inactive') / total) + '% of total', css: 'factory-kpi-sub', tone: 'red', icon: 'x' },
-          { label: 'Needs Attention', value: count('issue'), sub: issue ? issue.name + ': ' + issue.workspace : 'Nothing', css: 'factory-kpi-sub factory-warn', tone: 'amber', icon: 'clock' },
-          { label: 'Environments', value: 1, sub: 'This factory', css: 'factory-kpi-sub', tone: 'violet', icon: 'cog' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+          { label: 'Total Integrations', value: this.items().length, sub: dashboard.data().length + ' workspaces', tone: 'primary', icon: 'link' },
+          { label: 'Active', value: active, sub: Math.round(100 * active / total) + '% of total', tone: 'success', icon: 'check' },
+          { label: 'Inactive', value: count('inactive'), sub: Math.round(100 * count('inactive') / total) + '% of total', tone: 'danger', icon: 'x', open: () => this.showStatus('inactive') },
+          { label: 'Needs Attention', value: count('issue'), sub: issue ? issue.name + ': ' + issue.workspace : 'Nothing', css: 'factory-in-kpisub' + (issue ? ' factory-in-kpiwarn' : ''), tone: 'warning', icon: 'clock',
+            open: issue ? () => this.showStatus('issue') : null },
+          { label: 'Environments', value: 1, sub: 'This factory', tone: 'violet', icon: 'cog', open: () => this.tab('environments') }
+        ].map((k) => Object.assign(k, {
+          iconCss: 'fx-kpi-icon factory-in-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, css: k.css || 'factory-in-kpisub', open: k.open || null
+        }));
       });
 
       // Tabs, filters, selection and pages
@@ -197,7 +175,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
       this.emptyText = ko.pureComputed(() => (this.tab() === 'other' || this.typeFilter() === 'other'
         ? 'The factory does not connect other tools (code quality, chat notifications) yet.' : 'No integrations match.'));
-      this.pager = numberedPager(this.visible, 10);
+      this.pager = ui.pages(this.visible, 10, [10, 25, 50]);
       this.checked = ko.observableArray([]);
       this.allSelected = ko.pureComputed(() => this.pager.rows().length > 0 && this.pager.rows().every((i) => this.checked.indexOf(i.key) >= 0));
       this.toggleAll = (event) => {
@@ -213,10 +191,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ]);
       const pick = (key) => { this.selectedKey(key); this.detailTab('overview'); };
       this.testing = ko.observable(false);
+      this.testCss = ko.pureComputed(() => 'fx-btn fx-btn--primary fx-btn--block' + (this.testing() ? ' is-loading' : ''));
       const test = (i) => {
         if (i && i.test) {
           this.testing(true);
-          i.test().finally(() => this.testing(false));
+          i.test().then(() => {
+            const result = tests()[i.key];
+            if (result && result.ok) {
+              toast.success(i.name + ' (' + i.workspace + '): ' + result.text);
+            } else if (result) {
+              toast.error(i.name + ' (' + i.workspace + '): the test failed. See the details for what to check.');
+            }
+          }).finally(() => this.testing(false));
         }
       };
       const edit = (i) => {
@@ -227,30 +213,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           navigate(i.open);
         }
       };
-      this.rows = ko.pureComputed(() => this.pager.rows().map((i) => Object.assign({}, i, {
-        css: this.selected() && this.selected().key === i.key ? 'factory-clickable factory-row-sel' : 'factory-clickable', pick: () => pick(i.key),
-        isSelected: ko.pureComputed(() => this.checked.indexOf(i.key) >= 0),
-        toggle: (event) => { if (event.target.checked) { this.checked.push(i.key); } else { this.checked.remove(i.key); } },
-        stop: (event) => event.stopPropagation(),
-        action: (event) => {
-          const value = event.detail.selectedValue;
-          if (value === 'details') {
-            pick(i.key);
-          } else if (value === 'test') {
-            pick(i.key);
-            test(i);
-          } else if (value === 'edit') {
-            edit(i);
-          } else if (value === 'copy') {
-            copy(i.target);
-          }
-        }
-      })));
+      this.rows = ko.pureComputed(() => this.pager.rows().map((i) => {
+        const menu = ui.menu();
+        return Object.assign({}, i, {
+          css: (this.selected() && this.selected().key === i.key ? 'factory-clickable is-selected' : 'factory-clickable') + (this.checked.indexOf(i.key) >= 0 ? ' factory-in-checked' : ''),
+          pick: () => pick(i.key),
+          isSelected: ko.pureComputed(() => this.checked.indexOf(i.key) >= 0),
+          toggle: (event) => { if (event.target.checked) { this.checked.push(i.key); } else { this.checked.remove(i.key); } return true; },
+          stop: (event) => { event.stopPropagation(); return true; },
+          menu: menu,
+          doDetails: () => { menu.close(); pick(i.key); },
+          doTest: () => { menu.close(); pick(i.key); test(i); },
+          doEdit: () => { menu.close(); edit(i); },
+          doCopy: () => { menu.close(); copy(i.target); }
+        });
+      }));
       this.selected = ko.pureComputed(() => this.items().find((i) => i.key === this.selectedKey()) || this.items().find((i) => i.state === 'issue') || this.items()[0] || null);
       this.testSelected = () => test(this.selected());
       this.editSelected = () => edit(this.selected());
-      this.detailAction = (event) => {
-        const value = event.detail.selectedValue;
+      const detailAction = (menu) => (value) => () => {
+        menu.close();
         if (value === 'copy') {
           copy(this.selected() && this.selected().target);
         } else if (value === 'edit') {
@@ -259,6 +241,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.detailTab(value);
         }
       };
+      this.headMenu = ui.menu();
+      this.moreMenu = ui.menu();
+      const headDo = detailAction(this.headMenu);
+      const moreDo = detailAction(this.moreMenu);
+      this.headDo = { copy: headDo('copy'), edit: headDo('edit'), troubleshooting: headDo('troubleshooting') };
+      this.moreDo = { copy: moreDo('copy'), history: moreDo('history'), troubleshooting: moreDo('troubleshooting') };
 
       // Recent Jenkins builds: of the selected workspace, or of every workspace for shared integrations
       this.builds = ko.pureComputed(() => {
@@ -281,12 +269,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const ok = list.filter((i) => i.state === 'connected' || i.state === 'configured').length;
         const pct = list.length ? Math.round(100 * ok / list.length) : 0;
         return {
-          name: TYPES[t].label, text: ok + ' / ' + list.length, pct: list.length ? pct + '%' : '–', style: { width: pct + '%' },
-          barCss: 'factory-ov2-bar-fill ' + (pct >= 100 ? 'factory-ov2-fill-green' : pct >= 50 ? 'factory-ov2-fill-amber' : 'factory-in-fill-red'),
-          iconCss: 'factory-in-hicon factory-ov2-icon-' + HEALTH_TONE[t], iconClass: 'factory-nav-icon factory-ico-' + HEALTH_ICON[t]
+          name: TYPES[t].label, text: ok + ' / ' + list.length, pct: list.length ? pct + '%' : '–', style: { width: pct + '%' }, value: pct,
+          barCss: 'fx-progress factory-in-hbar' + (!list.length ? '' : pct >= 100 ? ' fx-progress--success' : pct >= 50 ? ' fx-progress--warning' : ' fx-progress--danger'),
+          iconCss: 'factory-in-hicon factory-in-tone-' + HEALTH_TONE[t], iconClass: 'factory-nav-icon factory-ico-' + HEALTH_ICON[t]
         };
       }));
-      this.healthDetails = () => { this.resetFilters(); this.statusFilter('inactive'); const el = document.getElementById('intStatus'); if (el) { el.value = 'inactive'; } };
+      this.showStatus = (status) => { this.resetFilters(); this.statusFilter(status); const el = document.getElementById('intStatus'); if (el) { el.value = status; } };
+      this.healthDetails = () => this.showStatus('inactive');
 
       // The environment this factory runs with
       this.envRows = ko.pureComputed(() => {
@@ -313,10 +302,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
       // Add Integration
       this.addDefault = () => navigate('code');
-      this.openAddMenu = (event) => document.getElementById('addIntegrationMenu').open(event, {
-        launcher: document.getElementById('addIntegrationMore'), position: { my: { horizontal: 'end', vertical: 'top' }, at: { horizontal: 'end', vertical: 'bottom' } }
-      });
-      this.addAction = (event) => navigate(event.detail.selectedValue === 'model' ? 'models' : 'code');
+      this.addMenu = ui.menu();
+      const addTo = (page) => () => { this.addMenu.close(); navigate(page); };
+      this.addDo = { svn: addTo('code'), jenkins: addTo('code'), model: addTo('models') };
 
       this.connected = () => {
         accUtils.announce('Integrations page loaded.');

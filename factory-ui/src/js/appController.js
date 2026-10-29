@@ -50,6 +50,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'setup' } },
         { path: 'notifications', detail: { label: 'Notifications', icon: 'bell', group: 'setup' } },
         { path: 'account', detail: { label: 'Account', icon: 'user', group: 'setup' } },
+        { path: 'design', detail: { label: 'Design System', icon: 'design', group: 'setup' } },
         { path: 'about', detail: { label: 'About', icon: 'info', group: 'setup' } },
         // Opened from the Code and Changes pages
         { path: 'knowledge', detail: { label: 'Knowledge Explorer', hidden: true, parent: 'code' } },
@@ -183,6 +184,15 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.openHelp = (event) => {
         event.preventDefault();
         router.go({ path: 'about' });
+      };
+      // Light or dark theme (also in Account & Preferences)
+      this.toggleTheme = () => preferences.toggleTheme();
+      this.themeLabel = ko.pureComputed(() => (preferences.theme() && preferences.isDark() ? 'Use the light theme' : 'Use the dark theme'));
+      this.themeIcon = ko.pureComputed(() => 'factory-nav-icon ' + (preferences.theme() && preferences.isDark() ? 'factory-ico-sun' : 'factory-ico-moon'));
+      this.openNewRequirement = (event) => {
+        event.preventDefault();
+        router.go({ path: 'requirements' });
+        this.sidebarOpen(false);
       };
       this.openNotifications = (event) => {
         event.preventDefault();

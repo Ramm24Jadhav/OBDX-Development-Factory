@@ -6,14 +6,17 @@
  * delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojfilepicker', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui) {
+        '../services/dialog', '../services/toast', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojfilepicker', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const POLL_MS = 2000;
-    const STATUS = { PROCESSING: ui.pill('In Progress', 'blue'), READY: ui.pill('In Review', 'amber'), APPROVED: ui.pill('Approved', 'green'), FAILED: ui.pill('Failed', 'red') };
-    const DESIGN = { DRAFT: ui.pill('Draft', 'grey'), IN_REVIEW: ui.pill('In Review', 'amber'), APPROVED: ui.pill('Approved', 'green') };
+    // A status badge (design system fx-badge, with a dot) from the older tone names
+    const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (TONES[tone] ? ' fx-badge--' + TONES[tone] : '') });
+    const STATUS = { PROCESSING: pill('In Progress', 'blue'), READY: pill('In Review', 'amber'), APPROVED: pill('Approved', 'green'), FAILED: pill('Failed', 'red') };
+    const DESIGN = { DRAFT: pill('Draft', 'grey'), IN_REVIEW: pill('In Review', 'amber'), APPROVED: pill('Approved', 'green') };
     const CHANGE = {
-      ANALYZING: ui.pill('Analyzing', 'blue'), PLAN_READY: ui.pill('Plan ready', 'amber'), GENERATING: ui.pill('Generating', 'blue'),
-      GENERATED: ui.pill('Generated', 'amber'), DELIVERED: ui.pill('Delivered', 'green'), FAILED: ui.pill('Failed', 'red'), CLOSED: ui.pill('Closed', 'grey')
+      ANALYZING: pill('Analyzing', 'blue'), PLAN_READY: pill('Plan ready', 'amber'), GENERATING: pill('Generating', 'blue'),
+      GENERATED: pill('Generated', 'amber'), DELIVERED: pill('Delivered', 'green'), FAILED: pill('Failed', 'red'), CLOSED: pill('Closed', 'grey')
     };
     const shortId = (id) => 'REQ-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
     const fileType = (name) => {
@@ -95,7 +98,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         this.moreFilters(!this.moreFilters());
       };
-      this.filterButtonCss = ko.pureComputed(() => 'factory-rq-filterbtn' + (this.moreFilters() ? ' factory-rq-filterbtn-on' : ''));
+      this.filterButtonCss = ko.pureComputed(() => 'fx-btn fx-btn--secondary fx-btn--icon factory-rq-filterbtn' + (this.moreFilters() ? ' factory-rq-filterbtn-on' : ''));
       this.pageMenu = (event) => {
         const value = event.detail.selectedValue;
         if (value === 'refresh') {
@@ -132,15 +135,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.typeText = ko.pureComputed(() => (this.detail() ? fileType(this.detail().fileName) : ''));
       this.modulePill = ko.pureComputed(() => {
         const s = this.spec();
-        return s && s.module ? { text: s.module, css: 'factory-ov-pill factory-rq-module', title: 'Module' }
-          : Object.assign(ui.pill('Module not set', 'grey'), { title: 'The specification does not record a module.' });
+        return s && s.module ? { text: s.module, css: 'fx-badge fx-badge--violet', title: 'Module' }
+          : Object.assign(pill('Module not set', 'grey'), { title: 'The specification does not record a module.' });
       });
       this.priorityPill = ko.pureComputed(() => {
         const s = this.spec();
         const p = s && s.priority ? String(s.priority) : '';
         const tone = /high|critical/i.test(p) ? 'red' : /medium/i.test(p) ? 'amber' : 'grey';
-        return p ? Object.assign(ui.pill(p, tone), { title: 'Priority' })
-          : Object.assign(ui.pill('Not set', 'grey'), { title: 'The specification does not record a priority.' });
+        return p ? Object.assign(pill(p, tone), { title: 'Priority' })
+          : Object.assign(pill('Not set', 'grey'), { title: 'The specification does not record a priority.' });
       });
       this.canEditSpec = ko.pureComputed(() => !!this.spec() && this.canEdit() && this.detail().status !== 'APPROVED');
       this.editBlockedReason = ko.pureComputed(() => {
@@ -227,7 +230,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.rules = ko.pureComputed(() => (this.spec() ? this.spec().businessRules : []));
       this.screens = ko.pureComputed(() => (this.spec() ? this.spec().screens.map((s) => Object.assign({}, s, {
-        kind: s.changeType === 'new' ? ui.pill('New', 'blue') : s.changeType === 'enhance' ? ui.pill('Change', 'amber') : ui.pill('Unknown', 'grey'),
+        kind: s.changeType === 'new' ? pill('New', 'blue') : s.changeType === 'enhance' ? pill('Change', 'amber') : pill('Unknown', 'grey'),
         fieldCount: s.fields.length + ' fields', actionNames: s.actions.map((a) => a.name).join(', '),
         fieldRows: s.fields.map((f) => Object.assign({}, f, {
           mandatoryText: f.mandatory === true ? 'Yes' : f.mandatory === false ? 'No' : 'Not stated',
@@ -253,7 +256,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.attachmentMenu = (event) => {
         if (event.detail.selectedValue === 'copy') {
-          copy(this.detail().documentText || '').catch(showError);
+          copy(this.detail().documentText || '').then(() => toast.success('Text copied.')).catch(failed);
         } else {
           this.showingText(!this.showingText());
         }
@@ -327,14 +330,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return {
             screen: screen.name,
             design: design ? design.name + ' v' + design.currentVersion : 'Not designed yet',
-            designStatus: design ? DESIGN[design.status] : ui.pill('Not started', 'grey'),
+            designStatus: design ? DESIGN[design.status] : pill('Not started', 'grey'),
             code: screen.relatedCode.slice(0, 3).join(', ') || 'No related code found',
             change: this.changes().length ? this.changes().map((c) => c.title).join(', ') : 'No change yet'
           };
         });
       });
       this.changeRows = ko.pureComputed(() => this.changes().map((c) => ({
-        title: c.title, status: CHANGE[c.status] || ui.pill(c.status, 'grey'), files: c.files.length + ' files', updated: day(c.updatedAt),
+        title: c.title, status: CHANGE[c.status] || pill(c.status, 'grey'), files: c.files.length + ' files', updated: day(c.updatedAt),
         open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }))
       })));
       this.designRows = ko.pureComputed(() => this.designs().map((d) => ({
@@ -360,6 +363,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       let pollTimer = null;
       const showError = (error) => this.errorMessage(error.message);
+      // After an action: the error stays on the page and a toast says it failed
+      const failed = (error) => { showError(error); toast.error(error.message); };
 
       const loadList = () => {
         const id = this.workspaceId();
@@ -369,7 +374,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return api.get('workspaces/' + id + '/requirements').then((list) => {
           items(list.map((r) => Object.assign({}, r, {
-            code: shortId(r.id), type: fileType(r.fileName), statusPill: STATUS[r.status] || ui.pill(r.status, 'grey'),
+            code: shortId(r.id), type: fileType(r.fileName), statusPill: STATUS[r.status] || pill(r.status, 'grey'),
             updated: new Date(r.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
             openAction: () => { this.tab('all'); this.open(r.id); }
           })));
@@ -401,7 +406,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           options: options.map((option) => ({
             label: option === q.suggestedAnswer ? option + ' (usual)' : option,
             editable: editable,
-            css: ko.pureComputed(() => 'factory-chip' + (parts().includes(option) ? ' factory-chip-on' : '')),
+            css: ko.pureComputed(() => 'fx-chip' + (parts().includes(option) ? ' is-on' : '')),
             pick: () => {
               const current = answerValue().trim();
               if (!current || options.includes(current)) {
@@ -459,46 +464,48 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         this.busy(true);
         api.upload('workspaces/' + this.workspaceId() + '/requirements', form)
-          .then((detail) => { this.chosenFile(null); this.newTitle(''); this.tab('all'); show(detail); })
-          .catch(showError)
+          .then((detail) => { this.chosenFile(null); this.newTitle(''); this.tab('all'); show(detail); toast.success('Document uploaded. The factory is drafting the specification.'); })
+          .catch(failed)
           .finally(() => this.busy(false));
       };
       this.submitText = () => {
         this.busy(true);
         api.post('workspaces/' + this.workspaceId() + '/requirements/text', { title: this.newTitle() || null, text: this.newText() })
-          .then((detail) => { this.newText(''); this.newTitle(''); this.tab('all'); show(detail); })
-          .catch(showError)
+          .then((detail) => { this.newText(''); this.newTitle(''); this.tab('all'); show(detail); toast.success('Requirement added. The factory is drafting the specification.'); })
+          .catch(failed)
           .finally(() => this.busy(false));
       };
 
       const answers = () => this.questions().map((q, index) => ({ index: index, answer: q.answerValue() }));
       const base = () => 'requirements/' + this.detail().id;
-      this.saveAnswers = () => api.put(base() + '/answers', { answers: answers() }).then(show).catch(showError);
+      this.saveAnswers = () => api.put(base() + '/answers', { answers: answers() }).then((d) => { show(d); toast.success('Answers saved.'); }).catch(failed);
       this.refine = () => api.put(base() + '/answers', { answers: answers() })
         .then(() => api.post(base() + '/refine'))
-        .then(show)
-        .catch(showError);
-      this.approve = () => api.post(base() + '/approve').then(show).catch(showError);
-      this.retry = () => api.post(base() + '/retry').then(show).catch(showError);
+        .then((d) => { show(d); toast.info('Updating the specification with the answers.'); })
+        .catch(failed);
+      this.approve = () => api.post(base() + '/approve').then((d) => { show(d); toast.success('Requirement approved.'); }).catch(failed);
+      this.retry = () => api.post(base() + '/retry').then((d) => { show(d); toast.info('Drafting the specification again.'); }).catch(failed);
       this.remove = () => {
-        if (!window.confirm('Delete this requirement and its drafted spec?')) {
-          return;
-        }
-        api.del(base()).then(() => { this.detail(null); loadList(); }).catch(showError);
+        dialog.confirm({ title: 'Delete this requirement?', message: 'The requirement and its drafted specification are deleted. This cannot be undone.', confirmLabel: 'Delete', danger: true }).then((ok) => {
+          if (!ok) {
+            return;
+          }
+          api.del(base()).then(() => { this.detail(null); loadList(); toast.success('Requirement deleted.'); }).catch(failed);
+        });
       };
       this.toggleJson = () => {
         this.editingJson(!this.editingJson());
         this.specJson(this.editingJson() && this.spec() ? JSON.stringify(this.spec(), null, 2) : '');
       };
       this.saveJson = () => api.put(base() + '/spec', this.specJson())
-        .then((detail) => { this.editingJson(false); show(detail); })
-        .catch(showError);
+        .then((detail) => { this.editingJson(false); show(detail); toast.success('Specification saved.'); })
+        .catch(failed);
       this.makeScreens = () => api.post(base() + '/designs')
-        .then(() => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' })))
-        .catch(showError);
+        .then(() => { toast.success('Screens are being made in the designer.'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' })); })
+        .catch(failed);
       this.planChange = () => api.post(base() + '/changes')
-        .then(() => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' })))
-        .catch(showError);
+        .then(() => { toast.success('Change planned.'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' })); })
+        .catch(failed);
       this.detailMenu = (event) => {
         const value = event.detail.selectedValue;
         if (value === 'screens') {
@@ -506,7 +513,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         } else if (value === 'change') {
           this.planChange();
         } else if (value === 'copy') {
-          copy(JSON.stringify(this.spec(), null, 2)).catch(showError);
+          copy(JSON.stringify(this.spec(), null, 2)).then(() => toast.success('Specification copied.')).catch(failed);
         } else if (value === 'delete') {
           this.remove();
         }

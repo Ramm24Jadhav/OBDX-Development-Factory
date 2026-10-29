@@ -5,8 +5,15 @@
  * each recipe applies to. Recipes are changed in the team's version pack files (FACTORY_PACKS_DIR), not on this page,
  * and have no review or retirement steps, so nothing is under review or deprecated.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/updates', '../services/ui', 'ojs/ojknockout', 'ojs/ojbutton'],
-  function (ko, accUtils, api, workspaceSelection, updates, ui) {
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/updates', '../services/ui', '../services/toast',
+        '../services/preferences', 'ojs/ojknockout', 'ojs/ojbutton'],
+  function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences) {
+    // Badges (design system .fx-badge): statuses carry a dot, categories are plain labels
+    const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
+    const badgeCss = (tone) => 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '');
+    const pill = (text, tone) => ({ text: text, css: badgeCss(tone) });
+    /** The current value of a design token, for the preview frame (its own document cannot read the page's variables). */
+    const token = (name, fallback) => (window.getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
     const CATEGORY = { ui: 'UI Generation', service: 'Code Generation', integration: 'API Generation', data: 'Database Script', test: 'Test Generation', config: 'Configuration' };
     const TONE = { 'UI Generation': 'blue', 'Code Generation': 'blue', 'API Generation': 'violet', 'Database Script': 'amber', 'Test Generation': 'red', Configuration: 'grey', 'Built-in Task': 'green', 'Business Logic': 'violet' };
     const BUILT_IN = [
@@ -33,20 +40,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       '- Quick check or build errors, when the file goes back for a fix'
     ].join('\n');
     // Simple client-side preview of an HTML view template: JET elements drawn as plain boxes, no scripts
-    const PREVIEW_CSS = 'body{font:12px/1.4 system-ui,sans-serif;margin:10px;color:#0f172a}*{max-width:100%}'
-      + '[label-hint]{display:block;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;color:#94a3b8}'
-      + '[label-hint]::before{content:attr(label-hint);display:block;font-size:10px;color:#475569}'
-      + 'oj-button{display:inline-block;margin:6px 6px 0 0;padding:6px 14px;border-radius:4px;background:#2563eb;color:#fff}'
-      + 'oj-bind-text::before{content:attr(value)}oj-form-layout,oj-bind-if,oj-bind-for-each{display:block}h1,h2,h3{font-size:14px;margin:6px 0}'
-      // Drawn as a sample screen that fills the preview: a top bar, the fields, the action button across the bottom
-      + 'html,body{height:100%}body{margin:0;background:#f8fafc;font-size:14px}.pv-frame{display:flex;flex-direction:column;box-sizing:border-box;height:100%;margin:0 auto;max-width:420px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;background:#fff}'
-      + '.pv-bar{padding:12px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a}.pv-body{display:flex;flex-direction:column;flex:1;padding:12px 14px}.pv-body>div:last-child{margin-top:auto}'
-      + '.pv-body [label-hint]{margin:8px 0;padding:10px 12px;font-size:13px}.pv-body [label-hint]::before{font-size:11px;margin-bottom:4px}'
-      + '.pv-body oj-button{display:block;margin:12px 0 0;padding:11px 14px;border-radius:6px;text-align:center;font-weight:600}';
+    // The colours come from the design tokens at the time of drawing, so the preview follows the light or dark theme
+    const previewCss = () => {
+      const c = {
+        text: token('--fx-text', '#0f172a'), muted: token('--fx-text-muted', '#475569'), faint: token('--fx-text-faint', '#94a3b8'),
+        bg: token('--fx-surface-2', '#f8fafc'), surface: token('--fx-surface', '#ffffff'), border: token('--fx-border', '#e2e8f0'),
+        strong: token('--fx-border-strong', '#cbd5e1'), primary: token('--fx-primary', '#2563eb')
+      };
+      return 'body{font:12px/1.4 system-ui,sans-serif;margin:10px;color:' + c.text + '}*{max-width:100%}'
+        + '[label-hint]{display:block;margin:6px 0;padding:6px 8px;border:1px solid ' + c.strong + ';border-radius:4px;background:' + c.surface + ';color:' + c.faint + '}'
+        + '[label-hint]::before{content:attr(label-hint);display:block;font-size:10px;color:' + c.muted + '}'
+        + 'oj-button{display:inline-block;margin:6px 6px 0 0;padding:6px 14px;border-radius:4px;background:' + c.primary + ';color:#fff}'
+        + 'oj-bind-text::before{content:attr(value)}oj-form-layout,oj-bind-if,oj-bind-for-each{display:block}h1,h2,h3{font-size:14px;margin:6px 0}'
+        // Drawn as a sample screen that fills the preview: a top bar, the fields, the action button across the bottom
+        + 'html,body{height:100%}body{margin:0;background:' + c.bg + ';font-size:14px}.pv-frame{display:flex;flex-direction:column;box-sizing:border-box;height:100%;margin:0 auto;max-width:420px;border-left:1px solid ' + c.border + ';border-right:1px solid ' + c.border + ';background:' + c.surface + '}'
+        + '.pv-bar{padding:12px 14px;border-bottom:1px solid ' + c.border + ';font-weight:600;color:' + c.text + '}.pv-body{display:flex;flex-direction:column;flex:1;padding:12px 14px}.pv-body>div:last-child{margin-top:auto}'
+        + '.pv-body [label-hint]{margin:8px 0;padding:10px 12px;font-size:13px}.pv-body [label-hint]::before{font-size:11px;margin-bottom:4px}'
+        + '.pv-body oj-button{display:block;margin:12px 0 0;padding:11px 14px;border-radius:6px;text-align:center;font-weight:600}';
+    };
 
     function PromptsViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
+      // Loading problems stay on the page; the result of an action is a toast
       const showError = (error) => this.errorMessage(error.message);
       const recipes = ko.observable(null);
       const changes = ko.observableArray([]);
@@ -63,7 +79,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           templates.forEach((p) => (p.templateContent.match(/<<[^>]+>>/g) || []).forEach((v) => { if (variables.indexOf(v) < 0) { variables.push(v); } }));
           const byChange = usageByChange(r);
           return {
-            key: r.id, title: r.title, category: category, version: data.version, versionTitle: 'OBDX ' + data.version + ' version pack', status: ui.pill('Approved', 'green'), statusKey: 'approved',
+            key: r.id, title: r.title, category: category, version: data.version, versionTitle: 'OBDX ' + data.version + ' version pack', status: pill('Approved', 'green'), statusKey: 'approved',
             when: r.when || 'Files matching ' + (r.layers.join(', ') || 'any layer'), guidance: r.guidance, layers: r.layers.join(', ') || 'Any', actions: r.actions.join(', ') || 'create, modify',
             source: r.source, custom: !/^packs\//.test(r.source || ''), usage: byChange.reduce((s, u) => s + u.n, 0), byChange: byChange,
             updated: 'Pack ' + data.version, updatedTitle: 'Changes with the ' + data.version + ' version pack',
@@ -75,15 +91,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           };
         }) : [];
         const builtIn = BUILT_IN.map((b, i) => ({
-          key: 'builtin-' + i, title: b.title, category: b.category, version: 'Factory', versionTitle: 'Part of the factory', status: ui.pill('Built in', 'blue'), statusKey: 'builtin',
+          key: 'builtin-' + i, title: b.title, category: b.category, version: 'Factory', versionTitle: 'Part of the factory', status: pill('Built in', 'blue'), statusKey: 'builtin',
           when: b.when, guidance: b.guidance + '\n\n(The full prompt is part of the factory and changes with its updates.)', layers: '–', actions: '–', source: 'Factory', custom: false,
           usage: null, byChange: [], updated: build ? 'Build ' + build : 'Factory', updatedTitle: 'Changes with factory updates',
           templates: [], parts: [], variables: [], examples: [], tags: [b.category], createdBy: 'Built in', approvedBy: 'Built in', approvalDate: 'Not recorded'
         }));
         return fromPack.concat(builtIn).map((x) => Object.assign(x, {
-          catCss: 'factory-ov-pill factory-pr-cat factory-ov-pill-' + (TONE[x.category] || 'grey'),
+          catCss: badgeCss(TONE[x.category]) + ' fx-badge--plain factory-pr-cat',
           iconCss: 'factory-kpi-icon factory-pr-icon factory-ov2-icon-' + (TONE[x.category] || 'blue'), usageText: x.usage === null ? '–' : x.usage,
-          tagPills: x.tags.map((t, i) => ({ text: t, css: 'factory-ov-pill factory-pr-tag factory-ov-pill-' + ['violet', 'blue', 'green', 'amber'][i % 4] }))
+          tagPills: x.tags.map((t) => ({ text: t, css: 'fx-chip factory-pr-tag' }))
         }));
       });
 
@@ -141,23 +157,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           && (!text || (x.title + ' ' + x.guidance + ' ' + x.category).toLowerCase().indexOf(text) >= 0));
       });
 
-      // Pages with a size the user picks
-      this.pageSize = ko.observable(10);
-      this.pageSizeChange = (event) => { this.pageSize(Number(event.target.value)); this.page(1); };
-      this.page = ko.observable(1);
-      this.pages = ko.pureComputed(() => Math.max(1, Math.ceil(this.visible().length / this.pageSize())));
-      this.visible.subscribe(() => this.page(1));
-      this.pageRows = ko.pureComputed(() => this.visible().slice((Math.min(this.page(), this.pages()) - 1) * this.pageSize(), Math.min(this.page(), this.pages()) * this.pageSize()));
-      this.pageText = ko.pureComputed(() => {
-        const total = this.visible().length;
-        const start = (Math.min(this.page(), this.pages()) - 1) * this.pageSize();
-        return total === 0 ? 'Nothing to show' : 'Showing ' + (start + 1) + ' to ' + Math.min(total, start + this.pageSize()) + ' of ' + total + ' prompts';
-      });
-      this.pageButtons = ko.pureComputed(() => Array.from({ length: this.pages() }, (v, i) => i + 1).map((n) => ({
-        n: n, css: n === this.page() ? 'factory-pr-pgbtn factory-pr-pgbtn-on' : 'factory-pr-pgbtn', go: () => this.page(n)
+      // Pages with a size the user picks (design system .fx-pager)
+      this.pager = ui.pages(this.visible, 10, [10, 20, 50]);
+      this.visible.subscribe(() => this.pager.page(1));
+      this.pageRows = this.pager.rows;
+      this.pageText = ko.pureComputed(() => this.pager.text() + (this.visible().length ? ' prompts' : ''));
+
+      // Use Case Templates: the prompts with templates as a carousel of cards above the table
+      this.carousel = ui.carousel();
+      this.useCases = ko.pureComputed(() => this.items().filter(TABS.usecase).map((x) => ({
+        key: x.key, title: x.title, category: x.category, catCss: x.catCss, iconCss: x.iconCss, when: x.when,
+        count: x.templates.length + ' template' + (x.templates.length === 1 ? '' : 's') + ' · ' + x.variables.length + ' variable' + (x.variables.length === 1 ? '' : 's'),
+        css: ko.pureComputed(() => 'fx-card fx-card--interactive factory-pr-slide' + (this.selected() && this.selected().key === x.key ? ' is-selected' : '')),
+        pressed: ko.pureComputed(() => (this.selected() && this.selected().key === x.key ? 'true' : 'false')),
+        pick: () => { this.selectedKey(x.key); this.detailTab('overview'); }
       })));
-      this.prevPage = () => this.page(Math.max(1, this.page() - 1));
-      this.nextPage = () => this.page(Math.min(this.pages(), this.page() + 1));
+      // The track is hidden on the other tabs, so measure it again when it shows or its cards change
+      const remeasure = () => window.setTimeout(() => this.carousel.refresh(), 0);
+      this.tab.subscribe(remeasure);
+      this.useCases.subscribe(remeasure);
 
       this.selectedKey = ko.observable(null);
       this.checked = ko.observable({});
@@ -170,11 +188,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         const r = event.currentTarget.getBoundingClientRect();
+        menuOpener = event.currentTarget;
         this.menuStyle({ top: (r.bottom + 4) + 'px', left: Math.max(8, r.right - 190) + 'px' });
         this.menuKey(key);
+        // Focus the first item so the arrow keys work at once
+        window.setTimeout(() => { const first = document.querySelector('.factory-pr-menu [role="menuitem"]'); if (first) { first.focus({ preventScroll: true }); } }, 0);
+      };
+      let menuOpener = null;
+      // Arrow keys move between the items of the row and detail menus; Escape closes it and returns to its button
+      this.menuKeydown = (event) => {
+        const items = Array.from(document.querySelectorAll('.factory-pr-menu [role="menuitem"]'));
+        const at = items.indexOf(document.activeElement);
+        if (event.key === 'Escape') {
+          this.menuKey(null);
+          if (menuOpener) { menuOpener.focus(); }
+        } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && items.length) {
+          items[(at + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+        } else {
+          return true;
+        }
+        event.preventDefault();
+        return false;
       };
       this.rows = ko.pureComputed(() => this.pageRows().map((x) => Object.assign({}, x, {
-        css: this.selected() && this.selected().key === x.key ? 'factory-clickable factory-row-sel' : 'factory-clickable',
+        css: this.selected() && this.selected().key === x.key ? 'factory-clickable is-selected' : 'factory-clickable',
         pick: () => { this.selectedKey(x.key); this.detailTab('overview'); },
         isChecked: ko.pureComputed(() => !!this.checked()[x.key] || (!!this.selected() && this.selected().key === x.key)),
         check: (event) => { event.stopPropagation(); const m = Object.assign({}, this.checked()); m[x.key] = event.target.checked; this.checked(m); return true; },
@@ -238,8 +275,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.varRows = ko.pureComputed(() => (this.selected() ? this.selected().variables.slice(0, VAR_ROWS) : []));
       this.moreVars = ko.pureComputed(() => (this.selected() ? Math.max(0, this.selected().variables.length - VAR_ROWS) : 0));
       this.copied = ko.observable('');
-      const copy = (text) => (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard')))
-        .then(() => { this.copied('Copied'); window.setTimeout(() => this.copied(''), 1500); }).catch(() => window.prompt('Copy the prompt:', text));
+      const copy = (text) => ui.copy(text)
+        .then(() => { this.copied('Copied'); toast.success('Copied the prompt.'); window.setTimeout(() => this.copied(''), 1500); })
+        .catch(() => toast.error('Could not copy. Open the Prompt tab and select the text instead.'));
       this.copyPrompt = () => copy(this.promptText());
 
       // Example Output card
@@ -258,15 +296,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         // The screen title from the template's first comment, as the top bar of a sample screen
         const head = t ? /<!--\s*([^:]*?)\s*:/.exec(t.content) : null;
         const title = head ? head[1].replace(/[<>'"&]/g, '') : 'Screen';
-        return t ? '<!doctype html><html><head><style>' + PREVIEW_CSS + '</style></head><body><div class="pv-frame"><div class="pv-bar">&#8249;&nbsp; '
+        // Read the theme so the preview is drawn again when it changes
+        preferences.theme();
+        return t ? '<!doctype html><html><head><style>' + previewCss() + '</style></head><body><div class="pv-frame"><div class="pv-bar">&#8249;&nbsp; '
           + title + '</div><div class="pv-body">' + body + '</div></div></body></html>' : '';
       });
 
       this.useTemplate = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
       this.howToAdd = ko.observable(false);
       this.toggleHowToAdd = () => this.howToAdd(!this.howToAdd());
-      this.createMenu = (event) => openMenu('create', event);
-      this.menuHowTo = () => { this.menuKey(null); this.howToAdd(true); };
+      // Create Prompt / Template: a split button (design system .fx-split)
+      this.createSplit = ui.menu();
+      this.menuHowTo = () => { this.createSplit.close(); this.howToAdd(true); };
+      this.createPacks = () => { this.createSplit.close(); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' })); };
 
       const load = (id) => {
         recipes(null);
@@ -292,6 +334,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const before = this.workspaceId();
         workspaceSelection.load().then(() => { if (this.workspaceId() === before) { load(before); } }).catch(showError);
         updates.refresh(false);
+        this.carousel.attach(document.getElementById('useCaseTrack'));
         document.addEventListener('click', outside);
         window.addEventListener('scroll', closeMenu, true);
       };

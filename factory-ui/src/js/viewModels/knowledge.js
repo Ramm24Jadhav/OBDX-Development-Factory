@@ -6,8 +6,8 @@
  * Files and content come from /files (a server without it falls back to code search hits).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/assistant',
-        '../services/pageRequests', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
-  function (ko, accUtils, api, workspaceSelection, ui, assistant, pageRequests) {
+        '../services/pageRequests', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+  function (ko, accUtils, api, workspaceSelection, ui, assistant, pageRequests, toast) {
     const size = (bytes) => (bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : bytes >= 1024 ? (bytes / 1024).toFixed(1) + ' KB' : bytes + ' B');
     const MAX_LINES = 3000;
 
@@ -226,7 +226,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.langChange = ui.value(this.langChoice);
       this.formatted = ko.observable(false);
       this.toggleFormat = () => this.formatted(!this.formatted());
-      this.formatCss = ko.pureComputed(() => 'factory-kn-tool' + (this.formatted() ? ' factory-kn-tool-on' : ''));
+      this.formatCss = ko.pureComputed(() => 'fx-btn fx-btn--tertiary fx-btn--sm factory-kn4-tool' + (this.formatted() ? ' is-on' : ''));
       this.lang = ko.pureComputed(() => (this.langChoice() !== 'auto' ? this.langChoice() : (this.file() ? langOf(this.file().path, this.file().language) : 'plain')));
       // Source lines with their real numbers; marker lines separate the pieces of a file shown from the index
       const sourceLines = ko.pureComputed(() => {
@@ -326,7 +326,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           revision: f.revision ? 'r' + f.revision : (indexRevision() ? 'r' + indexRevision() + ' or earlier' : '–'),
           endpoints: this.relatedApis().filter((a) => a.note.indexOf('Served') === 0).map((a) => ({ method: a.method, path: a.path, code: a.note.replace('Served here: ', ''), methodCss: a.methodCss })),
           related: related.map((r) => ({ code: 'REQ-' + r.id.replace(/-/g, '').slice(0, 4).toUpperCase(), title: r.title })),
-          tags: tags.map((t, i) => ({ text: t, css: 'factory-ov-pill factory-kn-pill factory-ov-pill-' + ['blue', 'amber', 'green', 'violet', 'grey', 'blue'][i % 6] })),
+          tags: tags.map((t) => ({ text: t, css: 'fx-chip factory-kn4-tag' })),
           iconCss: iconFor(f.path) + ' factory-kn-ficon-lg', truncated: f.truncated
         };
       });
@@ -377,23 +377,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.searchUsages = () => { if (this.file()) { this.query(this.file().path.split('/').pop().replace(/\.\w+$/, '')); this.tab('search'); this.search(); } };
 
       // File Details menu
-      this.menuOpen = ko.observable(false);
-      this.menuStyle = ko.observable({});
-      this.toggleMenu = (event) => {
-        event.stopPropagation();
-        const r = event.currentTarget.getBoundingClientRect();
-        this.menuStyle({ top: (r.bottom + 4) + 'px', left: Math.max(8, r.right - 190) + 'px' });
-        this.menuOpen(!this.menuOpen());
-      };
+      // (the design system's menu: keyboard, Escape and outside clicks from ui.menu)
+      this.fileMenu = ui.menu();
       this.copyNote = ko.observable('');
       this.copyPath = () => {
-        this.menuOpen(false);
+        this.fileMenu.close();
         const text = this.file() ? this.file().path : '';
-        (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard')))
-          .then(() => { this.copyNote('Path copied'); window.setTimeout(() => this.copyNote(''), 1500); }).catch(() => window.prompt('Copy the path:', text));
+        ui.copy(text).then(() => toast.success('Path copied.'))
+          .catch(() => toast.error('The path could not be copied. Select it in File Details and copy it by hand.'));
       };
-      this.menuSearch = () => { this.menuOpen(false); this.searchUsages(); };
-      this.menuExplain = () => { this.menuOpen(false); this.explain(); };
+      this.menuSearch = () => { this.fileMenu.close(); this.searchUsages(); };
+      this.menuExplain = () => { this.fileMenu.close(); this.explain(); };
 
       // Search
       this.query = ko.observable('');
@@ -510,16 +504,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.explain = () => { this.insightTab('explain'); this.generate(); };
       this.explainLogic = () => { this.insightTab('explain'); this.generate(); };
       // The Generate split button: its arrow picks what to generate
-      this.genMenuOpen = ko.observable(false);
-      this.genMenuStyle = ko.observable({});
-      this.toggleGenMenu = (event) => {
-        event.stopPropagation();
-        const r = event.currentTarget.getBoundingClientRect();
-        this.genMenuStyle({ top: (r.bottom + 4) + 'px', left: Math.max(8, r.right - 190) + 'px' });
-        this.genMenuOpen(!this.genMenuOpen());
-      };
+      this.genMenu = ui.menu();
       this.genOptions = [{ value: 'summary', label: 'Summary' }, { value: 'explain', label: 'Explain' }, { value: 'usage', label: 'Find usage' }, { value: 'suggest', label: 'Suggest changes' }]
-        .map((o) => Object.assign(o, { run: () => { this.genMenuOpen(false); this.insightTab(o.value); this.generate(); } }));
+        .map((o) => Object.assign(o, { run: () => { this.genMenu.close(); this.insightTab(o.value); this.generate(); } }));
       this.relatedReqs = ko.pureComputed(() => (this.fileInfo() ? this.fileInfo().related : []).map((r) => Object.assign({}, r, { open: this.openRequirements })));
 
       // Opens the first Java file (or the first file) with its folders
@@ -573,15 +560,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         });
       };
 
-      const outside = (event) => {
-        if (this.menuOpen() && !(event.target.closest && event.target.closest('.factory-kn-menu'))) {
-          this.menuOpen(false);
-        }
-        if (this.genMenuOpen() && !(event.target.closest && event.target.closest('.factory-kn-menu'))) {
-          this.genMenuOpen(false);
-        }
-      };
-      const closeMenu = () => { this.menuOpen(false); this.genMenuOpen(false); };
       let subscription = null;
       this.connected = () => {
         accUtils.announce('Knowledge Explorer page loaded.');
@@ -596,15 +574,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.tab('search');
           window.setTimeout(this.search, 500);
         }
-        document.addEventListener('click', outside);
-        window.addEventListener('scroll', closeMenu, true);
       };
       this.disconnected = () => {
         if (subscription) {
           subscription.dispose();
         }
-        document.removeEventListener('click', outside);
-        window.removeEventListener('scroll', closeMenu, true);
+        this.fileMenu.close();
+        this.genMenu.close();
       };
     }
 

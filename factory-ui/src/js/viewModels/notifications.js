@@ -4,10 +4,12 @@
  * notifications service.
  */
 define(['knockout', '../accUtils', '../services/dashboard', '../services/notifications', '../services/workspaceSelection', '../services/ui',
-        'ojs/ojknockout', 'ojs/ojbutton'],
-  function (ko, accUtils, dashboard, notifications, workspaceSelection, ui) {
+        '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, dashboard, notifications, workspaceSelection, ui, toast) {
     const CATEGORY = { action: 'Action Required', build: 'Build & Test', agent: 'Agent Runs', review: 'Reviews & Approvals', system: 'System' };
-    const PRIORITY = { high: ui.pill('High', 'red'), medium: ui.pill('Medium', 'amber'), low: ui.pill('Low', 'green') };
+    const PRIORITY = { high: { text: 'High', css: 'fx-badge fx-badge--danger' }, medium: { text: 'Medium', css: 'fx-badge fx-badge--warning' }, low: { text: 'Low', css: 'fx-badge fx-badge--success' } };
+    const UNREAD = { text: 'Unread', css: 'fx-badge fx-badge--primary' };
+    const READ = { text: 'Read', css: 'fx-badge' };
     // The page each notification opens, as the user knows it
     const PAGE = {
       build: ['Build & Test', 'flask'], requirements: ['Requirement', 'list'], reviews: ['Screen review', 'design'], impact: ['Change plan', 'branch'],
@@ -19,13 +21,13 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       const c = (test) => ko.pureComputed(() => all().filter(test).length);
       const count = (test) => all().filter(test).length;
       this.kpis = ko.pureComputed(() => [
-        { label: 'Total Notifications', value: all().length, sub: '↑ ' + count((n) => n.today) + ' today', css: 'factory-kpi-sub factory-up', tone: 'amber', icon: 'bell' },
+        { label: 'Total Notifications', value: all().length, sub: '↑ ' + count((n) => n.today) + ' today', css: 'factory-kpi-sub fx-trend fx-trend--up', tone: 'amber', icon: 'bell' },
         { label: 'Action Required', value: count((n) => n.action), sub: 'Needs your attention', css: 'factory-kpi-sub', tone: 'red', icon: 'alert' },
         { label: 'Build & Test', value: count((n) => n.category === 'build'), sub: count((n) => n.category === 'build' && n.tone === 'red') + ' failed, ' + count((n) => n.category === 'build' && n.tone === 'green') + ' completed', css: 'factory-kpi-sub', tone: 'violet', icon: 'cog' },
         { label: 'Agent Runs', value: count((n) => n.category === 'agent'), sub: count((n) => n.category === 'agent' && n.tone !== 'red') + ' completed, ' + count((n) => n.category === 'agent' && n.tone === 'red') + ' failed', css: 'factory-kpi-sub', tone: 'blue', icon: 'robot' },
         { label: 'Reviews & Approvals', value: count((n) => n.category === 'review'), sub: count((n) => n.category === 'review' && n.action) + ' pending approval', css: 'factory-kpi-sub', tone: 'violet', icon: 'doc' },
         { label: 'System', value: count((n) => n.category === 'system'), sub: 'General updates', css: 'factory-kpi-sub', tone: 'blue', icon: 'info' }
-      ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon })));
+      ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-no-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon })));
 
       this.tab = ko.observable('all');
       this.tabs = ui.tabs(this.tab, [
@@ -59,40 +61,48 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
           && (!days || (n.at && Date.now() - new Date(n.at).getTime() < days * 24 * 3600 * 1000))
           && (!text || (n.title + ' ' + n.text + ' ' + n.related).toLowerCase().indexOf(text) >= 0));
       });
-      this.pager = ui.pager(this.visible, 10);
-      this.pageButtons = ko.pureComputed(() => Array.from({ length: this.pager.pages() }, (v, i) => i + 1).map((p) => ({
-        n: p, css: p === this.pager.page() ? 'factory-no-pgbtn factory-no-pgbtn-on' : 'factory-no-pgbtn', go: () => this.pager.page(p)
-      })));
+      this.pager = ui.pages(this.visible, 10, [10, 25, 50]);
       // Date over time in the Time column, so the time never breaks apart
       const whenParts = (text) => { const i = text.lastIndexOf(', '); return i > 0 ? [text.slice(0, i), text.slice(i + 2)] : [text, '']; };
       this.selectedId = ko.observable(null);
       this.checked = ko.observable({});
       this.selected = ko.pureComputed(() => all().find((n) => n.id === this.selectedId()) || (this.selectedId() === 'none' ? null : this.visible()[0]) || null);
 
-      // The row ⋮ menu, placed next to its button
+      // The row ⋮ menu (design system .fx-menu), fixed next to its button so the table does not clip it; one menu
+      // state for every row, with the keyboard handling of ui.menu()
+      this.rowMenu = ui.menu();
       this.menuId = ko.observable(null);
       this.menuStyle = ko.observable({});
-      this.menuRow = ko.pureComputed(() => all().find((n) => n.id === this.menuId()) || null);
-      this.closeMenu = () => this.menuId(null);
+      this.menuRow = ko.pureComputed(() => (this.rowMenu.open() && all().find((n) => n.id === this.menuId())) || null);
+      this.closeMenu = () => this.rowMenu.close();
+      this.menuKey = (event) => this.rowMenu.key(event);
+      this.stop = (event) => { event.stopPropagation(); return true; };
 
       this.rows = ko.pureComputed(() => this.pager.rows().map((n) => Object.assign({}, n, {
         whenDate: whenParts(n.when)[0], whenTime: whenParts(n.when)[1],
-        iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone,iconClass: 'factory-nav-icon factory-ico-' + n.icon,
-        priorityPill: PRIORITY[n.priority], statusPill: n.unread() ? { text: 'Unread', css: 'factory-ov-pill factory-no-pill-unread' } : { text: 'Read', css: 'factory-ov-pill factory-no-pill-read' },
-        css: this.selected() && this.selected().id === n.id ? 'factory-clickable factory-row-sel' : (n.unread() ? 'factory-clickable factory-no-unread' : 'factory-clickable'),
+        iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
+        categoryText: CATEGORY[n.category],
+        priorityBadge: PRIORITY[n.priority], statusBadge: n.unread() ? UNREAD : READ,
+        css: 'factory-clickable' + (this.selected() && this.selected().id === n.id ? ' is-selected' : '') + (n.unread() ? ' factory-no-unread' : ''),
+        menuOpen: ko.pureComputed(() => this.rowMenu.open() && this.menuId() === n.id),
         // The open row shows checked, as in the design
         isChecked: ko.pureComputed(() => !!this.checked()[n.id] || (!!this.selected() && this.selected().id === n.id)),
         check: (event) => { event.stopPropagation(); const m = Object.assign({}, this.checked()); m[n.id] = event.target.checked; this.checked(m); return true; },
         pick: () => { this.selectedId(n.id); notifications.markRead([n.id]); },
         menu: (event) => {
           event.stopPropagation();
-          if (this.menuId() === n.id) {
+          if (this.rowMenu.open() && this.menuId() === n.id) {
             this.closeMenu();
             return;
           }
+          this.closeMenu();
           const r = event.currentTarget.getBoundingClientRect();
-          this.menuStyle({ top: (r.bottom + 4) + 'px', left: Math.max(8, r.right - 170) + 'px' });
+          // Below the button, or above it when the button is near the bottom of the window
+          const left = Math.max(8, r.right - 200) + 'px';
+          this.menuStyle(r.bottom + 160 < window.innerHeight ? { top: (r.bottom + 4) + 'px', bottom: 'auto', left: left }
+            : { top: 'auto', bottom: (window.innerHeight - r.top + 4) + 'px', left: left });
           this.menuId(n.id);
+          this.rowMenu.toggle(event);
         }
       })));
       this.allChecked = ko.pureComputed(() => this.pager.rows().length > 0 && this.pager.rows().every((n) => this.checked()[n.id]));
@@ -140,7 +150,8 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         }
         return Object.assign({}, n, {
           iconCss: 'factory-kpi-icon factory-no-bigicon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
-          priorityPill: PRIORITY[n.priority], category: CATEGORY[n.category], primary: primary, secondary: secondary,
+          priorityBadge: PRIORITY[n.priority], category: CATEGORY[n.category], primary: primary, secondary: secondary,
+          errorsCss: 'fx-alert ' + (n.tone === 'red' ? 'fx-alert--danger' : 'fx-alert--warning') + ' factory-no-errors',
           relatedItems: related.map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }))
         });
       });
@@ -148,27 +159,31 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       this.menuToggleRead = () => { toggleRead(this.menuRow()); this.closeMenu(); };
       this.menuOpen = () => { const n = this.menuRow(); this.closeMenu(); notifications.markRead([n.id]); go(n, n.page); };
       this.menuDetails = () => { const n = this.menuRow(); this.closeMenu(); this.selectedId(n.id); notifications.markRead([n.id]); };
-      this.markAllRead = () => notifications.markRead(this.visible().map((n) => n.id));
-      this.markSelectedRead = () => notifications.markRead(Object.keys(this.checked()).filter((id) => this.checked()[id]));
-      this.markSelectedUnread = () => { notifications.markUnread(Object.keys(this.checked()).filter((id) => this.checked()[id])); };
-      this.settings = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'account' }));
-      this.hasChecked = ko.pureComputed(() => Object.keys(this.checked()).some((id) => this.checked()[id]));
-
-      const outside = (event) => {
-        if (this.menuId() && !(event.target.closest && event.target.closest('.factory-no-menu'))) {
-          this.closeMenu();
-        }
+      const checkedIds = () => Object.keys(this.checked()).filter((id) => this.checked()[id]);
+      const plural = (count) => count + (count === 1 ? ' notification' : ' notifications');
+      this.unreadVisible = ko.pureComputed(() => this.visible().some((n) => n.unread()));
+      this.markAllRead = () => {
+        const ids = this.visible().filter((n) => n.unread()).map((n) => n.id);
+        notifications.markRead(ids);
+        toast.success(plural(ids.length) + ' marked as read.', { action: { label: 'Undo', run: () => notifications.markUnread(ids) } });
       };
+      this.markSelectedRead = () => { const ids = checkedIds(); notifications.markRead(ids); toast.success(plural(ids.length) + ' marked as read.'); };
+      this.markSelectedUnread = () => { const ids = checkedIds(); notifications.markUnread(ids); toast.success(plural(ids.length) + ' marked as unread.'); };
+      this.settings = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'account' }));
+      this.checkedCount = ko.pureComputed(() => checkedIds().length);
+      this.hasChecked = ko.pureComputed(() => this.checkedCount() > 0);
+
+      // The menu is fixed in place, so it closes when the page scrolls under it
+      const scrolled = (event) => { if (!(event.target.closest && event.target.closest('.fx-menu'))) { this.closeMenu(); } };
       this.connected = () => {
         accUtils.announce('Notification Center loaded.');
         document.title = 'Notifications';
         dashboard.load();
-        document.addEventListener('click', outside);
-        window.addEventListener('scroll', this.closeMenu, true);
+        window.addEventListener('scroll', scrolled, true);
       };
       this.disconnected = () => {
-        document.removeEventListener('click', outside);
-        window.removeEventListener('scroll', this.closeMenu, true);
+        this.closeMenu();
+        window.removeEventListener('scroll', scrolled, true);
       };
     }
 

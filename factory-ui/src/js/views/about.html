@@ -1,4 +1,4 @@
-<div class="factory-pg">
+<div class="factory-pg factory-ab-page">
   <div class="factory-pg-head">
     <div>
       <h1>About &amp; Product Information</h1>
@@ -8,7 +8,7 @@
 
   <div class="factory-tabbar" role="tablist" aria-label="About">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['ab-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+      <template><button type="button" role="tab" :id="[['ab-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
         <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
@@ -16,33 +16,24 @@
   <section class="factory-ab-hero" id="ab-sec-overview">
     <div class="factory-ab-copy">
       <div class="factory-ab-brand">
-        <svg class="factory-ab-logo" viewBox="0 0 64 64" aria-hidden="true">
-          <defs>
-            <linearGradient id="abLayerTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
-            <linearGradient id="abLayerMid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
-            <linearGradient id="abLayerLow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient>
-          </defs>
-          <path d="M32 34 60 46 32 58 4 46z" fill="url(#abLayerLow)"/>
-          <path d="M32 21 60 33 32 45 4 33z" fill="url(#abLayerMid)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M32 6 60 18 32 30 4 18z" fill="url(#abLayerTop)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        <div><strong>OBDX</strong><span>Development Factory</span></div></div>
+        <span class="factory-brand-mark factory-ab-mark" aria-hidden="true"></span>
+        <div class="factory-ab-word"><strong>OBDX</strong><span>Development Factory</span><span class="factory-brand-ai">Powered by AI</span></div></div>
       <p class="factory-ab-tag">AI-powered development for modern banking</p>
       <p>OBDX Development Factory helps development teams design, generate and implement OBDX-based changes using AI,
         reusable patterns and bank-specific standards, with traceability from requirements to delivered code.</p>
       <div class="factory-btn-row">
-        <span title="There is no overview video yet. Read the user guide instead."><oj-button id="watchOverviewButton" chroming="callToAction" disabled="true"><span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Watch Overview</oj-button></span>
-        <oj-button id="userGuideButton" chroming="outlined" on-oj-action="[[openDocs]]"><span slot="startIcon" class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>User Guide</oj-button>
+        <span data-fx-tip="There is no overview video yet. Read the user guide instead."><button type="button" id="watchOverviewButton" class="fx-btn fx-btn--primary fx-btn--lg" disabled><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Watch Overview</button></span>
+        <button type="button" id="userGuideButton" class="fx-btn fx-btn--secondary fx-btn--lg" on-click="[[openDocs]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>User Guide</button>
         <oj-bind-if test="[[isAdmin() && status() && status().enabled]]">
-          <oj-button id="checkUpdatesButton" chroming="outlined" on-oj-action="[[check]]">Check for updates</oj-button>
+          <button type="button" id="checkUpdatesButton" :class="[[checking() ? 'fx-btn fx-btn--secondary fx-btn--lg is-loading' : 'fx-btn fx-btn--secondary fx-btn--lg']]" on-click="[[check]]">Check for updates</button>
           <oj-bind-if test="[[status().state === 'AVAILABLE' || status().state === 'FAILED']]">
-            <oj-button id="aboutUpdateButton" chroming="callToAction" on-oj-action="[[install]]" disabled="[[!status().latestBuild]]">Update now</oj-button>
+            <span :data-fx-tip="[[status().latestBuild ? null : 'No newer build was found']]"><button type="button" id="aboutUpdateButton" class="fx-btn fx-btn--primary fx-btn--lg" on-click="[[install]]" :disabled="[[!status().latestBuild]]">Update now</button></span>
           </oj-bind-if>
         </oj-bind-if>
       </div>
       <oj-bind-if test="[[status() && status().enabled && status().message]]"><p class="factory-ab-update" id="updateMessage"><oj-bind-text value="[[status().message]]"></oj-bind-text></p></oj-bind-if>
       <oj-bind-if test="[[status() && !status().enabled]]"><p class="factory-ab-update">Updates are installed by the administrators of this factory.</p></oj-bind-if>
-      <oj-bind-if test="[[error()]]"><p class="oj-text-color-danger"><oj-bind-text value="[[error]]"></oj-bind-text></p></oj-bind-if>
+      <oj-bind-if test="[[error()]]"><p class="fx-error factory-ab-error" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[error]]"></oj-bind-text></p></oj-bind-if>
     </div>
     <div class="factory-ab-art" aria-hidden="true">
       <div class="factory-ab-chip factory-ab-chip-1"><span class="factory-ab-chip-ico factory-ab-chip-violet"><span class="factory-nav-icon factory-ico-target"></span></span><span>From Requirements<br/>to Code</span></div>
@@ -117,8 +108,8 @@
           <strong :title="[[$current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></strong></li></template></oj-bind-for-each>
       </ul>
       <div class="factory-ab-license-btns">
-        <oj-button id="licenseDetailsButton" chroming="outlined" on-oj-action="[[openLicense]]" title="Opens the licensing notes in the architecture document"><span slot="startIcon" class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>View License Details</oj-button>
-        <oj-button id="contactSupportButton" chroming="callToAction" on-oj-action="[[openSupport]]" title="Opens a new issue in the factory's GitHub repository"><span slot="startIcon" class="factory-nav-icon factory-ico-help factory-btn-icon" aria-hidden="true"></span>Contact Support</oj-button>
+        <button type="button" id="licenseDetailsButton" class="fx-btn fx-btn--secondary" on-click="[[openLicense]]" title="Opens the licensing notes in the architecture document"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>View License Details</button>
+        <button type="button" id="contactSupportButton" class="fx-btn fx-btn--primary" on-click="[[openSupport]]" title="Opens a new issue in the factory's GitHub repository"><span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Contact Support</button>
       </div>
     </section>
   </div>

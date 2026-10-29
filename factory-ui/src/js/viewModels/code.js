@@ -2,10 +2,16 @@
  * Code page: SVN settings, UI target, Jenkins settings, quick check rules, import jobs, index status and code search for
  * one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
         'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, toast, ArrayDataProvider) {
+    // Status badges of the design system; with an icon the dot is left out, so status is never colour alone
+    const badge = (text, tone, icon, title) => ({
+      text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') + (icon ? ' fx-badge--plain factory-cp4-badge' : ''),
+      icon: icon ? 'factory-nav-icon factory-ico-' + icon : '', title: title || ''
+    });
+    const failed = (error) => toast.error(error.message);
     const POLL_MS = 2000;
 
     /** "4m 32s", "12s" */
@@ -95,7 +101,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(showTarget)
           // The quick-check rules include the target pack's for the app folder.
           .then(() => api.get('workspaces/' + id + '/checks')).then(showChecks)
-          .catch(showError);
+          .then(() => toast.success('UI target saved.'))
+          .catch(failed);
       };
 
       // Quick checks: the workspace's version pack rules, each of which can be turned off
@@ -109,7 +116,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'error', label: 'Error', count: this.ruleCount('error') },
         { value: 'warning', label: 'Warning', count: this.ruleCount('warning') }
       ].map((f) => Object.assign(f, {
-        css: ko.pureComputed(() => 'factory-chip' + (this.ruleFilter() === f.value ? ' factory-chip-on' : '')),
+        css: 'fx-chip',
+        pressed: ko.pureComputed(() => (this.ruleFilter() === f.value ? 'true' : 'false')),
         pick: () => this.ruleFilter(f.value)
       }));
       this.visibleRules = ko.pureComputed(() => {
@@ -179,8 +187,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           branchParameter: this.jenkinsBranchParameter(), branchValue: this.jenkinsBranchValue(),
           patchParameter: this.jenkinsPatchParameter(), username: this.jenkinsUsername() || null,
           token: this.jenkinsToken() ? this.jenkinsToken() : null
-        }).then((settings) => { showJenkins(settings); this.jenkinsMessage('Jenkins settings saved.'); })
-          .catch((error) => this.errorMessage(error.message))
+        }).then((settings) => { showJenkins(settings); toast.success('Jenkins settings saved.'); })
+          .catch(failed)
           .finally(() => this.busy(false));
       };
 
@@ -193,8 +201,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then((result) => {
             this.jenkinsMessage('Connected. Jobs: ' + result.jobs.map((j) => j.name + ' (parameters: ' + (j.parameters.join(', ') || 'none') + ')').join('; ') + '.');
             this.jenkinsWarnings(result.warnings);
+            toast.success('Jenkins connection works.');
           })
-          .catch((error) => this.errorMessage(error.message))
+          .catch(failed)
           .finally(() => this.busy(false));
       };
 
@@ -223,17 +232,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // The status pill in the page header
       this.indexPill = ko.pureComputed(() => {
         const status = this.indexStatus();
-        const failed = jobs().length > 0 && jobs()[0].status === 'FAILED';
+        const importFailed = jobs().length > 0 && jobs()[0].status === 'FAILED';
         if (this.importRunning()) {
-          return { text: 'Importing', css: 'factory-ov-pill factory-ov-pill-blue' };
+          return badge('Importing', 'primary', 'refresh');
         }
-        if (failed) {
-          return { text: 'Last import failed', css: 'factory-ov-pill factory-ov-pill-red' };
+        if (importFailed) {
+          return badge('Last import failed', 'danger', 'x');
         }
         if (!status || status.indexedRevision === null) {
-          return { text: 'Not imported', css: 'factory-ov-pill factory-ov-pill-grey' };
+          return badge('Not imported', '', 'clock');
         }
-        return { text: 'Up to date', css: 'factory-ov-pill factory-ov-pill-green' };
+        return badge('Up to date', 'success', 'check');
       });
       this.jobCount = ko.pureComputed(() => jobs().length);
 
@@ -252,7 +261,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.checksSummary(checks.description + ': ' + enabled + ' of ' + checks.rules.length + ' rules on. Java is checked at level '
           + checks.javaLevel + ' (from the ' + checks.javaLevelSource + ').');
         const setEnabled = (r, enabled) => api.put('workspaces/' + id + '/checks/' + encodeURIComponent(r.id), { enabled: enabled })
-          .then(showChecks).catch(showError);
+          .then((result) => { showChecks(result); toast.success('Rule "' + r.title + '" turned ' + (enabled ? 'on' : 'off') + '.'); })
+          .catch(failed);
         this.checkRules(checks.rules.map((r) => ({
           id: r.id,
           title: r.title,
@@ -266,12 +276,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           enabled: r.enabled,
           canManage: canManage,
           note: r.matchesProfile ? '' : 'Does not apply to this codebase (Project Profile).',
-          toggle: (event) => {
-            if (event.detail.updatedFrom !== 'internal') {
-              return;
-            }
-            setEnabled(r, event.detail.value);
-          },
+          switchTip: canManage ? null : 'Only workspace managers can turn rules on or off',
+          flip: () => setEnabled(r, !r.enabled),
           menu: (event) => {
             const action = event.detail.selectedValue;
             if (action === 'toggle') {
@@ -367,8 +373,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }).then((workspace) => {
           this.workspace(workspace);
           this.svnPassword('');
-          this.svnMessage('SVN settings saved.');
-        }).catch(showError).finally(() => this.busy(false));
+          toast.success('SVN settings saved.');
+        }).catch(failed).finally(() => this.busy(false));
       };
 
       this.testSvn = () => {
@@ -380,13 +386,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             this.svnOk(true);
             this.svnMessage('Connected. Latest revision r' + info.headRevision + ' in ' + info.repositoryRoot + '.');
           })
-          .catch((error) => { this.svnOk(false); showError(error); })
+          .catch((error) => { this.svnOk(false); failed(error); })
           .finally(() => this.busy(false));
       };
 
       this.startImport = () => {
         this.errorMessage('');
-        api.post('workspaces/' + this.workspaceId() + '/imports').then(refreshImports).catch(showError);
+        api.post('workspaces/' + this.workspaceId() + '/imports')
+          .then((result) => { toast.info('Reindexing started.'); return refreshImports(result); }).catch(failed);
       };
 
       this.search = () => {
@@ -418,17 +425,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       const ruleStatus = (r) => {
         const files = checkedFiles().filter((f) => r.include.some((x) => x.test(f.path)) && !r.exclude.some((x) => x.test(f.path)));
-        const pill = (text, tone, icon, title) => ({ text: text, css: 'factory-ov-pill factory-cp2-status factory-ov-pill-' + tone, icon: icon ? 'factory-nav-icon factory-ico-' + icon : '', title: title });
         if (!files.length) {
-          return pill('Not run', 'grey', '', 'No generated file of this kind has been checked yet');
+          return badge('Not run', '', '', 'No generated file of this kind has been checked yet');
         }
         const hits = files.filter((f) => (f.checkMessage || '').indexOf('(' + r.id + ',') >= 0);
         if (hits.length) {
           return r.severity === 'error'
-            ? pill('Failed', 'red', 'x', 'Found in ' + hits.map((f) => f.path).join(', '))
-            : pill('Warning', 'amber', 'alert', 'Found in ' + hits.map((f) => f.path).join(', '));
+            ? badge('Failed', 'danger', 'x', 'Found in ' + hits.map((f) => f.path).join(', '))
+            : badge('Warning', 'warning', 'alert', 'Found in ' + hits.map((f) => f.path).join(', '));
         }
-        return pill('Passed', 'green', 'check', files.length + ' generated file(s) checked');
+        return badge('Passed', 'success', 'check', files.length + ' generated file(s) checked');
       };
       this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8).map((r) => Object.assign({}, r, { status: ruleStatus(r) })));
       this.ruleQueryInput = ui.value(this.ruleQuery);
@@ -467,9 +473,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           menu: (event) => {
             const action = event.detail.selectedValue;
             if (action === 'copy') {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(f.path).catch(() => null);
-              }
+              ui.copy(f.path).then(() => toast.success('Path copied.'))
+                .catch(() => toast.error('The path could not be copied. Select it and copy it by hand.'));
             } else if (action === 'search') {
               this.query(f.path.split('/').pop());
               this.tab('search');
@@ -567,8 +572,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           value: this.jenkinsMode() === 'BRANCH' ? this.jenkinsBranchParameter() : this.jenkinsPatchParameter() },
         { label: 'Username', value: this.jenkinsUsername() || 'None' }
       ] : []));
-      const JOB_PILL = { SUCCEEDED: ui.pill('Succeeded', 'green'), FAILED: ui.pill('Failed', 'red'), RUNNING: ui.pill('Running', 'blue'), QUEUED: ui.pill('Queued', 'grey') };
-      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || ui.pill(j.status, 'grey') })));
+      const JOB_PILL = { SUCCEEDED: badge('Succeeded', 'success'), FAILED: badge('Failed', 'danger'), RUNNING: badge('Running', 'primary'), QUEUED: badge('Queued', '') };
+      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || badge(j.status, '') })));
       // Indexing progress: the running import's files, or 100% once imported
       this.indexProgress = ko.pureComputed(() => {
         const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');

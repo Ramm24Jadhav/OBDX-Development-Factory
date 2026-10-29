@@ -5,62 +5,66 @@
  * a screen does not approve any code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/previewFrame', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame) {
+        '../services/previewFrame', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, toast, dialog) {
     const SOON_MS = 3 * 24 * 3600 * 1000;
     const DAY_MS = 24 * 3600 * 1000;
     const isoDate = (date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
+    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
 
     function ReviewsViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
       this.canEdit = ko.pureComputed(() => session.can(this.workspaceId(), 'EDIT_DESIGNS'));
       this.canComment = ko.pureComputed(() => session.can(this.workspaceId(), 'COMMENT'));
+      // Loading failures stay on the page; the result of an action is a toast
       this.errorMessage = ko.observable('');
-      this.infoMessage = ko.observable('');
-      const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); };
+      const showError = (error) => this.errorMessage(error.message);
+      const actionError = (error) => toast.error(error.message);
       const designs = ko.observableArray([]);
       this.loading = ko.observable(false);
 
       const linkState = (d) => {
         if (d.status === 'APPROVED') {
-          return { key: 'approved', pill: ui.pill('Approved', 'green') };
+          return { key: 'approved', pill: badge('Approved', 'success') };
         }
         if (d.reviewToken && d.reviewExpiresAt && new Date(d.reviewExpiresAt) < new Date()) {
-          return { key: 'expired', pill: ui.pill('Expired', 'grey') };
+          return { key: 'expired', pill: badge('Expired', '') };
         }
         if (d.reviewToken) {
-          return { key: 'active', pill: ui.pill('Active', 'green') };
+          return { key: 'active', pill: badge('Active', 'success') };
         }
-        return d.status === 'IN_REVIEW' ? { key: 'review', pill: ui.pill('In Review', 'blue') } : { key: 'none', pill: ui.pill('No link', 'grey') };
+        return d.status === 'IN_REVIEW' ? { key: 'review', pill: badge('In Review', 'info') } : { key: 'none', pill: badge('No link', '') };
       };
       this.links = ko.pureComputed(() => designs().map((d) => {
         const state = linkState(d);
         const reviewers = Array.from(new Set(d.comments.filter((c) => c.fromReview).map((c) => c.author)));
         const live = !!d.reviewToken && state.key !== 'expired';
+        const menu = ui.menu();
+        const then = (fn) => () => { menu.close(); this.selectedId(d.id); fn(); };
         return {
           id: d.id, name: d.name, version: 'v' + d.currentVersion, state: state.key, pill: state.pill,
           hasLink: live, canRevoke: !!d.reviewToken && this.canEdit(), canCreate: this.canEdit() && d.status !== 'APPROVED',
           stop: (event) => event.stopPropagation(),
-          action: (event) => {
-            const value = event.detail.selectedValue;
-            this.selectedId(d.id);
-            if (value === 'copy') {
-              this.copyLink();
-            } else if (value === 'open') {
-              window.open(this.reviewUrl(), '_blank', 'noopener');
-            } else if (value === 'designer') {
-              this.openDesigner();
-            } else if (value === 'create') {
-              this.createLink();
-            } else if (value === 'revoke') {
-              this.revokeLink();
-            }
-          },
+          stopKey: (event) => { event.stopPropagation(); return true; },
+          menu: menu,
+          doCopy: then(() => this.copyLink()),
+          doOpen: then(() => window.open(this.reviewUrl(), '_blank', 'noopener')),
+          doDesigner: then(() => this.openDesigner()),
+          doCreate: then(() => this.createLink()),
+          doRevoke: then(() => this.revokeLink()),
           expires: d.reviewExpiresAt ? 'Expires ' + new Date(d.reviewExpiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'No link',
           reviewers: reviewers.length + ' reviewer' + (reviewers.length === 1 ? '' : 's'), comments: d.comments.length + (d.comments.length === 1 ? ' comment' : ' comments'),
           css: ko.pureComputed(() => 'factory-rv-link' + (this.selectedId() === d.id ? ' factory-rv-link-on' : '')),
-          pick: () => this.selectedId(d.id)
+          pressed: ko.pureComputed(() => (this.selectedId() === d.id ? 'true' : 'false')),
+          pick: () => this.selectedId(d.id),
+          keyPick: (event) => {
+            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              this.selectedId(d.id);
+            }
+            return true;
+          }
         };
       }));
       this.linkSearch = ko.observable('');
@@ -78,12 +82,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const comments = [].concat.apply([], list.map((d) => d.comments));
         const reviewers = new Set(comments.filter((c) => c.fromReview).map((c) => c.author));
         return [
-          { label: 'Active Review Links', value: active.length, sub: soon + ' expiring soon', css: 'factory-kpi-sub factory-warn', tone: 'blue', icon: 'link' },
-          { label: 'Total Reviewers', value: reviewers.size, sub: 'have commented', css: 'factory-kpi-sub', tone: 'blue', icon: 'user' },
-          { label: 'Comments', value: comments.length, sub: comments.filter((c) => c.fromReview).length + ' from reviewers', css: 'factory-kpi-sub', tone: 'violet', icon: 'doc' },
-          { label: 'Approved Screens', value: list.filter((d) => d.status === 'APPROVED').length, sub: 'Out of ' + list.length, css: 'factory-kpi-sub', tone: 'green', icon: 'check' },
-          { label: 'Pending Approval', value: list.filter((d) => d.status === 'IN_REVIEW').length, sub: 'View details →', css: 'factory-kpi-sub factory-link', tone: 'amber', icon: 'clock' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+          { label: 'Active Review Links', value: active.length, sub: soon + ' expiring soon', css: 'factory-rv-kpisub' + (soon ? ' factory-rv-kpiwarn' : ''), tone: 'primary', icon: 'link' },
+          { label: 'Total Reviewers', value: reviewers.size, sub: 'have commented', tone: 'info', icon: 'user' },
+          { label: 'Comments', value: comments.length, sub: comments.filter((c) => c.fromReview).length + ' from reviewers', tone: 'violet', icon: 'doc' },
+          { label: 'Approved Screens', value: list.filter((d) => d.status === 'APPROVED').length, sub: 'Out of ' + list.length, tone: 'success', icon: 'check', open: () => this.tab('history') },
+          { label: 'Pending Approval', value: list.filter((d) => d.status === 'IN_REVIEW').length, sub: 'View details →', css: 'factory-rv-kpisub factory-rv-kpilink', tone: 'warning', icon: 'clock', open: () => this.tab('screens') }
+        ].map((k) => Object.assign(k, {
+          iconCss: 'fx-kpi-icon factory-rv-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, css: k.css || 'factory-rv-kpisub', open: k.open || null
+        }));
       });
       this.tab = ko.observable('links');
       this.tabs = ui.tabs(this.tab, [
@@ -136,46 +142,44 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!d) {
           return;
         }
-        if (live(d) && !window.confirm('Create a new review link for ' + d.name + '? The current link stops working.')) {
-          return;
-        }
-        api.post('designs/' + d.id + '/review-link', { days: daysFor() })
-          .then((detail) => { reload(detail); this.pickedExpiry(''); this.infoMessage('Review link created. Copy it and send it to the reviewers.'); })
-          .catch(showError);
+        const ask = live(d)
+          ? dialog.confirm({ title: 'Create a new review link?', message: 'The current link of ' + d.name + ' stops working. Send the new link to the reviewers.', confirmLabel: 'Create new link', danger: true })
+          : Promise.resolve(true);
+        ask.then((ok) => ok && api.post('designs/' + d.id + '/review-link', { days: daysFor() })
+          .then((detail) => {
+            reload(detail);
+            this.pickedExpiry('');
+            toast.success('Review link created. Copy it and send it to the reviewers.', { action: { label: 'Copy link', run: () => this.copyLink() } });
+          })
+          .catch(actionError));
       };
-      this.linkAction = (event) => {
-        const value = event.detail.selectedValue;
-        if (value === 'open') {
-          window.open(this.reviewUrl(), '_blank', 'noopener');
-        } else if (value === 'create') {
-          this.createLink();
-        } else if (value === 'revoke') {
-          this.revokeLink();
-        }
+      this.linkMenu = ui.menu();
+      this.linkDo = {
+        open: () => { this.linkMenu.close(); window.open(this.reviewUrl(), '_blank', 'noopener'); },
+        create: () => { this.linkMenu.close(); this.createLink(); },
+        revoke: () => { this.linkMenu.close(); this.revokeLink(); }
       };
       this.revokeLink = () => {
         const d = this.selected();
-        if (!d || !window.confirm('Revoke the review link of ' + d.name + '? People who have it can no longer open it.')) {
+        if (!d) {
           return;
         }
-        api.del('designs/' + d.id + '/review-link').then(reload).catch(showError);
+        dialog.confirm({ title: 'Revoke the review link?', message: 'People who have the link of ' + d.name + ' can no longer open it.', confirmLabel: 'Revoke link', danger: true })
+          .then((ok) => ok && api.del('designs/' + d.id + '/review-link').then((detail) => { reload(detail); toast.success('Review link revoked.'); }).catch(actionError));
       };
       this.copyLink = () => {
         const url = this.reviewUrl();
-        (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject(new Error('no clipboard')))
-          .then(() => this.infoMessage('Link copied.'))
-          .catch(() => { window.prompt('Copy the review link:', url); });
+        ui.copy(url)
+          .then(() => toast.success('Link copied.'))
+          .catch(() => toast.warning('The browser did not allow copying. Open the link and copy it from the address bar.', { action: { label: 'Open link', run: () => window.open(url, '_blank', 'noopener') } }));
       };
-      this.newLinkFor = (event) => {
-        if (event.detail.selectedValue !== 'none') {
-          this.selectedId(event.detail.selectedValue);
-          this.createLink();
-        }
-      };
-      this.withoutLink = ko.pureComputed(() => this.links().filter((l) => (l.state === 'none' || l.state === 'expired' || l.state === 'review') && !l.hasLink));
-      this.openNewLinkMenu = (event) => document.getElementById('createReviewLinkMenu').open(event, {
-        launcher: event.currentTarget, position: { my: { horizontal: 'end', vertical: 'top' }, at: { horizontal: 'end', vertical: 'bottom' } }
-      });
+      this.newMenu = ui.menu();
+      this.newMenu2 = ui.menu();
+      this.withoutLink = ko.pureComputed(() => this.links().filter((l) => (l.state === 'none' || l.state === 'expired' || l.state === 'review') && !l.hasLink).map((l) => Object.assign({}, l, {
+        createFor: () => { this.newMenu.close(); this.newMenu2.close(); this.selectedId(l.id); this.createLink(); }
+      })));
+      this.createTip = ko.pureComputed(() => (!this.canEdit() ? 'You need the Edit designs permission in this workspace'
+        : this.withoutLink().length === 0 ? 'Every screen already has an active review link' : null));
 
       // Comments of the selected design (newest first) and adding one
       this.commentFilter = ko.observable('all');
@@ -185,13 +189,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return d ? d.comments.slice().reverse().filter((c) => this.commentFilter() === 'all' || (this.commentFilter() === 'review') === c.fromReview).map((c) => ({
           author: c.author, initials: ui.initials(c.author), role: c.fromReview ? 'Reviewer (review link)' : 'Team', text: c.text,
           when: ui.when(c.createdAt), version: 'v' + c.version, component: c.componentId || '',
-          pill: c.fromReview ? ui.pill('Reviewer', 'amber') : ui.pill('Team', 'blue'),
+          avatarCss: ui.avatarTone(c.author) + ' factory-rv-avatar',
           reply: () => focusComment('@' + c.author + ' ')
         })) : [];
       });
       this.commentCount = ko.pureComputed(() => (this.selected() ? this.selected().comments.length : 0));
       this.sideTab = ko.observable('comments');
       this.sideTabs = ui.tabs(this.sideTab, [{ value: 'comments', label: 'Comments', count: this.commentCount }, { value: 'details', label: 'Details' }]);
+      this.myAvatarCss = ko.pureComputed(() => ui.avatarTone(session.user() ? session.user().username : '') + ' factory-rv-avatar');
       this.myInitials = ko.pureComputed(() => ui.initials(session.user() ? (session.user().displayName || session.user().username) : ''));
       this.newComment = ko.observable('');
       this.commentInput = ui.value(this.newComment);
@@ -226,11 +231,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!d || !this.newComment().trim()) {
           return;
         }
-        api.post('designs/' + d.id + '/comments', { text: this.newComment().trim() }).then((detail) => { focusComment(''); reload(detail); }).catch(showError);
+        api.post('designs/' + d.id + '/comments', { text: this.newComment().trim() }).then((detail) => { focusComment(''); reload(detail); toast.success('Comment posted.'); }).catch(actionError);
       };
       this.allComments = ko.pureComputed(() => [].concat.apply([], designs().map((d) => d.comments.map((c) => ({
         screen: d.name, author: c.author, text: c.text, when: ui.when(c.createdAt), at: c.createdAt,
-        pill: c.fromReview ? ui.pill('Reviewer', 'amber') : ui.pill('Team', 'blue')
+        pill: c.fromReview ? badge('Reviewer', 'warning') : badge('Team', 'primary')
       })))).sort((a, b) => new Date(b.at) - new Date(a.at)));
       this.history = ko.pureComputed(() => designs().filter((d) => d.approvedAt).map((d) => ({
         screen: d.name, version: 'v' + d.approvedVersion, by: d.approvedBy, when: ui.when(d.approvedAt), at: d.approvedAt,

@@ -1,6 +1,6 @@
 <div class="factory-ws">
   <oj-bind-if test="[[errorMessage()]]">
-    <p class="oj-text-color-danger" id="workspacesError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+    <div class="fx-alert fx-alert--danger factory-ws4-alert" id="workspacesError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
   </oj-bind-if>
 
   <!-- Screen 02: the main view -->
@@ -48,7 +48,7 @@
       <span class="factory-grow">
         <span class="factory-ws-tile-label">Completed Setup</span>
         <span class="factory-ws-tile-value"><oj-bind-text value="[[tiles().ready]]"></oj-bind-text> <span class="factory-ws-tile-note">Ready for development</span></span>
-        <span class="factory-ws-progress"><span :style.width="[[tiles().readyWidth]]"></span></span>
+        <span class="fx-progress fx-progress--success factory-ws-progress" role="progressbar" aria-label="Workspaces ready" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[tiles().readyPercent]]"><span :style.width="[[tiles().readyWidth]]"></span></span>
       </span>
     </div>
     <div class="factory-ws-tile">
@@ -83,7 +83,7 @@
         <oj-bind-for-each data="[[sourceTabs]]">
           <template>
             <oj-bind-if test="[[!$current.data.hidden()]]">
-              <button type="button" role="tab" :id="[['source-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+              <button type="button" role="tab" :id="[['source-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected]]" on-click="[[$current.data.pick]]">
                 <span :class="[[$current.data.icon]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text>
               </button>
             </oj-bind-if>
@@ -92,19 +92,19 @@
       </div>
       <div class="factory-ws-tabpanel">
         <oj-bind-if test="[[sourceKind() === 'folder']]">
-          <p class="factory-ov2-field-label">Select folder</p>
+          <p class="fx-label factory-ws4-label" id="folderPathLabel">Select folder</p>
           <div class="factory-ws-source">
-            <oj-input-text id="folderPath" class="factory-grow factory-ws-input" label-hint="Select folder" label-edge="none" autocomplete="off"
+            <oj-input-text id="folderPath" class="factory-grow factory-ws-input" label-hint="Select folder" label-edge="none" labelled-by="folderPathLabel" autocomplete="off"
                            placeholder="Choose a local folder containing OBDX code..." value="{{folderPath}}" on-oj-enter="[[checkFolder]]"></oj-input-text>
             <oj-bind-if test="[[!browsing()]]">
-              <button type="button" id="browseButton" class="factory-ov2-btn factory-ws-grey" on-click="[[toggleBrowse]]">Browse...</button>
+              <button type="button" id="browseButton" class="fx-btn fx-btn--tertiary factory-ws4-btn" on-click="[[toggleBrowse]]">Browse...</button>
             </oj-bind-if>
             <oj-bind-if test="[[browsing()]]">
-              <button type="button" id="browseButton" class="factory-ov2-btn factory-ws-grey" on-click="[[toggleBrowse]]">Close</button>
+              <button type="button" id="browseButton" class="fx-btn fx-btn--tertiary factory-ws4-btn" on-click="[[toggleBrowse]]">Close</button>
             </oj-bind-if>
-            <button type="button" id="checkFolderButton" class="factory-ws-check" :disabled="[[checking]]" on-click="[[checkFolder]]">
+            <button type="button" id="checkFolderButton" class="fx-btn fx-btn--primary factory-ws4-btn" :disabled="[[checking]]" on-click="[[checkFolder]]">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Check</button>
-            <span class="factory-ws-help" title="A TortoiseSVN checkout, an SVN repository, or any folder with the code, for example C:\svn\obdx\trunk">
+            <span class="factory-ws-help" tabindex="0" role="img" aria-label="Which folder? A TortoiseSVN checkout, an SVN repository, or any folder with the code, for example C:\svn\obdx\trunk" data-fx-tip="A TortoiseSVN checkout, an SVN repository, or any folder with the code, for example C:\svn\obdx\trunk">
               <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span></span>
           </div>
           <oj-bind-if test="[[found().length > 0]]">
@@ -112,7 +112,7 @@
               <span class="factory-ov-subtle">SVN repositories on this computer:</span>
               <oj-bind-for-each data="[[found]]">
                 <template>
-                  <button type="button" class="factory-chip" on-click="[[$current.data.use]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button>
+                  <button type="button" class="fx-chip" on-click="[[$current.data.use]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button>
                 </template>
               </oj-bind-for-each>
             </div>
@@ -141,7 +141,7 @@
                         <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
                       </oj-button>
                       <oj-bind-if test="[[$current.data.label]]">
-                        <span class="factory-badge"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+                        <span class="fx-badge fx-badge--info"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
                         <oj-button chroming="borderless" on-oj-action="[[$current.data.use]]">Use</oj-button>
                       </oj-bind-if>
                     </li>
@@ -160,7 +160,7 @@
             <oj-input-text id="svnUsername" label-hint="SVN username (if the server asks)" value="{{svnUsername}}" autocomplete="off"></oj-input-text>
             <oj-input-password id="svnPassword" label-hint="SVN password" value="{{svnPassword}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
           </oj-form-layout>
-          <button type="button" id="checkUrlButton" class="factory-ws-check" :disabled="[[checking]]" on-click="[[checkUrl]]">
+          <button type="button" id="checkUrlButton" class="fx-btn fx-btn--primary factory-ws4-btn" :disabled="[[checking]]" on-click="[[checkUrl]]">
             <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Check</button>
         </oj-bind-if>
       </div>
@@ -222,30 +222,30 @@
     <div class="factory-ws-list-head">
       <h2><oj-bind-text value="[['All Workspaces (' + total() + ')']]"></oj-bind-text></h2>
       <div class="factory-ws-filters">
-        <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-          <input id="workspaceSearch" type="search" placeholder="Search workspaces..." aria-label="Search workspaces" on-input="[[filterTextInput]]"></span>
-        <select id="bankFilter" class="factory-ws-select" aria-label="Bank" on-change="[[filterBankChange]]">
+        <span class="fx-control factory-ws4-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+          <input id="workspaceSearch" class="fx-input" type="search" placeholder="Search workspaces..." aria-label="Search workspaces" on-input="[[filterTextInput]]"></span>
+        <select id="bankFilter" class="fx-select factory-ws4-select" aria-label="Bank" on-change="[[filterBankChange]]">
           <option value="">All Banks</option>
           <oj-bind-for-each data="[[banks]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
         </select>
-        <select id="statusFilter" class="factory-ws-select" aria-label="Status" on-change="[[filterStatusChange]]">
+        <select id="statusFilter" class="fx-select factory-ws4-select" aria-label="Status" on-change="[[filterStatusChange]]">
           <option value="">All Status</option>
           <option value="ready">Completed</option>
           <option value="importing">In Progress</option>
           <option value="failed">Check Required</option>
           <option value="new">Not imported</option>
         </select>
-        <select id="versionFilter" class="factory-ws-select" aria-label="OBDX version" on-change="[[filterVersionChange]]">
+        <select id="versionFilter" class="fx-select factory-ws4-select" aria-label="OBDX version" on-change="[[filterVersionChange]]">
           <option value="">All Versions</option>
           <oj-bind-for-each data="[[versions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
         </select>
-        <button type="button" class="factory-ov2-btn factory-ws-icon-btn" id="refreshWorkspaces" title="Refresh" aria-label="Refresh" on-click="[[refresh]]">
+        <button type="button" class="fx-btn fx-btn--tertiary fx-btn--icon" id="refreshWorkspaces" data-fx-tip="Refresh" aria-label="Refresh" on-click="[[refresh]]">
           <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></button>
       </div>
     </div>
-    <div class="factory-ov2-table-wrap">
-      <table class="factory-ov2-table factory-ws-table" id="workspaceTable">
-        <thead><tr><th>Name</th><th>Bank</th><th>OBDX Version</th><th>SVN URL / Path</th><th>Status</th><th>Last Checked</th><th>Actions</th></tr></thead>
+    <div class="fx-table-wrap factory-ov2-table-wrap">
+      <table class="fx-table factory-ov2-table factory-ws-table" id="workspaceTable">
+        <thead><tr><th scope="col">Name</th><th scope="col">Bank</th><th scope="col">OBDX Version</th><th scope="col">SVN URL / Path</th><th scope="col">Status</th><th scope="col">Last Checked</th><th scope="col">Actions</th></tr></thead>
         <tbody>
           <oj-bind-for-each data="[[rows]]">
             <template>
@@ -258,11 +258,11 @@
                 <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.icon]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
                 <td class="factory-ws-nowrap"><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td>
                 <td class="factory-ws-actions">
-                  <button type="button" class="factory-ov2-btn" on-click="[[$current.data.open]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Open</button>
-                  <button type="button" class="factory-ov2-btn factory-ws-icon-btn" title="Edit the repository settings" :aria-label="[['Edit ' + $current.data.name]]" on-click="[[$current.data.edit]]">
+                  <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[$current.data.open]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Open</button>
+                  <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" data-fx-tip="Edit the repository settings" :aria-label="[['Edit ' + $current.data.name]]" on-click="[[$current.data.edit]]">
                     <span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span></button>
                   <oj-bind-if test="[[$current.data.canDelete]]">
-                    <button type="button" class="factory-ov2-btn factory-ws-icon-btn factory-ws-delete" title="Delete" :aria-label="[['Delete ' + $current.data.name]]" on-click="[[$current.data.remove]]">
+                    <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon factory-ws-delete" data-fx-tip="Delete" :aria-label="[['Delete ' + $current.data.name]]" on-click="[[$current.data.remove]]">
                       <span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span></button>
                   </oj-bind-if>
                 </td>
@@ -272,7 +272,7 @@
         </tbody>
       </table>
       <oj-bind-if test="[[rows().length === 0]]">
-        <p class="factory-ov-empty"><oj-bind-text value="[[total() === 0 ? 'No workspaces yet. Create one above.' : 'No workspaces match.']]"></oj-bind-text></p>
+        <div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><oj-bind-text value="[[total() === 0 ? 'No workspaces yet. Create one above.' : 'No workspaces match.']]"></oj-bind-text></div>
       </oj-bind-if>
     </div>
     <p class="factory-ws3-hint">Select a workspace to see its details in the <a href="?ojr=workspaces" id="openRegistry" on-click="[[openRegistry]]">workspace registry</a>.</p>
@@ -290,7 +290,7 @@
           </template>
         </oj-bind-for-each>
       </ul>
-      <oj-bind-if test="[[activity().length === 0]]"><p class="factory-ov-empty">Nothing yet.</p></oj-bind-if>
+      <oj-bind-if test="[[activity().length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span>Nothing yet.</div></oj-bind-if>
     </section>
     <section class="factory-ws-card">
       <h2>Quick Actions</h2>
@@ -339,7 +339,7 @@
 
   <div class="factory-tabbar factory-ws3-tabs" role="tablist" aria-label="Workspace registry">
     <oj-bind-for-each data="[[regTabs]]">
-      <template><button type="button" role="tab" :id="[['reg-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+      <template><button type="button" role="tab" :id="[['reg-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
         <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
@@ -350,33 +350,33 @@
       <h2>Workspaces</h2>
       <p class="factory-ws-card-sub">Manage your OBDX application workspaces and repositories</p>
       <div class="factory-ws3-filters">
-        <span class="factory-ws-search factory-grow"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-          <input id="registrySearch" type="search" placeholder="Search name, code or URL..." aria-label="Search workspaces" :value="[[regText]]" on-input="[[regTextInput]]"></span>
-        <select id="registryStatus" class="factory-ws-select" aria-label="Status" :value="[[regStatus]]" on-change="[[regStatusChange]]">
+        <span class="fx-control factory-ws4-search factory-grow"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+          <input id="registrySearch" class="fx-input" type="search" placeholder="Search name, code or URL..." aria-label="Search workspaces" :value="[[regText]]" on-input="[[regTextInput]]"></span>
+        <select id="registryStatus" class="fx-select factory-ws4-select" aria-label="Status" :value="[[regStatus]]" on-change="[[regStatusChange]]">
           <option value="">All Status</option>
           <option value="ready">Active</option>
           <option value="importing">Indexing</option>
           <option value="failed">Error</option>
           <option value="new">Not imported</option>
         </select>
-        <select id="registryEnvironment" class="factory-ws-select" aria-label="Environment" disabled title="Workspaces have no environment setting yet">
+        <span class="factory-ws4-tipwrap" tabindex="0" data-fx-tip="Workspaces have no environment setting yet"><select id="registryEnvironment" class="fx-select factory-ws4-select" aria-label="Environment (workspaces have no environment setting yet)" disabled>
           <option value="">All Environments</option>
-        </select>
-        <select id="registryOwner" class="factory-ws-select" aria-label="Owner" :value="[[regOwner]]" on-change="[[regOwnerChange]]">
+        </select></span>
+        <select id="registryOwner" class="fx-select factory-ws4-select" aria-label="Owner" :value="[[regOwner]]" on-change="[[regOwnerChange]]">
           <option value="">All Owners</option>
           <oj-bind-for-each data="[[owners]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
         </select>
-        <button type="button" class="factory-ov2-btn" id="registryReset" on-click="[[regReset]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
+        <button type="button" class="fx-btn fx-btn--tertiary factory-ws4-reset" id="registryReset" on-click="[[regReset]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
       </div>
       <oj-bind-if test="[[checkedCount() > 0]]">
-        <p class="factory-ws3-selbar"><oj-bind-text value="[[checkedCount() + ' selected']]"></oj-bind-text>
+        <p class="factory-ws3-selbar" role="status"><oj-bind-text value="[[checkedCount() + ' selected']]"></oj-bind-text>
           <button type="button" class="factory-ws3-linkbtn" on-click="[[clearChecked]]">Clear</button></p>
       </oj-bind-if>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table factory-ws3-table" id="registryWorkspaceTable">
+      <div class="fx-table-wrap factory-ov2-table-wrap">
+        <table class="fx-table factory-ov2-table factory-ws3-table" id="registryWorkspaceTable">
           <thead><tr>
-            <th class="factory-ws3-cb"><input type="checkbox" aria-label="Select all workspaces" :checked="[[allChecked]]" on-click="[[toggleAll]]"></th>
-            <th>Workspace Name</th><th>Code</th><th>Repository URL</th><th>Environment</th><th>Last Indexed</th><th>Status</th><th class="factory-ws3-act">Actions</th></tr></thead>
+            <th scope="col" class="factory-ws3-cb"><input type="checkbox" aria-label="Select all workspaces" :checked="[[allChecked]]" on-click="[[toggleAll]]"></th>
+            <th scope="col">Workspace Name</th><th scope="col">Code</th><th scope="col">Repository URL</th><th scope="col">Environment</th><th scope="col">Last Indexed</th><th scope="col">Status</th><th scope="col" class="factory-ws3-act">Actions</th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[regRows]]" as="r">
               <template>
@@ -385,7 +385,7 @@
                   <td><span class="factory-ws3-namecell"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span><span class="factory-ws3-ellipsis" :title="[[r.data.name]]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></span></span></td>
                   <td class="factory-ws-nowrap"><oj-bind-text value="[[r.data.code]]"></oj-bind-text></td>
                   <td class="factory-ws3-url" :title="[[r.data.svnUrl]]"><oj-bind-text value="[[r.data.shortUrl]]"></oj-bind-text></td>
-                  <td><span class="factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></td>
+                  <td><span class="fx-badge fx-badge--plain factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></td>
                   <td class="factory-ws3-when"><oj-bind-text value="[[r.data.indexedDay]]"></oj-bind-text><br><oj-bind-text value="[[r.data.indexedTime]]"></oj-bind-text></td>
                   <td><span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-ws3-act">
@@ -407,7 +407,7 @@
           </tbody>
         </table>
         <oj-bind-if test="[[regRows().length === 0]]">
-          <p class="factory-ov-empty"><oj-bind-text value="[[total() === 0 ? 'No workspaces yet. Register one.' : 'No workspaces match.']]"></oj-bind-text></p>
+          <div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><oj-bind-text value="[[total() === 0 ? 'No workspaces yet. Register one.' : 'No workspaces match.']]"></oj-bind-text></div>
         </oj-bind-if>
         <oj-bind-if test="[[regRows().length > 0 && regRows().length < 6]]">
           <p class="factory-ws3-filler">Select a workspace to see its details. Register Workspace adds another OBDX code base.</p>
@@ -417,7 +417,7 @@
     </section>
 
     <section class="factory-ws-card factory-ws3-detail" id="workspaceDetails">
-      <oj-bind-if test="[[!selectedWs()]]"><p class="factory-ov-empty">Select a workspace to see its details.</p></oj-bind-if>
+      <oj-bind-if test="[[!selectedWs()]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>Select a workspace to see its details.</div></oj-bind-if>
       <oj-bind-if test="[[selectedWs()]]">
         <div class="factory-ws3-dhead">
           <span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span></span>
@@ -436,7 +436,7 @@
         </div>
         <div class="factory-subtabs factory-ws3-subtabs" role="tablist" aria-label="Workspace details">
           <oj-bind-for-each data="[[detailTabs]]">
-            <template><button type="button" role="tab" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            <template><button type="button" role="tab" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
           </oj-bind-for-each>
         </div>
 
@@ -446,16 +446,16 @@
               <dl class="factory-kv factory-ws3-kv">
                 <dt>Workspace Code</dt><dd><oj-bind-text value="[[selectedWs().code]]"></oj-bind-text></dd>
                 <dt>Description</dt><dd><oj-bind-text value="[[selectedWs().description]]"></oj-bind-text></dd>
-                <dt>Environment</dt><dd><span class="factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></dd>
+                <dt>Environment</dt><dd><span class="fx-badge fx-badge--plain factory-ws3-env" title="Workspaces have no environment setting yet">Not set</span></dd>
                 <dt>Repository URL</dt><dd><span class="factory-ws3-copyrow"><span class="factory-ws3-urlwrap factory-mono" :title="[[selectedWs().svnUrl]]"><oj-bind-text value="[[selectedWs().svnUrl]]"></oj-bind-text></span>
-                  <button type="button" class="factory-ws3-iconbtn" title="Copy the repository URL" aria-label="Copy the repository URL" on-click="[[copyUrl]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></dd>
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-ws4-copy" data-fx-tip="Copy the repository URL" aria-label="Copy the repository URL" on-click="[[copyUrl]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></dd>
                 <dt>Created On</dt><dd><oj-bind-text value="[[selectedWs().created]]"></oj-bind-text></dd>
                 <dt>Last Indexed</dt><dd><oj-bind-text value="[[selectedWs().lastIndexed]]"></oj-bind-text></dd>
-                <dt>Owner</dt><dd><oj-bind-if test="[[selectedWs().owner]]"><span class="factory-ws3-person"><span class="factory-avatar-sm"><oj-bind-text value="[[selectedWs().owner ? selectedWs().owner.initials : '']]"></oj-bind-text></span><oj-bind-text value="[[selectedWs().owner ? selectedWs().owner.name : '']]"></oj-bind-text></span></oj-bind-if>
+                <dt>Owner</dt><dd><oj-bind-if test="[[selectedWs().owner]]"><span class="factory-ws3-person"><span :class="[[selectedWs().owner ? selectedWs().owner.avatar : 'fx-avatar fx-avatar--sm']]" aria-hidden="true"><oj-bind-text value="[[selectedWs().owner ? selectedWs().owner.initials : '']]"></oj-bind-text></span><oj-bind-text value="[[selectedWs().owner ? selectedWs().owner.name : '']]"></oj-bind-text></span></oj-bind-if>
                   <oj-bind-if test="[[!selectedWs().owner]]"><span class="factory-ov-subtle">No lead assigned</span></oj-bind-if></dd>
                 <dt>Members</dt><dd><span class="factory-ws3-members">
-                  <span class="factory-ws-members"><oj-bind-for-each data="[[selectedWs().memberFaces]]"><template><span class="factory-avatar-sm" :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span></template></oj-bind-for-each>
-                    <oj-bind-if test="[[selectedWs().moreMembers > 0]]"><span class="factory-avatar-sm factory-ws3-more"><oj-bind-text value="[['+' + selectedWs().moreMembers]]"></oj-bind-text></span></oj-bind-if>
+                  <span class="factory-ws-members"><oj-bind-for-each data="[[selectedWs().memberFaces]]"><template><span :class="[[$current.data.avatar]]" :title="[[$current.data.name]]" role="img" :aria-label="[[$current.data.name]]"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span></template></oj-bind-for-each>
+                    <oj-bind-if test="[[selectedWs().moreMembers > 0]]"><span class="fx-avatar fx-avatar--sm factory-ws3-more"><oj-bind-text value="[['+' + selectedWs().moreMembers]]"></oj-bind-text></span></oj-bind-if>
                     <oj-bind-if test="[[selectedWs().members.length === 0]]"><span class="factory-ov-subtle">Administrators only</span></oj-bind-if></span>
                   <a href="?ojr=admin" class="factory-ws3-manage" on-click="[[go('admin')]]">Manage Members</a></span></dd>
               </dl>
@@ -489,21 +489,21 @@
             <p class="factory-ws3-note"><oj-bind-text value="[[selectedWs().importMessage]]"></oj-bind-text></p>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'access']]">
-            <table class="factory-ov2-table factory-ws3-mini">
-              <thead><tr><th>Member</th><th>Role</th></tr></thead>
+            <table class="fx-table factory-ov2-table factory-ws3-mini">
+              <thead><tr><th scope="col">Member</th><th scope="col">Role</th></tr></thead>
               <tbody>
                 <oj-bind-for-each data="[[selectedWs().members]]">
-                  <template><tr><td><span class="factory-ws3-person"><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.displayName]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.roleText]]"></oj-bind-text></td></tr></template>
+                  <template><tr><td><span class="factory-ws3-person"><span :class="[[$current.data.avatar]]" aria-hidden="true"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.displayName]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.roleText]]"></oj-bind-text></td></tr></template>
                 </oj-bind-for-each>
               </tbody>
             </table>
-            <oj-bind-if test="[[selectedWs().members.length === 0]]"><p class="factory-ov-empty">No members yet. Administrators can open it; add members on the Administration page.</p></oj-bind-if>
+            <oj-bind-if test="[[selectedWs().members.length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span></span>No members yet. Administrators can open it; add members on the Administration page.</div></oj-bind-if>
           </oj-bind-if>
         </div>
 
         <div class="factory-ws3-dactions">
-          <button type="button" id="reindexButton" class="factory-ws3-btn factory-ws3-btn-primary" :disabled="[[!selectedWs().canReindex]]" on-click="[[selectedWs().reindex]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-index Workspace</button>
-          <button type="button" id="editConfigButton" class="factory-ws3-btn" on-click="[[selectedWs().edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Configuration</button>
+          <span class="factory-ws4-tipwrap" :tabindex="[[selectedWs().canReindex ? null : '0']]" :data-fx-tip="[[selectedWs().reindexTip]]"><button type="button" id="reindexButton" class="fx-btn fx-btn--primary factory-ws4-dbtn" :disabled="[[!selectedWs().canReindex]]" on-click="[[selectedWs().reindex]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-index Workspace</button></span>
+          <button type="button" id="editConfigButton" class="fx-btn fx-btn--tertiary factory-ws4-dbtn" on-click="[[selectedWs().edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Configuration</button>
           <oj-menu-button id="moreActionsButton" chroming="outlined">More Actions
             <span slot="endIcon" class="factory-nav-icon factory-ico-caret factory-ws3-caret" aria-hidden="true"></span>
             <oj-menu slot="menu" on-oj-menu-action="[[detailMenu]]">
@@ -524,9 +524,9 @@
     <section class="factory-ws-card" id="registryRepositories">
       <h2>Repository Configuration</h2>
       <p class="factory-ws-card-sub">The SVN repository of each workspace. Change one or test its connection on the Code page.</p>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table factory-ws3-table">
-          <thead><tr><th>Workspace</th><th>Provider</th><th>Repository URL</th><th>Username</th><th>Password</th><th>Indexed Revision</th><th>Last Import</th><th></th></tr></thead>
+      <div class="fx-table-wrap factory-ov2-table-wrap">
+        <table class="fx-table factory-ov2-table factory-ws3-table">
+          <thead><tr><th scope="col">Workspace</th><th scope="col">Provider</th><th scope="col">Repository URL</th><th scope="col">Username</th><th scope="col">Password</th><th scope="col">Indexed Revision</th><th scope="col">Last Import</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[regAll]]" as="w">
               <template><tr>
@@ -537,7 +537,7 @@
                 <td><oj-bind-text value="[[w.data.svnPassword]]"></oj-bind-text></td>
                 <td><oj-bind-text value="[[w.data.revision]]"></oj-bind-text></td>
                 <td class="factory-ws-nowrap"><oj-bind-text value="[[w.data.lastImport]]"></oj-bind-text></td>
-                <td><button type="button" class="factory-ov2-btn" on-click="[[w.data.edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit</button></td>
+                <td><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" :aria-label="[['Edit ' + w.data.name]]" on-click="[[w.data.edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit</button></td>
               </tr></template>
             </oj-bind-for-each>
           </tbody>
@@ -550,9 +550,9 @@
     <section class="factory-ws-card" id="registryIndexing">
       <h2>Indexing &amp; Discovery</h2>
       <p class="factory-ws-card-sub">What the last code import of each workspace indexed and discovered.</p>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table factory-ws3-table">
-          <thead><tr><th>Workspace</th><th>Status</th><th>Files</th><th>Searchable Pieces</th><th>With Embeddings</th><th>Modules</th><th>UI Screens</th><th>APIs</th><th>Revision</th><th>Last Indexed</th></tr></thead>
+      <div class="fx-table-wrap factory-ov2-table-wrap">
+        <table class="fx-table factory-ov2-table factory-ws3-table">
+          <thead><tr><th scope="col">Workspace</th><th scope="col">Status</th><th scope="col">Files</th><th scope="col">Searchable Pieces</th><th scope="col">With Embeddings</th><th scope="col">Modules</th><th scope="col">UI Screens</th><th scope="col">APIs</th><th scope="col">Revision</th><th scope="col">Last Indexed</th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[regAll]]" as="w">
               <template><tr>
@@ -578,9 +578,9 @@
     <section class="factory-ws-card" id="registryStack">
       <h2>Project Stack</h2>
       <p class="factory-ws-card-sub">Technologies the factory detected in each workspace's code. See the evidence on the Project Profile page.</p>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table factory-ws3-table">
-          <thead><tr><th>Workspace</th><th>Frontend</th><th>Backend</th><th>Database</th><th>Build</th><th>App Server</th><th>CI / CD</th></tr></thead>
+      <div class="fx-table-wrap factory-ov2-table-wrap">
+        <table class="fx-table factory-ov2-table factory-ws3-table">
+          <thead><tr><th scope="col">Workspace</th><th scope="col">Frontend</th><th scope="col">Backend</th><th scope="col">Database</th><th scope="col">Build</th><th scope="col">App Server</th><th scope="col">CI / CD</th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[regAll]]" as="w">
               <template><tr>
@@ -603,9 +603,9 @@
     <section class="factory-ws-card" id="registryAccess">
       <h2>Access &amp; Permissions</h2>
       <p class="factory-ws-card-sub">Members of each workspace and their roles. Administrators can open every workspace.</p>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table factory-ws3-table">
-          <thead><tr><th>Workspace</th><th>Owner</th><th>Members</th><th></th></tr></thead>
+      <div class="fx-table-wrap factory-ov2-table-wrap">
+        <table class="fx-table factory-ov2-table factory-ws3-table">
+          <thead><tr><th scope="col">Workspace</th><th scope="col">Owner</th><th scope="col">Members</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[regAll]]" as="w">
               <template><tr>
@@ -633,7 +633,7 @@
           </template>
         </oj-bind-for-each>
       </ul>
-      <oj-bind-if test="[[regActivity().length === 0]]"><p class="factory-ov-empty">Nothing yet.</p></oj-bind-if>
+      <oj-bind-if test="[[regActivity().length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span>Nothing yet.</div></oj-bind-if>
     </section>
     <section class="factory-ws-card">
       <h2 class="factory-ws-h2-row">Project Stack <a href="?ojr=profile" on-click="[[openProfile]]">View Details <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a></h2>

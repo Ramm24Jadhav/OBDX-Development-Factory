@@ -6,131 +6,160 @@
     </div>
   </div>
 
-  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="integrationsError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-in-alert" id="integrationsError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+    <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
 
   <div class="factory-kpis">
-    <oj-bind-for-each data="[[kpis]]">
-      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
-        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-          <span :class="[[$current.data.css]]" :title="[[$current.data.sub]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+    <oj-bind-for-each data="[[kpis]]" as="k">
+      <template>
+        <oj-bind-if test="[[k.data.open]]">
+          <button type="button" class="fx-card fx-card--interactive fx-kpi factory-in-kpi" on-click="[[k.data.open]]"><span :class="[[k.data.iconCss]]"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+            <span class="factory-in-kpitext"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span>
+              <span :class="[[k.data.css]]" :title="[[k.data.sub]]"><oj-bind-text value="[[k.data.sub]]"></oj-bind-text></span></span></button>
+        </oj-bind-if>
+        <oj-bind-if test="[[!k.data.open]]">
+          <div class="fx-card fx-kpi factory-in-kpi"><span :class="[[k.data.iconCss]]"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+            <span class="factory-in-kpitext"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span>
+              <span :class="[[k.data.css]]" :title="[[k.data.sub]]"><oj-bind-text value="[[k.data.sub]]"></oj-bind-text></span></span></div>
+        </oj-bind-if>
+      </template>
     </oj-bind-for-each>
   </div>
 
-  <div class="factory-card factory-in-bar">
-    <div class="factory-tabbar factory-in-tabs" role="tablist" aria-label="Integration types">
-      <oj-bind-for-each data="[[tabs]]">
-        <template><button type="button" role="tab" :id="[['in-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-          <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+  <div class="fx-card factory-in-bar">
+    <div class="fx-tabs factory-in-tabs" role="tablist" aria-label="Integration types">
+      <oj-bind-for-each data="[[tabs]]" as="t">
+        <template><button type="button" role="tab" :id="[['in-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" on-click="[[t.data.pick]]">
+          <span :class="[[t.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template>
       </oj-bind-for-each>
     </div>
-    <span class="factory-in-split">
-      <button type="button" id="addIntegration" class="factory-in-split-main" on-click="[[addDefault]]" title="Set up SVN and Jenkins for a workspace on the Code page">
+    <div class="fx-split">
+      <button type="button" id="addIntegration" class="fx-btn fx-btn--primary" on-click="[[addDefault]]" data-fx-tip="Set up SVN and Jenkins for a workspace on the Code page">
         <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Integration</button>
-      <button type="button" id="addIntegrationMore" class="factory-in-split-caret" aria-label="Choose what to add" aria-haspopup="true" on-click="[[openAddMenu]]">
-        <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button>
-    </span>
-    <oj-menu id="addIntegrationMenu" on-oj-menu-action="[[addAction]]">
-      <oj-option value="svn">SVN repository (Code page)</oj-option>
-      <oj-option value="jenkins">Jenkins pipeline (Code page)</oj-option>
-      <oj-option value="model" disabled="[[!isAdmin()]]">Model provider (Models page)</oj-option>
-      <oj-option value="other" disabled>Other tools: not supported yet</oj-option>
-    </oj-menu>
+      <button type="button" id="addIntegrationMore" class="fx-btn fx-btn--primary fx-split-toggle" aria-label="Choose what to add" aria-haspopup="menu" :aria-expanded="[[addMenu.open() ? 'true' : 'false']]"
+              on-click="[[addMenu.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
+      <oj-bind-if test="[[addMenu.open()]]">
+        <div class="fx-menu" role="menu" on-keydown="[[addMenu.key]]">
+          <button type="button" role="menuitem" on-click="[[addDo.svn]]"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>SVN repository (Code page)</button>
+          <button type="button" role="menuitem" on-click="[[addDo.jenkins]]"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Jenkins pipeline (Code page)</button>
+          <button type="button" role="menuitem" :disabled="[[!isAdmin()]]" on-click="[[addDo.model]]"><span class="factory-nav-icon factory-ico-chip" aria-hidden="true"></span>Model provider (Models page)</button>
+          <div class="fx-menu-sep" role="separator"></div>
+          <button type="button" role="menuitem" disabled><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span>Other tools: not supported yet</button>
+        </div>
+      </oj-bind-if>
+    </div>
   </div>
 
   <div class="factory-in-layout">
     <div class="factory-in-left">
-      <section class="factory-card factory-in-list">
+      <section class="fx-card factory-in-list">
         <oj-bind-if test="[[tab() === 'environments']]">
-          <p class="factory-note factory-in-envnote">Environments: this factory runs as one environment. Its settings are in Environment Configuration below. The table lists every integration.</p>
+          <div class="fx-alert fx-alert--info factory-in-envnote"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>
+            <span class="fx-alert-text">Environments: this factory runs as one environment. Its settings are in Environment Configuration below. The table lists every integration.</span></div>
         </oj-bind-if>
         <div class="factory-filters">
-          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" id="intSearch" placeholder="Search integrations by name or type..." aria-label="Search integrations" on-input="[[searchInput]]"></span>
-          <select class="factory-ws-select" id="intType" aria-label="Type" on-change="[[typeChange]]"><option value="">All Types</option><option value="svn">Source Control</option>
+          <span class="fx-control factory-in-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+            <input type="search" class="fx-input" id="intSearch" placeholder="Search integrations by name or type..." aria-label="Search integrations" on-input="[[searchInput]]"></span>
+          <select class="fx-select" id="intType" aria-label="Type" on-change="[[typeChange]]"><option value="">All Types</option><option value="svn">Source Control</option>
             <option value="jenkins">CI / CD</option><option value="model">Model Provider</option><option value="other">Other Tools</option></select>
-          <select class="factory-ws-select" id="intStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="connected">Connected</option>
+          <select class="fx-select" id="intStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="connected">Connected</option>
             <option value="configured">Configured</option><option value="issue">Connection Issue</option><option value="inactive">Inactive</option></select>
-          <button type="button" class="factory-ov2-btn" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
+          <button type="button" class="fx-btn fx-btn--secondary" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
         </div>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-in-table" id="integrationTable">
-            <thead><tr><th><input type="checkbox" id="intSelectAll" aria-label="Select all integrations on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></th>
-              <th>Name</th><th>Type</th><th>Description</th><th>Workspace</th><th>Status</th><th>Last Connected</th><th>Actions</th></tr></thead>
+        <div class="fx-table-wrap factory-in-menuwrap">
+          <table class="fx-table factory-in-table" id="integrationTable">
+            <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" id="intSelectAll" aria-label="Select all integrations on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></label></th>
+              <th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th><th scope="col">Workspace</th><th scope="col">Status</th><th scope="col">Last Connected</th><th scope="col" class="fx-table-actions">Actions</th></tr></thead>
             <tbody>
-              <oj-bind-for-each data="[[rows]]">
-                <template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-                  <td on-click="[[$current.data.stop]]"><input type="checkbox" :aria-label="[['Select ' + $current.data.name + ' ' + $current.data.workspace]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></td>
-                  <td><span class="factory-name-cell"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></td>
-                  <td><span :class="[[$current.data.typeCss]]"><oj-bind-text value="[[$current.data.typeLabel]]"></oj-bind-text></span></td>
-                  <td class="factory-ov-subtle factory-in-desc"><oj-bind-text value="[[$current.data.descText]]"></oj-bind-text></td>
-                  <td><span class="factory-tag factory-in-ws" :title="[[$current.data.workspace]]"><oj-bind-text value="[[$current.data.wsShort]]"></oj-bind-text></span></td>
-                  <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
-                  <td class="factory-in-last"><oj-bind-text value="[[$current.data.last]]"></oj-bind-text></td>
-                  <td on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.name + ' ' + $current.data.workspace]]"></oj-bind-text>
-                    <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
-                      <oj-option value="details">View details</oj-option>
-                      <oj-option value="test" disabled="[[!$current.data.test]]">Test connection</oj-option>
-                      <oj-option value="edit">Edit configuration</oj-option>
-                      <oj-option value="copy" disabled="[[!$current.data.hasTarget]]">Copy server URL</oj-option>
-                    </oj-menu></oj-menu-button></td></tr></template>
+              <oj-bind-for-each data="[[rows]]" as="r">
+                <template><tr :class="[[r.data.css]]" on-click="[[r.data.pick]]">
+                  <td class="fx-col-check" on-click="[[r.data.stop]]"><label class="fx-check"><input type="checkbox" :aria-label="[['Select ' + r.data.name + ' ' + r.data.workspace]]" :checked="[[r.data.isSelected]]" on-click="[[r.data.toggle]]"></label></td>
+                  <td><span class="factory-name-cell"><span :class="[[r.data.iconCss]]"><span :class="[[r.data.iconClass]]" aria-hidden="true"></span></span>
+                    <button type="button" class="factory-in-namebtn" :aria-label="[['Show details of ' + r.data.name + ', ' + r.data.workspace]]" on-click="[[r.data.pick]]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></button></span></td>
+                  <td><span :class="[[r.data.typeCss]]"><oj-bind-text value="[[r.data.typeLabel]]"></oj-bind-text></span></td>
+                  <td class="factory-ov-subtle factory-in-desc"><oj-bind-text value="[[r.data.descText]]"></oj-bind-text></td>
+                  <td><span class="fx-chip factory-in-ws" :title="[[r.data.workspace]]"><oj-bind-text value="[[r.data.wsShort]]"></oj-bind-text></span></td>
+                  <td><span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
+                  <td class="factory-in-last"><oj-bind-text value="[[r.data.last]]"></oj-bind-text></td>
+                  <td class="fx-table-actions" on-click="[[r.data.stop]]"><div class="fx-menu-wrap">
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[r.data.menu.open() ? 'true' : 'false']]"
+                            :aria-label="[['Actions for ' + r.data.name + ' ' + r.data.workspace]]" on-click="[[r.data.menu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+                    <oj-bind-if test="[[r.data.menu.open()]]">
+                      <div class="fx-menu" role="menu" on-keydown="[[r.data.menu.key]]">
+                        <button type="button" role="menuitem" on-click="[[r.data.doDetails]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>View details</button>
+                        <button type="button" role="menuitem" :disabled="[[!r.data.test || testing()]]" on-click="[[r.data.doTest]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Test connection</button>
+                        <button type="button" role="menuitem" on-click="[[r.data.doEdit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit configuration</button>
+                        <button type="button" role="menuitem" :disabled="[[!r.data.hasTarget]]" on-click="[[r.data.doCopy]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy server URL</button>
+                      </div>
+                    </oj-bind-if>
+                  </div></td></tr></template>
               </oj-bind-for-each>
             </tbody>
           </table>
-          <oj-bind-if test="[[rows().length === 0]]"><p class="factory-ov-empty"><oj-bind-text value="[[emptyText]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-if test="[[rows().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span><strong>Nothing to show</strong><oj-bind-text value="[[emptyText]]"></oj-bind-text></div></oj-bind-if>
         </div>
-        <div class="factory-pager"><span><oj-bind-text value="[[pager.text() + ' integrations' + selectedText()]]"></oj-bind-text></span>
-          <span class="factory-in-pages"><button type="button" class="factory-in-pg" aria-label="Previous page" on-click="[[pager.prev]]">‹</button>
-            <oj-bind-for-each data="[[pager.buttons]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></button></template></oj-bind-for-each>
-            <button type="button" class="factory-in-pg" aria-label="Next page" on-click="[[pager.next]]">›</button>
-            <select class="factory-ws-select factory-in-size" id="intPageSize" aria-label="Integrations per page" on-change="[[pager.sizeChange]]"><option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select></span></div>
+        <div class="fx-pager factory-in-pager">
+          <span class="fx-pager-text"><oj-bind-text value="[[pager.text() + ' integrations' + selectedText()]]"></oj-bind-text></span>
+          <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
+          <oj-bind-for-each data="[[pager.numbers]]" as="n"><template>
+            <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+            <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+          </template></oj-bind-for-each>
+          <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button>
+          <select class="fx-select" id="intPageSize" aria-label="Integrations per page" on-change="[[pager.sizeChange]]"><option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select>
+        </div>
       </section>
 
-      <section class="factory-card factory-in-env" id="environmentConfig">
+      <section class="fx-card factory-in-env" id="environmentConfig">
         <div class="factory-in-cardhead">
-          <div><h2>Environment Configuration</h2>
-            <p class="factory-card-sub">Settings this factory runs with. It is one environment: DEV, SIT and UAT profiles are not part of the factory.</p></div>
+          <div><h2 class="fx-card-title">Environment Configuration</h2>
+            <p class="fx-card-sub">Settings this factory runs with. It is one environment: DEV, SIT and UAT profiles are not part of the factory.</p></div>
           <div class="factory-in-envactions">
-            <button type="button" class="factory-link-sm" id="envViewAll" on-click="[[viewEnvironment]]" title="See the factory's build, version and setup on the About page">View All →</button>
-            <button type="button" id="editEnvironment" class="factory-in-primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]"
-                    :title="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
-              <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="envViewAll" on-click="[[viewEnvironment]]" data-fx-tip="See the factory's build, version and setup on the About page">View All →</button>
+            <span :data-fx-tip="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
+              <button type="button" id="editEnvironment" class="fx-btn fx-btn--primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]">
+                <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button></span>
           </div>
         </div>
-        <div class="factory-subtabs factory-in-envtabs">
-          <button type="button" class="factory-tab factory-tab-on">This factory</button>
+        <div class="fx-tabs factory-in-envtabs" role="tablist" aria-label="Environments">
+          <button type="button" role="tab" aria-selected="true">This factory</button>
         </div>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-in-envtable" id="envTable">
-            <thead><tr><th>Variable</th><th>Value</th><th>Description</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[envRows]]"><template><tr>
-              <td class="factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
-              <td class="factory-in-envval" :title="[[$current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></td>
-              <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-in-envtable" id="envTable">
+            <thead><tr><th scope="col">Variable</th><th scope="col">Value</th><th scope="col">Description</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[envRows]]" as="e"><template><tr>
+              <td class="factory-mono"><oj-bind-text value="[[e.data.name]]"></oj-bind-text></td>
+              <td class="factory-in-envval" :title="[[e.data.value]]"><oj-bind-text value="[[e.data.value]]"></oj-bind-text></td>
+              <td class="factory-ov-subtle"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
           </table>
         </div>
-        <p class="factory-card-sub factory-in-envfoot">Secrets (database password, API keys, the secret key) are never shown in the browser. Each bank's own environments are reached through its SVN and Jenkins jobs.</p>
+        <p class="fx-card-sub factory-in-envfoot">Secrets (database password, API keys, the secret key) are never shown in the browser. Each bank's own environments are reached through its SVN and Jenkins jobs.</p>
       </section>
     </div>
 
     <div class="factory-in-right">
-      <section class="factory-card factory-in-detail">
-        <oj-bind-if test="[[!selected()]]"><p class="factory-empty">No integrations yet. Add a workspace to start.</p></oj-bind-if>
+      <section class="fx-card factory-in-detail">
+        <oj-bind-if test="[[!selected()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span><strong>No integrations yet</strong>Add a workspace to start.</div></oj-bind-if>
         <oj-bind-if test="[[selected()]]">
           <div class="factory-in-dhead">
             <span :class="[[selected().iconCss]]"><span :class="[[selected().iconClass]]" aria-hidden="true"></span></span>
             <span class="factory-in-dname"><span class="factory-in-title"><oj-bind-text value="[[selected().name]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[selected().typeLabel + ' · ' + selected().workspace]]"></oj-bind-text></span></span>
             <span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
-            <oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
-              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-              <oj-menu slot="menu" on-oj-menu-action="[[detailAction]]">
-                <oj-option value="copy" disabled="[[!selected().hasTarget]]">Copy server URL</oj-option>
-                <oj-option value="edit">Edit configuration</oj-option>
-                <oj-option value="troubleshooting">Troubleshooting</oj-option>
-              </oj-menu></oj-menu-button>
+            <div class="fx-menu-wrap">
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[headMenu.open() ? 'true' : 'false']]" aria-label="More actions"
+                      on-click="[[headMenu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+              <oj-bind-if test="[[headMenu.open()]]">
+                <div class="fx-menu" role="menu" on-keydown="[[headMenu.key]]">
+                  <button type="button" role="menuitem" :disabled="[[!selected().hasTarget]]" on-click="[[headDo.copy]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy server URL</button>
+                  <button type="button" role="menuitem" on-click="[[headDo.edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit configuration</button>
+                  <button type="button" role="menuitem" on-click="[[headDo.troubleshooting]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Troubleshooting</button>
+                </div>
+              </oj-bind-if>
+            </div>
           </div>
-          <div class="factory-subtabs factory-in-dtabs">
-            <oj-bind-for-each data="[[detailTabs]]">
-              <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+          <div class="fx-tabs factory-in-dtabs" role="tablist" aria-label="Integration details">
+            <oj-bind-for-each data="[[detailTabs]]" as="d">
+              <template><button type="button" role="tab" :aria-selected="[[d.data.selected() ? 'true' : 'false']]" on-click="[[d.data.pick]]"><oj-bind-text value="[[d.data.text]]"></oj-bind-text></button></template>
             </oj-bind-for-each>
           </div>
           <oj-bind-if test="[[detailTab() === 'overview']]">
@@ -147,61 +176,67 @@
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'config']]">
             <dl class="factory-kv factory-in-kv">
-              <oj-bind-for-each data="[[selected().config]]"><template><dt><oj-bind-text value="[[$current.data.k]]"></oj-bind-text></dt><dd class="factory-in-url" :title="[[$current.data.v]]"><oj-bind-text value="[[$current.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each>
+              <oj-bind-for-each data="[[selected().config]]" as="c"><template><dt><oj-bind-text value="[[c.data.k]]"></oj-bind-text></dt><dd class="factory-in-url" :title="[[c.data.v]]"><oj-bind-text value="[[c.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each>
             </dl>
-            <p class="factory-card-sub">Credentials stay on the server and are never shown. Change these with Edit Configuration.</p>
+            <p class="fx-card-sub">Credentials stay on the server and are never shown. Change these with Edit Configuration.</p>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'jobs']]">
             <oj-bind-if test="[[selected().jobList.length]]">
-              <ul class="factory-in-jobs"><oj-bind-for-each data="[[selected().jobList]]"><template><li class="factory-mono"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+              <ul class="factory-in-jobs"><oj-bind-for-each data="[[selected().jobList]]" as="j"><template><li class="factory-mono"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span><oj-bind-text value="[[j.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
             </oj-bind-if>
             <oj-bind-if test="[[!selected().jobList.length]]"><p class="factory-empty"><oj-bind-text value="[[selected().type === 'jenkins' ? 'No Jenkins jobs set up for this workspace. Add them on the Code page.' : 'Build jobs belong to Jenkins integrations.']]"></oj-bind-text></p></oj-bind-if>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'history']]">
-            <ul class="factory-in-hist"><oj-bind-for-each data="[[selected().history]]"><template><li><span :class="[[$current.data.dot]]"></span><span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            <ul class="factory-in-hist"><oj-bind-for-each data="[[selected().history]]" as="h"><template><li><span :class="[[h.data.dot]]" aria-hidden="true"></span><span><oj-bind-text value="[[h.data.text]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[h.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
             <oj-bind-if test="[[selected().history.length === 0]]"><p class="factory-empty">Nothing recorded yet. Test the connection to add an entry.</p></oj-bind-if>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'troubleshooting']]">
-            <ul class="factory-in-tips"><oj-bind-for-each data="[[selected().tips]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+            <ul class="factory-in-tips"><oj-bind-for-each data="[[selected().tips]]" as="p"><template><li><oj-bind-text value="[[p.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
           </oj-bind-if>
-          <oj-bind-if test="[[selected().testText]]"><p :class="[[selected().state === 'connected' ? 'factory-note' : 'factory-note factory-note-warn']]" id="testResult"><oj-bind-text value="[[selected().testText]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-if test="[[selected().testText]]"><div :class="[[selected().state === 'connected' ? 'fx-alert fx-alert--success factory-in-test' : 'fx-alert fx-alert--warning factory-in-test']]" id="testResult" role="status">
+            <span :class="[[selected().state === 'connected' ? 'factory-nav-icon factory-ico-check' : 'factory-nav-icon factory-ico-alert']]" aria-hidden="true"></span>
+            <span class="fx-alert-text"><oj-bind-text value="[[selected().testText]]"></oj-bind-text></span></div></oj-bind-if>
           <div class="factory-in-btns">
-            <button type="button" id="testIntegrationButton" class="factory-in-primary factory-in-grow" on-click="[[testSelected]]" :disabled="[[!selected().test || testing()]]"
-                    :title="[[selected().test ? 'Connect to it now' : selected().type === 'model' ? 'Only administrators can test model servers' : 'Set it up first']]">
-              <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span><oj-bind-text value="[[testing() ? 'Testing...' : 'Test Connection']]"></oj-bind-text></button>
-            <button type="button" id="editIntegrationButton" class="factory-ov2-btn factory-in-grow factory-in-edit" on-click="[[editSelected]]">
+            <span class="factory-in-grow" :data-fx-tip="[[selected().test ? null : selected().type === 'model' ? 'Only administrators can test model servers' : 'Set it up first']]">
+              <button type="button" id="testIntegrationButton" :class="[[testCss]]" on-click="[[testSelected]]" :disabled="[[!selected().test || testing()]]">
+                <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Test Connection</button></span>
+            <button type="button" id="editIntegrationButton" class="fx-btn fx-btn--secondary factory-in-grow factory-in-edit" on-click="[[editSelected]]">
               <span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Configuration</button>
-            <oj-menu-button chroming="outlined" display="icons" class="factory-in-moreb">
-              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-              <oj-menu slot="menu" on-oj-menu-action="[[detailAction]]">
-                <oj-option value="copy" disabled="[[!selected().hasTarget]]">Copy server URL</oj-option>
-                <oj-option value="history">Show history</oj-option>
-                <oj-option value="troubleshooting">Troubleshooting</oj-option>
-              </oj-menu></oj-menu-button>
+            <div class="fx-menu-wrap">
+              <button type="button" class="fx-btn fx-btn--secondary fx-btn--icon fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[moreMenu.open() ? 'true' : 'false']]" aria-label="More actions"
+                      on-click="[[moreMenu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+              <oj-bind-if test="[[moreMenu.open()]]">
+                <div class="fx-menu" role="menu" on-keydown="[[moreMenu.key]]">
+                  <button type="button" role="menuitem" :disabled="[[!selected().hasTarget]]" on-click="[[moreDo.copy]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy server URL</button>
+                  <button type="button" role="menuitem" on-click="[[moreDo.history]]"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>Show history</button>
+                  <button type="button" role="menuitem" on-click="[[moreDo.troubleshooting]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Troubleshooting</button>
+                </div>
+              </oj-bind-if>
+            </div>
           </div>
         </oj-bind-if>
         <div class="factory-in-builds">
-          <h2 class="factory-in-h3">Recent Builds <button type="button" class="factory-link-sm" on-click="[[viewBuilds]]">View All →</button></h2>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table factory-in-btable"><thead><tr><th>Build #</th><th>Branch</th><th>Status</th><th>Started</th><th>Duration</th></tr></thead>
-              <tbody><oj-bind-for-each data="[[builds]]"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></td>
-                <td class="factory-in-branch" :title="[[$current.data.branch]]"><oj-bind-text value="[[$current.data.branch]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
-                <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
-            <oj-bind-if test="[[builds().length === 0]]"><p class="factory-ov-empty"><oj-bind-text value="[[buildsEmpty]]"></oj-bind-text></p></oj-bind-if>
+          <div class="factory-in-bhead"><h2 class="fx-card-title factory-in-h3">Recent Builds</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[viewBuilds]]">View All →</button></div>
+          <div class="fx-table-wrap">
+            <table class="fx-table factory-in-btable"><thead><tr><th scope="col">Build #</th><th scope="col">Branch</th><th scope="col">Status</th><th scope="col">Started</th><th scope="col">Duration</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[builds]]" as="b"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[b.data.number]]"></oj-bind-text></td>
+                <td class="factory-in-branch" :title="[[b.data.branch]]"><oj-bind-text value="[[b.data.branch]]"></oj-bind-text></td><td><span :class="[[b.data.pill.css]]"><oj-bind-text value="[[b.data.pill.text]]"></oj-bind-text></span></td>
+                <td class="factory-cp-nowrap"><oj-bind-text value="[[b.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[b.data.duration]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+            <oj-bind-if test="[[builds().length === 0]]"><div class="fx-empty factory-in-bempty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span></span><oj-bind-text value="[[buildsEmpty]]"></oj-bind-text></div></oj-bind-if>
           </div>
         </div>
       </section>
 
-      <section class="factory-card factory-in-health">
-        <h2>Integration Health <button type="button" class="factory-link-sm" on-click="[[healthDetails]]">View Details →</button></h2>
-        <p class="factory-card-sub">Configured and connected integrations of each kind</p>
+      <section class="fx-card factory-in-health">
+        <div class="factory-in-bhead"><h2 class="fx-card-title">Integration Health</h2><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[healthDetails]]">View Details →</button></div>
+        <p class="fx-card-sub">Configured and connected integrations of each kind</p>
         <ul class="factory-in-hlist">
-          <oj-bind-for-each data="[[health]]">
-            <template><li><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
-              <span class="factory-in-hname"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
-              <span class="factory-ov2-bar"><span :class="[[$current.data.barCss]]" :style="[[$current.data.style]]"></span></span>
-              <span class="factory-in-hpct"><oj-bind-text value="[[$current.data.pct]]"></oj-bind-text></span>
-              <span class="factory-in-hn"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></li></template>
+          <oj-bind-for-each data="[[health]]" as="h">
+            <template><li><span :class="[[h.data.iconCss]]"><span :class="[[h.data.iconClass]]" aria-hidden="true"></span></span>
+              <span class="factory-in-hname"><oj-bind-text value="[[h.data.name]]"></oj-bind-text></span>
+              <span :class="[[h.data.barCss]]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[h.data.value]]" :aria-label="[[h.data.name + ' health']]"><span :style="[[h.data.style]]"></span></span>
+              <span class="factory-in-hpct"><oj-bind-text value="[[h.data.pct]]"></oj-bind-text></span>
+              <span class="factory-in-hn"><oj-bind-text value="[[h.data.text]]"></oj-bind-text></span></li></template>
           </oj-bind-for-each>
         </ul>
       </section>

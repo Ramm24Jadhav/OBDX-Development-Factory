@@ -4,20 +4,21 @@
  * the name, bank and OBDX version from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
-        '../services/pageRequests', '../services/ui', 'ojs/ojarraydataprovider',
+        '../services/pageRequests', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
         'ojs/ojbutton', 'ojs/ojvalidationgroup', 'ojs/ojswitch', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, ArrayDataProvider) {
+  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog, ArrayDataProvider) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
     const WEEK_MS = 7 * 24 * 3600 * 1000;
     const STATUS = {
-      ready: { text: 'Completed', css: 'factory-ws-status factory-ws-status-green', icon: 'factory-nav-icon factory-ico-check' },
-      importing: { text: 'In Progress', css: 'factory-ws-status factory-ws-status-amber', icon: 'factory-nav-icon factory-ico-clock' },
-      failed: { text: 'Check Required', css: 'factory-ws-status factory-ws-status-red', icon: 'factory-nav-icon factory-ico-alert' },
-      new: { text: 'Not imported', css: 'factory-ws-status factory-ws-status-grey', icon: 'factory-nav-icon factory-ico-clock' }
+      ready: { text: 'Completed', css: 'fx-badge fx-badge--plain fx-badge--success factory-ws4-status', icon: 'factory-nav-icon factory-ico-check' },
+      importing: { text: 'In Progress', css: 'fx-badge fx-badge--plain fx-badge--warning factory-ws4-status', icon: 'factory-nav-icon factory-ico-clock' },
+      failed: { text: 'Check Required', css: 'fx-badge fx-badge--plain fx-badge--danger factory-ws4-status', icon: 'factory-nav-icon factory-ico-alert' },
+      new: { text: 'Not imported', css: 'fx-badge fx-badge--plain factory-ws4-status', icon: 'factory-nav-icon factory-ico-clock' }
     };
     // The registry's status pills
-    const REGISTRY = { ready: ui.pill('Active', 'green'), importing: ui.pill('Indexing', 'amber'), failed: ui.pill('Error', 'red'), new: ui.pill('Not imported', 'grey') };
+    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
+    const REGISTRY = { ready: badge('Active', 'success'), importing: badge('Indexing', 'warning'), failed: badge('Error', 'danger'), new: badge('Not imported', '') };
     // A long URL on one line: its start and its end, which tells workspaces apart
     const midUrl = (url, max) => {
       const text = url || '';
@@ -160,6 +161,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'url', label: 'SVN server (URL)', icon: 'factory-nav-icon factory-ico-link' }
       ].map((t) => Object.assign(t, {
         css: ko.pureComputed(() => 'factory-ws-tab' + (this.sourceKind() === t.value ? ' factory-ws-tab-on' : '')),
+        selected: ko.pureComputed(() => String(this.sourceKind() === t.value)),
         hidden: ko.pureComputed(() => t.value === 'folder' && !this.localEnabled()),
         pick: () => this.sourceKind(t.value)
       }));
@@ -223,7 +225,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const versions = Array.from(new Set(d.map((e) => e.workspace.obdxVersion))).sort();
         return {
           total: d.length, newThisWeek: newThisWeek, banks: banks === 1 ? 'Across 1 bank' : 'Across ' + banks + ' banks',
-          ready: ready, readyWidth: (d.length ? Math.round(100 * ready / d.length) : 0) + '%',
+          ready: ready, readyPercent: d.length ? Math.round(100 * ready / d.length) : 0, readyWidth: (d.length ? Math.round(100 * ready / d.length) : 0) + '%',
           inProgress: d.length - ready,
           versionCount: versions.length, versionList: versions.join(', ') || 'None yet'
         };
@@ -283,7 +285,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const pct = index && index.chunks ? Math.round(100 * index.chunksWithEmbedding / index.chunks) : 0;
         const state = dashboard.codeState(entry).key;
         const members = (extra.members || []).map((m) => ({
-          initials: ui.initials(m.displayName), displayName: m.displayName, roleText: ROLE_TEXT(m.role), role: m.role,
+          initials: ui.initials(m.displayName), avatar: ui.avatarTone(m.displayName) + ' fx-avatar--sm', displayName: m.displayName, roleText: ROLE_TEXT(m.role), role: m.role,
           name: m.displayName + ' (' + m.role.toLowerCase() + ')'
         }));
         const lead = members.find((m) => m.role === 'LEAD') || null;
@@ -296,7 +298,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           revision: w.indexedRevision ? 'r' + w.indexedRevision : 'Not indexed',
           lastImport: job ? ui.when(job.finishedAt || job.createdAt) + ' (' + job.status.toLowerCase() + ')' : 'Never',
           importMessage: job && job.message ? job.message : 'No code import yet.',
-          owner: lead ? { initials: lead.initials, name: lead.displayName } : null,
+          owner: lead ? { initials: lead.initials, avatar: lead.avatar, name: lead.displayName } : null,
           members: members, memberFaces: members.slice(0, 3), moreMembers: Math.max(0, members.length - 3),
           stats: [
             { label: 'Total Modules', value: inv ? inv.modules : '–' }, { label: 'UI Screens', value: inv ? inv.screens : '–' },
@@ -305,7 +307,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           ],
           stack: stackOf(extra),
           indexing: {
-            pct: pct, style: { background: 'conic-gradient(#16a34a ' + pct + '%, #e5eaf1 0)' },
+            pct: pct, style: { background: 'conic-gradient(var(--fx-success) ' + pct + '%, var(--fx-surface-3) 0)' },
             rows: [
               { label: 'Files indexed', value: index ? index.files : 0, dot: 'factory-step-dot factory-dot-green' },
               { label: 'Searchable pieces', value: index ? index.chunks : 0, dot: 'factory-step-dot factory-dot-blue' },
@@ -316,8 +318,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             title: running ? 'Indexing...' : (job ? (job.status === 'FAILED' ? 'Last indexing failed' : 'Indexing complete') : 'Not indexed yet'),
             text: running ? 'Processing source files and extracting components' : 'Code search by meaning covers ' + pct + '% of the code'
           },
-          reindex: () => api.post('workspaces/' + w.id + '/imports').then(() => dashboard.load()).catch(showError),
-          edit: dashboard.open('code', w.id), canReindex: session.can(w.id, 'MANAGE_CODE')
+          reindex: () => api.post('workspaces/' + w.id + '/imports')
+            .then(() => { toast.success('Re-indexing of ' + w.name + ' started.'); return dashboard.load(); })
+            .catch((error) => toast.error(error.message)),
+          edit: dashboard.open('code', w.id), canReindex: session.can(w.id, 'MANAGE_CODE'),
+          reindexTip: session.can(w.id, 'MANAGE_CODE') ? null : 'Re-indexing needs the right to manage the code of this workspace.'
         };
       });
       this.selectedWsId.subscribe((id) => this.loadWsDetails(id));
@@ -448,7 +453,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (!this.regStatus() || r.state === this.regStatus())
           && (!this.regOwner() || r.owner === this.regOwner());
       }).map((r) => Object.assign({}, r, {
-        css: 'factory-clickable' + (this.selectedWs() && this.selectedWs().id === r.id ? ' factory-row-sel' : ''),
+        css: 'factory-clickable' + (this.selectedWs() && this.selectedWs().id === r.id ? ' factory-row-sel is-selected' : ''),
         checked: this.checkedIds().indexOf(r.id) >= 0,
         toggle: (event) => {
           event.stopPropagation();
@@ -474,8 +479,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.deleteWorkspace(id);
         } else if (action === 'copy') {
           const entry = data().find((d) => d.workspace.id === id);
-          if (entry && navigator.clipboard) {
-            navigator.clipboard.writeText(entry.workspace.svnUrl || '').catch(() => null);
+          if (entry && entry.workspace.svnUrl) {
+            ui.copy(entry.workspace.svnUrl).then(() => toast.success('Repository URL copied.'))
+              .catch(() => toast.error('The URL could not be copied. Select it and copy it by hand.'));
           }
         } else {
           dashboard.open(action === 'edit' ? 'code' : action, id)();
@@ -531,6 +537,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .then(() => workspaceSelection.load())
           .then(() => {
             workspaceSelection.selectedId(workspace.id);
+            toast.success('Workspace ' + workspace.name + ' created' + (this.importNow() ? '; the code import has started.' : '.'));
             if (this.importNow()) {
               window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' }));
               return null;
@@ -547,12 +554,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
 
       this.deleteWorkspace = (id) => {
-        if (!window.confirm('Delete this workspace with its code index, profile and requirements?')) {
-          return;
-        }
-        api.del('workspaces/' + id)
-          .then(load)
-          .catch(showError);
+        const entry = data().find((d) => d.workspace.id === id);
+        const name = entry ? entry.workspace.name : 'this workspace';
+        dialog.confirm({
+          title: 'Delete ' + name + '?',
+          message: 'The workspace is deleted with its code index, profile and requirements. This cannot be undone.',
+          confirmLabel: 'Delete', danger: true
+        }).then((ok) => {
+          if (!ok) {
+            return null;
+          }
+          return api.del('workspaces/' + id)
+            .then(() => { toast.success('Workspace ' + name + ' deleted.'); return load(); })
+            .catch((error) => toast.error(error.message));
+        });
       };
 
       this.connected = () => {

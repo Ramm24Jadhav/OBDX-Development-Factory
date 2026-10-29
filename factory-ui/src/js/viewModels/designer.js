@@ -5,10 +5,15 @@
  * requirement's rules with the screen's validations, comments and history, beside the AI Assistant.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
-        'ojs/ojarraydataprovider', '../services/assistant',
+        'ojs/ojarraydataprovider', '../services/assistant', '../services/ui', '../services/dialog', '../services/toast',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
         'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider, assistant) {
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider, assistant, ui, dialog, toast) {
+    // Asks before an action (design system dialog); resolves true when confirmed
+    const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
+    // Status badges (design system fx-badge)
+    const STATUS_BADGE = { DRAFT: 'fx-badge', IN_REVIEW: 'fx-badge fx-badge--warning', APPROVED: 'fx-badge fx-badge--success' };
+    const DISCARD = ['Discard your unsaved changes?', 'The changes since the last saved version are lost.', 'Discard'];
     // Screen sizes to check a design at; "fit" uses the canvas width, "custom" a width the designer types
     const VIEWPORTS = [
       { key: 'fit', label: 'Fit to canvas', width: null },
@@ -149,8 +154,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'primary', label: 'Primary' }, { value: 'secondary', label: 'Secondary' }, { value: 'link', label: 'Link' }
       ], { keyAttributes: 'value' });
 
-      const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); };
-      const showInfo = (text) => { this.errorMessage(''); this.infoMessage(text); };
+      // Errors stay above the canvas and show a toast; other feedback is a toast
+      const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); toast.error(error.message); };
+      const showInfo = (text) => { this.errorMessage(''); this.infoMessage(''); toast.success(text); };
       this.clearMessages = () => { this.errorMessage(''); this.infoMessage(''); };
       // Enter in the Ask AI box applies the instruction
       this.aiKeydown = (event) => {
@@ -558,13 +564,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return loadCustom(id);
         }).catch(showError).finally(() => this.busy(false));
       };
-      const deleteCustom = (item) => {
-        if (!window.confirm('Delete the custom component "' + item.label + '"? Screens that use it keep their copy.')) {
+      const deleteCustom = (item) => ask('Delete the custom component?', '"' + item.label + '" is deleted. Screens that use it keep their copy.', 'Delete', true).then((ok) => {
+        if (!ok) {
           return;
         }
         api.del('workspaces/' + this.workspaceId() + '/custom-components/' + item.customId)
-          .then(() => loadCustom(this.workspaceId())).catch(showError);
-      };
+          .then(() => { showInfo('Custom component deleted.'); return loadCustom(this.workspaceId()); }).catch(showError);
+      });
 
       /** A new component (or action button) for a palette item; returns the component, or null for a button. */
       const fromPalette = (m, item) => {
@@ -1159,6 +1165,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.showHistory();
         }
       };
+      // The Save Version split button's menu
+      this.saveSplit = ui.menu();
+      this.saveDo = (value) => () => { this.saveSplit.close(); this.saveMenu({ detail: { selectedValue: value } }); };
       this.saveTitle = ko.pureComputed(() => {
         if (!this.detail()) {
           return '';
@@ -1176,8 +1185,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         : 'You can look at this screen but not change it.'));
       this.screenHeading = ko.pureComputed(() => (this.working() ? this.working().title || this.detail().name : ''));
       /** Back to the start page with every requirement and its screens. */
-      this.backToBoard = () => {
-        if (this.dirty() && !window.confirm('Discard your unsaved changes?')) {
+      this.backToBoard = () => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true)).then((ok) => {
+        if (!ok) {
           return;
         }
         this.detail(null);
@@ -1186,7 +1195,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.designPick(null);
         this.previewMode(false);
         this.mode('design');
-      };
+      });
       // The workspace's screens, for the Screens tab
       this.screenList = ko.pureComputed(() => {
         const current = this.detail() ? this.detail().id : null;
@@ -1194,7 +1203,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           name: d.name,
           meta: d.components + ' components · v' + d.currentVersion,
           statusText: statusLabel(d.status),
-          statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+          statusClass: STATUS_BADGE[d.status] || 'fx-badge',
           css: 'factory-dz-scr' + (d.id === current ? ' factory-dz-scr-on' : ''),
           openAction: () => { if (d.id !== current) { this.open(d.id); } }
         }));
@@ -1434,7 +1443,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               name: d.name,
               meta: d.components + ' components · v' + d.currentVersion,
               statusText: statusLabel(d.status),
-              statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+              statusClass: STATUS_BADGE[d.status] || 'fx-badge',
               openAction: () => this.open(d.id)
             }))
           };
@@ -1521,7 +1530,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             requirements(requirementList);
             const current = this.detail() ? this.detail().id : null;
             this.designs(designList.map((d) => ({
-              name: d.name, status: d.status, statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+              name: d.name, status: d.status, statusClass: STATUS_BADGE[d.status] || 'fx-badge',
               statusText: d.status.replace('_', ' ').toLowerCase(), selected: d.id === current, openAction: () => this.open(d.id)
             })));
             designOptions(designList.map((d) => ({ value: d.id, label: d.name + ' (' + d.status.replace('_', ' ').toLowerCase() + ')' })));
@@ -1569,15 +1578,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         loadDesigns();
       };
 
-      this.open = (id) => {
-        if (this.dirty() && !window.confirm('Discard your unsaved changes?')) {
+      this.open = (id) => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true)).then((ok) => {
+        if (!ok) {
           this.designPick(this.detail() ? this.detail().id : null);
-          return Promise.resolve();
+          return null;
         }
         this.clearMessages();
         this.drawer(null);
         return api.get('designs/' + id).then((detail) => show(detail)).catch(showError);
-      };
+      });
       this.designPick.subscribe((id) => {
         if (id && (!this.detail() || this.detail().id !== id)) {
           this.open(id);
@@ -1670,7 +1679,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.openReview = () => api.post(base() + '/review-link', {})
         .then((detail) => { show(detail, true); showInfo('Review link created. Copy it and send it to the customer.'); })
         .catch(showError);
-      this.closeReview = () => api.del(base() + '/review-link').then((detail) => show(detail, true)).catch(showError);
+      this.closeReview = () => api.del(base() + '/review-link').then((detail) => { show(detail, true); showInfo('Review link closed.'); }).catch(showError);
       this.copyReviewLink = () => {
         const input = document.getElementById('reviewUrl');
         input.select();
@@ -1678,15 +1687,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(() => showInfo('Review link copied.'))
           .catch(() => showInfo('Select the link and copy it.'));
       };
-      this.approve = () => {
-        if (!window.confirm('Approve version ' + this.detail().currentVersion + ' for development?')) {
+      this.approve = () => ask('Approve this screen?', 'Version ' + this.detail().currentVersion + ' is approved for development and its components are locked.', 'Approve').then((ok) => {
+        if (!ok) {
           return;
         }
-        api.post(base() + '/approve').then((detail) => show(detail, true)).catch(showError);
-      };
-      this.reopen = () => api.post(base() + '/reopen').then((detail) => show(detail, true)).catch(showError);
-      this.remove = () => {
-        if (!window.confirm('Delete this screen with all its versions and comments?')) {
+        api.post(base() + '/approve').then((detail) => { show(detail, true); showInfo('Screen approved for development.'); }).catch(showError);
+      });
+      this.reopen = () => api.post(base() + '/reopen').then((detail) => { show(detail, true); showInfo('Screen reopened for changes.'); }).catch(showError);
+      this.remove = () => ask('Delete this screen?', 'The screen, all its versions and its comments are deleted. This cannot be undone.', 'Delete', true).then((ok) => {
+        if (!ok) {
           return;
         }
         api.del(base()).then(() => {
@@ -1695,13 +1704,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.dirty(false);
           this.designPick(null);
           loadDesigns();
+          showInfo('Screen deleted.');
         }).catch(showError);
-      };
+      });
       this.addComment = () => api.post(base() + '/comments', {
         text: this.commentText(), componentId: this.selectedKind() === 'screen' ? null : this.selectedId()
       }).then((detail) => {
         this.commentText('');
         this.detail(detail);
+        showInfo('Comment added.');
       }).catch(showError);
 
       // --- page lifecycle ---

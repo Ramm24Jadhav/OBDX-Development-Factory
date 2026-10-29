@@ -3,9 +3,13 @@
  * conventions) with each fact's confidence and evidence files, confirm/correct/reset of facts, the version pack's
  * reference patterns (with pinning of examples), and an assistant that answers from the profile.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui', '../services/toast',
         '../services/assistant', '../services/pageRequests', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojbutton'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, pageRequests) {
+  function (ko, accUtils, api, workspaceSelection, session, ui, toast, assistant, pageRequests) {
+    // Status badges of the design system (fx-badge carries a dot, so status is never colour alone)
+    const TONES = { green: 'success', amber: 'warning', red: 'danger', blue: 'primary', violet: 'violet', grey: '' };
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (TONES[tone] ? ' fx-badge--' + TONES[tone] : '') });
+    const failed = (error) => toast.error(error.message);
     const SECTIONS = [
       { key: 'OBDX', title: '1. OBDX Framework', icon: 'doc' },
       { key: 'UI', title: '2. User Interface', icon: 'monitor' },
@@ -14,8 +18,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       { key: 'INTEGRATION', title: '5. Integration', icon: 'link' },
       { key: 'CONVENTIONS', title: '6. Bank Conventions', icon: 'shield' }
     ];
-    const CONFIDENCE = { HIGH: ui.pill('High', 'green'), MEDIUM: ui.pill('Medium', 'amber'), LOW: ui.pill('Low', 'red'), NONE: ui.pill('None', 'grey') };
-    const STATUS = { confirmed: ui.pill('Confirmed', 'green'), corrected: ui.pill('Corrected', 'blue'), detected: ui.pill('Detected', 'amber'), missing: ui.pill('Not found', 'grey') };
+    const CONFIDENCE = { HIGH: pill('High', 'green'), MEDIUM: pill('Medium', 'amber'), LOW: pill('Low', 'red'), NONE: pill('None', 'grey') };
+    const STATUS = { confirmed: pill('Confirmed', 'green'), corrected: pill('Corrected', 'blue'), detected: pill('Detected', 'amber'), missing: pill('Not found', 'grey') };
     const CONFIG = /\.(xml|properties|json|ya?ml|conf|config)$/i;
 
     function ProfileViewModel() {
@@ -42,18 +46,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.detectedAt = ko.pureComputed(() => (this.profile() ? ui.when(this.profile().detectedAt) : ''));
       // Coverage: the share of facts that have a value (detected, confirmed or corrected)
       this.coverage = ko.pureComputed(() => (facts().length ? Math.round(100 * facts().filter((f) => f.value).length / facts().length) : 0));
-      this.coverageStyle = ko.pureComputed(() => ({ background: 'conic-gradient(#2563eb ' + this.coverage() + '%, #e5eaf1 0)' }));
+      this.coverageStyle = ko.pureComputed(() => ({ background: 'conic-gradient(var(--fx-primary) ' + this.coverage() + '%, var(--fx-surface-3) 0)' }));
       // Confidence: the share of facts confirmed or corrected by people, or detected with high or medium confidence
       this.confidence = ko.pureComputed(() => (facts().length ? Math.round(100 * facts().filter((f) => f.status === 'confirmed' || f.status === 'corrected'
         || (f.value && (f.confidence === 'HIGH' || f.confidence === 'MEDIUM'))).length / facts().length) : 0));
-      this.confidenceStyle = ko.pureComputed(() => ({ background: 'conic-gradient(#2563eb ' + this.confidence() + '%, #e5eaf1 0)' }));
+      this.confidenceStyle = ko.pureComputed(() => ({ background: 'conic-gradient(var(--fx-primary) ' + this.confidence() + '%, var(--fx-surface-3) 0)' }));
       // The discovery run under the Refresh Discovery button
-      this.discoveryPill = ko.pureComputed(() => (this.busy() ? ui.pill('Running', 'blue') : (this.profile() ? ui.pill('Completed', 'green') : ui.pill('Not run', 'grey'))));
+      this.discoveryPill = ko.pureComputed(() => (this.busy() ? pill('Running', 'blue') : (this.profile() ? pill('Completed', 'green') : pill('Not run', 'grey'))));
       this.statusPill = ko.pureComputed(() => {
         if (!this.profile()) {
-          return ui.pill('Not detected', 'grey');
+          return pill('Not detected', 'grey');
         }
-        return count('detected') > 0 ? ui.pill(count('detected') + ' to review', 'amber') : ui.pill('Ready', 'green');
+        return count('detected') > 0 ? pill(count('detected') + ' to review', 'amber') : pill('Ready', 'green');
       });
       this.summary = ko.pureComputed(() => facts().length + ' facts: ' + count('confirmed') + ' confirmed, ' + count('corrected')
         + ' corrected, ' + count('detected') + ' to review, ' + count('missing') + ' not found.');
@@ -68,7 +72,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         open: () => { this.editing(f); this.editValue(f.value || ''); }
       });
       // A card's status pill, with a leading check (or a warning sign when facts wait for confirmation)
-      const statusPill = (text, tone, icon) => Object.assign(ui.pill(text, tone), { icon: 'factory-nav-icon factory-ico-' + icon });
+      const statusPill = (text, tone, icon) => Object.assign(pill(text, tone), { css: pill(text, tone).css + ' fx-badge--plain', icon: 'factory-nav-icon factory-ico-' + icon });
       const cardStatus = (list) => {
         if (list.length && list.every((f) => f.status === 'confirmed' || f.status === 'corrected')) {
           return statusPill('Verified', 'green', 'check');
@@ -131,7 +135,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const revision = fileRevisions() ? fileRevisions()[p] : undefined;
           return {
             path: p, name: name, purpose: evidenceFiles()[p].slice(0, 2).join(', '),
-            status: warn ? ui.pill('Warning', 'amber') : ui.pill('Valid', 'green'),
+            status: warn ? pill('Warning', 'amber') : pill('Valid', 'green'),
             statusTitle: warn ? (warned.concat(weak.map((f) => f.label + ' has low confidence'))).join('; ') : 'The facts read from this file are reliable',
             modified: revision !== undefined ? 'r' + revision : 'Not known',
             modifiedTitle: revision !== undefined ? 'Last indexed at this revision' : 'This factory server does not report file changes',
@@ -192,9 +196,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               template: p.templateContent || '', templateName: p.template || '', canEdit: canEdit, newPath: newPath,
               examples: p.examples.map((e) => ({
                 path: e.path, reason: e.reason, pinned: e.pinned, canEdit: canEdit,
-                unpin: () => api.del(url + '?path=' + encodeURIComponent(e.path)).then(showRecipes).catch(showError)
+                unpin: () => api.del(url + '?path=' + encodeURIComponent(e.path))
+                  .then((result) => { showRecipes(result); toast.success('Example unpinned.'); }).catch(failed)
               })),
-              pin: () => api.post(url, { path: newPath() }).then(showRecipes).catch(showError)
+              pin: () => api.post(url, { path: newPath() })
+                .then((result) => { showRecipes(result); toast.success('Example pinned.'); }).catch(failed)
             };
           })
         })));
@@ -245,12 +251,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.detect = () => {
         this.busy(true);
-        api.post(base() + '/refresh').then(show).catch(showError).finally(() => this.busy(false));
+        api.post(base() + '/refresh').then((profile) => { show(profile); toast.success('Discovery refreshed.'); })
+          .catch(failed).finally(() => this.busy(false));
       };
-      const put = (f, value) => api.put(base() + '/facts/' + encodeURIComponent(f.key), { value: value }).then(show).catch(showError);
-      this.confirmEditing = () => put(this.editing(), this.editing().value);
-      this.saveEditing = () => put(this.editing(), this.editValue());
-      this.resetEditing = () => api.del(base() + '/facts/' + encodeURIComponent(this.editing().key)).then(show).catch(showError);
+      const put = (f, value, done) => api.put(base() + '/facts/' + encodeURIComponent(f.key), { value: value })
+        .then((profile) => { show(profile); toast.success(done); }).catch(failed);
+      this.confirmEditing = () => put(this.editing(), this.editing().value, this.editing().label + ' confirmed.');
+      this.saveEditing = () => put(this.editing(), this.editValue(), this.editing().label + ' corrected.');
+      this.resetEditing = () => {
+        const label = this.editing().label;
+        api.del(base() + '/facts/' + encodeURIComponent(this.editing().key))
+          .then((profile) => { show(profile); toast.success(label + ' reset to the detected value.'); }).catch(failed);
+      };
       this.closeEditing = () => this.editing(null);
       this.editingTitle = ko.pureComputed(() => (this.editing() ? this.editing().label : ''));
       this.editingDetected = ko.pureComputed(() => (this.editing() ? (this.editing().detectedValue || 'Nothing detected') : ''));

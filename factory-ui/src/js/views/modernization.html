@@ -20,12 +20,12 @@
     </div>
   </div>
 
-  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="modernizationError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
-  <oj-bind-if test="[[emptyMessage()]]"><div class="factory-note" id="modernizationEmpty"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></div></oj-bind-if>
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-mo-alert" role="alert" id="modernizationError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
+  <oj-bind-if test="[[emptyMessage()]]"><div class="fx-alert fx-alert--info factory-mo-alert" role="status" id="modernizationEmpty"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></span></div></oj-bind-if>
 
   <div class="factory-tabbar" role="tablist" aria-label="Modernization views">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['mo-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      <template><button type="button" role="tab" :id="[['mo-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
 
@@ -70,7 +70,7 @@
           </ul>
         </section>
         <section class="factory-card factory-mo-progress">
-          <h2>Migration Progress <button type="button" class="factory-link-sm" on-click="[[showPlan]]">View Plan</button></h2>
+          <h2>Migration Progress <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mo-link" on-click="[[showPlan]]">View Plan</button></h2>
           <ul class="factory-mo-phases">
             <oj-bind-for-each data="[[phases]]">
               <template><li :title="[[$current.data.title]]"><span class="factory-mo-phase"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span>
@@ -83,7 +83,7 @@
           <div class="factory-mo-target"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span>
             <span><span class="factory-ov-subtle">Target Version</span><strong><oj-bind-text value="[['OBDX ' + target()]]"></oj-bind-text></strong>
               <span class="factory-ov-subtle"><oj-bind-text value="[[effortText]]"></oj-bind-text></span></span>
-            <button type="button" class="factory-ov2-btn factory-mo-smallbtn" id="configureTargetButton" on-click="[[configureTarget]]" title="The target is the newest version pack. See its rules on the Version Packs page.">Configure Target</button></div>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-mo-smallbtn" id="configureTargetButton" on-click="[[configureTarget]]" data-fx-tip="The target is the newest version pack. See its rules on the Version Packs page.">Configure Target</button></div>
         </section>
       </div>
 
@@ -92,22 +92,22 @@
           <div class="factory-row factory-mo-midrow">
             <section class="factory-card">
               <h2>Deprecated APIs and Components
-                <button type="button" class="factory-ov2-btn factory-mo-iconbtn" id="refreshFindingsButton" on-click="[[rescanFindings]]" :disabled="[[searchingFindings]]" title="Search the code again" aria-label="Search the code again">
+                <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon factory-mo-iconbtn" id="refreshFindingsButton" on-click="[[rescanFindings]]" :disabled="[[searchingFindings]]" data-fx-tip="Search the code again" aria-label="Search the code again">
                   <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></button></h2>
-              <div class="factory-chips factory-mo-chips">
+              <div class="factory-chips factory-mo-chips" role="group" aria-label="Show findings">
                 <oj-bind-for-each data="[[severityTabs]]">
-                  <template><button type="button" :class="[[$current.data.selected() ? 'factory-chip factory-chip-on' : 'factory-chip']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+                  <template><button type="button" :class="[[$current.data.selected() ? 'fx-chip is-on' : 'fx-chip']]" :aria-pressed="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
                 </oj-bind-for-each>
               </div>
               <div class="factory-mo-filters">
-                <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search API or component..." aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
-                <select class="factory-ws-select" aria-label="Module" on-change="[[findingModuleChange]]"><option value="">All Modules</option>
+                <span class="fx-control factory-mo-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" placeholder="Search API or component..." aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
+                <select class="fx-select" aria-label="Module" on-change="[[findingModuleChange]]"><option value="">All Modules</option>
                   <oj-bind-for-each data="[[findingModules]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-                <select class="factory-ws-select" aria-label="Status" on-change="[[findingStatusChange]]"><option value="">All Status</option><option value="ERROR">Critical</option><option value="WARNING">Warning</option></select>
+                <select class="fx-select" aria-label="Status" on-change="[[findingStatusChange]]"><option value="">All Status</option><option value="ERROR">Critical</option><option value="WARNING">Warning</option></select>
               </div>
-              <div class="factory-ov2-table-wrap">
-                <table class="factory-ov2-table factory-mo-table">
-                  <thead><tr><th class="factory-mo-c1">Name</th><th>Type</th><th title="The version pack whose rule forbids it">Current Version</th><th class="factory-mo-c4">Replacement</th><th>Module</th><th>Impact</th><th>Status</th><th class="factory-mo-c8">Actions</th></tr></thead>
+              <div class="fx-table-wrap">
+                <table class="fx-table factory-mo-table">
+                  <thead><tr><th class="factory-mo-c1">Name</th><th>Type</th><th title="The version pack whose rule forbids it">Current Version</th><th class="factory-mo-c4">Replacement</th><th>Module</th><th>Impact</th><th>Status</th><th class="factory-mo-c8 fx-table-actions">Actions</th></tr></thead>
                   <tbody>
                     <oj-bind-for-each data="[[visibleFindings]]" as="f">
                       <template><tr><td :title="[[f.data.rule + ' — ' + f.data.path + ':' + f.data.lines]]"><span class="factory-mo-fname"><oj-bind-text value="[[f.data.rule]]"></oj-bind-text></span><span class="factory-mo-fpath factory-mono"><bdi><oj-bind-text value="[[f.data.path]]"></oj-bind-text></bdi></span></td>
@@ -126,8 +126,8 @@
                     </oj-bind-for-each>
                   </tbody>
                 </table>
-                <oj-bind-if test="[[searchingFindings()]]"><p class="factory-ov-empty">Searching the code...</p></oj-bind-if>
-                <oj-bind-if test="[[!searchingFindings() && visibleFindings().length === 0]]"><p class="factory-ov-empty">No usage of forbidden APIs found in the indexed code.</p></oj-bind-if>
+                <oj-bind-if test="[[searchingFindings()]]"><div class="fx-empty" role="status"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>Searching the code...</div></oj-bind-if>
+                <oj-bind-if test="[[!searchingFindings() && visibleFindings().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>Nothing found</strong>No usage of forbidden APIs in the indexed code.</div></oj-bind-if>
               </div>
             </section>
             <section class="factory-card factory-mo-depcard">
@@ -167,7 +167,7 @@
             </section>
             <section class="factory-card">
               <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Recommended Actions</span>
-                <button type="button" class="factory-link-sm" on-click="[[showPlan]]">View All</button></h2>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mo-link" on-click="[[showPlan]]">View All</button></h2>
               <ol class="factory-im-next factory-mo-actions">
                 <oj-bind-for-each data="[[actions]]">
                   <template><li><span class="factory-step-dot factory-dot-blue"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><span class="factory-grow"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span>
@@ -180,8 +180,8 @@
 
         <section :class="[[aiExpanded() ? 'factory-card factory-ai factory-mo-ai factory-mo-ai-big' : 'factory-card factory-ai factory-mo-ai']]">
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
-            <span class="factory-mo-aihead"><button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button>
-              <button type="button" class="factory-mo-iconlink" id="moAiExpand" on-click="[[toggleAi]]" :title="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]" :aria-label="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]">
+            <span class="factory-mo-aihead"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ai.clear]]">New Chat</button>
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="moAiExpand" on-click="[[toggleAi]]" :title="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]" :aria-label="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]">
                 <span :class="[[aiExpanded() ? 'factory-nav-icon factory-ico-collapse' : 'factory-nav-icon factory-ico-monitor']]" aria-hidden="true"></span></button></span></h2>
           <div class="factory-subtabs">
             <oj-bind-for-each data="[[aiTabs]]">
@@ -199,14 +199,14 @@
             <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
             <div class="factory-ai-suggest factory-mo-chipsugg">
               <oj-bind-for-each data="[[ai.suggestions]]">
-                <template><button type="button" class="factory-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+                <template><button type="button" class="fx-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
               </oj-bind-for-each>
             </div>
           </oj-bind-if>
           <oj-bind-if test="[[aiTab() === 'suggestions']]">
             <div class="factory-mo-suggest">
               <oj-bind-for-each data="[[ai.suggestions]]">
-                <template><button type="button" class="factory-ov2-btn" on-click="[[$current.data.ask]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+                <template><button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-mo-sugg" on-click="[[$current.data.ask]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
               </oj-bind-for-each>
             </div>
           </oj-bind-if>
@@ -224,10 +224,10 @@
         <h2>Deprecated APIs and Components</h2>
         <p class="factory-card-sub">What the version pack rules forbid, found in the indexed code with code search (up to 20 files per rule) and checked against each rule's pattern.</p>
         <div class="factory-filters">
-          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search API or component..." aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
+          <span class="fx-control factory-mo-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" placeholder="Search API or component..." aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
         </div>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table" id="findingTable">
+        <div class="fx-table-wrap">
+          <table class="fx-table" id="findingTable">
             <thead><tr><th>Rule</th><th>File</th><th>Lines</th><th>Type</th><th>Replacement</th><th>Impact</th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[visibleFindings]]">
@@ -237,7 +237,7 @@
               </oj-bind-for-each>
             </tbody>
           </table>
-          <oj-bind-if test="[[visibleFindings().length === 0]]"><p class="factory-ov-empty">Nothing found.</p></oj-bind-if>
+          <oj-bind-if test="[[visibleFindings().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>Nothing found.</div></oj-bind-if>
         </div>
       </section>
     </oj-bind-if>
@@ -246,10 +246,10 @@
       <div class="factory-row factory-row-2">
         <section class="factory-card">
           <h2>Services the screens call</h2>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table" id="callTable">
+          <div class="fx-table-wrap">
+            <table class="fx-table" id="callTable">
               <thead><tr><th>Method</th><th>Path</th><th>Backend</th><th>Screens</th></tr></thead>
-              <tbody><oj-bind-for-each data="[[callRows]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
+              <tbody><oj-bind-for-each data="[[callRows]]"><template><tr><td><span class="fx-chip factory-mo-method"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
                 <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
                 <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.screens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
             </table>
@@ -257,13 +257,14 @@
         </section>
         <section class="factory-card">
           <h2>Backend services in this code</h2>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table" id="endpointTable">
+          <div class="fx-table-wrap">
+            <table class="fx-table" id="endpointTable">
               <thead><tr><th>Method</th><th>Path</th><th>Code</th><th>Owner</th><th>Used by</th></tr></thead>
-              <tbody><oj-bind-for-each data="[[endpointRows]]"><template><tr><td><span class="factory-tag"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
+              <tbody><oj-bind-for-each data="[[endpointRows]]"><template><tr><td><span class="fx-chip factory-mo-method"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span></td>
                 <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.code]]"></oj-bind-text></td>
                 <td><oj-bind-text value="[[$current.data.product]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.usedBy]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
             </table>
+            <oj-bind-if test="[[endpointRows().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span></span>No backend services found in this code.</div></oj-bind-if>
           </div>
           <h3>Roles and segments</h3>
           <ul class="factory-list"><oj-bind-for-each data="[[roles]]"><template><li><span class="factory-step-dot factory-dot-violet"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span></span>
@@ -274,15 +275,15 @@
 
     <oj-bind-if test="[[tab() === 'plan']]">
       <section class="factory-card">
-        <h2>Migration Plan <a :href="[[csvUrl]]" class="factory-link-sm" id="csvLink">Download screens as CSV</a></h2>
+        <h2>Migration Plan <a :href="[[csvUrl]]" class="fx-btn fx-btn--secondary fx-btn--sm" id="csvLink"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Download screens as CSV</a></h2>
         <p class="factory-card-sub">Screens by wave: small screens first, large screens last. Use the CSV to plan waves with the team.</p>
         <div class="factory-filters">
-          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" id="screenSearch" placeholder="Search screens, files or services..." aria-label="Search screens" on-input="[[searchInput]]"></span>
-          <select class="factory-ws-select" aria-label="Module" on-change="[[moduleChange]]"><option value="">All Modules</option>
+          <span class="fx-control factory-mo-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="screenSearch" placeholder="Search screens, files or services..." aria-label="Search screens" on-input="[[searchInput]]"></span>
+          <select class="fx-select factory-mo-filtersel" aria-label="Module" on-change="[[moduleChange]]"><option value="">All Modules</option>
             <oj-bind-for-each data="[[moduleNames]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
         </div>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table" id="screenTable">
+        <div class="fx-table-wrap">
+          <table class="fx-table" id="screenTable">
             <thead><tr><th>Screen</th><th>Module</th><th>Wave</th><th>Complexity</th><th>Fields</th><th>Actions</th><th>Calls</th><th>Opens</th></tr></thead>
             <tbody><oj-bind-for-each data="[[screenRows]]"><template><tr :title="[[$current.data.files]]"><td><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
               <td><oj-bind-text value="[[$current.data.wave]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
@@ -300,8 +301,8 @@
       <div class="factory-row factory-row-2">
         <section class="factory-card">
           <h2>Version Compatibility</h2>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table"><thead><tr><th>From / To</th><th>OBDX 22.x</th><th>OBDX 25.x</th><th>Java</th></tr></thead>
+          <div class="fx-table-wrap">
+            <table class="fx-table"><thead><tr><th>From / To</th><th>OBDX 22.x</th><th>OBDX 25.x</th><th>Java</th></tr></thead>
               <tbody><oj-bind-for-each data="[[compatibility]]"><template><tr><td><strong><oj-bind-text value="[[$current.data.from]]"></oj-bind-text></strong></td>
                 <td><span :class="[[$current.data.to22.css]]"><oj-bind-text value="[[$current.data.to22.text]]"></oj-bind-text></span></td>
                 <td><span :class="[[$current.data.to25.css]]"><oj-bind-text value="[[$current.data.to25.text]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.java]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
@@ -310,8 +311,8 @@
         </section>
         <section class="factory-card">
           <h2>Rules of this workspace's version pack</h2>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table"><thead><tr><th>Rule</th><th>Severity</th><th>Applies to</th><th>On</th></tr></thead>
+          <div class="fx-table-wrap">
+            <table class="fx-table"><thead><tr><th>Rule</th><th>Severity</th><th>Applies to</th><th>On</th></tr></thead>
               <tbody><oj-bind-for-each data="[[packRules]]"><template><tr :title="[[$current.data.message]]"><td><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
                 <td><span :class="[[$current.data.severity.css]]"><oj-bind-text value="[[$current.data.severity.text]]"></oj-bind-text></span></td>
                 <td><oj-bind-text value="[[$current.data.appliesTo]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.enabled]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>

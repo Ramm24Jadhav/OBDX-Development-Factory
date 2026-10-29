@@ -3,8 +3,9 @@
  * updates are on), what it is built with, the AI models in use, its key features, licensing and support, and links to
  * its documentation.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/updates', '../services/ui', 'ojs/ojbutton'],
-  function (ko, accUtils, api, session, updates, ui) {
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/updates', '../services/ui', '../services/toast',
+        '../services/dialog', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, updates, ui, toast, dialog) {
     const REPO = 'https://github.com/Ramm24Jadhav/OBDX-Development-Factory';
 
     function AboutViewModel() {
@@ -15,8 +16,35 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.workspaces = ko.observable(null);
       // Reproducible builds stamp the jar with 1980; that is not the real date
       this.builtAtText = ko.pureComputed(() => (this.status() && this.status().builtAt && new Date(this.status().builtAt).getFullYear() > 2000 ? ui.when(this.status().builtAt) : ''));
-      this.check = () => updates.refresh(true);
-      this.install = () => updates.install();
+      this.checking = ko.observable(false);
+      this.check = () => {
+        this.checking(true);
+        updates.refresh(true).then((result) => {
+          this.checking(false);
+          if (result) {
+            toast.info(result.message || (result.state === 'AVAILABLE' ? 'A newer build is available.' : 'This factory has the latest build.'));
+          } else if (updates.error()) {
+            toast.error('Could not check for updates: ' + updates.error());
+          }
+        });
+      };
+      // Updating restarts the factory, so it asks first
+      this.install = () => dialog.confirm({
+        title: 'Update the factory now?',
+        message: 'The factory downloads build ' + (this.status() && this.status().latestBuild) + ' and restarts. It is not available for a short while, so tell the people using it first.',
+        confirmLabel: 'Update now'
+      }).then((ok) => {
+        if (!ok) {
+          return;
+        }
+        updates.install().then(() => {
+          if (updates.error()) {
+            toast.error('The update did not start: ' + updates.error());
+          } else {
+            toast.info('The update is downloading. The factory restarts when it is ready.');
+          }
+        });
+      });
       this.tab = ko.observable('overview');
       this.tabs = ui.tabs(this.tab, [
         { value: 'overview', label: 'Overview', icon: 'cube' }, { value: 'version', label: 'Version Information', icon: 'info' },

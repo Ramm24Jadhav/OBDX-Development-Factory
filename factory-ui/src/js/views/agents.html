@@ -5,22 +5,23 @@
       <p>Track, monitor and manage all AI agent executions, tasks, logs and results</p>
     </div>
     <div class="factory-pg-actions">
-      <span class="factory-ag-split">
-        <button type="button" id="newAgentTask" class="factory-ag-split-main" on-click="[[newTaskDefault]]" title="Draft a specification from a BRD/FSD">
+      <div class="fx-split">
+        <button type="button" id="newAgentTask" class="fx-btn fx-btn--primary" on-click="[[newTaskDefault]]" data-fx-tip="Draft a specification from a BRD/FSD">
           <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Agent Task</button>
-        <button type="button" id="newAgentTaskMore" class="factory-ag-split-caret" aria-label="More agent tasks" aria-haspopup="true" on-click="[[openTaskMenu]]">
-          <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button>
-      </span>
-      <oj-menu id="newAgentTaskMenu" on-oj-menu-action="[[newTask]]">
-        <oj-option value="requirements">Draft a specification from a BRD/FSD</oj-option>
-        <oj-option value="changes">Plan a change (impact analysis)</oj-option>
-        <oj-option value="designer">Change a screen with AI</oj-option>
-        <oj-option value="code">Import and index code</oj-option>
-      </oj-menu>
+        <button type="button" id="newAgentTaskMore" class="fx-btn fx-btn--primary fx-split-toggle" aria-label="More agent tasks" aria-haspopup="menu"
+                :aria-expanded="[[taskMenu.open() ? 'true' : 'false']]" on-click="[[taskMenu.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
+        <oj-bind-if test="[[taskMenu.open()]]">
+          <div class="fx-menu" role="menu" id="newAgentTaskMenu" aria-label="Agent tasks" on-keydown="[[taskMenu.key]]">
+            <oj-bind-for-each data="[[taskItems]]" as="t">
+              <template><button type="button" role="menuitem" on-click="[[t.data.run]]"><span :class="[[t.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+        </oj-bind-if>
+      </div>
     </div>
   </div>
 
-  <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="agentsError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-ag-alert" role="alert" id="agentsError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
 
   <div class="factory-kpis">
     <oj-bind-for-each data="[[kpis]]">
@@ -34,49 +35,49 @@
     <div class="factory-ag-tabrow">
       <div class="factory-tabbar factory-ag-tabs" role="tablist" aria-label="Runs">
         <oj-bind-for-each data="[[tabs]]">
-          <template><button type="button" role="tab" :id="[['ag-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+          <template><button type="button" role="tab" :id="[['ag-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
             <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
         </oj-bind-for-each>
       </div>
       <span class="factory-ag-range" on-keydown="[[dateKey]]">
-        <button type="button" class="factory-ag-rangebtn" id="runDateRange" title="Show runs started in this date range" aria-haspopup="dialog" :aria-expanded="[[dateOpen() ? 'true' : 'false']]" on-click="[[toggleDates]]">
+        <button type="button" class="fx-btn fx-btn--tertiary factory-ag-rangebtn" id="runDateRange" data-fx-tip="Show runs started in this date range" aria-haspopup="dialog" :aria-expanded="[[dateOpen() ? 'true' : 'false']]" on-click="[[toggleDates]]">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>
           <span><oj-bind-text value="[[dateRangeText]]"></oj-bind-text></span></button>
         <oj-bind-if test="[[dateOpen()]]">
           <div class="factory-ag-rangepop" role="dialog" aria-label="Date range">
-            <label>From<input type="date" id="runFrom" :value="[[fromDate]]" on-change="[[fromChange]]"></label>
-            <label>To<input type="date" id="runTo" :value="[[toDate]]" on-change="[[toChange]]"></label>
-            <div class="factory-ag-rangeact"><button type="button" class="factory-link-sm" on-click="[[clearDates]]">Clear</button>
-              <button type="button" class="factory-ov2-btn factory-ag-rangedone" on-click="[[closeDates]]">Done</button></div>
+            <div class="fx-field"><label class="fx-label" for="runFrom">From</label><input type="date" class="fx-input" id="runFrom" :value="[[fromDate]]" on-change="[[fromChange]]"></div>
+            <div class="fx-field"><label class="fx-label" for="runTo">To</label><input type="date" class="fx-input" id="runTo" :value="[[toDate]]" on-change="[[toChange]]"></div>
+            <div class="factory-ag-rangeact"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearDates]]">Clear</button>
+              <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[closeDates]]">Done</button></div>
           </div>
         </oj-bind-if>
       </span>
     </div>
     <div class="factory-filters factory-ag-filters">
-      <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" id="runSearch" placeholder="Search by run ID, task, requirement or model..." aria-label="Search runs" on-input="[[searchInput]]"></span>
-      <select class="factory-ws-select" id="runStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="completed">Completed</option>
+      <span class="fx-control factory-ag-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="runSearch" placeholder="Search by run ID, task, requirement or model..." aria-label="Search runs" on-input="[[searchInput]]"></span>
+      <select class="fx-select" id="runStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="completed">Completed</option>
         <option value="failed">Failed</option><option value="running">Running</option><option value="queued">Queued</option></select>
-      <select class="factory-ws-select" id="runAgent" aria-label="Agent" on-change="[[agentChange]]"><option value="">All Agents</option>
+      <select class="fx-select" id="runAgent" aria-label="Agent" on-change="[[agentChange]]"><option value="">All Agents</option>
         <oj-bind-for-each data="[[agentOptions]]"><template><option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-      <select class="factory-ws-select" id="runModel" aria-label="Model" on-change="[[modelChange]]"><option value="">All Models</option>
+      <select class="fx-select" id="runModel" aria-label="Model" on-change="[[modelChange]]"><option value="">All Models</option>
         <oj-bind-for-each data="[[modelOptions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-      <select class="factory-ws-select" id="runWorkspace" aria-label="Workspace" on-change="[[workspaceChange]]"><option value="">All Workspaces</option>
+      <select class="fx-select" id="runWorkspace" aria-label="Workspace" on-change="[[workspaceChange]]"><option value="">All Workspaces</option>
         <oj-bind-for-each data="[[workspaceOptions]]"><template><option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select>
-      <button type="button" class="factory-ov2-btn" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
+      <button type="button" class="fx-btn fx-btn--tertiary" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
     </div>
   </section>
 
   <div class="factory-ag-layout">
     <div class="factory-ag-left">
       <section class="factory-card factory-ag-list" id="runList">
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table factory-ag-table" id="runTable">
-            <thead><tr><th><input type="checkbox" id="runSelectAll" aria-label="Select all runs on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></th>
-              <th>Run ID</th><th>Task / Prompt</th><th>Agent</th><th>Model</th><th>Status</th><th>Started</th><th>Duration</th><th>Actions</th></tr></thead>
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-ag-table" id="runTable">
+            <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" id="runSelectAll" aria-label="Select all runs on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></label></th>
+              <th>Run ID</th><th>Task / Prompt</th><th>Agent</th><th>Model</th><th>Status</th><th>Started</th><th>Duration</th><th class="fx-table-actions">Actions</th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[rows]]">
                 <template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-                  <td on-click="[[$current.data.stop]]"><input type="checkbox" :aria-label="[['Select ' + $current.data.id]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></td>
+                  <td class="fx-col-check" on-click="[[$current.data.stop]]"><label class="fx-check"><input type="checkbox" :aria-label="[['Select ' + $current.data.id]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></label></td>
                   <td class="factory-cp-link factory-cp-nowrap"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
                   <td class="factory-ag-task"><span class="factory-ag-clamp" :title="[[$current.data.task]]"><oj-bind-text value="[[$current.data.task]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></span></td>
                   <td><span class="factory-ag-agentcell" :title="[[$current.data.agentName]]"><span :class="[[$current.data.agentCss]]"><span :class="[[$current.data.agentIcon]]" aria-hidden="true"></span></span><span class="factory-ag-ell"><oj-bind-text value="[[$current.data.agentName]]"></oj-bind-text></span></span></td>
@@ -84,7 +85,7 @@
                   <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-cp-nowrap" :title="[[$current.data.startedText]]"><oj-bind-text value="[[$current.data.startedShort]]"></oj-bind-text></td>
                   <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
-                  <td on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
+                  <td class="fx-table-actions" on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
                     <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.id]]"></oj-bind-text>
                     <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
                       <oj-option value="details">View details</oj-option>
@@ -95,19 +96,25 @@
               </oj-bind-for-each>
             </tbody>
           </table>
-          <oj-bind-if test="[[!loading() && rows().length === 0]]"><p class="factory-ov-empty">No runs match.</p></oj-bind-if>
+          <oj-bind-if test="[[loading() && rows().length === 0]]"><div class="fx-empty" role="status"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span>Loading the runs...</div></oj-bind-if>
+          <oj-bind-if test="[[!loading() && rows().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-robot" aria-hidden="true"></span></span><strong>No runs match</strong>Change the filters or press Reset.</div></oj-bind-if>
         </div>
-        <div class="factory-pager"><span><oj-bind-text value="[[pager.text() + ' runs' + selectedText()]]"></oj-bind-text></span>
-          <span class="factory-ag-pages"><button type="button" class="factory-ag-pg" aria-label="Previous page" on-click="[[pager.prev]]">‹</button>
-            <oj-bind-for-each data="[[pager.buttons]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></button></template></oj-bind-for-each>
-            <button type="button" class="factory-ag-pg" aria-label="Next page" on-click="[[pager.next]]">›</button>
-            <select class="factory-ws-select factory-ag-size" id="runPageSize" aria-label="Runs per page" on-change="[[pager.sizeChange]]"><option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select></span></div>
+        <div class="fx-pager factory-ag-pager">
+          <span class="fx-pager-text"><oj-bind-text value="[[pager.text() + (visibleRuns().length ? ' runs' : '') + selectedText()]]"></oj-bind-text></span>
+          <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
+          <oj-bind-for-each data="[[pager.numbers]]" as="n"><template>
+            <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+            <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+          </template></oj-bind-for-each>
+          <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button>
+          <select class="fx-select" id="runPageSize" aria-label="Runs per page" on-change="[[pager.sizeChange]]"><oj-bind-for-each data="[[pager.sizes]]" as="s"><template><option :value="[[s.data]]" :selected="[[s.data === pager.size()]]"><oj-bind-text value="[[s.data + ' / page']]"></oj-bind-text></option></template></oj-bind-for-each></select>
+        </div>
         <p class="factory-card-sub factory-ag-note">Durations with ~ are from the record's created and updated times. <oj-bind-text value="[[modelNote]]"></oj-bind-text></p>
       </section>
 
       <div class="factory-ag-bottom">
         <section class="factory-card">
-          <h2 class="factory-ag-cardhead">Recent Agent Activity <button type="button" class="factory-link-sm" on-click="[[viewAll]]">View All →</button></h2>
+          <h2 class="factory-ag-cardhead">Recent Agent Activity <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-ag-link" on-click="[[viewAll]]">View All →</button></h2>
           <ul class="factory-ag-timeline">
             <oj-bind-for-each data="[[recent]]">
               <template><li><span class="factory-ag-time"><oj-bind-text value="[[$current.data.time]]"></oj-bind-text></span>
@@ -115,10 +122,10 @@
                 <span class="factory-ag-tltext" :title="[[$current.data.full]]"><b><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></b> <oj-bind-text value="[[$current.data.text]]"></oj-bind-text> <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.agent]]"></oj-bind-text></span></span></li></template>
             </oj-bind-for-each>
           </ul>
-          <oj-bind-if test="[[recent().length === 0]]"><p class="factory-empty">No agent runs yet.</p></oj-bind-if>
+          <oj-bind-if test="[[recent().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-robot" aria-hidden="true"></span></span>No agent runs yet.</div></oj-bind-if>
         </section>
         <section class="factory-card">
-          <h2 class="factory-ag-cardhead"><span>Model Usage <small>(This Month)</small></span> <button type="button" class="factory-link-sm" on-click="[[viewModels]]">View Details →</button></h2>
+          <h2 class="factory-ag-cardhead"><span>Model Usage <small>(This Month)</small></span> <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-ag-link" on-click="[[viewModels]]">View Details →</button></h2>
           <p class="factory-card-sub">Runs per model. The factory does not record token usage.</p>
           <div class="factory-im-donutrow factory-ag-donutrow">
             <span class="factory-ring factory-im-donut" :style="[[byModel().style]]"><span><oj-bind-text value="[[byModel().total]]"></oj-bind-text><small>Total Runs</small></span></span>
@@ -128,13 +135,13 @@
               </oj-bind-for-each>
             </ul>
           </div>
-          <oj-bind-if test="[[byModel().total === 0]]"><p class="factory-empty">No runs this month.</p></oj-bind-if>
+          <oj-bind-if test="[[byModel().total === 0]]"><div class="fx-empty">No runs this month.</div></oj-bind-if>
         </section>
       </div>
     </div>
 
     <section class="factory-card factory-ag-detail" id="runInspector">
-      <oj-bind-if test="[[!run()]]"><p class="factory-empty">No runs yet.</p></oj-bind-if>
+      <oj-bind-if test="[[!run()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-robot" aria-hidden="true"></span></span><strong>No runs yet</strong>Runs appear here when the factory drafts, plans, writes or indexes.</div></oj-bind-if>
       <oj-bind-if test="[[run()]]">
         <div class="factory-ag-dhead">
           <h2 id="runId"><oj-bind-text value="[[run().id]]"></oj-bind-text></h2>
@@ -144,7 +151,7 @@
         <p class="factory-card-sub"><oj-bind-text value="[[run().message]]"></oj-bind-text></p>
         <div class="factory-subtabs factory-ag-subtabs">
           <oj-bind-for-each data="[[detailTabs]]">
-            <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            <template><button type="button" :class="[[$current.data.css]]" :aria-pressed="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
           </oj-bind-for-each>
         </div>
         <div class="factory-ag-dbody">
@@ -189,7 +196,7 @@
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'files']]">
             <ul class="factory-pf-evlist"><oj-bind-for-each data="[[run().files]]"><template><li class="factory-mono"><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-            <oj-bind-if test="[[run().files.length === 0]]"><p class="factory-empty">This run wrote no files.</p></oj-bind-if>
+            <oj-bind-if test="[[run().files.length === 0]]"><div class="fx-empty">This run wrote no files.</div></oj-bind-if>
           </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'related']]">
             <p class="factory-card-sub">Other runs for the same requirement or workspace.</p>
@@ -200,12 +207,12 @@
                   <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></li></template>
               </oj-bind-for-each>
             </ul>
-            <oj-bind-if test="[[related().length === 0]]"><p class="factory-empty">No related runs.</p></oj-bind-if>
+            <oj-bind-if test="[[related().length === 0]]"><div class="fx-empty">No related runs.</div></oj-bind-if>
           </oj-bind-if>
         </div>
         <div class="factory-ag-foot">
-          <button type="button" id="viewResultButton" class="factory-ov2-btn factory-ag-footbtn" on-click="[[viewResult]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[resultLabel]]"></oj-bind-text></button>
-          <button type="button" id="rerunButton" class="factory-ov2-btn factory-ag-footbtn" on-click="[[rerun]]" :disabled="[[!canRerun()]]" :title="[[canRerun() ? 'Run this again' : 'Only failed runs (and plans waiting for approval) can be run again']]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-run</button>
+          <button type="button" id="viewResultButton" class="fx-btn fx-btn--secondary factory-ag-footbtn" on-click="[[viewResult]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[resultLabel]]"></oj-bind-text></button>
+          <button type="button" id="rerunButton" class="fx-btn fx-btn--secondary factory-ag-footbtn" on-click="[[rerun]]" :disabled="[[!canRerun()]]" :data-fx-tip="[[canRerun() ? 'Run this again' : 'Only failed runs (and plans waiting for approval) can be run again']]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-run</button>
           <oj-menu-button id="runMoreActions" chroming="outlined" class="factory-ag-more">More Actions
             <oj-menu slot="menu" on-oj-menu-action="[[moreAction]]">
               <oj-option value="steps">Show execution steps</oj-option>

@@ -6,19 +6,19 @@
   <!-- Title row actions: mode, screen size, zoom, more, preview, save -->
   <oj-bind-if test="[[detail()]]">
     <div class="factory-dz-headactions">
-      <div class="factory-dz-modes" role="group" aria-label="Design or code">
-        <button type="button" id="designModeButton" :class="[[mode() === 'design' ? 'factory-dz-mode factory-dz-mode-on' : 'factory-dz-mode']]" on-click="[[setDesignMode]]">Design</button>
-        <button type="button" id="codeModeButton" :class="[[mode() === 'code' ? 'factory-dz-mode factory-dz-mode-on' : 'factory-dz-mode']]" on-click="[[setCodeMode]]">Code</button>
+      <div class="fx-toggle-group factory-dz-modes" role="group" aria-label="Design or code">
+        <button type="button" id="designModeButton" :aria-pressed="[[mode() === 'design' ? 'true' : 'false']]" on-click="[[setDesignMode]]">Design</button>
+        <button type="button" id="codeModeButton" :aria-pressed="[[mode() === 'code' ? 'true' : 'false']]" on-click="[[setCodeMode]]">Code</button>
       </div>
-      <div class="factory-dz-sizes" role="group" aria-label="Screen size">
+      <div class="fx-toggle-group factory-dz-sizes" role="group" aria-label="Screen size">
         <oj-bind-for-each data="[[sizeButtons]]" as="sz">
           <template>
-            <button type="button" :class="[[sz.data.css]]" :title="[[sz.data.title]]" :aria-label="[[sz.data.title]]" :aria-pressed="[[sz.data.on ? 'true' : 'false']]" on-click="[[sz.data.pick]]">
+            <button type="button" :data-fx-tip="[[sz.data.title]]" :aria-label="[[sz.data.title]]" :aria-pressed="[[sz.data.on() ? 'true' : 'false']]" on-click="[[sz.data.pick]]">
               <span :class="[[sz.data.icon]]" aria-hidden="true"></span></button>
           </template>
         </oj-bind-for-each>
       </div>
-      <select id="zoomSelect" class="factory-dz-zoom" aria-label="Zoom" title="Zoom" data-bind="options: zoomOptions, optionsText: 'label', optionsValue: 'value', value: zoom"></select>
+      <select id="zoomSelect" class="fx-select factory-dz-zoom" aria-label="Zoom" title="Zoom" data-bind="options: zoomOptions, optionsText: 'label', optionsValue: 'value', value: zoom"></select>
       <oj-menu-button id="designerMore" chroming="outlined" display="icons" class="factory-dz-morebtn">
         <span slot="startIcon" class="factory-nav-icon factory-ico-more factory-dz-more-h" aria-hidden="true"></span>More
         <oj-menu id="designerMoreMenu" slot="menu" on-oj-menu-action="[[pageMenu]]">
@@ -37,31 +37,33 @@
         </oj-menu>
       </oj-menu-button>
       <oj-bind-if test="[[!previewMode()]]">
-        <button type="button" id="previewButton" class="factory-dz-hbtn" on-click="[[togglePreview]]" title="See the screen without the panels">
+        <button type="button" id="previewButton" class="fx-btn fx-btn--secondary" on-click="[[togglePreview]]" data-fx-tip="See the screen without the panels">
           <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>Preview</button>
       </oj-bind-if>
       <oj-bind-if test="[[previewMode()]]">
-        <button type="button" id="exitPreviewButton" class="factory-dz-hbtn factory-dz-hbtn-on" on-click="[[togglePreview]]">
+        <button type="button" id="exitPreviewButton" class="fx-btn fx-btn--secondary factory-dz-hbtn-on" aria-pressed="true" on-click="[[togglePreview]]">
           <span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Exit preview</button>
       </oj-bind-if>
-      <span class="factory-dz-split" :title="[[saveTitle]]">
-        <button type="button" id="saveDesignButton" class="factory-dz-split-main" on-click="[[save]]" :disabled="[[!dirty() || !editable()]]">
-          <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save Version</button>
-        <oj-menu-button id="saveMore" chroming="borderless" display="icons" class="factory-dz-split-arrow">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span>Save options
-          <oj-menu id="saveMoreMenu" slot="menu" on-oj-menu-action="[[saveMenu]]">
-            <oj-option value="save" disabled="[[!dirty() || !editable()]]">Save as a new version</oj-option>
-            <oj-option value="discard" disabled="[[!dirty() || !editable()]]">Discard the changes</oj-option>
-            <oj-option value="previous" disabled="[[!canRestorePrevious()]]">Bring back the previous version</oj-option>
-            <oj-option value="history">Version history</oj-option>
-          </oj-menu>
-        </oj-menu-button>
-      </span>
+      <div class="fx-split factory-dz-savesplit">
+        <span class="factory-dz-savemain" :title="[[saveTitle]]"><button type="button" id="saveDesignButton" class="fx-btn fx-btn--primary" on-click="[[save]]" :disabled="[[!dirty() || !editable()]]">
+          <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save Version</button></span>
+        <button type="button" id="saveMore" class="fx-btn fx-btn--primary fx-split-toggle" aria-haspopup="menu" :aria-expanded="[[saveSplit.open() ? 'true' : 'false']]"
+                aria-label="Save options" on-click="[[saveSplit.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
+        <oj-bind-if test="[[saveSplit.open()]]">
+          <div class="fx-menu" role="menu" id="saveMoreMenu" aria-label="Save options" on-keydown="[[saveSplit.key]]">
+            <button type="button" role="menuitem" on-click="[[saveDo('save')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save as a new version</button>
+            <button type="button" role="menuitem" on-click="[[saveDo('discard')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Discard the changes</button>
+            <div class="fx-menu-sep" role="separator"></div>
+            <button type="button" role="menuitem" on-click="[[saveDo('previous')]]" :disabled="[[!canRestorePrevious()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Bring back the previous version</button>
+            <button type="button" role="menuitem" on-click="[[saveDo('history')]]"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>Version history</button>
+          </div>
+        </oj-bind-if>
+      </div>
     </div>
   </oj-bind-if>
   <oj-bind-if test="[[!detail() && workspaceId() && canDesign()]]">
     <div class="factory-dz-headactions">
-      <button type="button" id="newScreenButton" class="factory-dz-hbtn factory-dz-hbtn-primary" on-click="[[openNew]]">
+      <button type="button" id="newScreenButton" class="fx-btn fx-btn--primary" on-click="[[openNew]]">
         <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New screen</button>
     </div>
   </oj-bind-if>
@@ -69,14 +71,14 @@
 <div class="factory-dz">
   <!-- Messages -->
   <oj-bind-if test="[[errorMessage()]]">
-    <div id="designError" class="factory-dz-message factory-dz-message-error" role="alert">
-      <span><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span>
+    <div id="designError" class="fx-alert fx-alert--danger factory-dz-alert" role="alert">
+      <span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span>
       <button type="button" class="factory-dz-icon" aria-label="Close" on-click="[[clearMessages]]">✕</button>
     </div>
   </oj-bind-if>
   <oj-bind-if test="[[infoMessage()]]">
-    <div id="designInfo" class="factory-dz-message factory-dz-message-info" role="status">
-      <span><oj-bind-text value="[[infoMessage]]"></oj-bind-text></span>
+    <div id="designInfo" class="fx-alert fx-alert--info factory-dz-alert" role="status">
+      <span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[infoMessage]]"></oj-bind-text></span>
       <button type="button" class="factory-dz-icon" aria-label="Close" on-click="[[clearMessages]]">✕</button>
     </div>
   </oj-bind-if>
@@ -90,7 +92,7 @@
         <div class="factory-dz-row">
           <oj-select-single id="requirementSelect" class="factory-dz-grow" aria-label="Approved requirement" label-edge="none"
                             data="[[requirementProvider]]" value="{{requirementId}}" placeholder="Choose an approved requirement"></oj-select-single>
-          <button type="button" id="fromRequirementButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[createFromRequirement]]"
+          <button type="button" id="fromRequirementButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createFromRequirement]]"
                   :disabled="[[!requirementId()]]">Create screens</button>
         </div>
       </div>
@@ -100,7 +102,7 @@
         <div class="factory-dz-row">
           <oj-input-text id="blankName" class="factory-dz-grow" aria-label="Screen name" label-edge="none" placeholder="Fixed deposit opening"
                          value="{{blankName}}"></oj-input-text>
-          <button type="button" id="blankButton" class="factory-dz-btn" on-click="[[createBlank]]" :disabled="[[!blankName()]]">Create</button>
+          <button type="button" id="blankButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[createBlank]]" :disabled="[[!blankName()]]">Create</button>
         </div>
       </div>
       <button type="button" class="factory-dz-icon factory-dz-drawer-close" aria-label="Close" on-click="[[closeDrawer]]">✕</button>
@@ -116,7 +118,7 @@
         <div class="factory-dz-row">
           <oj-input-password id="figmaToken" class="factory-dz-grow" aria-label="Figma personal access token" label-edge="none"
                              placeholder="Figma personal access token" value="{{figmaToken}}" mask-icon="visible"></oj-input-password>
-          <button type="button" id="importFigmaButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[importFigma]]"
+          <button type="button" id="importFigmaButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[importFigma]]"
                   :disabled="[[!figmaLink() || !figmaToken() || busy()]]">Import frame</button>
         </div>
       </div>
@@ -126,10 +128,10 @@
         <div class="factory-dz-row">
           <oj-file-picker id="designFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
                           on-oj-select="[[designFileSelected]]">
-            <button type="button" slot="trigger" id="chooseDesignButton" class="factory-dz-btn">Choose file</button>
+            <button type="button" slot="trigger" id="chooseDesignButton" class="fx-btn fx-btn--secondary fx-btn--sm">Choose file</button>
           </oj-file-picker>
           <span class="factory-dz-hint factory-dz-grow"><oj-bind-text value="[[designFileName]]"></oj-bind-text></span>
-          <button type="button" id="importFileButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[importFile]]"
+          <button type="button" id="importFileButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[importFile]]"
                   :disabled="[[!designFile() || busy()]]">Import file</button>
         </div>
       </div>
@@ -151,29 +153,29 @@
             </template>
           </oj-bind-for-each>
         </div>
-        <input type="text" id="newComponentName" class="factory-dz-input" placeholder="Name, for example Exchange rate ticker" aria-label="Component name"
+        <input type="text" id="newComponentName" class="fx-input factory-dz-input" placeholder="Name, for example Exchange rate ticker" aria-label="Component name"
                data-bind="textInput: newComponentName"/>
         <oj-bind-if test="[[newComponentSource() === 'file']]">
           <div class="factory-dz-row">
             <oj-file-picker id="newComponentFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
                             on-oj-select="[[newComponentFileSelected]]">
-              <button type="button" slot="trigger" class="factory-dz-btn">Choose image or PDF</button>
+              <button type="button" slot="trigger" class="fx-btn fx-btn--secondary fx-btn--sm">Choose image or PDF</button>
             </oj-file-picker>
             <span class="factory-dz-hint factory-dz-grow"><oj-bind-text value="[[newComponentFileName]]"></oj-bind-text></span>
           </div>
           <p class="factory-dz-hint">An image needs a chat model that reads images; a PDF works with any model.</p>
         </oj-bind-if>
         <oj-bind-if test="[[newComponentSource() === 'figma']]">
-          <input type="text" id="newComponentLink" class="factory-dz-input" placeholder="https://www.figma.com/design/…?node-id=12-34"
+          <input type="text" id="newComponentLink" class="fx-input factory-dz-input" placeholder="https://www.figma.com/design/…?node-id=12-34"
                  aria-label="Figma frame link" data-bind="textInput: newComponentLink"/>
           <oj-input-password id="newComponentToken" aria-label="Figma personal access token" label-edge="none" placeholder="Figma personal access token"
                              value="{{figmaToken}}" mask-icon="visible"></oj-input-password>
         </oj-bind-if>
-        <textarea id="newComponentPrompt" class="factory-dz-input factory-dz-textarea" rows="3" aria-label="What the component should be"
+        <textarea id="newComponentPrompt" class="fx-textarea factory-dz-input factory-dz-textarea" rows="3" aria-label="What the component should be"
                   data-bind="textInput: newComponentPrompt"
                   placeholder="What it should be, for example: a card with the live INR exchange rates for USD, EUR and GBP, with a small up or down arrow"></textarea>
         <div class="factory-dz-row">
-          <button type="button" id="makeComponentButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[createComponent]]" :disabled="[[busy()]]">
+          <button type="button" id="makeComponentButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createComponent]]" :disabled="[[busy()]]">
             <oj-bind-text value="[[busy() ? 'Making…' : 'Create component']]"></oj-bind-text>
           </button>
         </div>
@@ -188,15 +190,15 @@
         <oj-bind-if test="[[reviewUrl()]]">
           <p class="factory-dz-hint">Anyone with the link can view, comment and approve until <oj-bind-text value="[[reviewExpires]]"></oj-bind-text>.</p>
           <div class="factory-dz-row">
-            <input id="reviewUrl" class="factory-dz-input factory-dz-grow" readonly :value="[[reviewUrl]]" aria-label="Review link"/>
-            <button type="button" id="copyLinkButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[copyReviewLink]]">Copy</button>
-            <button type="button" id="newLinkButton" class="factory-dz-btn" on-click="[[openReview]]">New link</button>
-            <button type="button" id="closeLinkButton" class="factory-dz-btn factory-dz-btn-ghost" on-click="[[closeReview]]">Close link</button>
+            <input id="reviewUrl" class="fx-input factory-dz-input factory-dz-grow" readonly :value="[[reviewUrl]]" aria-label="Review link"/>
+            <button type="button" id="copyLinkButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[copyReviewLink]]">Copy</button>
+            <button type="button" id="newLinkButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openReview]]">New link</button>
+            <button type="button" id="closeLinkButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[closeReview]]">Close link</button>
           </div>
         </oj-bind-if>
         <oj-bind-if test="[[!reviewUrl()]]">
           <p class="factory-dz-hint">Create a link the customer can open without signing in, to see this version, comment on it and approve it.</p>
-          <button type="button" id="createLinkButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[openReview]]">Create review link</button>
+          <button type="button" id="createLinkButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[openReview]]">Create review link</button>
         </oj-bind-if>
       </div>
       <button type="button" class="factory-dz-icon factory-dz-drawer-close" aria-label="Close" on-click="[[closeDrawer]]">✕</button>
@@ -249,11 +251,11 @@
               </div>
             </oj-bind-if>
             <div class="factory-dz-row">
-              <input type="search" id="paletteFilter" class="factory-dz-input factory-dz-search factory-dz-grow" placeholder="Search components..."
+              <input type="search" id="paletteFilter" class="fx-input factory-dz-input factory-dz-search factory-dz-grow" placeholder="Search components..."
                      aria-label="Search components" data-bind="textInput: paletteFilter"/>
             </div>
             <oj-bind-if test="[[editable()]]">
-              <button type="button" id="createComponentButton" class="factory-dz-btn factory-dz-btn-full" on-click="[[openNewComponent]]">+ Create component</button>
+              <button type="button" id="createComponentButton" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[openNewComponent]]">+ Create component</button>
               <p class="factory-dz-hint">Drag onto the canvas or a layer, or click to add after the selection.</p>
             </oj-bind-if>
             <oj-bind-if test="[[paletteNote()]]">
@@ -309,7 +311,7 @@
               </oj-bind-for-each>
             </div>
             <oj-bind-if test="[[canDesign()]]">
-              <button type="button" class="factory-dz-btn factory-dz-btn-full" on-click="[[openNew]]">+ New screen</button>
+              <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[openNew]]">+ New screen</button>
             </oj-bind-if>
             <div class="factory-dz-lhead"><oj-bind-text value="[['Layers of ' + (working() ? working().title || detail().name : '')]]"></oj-bind-text></div>
           </div>
@@ -354,8 +356,8 @@
             </div>
             <oj-bind-if test="[[editable()]]">
               <div class="factory-dz-row factory-layers-add">
-                <button type="button" id="addSectionButton" class="factory-dz-btn factory-dz-btn-ghost" on-click="[[addSection]]">+ Section</button>
-                <button type="button" id="addActionButton" class="factory-dz-btn factory-dz-btn-ghost" on-click="[[addAction]]">+ Button</button>
+                <button type="button" id="addSectionButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[addSection]]">+ Section</button>
+                <button type="button" id="addActionButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[addAction]]">+ Button</button>
               </div>
             </oj-bind-if>
           </div>
@@ -395,10 +397,10 @@
                       </oj-bind-for-each>
                     </div>
                     <oj-bind-if test="[[g.data.canCreate]]">
-                      <button type="button" class="factory-dz-btn factory-dz-btn-primary" on-click="[[g.data.createAction]]">Create its screens</button>
+                      <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[g.data.createAction]]">Create its screens</button>
                     </oj-bind-if>
                     <oj-bind-if test="[[g.data.done]]">
-                      <a class="factory-dz-btn factory-dz-btn-primary factory-dz-btn-link" href="?ojr=changes">All approved · plan the change</a>
+                      <a class="fx-btn fx-btn--primary fx-btn--sm factory-dz-btn-link" href="?ojr=changes">All approved · plan the change</a>
                     </oj-bind-if>
                   </section>
                 </template>
@@ -414,15 +416,15 @@
         <div class="factory-dz-cardhead">
           <span class="factory-dz-cardicon" aria-hidden="true"><span class="factory-nav-icon factory-ico-design"></span></span>
           <strong class="factory-dz-cardname" :title="[[screenHeading]]"><oj-bind-text value="[[screenHeading]]"></oj-bind-text></strong>
-          <span :class="[['factory-dz-badge factory-dz-badge-' + detail().status.toLowerCase()]]"><oj-bind-text value="[[statusText]]"></oj-bind-text></span>
+          <span :class="[[detail().status === 'APPROVED' ? 'fx-badge fx-badge--success' : (detail().status === 'IN_REVIEW' ? 'fx-badge fx-badge--warning' : 'fx-badge')]]"><oj-bind-text value="[[statusText]]"></oj-bind-text></span>
           <oj-bind-if test="[[dirty()]]">
-            <span class="factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
+            <span class="fx-badge fx-badge--warning factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
           </oj-bind-if>
           <button type="button" id="checksChip" :class="[['factory-dz-checks-chip' + (openChecks() === 0 ? ' factory-dz-checks-ok' : ' factory-dz-checks-open')]]"
                   on-click="[[showChecks]]" title="Show the checks"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></button>
           <span class="factory-dz-spacer"></span>
           <oj-bind-if test="[[viewport() === 'custom']]">
-            <input type="number" id="customWidth" class="factory-dz-input factory-dz-width" min="320" max="2560" step="10" aria-label="Width in pixels"
+            <input type="number" id="customWidth" class="fx-input factory-dz-input factory-dz-width" min="320" max="2560" step="10" aria-label="Width in pixels"
                    data-bind="value: customWidth"/>
           </oj-bind-if>
           <oj-bind-if test="[[editable()]]">
@@ -488,7 +490,7 @@
             </span>
             <input type="text" id="aiInstruction" class="factory-dz-ai-input" aria-label="Ask AI to change the screen"
                    :placeholder="[[aiPlaceholder]]" data-bind="textInput: aiInstruction" on-keydown="[[aiKeydown]]"/>
-            <button type="button" id="askAiButton" class="factory-dz-btn factory-dz-btn-primary" on-click="[[askAi]]"
+            <button type="button" id="askAiButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[askAi]]"
                     :disabled="[[!aiInstruction() || busy()]]">
               <oj-bind-text value="[[busy() ? 'Working…' : 'Apply']]"></oj-bind-text>
             </button>
@@ -504,7 +506,7 @@
             <div class="factory-dz-row">
               <oj-input-text id="codeModule" class="factory-dz-grow" aria-label="Module folder" label-edge="none" placeholder="Module folder"
                              value="{{codeModule}}"></oj-input-text>
-              <button type="button" id="showCodeButton" class="factory-dz-btn" on-click="[[showCode]]">Show code</button>
+              <button type="button" id="showCodeButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[showCode]]">Show code</button>
             </div>
             <oj-bind-for-each data="[[codeFiles]]" as="f">
               <template>
@@ -596,11 +598,11 @@
                   </oj-bind-if>
                 </div>
                 <div class="factory-dz-ctxform">
-                  <textarea id="commentText" class="factory-dz-input factory-dz-textarea" rows="3"
+                  <textarea id="commentText" class="fx-textarea factory-dz-input factory-dz-textarea" rows="3"
                             :placeholder="[[selectedKind() === 'screen' ? 'Comment on the screen' : 'Comment on ' + selectedTitle()]]"
                             data-bind="textInput: commentText"
                             aria-label="Comment"></textarea>
-                  <button type="button" id="addCommentButton" class="factory-dz-btn" on-click="[[addComment]]" :disabled="[[!commentText()]]">Add comment</button>
+                  <button type="button" id="addCommentButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[addComment]]" :disabled="[[!commentText()]]">Add comment</button>
                 </div>
               </div>
             </oj-bind-if>
@@ -713,7 +715,7 @@
                     <div>
                       <p class="factory-dz-hint">The values are loaded when the screen opens. Code generation calls this API through the screen's model.</p>
                       <div class="factory-dz-field-label">API</div>
-                      <input type="text" id="propApi" class="factory-dz-input factory-dz-full" list="apiSuggestions" placeholder="GET /digx/v1/accounts/demandDeposit"
+                      <input type="text" id="propApi" class="fx-input factory-dz-input factory-dz-full" list="apiSuggestions" placeholder="GET /digx/v1/accounts/demandDeposit"
                              data-bind="value: propApi" :readonly="[[!editable()]]"/>
                       <datalist id="apiSuggestions">
                         <oj-bind-for-each data="[[apiSuggestions]]" as="sug">
@@ -721,15 +723,15 @@
                         </oj-bind-for-each>
                       </datalist>
                       <div class="factory-dz-field-label">List in the response</div>
-                      <input type="text" id="propApiPath" class="factory-dz-input factory-dz-full" placeholder="accounts" data-bind="value: propApiPath" :readonly="[[!editable()]]"/>
+                      <input type="text" id="propApiPath" class="fx-input factory-dz-input factory-dz-full" placeholder="accounts" data-bind="value: propApiPath" :readonly="[[!editable()]]"/>
                       <div class="factory-dz-row">
                         <div class="factory-dz-grow">
                           <div class="factory-dz-field-label">Value field</div>
-                          <input type="text" id="propApiValue" class="factory-dz-input factory-dz-full" placeholder="id.value" data-bind="value: propApiValue" :readonly="[[!editable()]]"/>
+                          <input type="text" id="propApiValue" class="fx-input factory-dz-input factory-dz-full" placeholder="id.value" data-bind="value: propApiValue" :readonly="[[!editable()]]"/>
                         </div>
                         <div class="factory-dz-grow">
                           <div class="factory-dz-field-label">Display field</div>
-                          <input type="text" id="propApiLabel" class="factory-dz-input factory-dz-full" placeholder="displayName" data-bind="value: propApiLabel" :readonly="[[!editable()]]"/>
+                          <input type="text" id="propApiLabel" class="fx-input factory-dz-input factory-dz-full" placeholder="displayName" data-bind="value: propApiLabel" :readonly="[[!editable()]]"/>
                         </div>
                       </div>
                     </div>
@@ -754,14 +756,14 @@
                   <p class="factory-dz-hint">Depend on another field. Try it on the canvas: type in that field and this one follows.</p>
                   <div id="visibleWhen" class="factory-dz-condition">
                     <div class="factory-dz-field-label">Show only when</div>
-                    <select class="factory-dz-input" aria-label="Show only when this field"
+                    <select class="fx-select factory-dz-input" aria-label="Show only when this field"
                             data-bind="options: conditionFields, optionsText: 'label', optionsValue: 'value', optionsCaption: 'Always shown', value: visibleField, disable: !editable()"></select>
                     <oj-bind-if test="[[!!visibleField()]]">
                       <div class="factory-dz-row">
-                        <select class="factory-dz-input factory-dz-grow" aria-label="Condition"
+                        <select class="fx-select factory-dz-input factory-dz-grow" aria-label="Condition"
                                 data-bind="options: conditionOperators, optionsText: 'label', optionsValue: 'value', value: visibleOperator, disable: !editable()"></select>
                         <oj-bind-if test="[[visibleNeedsValue()]]">
-                          <input type="text" class="factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: visibleValue"
+                          <input type="text" class="fx-input factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: visibleValue"
                                  :readonly="[[!editable()]]"/>
                         </oj-bind-if>
                       </div>
@@ -769,14 +771,14 @@
                   </div>
                   <div id="requiredWhen" class="factory-dz-condition">
                     <div class="factory-dz-field-label">Mandatory only when</div>
-                    <select class="factory-dz-input" aria-label="Mandatory only when this field"
+                    <select class="fx-select factory-dz-input" aria-label="Mandatory only when this field"
                             data-bind="options: conditionFields, optionsText: 'label', optionsValue: 'value', optionsCaption: 'As set above', value: requiredField, disable: !editable()"></select>
                     <oj-bind-if test="[[!!requiredField()]]">
                       <div class="factory-dz-row">
-                        <select class="factory-dz-input factory-dz-grow" aria-label="Condition"
+                        <select class="fx-select factory-dz-input factory-dz-grow" aria-label="Condition"
                                 data-bind="options: conditionOperators, optionsText: 'label', optionsValue: 'value', value: requiredOperator, disable: !editable()"></select>
                         <oj-bind-if test="[[requiredNeedsValue()]]">
-                          <input type="text" class="factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: requiredValue"
+                          <input type="text" class="fx-input factory-dz-input factory-dz-grow" aria-label="Value" placeholder="Value" data-bind="value: requiredValue"
                                  :readonly="[[!editable()]]"/>
                         </oj-bind-if>
                       </div>
@@ -816,7 +818,7 @@
             <oj-bind-if test="[[selectedKind() === 'screen']]">
               <div>
                 <details class="factory-dz-sec" open>
-                  <summary>Checks <span :class="[[openChecks() === 0 ? 'factory-dz-badge factory-dz-badge-approved' : 'factory-dz-badge factory-dz-badge-in_review']]">
+                  <summary>Checks <span :class="[[openChecks() === 0 ? 'fx-badge fx-badge--success' : 'fx-badge fx-badge--warning']]">
                     <oj-bind-text value="[[checksSummary]]"></oj-bind-text></span></summary>
                   <div id="checksPanel" class="factory-dz-checks">
                     <oj-bind-for-each data="[[checks]]" as="ck">
@@ -843,7 +845,7 @@
                                       placeholder="Not set"></oj-select-single>
                   </oj-form-layout>
                   <oj-bind-if test="[[canMakeFlow()]]">
-                    <button type="button" id="makeFlowButton" class="factory-dz-btn factory-dz-btn-full" on-click="[[makeFlowScreens]]" :disabled="[[busy()]]">
+                    <button type="button" id="makeFlowButton" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[makeFlowScreens]]" :disabled="[[busy()]]">
                       Create review and confirmation screens</button>
                   </oj-bind-if>
                   <div class="factory-dz-field-label">Channels (none chosen: all)</div>
@@ -866,7 +868,7 @@
                   </oj-bind-if>
                   <p class="factory-dz-hint">Select a component, section or button on the canvas or in Screens to edit it.</p>
                   <oj-bind-if test="[[canDesign()]]">
-                    <button type="button" id="deleteDesignButton" class="factory-dz-btn factory-dz-btn-danger" on-click="[[remove]]">Delete screen</button>
+                    <button type="button" id="deleteDesignButton" class="fx-btn fx-btn--danger fx-btn--sm" on-click="[[remove]]">Delete screen</button>
                   </oj-bind-if>
                 </details>
                 <oj-bind-if test="[[screenRules().length > 0]]">
@@ -960,7 +962,7 @@
                   <div>
                     <p class="factory-dz-hint">Your own markup for this element, drawn instead of the generated one. It runs in a sealed frame on the
                       canvas; code generation turns it into the element's template.</p>
-                    <textarea id="propHtml" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="HTML"
+                    <textarea id="propHtml" class="fx-textarea factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="HTML"
                               placeholder="&lt;label&gt;Remarks&lt;/label&gt;&#10;&lt;textarea maxlength=&quot;35&quot;&gt;&lt;/textarea&gt;"
                               data-bind="value: propHtml" :readonly="[[!editable()]]"></textarea>
                     <oj-bind-if test="[[editable() && !propHtml()]]">
@@ -972,7 +974,7 @@
                   <div>
                     <p class="factory-dz-hint">Styles for this element. Write declarations (color: #1f3a5f;) or rules where &amp; is the element
                       (&amp; label { font-weight: 600; }).</p>
-                    <textarea id="propCss" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="CSS"
+                    <textarea id="propCss" class="fx-textarea factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="CSS"
                               placeholder="&amp; { background: #f7f9fc; padding: 8px; }" data-bind="value: propCss" :readonly="[[!editable()]]"></textarea>
                   </div>
                 </oj-bind-if>
@@ -980,7 +982,7 @@
                   <div>
                     <p class="factory-dz-hint">Behaviour for this element's own markup, for example formatting or showing a field. It runs in the
                       element's sealed frame only; code generation moves it into the view model.</p>
-                    <textarea id="propScript" class="factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="JavaScript"
+                    <textarea id="propScript" class="fx-textarea factory-dz-input factory-dz-code" rows="8" spellcheck="false" aria-label="JavaScript"
                               placeholder="document.querySelector('textarea').addEventListener('input', …);" data-bind="value: propScript" :readonly="[[!editable()]]"></textarea>
                   </div>
                 </oj-bind-if>

@@ -1,20 +1,25 @@
 /*
  * Account & Preferences page: who is signed in with their role and workspaces, the preferences kept in this browser
- * (landing page, default workspace, time format, text size, assistant panels, notification categories), changing the
- * password of a factory account, this session, and signing out.
+ * (theme, landing page, default workspace, time format, text size, assistant panels, notification categories),
+ * changing the password of a factory account, this session, and signing out.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/preferences',
-        '../services/ui', 'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojswitch'],
-  function (ko, accUtils, api, session, workspaceSelection, preferences, ui) {
+        '../services/ui', '../services/toast', 'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton'],
+  function (ko, accUtils, api, session, workspaceSelection, preferences, ui, toast) {
+    // A design system switch (button role=switch) for an observable, or a fixed value when it cannot change yet
+    const switchFor = (value) => ({
+      checkedText: ko.pureComputed(() => (ko.unwrap(value) ? 'true' : 'false')),
+      flip: () => { if (ko.isObservable(value)) { value(!value()); } }
+    });
+
     function AccountViewModel() {
       this.user = session.user;
       this.prefs = preferences;
       this.currentPassword = ko.observable('');
       this.newPassword = ko.observable('');
       this.repeatPassword = ko.observable('');
+      // An error from changing the password, shown under the fields; success is a toast
       this.message = ko.observable('');
-      this.success = ko.observable(false);
-      this.messageClass = ko.pureComputed(() => (this.success() ? 'factory-note' : 'factory-note factory-note-bad'));
       this.tab = ko.observable('profile');
       this.tabs = ui.tabs(this.tab, [
         { value: 'profile', label: 'Profile', icon: 'user' }, { value: 'preferences', label: 'Preferences', icon: 'cog' },
@@ -103,35 +108,45 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.textChange = ui.value(preferences.textSize);
       this.hour12On = () => preferences.hour12(true);
       this.hour24On = () => preferences.hour12(false);
-      this.hour12Css = ko.pureComputed(() => (preferences.hour12() ? 'factory-seg factory-seg-on' : 'factory-seg'));
-      this.hour24Css = ko.pureComputed(() => (preferences.hour12() ? 'factory-seg' : 'factory-seg factory-seg-on'));
-      this.assistantToggle = ui.checked(preferences.assistant);
+      // Theme: the same preference as the top bar's light / dark toggle
+      this.themes = [
+        { value: 'light', label: 'Light', icon: 'sun', tip: 'Light theme' },
+        { value: 'dark', label: 'Dark', icon: 'moon', tip: 'Dark theme' },
+        { value: 'system', label: 'System', icon: 'monitor', tip: 'Follow the light or dark setting of your computer' }
+      ].map((t) => Object.assign(t, {
+        iconClass: 'factory-nav-icon factory-ico-' + t.icon,
+        pressed: ko.pureComputed(() => (preferences.theme() === t.value ? 'true' : 'false')),
+        css: ko.pureComputed(() => 'factory-ac-theme' + (preferences.theme() === t.value ? ' factory-ac-theme-on' : '')),
+        pick: () => preferences.theme(t.value)
+      }));
       this.sample = ko.pureComputed(() => ui.when(new Date().toISOString()));
       this.notifyRows = [
         { label: 'Build Results', icon: 'cog', key: 'build', tone: 'blue' }, { label: 'Agent Run Status', icon: 'robot', key: 'agent', tone: 'violet' },
         { label: 'Reviews & Approvals', icon: 'doc', key: 'review', tone: 'amber' }, { label: 'System Notifications', icon: 'info', key: 'system', tone: 'green' }
-      ].map((r) => Object.assign(r, { value: preferences.notify[r.key], change: ui.checked(preferences.notify[r.key]), disabled: false, tip: '' }))
+      ].map((r) => Object.assign(r, { value: preferences.notify[r.key], disabled: false, tip: '' }))
         .concat([{ label: 'Security Alerts', icon: 'shield', tone: 'red' }, { label: 'Weekly Summary', icon: 'chart', tone: 'blue' }]
-          .map((r) => Object.assign(r, { value: false, change: () => true, disabled: true, tip: 'The factory does not send these yet' })))
-        .map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon, tileCss: 'factory-ac-tile factory-ov2-icon-' + r.tone }));
-      // A sample shown on this page only; notifications come from what happens in the workspaces
-      this.testShown = ko.observable(false);
-      let testTimer = null;
-      this.sendTest = () => { this.testShown(true); window.clearTimeout(testTimer); testTimer = window.setTimeout(() => this.testShown(false), 8000); };
-      this.hideTest = () => this.testShown(false);
+          .map((r) => Object.assign(r, { value: false, disabled: true, tip: 'The factory does not send these yet' })))
+        .map((r) => Object.assign(r, switchFor(r.value), { iconClass: 'factory-nav-icon factory-ico-' + r.icon, tileCss: 'factory-ac-tile factory-ac-tone-' + r.tone }));
+      // A sample shown as a toast on this page only; notifications come from what happens in the workspaces
+      this.sendTest = () => toast.info('Test notification: this is how a notification shows. Real ones are in the Notification Center.', {
+        action: { label: 'Open', run: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'notifications' })) }
+      });
       this.settingsRows = [
-        { id: 'assistantToggle', label: 'AI suggestions', sub: 'Show the AI Assistant panels on the pages', icon: 'sparkle', value: preferences.assistant, change: ui.checked(preferences.assistant), disabled: false, tip: '' },
+        { id: 'assistantToggle', label: 'AI suggestions', sub: 'Show the AI Assistant panels on the pages', icon: 'sparkle', value: preferences.assistant, disabled: false, tip: '' },
         { id: 'autoSaveToggle', label: 'Auto-save changes', sub: 'Pages save when you press Save', icon: 'refresh', value: false, disabled: true, tip: 'There is no auto-save; each page saves when you press Save' },
         { id: 'tooltipsToggle', label: 'Show helpful tooltips', sub: 'Tooltips always show', icon: 'help', value: true, disabled: true, tip: 'Tooltips cannot be turned off yet' },
         { id: 'confirmDeleteToggle', label: 'Confirm before delete', sub: 'Each page decides when to ask', icon: 'trash', value: true, disabled: true, tip: 'Not a setting yet' },
         { id: 'usageDataToggle', label: 'Anonymous usage data', sub: 'The factory collects none', icon: 'chart', value: false, disabled: true, tip: 'The factory sends no usage data anywhere' }
-      ].map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon + ' factory-ac-seticon', change: r.change || (() => true) }));
+      ].map((r) => Object.assign(r, switchFor(r.value), { iconClass: 'factory-nav-icon factory-ico-' + r.icon + ' factory-ac-seticon' }));
       this.resetPreferences = () => {
         preferences.reset();
         this.extra.pageSize('10');
         this.extra.dateFormat('browser');
         this.extra.editorTheme('light');
-        ['landingPick', 'workspacePick', 'textPick', 'pageSizePick', 'dateFormatPick', 'editorThemePick'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = el.querySelector('option') ? el.querySelector('option').value : ''; } });
+        // The selects show the defaults again (their options are bound to the preferences)
+        [['landingPick', preferences.landing()], ['workspacePick', preferences.workspace()], ['textPick', preferences.textSize()],
+          ['pageSizePick', '10'], ['dateFormatPick', 'browser'], ['editorThemePick', 'light']].forEach((p) => { const el = document.getElementById(p[0]); if (el) { el.value = p[1]; } });
+        toast.success('Preferences reset to the defaults.');
       };
       this.landingIs = (v) => ko.pureComputed(() => preferences.landing() === v);
 
@@ -144,15 +159,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ].map((r) => Object.assign(r, { css: ko.pureComputed(() => (r.ok() ? 'factory-ad-yes' : 'factory-ac-todo')), rowCss: ko.pureComputed(() => (r.ok() ? 'factory-ac-req-ok' : '')) }));
       this.canChange = ko.pureComputed(() => !!this.user() && this.user().canChangePassword);
       this.changePassword = () => {
-        this.success(false);
+        this.message('');
         if (this.newPassword() !== this.repeatPassword()) {
-          this.message('The new passwords do not match.');
+          this.message('The new passwords do not match. Type the same new password twice.');
           return;
         }
         api.post('auth/password', { currentPassword: this.currentPassword(), newPassword: this.newPassword() })
           .then(() => {
-            this.success(true);
-            this.message('Password changed.');
+            toast.success('Password changed. Use the new one the next time you sign in.');
             this.currentPassword('');
             this.newPassword('');
             this.repeatPassword('');

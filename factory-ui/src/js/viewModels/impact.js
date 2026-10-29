@@ -5,16 +5,18 @@
  * in the dependency view are inferred from the layers, not read from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
-  function (ko, accUtils, api, workspaceSelection, session, ui) {
+        '../services/dialog', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const LAYERS = [
-      { key: 'ui', label: 'UI Component', color: '#2563eb', bg: '#e4edff', icon: 'monitor' },
-      { key: 'service', label: 'Service', color: '#16a34a', bg: '#dcf3e5', icon: 'cog' },
-      { key: 'integration', label: 'Integration', color: '#7c3aed', bg: '#ece5ff', icon: 'plug' },
-      { key: 'data', label: 'Database', color: '#ea580c', bg: '#ffedd9', icon: 'cube' },
-      { key: 'config', label: 'Configuration', color: '#0891b2', bg: '#dff4f8', icon: 'cog' },
-      { key: 'test', label: 'Test', color: '#db2777', bg: '#fce7f3', icon: 'flask' }
-    ];
+      { key: 'ui', label: 'UI Component', color: '#3b82f6', icon: 'monitor' },
+      { key: 'service', label: 'Service', color: '#16a34a', icon: 'cog' },
+      { key: 'integration', label: 'Integration', color: '#8b5cf6', icon: 'plug' },
+      { key: 'data', label: 'Database', color: '#ea580c', icon: 'cube' },
+      { key: 'config', label: 'Configuration', color: '#0891b2', icon: 'cog' },
+      { key: 'test', label: 'Test', color: '#db2777', icon: 'flask' }
+    ].map((l) => Object.assign(l, { bg: 'color-mix(in srgb, ' + l.color + ' 16%, transparent)' }));
+    // A status badge (design system fx-badge): tone is success, warning, danger, info, primary, violet or neutral
+    const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone && tone !== 'neutral' ? ' fx-badge--' + tone : '') });
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
     const moduleOf = (path) => {
       const parts = path.split('/').filter(Boolean);
@@ -42,12 +44,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const services = java.filter((i) => /service/i.test(i.path)).length;
         const spec = this.requirement() && this.requirement().spec;
         return [
-          { label: 'Affected Files', value: items().length, sub: count((i) => i.action === 'modify') + ' modified, ' + count((i) => i.action === 'create') + ' new', tone: 'blue', icon: 'doc', css: 'factory-kpi-sub factory-link' },
+          { label: 'Affected Files', value: items().length, sub: count((i) => i.action === 'modify') + ' modified, ' + count((i) => i.action === 'create') + ' new', tone: 'blue', icon: 'doc', css: 'factory-kpi-sub factory-im-sub-link' },
           { label: 'Affected Classes', value: java.length, sub: services + ' services, ' + (java.length - services) + ' other', tone: 'green', icon: 'cube', css: 'factory-kpi-sub' },
           { label: 'Affected APIs', value: spec ? spec.apis.length : 0, sub: count((i) => i.layer === 'integration') + ' integration files', tone: 'violet', icon: 'link', css: 'factory-kpi-sub' },
           { label: 'Database Objects', value: count((i) => i.layer === 'data'), sub: 'data scripts in the plan', tone: 'amber', icon: 'cube', css: 'factory-kpi-sub' },
-          { label: 'Test Cases', value: count((i) => i.layer === 'test'), sub: count((i) => i.layer === 'test' && i.action === 'create') + ' new', tone: 'red', icon: 'alert', css: 'factory-kpi-sub factory-bad' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+          { label: 'Test Cases', value: count((i) => i.layer === 'test'), sub: count((i) => i.layer === 'test' && i.action === 'create') + ' new', tone: 'red', icon: 'alert', css: 'factory-kpi-sub factory-im-sub-bad' }
+        ].map((k) => Object.assign(k, { iconCss: 'fx-kpi-icon factory-im-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
       });
 
       this.tab = ko.observable('impact');
@@ -69,12 +71,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return {
           title: d.title,
           description: d.plan ? d.plan.summary : 'The impact analysis is running.',
-          type: items().some((i) => i.action === 'modify') ? ui.pill('Enhancement', 'blue') : ui.pill('New Feature', 'green'),
+          type: items().some((i) => i.action === 'modify') ? badge('Enhancement', 'primary') : badge('New Feature', 'success'),
           module: modules.slice(0, 2).join(', ') || '–',
           version: this.workspace() ? 'OBDX ' + this.workspace().obdxVersion : '–',
           // Neither the change nor its requirement records a priority
-          priority: Object.assign(ui.pill('Not set', 'grey'), { title: 'The requirement and the plan do not record a priority.' }),
-          status: ui.pill(d.status.replace('_', ' ').toLowerCase(), d.status === 'PLAN_READY' ? 'amber' : 'blue')
+          priority: Object.assign(badge('Not set', 'neutral'), { title: 'The requirement and the plan do not record a priority.' }),
+          status: badge(d.status.replace('_', ' ').toLowerCase(), d.status === 'PLAN_READY' ? 'warning' : 'primary')
         };
       });
       this.scope = ko.pureComputed(() => {
@@ -106,7 +108,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.savePlan = () => {
         const plan = Object.assign({}, this.detail().plan, { summary: this.summaryDraft().trim() });
         api.put('changes/' + this.detail().id + '/plan', JSON.stringify(plan))
-          .then((d) => { this.editing(false); this.detail(d); this.errorMessage(''); }).catch(showError);
+          .then((d) => { this.editing(false); this.detail(d); this.errorMessage(''); toast.success('Plan saved.'); }).catch(showError);
       };
       this.createPlan = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
 
@@ -154,7 +156,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               x: x, y: y, w: nodeW, h: nodeH, ci: ci, kind: c.layer.label,
               name: breakable(f.path.split('/').pop()), path: f.path, action: f.action === 'create' ? 'new' : 'modified',
               icon: 'factory-nav-icon factory-ico-' + c.layer.icon, iconStyle: { background: c.layer.bg, color: c.layer.color },
-              style: { left: x + 'px', top: y + 'px', width: nodeW + 'px', height: nodeH + 'px', borderColor: c.layer.color, background: '#fff' }
+              style: { left: x + 'px', top: y + 'px', width: nodeW + 'px', height: nodeH + 'px', borderColor: c.layer.color, background: 'var(--fx-surface)' }
             });
           });
         });
@@ -169,8 +171,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }));
         // The arrows are drawn as one SVG image under the nodes
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '">'
-          + '<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker></defs>'
-          + edges.slice(0, 80).map((d) => '<path d="' + d + '" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#a)"/>').join('') + '</svg>';
+          + '<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7b8aa0"/></marker></defs>'
+          + edges.slice(0, 80).map((d) => '<path d="' + d + '" fill="none" stroke="#7b8aa0" stroke-width="1.5" marker-end="url(#a)"/>').join('') + '</svg>';
         const z = this.zoom();
         return {
           nodes: nodes, width: width, height: height, lines: 'data:image/svg+xml,' + encodeURIComponent(svg),
@@ -207,22 +209,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           && (!this.actionFilter() || i.action === this.actionFilter()) && (!this.moduleFilter() || moduleOf(i.path) === this.moduleFilter())).map((i) => {
           // Estimated impact: changing shared or existing code weighs more than adding a file
           const shared = /common|shared|util|base/i.test(i.path);
-          const impact = i.action === 'modify' ? (shared ? ui.pill('High', 'red') : ui.pill('Medium', 'amber')) : ui.pill('Low', 'green');
+          const impact = i.action === 'modify' ? (shared ? badge('High', 'danger') : badge('Medium', 'warning')) : badge('Low', 'success');
           return {
             path: i.path, pathWrap: i.path.replace(/\//g, '/\u200B'), type: (i.path.split('.').pop() || '').toUpperCase(), module: moduleOf(i.path), layer: i.layer, impact: impact,
-            change: i.action === 'create' ? ui.pill('New', 'blue') : ui.pill('Modified', 'violet'), purpose: i.purpose
+            change: i.action === 'create' ? badge('New', 'primary') : badge('Modified', 'violet'), purpose: i.purpose
           };
         }).filter((f) => !this.impactFilter() || f.impact.text === this.impactFilter());
       });
-      this.filePager = ui.pager(this.files, 8);
-      this.pageButtons = ko.pureComputed(() => {
-        const list = [];
-        for (let p = 1; p <= this.filePager.pages(); p++) {
-          const page = p;
-          list.push({ n: page, css: 'factory-ov2-btn factory-im-page' + (this.filePager.page() === page ? ' factory-im-page-on' : ''), pick: () => this.filePager.page(page) });
-        }
-        return list;
-      });
+      this.filePager = ui.pages(this.files, 8, [8, 25, 50]);
 
       // Summary by layer (donut) and by module (bars)
       this.byLayer = ko.pureComputed(() => {
@@ -236,7 +230,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         });
         return {
           parts: parts.map((p) => Object.assign(p, { dot: { background: p.color } })),
-          style: { background: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : '#e5eaf1' }
+          style: { background: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : 'var(--fx-surface-3)' }
         };
       });
       this.byModule = ko.pureComputed(() => {
@@ -249,7 +243,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks : []));
       this.riskLevel = ko.pureComputed(() => {
         const n = this.risks().length;
-        return n === 0 ? ui.pill('Low', 'green') : n <= 2 ? ui.pill('Low - Medium', 'green') : n <= 4 ? ui.pill('Medium', 'amber') : ui.pill('High', 'red');
+        return n === 0 ? badge('Low', 'success') : n <= 2 ? badge('Low - Medium', 'success') : n <= 4 ? badge('Medium', 'warning') : badge('High', 'danger');
       });
       this.nextSteps = ko.pureComputed(() => {
         const s = this.detail() ? this.detail().status : '';
@@ -272,20 +266,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return [];
         }
         return [
-          { step: 'Impact analysis', state: d.plan ? ui.pill('Done', 'green') : ui.pill('Running', 'blue'), who: 'AI agent', when: ui.when(d.createdAt) },
-          { step: 'Plan approval', state: d.planApprovedAt ? ui.pill('Approved', 'green') : ui.pill('Waiting', 'amber'), who: d.planApprovedBy || '–', when: ui.when(d.planApprovedAt) }
+          { step: 'Impact analysis', state: d.plan ? badge('Done', 'success') : badge('Running', 'info'), who: 'AI agent', when: ui.when(d.createdAt) },
+          { step: 'Plan approval', state: d.planApprovedAt ? badge('Approved', 'success') : badge('Waiting', 'warning'), who: d.planApprovedBy || '–', when: ui.when(d.planApprovedAt) }
         ];
       });
       this.reqCode = ko.pureComputed(() => (this.detail() ? code('REQ', this.detail().requirementId, 4) : ''));
 
       const base = () => 'changes/' + this.detail().id;
+      this.canAnalyze = ko.pureComputed(() => !!this.detail() && this.canManage());
+      this.analyzeTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first' : (this.canManage() ? 'Run the impact analysis again' : 'You need the right to manage code')));
+      this.canApprovePlan = ko.pureComputed(() => !!this.detail() && this.detail().status === 'PLAN_READY' && this.canApprove());
+      this.approveTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first'
+        : (this.detail().status !== 'PLAN_READY' ? 'This plan is already approved' : (this.canApprove() ? 'Approve the plan and write the code' : 'Only the Lead role can approve the plan'))));
+      const failed = (error) => { showError(error); toast.error(error.message); };
       this.approvePlan = () => {
-        if (!window.confirm('Approve this plan? The model will write ' + items().length + ' file(s).')) {
-          return;
-        }
-        api.post(base() + '/approve-plan').then((d) => this.detail(d)).catch(showError);
+        dialog.confirm({ title: 'Approve this plan?', message: 'The model will write ' + items().length + ' file(s) for this change.', confirmLabel: 'Approve Plan' }).then((ok) => {
+          if (!ok) {
+            return;
+          }
+          api.post(base() + '/approve-plan').then((d) => { this.detail(d); this.errorMessage(''); toast.success('Plan approved. The model is writing the code.'); }).catch(failed);
+        });
       };
-      this.analyzeAgain = () => api.post(base() + '/analyze').then((d) => this.detail(d)).catch(showError);
+      this.analyzeAgain = () => api.post(base() + '/analyze').then((d) => { this.detail(d); this.errorMessage(''); toast.info('Impact analysis started again.'); }).catch(failed);
       this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
 
       this.changeId.subscribe((id) => {

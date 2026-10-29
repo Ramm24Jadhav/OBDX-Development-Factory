@@ -7,9 +7,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         '../services/pageRequests', 'ojs/ojarraydataprovider', 'ojs/ojbutton', 'ojs/ojmenu', 'ojs/ojselectsingle', 'ojs/ojinputtext'],
   function (ko, accUtils, api, session, dashboard, pageRequests, ArrayDataProvider) {
     const WEEK_MS = 7 * 24 * 3600 * 1000;
-    const pill = (text, tone) => ({ text: text, css: 'factory-ov-pill factory-ov-pill-' + tone });
-    const REQUIREMENT = { PROCESSING: pill('In Progress', 'blue'), READY: pill('Review', 'amber'), APPROVED: pill('Approved', 'green'), FAILED: pill('Failed', 'red') };
-    const CODE = { ready: pill('Ready', 'green'), importing: pill('Indexing', 'blue'), failed: pill('Check Required', 'amber'), new: pill('Not imported', 'grey') };
+    // Status badges of the design system (fx-badge carries a dot, so status is not colour alone)
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
+    const REQUIREMENT = { PROCESSING: pill('In Progress', 'primary'), READY: pill('Review', 'warning'), APPROVED: pill('Approved', 'success'), FAILED: pill('Failed', 'danger') };
+    const CODE = { ready: pill('Ready', 'success'), importing: pill('Indexing', 'primary'), failed: pill('Check Required', 'warning'), new: pill('Not imported', '') };
     const count = (list, test) => list.filter(test).length;
     const all = (data, key) => data.reduce((sum, d) => sum.concat(d[key]), []);
     const shortId = (id) => 'REQ-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
@@ -54,8 +55,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           { value: changes.length, label: 'Code Changes', sub: '↓ ' + pendingReview + ' pending review', tone: 'amber', subTone: 'warn', icon: 'code', open: this.go('changes') },
           { value: builds.length, label: 'Builds', sub: '↓ ' + failedBuilds + ' failed', tone: 'red', subTone: 'bad', icon: 'flask', open: this.go('changes') }
         ].map((t) => Object.assign(t, {
-          css: 'factory-ov2-tile factory-ov2-tile-' + t.tone, iconCss: 'factory-ov2-tile-icon factory-ov2-icon-' + t.tone,
-          iconClass: 'factory-nav-icon factory-ico-' + t.icon, subCss: 'factory-ov2-sub factory-ov2-' + t.subTone
+          css: 'fx-kpi factory-ov2-tile factory-ov2-tile-' + t.tone, iconCss: 'fx-kpi-icon factory-ov2-tile-icon factory-ov2-icon-' + t.tone,
+          iconClass: 'factory-nav-icon factory-ico-' + t.icon, subCss: 'fx-trend factory-ov2-sub factory-ov2-' + t.subTone
         }));
       });
 
@@ -78,9 +79,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.sourceKind = ko.observable('folder');
       this.localEnabled = ko.observable(false);
       this.sourceTabs = [{ value: 'folder', label: 'Folder on this computer' }, { value: 'url', label: 'SVN server (URL)' }].map((t) => Object.assign(t, {
-        css: ko.pureComputed(() => 'factory-seg' + (this.sourceKind() === t.value ? ' factory-seg-on' : '')),
-        disabled: ko.pureComputed(() => t.value === 'folder' && !this.localEnabled()),
-        pick: () => this.sourceKind(t.value)
+        pressed: ko.pureComputed(() => String(this.sourceKind() === t.value)),
+        disabled: ko.pureComputed(() => String(t.value === 'folder' && !this.localEnabled())),
+        tip: ko.pureComputed(() => (t.value === 'folder' && !this.localEnabled() ? 'Folders on this computer are turned off on this server. Use an SVN URL.' : null)),
+        pick: () => {
+          if (!(t.value === 'folder' && !this.localEnabled())) {
+            this.sourceKind(t.value);
+          }
+        }
       }));
       this.sourceValue = ko.observable('');
       this.sourceInput = (event) => this.sourceValue(event.target.value);
@@ -99,7 +105,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Recent requirements
       this.recentRequirements = ko.pureComputed(() => data().reduce((list, d) => list.concat(d.requirements.map((r) => ({
         id: shortId(r.id), title: r.title, workspace: d.workspace.name, type: r.fileName ? 'Document' : 'Described',
-        status: REQUIREMENT[r.status] || pill(r.status, 'grey'),
+        status: REQUIREMENT[r.status] || pill(r.status, ''),
         updated: new Date(r.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
         at: r.updatedAt, open: dashboard.open('requirements', d.workspace.id)
       }))), []).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4));
@@ -117,10 +123,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const designs = all(d, 'designs');
         const changes = all(d, 'changes');
         const builds = all(d, 'builds');
-        const row = (label, icon, tone, done, total) => ({
-          label: label, iconClass: 'factory-nav-icon factory-ico-' + icon, iconCss: 'factory-ov2-prog-icon factory-ov2-icon-' + tone,
-          barCss: 'factory-ov2-bar-fill factory-ov2-fill-' + tone, text: done + ' / ' + total, width: (total ? Math.round(100 * done / total) : 0) + '%'
-        });
+        const row = (label, icon, tone, done, total) => {
+          const percent = total ? Math.round(100 * done / total) : 0;
+          return {
+            label: label, iconClass: 'factory-nav-icon factory-ico-' + icon, iconCss: 'factory-ov2-prog-icon factory-ov2-icon-' + tone,
+            barCss: 'fx-progress factory-ov2-bar factory-ov2-fill-' + tone, text: done + ' / ' + total, percent: percent, width: percent + '%'
+          };
+        };
         return [
           row('Requirements', 'doc', 'blue', count(requirements, (r) => r.status === 'APPROVED'), requirements.length),
           row('Screens', 'monitor', 'green', count(designs, (s) => s.status === 'APPROVED'), designs.length),

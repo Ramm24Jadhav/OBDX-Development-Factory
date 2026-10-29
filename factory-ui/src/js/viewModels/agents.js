@@ -6,8 +6,8 @@
  * The factory does not record which model did older work, so the model shown is the one in use now.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard', '../services/workspaceSelection',
-        '../services/ui', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, dashboard, workspaceSelection, ui) {
+        '../services/ui', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojmenu'],
+  function (ko, accUtils, api, session, dashboard, workspaceSelection, ui, toast) {
     const AGENTS = {
       requirements: { name: 'Requirements Agent', icon: 'doc', tone: 'amber' },
       ui: { name: 'UI Agent', icon: 'monitor', tone: 'violet' },
@@ -16,8 +16,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       debug: { name: 'Debug Agent', icon: 'flask', tone: 'blue' },
       indexing: { name: 'Indexing Agent', icon: 'cube', tone: 'green' }
     };
+    // Status badges (design system .fx-badge)
     const STATUS = {
-      completed: ui.pill('Completed', 'green'), failed: ui.pill('Failed', 'red'), running: ui.pill('Running', 'blue'), queued: ui.pill('Queued', 'violet')
+      completed: { text: 'Completed', css: 'fx-badge fx-badge--success' }, failed: { text: 'Failed', css: 'fx-badge fx-badge--danger' },
+      running: { text: 'Running', css: 'fx-badge fx-badge--info' }, queued: { text: 'Queued', css: 'fx-badge fx-badge--violet' }
     };
     const MONTH_MS = 30 * 24 * 3600 * 1000;
     const hash = (text) => {
@@ -30,38 +32,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
     const shortWhen = (value) => new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-    /** Pages of a list with numbered page buttons and a page size: {rows, page, pages, text, prev, next, buttons, sizeChange}. */
-    function numberedPager(list, initialSize) {
-      const size = ko.observable(initialSize);
-      const page = ko.observable(1);
-      const pages = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
-      const current = ko.pureComputed(() => Math.min(page(), pages()));
-      const rows = ko.pureComputed(() => ko.unwrap(list).slice((current() - 1) * size(), current() * size()));
-      const text = ko.pureComputed(() => {
-        const total = ko.unwrap(list).length;
-        return total === 0 ? 'Showing 0' : 'Showing ' + ((current() - 1) * size() + 1) + ' to ' + Math.min(total, current() * size()) + ' of ' + total;
-      });
-      const buttons = ko.pureComputed(() => {
-        const out = [];
-        for (let n = 1; n <= pages(); n++) {
-          out.push({ n: n, css: 'factory-ag-pg' + (n === current() ? ' factory-ag-pg-on' : ''), pick: () => page(n) });
-        }
-        return out;
-      });
-      return {
-        rows: rows, page: current, pages: pages, text: text, buttons: buttons,
-        prev: () => page(Math.max(1, current() - 1)),
-        next: () => page(Math.min(pages(), current() + 1)),
-        sizeChange: (event) => { size(Number(event.target.value) || initialSize); page(1); }
-      };
-    }
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
-    const copy = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => null); } };
+    const copy = (text) => ui.copy(text).then(() => toast.success('Copied ' + text), () => toast.error('Could not copy. Select the text and copy it instead.'));
 
     function AgentsViewModel() {
-      this.errorMessage = ko.observable('');
+      this.errorMessage = dashboard.error;
       this.loading = dashboard.loading;
-      const showError = (error) => this.errorMessage(error.message);
+      // Starting a run again: the result is a toast, and the list reloads to show the new run
+      const again = (request, what) => request.then(() => { toast.success(what + ' started again.'); dashboard.load(); }).catch((error) => toast.error(error.message));
       const model = ko.pureComputed(() => (dashboard.model() ? dashboard.model().chatModel : '–'));
       const embedding = ko.pureComputed(() => (dashboard.model() ? dashboard.model().embeddingModel : '–'));
 
@@ -82,7 +60,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               { name: 'Draft screens, rules, APIs and questions', done: r.status !== 'PROCESSING' && r.status !== 'FAILED', failed: r.status === 'FAILED' },
               { name: r.openQuestions + ' open questions to answer', done: r.status === 'APPROVED' || (r.status === 'READY' && r.openQuestions === 0) }
             ],
-            files: [], rerun: r.status === 'FAILED' ? () => api.post('requirements/' + r.id + '/retry').then(() => dashboard.load()).catch(showError) : null
+            files: [], rerun: r.status === 'FAILED' ? () => again(api.post('requirements/' + r.id + '/retry'), 'The specification draft') : null
           }));
           // Screens generated from a requirement, one run per requirement
           const byRequirement = {};
@@ -112,7 +90,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
                 { name: 'Plan approved' + (c.planApprovedBy ? ' by ' + c.planApprovedBy : ''), done: !!c.planApprovedAt }
               ],
               files: c.plan ? c.plan.items.map((i) => i.action + ' ' + i.path) : [],
-              rerun: c.status !== 'ANALYZING' && ['PLAN_READY', 'FAILED'].indexOf(c.status) >= 0 ? () => api.post('changes/' + c.id + '/analyze').then(() => dashboard.load()).catch(showError) : null
+              rerun: c.status !== 'ANALYZING' && ['PLAN_READY', 'FAILED'].indexOf(c.status) >= 0 ? () => again(api.post('changes/' + c.id + '/analyze'), 'The impact analysis') : null
             });
             if (c.planApprovedAt) {
               const failedFiles = c.files.filter((f) => f.status === 'FAILED');
@@ -141,7 +119,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             started: j.startedAt || j.createdAt, finished: j.finishedAt, approx: false, requirement: '', message: j.message || '', page: 'code', model: embedding(),
             steps: [{ name: j.filesScanned + ' files scanned', done: j.status !== 'QUEUED' }, { name: j.filesIndexed + ' files indexed, ' + j.filesRemoved + ' removed', done: j.status === 'SUCCEEDED' },
               { name: j.chunksIndexed + ' pieces, ' + j.embeddingsCreated + ' embeddings', done: j.status === 'SUCCEEDED', failed: j.status === 'FAILED' }],
-            files: [], rerun: j.status === 'FAILED' ? () => api.post('workspaces/' + w.id + '/imports').then(() => dashboard.load()).catch(showError) : null
+            files: [], rerun: j.status === 'FAILED' ? () => again(api.post('workspaces/' + w.id + '/imports'), 'The code import') : null
           }));
         });
         return runs.filter((r) => r.started).sort((a, b) => new Date(b.started) - new Date(a.started)).map((r) => {
@@ -220,7 +198,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (!this.toDate() || new Date(r.started) <= new Date(this.toDate() + 'T23:59:59'))
           && (!text || (r.id + ' ' + r.task + ' ' + r.requirement + ' ' + r.model + ' ' + r.agentName).toLowerCase().indexOf(text) >= 0));
       });
-      this.pager = numberedPager(this.visibleRuns, 10);
+      this.pager = ui.pages(this.visibleRuns, 10, [10, 25, 50]);
       this.selectedKey = ko.observable(null);
       const pickRun = (key) => { this.selectedKey(key); this.detailTab('overview'); this.openSteps([]); };
       // Checked runs (client side)
@@ -232,7 +210,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
       this.selectedText = ko.pureComputed(() => (this.checked().length ? ' · ' + this.checked().length + ' selected' : ''));
       this.rows = ko.pureComputed(() => this.pager.rows().map((r) => Object.assign({}, r, {
-        css: this.selectedKey() === r.key ? 'factory-clickable factory-row-sel' : 'factory-clickable', pick: () => pickRun(r.key),
+        css: this.selectedKey() === r.key ? 'factory-clickable is-selected' : 'factory-clickable', pick: () => pickRun(r.key),
         isSelected: ko.pureComputed(() => this.checked.indexOf(r.key) >= 0),
         toggle: (event) => { if (event.target.checked) { this.checked.push(r.key); } else { this.checked.remove(r.key); } },
         stop: (event) => event.stopPropagation(),
@@ -304,11 +282,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
       this.rerun = () => { const r = this.run(); if (r && r.rerun) { r.rerun(); } };
       this.canRerun = ko.pureComputed(() => !!this.run() && !!this.run().rerun);
-      this.newTask = (event) => navigate(event.detail.selectedValue);
+      // New Agent Task: a split button (design system .fx-split); each kind of work starts on its own page
+      this.taskMenu = ui.menu();
+      this.taskItems = [
+        { label: 'Draft a specification from a BRD/FSD', icon: 'doc', page: 'requirements' },
+        { label: 'Plan a change (impact analysis)', icon: 'branch', page: 'changes' },
+        { label: 'Change a screen with AI', icon: 'design', page: 'designer' },
+        { label: 'Import and index code', icon: 'code', page: 'code' }
+      ].map((t) => Object.assign(t, { iconClass: 'factory-nav-icon factory-ico-' + t.icon, run: () => { this.taskMenu.close(); navigate(t.page); } }));
       this.newTaskDefault = () => navigate('requirements');
-      this.openTaskMenu = (event) => document.getElementById('newAgentTaskMenu').open(event, {
-        launcher: document.getElementById('newAgentTaskMore'), position: { my: { horizontal: 'end', vertical: 'top' }, at: { horizontal: 'end', vertical: 'bottom' } }
-      });
       this.viewAll = () => { this.resetFilters(); const el = document.getElementById('runList'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } };
       this.viewModels = () => navigate('models');
 
@@ -331,7 +313,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const stops = parts.map((p) => { const from = at; at += 100 * p.n / total; return p.color + ' ' + from + '% ' + at + '%'; });
         return {
           total: month.length, parts: parts.map((p) => Object.assign(p, { dot: { background: p.color }, text: p.n + ' (' + Math.round(100 * p.n / total) + '%)' })),
-          style: { background: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : '#e5eaf1' }
+          style: { background: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : 'var(--fx-surface-3)' }
         };
       });
       this.modelNote = ko.pureComputed(() => 'Model in use now: ' + model() + '; code search: ' + embedding() + '.');

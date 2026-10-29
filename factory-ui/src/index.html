@@ -31,13 +31,14 @@
       <oj-bind-if test="[[!embedded && signedIn()]]">
       <div :class="[[shellClass]]">
         <aside class="factory-sidebar" id="sidebar" role="navigation" aria-label="Main">
-          <div class="factory-brand">
+          <a class="factory-brand" href="?ojr=overview" aria-label="OBDX Development Factory, Powered by AI">
             <span class="factory-brand-mark" aria-hidden="true"></span>
             <span class="factory-brand-text">
               <span class="factory-brand-name">OBDX</span>
               <span class="factory-brand-sub">Development Factory</span>
+              <span class="factory-brand-ai">Powered by AI</span>
             </span>
-          </div>
+          </a>
           <nav class="factory-nav">
             <ul>
               <oj-bind-for-each data="[[workNav]]">
@@ -65,6 +66,13 @@
               </oj-bind-for-each>
             </ul>
           </nav>
+          <section class="factory-nav-promo" aria-label="Build smarter with AI">
+            <span class="factory-brand-mark factory-nav-promo-mark" aria-hidden="true"></span>
+            <strong>Build smarter with AI</strong>
+            <span>Describe a change and the factory drafts the spec, screens and code.</span>
+            <a class="factory-nav-promo-go" href="?ojr=requirements" on-click="[[openNewRequirement]]" aria-label="Describe a new requirement">
+              <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a>
+          </section>
           <button type="button" class="factory-nav-collapse" id="collapseSidebar" on-click="[[toggleCollapsed]]"
                   :aria-label="[[sidebarCollapsed() ? 'Expand the menu' : 'Collapse the menu']]">
             <span class="factory-nav-icon factory-ico-collapse" aria-hidden="true"></span>
@@ -79,7 +87,7 @@
               <span class="factory-nav-icon factory-ico-menu" aria-hidden="true"></span>
             </button>
             <div class="factory-topbar-workspace">
-              <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>
+              <span class="factory-topbar-wslabel" aria-hidden="true">Workspace</span>
               <oj-select-single id="topWorkspace" class="factory-topbar-select" label-hint="Workspace" label-edge="none"
                                 data="[[workspaceProvider]]" value="{{workspaceId}}" placeholder="Select a workspace"></oj-select-single>
             </div>
@@ -97,6 +105,9 @@
               <kbd class="factory-kbd">Ctrl K</kbd>
             </form>
             <div class="factory-topbar-icons">
+              <button type="button" class="factory-icon-button" id="themeButton" on-click="[[toggleTheme]]" :title="[[themeLabel]]" :aria-label="[[themeLabel]]">
+                <span :class="[[themeIcon]]" aria-hidden="true"></span>
+              </button>
               <div class="factory-bell-wrap">
                 <button type="button" class="factory-icon-button" id="bellButton" on-click="[[toggleBell]]"
                         :aria-label="[[attentionCount() + ' things need your attention']]" :aria-expanded="[[bellOpen() ? 'true' : 'false']]">

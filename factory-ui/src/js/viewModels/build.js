@@ -4,9 +4,13 @@
  * again, check again, write a failed file again) and an assistant that answers from the build results.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant) {
+        '../services/assistant', '../services/toast', '../services/dialog', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, dialog) {
     const POLL_MS = 3000;
+    // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
+    const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
+    const pillCss = (tone) => 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '');
+    const pill = (text, tone) => ({ text: text, css: pillCss(tone) });
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
 
     function BuildViewModel() {
@@ -33,7 +37,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.changeId(list[0].id);
         }
       };
+      // Loading problems stay on the page; the result of an action is a toast
       const showError = (error) => this.errorMessage(error.message);
+      const actionError = (error) => toast.error(error.message);
 
       // Lifecycle of the change: plan approved, code generated, validation, review, apply
       this.stages = ko.pureComputed(() => {
@@ -93,11 +99,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return [
           { value: files().filter((f) => f.status === 'GENERATED').length, label: 'Files changed',
             subs: [{ text: '+' + files().reduce((s, f) => s + f.linesAdded, 0), css: 'factory-ch-plus' }, { text: '-' + files().reduce((s, f) => s + f.linesRemoved, 0), css: 'factory-ch-minus' }] },
-          { value: k.passed + k.failed + k.warning, label: 'Quick checks', subs: [{ text: k.passed + ' passed', css: 'factory-ov-pill factory-ov-pill-green' }, { text: k.failed + ' failed', css: 'factory-ov-pill factory-ov-pill-red' }] },
-          { value: k.warning, label: 'Warnings', subs: [{ text: k.warning ? 'to review' : 'none', css: 'factory-ov-pill factory-ov-pill-' + (k.warning ? 'amber' : 'green') }] },
-          { value: this.jenkinsBuilds().length, label: 'Jenkins rounds', subs: [{ text: b ? (b.result || 'running') : 'none yet', css: b && b.result === 'SUCCESS' ? 'factory-ov-pill factory-ov-pill-green' : 'factory-ov-pill factory-ov-pill-grey' }] },
-          { value: errors, label: 'Build errors', subs: [{ text: !b ? 'not built' : errors ? errors + ' to fix' : 'none', css: 'factory-ov-pill factory-ov-pill-' + (!b ? 'grey' : errors ? 'red' : 'green') }] },
-          { value: builds().reduce((sum, x) => sum + x.fixedFiles.length, 0), label: 'Files fixed', subs: [{ text: 'by fix rounds', css: 'factory-ov-pill factory-ov-pill-grey' }] }
+          { value: k.passed + k.failed + k.warning, label: 'Quick checks', subs: [{ text: k.passed + ' passed', css: pillCss('green') }, { text: k.failed + ' failed', css: pillCss('red') }] },
+          { value: k.warning, label: 'Warnings', subs: [{ text: k.warning ? 'to review' : 'none', css: pillCss(k.warning ? 'amber' : 'green') }] },
+          { value: this.jenkinsBuilds().length, label: 'Jenkins rounds', subs: [{ text: b ? (b.result || 'running') : 'none yet', css: b && b.result === 'SUCCESS' ? pillCss('green') : pillCss('grey') }] },
+          { value: errors, label: 'Build errors', subs: [{ text: !b ? 'not built' : errors ? errors + ' to fix' : 'none', css: pillCss(!b ? 'grey' : errors ? 'red' : 'green') }] },
+          { value: builds().reduce((sum, x) => sum + x.fixedFiles.length, 0), label: 'Files fixed', subs: [{ text: 'by fix rounds', css: pillCss('grey') }] }
         ];
       });
 
@@ -119,7 +125,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           title: title, detail: detail, sub: sub,
           css: 'factory-step-dot factory-bt-mid factory-dot-' + ({ ok: 'green', bad: 'red', warn: 'amber', run: 'blue' }[state] || 'grey'),
           icon: 'factory-nav-icon factory-ico-' + (state === 'ok' ? 'check' : state === 'bad' ? 'x' : state === 'warn' ? 'alert' : 'clock'),
-          pill: ui.pill(state === 'ok' ? 'Success' : state === 'bad' ? 'Failed' : state === 'warn' ? 'Warnings' : state === 'run' ? 'Running' : 'Not run',
+          pill: pill(state === 'ok' ? 'Success' : state === 'bad' ? 'Failed' : state === 'warn' ? 'Warnings' : state === 'run' ? 'Running' : 'Not run',
             state === 'ok' ? 'green' : state === 'bad' ? 'red' : state === 'warn' ? 'amber' : state === 'run' ? 'blue' : 'grey')
         });
         const dur = (x) => (x && x.finishedAt ? Math.max(1, Math.round((new Date(x.finishedAt) - new Date(x.startedAt)) / 1000)) + 's' : '');
@@ -131,7 +137,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ];
       });
 
-      const copyText = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text || '').catch(() => null); } };
+      const copyText = (text) => ui.copy(text || '').then(() => toast.success('Copied the error message.'), () => toast.error('Could not copy. Select the text and copy it instead.'));
       this.copyMessage = () => copyText(this.failure() ? this.failure().message : '');
       // Failures: build errors and failed quick checks, each with its file
       const findFile = (path) => (path ? files().find((x) => x.path === path || x.path.endsWith('/' + path) || path.endsWith(x.path)) : null);
@@ -153,7 +159,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           line: ((f.checkMessage || '').match(/^Line (\d+)/) || [])[1] || '', log: '', layer: f.layer
         }));
         return list.map((x, i) => Object.assign(x, {
-          index: i, status: x.kind === 'Warning' ? ui.pill('WARNING', 'amber') : ui.pill('FAILED', 'red'),
+          index: i, status: x.kind === 'Warning' ? pill('WARNING', 'amber') : pill('FAILED', 'red'),
           name: x.file ? x.file.split('/').pop() : '–',
           pick: () => this.selectedFailure(i),
           stop: (event) => event.stopPropagation(),
@@ -234,7 +240,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'integration', label: 'Integration Log' }, { value: 'obdx', label: 'OBDX Log' }]);
       this.logRound = ko.observable(0);
       this.logs = ko.pureComputed(() => builds().map((b, i) => ({
-        label: b.job + ' #' + (b.buildNumber || b.round), css: ko.pureComputed(() => 'factory-chip' + (this.logRound() === i ? ' factory-chip-on' : '')), pick: () => this.logRound(i)
+        label: b.job + ' #' + (b.buildNumber || b.round), on: ko.pureComputed(() => this.logRound() === i),
+        css: ko.pureComputed(() => 'fx-chip' + (this.logRound() === i ? ' is-on' : '')), pick: () => this.logRound(i)
       })));
       this.logText = ko.pureComputed(() => {
         const type = this.logType();
@@ -258,8 +265,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.logDownload = ko.pureComputed(() => 'data:text/plain;charset=utf-8,' + encodeURIComponent(this.logText()));
 
       this.fileRows = ko.pureComputed(() => files().map((f) => ({
-        path: f.path, layer: f.layer, check: f.checkStatus === 'PASSED' ? ui.pill('Passed', 'green') : f.checkStatus === 'FAILED' ? ui.pill('Failed', 'red')
-          : f.checkStatus === 'WARNING' ? ui.pill('Warning', 'amber') : ui.pill('Not checked', 'grey'),
+        path: f.path, layer: f.layer, check: f.checkStatus === 'PASSED' ? pill('Passed', 'green') : f.checkStatus === 'FAILED' ? pill('Failed', 'red')
+          : f.checkStatus === 'WARNING' ? pill('Warning', 'amber') : pill('Not checked', 'grey'),
         message: f.checkMessage || '', attempts: f.attempts
       })));
       this.info = ko.pureComputed(() => {
@@ -294,8 +301,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return rows;
       });
       this.securityRows = ko.pureComputed(() => this.fileRows().filter((r) => /sql|injection|secret|password|security|xss/i.test(r.message)));
-      this.reviewRows = ko.pureComputed(() => files().map((f) => ({ path: f.path, layer: f.layer, pill: f.edited ? ui.pill('Edited', 'blue') : ui.pill('Not edited', 'grey') })));
-      this.headStatus = ko.pureComputed(() => ui.pill(this.headline().text, this.headline().tone));
+      this.reviewRows = ko.pureComputed(() => files().map((f) => ({ path: f.path, layer: f.layer, pill: f.edited ? pill('Edited', 'blue') : pill('Not edited', 'grey') })));
+      this.headStatus = ko.pureComputed(() => pill(this.headline().text, this.headline().tone));
 
       // Quick actions
       this.canBuild = ko.pureComputed(() => {
@@ -307,21 +314,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return j.mode === 'BRANCH' ? d.status === 'DELIVERED' : (d.status === 'GENERATED' || d.status === 'DELIVERED');
       });
       this.buildHint = ko.pureComputed(() => (!this.jenkins() ? 'Set up Jenkins on the Code page to build.' : ''));
+      this.rebuildTip = ko.pureComputed(() => {
+        if (this.canBuild()) {
+          return null;
+        }
+        const d = this.detail();
+        return !this.jenkins() ? 'Set up Jenkins on the Code page first' : !this.canManage() ? 'You need the Manage code permission'
+          : d && d.buildStatus === 'BUILDING' ? 'A build is running' : 'Generate the code first' + (this.jenkins().mode === 'BRANCH' ? ' and deliver it to a branch' : '');
+      });
       const base = () => 'changes/' + this.detail().id;
-      this.rebuild = () => api.post(base() + '/build').then(show).catch(showError);
-      this.checkAgain = () => api.post(base() + '/check').then(show).catch(showError);
+      this.rebuild = () => api.post(base() + '/build').then((d) => { show(d); toast.info('Build started. This page updates when Jenkins finishes.'); }).catch(actionError);
+      this.checkAgain = () => api.post(base() + '/check').then((d) => { show(d); toast.success('Checked every file again.'); }).catch(actionError);
       this.fixWithAi = () => {
         const f = this.failure();
         if (!f || !f.file) {
-          this.errorMessage('Choose a failure with a file first.');
+          toast.warning('Choose a failure with a file first.');
           return;
         }
         const file = files().find((x) => x.path === f.file || x.path.endsWith('/' + f.file) || f.file.endsWith(x.path));
         if (!file) {
-          this.errorMessage('The failing file is not one of this change\'s files.');
+          toast.warning('The failing file is not one of this change\'s files.');
           return;
         }
-        api.post(base() + '/regenerate', { path: file.path, note: 'Fix this failure: ' + f.message }).then(show).catch(showError);
+        api.post(base() + '/regenerate', { path: file.path, note: 'Fix this failure: ' + f.message })
+          .then((d) => { show(d); toast.info('Writing ' + file.path.split('/').pop() + ' again with the fix.'); }).catch(actionError);
       };
       this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
       this.moreAction = (event) => {
@@ -335,10 +351,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.deliver = () => {
-        if (!window.confirm('Commit the reviewed code to a new SVN branch? Trunk is not changed.')) {
-          return;
-        }
-        api.post(base() + '/deliver').then(show).catch(showError);
+        dialog.confirm({ title: 'Submit for review', message: 'Commit the reviewed code to a new SVN branch? Trunk is not changed.', confirmLabel: 'Commit to a branch' }).then((ok) => {
+          if (ok) {
+            api.post(base() + '/deliver').then((d) => { show(d); toast.success('Delivered to a new SVN branch for review.'); }).catch(actionError);
+          }
+        });
       };
 
       this.ai = assistant.create(() => {

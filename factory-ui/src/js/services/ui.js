@@ -14,9 +14,11 @@ define(['knockout', './preferences'], function (ko, preferences) {
     }));
   }
 
-  /** A status pill: tone is green, amber, red, blue, grey or violet. */
+  /** A status pill (design system fx-badge, with a dot so status is not colour alone): tone is green, amber, red, blue, grey or violet. */
+  const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'primary', violet: 'violet', grey: '' };
   function pill(text, tone) {
-    return { text: text, css: 'factory-ov-pill factory-ov-pill-' + (tone || 'grey') };
+    const variant = BADGE[tone || 'grey'];
+    return { text: text, css: 'fx-badge' + (variant ? ' fx-badge--' + variant : '') + ' factory-ov-pill-' + (tone || 'grey') };
   }
 
   function initials(name) {
@@ -48,10 +50,196 @@ define(['knockout', './preferences'], function (ko, preferences) {
     };
   }
 
+  /**
+   * A pager with a page size the person picks and numbered page buttons (design system .fx-pager):
+   * {rows, page, pages, size, sizes, text, prev, next, numbers: [{label, css, go, current}], sizeChange}.
+   */
+  function pages(list, initialSize, sizes) {
+    const size = ko.observable(initialSize || 10);
+    const page = ko.observable(1);
+    const count = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
+    const rows = ko.pureComputed(() => {
+      if (page() > count()) {
+        page(count());
+      }
+      return ko.unwrap(list).slice((page() - 1) * size(), page() * size());
+    });
+    const text = ko.pureComputed(() => {
+      const total = ko.unwrap(list).length;
+      return total === 0 ? 'Nothing to show' : 'Showing ' + ((page() - 1) * size() + 1) + ' to ' + Math.min(total, page() * size()) + ' of ' + total;
+    });
+    // At most seven buttons: first, last, the current page and its neighbours, with gaps as "…"
+    const numbers = ko.pureComputed(() => {
+      const n = count();
+      const p = page();
+      const wanted = [1, n, p - 1, p, p + 1].filter((x) => x >= 1 && x <= n);
+      const list2 = Array.from(new Set(wanted)).sort((a, b) => a - b);
+      const out = [];
+      list2.forEach((x, i) => {
+        if (i > 0 && x - list2[i - 1] > 1) {
+          out.push({ label: '…', css: 'fx-pager-gap', go: () => null, current: false, gap: true });
+        }
+        out.push({ label: String(x), css: 'fx-pager-num' + (x === p ? ' is-current' : ''), go: () => page(x), current: x === p, gap: false });
+      });
+      return out;
+    });
+    return {
+      rows: rows, page: page, pages: count, size: size, sizes: sizes || [10, 25, 50], text: text, numbers: numbers,
+      canPrev: ko.pureComputed(() => page() > 1),
+      canNext: ko.pureComputed(() => page() < count()),
+      prev: () => page(Math.max(1, page() - 1)),
+      next: () => page(Math.min(count(), page() + 1)),
+      sizeChange: (event) => { size(Number(event.target.value) || 10); page(1); }
+    };
+  }
+
+  /**
+   * The dropdown half of a split button or a menu button (design system .fx-split / .fx-menu): open state, toggle,
+   * close on Escape or an outside click, arrow keys between items. Bind the menu's keydown to `key`.
+   */
+  function menu() {
+    const open = ko.observable(false);
+    // JET event bindings pass (event, context); Knockout-style callers may pass (data, event)
+    const eventOf = (a, b) => (a && typeof a.preventDefault === 'function' ? a : b);
+    let root = null;
+    const outside = (event) => { if (root && !root.contains(event.target)) { open(false); } };
+    open.subscribe((value) => {
+      if (value) {
+        document.addEventListener('mousedown', outside, true);
+      } else {
+        document.removeEventListener('mousedown', outside, true);
+      }
+    });
+    return {
+      open: open,
+      toggle: (a, b) => {
+        const e = eventOf(a, b);
+        const target = e ? (e.currentTarget || e.target) : null;
+        root = target && target.closest ? target.closest('.fx-split, .fx-menu-wrap') : null;
+        open(!open());
+        if (open() && root) {
+          window.setTimeout(() => { const first = root.querySelector('.fx-menu [role="menuitem"]:not([disabled])'); if (first) { first.focus(); } }, 0);
+        }
+      },
+      close: () => open(false),
+      key: (a, b) => {
+        const e = eventOf(a, b);
+        if (!e) {
+          return true;
+        }
+        const items = root ? Array.from(root.querySelectorAll('.fx-menu [role="menuitem"]:not([disabled])')) : [];
+        const at = items.indexOf(document.activeElement);
+        if (e.key === 'Escape') {
+          open(false);
+          const toggleButton = root && root.querySelector('.fx-split-toggle, .fx-menu-toggle');
+          if (toggleButton) { toggleButton.focus(); }
+        } else if (e.key === 'ArrowDown' && items.length) {
+          e.preventDefault();
+          items[(at + 1) % items.length].focus();
+        } else if (e.key === 'ArrowUp' && items.length) {
+          e.preventDefault();
+          items[(at - 1 + items.length) % items.length].focus();
+        } else {
+          return true;
+        }
+        return false;
+      }
+    };
+  }
+
+  /**
+   * A horizontal carousel over a scrolling track (design system .fx-carousel). Call attach(element) once the view is
+   * connected; prev/next scroll by one card, dots show the position. Arrow keys move when the track has focus.
+   */
+  function carousel() {
+    const canPrev = ko.observable(false);
+    const canNext = ko.observable(false);
+    const position = ko.observable(0);
+    const count = ko.observable(0);
+    let track = null;
+    let attached = false;
+    const update = () => {
+      if (!track) {
+        return;
+      }
+      const max = track.scrollWidth - track.clientWidth;
+      canPrev(track.scrollLeft > 2);
+      canNext(track.scrollLeft < max - 2);
+      // One dot per scroll stop: the cards that fit show together, so there are cards - visible + 1 stops
+      const cards = track.children.length;
+      const card = track.firstElementChild;
+      const step = card ? card.getBoundingClientRect().width + 12 : track.clientWidth;
+      const visible = Math.max(1, Math.floor((track.clientWidth + 12) / Math.max(1, step)));
+      const stops = cards > 0 ? Math.max(1, cards - visible + 1) : 0;
+      count(stops > 1 ? stops : 0);
+      position(Math.min(Math.max(0, stops - 1), Math.round(track.scrollLeft / Math.max(1, step))));
+    };
+    const scroll = (dir) => {
+      if (!track) {
+        return;
+      }
+      const card = track.firstElementChild;
+      const step = card ? card.getBoundingClientRect().width + 12 : track.clientWidth * 0.8;
+      const smooth = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      track.scrollBy({ left: dir * step, behavior: smooth ? 'smooth' : 'auto' });
+    };
+    return {
+      canPrev: canPrev, canNext: canNext, position: position, count: count,
+      dots: ko.pureComputed(() => Array.from({ length: count() }, (x, i) => ({ css: 'fx-carousel-dot' + (i === position() ? ' is-current' : '') }))),
+      prev: () => scroll(-1),
+      next: () => scroll(1),
+      attach: (element) => {
+        track = element;
+        if (!track) {
+          return;
+        }
+        track.addEventListener('scroll', update, { passive: true });
+        track.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') { e.preventDefault(); scroll(1); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); scroll(-1); }
+        });
+        if (!attached) {
+          window.addEventListener('resize', update);
+          attached = true;
+        }
+        new MutationObserver(update).observe(track, { childList: true });
+        window.setTimeout(update, 0);
+      },
+      refresh: update
+    };
+  }
+
+  /** A stable avatar colour class for a name (fx-avatar--1 … --8). */
+  function avatarTone(name) {
+    let hash = 0;
+    String(name || '').split('').forEach((c) => { hash = (hash * 31 + c.charCodeAt(0)) >>> 0; });
+    return 'fx-avatar fx-avatar--' + (hash % 8 + 1);
+  }
+
+  /** Copies text and resolves when done (falls back to a hidden text area). */
+  function copy(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy') ? resolve() : reject(new Error('Copy is not allowed here')); } catch (e) { reject(e); }
+      area.remove();
+    });
+  }
+
   /** Short date and time, for tables. */
   function when(value) {
     return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: preferences.hour12() }) : '';
   }
 
-  return { tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when };
+  return {
+    tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when,
+    badge: pill, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy
+  };
 });

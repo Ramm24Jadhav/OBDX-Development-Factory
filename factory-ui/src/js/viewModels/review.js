@@ -2,9 +2,9 @@
  * Customer review page, opened from a review link (?ojr=review&embed=1&token=...). Shows the screen preview and
  * lets the reviewer comment and approve. Only the token in the link is needed.
  */
-define(['knockout', '../services/api', '../services/previewFrame',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar'],
-  function (ko, api, PreviewFrame) {
+define(['knockout', '../services/api', '../services/previewFrame', '../services/ui', '../services/toast', '../services/dialog',
+        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext'],
+  function (ko, api, PreviewFrame, ui, toast, dialog) {
     const VIEWPORTS = [
       { key: 'desktop', label: 'Desktop', width: '100%' },
       { key: 'tablet', label: 'Tablet', width: '768px' },
@@ -53,6 +53,8 @@ define(['knockout', '../services/api', '../services/previewFrame',
       this.comments = ko.pureComputed(() => (this.review() ? this.review().comments : []).map((c) => ({
         author: c.author,
         text: c.text,
+        initials: ui.initials(c.author),
+        avatar: ui.avatarTone(c.author),
         meta: ' ' + new Date(c.createdAt).toLocaleString() + (c.componentId ? ' · about ' + labelOf(c.componentId) : '')
       })));
       const labelOf = (id) => {
@@ -68,15 +70,26 @@ define(['knockout', '../services/api', '../services/previewFrame',
       const showError = (error) => this.errorMessage(error.message);
       const base = 'review/' + encodeURIComponent(token);
 
-      this.sendComment = () => api.post(base + '/comments', { author: this.author(), text: this.text(), componentId: this.selectedId() })
-        .then((review) => { this.text(''); this.review(review); })
-        .catch(showError);
-      this.approve = () => {
-        if (!window.confirm('Approve this screen design as shown?')) {
+      this.sending = ko.observable(false);
+      this.sendComment = () => {
+        this.sending(true);
+        api.post(base + '/comments', { author: this.author(), text: this.text(), componentId: this.selectedId() })
+          .then((review) => { this.text(''); this.review(review); toast.success('Comment sent. Thank you!'); })
+          .catch((error) => toast.error('The comment was not sent: ' + error.message))
+          .then(() => this.sending(false));
+      };
+      this.approve = () => dialog.confirm({
+        title: 'Approve this screen design?',
+        message: 'You approve the screen as shown, as ' + this.author() + '. Comments close once it is approved.',
+        confirmLabel: 'Approve'
+      }).then((ok) => {
+        if (!ok) {
           return;
         }
-        api.post(base + '/approve', { by: this.author() }).then((review) => this.review(review)).catch(showError);
-      };
+        api.post(base + '/approve', { by: this.author() })
+          .then((review) => { this.review(review); toast.success('Design approved. Thank you!'); })
+          .catch((error) => toast.error('The approval was not saved: ' + error.message));
+      });
 
       this.connected = () => {
         document.title = 'Screen review';

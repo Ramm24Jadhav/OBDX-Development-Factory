@@ -6,8 +6,13 @@
  * The screens can be downloaded as CSV for wave planning.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant) {
+        '../services/assistant', '../services/toast', '../services/preferences', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, preferences) {
+    // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
+    const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '') });
+    /** The current value of a design token, for drawings that cannot use CSS variables (the radial graph is an image). */
+    const token = (name, fallback) => (window.getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
     const lastSegment = (id) => id.substring(id.lastIndexOf('/') + 1);
     // Days of work per screen by complexity, for the effort estimate
     const DAYS = { S: 1, M: 3, L: 5 };
@@ -49,7 +54,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'overview', label: 'Overview' }, { value: 'deprecated', label: 'Deprecated APIs' }, { value: 'dependencies', label: 'Dependency Analysis' },
         { value: 'plan', label: 'Migration Plan' }, { value: 'compatibility', label: 'Compatibility' }, { value: 'progress', label: 'Progress & History' }
       ]);
+      // Loading problems stay on the page; the result of an action is a toast
       const showError = (error) => this.errorMessage(error.message);
+      const actionError = (error) => toast.error(error.message);
       const summary = ko.pureComputed(() => (this.inventory() ? this.inventory().summary : null));
       const fact = (key) => {
         const f = this.profile() ? this.profile().facts.find((x) => x.key === key) : null;
@@ -64,8 +71,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const s = summary();
         return s && s.screens ? Math.round(100 * (s.complexity.S + s.complexity.M) / s.screens) : 0;
       });
-      this.readinessStyle = ko.pureComputed(() => ({ background: 'conic-gradient(#16a34a ' + this.readiness() + '%, #e5eaf1 0)' }));
-      this.readinessPill = ko.pureComputed(() => (this.readiness() >= 70 ? ui.pill('Good', 'green') : this.readiness() >= 40 ? ui.pill('Fair', 'amber') : ui.pill('Low', 'red')));
+      this.readinessStyle = ko.pureComputed(() => ({ background: 'conic-gradient(var(--fx-success) ' + this.readiness() + '%, var(--fx-surface-3) 0)' }));
+      this.readinessPill = ko.pureComputed(() => (this.readiness() >= 70 ? pill('Good', 'green') : this.readiness() >= 40 ? pill('Fair', 'amber') : pill('Low', 'red')));
       const critical = ko.pureComputed(() => this.findings().filter((f) => f.severity === 'ERROR').length);
       this.kpis = ko.pureComputed(() => {
         const s = summary();
@@ -84,7 +91,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.stack = ko.pureComputed(() => {
         const java = fact('backend.javaVersion');
         const targetJava = PACK_JAVA[this.target()];
-        const row = (name, value, status, tone, icon) => ({ name: name, value: value ? value.replace(/\s*\(\d+ files?\)$/, '') : 'Not detected', pill: ui.pill(status, tone), iconClass: 'factory-nav-icon factory-ico-' + icon,
+        const row = (name, value, status, tone, icon) => ({ name: name, value: value ? value.replace(/\s*\(\d+ files?\)$/, '') : 'Not detected', pill: pill(status, tone), iconClass: 'factory-nav-icon factory-ico-' + icon,
           tileCss: 'factory-mo-tile factory-ov2-icon-blue', open: () => (name === 'OBDX Framework' ? this.tab('compatibility') : go('profile')) });
         return [
           row('OBDX Framework', 'OBDX ' + this.version(), this.version() !== this.target() ? 'Upgrade: ' + this.target() : 'Current', this.version() !== this.target() ? 'amber' : 'green', 'cube'),
@@ -101,7 +108,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!s) {
           return [];
         }
-        const row = (name, count, level, icon, tab, tone) => ({ name: name, count: count + ' items', pill: ui.pill(level, level === 'High' ? 'red' : level === 'Medium' ? 'amber' : 'green'),
+        const row = (name, count, level, icon, tab, tone) => ({ name: name, count: count + ' items', pill: pill(level, level === 'High' ? 'red' : level === 'Medium' ? 'amber' : 'green'),
           iconClass: 'factory-nav-icon factory-ico-' + icon, tileCss: 'factory-mo-tile factory-mo-tile-' + tone, open: () => this.tab(tab) });
         return [
           row('Framework Upgrade', this.version() !== this.target() ? 1 : 0, this.version() !== this.target() ? 'High' : 'Low', 'cube', 'compatibility', 'red'),
@@ -145,7 +152,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.risk = ko.pureComputed(() => {
         const s = summary();
         if (!s || !s.screens) {
-          return { total: 0, parts: [], style: { background: '#e5eaf1' } };
+          return { total: 0, parts: [], style: { background: 'var(--fx-surface-3)' } };
         }
         const parts = [{ label: 'Large', n: s.complexity.L, color: '#ef4444' }, { label: 'Medium', n: s.complexity.M, color: '#f59e0b' }, { label: 'Small', n: s.complexity.S, color: '#22c55e' }];
         let at = 0;
@@ -174,6 +181,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!inv) {
           return { src: '', alt: '' };
         }
+        // Drawn again when the theme changes: lines, labels and the centre follow the tokens, the node hues stay
+        preferences.theme();
+        const ink = token('--fx-text', '#0f172a');
+        const line = token('--fx-text-faint', '#94a3b8');
+        const paper = token('--fx-surface', '#ffffff');
+        const hub = token('--fx-primary', '#2563eb');
+        const halo = token('--fx-primary-soft', '#dbe7fe');
         const s = inv.summary;
         const sats = inv.modules.slice(0, 6).map((m) => ({
           name: m.name, detail: m.screens + ' screen' + (m.screens === 1 ? '' : 's'),
@@ -197,39 +211,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const ex = cx + 52 * Math.cos(a);
           const ey = cy + 52 * Math.sin(a);
           parts.push('<line x1="' + ex.toFixed(1) + '" y1="' + ey.toFixed(1) + '" x2="' + (x - 22 * Math.cos(a)).toFixed(1) + '" y2="' + (y - 22 * Math.sin(a)).toFixed(1)
-            + '" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#h)"/>');
+            + '" stroke="' + line + '" stroke-width="1.6" marker-end="url(#h)"/>');
           const tx = Math.min(W - 56, Math.max(56, x));
           const ty = Math.sin(a) < -0.2 ? y - 40 : y + 38;
           const px = x.toFixed(1);
           const py = y.toFixed(1);
           nodes.push('<circle cx="' + px + '" cy="' + py + '" r="21" fill="' + n.color + '" fill-opacity="0.16"/>'
             + '<circle cx="' + px + '" cy="' + py + '" r="15" fill="' + n.color + '"/>'
-            + '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="none" stroke="#fff" stroke-width="2.2"/>'
-            + '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="middle" font-size="14.5" font-weight="600" fill="#0f172a">' + esc(n.name.length > 17 ? n.name.slice(0, 16) + '…' : n.name) + '</text>'
+            + '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="none" stroke="' + paper + '" stroke-width="2.2"/>'
+            + '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="middle" font-size="14.5" font-weight="600" fill="' + ink + '">' + esc(n.name.length > 17 ? n.name.slice(0, 16) + '…' : n.name) + '</text>'
             + '<text x="' + tx.toFixed(1) + '" y="' + (ty + 16).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="600" fill="' + n.color + '">' + esc(n.detail) + '</text>');
         });
         const title = this.workspace() ? this.workspace().name : 'Workspace';
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" font-family="Segoe UI, Arial, sans-serif">'
-          + '<defs><marker id="h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>'
-          + parts.join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="54" fill="#dbe7fe"/><circle cx="' + cx + '" cy="' + cy + '" r="46" fill="#2563eb"/>'
+          + '<defs><marker id="h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + line + '"/></marker></defs>'
+          + parts.join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="54" fill="' + halo + '"/><circle cx="' + cx + '" cy="' + cy + '" r="46" fill="' + hub + '"/>'
           + '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">' + esc(title.length > 14 ? title.slice(0, 13) + '…' : title) + '</text>'
-          + '<text x="' + cx + '" y="' + (cy + 15) + '" text-anchor="middle" font-size="11" fill="#dbeafe">' + s.screens + ' screens</text>'
+          + '<text x="' + cx + '" y="' + (cy + 15) + '" text-anchor="middle" font-size="11" fill="#ffffff" fill-opacity="0.85">' + s.screens + ' screens</text>'
           + nodes.join('') + '</svg>';
         return { src: 'data:image/svg+xml,' + encodeURIComponent(svg), alt: title + ': ' + sats.map((n) => n.name + ' ' + n.detail).join(', ') };
       });
       this.actions = ko.pureComputed(() => {
         const list = [];
         if (this.version() !== this.target()) {
-          list.push({ text: 'Upgrade the OBDX framework to ' + this.target(), pill: ui.pill('High', 'red') });
+          list.push({ text: 'Upgrade the OBDX framework to ' + this.target(), pill: pill('High', 'red') });
         }
-        this.findings().filter((f) => f.severity === 'ERROR').slice(0, 2).forEach((f) => list.push({ text: 'Replace: ' + f.rule + ' (' + f.module + ')', pill: ui.pill('High', 'red') }));
+        this.findings().filter((f) => f.severity === 'ERROR').slice(0, 2).forEach((f) => list.push({ text: 'Replace: ' + f.rule + ' (' + f.module + ')', pill: pill('High', 'red') }));
         if (summary() && summary().complexity.L) {
-          list.push({ text: 'Plan the ' + summary().complexity.L + ' large screens first', pill: ui.pill('Medium', 'amber') });
+          list.push({ text: 'Plan the ' + summary().complexity.L + ' large screens first', pill: pill('Medium', 'amber') });
         }
         if (summary() && summary().callsWithoutBackend) {
-          list.push({ text: 'Check the ' + summary().callsWithoutBackend + ' product services the UI calls', pill: ui.pill('Medium', 'amber') });
+          list.push({ text: 'Check the ' + summary().callsWithoutBackend + ' product services the UI calls', pill: pill('Medium', 'amber') });
         }
-        list.push({ text: 'Run regression tests for the critical flows', pill: ui.pill('Low', 'green') });
+        list.push({ text: 'Run regression tests for the critical flows', pill: pill('Low', 'green') });
         return list.slice(0, 5).map((a, i) => Object.assign(a, { n: i + 1 }));
       });
 
@@ -257,10 +271,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.findings([]);
         const candidates = rules.filter((r) => r.forbid && r.enabled).map((r) => ({ rule: r, term: searchTerm(r.forbid) })).filter((c) => c.term);
         if (!candidates.length) {
-          return;
+          return Promise.resolve();
         }
         this.searchingFindings(true);
-        Promise.all(candidates.map((c) => api.get('workspaces/' + workspaceId + '/search?q=' + encodeURIComponent(c.term) + '&limit=20').then((res) => {
+        return Promise.all(candidates.map((c) => api.get('workspaces/' + workspaceId + '/search?q=' + encodeURIComponent(c.term) + '&limit=20').then((res) => {
           const pattern = toRegExp(c.rule.forbid);
           if (!pattern) {
             return [];
@@ -270,16 +284,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             rule: c.rule.title, severity: c.rule.severity, path: hit.path, module: hit.path.split('/').slice(-2, -1)[0] || '',
             lines: hit.startLine + '-' + hit.endLine, replacement: c.rule.message, type: hit.language,
             current: this.version(), impact: c.rule.severity === 'ERROR' ? 'High' : 'Medium',
-            pill: c.rule.severity === 'ERROR' ? ui.pill('Critical', 'red') : ui.pill('Warning', 'amber'),
+            pill: c.rule.severity === 'ERROR' ? pill('Critical', 'red') : pill('Warning', 'amber'),
             menuAction: (event) => {
               const action = event.detail.selectedValue;
               if (action === 'ask') {
                 this.aiTab('chat');
                 this.ai.ask('How do I replace "' + c.rule.title + '" in ' + hit.path + '? The rule says: ' + c.rule.message);
               } else if (action === 'copy') {
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(hit.path).catch(() => null);
-                }
+                ui.copy(hit.path).then(() => toast.success('Copied ' + hit.path), () => toast.error('Could not copy. Select the text and copy it instead.'));
               } else {
                 go('code');
               }
@@ -311,7 +323,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .map((s) => ({
             name: s.name, module: s.module, kind: s.kind, complexity: s.complexity,
             wave: s.complexity === 'S' ? 'Phase 1' : s.complexity === 'M' ? 'Phase 2' : 'Phase 3',
-            pill: s.complexity === 'L' ? ui.pill('Large', 'red') : s.complexity === 'M' ? ui.pill('Medium', 'amber') : ui.pill('Small', 'green'),
+            pill: s.complexity === 'L' ? pill('Large', 'red') : s.complexity === 'M' ? pill('Medium', 'amber') : pill('Small', 'green'),
             fields: s.fields.length, actions: s.actions, calls: s.calls.join(', ') || '-',
             opens: s.opens.map((id) => names[id] || lastSegment(id)).join(', ') || '-', files: s.files.join(', ')
           }));
@@ -322,18 +334,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       })));
       this.callRows = ko.pureComputed(() => (this.inventory() ? this.inventory().calls : []).map((c) => ({
         method: c.method, path: c.path, endpoint: c.endpoint || 'Not in this codebase (OBDX product service)',
-        pill: c.endpoint ? ui.pill('In this code', 'green') : ui.pill('Product service', 'amber'), screens: c.screens.map(lastSegment).join(', ')
+        pill: c.endpoint ? pill('In this code', 'green') : pill('Product service', 'amber'), screens: c.screens.map(lastSegment).join(', ')
       })));
       this.roles = ko.pureComputed(() => (this.inventory() ? this.inventory().roles : []).map((r) => ({ name: r.name, source: r.source, evidence: r.evidence.join(', ') })));
       this.flows = ko.pureComputed(() => (this.inventory() ? this.inventory().flows : []));
       this.notes = ko.pureComputed(() => (this.inventory() ? this.inventory().notes : []));
       this.csvUrl = ko.pureComputed(() => 'api/workspaces/' + this.workspaceId() + '/inventory/screens.csv');
       this.compatibility = ko.pureComputed(() => [
-        { from: 'OBDX 22.x', to22: ui.pill('Current', 'green'), to25: ui.pill('Upgrade', 'amber'), java: 'Java 8 → 11' },
-        { from: 'OBDX 25.x', to22: ui.pill('Not supported', 'red'), to25: ui.pill('Current', 'green'), java: 'Java 11' }
+        { from: 'OBDX 22.x', to22: pill('Current', 'green'), to25: pill('Upgrade', 'amber'), java: 'Java 8 → 11' },
+        { from: 'OBDX 25.x', to22: pill('Not supported', 'red'), to25: pill('Current', 'green'), java: 'Java 11' }
       ]);
       this.packRules = ko.pureComputed(() => this.rules().map((r) => ({
-        title: r.title, severity: r.severity === 'ERROR' ? ui.pill('Error', 'red') : ui.pill('Warning', 'amber'), message: r.message, appliesTo: r.appliesTo,
+        title: r.title, severity: r.severity === 'ERROR' ? pill('Error', 'red') : pill('Warning', 'amber'), message: r.message, appliesTo: r.appliesTo,
         enabled: r.enabled ? 'On' : 'Off'
       })));
 
@@ -378,9 +390,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.scan = () => {
         this.busy(true);
-        api.post('workspaces/' + this.workspaceId() + '/inventory/scan').then(show).catch(showError).finally(() => this.busy(false));
+        api.post('workspaces/' + this.workspaceId() + '/inventory/scan')
+          .then((inventory) => { show(inventory); toast.success('Analysis done: ' + (inventory ? inventory.summary.screens + ' screens in ' + inventory.summary.modules + ' modules.' : 'nothing to scan.')); })
+          .catch(actionError).finally(() => this.busy(false));
       };
-      this.rescanFindings = () => findUsage(this.workspaceId(), this.rules());
+      this.rescanFindings = () => {
+        const p = findUsage(this.workspaceId(), this.rules());
+        if (p) {
+          p.then(() => toast.info('Searched the code again: ' + this.findings().length + ' usage' + (this.findings().length === 1 ? '' : 's') + ' of forbidden APIs.'));
+        }
+      };
       this.showPlan = () => this.tab('plan');
       this.moreAction = (event) => {
         const action = event.detail.selectedValue;

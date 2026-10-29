@@ -3,9 +3,12 @@
  * tests, the models they offer, the model server and models in use, choosing them (administrators: a server on this computer, found
  * automatically, or another one by URL, then its chat and embedding models), and a test prompt. Through /api/model.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojradioset', 'ojs/ojselectsingle', 'ojs/ojmenu', 'ojs/ojswitch'],
-  function (ko, accUtils, api, session, ui, ArrayDataProvider) {
+  function (ko, accUtils, api, session, ui, toast, ArrayDataProvider) {
+    // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
+    const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '') });
     function ModelsViewModel() {
       this.isAdmin = session.isAdmin;
       this.status = ko.observable(null);
@@ -22,7 +25,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.reply = ko.observable(null);
       this.errorMessage = ko.observable('');
       this.busy = ko.observable(false);
+      // Loading problems stay on the page; the result of an action is a toast
       const showError = (error) => this.errorMessage(error.message);
+      const actionError = (error) => toast.error(error.message);
 
       // Choosing the server
       this.serverKindProvider = new ArrayDataProvider([
@@ -120,12 +125,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.searching(true);
         this.errorMessage('');
         api.post('model/servers/models', { baseUrl: url, apiKey: this.embeddingApiKey() || null })
-          .then((models) => this.embeddingServerModels(models))
-          .catch(showError)
+          .then((models) => { this.embeddingServerModels(models); toast.success(models.length + ' model' + (models.length === 1 ? '' : 's') + ' on the code search server.'); })
+          .catch(actionError)
           .finally(() => this.searching(false));
       };
 
-      this.findLocal = () => {
+      this.findLocal = (event) => {
+        // A click on Find Local Servers reports what it found; the first look when the page opens stays quiet
+        const manual = !!(event && event.type);
         this.searching(true);
         this.errorMessage('');
         return api.get('model/servers/local').then((servers) => {
@@ -138,7 +145,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const preferred = servers.find((s) => s.baseUrl === current) || servers[0];
           this.localServerUrl(null);
           this.localServerUrl(preferred ? preferred.baseUrl : null);
-        }).catch(showError).finally(() => this.searching(false));
+          if (manual) {
+            toast.info(servers.length ? 'Found ' + servers.length + ' model server' + (servers.length === 1 ? '' : 's') + ' on this computer.' : 'No model server found on this computer. Start Ollama or LM Studio and look again.');
+          }
+        }).catch(manual ? actionError : showError).finally(() => this.searching(false));
       };
       this.localServerUrl.subscribe((url) => {
         const option = this.localServers().find((o) => o.value === url);
@@ -157,8 +167,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.searching(true);
         this.errorMessage('');
         api.post('model/servers/models', { baseUrl: url, apiKey: this.apiKey() || null })
-          .then((models) => showModels(url, models))
-          .catch(showError)
+          .then((models) => { showModels(url, models); toast.success(models.length + ' model' + (models.length === 1 ? '' : 's') + ' on this server.'); })
+          .catch(actionError)
           .finally(() => this.searching(false));
       };
 
@@ -186,10 +196,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.apiKey('');
           this.embeddingApiKey('');
           const s = result.status;
-          this.savedMessage('Saved: the factory now uses ' + s.chatModel + ' and ' + s.embeddingModel
+          toast.success('Saved: the factory now uses ' + s.chatModel + ' and ' + s.embeddingModel
             + (s.embeddingBaseUrl ? ' at ' + s.embeddingBaseUrl : '') + '.'
-            + (result.embeddingsRemoved ? ' The embedding model changed, so import the code of each workspace again (Code page) to search it by meaning.' : ''));
-        }).catch(showError).finally(() => this.saving(false));
+            + (result.embeddingsRemoved ? ' The embedding model changed, so import the code of each workspace again (Code page) to search it by meaning.' : ''),
+            { timeout: result.embeddingsRemoved ? 0 : 6000 });
+        }).catch(actionError).finally(() => this.saving(false));
       };
 
       this.send = () => {
@@ -198,7 +209,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.reply(null);
         api.post('model/chat', { prompt: this.prompt() })
           .then((data) => this.reply(data))
-          .catch(showError)
+          .catch(actionError)
           .finally(() => this.busy(false));
       };
 
@@ -209,7 +220,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'prompts', label: 'Prompts & Templates' }, { value: 'policies', label: 'Policies' }, { value: 'evaluation', label: 'Model Evaluation' }
       ]);
       const same = (a, b) => !!a && !!b && a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
-      const copy = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => null); } };
+      const copy = (text) => ui.copy(text).then(() => toast.success('Copied ' + text), () => toast.error('Could not copy. Select the text and copy it instead.'));
       const scrollTo = (id) => window.setTimeout(() => { const el = document.getElementById(id); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } }, 100);
       const provider = (id, name, description, baseUrl, local) => {
         const p = {
@@ -222,15 +233,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           testing: ko.observable(false), admin: session.isAdmin
         };
         p.active = ko.pureComputed(() => !!this.status() && same(this.status().baseUrl, p.baseUrl()));
-        p.pill = ko.pureComputed(() => (p.active() ? ui.pill('In use', 'green') : p.state() === 'ok' ? ui.pill('Connected', 'green')
-          : p.state() === 'failed' ? ui.pill('Not reachable', 'red') : ui.pill('Not tested', 'grey')));
+        p.pill = ko.pureComputed(() => (p.active() ? pill('In use', 'green') : p.state() === 'ok' ? pill('Connected', 'green')
+          : p.state() === 'failed' ? pill('Not reachable', 'red') : pill('Not tested', 'grey')));
         p.statusText = ko.pureComputed(() => (p.state() === 'ok' ? p.models().length + ' models available' : p.state() === 'failed' ? 'Failed: ' + p.error : (p.active() ? 'In use' : 'Not tested')));
         p.chatModels = ko.pureComputed(() => p.models().filter((m) => !m.embedding).map((m) => m.id));
         p.defaultModel = ko.pureComputed(() => p.selectedModel()
           || (p.active() ? find(p.models(), this.status().chatModel) || this.status().chatModel : (p.chatModels()[0] || '–')));
         p.modelChange = (event) => p.selectedModel(event.target.value);
-        p.statusPill = ko.pureComputed(() => (p.state() === 'failed' ? ui.pill('Not reachable', 'red')
-          : (p.state() === 'ok' || p.active()) ? ui.pill('Available', 'green') : ui.pill('Not tested', 'grey')));
+        p.statusPill = ko.pureComputed(() => (p.state() === 'failed' ? pill('Not reachable', 'red')
+          : (p.state() === 'ok' || p.active()) ? pill('Available', 'green') : pill('Not tested', 'grey')));
         p.selectedAsDefault = ko.pureComputed(() => same(this.modelsUrl() || (this.status() || {}).baseUrl, p.baseUrl()));
         // What the listed models can do: chat models write specs and code, embedding models search code
         p.caps = ko.pureComputed(() => [
@@ -242,7 +253,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         p.menuAction = (event) => {
           const action = event.detail.selectedValue;
           if (action === 'test') {
-            p.test();
+            p.test(event);
           } else if (action === 'use') {
             p.use();
           } else if (action === 'models') {
@@ -253,13 +264,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           }
         };
         p.keyLabel = ko.pureComputed(() => (p.active() && this.status().apiKeySet ? 'Stored (leave empty to keep)' : (local ? 'Not needed' : 'API key')));
-        p.test = () => {
+        // A click on one card's Test Connection reports the result; Test All Providers shows it on the cards only
+        p.test = (event) => {
+          const loud = !!(event && event.type);
           p.testing(true);
           const start = Date.now();
           const key = p.key() || null;
           api.post('model/servers/models', { baseUrl: p.baseUrl(), apiKey: key })
-            .then((models) => { p.models(models); p.state('ok'); })
-            .catch((error) => { p.error = error.message; p.state('failed'); })
+            .then((models) => { p.models(models); p.state('ok'); if (loud) { toast.success(p.name + ' is reachable: ' + models.length + ' model' + (models.length === 1 ? '' : 's') + '.'); } })
+            .catch((error) => { p.error = error.message; p.state('failed'); if (loud) { toast.error(p.name + ' is not reachable: ' + error.message); } })
             .finally(() => { p.latency(Date.now() - start); p.checked(new Date().toLocaleTimeString()); p.testing(false); });
         };
         p.use = () => {
@@ -386,7 +399,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             : { kind: 'count', text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
       });
       this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
-        name: p.short, pill: p.state() === 'ok' ? ui.pill('Healthy', 'green') : ui.pill('Unavailable', 'red'),
+        name: p.short, pill: p.state() === 'ok' ? pill('Healthy', 'green') : pill('Unavailable', 'red'),
         latency: p.latency() !== null ? p.latency() + ' ms' : '–', checked: p.checked() || '–'
       })));
       this.routing = ko.pureComputed(() => {

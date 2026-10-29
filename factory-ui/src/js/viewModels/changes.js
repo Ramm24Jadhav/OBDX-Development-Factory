@@ -5,10 +5,14 @@
  * build, deliver as a patch or an SVN branch, close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        '../services/ui', '../services/assistant', 'ojs/ojarraydataprovider',
+        '../services/ui', '../services/assistant', 'ojs/ojarraydataprovider', '../services/dialog', '../services/toast',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, ArrayDataProvider) {
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, ArrayDataProvider, dialog, toast) {
     const POLL_MS = 2000;
+    // A status badge (design system fx-badge, with a dot) from the older tone names
+    const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
+    const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (TONES[tone] ? ' fx-badge--' + TONES[tone] : '') });
+    const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
     const STATUS_LABELS = {
       ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
       DELIVERED: 'delivered', FAILED: 'failed', CLOSED: 'closed'
@@ -91,6 +95,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
 
       const showError = (error) => this.errorMessage(error.message);
+      // After an action: the error stays on the page and a toast says it failed
+      const failed = (error) => { showError(error); toast.error(error.message); };
+      const done = (message) => (detail) => { show(detail); toast.success(message); };
       let pollTimer = null;
 
       const loadList = () => {
@@ -144,70 +151,67 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const base = () => 'changes/' + this.detail().id;
 
       this.create = () => api.post('requirements/' + this.requirementId() + '/changes')
-        .then((detail) => { this.requirementId(null); show(detail); })
-        .catch(showError);
-      this.analyzeAgain = () => api.post(base() + '/analyze').then(show).catch(showError);
-      this.approvePlan = () => {
-        if (!window.confirm('Approve this plan? The model will write ' + this.detail().plan.items.length + ' file(s).')) {
-          return;
-        }
-        api.post(base() + '/approve-plan').then(show).catch(showError);
-      };
+        .then((detail) => { this.requirementId(null); show(detail); toast.success('Change created. The impact analysis is running.'); })
+        .catch(failed);
+      this.analyzeAgain = () => api.post(base() + '/analyze').then(done('Impact analysis started again.')).catch(failed);
+      this.approvePlan = () => ask('Approve this plan?', 'The model will write ' + this.detail().plan.items.length + ' file(s) for this change.', 'Approve Plan')
+        .then((ok) => (ok ? api.post(base() + '/approve-plan').then(done('Plan approved. The model is writing the code.')).catch(failed) : null));
       this.togglePlanJson = () => {
         this.editingPlan(!this.editingPlan());
         this.planJson(this.editingPlan() ? JSON.stringify(this.detail().plan, null, 2) : '');
       };
       this.savePlan = () => api.put(base() + '/plan', this.planJson())
-        .then((detail) => { this.editingPlan(false); show(detail); })
-        .catch(showError);
-      this.deliver = () => {
-        if (!window.confirm('Commit the reviewed code to a new SVN branch? Trunk is not changed.')) {
+        .then((detail) => { this.editingPlan(false); show(detail); toast.success('Plan saved.'); })
+        .catch(failed);
+      this.deliver = () => ask('Submit for review?', 'The reviewed code is committed to a new SVN branch. Trunk is not changed.', 'Submit for Review').then((ok) => {
+        if (!ok) {
           return;
         }
         this.busy(true);
-        api.post(base() + '/deliver').then(show).catch(showError).finally(() => this.busy(false));
-      };
-      this.build = () => api.post(base() + '/build').then(show).catch(showError);
-      this.checkAgain = () => api.post(base() + '/check').then(show).catch(showError);
+        api.post(base() + '/deliver').then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
+      });
+      this.build = () => api.post(base() + '/build').then(done('Jenkins build started.')).catch(failed);
+      this.checkAgain = () => api.post(base() + '/check').then(done('Quick checks run again.')).catch(failed);
       const close = (reason, force) => api.post(base() + '/close', { reason: reason, force: force })
         .then((detail) => { show(detail); loadList(); });
       const liveBranch = () => this.detail().branchUrl && !this.detail().branchDeletedRevision;
-      this.closeMerged = () => {
-        if (!window.confirm(liveBranch()
-          ? 'Close this change as merged? The factory checks in SVN that the branch is merged into trunk, then removes the branch (it stays in the SVN history).'
-          : 'Close this change as merged or applied?')) {
+      this.closeMerged = () => ask('Close this change as merged?', liveBranch()
+        ? 'The factory checks in SVN that the branch is merged into trunk, then removes the branch (it stays in the SVN history).'
+        : 'The change is closed as merged or applied.', 'Close as Merged').then((ok) => {
+        if (!ok) {
           return;
         }
         this.busy(true);
         close('MERGED', false)
           .catch((error) => {
-            if (error.status === 409 && error.message.indexOf('Merge the branch first') >= 0
-                && window.confirm(error.message + '\n\nClose anyway and remove the branch?')) {
-              return close('MERGED', true);
+            if (error.status === 409 && error.message.indexOf('Merge the branch first') >= 0) {
+              return ask('Close anyway?', error.message + ' Close anyway and remove the branch?', 'Close Anyway', true)
+                .then((force) => (force ? close('MERGED', true) : 'cancelled'));
             }
             throw error;
           })
-          .catch(showError).finally(() => this.busy(false));
-      };
-      this.abandon = () => {
-        if (!window.confirm('Abandon this change?' + (liveBranch() ? ' Its branch is removed from SVN (it stays in the SVN history).' : ''))) {
+          .then((result) => { if (result !== 'cancelled') { toast.success('Change closed as merged.'); } })
+          .catch(failed).finally(() => this.busy(false));
+      });
+      this.abandon = () => ask('Abandon this change?', liveBranch() ? 'Its branch is removed from SVN (it stays in the SVN history).' : 'The change is closed without being merged.', 'Abandon', true).then((ok) => {
+        if (!ok) {
           return;
         }
         this.busy(true);
-        close('ABANDONED', false).catch(showError).finally(() => this.busy(false));
-      };
+        close('ABANDONED', false).then(() => toast.success('Change abandoned.')).catch(failed).finally(() => this.busy(false));
+      });
       this.canClose = ko.pureComputed(() => {
         const d = this.detail();
         return !!d && this.canManage() && d.buildStatus !== 'BUILDING'
           && ['PLAN_READY', 'GENERATED', 'DELIVERED', 'FAILED'].indexOf(d.status) >= 0;
       });
 
-      this.remove = () => {
-        if (!window.confirm('Delete this change with its plan and generated code?')) {
+      this.remove = () => ask('Delete this change?', 'The change, its plan and its generated code are deleted. This cannot be undone.', 'Delete', true).then((ok) => {
+        if (!ok) {
           return;
         }
-        api.del(base()).then(() => { this.detail(null); this.file(null); loadList(); }).catch(showError);
-      };
+        api.del(base()).then(() => { this.detail(null); this.file(null); loadList(); toast.success('Change deleted.'); }).catch(failed);
+      });
 
       this.openTabs = ko.observableArray([]);
       this.openFile = (path, keepMode) => api.get(base() + '/file?path=' + encodeURIComponent(path))
@@ -229,20 +233,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.fileMode('edit');
       };
       this.saveEdit = () => api.put(base() + '/file', { path: this.file().path, content: this.editContent() })
-        .then((detail) => { this.fileMode('diff'); show(detail); })
-        .catch(showError);
+        .then((detail) => { this.fileMode('diff'); show(detail); toast.success('Draft saved.'); })
+        .catch(failed);
       this.regenerate = () => api.post(base() + '/regenerate', { path: this.file().path, note: this.regenerateNote() || null })
-        .then((detail) => { this.regenerateNote(''); show(detail); })
-        .catch(showError);
+        .then((detail) => { this.regenerateNote(''); show(detail); toast.info('The model is writing the file again.'); })
+        .catch(failed);
 
       // ---- The workbench layout ----
       const STATUS_PILLS = {
-        ANALYZING: ui.pill('Analyzing', 'blue'), PLAN_READY: ui.pill('Plan to review', 'amber'), GENERATING: ui.pill('Writing code', 'blue'),
-        GENERATED: ui.pill('In Development', 'green'), DELIVERED: ui.pill('Delivered', 'green'), FAILED: ui.pill('Failed', 'red'), CLOSED: ui.pill('Closed', 'grey')
+        ANALYZING: pill('Analyzing', 'blue'), PLAN_READY: pill('Plan to review', 'amber'), GENERATING: pill('Writing code', 'blue'),
+        GENERATED: pill('In Development', 'green'), DELIVERED: pill('Delivered', 'green'), FAILED: pill('Failed', 'red'), CLOSED: pill('Closed', 'grey')
       };
       const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
       this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
-      this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : ui.pill('', 'grey')));
+      this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : pill('', 'grey')));
       this.changeMenu = ko.pureComputed(() => this.changes());
       this.pickChange = (event) => this.open(event.detail.selectedValue);
       this.choosingRequirement = ko.observable(false);
