@@ -8794,3 +8794,136 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
 @media (max-width: 1300px) { .factory-ch-actions { flex: 0 1 auto; min-width: 0; max-width: 100%; } }
 /* Version Packs standards: on phones the table keeps readable columns and scrolls inside its box */
 @media (max-width: 767px) { .factory-pk-std2 { min-width: 560px; } }
+
+/* ======================================================================================================
+   Motion and interaction. Durations: hover and focus 140ms, press 120ms, menus and tooltips 180ms, panels 240ms,
+   dialogs 260ms, pages 240ms. Motion uses transform and opacity; prefers-reduced-motion turns it all off (above).
+   ====================================================================================================== */
+:root {
+    --fx-ease-out: cubic-bezier(0.22, 1, 0.36, 1);     /* entering, settling */
+    --fx-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);  /* moving between two states */
+    --fx-dur-hover: 140ms;
+    --fx-dur-press: 120ms;
+    --fx-dur-pop: 180ms;
+    --fx-dur-panel: 240ms;
+    --fx-dur-modal: 260ms;
+    --fx-dur-page: 240ms;
+    --fx-stagger: 40ms;
+    --fx-duration: var(--fx-dur-hover);
+}
+@keyframes fx-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fx-pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fx-zoom { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes fx-bar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+/* Pages: a short rise when a page opens (only when it is inserted, so updates inside a page do not replay it) */
+.factory-page > *:not(script) { animation: fx-rise var(--fx-dur-page) var(--fx-ease-out) both; }
+/* Summary cards follow one another */
+.factory-page [class*="-kpis"] > * { animation: fx-rise var(--fx-dur-panel) var(--fx-ease-out) both; }
+.factory-page [class*="-kpis"] > :nth-child(2) { animation-delay: calc(var(--fx-stagger) * 1); }
+.factory-page [class*="-kpis"] > :nth-child(3) { animation-delay: calc(var(--fx-stagger) * 2); }
+.factory-page [class*="-kpis"] > :nth-child(4) { animation-delay: calc(var(--fx-stagger) * 3); }
+.factory-page [class*="-kpis"] > :nth-child(n+5) { animation-delay: calc(var(--fx-stagger) * 4); }
+
+/* Popups enter: menus and lists drop in, dialogs and the palette zoom in, backdrops fade */
+.fx-menu, .fx-popup, .factory-bell-panel, .fx-popover-panel { animation: fx-pop var(--fx-dur-pop) var(--fx-ease-out) both; transform-origin: top right; }
+.fx-dialog, .fx-cmd, .fx-shortcuts { animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) both; }
+.fx-dialog-backdrop, .fx-cmd-backdrop, .fx-sheet-backdrop { animation: fx-fade var(--fx-dur-pop) ease-out both; }
+
+/* Buttons: colour and shadow ease, a press moves the button 1px, arrows nudge forward on hover */
+.fx-btn, .factory-icon-button, .factory-menu-toggle, .fx-carousel-btn, .fx-tabs > button, .factory-tab, .fx-chip, .fx-toggle-group > button, .factory-nav-link {
+    transition: background-color var(--fx-dur-hover) var(--fx-ease-out), border-color var(--fx-dur-hover) var(--fx-ease-out),
+                color var(--fx-dur-hover) var(--fx-ease-out), box-shadow var(--fx-dur-hover) var(--fx-ease-out), transform var(--fx-dur-press) var(--fx-ease-out);
+}
+.fx-btn:not(:disabled):not([aria-disabled="true"]):active, .factory-icon-button:active, .fx-carousel-btn:not(:disabled):active,
+.fx-chip:is(button, a):active, .factory-nav-link:active { transform: translateY(1px) scale(0.985); }
+.fx-btn--primary:not(:disabled):hover { box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28); }
+.fx-btn .factory-ico-arrow { transition: transform var(--fx-dur-hover) var(--fx-ease-out); }
+.fx-btn:not(:disabled):hover .factory-ico-arrow { transform: translateX(2px); }
+.fx-check input, .fx-radio input, .fx-switch { transition: background-color var(--fx-dur-hover), border-color var(--fx-dur-hover), box-shadow var(--fx-dur-hover); }
+.fx-tabs > button[aria-selected] { transition: color var(--fx-dur-hover), border-color var(--fx-dur-panel) var(--fx-ease-out); }
+
+/* A button whose request is open (services/busy): the label hides behind a spinner, the width stays, more clicks
+   are ignored */
+.fx-btn.is-busy, .factory-icon-button.is-busy { position: relative; color: transparent !important; cursor: progress; }
+.fx-btn.is-busy *, .factory-icon-button.is-busy * { visibility: hidden; }
+.fx-btn.is-busy::before, .factory-icon-button.is-busy::before {
+    content: ""; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--fx-primary-text); border-right-color: transparent; animation: fx-spin 0.7s linear infinite;
+}
+.fx-btn--primary.is-busy::before, .fx-btn--danger.is-busy::before { border-color: #fff; border-right-color: transparent; }
+
+/* Spinner */
+.fx-spinner { display: inline-block; flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--fx-primary-border); border-top-color: var(--fx-primary); animation: fx-spin 0.75s linear infinite; }
+.fx-spinner--lg { width: 30px; height: 30px; border-width: 3px; }
+
+/* The bar under the top bar while the user's requests are open */
+.fx-progressbar { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity var(--fx-dur-pop); }
+.fx-progressbar.is-on { opacity: 1; }
+.fx-progressbar.is-on::before { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; background: var(--fx-primary); border-radius: 2px; animation: fx-bar 1.1s var(--fx-ease-in-out) infinite; }
+
+/* Blocking overlay: a translucent cover with a card; it stays inside the window and its safe areas */
+.fx-overlay { position: fixed; inset: 0; z-index: 1300; display: flex; align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: rgba(15, 23, 42, 0.35); backdrop-filter: blur(2px); animation: fx-fade var(--fx-dur-pop) ease-out both; outline: none; }
+.fx-overlay-card { display: flex; align-items: center; gap: 14px; max-width: min(420px, 100%); padding: 18px 22px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius-xl);
+    background: var(--fx-surface); box-shadow: var(--fx-shadow-lg); animation: fx-zoom var(--fx-dur-modal) var(--fx-ease-out) both; }
+.fx-overlay-text { margin: 0; font-size: var(--fx-text-base); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+
+/* Start screen until the app is bound and the session is known */
+.fx-boot { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: var(--fx-bg); color: var(--fx-text-body); font-family: var(--fx-font); transition: opacity var(--fx-dur-panel) ease-out, visibility 0s linear var(--fx-dur-panel); }
+.fx-boot-mark { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 12px; }
+.fx-boot-name { font-size: var(--fx-text-h3); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+.fx-boot-text { font-size: var(--fx-text-sm); color: var(--fx-text-muted); }
+body:not(.fx-ready) #globalBody { visibility: hidden; }
+body.fx-ready .fx-boot { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* Interactive cards: a light lift on hover; static cards do not move */
+a.fx-card, button.fx-card, .fx-card[tabindex="0"], .fx-card.is-interactive {
+    transition: transform var(--fx-dur-panel) var(--fx-ease-out), box-shadow var(--fx-dur-panel) var(--fx-ease-out), border-color var(--fx-dur-hover);
+}
+a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is-interactive:hover {
+    transform: translateY(-2px); box-shadow: var(--fx-shadow); border-color: var(--fx-primary-border);
+}
+.fx-table tbody tr { transition: background-color var(--fx-dur-hover) var(--fx-ease-out); }
+.fx-carousel-dot { padding: 0; border: 0; cursor: pointer; transition: width var(--fx-dur-panel) var(--fx-ease-out), background-color var(--fx-dur-hover); }
+.fx-carousel-dot:hover { background: var(--fx-primary-border); }
+/* Touch screens: no hover lifts (a tap would leave them stuck) */
+@media (hover: none) {
+    a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is-interactive:hover { transform: none; box-shadow: var(--fx-shadow-sm); }
+}
+
+/* Strips (services/strips): no native scrollbar; the edges fade while more is hidden past them */
+.fx-strip { scrollbar-width: none; scroll-behavior: smooth; }
+.fx-strip::-webkit-scrollbar { display: none; }
+.fx-strip.fx-strip--end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+.fx-strip.fx-strip--start { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px); mask-image: linear-gradient(to right, transparent, #000 40px); }
+.fx-strip.fx-strip--start.fx-strip--end { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+.fx-strip.fx-strip--dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }
+/* Chip rows wrap instead of scrolling */
+.factory-bt-chips, .factory-mo-chips { flex-wrap: wrap; overflow-x: visible; }
+
+/* Sidebar: a collapse notch on the menu edge beside the logo. The menu width animates; icons stay where they are
+   and labels fade, so nothing jumps. */
+.factory-sidebar { transition: width var(--fx-dur-panel) var(--fx-ease-in-out), flex-basis var(--fx-dur-panel) var(--fx-ease-in-out); }
+.factory-nav-notch {
+    position: absolute; top: 24px; right: -12px; z-index: 25; display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; padding: 0; border: 1px solid var(--fx-border-strong); border-radius: 50%; background: var(--fx-surface);
+    color: var(--fx-text-muted); box-shadow: var(--fx-shadow-sm); cursor: pointer;
+    transition: color var(--fx-dur-hover), border-color var(--fx-dur-hover), box-shadow var(--fx-dur-hover), transform var(--fx-dur-press) var(--fx-ease-out);
+}
+.factory-nav-notch:hover { color: var(--fx-primary-text); border-color: var(--fx-primary-border); box-shadow: var(--fx-shadow); transform: scale(1.08); }
+.factory-nav-notch:active { transform: scale(0.94); }
+.factory-nav-notch:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 2px; }
+.factory-nav-notch-icon { width: 7px; height: 7px; margin-left: 3px; border-left: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg); transition: transform var(--fx-dur-panel) var(--fx-ease-in-out), margin var(--fx-dur-panel); }
+.factory-shell-collapsed .factory-nav-notch-icon { transform: rotate(-135deg); margin-left: -3px; }
+.factory-brand-text, .factory-nav-label { transition: opacity var(--fx-dur-hover) ease-out; }
+.factory-shell .factory-nav-link { overflow: hidden; }
+.factory-shell-collapsed .factory-nav-label { display: inline; opacity: 0; }
+.factory-shell-collapsed .factory-brand-text { display: flex; opacity: 0; pointer-events: none; }
+.factory-shell-collapsed .factory-brand { overflow: hidden; }
+.factory-shell-collapsed .factory-nav-link { justify-content: flex-start; padding-left: 12px; padding-right: 12px; }
+@media (max-width: 767px) { .factory-nav-notch { display: none; } }
+/* Dragging a carousel: no snapping or smooth scrolling while the mouse moves; on release it settles on a card */
+.fx-carousel-track.fx-strip--dragging { cursor: grabbing; scroll-behavior: auto; scroll-snap-type: none; user-select: none; }

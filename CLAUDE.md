@@ -44,6 +44,10 @@ All 115 tests pass at the last commit.
   `js/components/fx-elements.js`) and `fx-*` classes from the design system (`docs/DESIGN-SYSTEM.md`, `?ojr=design`),
   not JET visual components; only the screen preview keeps JET (it renders the bank's OBDX screens). Colours come from
   the `--fx-*` tokens so the dark theme works.
+- Loading feedback is automatic: every `api.js` request spins the clicked button and runs the top progress bar
+  (`services/busy.js`); use `busy.block(promise, message)` only for operations that must finish before anything else.
+  Card collections use `ui.carousel()`; tab strips get their fades from `services/strips.js`. Motion uses the
+  `--fx-dur-*` and `--fx-ease-*` tokens.
 - JET binding expressions cannot use `new` or function literals, and `$parent` does not work in `oj-bind-for-each`
   (use `as="x"`); compute per-row values in the view model.
 - The embedded trial database refuses to run as root on Linux.

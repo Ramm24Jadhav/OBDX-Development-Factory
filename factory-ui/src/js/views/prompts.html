@@ -71,7 +71,7 @@
           </template></oj-bind-for-each>
         </div>
         <button type="button" class="fx-carousel-btn fx-carousel-btn--next" aria-label="Next use case templates" on-click="[[carousel.next]]" :disabled="[[!carousel.canNext()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
-        <div class="fx-carousel-dots" aria-hidden="true"><oj-bind-for-each data="[[carousel.dots]]" as="d"><template><span :class="[[d.data.css]]"></span></template></oj-bind-for-each></div>
+        <div class="fx-carousel-dots" aria-hidden="true"><oj-bind-for-each data="[[carousel.dots]]" as="d"><template><button type="button" tabindex="-1" :class="[[d.data.css]]" :aria-label="[[d.data.label]]" :aria-current="[[d.data.current]]" on-click="[[d.data.go]]"></button></template></oj-bind-for-each></div>
       </div>
       <div class="fx-table-wrap">
         <table class="fx-table factory-pr-table" id="promptTable">

@@ -21,6 +21,13 @@
     <link rel="stylesheet" href="css/app.css" type="text/css"/>
   </head>
   <body class="oj-web-applayout-body">
+    <!-- Shown until the app has loaded and checked the session (plain HTML: it needs no script) -->
+    <div class="fx-boot" id="boot" role="status" aria-live="polite">
+      <span class="factory-brand-mark fx-boot-mark" aria-hidden="true"></span>
+      <span class="fx-boot-name">OBDX Development Factory</span>
+      <span class="fx-spinner" aria-hidden="true"></span>
+      <span class="fx-boot-text">Loading the factory…</span>
+    </div>
     <div id="globalBody" class="oj-web-applayout-page">
 
       <div id="announce" tabindex="-1" class="send-off-screen" :aria-live="[[manner]]" aria-atomic="true">
@@ -39,6 +46,12 @@
               <span class="factory-brand-ai">Powered by AI</span>
             </span>
           </a>
+          <!-- Collapse / expand: a notch on the menu's edge beside the logo -->
+          <button type="button" class="factory-nav-notch" id="collapseSidebar" on-click="[[toggleCollapsed]]"
+                  :aria-label="[[sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar']]" :title="[[sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar']]"
+                  :aria-expanded="[[sidebarCollapsed() ? 'false' : 'true']]" aria-controls="sidebar">
+            <span class="factory-nav-notch-icon" aria-hidden="true"></span>
+          </button>
           <nav class="factory-nav" aria-label="Main menu">
             <h2 class="factory-nav-heading" id="navWorkHeading">Workflow</h2>
             <ul aria-labelledby="navWorkHeading">
@@ -81,11 +94,6 @@
             <a class="factory-nav-promo-go" href="?ojr=requirements" on-click="[[openNewRequirement]]" aria-label="Describe a new requirement">
               <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></a>
           </section>
-          <button type="button" class="factory-nav-collapse" id="collapseSidebar" on-click="[[toggleCollapsed]]"
-                  :aria-label="[[sidebarCollapsed() ? 'Expand the menu' : 'Collapse the menu']]">
-            <span class="factory-nav-icon factory-ico-collapse" aria-hidden="true"></span>
-            <span class="factory-nav-label">Collapse</span>
-          </button>
         </aside>
         <div class="factory-scrim" on-click="[[closeSidebar]]"></div>
 
@@ -168,6 +176,8 @@
                 </div>
               </oj-bind-if>
             </div>
+            <!-- Runs while a request the user started is open (services/busy) -->
+            <div :class="[[busy.barVisible() ? 'fx-progressbar is-on' : 'fx-progressbar']]" aria-hidden="true"></div>
           </header>
           <oj-bind-if test="[[updateBanner()]]">
             <div class="factory-update-banner" role="status" id="updateBanner">
@@ -343,6 +353,16 @@
       <oj-bind-if test="[[embedded]]">
       <oj-module role="main" class="oj-web-applayout-content" config="[[moduleAdapter.koObservableConfig]]">
       </oj-module>
+      </oj-bind-if>
+
+      <!-- An operation that must finish before anything else (services/busy.block) -->
+      <oj-bind-if test="[[busy.blocking()]]">
+        <div class="fx-overlay" role="alertdialog" aria-modal="true" aria-busy="true" aria-labelledby="fxOverlayText" tabindex="-1">
+          <div class="fx-overlay-card">
+            <span class="fx-spinner fx-spinner--lg" aria-hidden="true"></span>
+            <p class="fx-overlay-text" id="fxOverlayText" role="status"><oj-bind-text value="[[busy.blockMessage]]"></oj-bind-text></p>
+          </div>
+        </div>
       </oj-bind-if>
     </div>
 

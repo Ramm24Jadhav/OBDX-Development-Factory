@@ -115,6 +115,83 @@ changes and the code. Arrow keys move, Enter runs, Escape closes; `>` narrows to
 requirements and changes. `g` then a letter jumps to a page (G O overview, G R requirements, G H changes, ...), and `?`
 lists every shortcut. Single-letter shortcuts never fire while typing in a field.
 
+## Motion and interaction
+
+**Tokens** (`app.css`, "Motion and interaction"):
+
+| Token | Value | Used for |
+|---|---|---|
+| `--fx-dur-hover` | 140ms | hover and focus colour, border and shadow; also the general `--fx-duration` |
+| `--fx-dur-press` | 120ms | a button press (1px down, scale 0.985) |
+| `--fx-dur-pop` | 180ms | menus, popups, the notification panel, backdrops |
+| `--fx-dur-panel` | 240ms | the menu collapsing, cards lifting, carousel dots |
+| `--fx-dur-modal` | 260ms | dialogs, the command palette, the blocking overlay |
+| `--fx-dur-page` | 240ms | a page opening |
+| `--fx-stagger` | 40ms | summary cards following one another |
+
+Easings:
+- `--fx-ease-out` (entering and settling);
+- `--fx-ease-in-out` (moving between two states).
+
+Motion only uses `transform` and `opacity`. There are no bounces and no animations that loop for ever, except spinners and the progress bar while something is actually running. `prefers-reduced-motion: reduce` turns every animation and transition off. On touch screens (`hover: none`) cards do not lift.
+
+**Pages** rise in (6px, 240ms) when they open. The animation runs only when a page is inserted, so updates inside a page never replay it. **Popups** (menus, lists, the bell panel) drop in, and dialogs and the palette zoom in. They close at once, so nothing invisible is left blocking a click or holding focus.
+
+**Interactive cards** (`a.fx-card`, `button.fx-card`, `.fx-card[tabindex="0"]`, `.fx-card.is-interactive`) lift 2px on hover. Static cards do not move.
+
+## Loading and operation feedback (`js/services/busy.js`)
+
+Every request goes through `services/api.js`, which reports it to `services/busy` and releases it however it ends: success, an error answer, a network failure or an exception. The feedback follows from that:
+
+- **The button that started a request** shows a spinner in place of its label (its width stays) and ignores further clicks until the request settles, so nothing is sent twice. No page code is needed: it is the `.fx-btn` or icon button that was clicked when the request started.
+- **The progress bar** under the top bar runs while a request the user started (within 1.5 seconds of a click or key press) is open. Background polling does not move it.
+- **`busy.block(promise, message)`** covers the page with a message for operations that must finish before anything else:
+  - starting the factory (the start screen);
+  - signing in ("Signing in…");
+  - committing a change to SVN ("Committing the change to a new SVN branch…").
+
+  The page behind it is inert and the overlay takes focus. Overlapping blocks are counted, so the first to finish does not hide the second.
+- Spinners and the bar appear only after 150ms, so fast requests never flicker. Nothing is delayed to show an animation.
+- **Long jobs** (impact analysis, code generation, builds, imports) never block. Their pages show the real state from the server with `ui.status`:
+  - queued, in progress, needs review (awaiting approval), done, closed (cancelled) or failed;
+  - the live timeline and log where the server has them.
+
+## Navigation
+
+- **Collapse notch:** a round button on the menu's edge beside the logo collapses and expands the menu ("Collapse sidebar" or "Expand sidebar", with `aria-expanded`).
+  - The menu's width animates. The icons stay where they are and the labels fade, so nothing jumps, and the page widens or narrows with it.
+  - On tablets the menu starts as icons, and the notch opens it.
+  - On phones the menu is a drawer from the top bar's menu button, and the notch is hidden.
+- **Start screen:** while the app loads, a start screen with the logo and "Loading the factory…" shows instead of the unbound page.
+
+## Carousels and strips
+
+- **Carousels** (`ui.carousel()` with the `.fx-carousel` markup) are for card collections.
+  - Previous and Next buttons are disabled at each end.
+  - The dots are buttons that jump to their stop.
+  - When the track has focus, the arrow keys, Home and End move it.
+  - Touch, trackpad and mouse drag all scroll it, and it snaps to a card on release.
+  - It re-measures when its width changes (the window, or the menu collapsing).
+  - With fewer cards than fit, the buttons and dots disappear.
+- **Strips** (tab strips and steppers, `services/strips.js`, applied to every page automatically):
+  - they have no native scrollbar;
+  - the edge fades while more tabs are hidden past it;
+  - a mouse can drag them, and a focused tab scrolls into view.
+- **What stays as it is:**
+  - chip rows wrap instead of scrolling;
+  - tables, code, diffs and logs keep their own scrolling inside their box.
+
+## Illustrations, images and icons
+
+The screen designs (`design/design and implementation plan.docx`) are 23 flattened mockups, 1536 × 1024 pixels. There are no separate illustration, image or icon files in the document or the repository. Two mockups contain illustrations:
+
+| Mockup | Illustration | In the app |
+|---|---|---|
+| Sign-in (image 3) | A code editor with the OBDX tree, and Analyze → Generate → Validate tiles | `.factory-login-art` on the sign-in page, built from markup and CSS |
+| About (image 23) | A laptop and phone showing the factory, with four feature badges | `.factory-ab-art` on the About page, built from markup and CSS |
+
+Both are rebuilt rather than cut out of the mockups. A crop would be a 440-pixel raster: blurred on high-density screens, wrong in the dark theme, and showing sample text that does not match the factory. The other mockups' icons are a single stroke family (1.8px, round caps), which the factory's own mask icons (`factory-ico-*`, in the text colour) follow. The logo and "Powered by AI" come from the design system (`css/images/factory-logo.svg`). No asset was invented or substituted. If the original illustration files are available, `factory-login-art` and `factory-ab-art` are the two places they belong.
+
 ## Responsive design
 
 **Breakpoints** (content-driven, in `app.css`):

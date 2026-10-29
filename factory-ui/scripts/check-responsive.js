@@ -6,7 +6,7 @@
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-responsive.js --url http://localhost:8080
 //
 // Options: --pages overview,code   --sizes 375x667,1440x900   --out <folder for report.json and screenshots>
-//          --workspace <id>   --theme light|dark   --browser <path to msedge.exe or chrome>
+//          --workspace <id>   --theme light|dark   --reduced-motion 1   --browser <path to msedge.exe or chrome>
 // It only reads: it signs in and opens pages, and never saves or deletes anything. Exit code 1 when a defect is found.
 // No dependencies: it talks to the browser over the DevTools protocol with the small WebSocket client below.
 const fs = require('fs');
@@ -189,6 +189,9 @@ function measure() {
   out.heading = h1 ? h1.textContent.trim().slice(0, 50) : '';
   out.headingVisible = !!h1 && visible(h1) && h1.getBoundingClientRect().right <= vw + 1;
   out.signIn = !!document.querySelector('#loginUsername, .factory-login');
+  // How long the page entrance animates (0.01ms when the system asks for reduced motion)
+  const pageRoot = document.querySelector('.factory-page > *');
+  out.pageMotion = pageRoot ? getComputedStyle(pageRoot).animationDuration : '';
   return out;
 }
 
@@ -260,6 +263,7 @@ async function popupsInWindow() {
     return r.result.result.value;
   };
   await cdp('Runtime.enable'); await cdp('Network.enable'); await cdp('Page.enable');
+  if (args['reduced-motion']) { await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }); }
 
   const open = async (url) => { await cdp('Page.navigate', { url: url }); for (let i = 0; i < 60; i++) { await sleep(500); try { if (await run(() => !!(window.require && document.querySelector('.factory-shell, .factory-login, #loginUsername')))) { break; } } catch (e) { /* loading */ } } await sleep(1500); };
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });

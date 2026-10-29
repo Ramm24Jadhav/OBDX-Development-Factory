@@ -1,9 +1,10 @@
 /*
  * Small wrapper around fetch for calls to the factory backend (/api/...).
  * Rejects with an Error whose message comes from the backend's error body when available, and whose
- * status is the HTTP status code.
+ * status is the HTTP status code. Every request is reported to services/busy (the clicked button's spinner, the
+ * progress bar) and released however it ends.
  */
-define([], function () {
+define(['./busy'], function (busy) {
   /** The CSRF token the server keeps in the XSRF-TOKEN cookie; changes must send it back in a header. */
   function csrfToken() {
     const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
@@ -24,6 +25,7 @@ define([], function () {
       options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(body);
     }
+    const release = busy.request();
     return fetch('api/' + path, options).then(function (response) {
       if (response.status === 204) {
         return null;
@@ -41,7 +43,7 @@ define([], function () {
         }
         return data;
       });
-    });
+    }).finally(release);
   }
 
   return {

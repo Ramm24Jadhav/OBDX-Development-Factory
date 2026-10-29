@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
-  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', './services/busy', './services/strips', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, busy, strips, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -126,6 +126,18 @@ define(['knockout', './services/session', './services/updates', './services/dash
         }
         if (sideNav.dataset.edges) { return; }
         sideNav.dataset.edges = '1';
+        // Phones: a swipe to the left closes the open menu drawer (a mostly vertical swipe still scrolls it)
+        const drawer = sideNav.closest('.factory-sidebar');
+        let touchX = null;
+        let touchY = null;
+        drawer.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; }, { passive: true });
+        drawer.addEventListener('touchend', (e) => {
+          if (touchX === null || !this.sidebarOpen()) { return; }
+          const dx = e.changedTouches[0].clientX - touchX;
+          const dy = e.changedTouches[0].clientY - touchY;
+          touchX = null;
+          if (dx < -60 && Math.abs(dx) > Math.abs(dy) * 1.5) { this.sidebarOpen(false); }
+        }, { passive: true });
         sideNav.addEventListener('scroll', () => navEdges(sideNav), { passive: true });
         window.addEventListener('resize', () => navEdges(sideNav));
         if (window.ResizeObserver) {
@@ -235,6 +247,25 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.signedIn.subscribe((value) => { if (value) { this.watchNav(); } });
       if (this.signedIn()) { this.watchNav(); }
       this.sessionChecked = session.checked;
+
+      // Loading feedback (services/busy): the progress bar, button spinners and the blocking overlay. While the overlay
+      // shows, the page behind it cannot be used or focused.
+      this.busy = busy;
+      busy.blocking.subscribe((on) => {
+        const shell = document.querySelector('.factory-shell, .factory-login');
+        if (shell) { shell.inert = on; }
+        if (on) { window.setTimeout(() => { const o = document.querySelector('.fx-overlay'); if (o) { o.focus(); } }, 0); }
+      });
+      // The start screen (index.html) fades once the page is bound and the session is known; it never stays longer than
+      // 15 seconds, so a slow or failed check still shows the page and its message.
+      this.markReady = () => {
+        const reveal = () => document.body.classList.add('fx-ready');
+        if (session.checked()) { window.setTimeout(reveal, 0); } else {
+          const sub = session.checked.subscribe((v) => { if (v) { sub.dispose(); window.setTimeout(reveal, 0); } });
+          window.setTimeout(reveal, 15000);
+        }
+        strips.init();
+      };
       this.authConfig = session.config;
       this.loginUsername = ko.observable('');
       this.loginPassword = ko.observable('');
@@ -245,7 +276,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.signIn = () => {
         this.signingIn(true);
         this.loginError('');
-        session.login(this.loginUsername(), this.loginPassword())
+        busy.block(session.login(this.loginUsername(), this.loginPassword()), 'Signing in…')
           .then(() => this.loginPassword(''))
           .catch((error) => this.loginError(error.message))
           .finally(() => this.signingIn(false));

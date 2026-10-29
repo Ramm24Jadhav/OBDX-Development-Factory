@@ -183,9 +183,24 @@ define(['knockout', './preferences'], function (ko, preferences) {
       const smooth = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       track.scrollBy({ left: dir * step, behavior: smooth ? 'smooth' : 'auto' });
     };
+    const goTo = (index) => {
+      if (!track) {
+        return;
+      }
+      const card = track.firstElementChild;
+      const step = card ? card.getBoundingClientRect().width + 12 : track.clientWidth;
+      const smooth = !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      track.scrollTo({ left: index * step, behavior: smooth ? 'smooth' : 'auto' });
+    };
     return {
       canPrev: canPrev, canNext: canNext, position: position, count: count,
-      dots: ko.pureComputed(() => Array.from({ length: count() }, (x, i) => ({ css: 'fx-carousel-dot' + (i === position() ? ' is-current' : '') }))),
+      // Dots are buttons: each one shows its stop
+      dots: ko.pureComputed(() => Array.from({ length: count() }, (x, i) => ({
+        css: 'fx-carousel-dot' + (i === position() ? ' is-current' : ''),
+        label: 'Show from card ' + (i + 1),
+        current: i === position() ? 'true' : null,
+        go: () => goTo(i)
+      }))),
       prev: () => scroll(-1),
       next: () => scroll(1),
       attach: (element) => {
@@ -197,9 +212,16 @@ define(['knockout', './preferences'], function (ko, preferences) {
         track.addEventListener('keydown', (e) => {
           if (e.key === 'ArrowRight') { e.preventDefault(); scroll(1); }
           if (e.key === 'ArrowLeft') { e.preventDefault(); scroll(-1); }
+          if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+          if (e.key === 'End') { e.preventDefault(); goTo(track.children.length); }
         });
         if (!attached) {
-          window.addEventListener('resize', update);
+          // The track also changes width when the menu collapses or a panel opens, not only with the window
+          if (window.ResizeObserver) {
+            new window.ResizeObserver(update).observe(track);
+          } else {
+            window.addEventListener('resize', update);
+          }
           attached = true;
         }
         new MutationObserver(update).observe(track, { childList: true });

@@ -293,7 +293,7 @@
             </template></oj-bind-for-each>
           </div>
           <button type="button" class="fx-carousel-btn fx-carousel-btn--next" aria-label="Next components" on-click="[[carousel.next]]" :disabled="[[!carousel.canNext()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
-          <div class="fx-carousel-dots" aria-hidden="true"><oj-bind-for-each data="[[carousel.dots]]" as="d"><template><span :class="[[d.data.css]]"></span></template></oj-bind-for-each></div>
+          <div class="fx-carousel-dots" aria-hidden="true"><oj-bind-for-each data="[[carousel.dots]]" as="d"><template><button type="button" tabindex="-1" :class="[[d.data.css]]" :aria-label="[[d.data.label]]" :aria-current="[[d.data.current]]" on-click="[[d.data.go]]"></button></template></oj-bind-for-each></div>
       </div>
       <oj-bind-if test="[[componentCards().length === 0]]">
         <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span></span><strong>No reusable components yet</strong>

@@ -5,8 +5,8 @@
  * build, deliver as a patch or an SVN branch, close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests) {
+        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/busy', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
@@ -182,7 +182,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.busy(true);
-        api.post(base() + '/deliver').then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
+        busyService.block(api.post(base() + '/deliver'), 'Committing the change to a new SVN branch…').then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
       });
       this.build = () => api.post(base() + '/build').then(done('Jenkins build started.')).catch(failed);
       this.checkAgain = () => api.post(base() + '/check').then(done('Quick checks run again.')).catch(failed);
