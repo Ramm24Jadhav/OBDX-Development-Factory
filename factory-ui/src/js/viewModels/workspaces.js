@@ -4,10 +4,10 @@
  * the name, bank and OBDX version from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
-        '../services/pageRequests', 'ojs/ojarraydataprovider',
+        '../services/pageRequests', '../services/ui', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
         'ojs/ojbutton', 'ojs/ojvalidationgroup', 'ojs/ojswitch', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ArrayDataProvider) {
+  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, ArrayDataProvider) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
     const WEEK_MS = 7 * 24 * 3600 * 1000;
     const STATUS = {
@@ -15,6 +15,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       importing: { text: 'In Progress', css: 'factory-ws-status factory-ws-status-amber', icon: 'factory-nav-icon factory-ico-clock' },
       failed: { text: 'Check Required', css: 'factory-ws-status factory-ws-status-red', icon: 'factory-nav-icon factory-ico-alert' },
       new: { text: 'Not imported', css: 'factory-ws-status factory-ws-status-grey', icon: 'factory-nav-icon factory-ico-clock' }
+    };
+    // The registry's status pills
+    const REGISTRY = { ready: ui.pill('Active', 'green'), importing: ui.pill('Indexing', 'amber'), failed: ui.pill('Error', 'red'), new: ui.pill('Not imported', 'grey') };
+    // A long URL on one line: its start and its end, which tells workspaces apart
+    const midUrl = (url, max) => {
+      const text = url || '';
+      const limit = max || 46;
+      return text.length <= limit ? text : text.slice(0, 12) + '…' + text.slice(text.length - (limit - 13));
+    };
+    const workspaceCode = (id) => 'WS-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
+    const ROLE_TEXT = (role) => role.charAt(0) + role.slice(1).toLowerCase();
+    const stopping = (handler) => (event) => {
+      if (event && event.stopPropagation) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      handler();
     };
 
     function WorkspacesViewModel() {
@@ -179,13 +196,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const state = dashboard.codeState(d).key;
         const job = d.imports.length ? d.imports[0] : null;
         return {
-          id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, svnUrl: w.svnUrl || '', state: state,
+          id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, svnUrl: w.svnUrl || '', shortUrl: midUrl(w.svnUrl, 48), state: state,
           status: STATUS[state], checked: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never',
           canDelete: session.isAdmin(),
-          open: dashboard.open('code', w.id),
-          edit: dashboard.open('code', w.id),
-          remove: () => this.deleteWorkspace(w.id),
-          select: () => this.selectedWsId(w.id)
+          open: stopping(dashboard.open('code', w.id)),
+          edit: stopping(dashboard.open('code', w.id)),
+          remove: stopping(() => this.deleteWorkspace(w.id)),
+          select: () => this.openRegistry(w.id)
         };
       }).filter((r) => {
         const text = this.filterText().trim().toLowerCase();
@@ -236,6 +253,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.selectedWsId = ko.observable(null);
       this.selectWs = (id) => () => this.selectedWsId(id);
       const wsDetails = ko.observable({});
+      // The six stack facts of a workspace, from its project profile and Jenkins settings
+      const stackOf = (extra) => {
+        const fact = (key) => {
+          const f = extra.profile ? extra.profile.facts.find((x) => x.key === key) : null;
+          return f && f.value ? f.value : '';
+        };
+        const or = (value) => value || 'Not detected';
+        return [
+          { label: 'Frontend', value: or(fact('ui.architecture')), sub: fact('ui.jetVersion'), icon: 'monitor', tone: 'red' },
+          { label: 'Backend', value: or(fact('backend.javaVersion') || fact('backend.frameworks')), sub: fact('backend.javaVersion') ? fact('backend.frameworks') : '', icon: 'code', tone: 'amber' },
+          { label: 'Database', value: or(fact('data.databaseType')), sub: fact('data.tableNaming'), icon: 'cube', tone: 'blue' },
+          { label: 'Build', value: or(fact('backend.buildTool')), sub: fact('backend.packaging'), icon: 'cog', tone: 'amber' },
+          { label: 'App Server', value: or(fact('backend.appServer')), sub: '', icon: 'monitor', tone: 'violet' },
+          { label: 'CI/CD', value: extra.jenkins && extra.jenkins.url ? 'Jenkins' : 'Not set up', sub: extra.jenkins && extra.jenkins.jobs ? String(extra.jenkins.jobs) : '', icon: 'flask', tone: 'green' }
+        ].map((s) => Object.assign(s, { iconClass: 'factory-nav-icon factory-ico-' + s.icon + ' factory-ws3-tone-' + s.tone }));
+      };
       this.selectedWs = ko.pureComputed(() => {
         const entry = data().find((d) => d.workspace.id === this.selectedWsId()) || data()[0];
         if (!entry) {
@@ -244,49 +277,56 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const w = entry.workspace;
         const extra = wsDetails()[w.id] || {};
         const inv = extra.inventory ? extra.inventory.summary : null;
-        const fact = (key) => {
-          const f = extra.profile ? extra.profile.facts.find((x) => x.key === key) : null;
-          return f && f.value ? f.value : 'Not detected';
-        };
         const job = entry.imports.length ? entry.imports[0] : null;
         const index = entry.index;
+        const running = job && (job.status === 'RUNNING' || job.status === 'QUEUED');
         const pct = index && index.chunks ? Math.round(100 * index.chunksWithEmbedding / index.chunks) : 0;
+        const state = dashboard.codeState(entry).key;
+        const members = (extra.members || []).map((m) => ({
+          initials: ui.initials(m.displayName), displayName: m.displayName, roleText: ROLE_TEXT(m.role), role: m.role,
+          name: m.displayName + ' (' + m.role.toLowerCase() + ')'
+        }));
+        const lead = members.find((m) => m.role === 'LEAD') || null;
         return {
-          id: w.id, name: w.name, bank: w.bankName, version: 'OBDX ' + w.obdxVersion, svnUrl: w.svnUrl || 'Not set', created: new Date(w.createdAt).toLocaleString(),
-          lastIndexed: job ? new Date(job.finishedAt || job.createdAt).toLocaleString() : 'Never', status: STATUS[dashboard.codeState(entry).key],
-          members: (extra.members || []).map((m) => ({ initials: m.displayName.split(/\s+/).map((p) => p.charAt(0)).join('').slice(0, 2).toUpperCase(), name: m.displayName + ' (' + m.role.toLowerCase() + ')' })),
+          id: w.id, name: w.name, bank: w.bankName, version: 'OBDX ' + w.obdxVersion, code: workspaceCode(w.id),
+          description: w.bankName + ' code base on OBDX ' + w.obdxVersion,
+          svnUrl: w.svnUrl || 'Not set', shortUrl: midUrl(w.svnUrl, 40), created: ui.when(w.createdAt),
+          lastIndexed: job ? ui.when(job.finishedAt || job.createdAt) : 'Never', status: STATUS[state], pill: REGISTRY[state],
+          svnUser: w.svnUsername || 'None (no sign-in)', svnPassword: w.svnPasswordSet ? 'Saved' : 'Not saved',
+          revision: w.indexedRevision ? 'r' + w.indexedRevision : 'Not indexed',
+          lastImport: job ? ui.when(job.finishedAt || job.createdAt) + ' (' + job.status.toLowerCase() + ')' : 'Never',
+          importMessage: job && job.message ? job.message : 'No code import yet.',
+          owner: lead ? { initials: lead.initials, name: lead.displayName } : null,
+          members: members, memberFaces: members.slice(0, 3), moreMembers: Math.max(0, members.length - 3),
           stats: [
-            { label: 'Modules', value: inv ? inv.modules : '–' }, { label: 'UI Screens', value: inv ? inv.screens : '–' },
-            { label: 'APIs', value: inv ? inv.endpoints : '–' }, { label: 'Indexed Files', value: index ? index.files : '–' },
-            { label: 'Requirements', value: entry.requirements.length }, { label: 'Screen Designs', value: entry.designs.length }
+            { label: 'Total Modules', value: inv ? inv.modules : '–' }, { label: 'UI Screens', value: inv ? inv.screens : '–' },
+            { label: 'APIs', value: inv ? inv.endpoints : '–' }, { label: 'Form Fields', value: inv ? inv.fields : '–' },
+            { label: 'Indexed Files', value: index ? index.files : '–' }, { label: 'Requirements', value: entry.requirements.length }
           ],
-          stack: [
-            { label: 'Frontend', value: fact('ui.architecture'), sub: fact('ui.jetVersion'), icon: 'monitor' },
-            { label: 'Backend', value: fact('backend.javaVersion'), sub: fact('backend.frameworks'), icon: 'code' },
-            { label: 'Database', value: fact('data.databaseType'), sub: '', icon: 'cube' },
-            { label: 'Build', value: fact('backend.buildTool'), sub: '', icon: 'cog' },
-            { label: 'App Server', value: fact('backend.appServer'), sub: '', icon: 'cube' },
-            { label: 'CI / CD', value: extra.jenkins ? 'Jenkins' : 'Not set up', sub: extra.jenkins ? extra.jenkins.jobs : '', icon: 'flask' }
-          ].map((s) => Object.assign(s, { iconClass: 'factory-nav-icon factory-ico-' + s.icon })),
+          stack: stackOf(extra),
           indexing: {
             pct: pct, style: { background: 'conic-gradient(#16a34a ' + pct + '%, #e5eaf1 0)' },
             rows: [
               { label: 'Files indexed', value: index ? index.files : 0, dot: 'factory-step-dot factory-dot-green' },
               { label: 'Searchable pieces', value: index ? index.chunks : 0, dot: 'factory-step-dot factory-dot-blue' },
               { label: 'With embeddings', value: index ? index.chunksWithEmbedding : 0, dot: 'factory-step-dot factory-dot-violet' },
+              { label: 'UI screens discovered', value: inv ? inv.screens : 0, dot: 'factory-step-dot factory-dot-red' },
               { label: 'Indexed revision', value: w.indexedRevision ? 'r' + w.indexedRevision : '–', dot: 'factory-step-dot factory-dot-amber' }
             ],
-            text: job && (job.status === 'RUNNING' || job.status === 'QUEUED') ? 'Indexing...' : 'Code search by meaning covers ' + pct + '% of the code'
+            title: running ? 'Indexing...' : (job ? (job.status === 'FAILED' ? 'Last indexing failed' : 'Indexing complete') : 'Not indexed yet'),
+            text: running ? 'Processing source files and extracting components' : 'Code search by meaning covers ' + pct + '% of the code'
           },
           reindex: () => api.post('workspaces/' + w.id + '/imports').then(() => dashboard.load()).catch(showError),
           edit: dashboard.open('code', w.id), canReindex: session.can(w.id, 'MANAGE_CODE')
         };
       });
       this.selectedWsId.subscribe((id) => this.loadWsDetails(id));
+      const pending = {};
       this.loadWsDetails = (id) => {
-        if (!id || wsDetails()[id]) {
+        if (!id || wsDetails()[id] || pending[id]) {
           return;
         }
+        pending[id] = true;
         Promise.all([api.get('workspaces/' + id + '/profile').catch(() => null), api.get('workspaces/' + id + '/inventory').catch(() => null),
           api.get('workspaces/' + id + '/members').catch(() => []), api.get('workspaces/' + id + '/jenkins').catch(() => null)])
           .then(([profile, inventory, members, jenkins]) => { const m = Object.assign({}, wsDetails()); m[id] = { profile: profile, inventory: inventory, members: members, jenkins: jenkins }; wsDetails(m); });
@@ -294,11 +334,178 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       data.subscribe((list) => { if (!this.selectedWsId() && list.length) { this.selectedWsId(list[0].workspace.id); } });
 
       this.quickActions = [
-        { title: 'Browse Code', text: 'Explore repositories and search code', icon: 'factory-nav-icon factory-ico-code', open: dashboard.open('code') },
-        { title: 'View Profile', text: 'Detected stack and conventions', icon: 'factory-nav-icon factory-ico-doc', open: dashboard.open('profile') },
-        { title: 'Add Requirement', text: 'Upload BRD/FSD or describe change', icon: 'factory-nav-icon factory-ico-list', open: dashboard.open('requirements') },
-        { title: 'Open Designer', text: 'Design and review screens', icon: 'factory-nav-icon factory-ico-design', open: dashboard.open('designer') }
-      ];
+        { title: 'Browse Code', text: 'Explore repositories and search code', icon: 'code', tone: 'blue', open: dashboard.open('code') },
+        { title: 'View Profile', text: 'Detected stack and conventions', icon: 'doc', tone: 'blue', open: dashboard.open('profile') },
+        { title: 'Add Requirement', text: 'Upload BRD/FSD or describe change', icon: 'list', tone: 'violet', open: dashboard.open('requirements') },
+        { title: 'Open Designer', text: 'Design and review screens', icon: 'design', tone: 'violet', open: dashboard.open('designer') }
+      ].map((q, i) => Object.assign(q, {
+        icon: 'factory-nav-icon factory-ico-' + q.icon + ' factory-ws3-q-' + q.tone,
+        css: 'factory-ws-quick-card' + (i === 0 ? ' factory-ws3-quick-first' : '')
+      }));
+
+      // Screen 17, the workspace registry: opened by selecting a workspace or the registry link
+      this.view = ko.observable('main');
+      this.showMain = (event) => {
+        if (event && event.preventDefault) {
+          event.preventDefault();
+        }
+        this.view('main');
+      };
+      this.openRegistry = (id) => {
+        if (id && typeof id === 'string') {
+          this.selectedWsId(id);
+        } else if (id && id.preventDefault) {
+          id.preventDefault();
+        }
+        data().forEach((d) => this.loadWsDetails(d.workspace.id));
+        this.view('registry');
+        window.scrollTo(0, 0);
+      };
+      this.registerWorkspace = () => {
+        this.view('main');
+        window.setTimeout(focusCreate, 60);
+      };
+      this.regTab = ko.observable('workspaces');
+      this.regTabs = ui.tabs(this.regTab, [
+        { value: 'workspaces', label: 'Workspaces', icon: 'folder' },
+        { value: 'repositories', label: 'Repository Configuration', icon: 'branch' },
+        { value: 'indexing', label: 'Indexing & Discovery', icon: 'search' },
+        { value: 'stack', label: 'Project Stack', icon: 'cube' },
+        { value: 'access', label: 'Access & Permissions', icon: 'users' }
+      ]);
+      this.detailTab = ko.observable('overview');
+      this.detailTabs = ui.tabs(this.detailTab, [
+        { value: 'overview', label: 'Overview' },
+        { value: 'repositories', label: 'Repositories', count: 1 },
+        { value: 'stack', label: 'Project Stack' },
+        { value: 'indexing', label: 'Indexing' },
+        { value: 'access', label: 'Access Control' }
+      ]);
+
+      const MONTH_MS = 30 * 24 * 3600 * 1000;
+      this.regKpis = ko.pureComputed(() => {
+        const d = data();
+        const states = d.map((e) => dashboard.codeState(e).key);
+        const n = (key) => states.filter((s) => s === key).length;
+        const thisMonth = d.filter((e) => Date.now() - new Date(e.workspace.createdAt).getTime() < MONTH_MS).length;
+        const repositories = new Set(d.map((e) => e.workspace.svnUrl).filter(Boolean)).size;
+        const kpi = (label, value, sub, icon, tone, subCss, status) => ({
+          label: label, value: value, sub: sub, iconCss: 'factory-kpi-icon factory-ov2-icon-' + tone, iconClass: 'factory-nav-icon factory-ico-' + icon,
+          css: 'factory-kpi-sub' + (subCss ? ' factory-' + subCss : ''),
+          open: () => { this.regTab('workspaces'); this.regStatus(status || ''); }
+        });
+        return [
+          kpi('Total Workspaces', d.length, '↑ ' + thisMonth + ' this month', 'folder', 'blue', 'up'),
+          kpi('Active', n('ready'), (d.length ? Math.round(100 * n('ready') / d.length) : 0) + '% of total', 'check', 'green', '', 'ready'),
+          kpi('Indexing', n('importing'), 'In progress', 'clock', 'amber', '', 'importing'),
+          kpi('Issues', n('failed'), 'Needs attention', 'alert', 'red', n('failed') ? 'bad' : '', 'failed'),
+          kpi('Total Repositories', repositories, 'Across all workspaces', 'cube', 'violet', '')
+        ];
+      });
+
+      // The registry table: search, status and owner filters, check boxes and a footer
+      this.regText = ko.observable('');
+      this.regStatus = ko.observable('');
+      this.regOwner = ko.observable('');
+      this.regTextInput = ui.value(this.regText);
+      this.regStatusChange = ui.value(this.regStatus);
+      this.regOwnerChange = ui.value(this.regOwner);
+      this.regReset = () => { this.regText(''); this.regStatus(''); this.regOwner(''); };
+      this.checkedIds = ko.observableArray([]);
+      const ownerOf = (id) => {
+        const members = (wsDetails()[id] || {}).members || [];
+        const lead = members.find((m) => m.role === 'LEAD') || null;
+        return lead ? lead.displayName : '';
+      };
+      this.owners = ko.pureComputed(() => Array.from(new Set(data().map((d) => ownerOf(d.workspace.id)).filter(Boolean))).sort());
+      const regBase = ko.pureComputed(() => data().map((d) => {
+        const w = d.workspace;
+        const extra = wsDetails()[w.id] || {};
+        const inv = extra.inventory ? extra.inventory.summary : null;
+        const state = dashboard.codeState(d).key;
+        const job = d.imports.length ? d.imports[0] : null;
+        const indexed = job ? ui.when(job.finishedAt || job.createdAt) : '';
+        const cut = indexed.lastIndexOf(', ');
+        const members = extra.members || [];
+        return {
+          id: w.id, name: w.name, code: workspaceCode(w.id), svnUrl: w.svnUrl || '', shortUrl: midUrl(w.svnUrl, 34), state: state, pill: REGISTRY[state],
+          indexedDay: indexed ? (cut > 0 ? indexed.slice(0, cut) : indexed) : 'Never', indexedTime: cut > 0 ? indexed.slice(cut + 2) : '',
+          owner: ownerOf(w.id), ownerName: ownerOf(w.id) || 'No lead assigned',
+          memberText: members.length ? members.map((m) => m.displayName + ' (' + ROLE_TEXT(m.role) + ')').join(', ') : 'Administrators only',
+          svnUser: w.svnUsername || 'None (no sign-in)', svnPassword: w.svnPasswordSet ? 'Saved' : 'Not saved',
+          revision: w.indexedRevision ? 'r' + w.indexedRevision : 'Not indexed', lastImport: job ? ui.when(job.finishedAt || job.createdAt) + ' (' + job.status.toLowerCase() + ')' : 'Never',
+          files: d.index ? d.index.files : 0, chunks: d.index ? d.index.chunks : 0, embedded: d.index ? d.index.chunksWithEmbedding : 0,
+          modules: inv ? inv.modules : '–', screens: inv ? inv.screens : '–', apis: inv ? inv.endpoints : '–',
+          stack: stackOf(extra),
+          canDelete: session.isAdmin(),
+          edit: dashboard.open('code', w.id)
+        };
+      }));
+      this.regAll = regBase;
+      this.regRows = ko.pureComputed(() => regBase().filter((r) => {
+        const text = this.regText().trim().toLowerCase();
+        return (!text || (r.name + ' ' + r.code + ' ' + r.svnUrl).toLowerCase().indexOf(text) >= 0)
+          && (!this.regStatus() || r.state === this.regStatus())
+          && (!this.regOwner() || r.owner === this.regOwner());
+      }).map((r) => Object.assign({}, r, {
+        css: 'factory-clickable' + (this.selectedWs() && this.selectedWs().id === r.id ? ' factory-row-sel' : ''),
+        checked: this.checkedIds().indexOf(r.id) >= 0,
+        toggle: (event) => {
+          event.stopPropagation();
+          if (event.target.checked) {
+            this.checkedIds.push(r.id);
+          } else {
+            this.checkedIds.remove(r.id);
+          }
+        },
+        select: () => this.selectedWsId(r.id),
+        menu: (event) => this.rowAction(event.detail.selectedValue, r.id)
+      })));
+      this.checkedCount = ko.pureComputed(() => this.checkedIds().length);
+      this.allChecked = ko.pureComputed(() => this.regRows().length > 0 && this.regRows().every((r) => r.checked));
+      this.toggleAll = (event) => this.checkedIds(event.target.checked ? this.regRows().map((r) => r.id) : []);
+      this.clearChecked = () => this.checkedIds([]);
+      this.regFooter = ko.pureComputed(() => {
+        const n = this.regRows().length;
+        return n ? 'Showing 1 to ' + n + ' of ' + n + ' workspace' + (n === 1 ? '' : 's') : 'Showing 0 workspaces';
+      });
+      this.rowAction = (action, id) => {
+        if (action === 'delete') {
+          this.deleteWorkspace(id);
+        } else if (action === 'copy') {
+          const entry = data().find((d) => d.workspace.id === id);
+          if (entry && navigator.clipboard) {
+            navigator.clipboard.writeText(entry.workspace.svnUrl || '').catch(() => null);
+          }
+        } else {
+          dashboard.open(action === 'edit' ? 'code' : action, id)();
+        }
+      };
+      this.detailMenu = (event) => this.selectedWs() && this.rowAction(event.detail.selectedValue, this.selectedWs().id);
+      this.copyUrl = () => this.selectedWs() && this.rowAction('copy', this.selectedWs().id);
+      this.openProfile = (event) => { event.preventDefault(); dashboard.open('profile', this.selectedWs() ? this.selectedWs().id : undefined)(); };
+      this.openCode = (event) => { event.preventDefault(); dashboard.open('code', this.selectedWs() ? this.selectedWs().id : undefined)(); };
+
+      // Recent activity in the registry, with dates
+      this.regActivity = ko.pureComputed(() => {
+        const items = [];
+        data().forEach((d) => {
+          const w = d.workspace;
+          items.push({ css: 'factory-ws-dot factory-ws-dot-violet', icon: 'factory-nav-icon factory-ico-cube', text: 'Workspace ' + w.name + ' registered', at: w.createdAt });
+          d.imports.forEach((j) => {
+            const done = j.status === 'SUCCEEDED';
+            const failed = j.status === 'FAILED';
+            items.push({
+              css: 'factory-ws-dot ' + (done ? 'factory-ws-dot-green' : (failed ? 'factory-ws-dot-amber' : 'factory-ws-dot-blue')),
+              icon: 'factory-nav-icon ' + (done ? 'factory-ico-check' : (failed ? 'factory-ico-alert' : 'factory-ico-refresh')),
+              text: done ? w.name + ' indexed successfully (' + j.filesIndexed + ' files)' : (failed ? 'Indexing of ' + w.name + ' failed' : 'Indexing of ' + w.name + ' started'),
+              at: j.finishedAt || j.createdAt
+            });
+          });
+          d.requirements.forEach((r) => items.push({ css: 'factory-ws-dot factory-ws-dot-violet', icon: 'factory-nav-icon factory-ico-doc', text: 'Requirement "' + r.title + '" updated in ' + w.name, at: r.updatedAt }));
+        });
+        return items.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5).map((i) => Object.assign(i, { date: ui.when(i.at) }));
+      });
 
       const load = () => Promise.all([dashboard.load(), workspaceSelection.load()]).catch(showError);
 

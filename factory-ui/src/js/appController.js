@@ -32,25 +32,26 @@ define(['knockout', './services/session', './services/updates', './services/dash
       // that stays highlighted for a page opened from another one.
       let navData = [
         { path: '', redirect: preferences.landing() || 'overview' },
-        { path: 'overview', detail: { label: 'Home', icon: 'home', group: 'work' } },
+        { path: 'overview', detail: { label: 'Overview', icon: 'home', group: 'work' } },
         { path: 'workspaces', detail: { label: 'Workspaces', icon: 'folder', group: 'work' } },
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'work' } },
         { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'work' } },
         { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'work' } },
-        { path: 'designer', detail: { label: 'Visual Designer', icon: 'design', group: 'work' } },
+        { path: 'designer', detail: { label: 'Designer', icon: 'design', group: 'work' } },
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'work' } },
-        { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'work' } },
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'work' } },
-        { path: 'models', detail: { label: 'Models & AI Providers', icon: 'chip', group: 'work' } },
-        { path: 'agents', detail: { label: 'Agent Runs', icon: 'robot', group: 'work' } },
-        { path: 'admin', detail: { label: 'Administration', icon: 'cog', group: 'setup', adminOnly: true } },
-        { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'setup' } },
-        { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'setup' } },
-        { path: 'packs', detail: { label: 'Version Packs', icon: 'cube', group: 'setup' } },
-        { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'setup' } },
-        { path: 'notifications', detail: { label: 'Notifications', icon: 'bell', group: 'setup' } },
-        { path: 'account', detail: { label: 'Account', icon: 'user', group: 'setup' } },
-        { path: 'about', detail: { label: 'About', icon: 'info', group: 'setup' } },
+        { path: 'models', detail: { label: 'Models', icon: 'chip', group: 'work' } },
+        { path: 'build', detail: { label: 'Build & Test', icon: 'flask', group: 'work' } },
+        { path: 'agents', detail: { label: 'Task History', icon: 'robot', group: 'work' } },
+        { path: 'admin', detail: { label: 'Users & Access', icon: 'users', group: 'admin', adminOnly: true } },
+        { path: 'packs', detail: { label: 'Version Packs', icon: 'cube', group: 'admin' } },
+        { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'admin' } },
+        { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'admin' } },
+        { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'admin' } },
+        { path: 'account', detail: { label: 'Settings', icon: 'cog', group: 'admin' } },
+        // Opened from the top bar: the bell, Help and the user menu
+        { path: 'notifications', detail: { label: 'Notifications', hidden: true } },
+        { path: 'about', detail: { label: 'About', hidden: true } },
         // Opened from the Code and Changes pages
         { path: 'knowledge', detail: { label: 'Knowledge Explorer', hidden: true, parent: 'code' } },
         { path: 'impact', detail: { label: 'Impact Analysis', hidden: true, parent: 'changes' } },
@@ -96,7 +97,22 @@ define(['knockout', './services/session', './services/updates', './services/dash
         }
       })));
       this.workNav = navGroup('work');
-      this.setupNav = navGroup('setup');
+      this.adminNav = navGroup('admin');
+      // The Administration group opens and closes; it is open while one of its pages is shown.
+      const storedAdminOpen = (() => {
+        try { return window.localStorage.getItem('factory.adminOpen') !== '0'; } catch (e) { return true; }
+      })();
+      this.adminOpen = ko.observable(storedAdminOpen);
+      this.adminOpen.subscribe((value) => {
+        try { window.localStorage.setItem('factory.adminOpen', value ? '1' : '0'); } catch (e) { /* not kept */ }
+      });
+      this.toggleAdminOpen = () => this.adminOpen(!this.adminOpen());
+      this.selection.path.subscribe((path) => {
+        const route = navData.find((r) => r.path === path);
+        if (route && route.detail && route.detail.group === 'admin') {
+          this.adminOpen(true);
+        }
+      });
       this.pageTitle = ko.pureComputed(() => {
         const route = navData.find((r) => r.path === this.selection.path());
         return route && route.detail ? route.detail.label : '';
@@ -184,6 +200,18 @@ define(['knockout', './services/session', './services/updates', './services/dash
         event.preventDefault();
         router.go({ path: 'about' });
       };
+      this.openNotifications = (event) => {
+        event.preventDefault();
+        this.bellOpen(false);
+        router.go({ path: 'notifications' });
+      };
+      this.openHome = (event) => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+          return;
+        }
+        event.preventDefault();
+        router.go({ path: 'overview' });
+      };
 
       // Sign-in: pages show only for a signed-in user, except the preview and customer review pages (embedded).
       this.signedIn = ko.pureComputed(() => session.user() !== null);
@@ -202,6 +230,12 @@ define(['knockout', './services/session', './services/updates', './services/dash
           .catch((error) => this.loginError(error.message))
           .finally(() => this.signingIn(false));
       };
+      this.loginTabLabel = ko.pureComputed(() => (this.authConfig() && this.authConfig().mode === 'ldap' ? 'Bank Directory' : 'Username & Password'));
+      this.loginVersion = ko.pureComputed(() => {
+        const v = this.authConfig() && this.authConfig().version;
+        const m = v ? /^(\d+)\.(\d+)/.exec(v) : null;
+        return m ? 'v' + m[1] + '.' + m[2] : '';
+      });
       this.loginHint = ko.pureComputed(() => (this.authConfig() && this.authConfig().mode === 'ldap'
         ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.'));
       // Update banner for administrators: checked after sign-in and every 30 minutes.
@@ -220,6 +254,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
           router.go({ path: 'account' });
         } else if (value === 'about') {
           router.go({ path: 'about' });
+        } else if (value === 'notifications') {
+          router.go({ path: 'notifications' });
         }
       };
 

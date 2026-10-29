@@ -13,6 +13,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     const count = (list, test) => list.filter(test).length;
     const all = (data, key) => data.reduce((sum, d) => sum.concat(d[key]), []);
     const shortId = (id) => 'REQ-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
+    // The end of a code location, which tells workspaces apart: ".../bank-a-22/trunk"
+    const shortPath = (url) => {
+      const parts = (url || '').replace(/^file:\/\/\/?/, '').split(/[\\/]/).filter(Boolean);
+      return parts.length > 3 ? '…/' + parts.slice(-3).join('/') : parts.join('/');
+    };
 
     function OverviewViewModel() {
       const data = dashboard.data;
@@ -59,9 +64,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const w = d.workspace;
         const job = d.imports.length ? d.imports[0] : null;
         const updated = job ? (job.finishedAt || job.createdAt) : w.createdAt;
+        const when = dashboard.when(updated) || '';
+        const cut = when.lastIndexOf(', ');
         return {
-          id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, location: w.svnUrl || '',
-          status: CODE[dashboard.codeState(d).key], updated: dashboard.when(updated), at: updated,
+          id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, location: w.svnUrl || '', shortLocation: shortPath(w.svnUrl),
+          status: CODE[dashboard.codeState(d).key], updatedDay: cut > 0 ? when.slice(0, cut) : when, updatedTime: cut > 0 ? when.slice(cut + 2) : '', at: updated,
           open: dashboard.open('code', w.id),
           menu: (event) => dashboard.open(event.detail.selectedValue, w.id)()
         };
@@ -118,7 +125,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           row('Requirements', 'doc', 'blue', count(requirements, (r) => r.status === 'APPROVED'), requirements.length),
           row('Screens', 'monitor', 'green', count(designs, (s) => s.status === 'APPROVED'), designs.length),
           row('Code Changes', 'code', 'amber', count(changes, (c) => c.status === 'DELIVERED' || c.status === 'CLOSED'), changes.length),
-          row('Builds passed', 'flask', 'violet', count(builds, (b) => b.result === 'SUCCESS'), builds.length)
+          Object.assign(row('Tests', 'flask', 'violet', count(builds, (b) => b.result === 'SUCCESS'), builds.length),
+            { title: 'Jenkins builds whose tests passed, out of all builds' })
         ];
       });
 

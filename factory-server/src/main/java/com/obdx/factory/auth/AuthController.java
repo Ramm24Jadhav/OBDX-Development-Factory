@@ -2,6 +2,8 @@ package com.obdx.factory.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -33,10 +35,12 @@ public class AuthController {
     private final MembershipRepository memberships;
     private final AuditLog audit;
     private final AuthProperties properties;
+    private final BuildProperties buildInfo;
 
     public AuthController(AuthenticationManager authenticationManager, SecurityContextRepository contextRepository,
                           UserDirectory directory, LoginAttempts attempts, AccessGuard guard, MembershipRepository memberships,
-                          AuditLog audit, AuthProperties properties) {
+                          AuditLog audit, AuthProperties properties,
+                          ObjectProvider<BuildProperties> buildInfo) {
         this.authenticationManager = authenticationManager;
         this.contextRepository = contextRepository;
         this.directory = directory;
@@ -45,9 +49,10 @@ public class AuthController {
         this.memberships = memberships;
         this.audit = audit;
         this.properties = properties;
+        this.buildInfo = buildInfo.getIfAvailable();
     }
 
-    public record AuthConfig(String mode, String ssoLoginUrl) {
+    public record AuthConfig(String mode, String ssoLoginUrl, String version) {
     }
 
     public record LoginRequest(String username, String password) {
@@ -63,12 +68,12 @@ public class AuthController {
     public record PasswordChange(String currentPassword, String newPassword) {
     }
 
-    /** Tells the sign-in page which form to show. */
+    /** Tells the sign-in page which form to show, and the factory version for its top bar. */
     @GetMapping("/api/auth/config")
     public AuthConfig config() {
         String ssoLoginUrl = properties.isOidc() ? "oauth2/authorization/" + properties.oidc().registrationId()
                 : properties.isSaml() ? "saml2/authenticate/" + properties.saml().registrationId() : null;
-        return new AuthConfig(properties.mode().toLowerCase(), ssoLoginUrl);
+        return new AuthConfig(properties.mode().toLowerCase(), ssoLoginUrl, buildInfo == null ? null : buildInfo.getVersion());
     }
 
     @PostMapping("/api/auth/login")

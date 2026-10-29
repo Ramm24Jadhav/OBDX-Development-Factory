@@ -24,6 +24,34 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       LOGIN: { title: 'Signed in', icon: 'check', tone: 'green' }
     };
 
+    const ROLE_NAME = { LEAD: 'Lead', DEVELOPER: 'Developer', ANALYST: 'Business Analyst' };
+
+    /** Pages of a list with numbered page buttons and a page size: {rows, page, pages, text, prev, next, buttons, sizeChange}. */
+    function numberedPager(list, initialSize) {
+      const size = ko.observable(initialSize);
+      const page = ko.observable(1);
+      const pages = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
+      const current = ko.pureComputed(() => Math.min(page(), pages()));
+      const rows = ko.pureComputed(() => ko.unwrap(list).slice((current() - 1) * size(), current() * size()));
+      const text = ko.pureComputed(() => {
+        const total = ko.unwrap(list).length;
+        return total === 0 ? 'Showing 0' : 'Showing ' + ((current() - 1) * size() + 1) + ' to ' + Math.min(total, current() * size()) + ' of ' + total;
+      });
+      const buttons = ko.pureComputed(() => {
+        const out = [];
+        for (let n = 1; n <= pages(); n++) {
+          out.push({ n: n, css: 'factory-ad-pg' + (n === current() ? ' factory-ad-pg-on' : ''), pick: () => page(n) });
+        }
+        return out;
+      });
+      return {
+        rows: rows, page: current, pages: pages, text: text, buttons: buttons,
+        prev: () => page(Math.max(1, current() - 1)),
+        next: () => page(Math.min(pages(), current() + 1)),
+        sizeChange: (event) => { size(Number(event.target.value) || initialSize); page(1); }
+      };
+    }
+
     function AdminViewModel() {
       this.errorMessage = ko.observable('');
       this.infoMessage = ko.observable('');
@@ -46,6 +74,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // userId -> [{workspace, role}]
       const memberships = ko.observable({});
       const rawAudit = ko.observableArray([]);
+      const rawWorkspaces = ko.observableArray([]);
+      // Selected users (client side)
+      this.selected = ko.observableArray([]);
 
       const roleOf = (u) => {
         if (u.admin) {
@@ -95,7 +126,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           },
           adminLabel: u.admin ? 'Remove administrator' : 'Make administrator',
           enabledLabel: u.enabled ? 'Deactivate' : 'Activate',
-          isLocal: u.source === 'LOCAL'
+          isLocal: u.source === 'LOCAL',
+          isSelected: ko.pureComputed(() => this.selected.indexOf(u.id) >= 0),
+          rowCss: ko.pureComputed(() => (this.selected.indexOf(u.id) >= 0 ? 'factory-ad-picked' : '')),
+          toggle: (event) => { if (event.target.checked) { this.selected.push(u.id); } else { this.selected.remove(u.id); } return true; }
         });
       }));
       this.visibleUsers = ko.pureComputed(() => {
@@ -105,7 +139,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (!this.statusFilter() || (this.statusFilter() === 'active') === u.enabled)
           && (!this.workspaceFilter() || u.admin || u.workspaceIds.indexOf(this.workspaceFilter()) >= 0));
       });
-      this.userPager = ui.pager(this.visibleUsers, 10);
+      this.userPager = numberedPager(this.visibleUsers, 10);
+      this.allSelected = ko.pureComputed(() => this.userPager.rows().length > 0 && this.userPager.rows().every((u) => this.selected.indexOf(u.id) >= 0));
+      this.toggleAll = (event) => {
+        const ids = this.userPager.rows().map((u) => u.id);
+        this.selected(event.target.checked ? Array.from(new Set(this.selected().concat(ids))) : this.selected().filter((id) => ids.indexOf(id) < 0));
+      };
+      this.selectedText = ko.pureComputed(() => (this.selected().length ? ' · ' + this.selected().length + ' selected' : ''));
       this.invited = ko.pureComputed(() => this.users().filter((u) => !u.lastLoginAt));
       this.kpis = ko.pureComputed(() => {
         const all = rawUsers();
@@ -114,7 +154,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return [
           { label: 'Total Users', value: all.length, sub: '↑ ' + recent + ' this month', css: 'factory-kpi-sub factory-up', tone: 'blue', icon: 'user' },
           { label: 'Active Users', value: active, sub: (all.length ? Math.round(100 * active / all.length) : 0) + '% of total', css: 'factory-kpi-sub', tone: 'blue', icon: 'user' },
-          { label: 'Roles', value: 4, sub: 'Administrator and 3 workspace roles', css: 'factory-kpi-sub', tone: 'violet', icon: 'shield' },
+          { label: 'Roles', value: 4, sub: '3 workspace roles', css: 'factory-kpi-sub', tone: 'violet', icon: 'shield' },
           { label: 'Workspaces', value: workspaces().length, sub: Object.keys(memberships()).length + ' users with access', css: 'factory-kpi-sub', tone: 'green', icon: 'folder' },
           { label: 'Not Signed In Yet', value: this.invited().length, sub: 'View users →', css: 'factory-kpi-sub factory-link', tone: 'amber', icon: 'clock', open: () => this.tab('invitations') }
         ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon, open: k.open || (() => null) }));
@@ -140,11 +180,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ];
       this.matrixRoles = ['Administrator', 'Lead', 'Developer', 'Business Analyst'];
 
-      // Recent administrative activity from the audit log
+      // Recent administrative activity from the audit log, with user and workspace names instead of their IDs
+      const userName = (id) => { const u = rawUsers().find((x) => x.id === id); return u ? (u.displayName || u.username) : id; };
+      const workspaceName = (id) => { const w = rawWorkspaces().find((x) => x.id === id); return w ? w.name : 'a deleted workspace'; };
+      const activityText = (e) => {
+        if (e.action === 'MEMBER_SET') {
+          return userName(e.target) + ' added to ' + workspaceName(e.workspaceId) + ' as ' + (ROLE_NAME[e.detail] || e.detail);
+        }
+        if (e.action === 'MEMBER_REMOVED') {
+          return userName(e.target) + ' removed from ' + workspaceName(e.workspaceId);
+        }
+        return [e.target ? userName(e.target) : '', e.detail].filter(Boolean).join(' · ') || e.username;
+      };
       this.activity = ko.pureComputed(() => rawAudit().filter((e) => ACTIVITY[e.action] && e.action !== 'LOGIN').slice(0, 6).map((e) => {
         const a = ACTIVITY[e.action];
         return {
-          title: a.title, text: [e.target, e.detail].filter(Boolean).join(' · ') || e.username, when: ui.when(e.at),
+          title: a.title, text: activityText(e), when: ui.when(e.at),
           iconCss: 'factory-kpi-icon factory-ad-acticon factory-ov2-icon-' + ({ green: 'green', blue: 'blue', amber: 'amber', red: 'red', violet: 'violet' }[a.tone]),
           iconClass: 'factory-nav-icon factory-ico-' + a.icon
         };
@@ -221,7 +272,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         accUtils.announce('Administration page loaded.');
         document.title = 'Administration';
         loadUsers();
-        api.get('workspaces').then((list) => workspaces(list.map((w) => ({ value: w.id, label: w.name + ' (' + w.bankName + ')' }))))
+        api.get('workspaces').then((list) => rawWorkspaces(list) && workspaces(list.map((w) => ({ value: w.id, label: w.name + ' (' + w.bankName + ')' }))))
           .then(() => Promise.all([loadAudit(), loadAllMembers()]))
           .then(() => { if (!this.memberWorkspaceId() && workspaces().length) { this.memberWorkspaceId(workspaces()[0].value); } })
           .catch(showError);

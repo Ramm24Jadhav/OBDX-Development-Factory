@@ -337,14 +337,14 @@ npx ojet serve
 
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
-Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the sidebar (collapsible; it slides in on phones), the top bar with the user menu, and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), and a bell listing what needs attention. Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.
+Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work`, or `admin` for the collapsible Administration group; `hidden` pages are opened from the top bar or other pages). `index.html` holds the shell: a dark top bar across the page, the sidebar under it (collapsible; it slides in on phones), and the sign-in page. The top bar has the product name, the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), Help (the About page), a bell listing what needs attention (with a link to the Notification Center), and the user menu (Account & Preferences, Notifications, About, sign out). Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.
 
 The pages follow the screen designs in `design/design and implementation plan.docx`: Home (Overview), Workspaces (with
 the workspace details), Code (and the Knowledge Explorer behind it), Project Profile, Requirements, Visual Designer,
 Changes (and Impact Analysis behind it), Build, Test & Review, Modernization, Models & AI Providers, Agent Runs,
 Administration, External Review, Integrations, Version Packs, AI Prompt Library, Notifications, Account & Preferences and
 About. Pages show only the factory's real data; where a design shows something the factory does not record (test
-counts, coverage, costs, environments), the page leaves it out or says so, and estimates are labelled as estimates.
+counts, coverage, costs, environments), the page keeps the section in its place with a short note saying what is not recorded, controls that need server work are disabled with a tooltip, and estimates are labelled as estimates.
 Agent Runs, Notifications and the Prompt Library are built from the requirements, designs, changes, builds, imports and
 version-pack recipes the factory already keeps. Shared pieces:
 
@@ -362,7 +362,7 @@ object: compute those in the view model.
 
 | Method and path | Purpose |
 |---|---|
-| `GET /api/auth/config` | Sign-in mode (public) |
+| `GET /api/auth/config` | Sign-in mode, single sign-on link and factory version (public) |
 | `POST /api/auth/login` | Sign in with username and password (`local` and `ldap`) |
 | `POST /api/auth/logout` | Sign out |
 | `GET /api/auth/me` | The signed-in user with workspace roles and permissions |

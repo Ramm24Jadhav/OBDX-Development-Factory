@@ -52,9 +52,9 @@
                   <td><a href="?ojr=code" class="factory-ov2-link" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></a></td>
                   <td><oj-bind-text value="[[$current.data.bank]]"></oj-bind-text></td>
                   <td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
-                  <td class="factory-ov2-path"><oj-bind-text value="[[$current.data.location]]"></oj-bind-text></td>
+                  <td class="factory-ov2-path" :title="[[$current.data.location]]"><oj-bind-text value="[[$current.data.shortLocation]]"></oj-bind-text></td>
                   <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
-                  <td><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></td>
+                  <td class="factory-ov3-when"><oj-bind-text value="[[$current.data.updatedDay]]"></oj-bind-text><br><oj-bind-text value="[[$current.data.updatedTime]]"></oj-bind-text></td>
                   <td>
                     <oj-menu-button :id="[['wsActions-' + $current.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
                       <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
@@ -74,6 +74,9 @@
         </table>
         <oj-bind-if test="[[!loading() && recentWorkspaces().length === 0]]">
           <p class="factory-ov-empty">No workspaces yet.</p>
+        </oj-bind-if>
+        <oj-bind-if test="[[!loading() && recentWorkspaces().length > 0 && recentWorkspaces().length < 4]]">
+          <p class="factory-ov3-filler">The four most recently updated workspaces show here. Add another with Setup New Workspace.</p>
         </oj-bind-if>
       </div>
     </section>
@@ -144,6 +147,9 @@
         <oj-bind-if test="[[!loading() && recentRequirements().length === 0]]">
           <p class="factory-ov-empty">No requirements yet.</p>
         </oj-bind-if>
+        <oj-bind-if test="[[!loading() && recentRequirements().length > 0 && recentRequirements().length < 4]]">
+          <p class="factory-ov3-filler">The four latest requirements show here. Describe a new one on the Requirements page.</p>
+        </oj-bind-if>
       </div>
     </section>
 
@@ -155,7 +161,7 @@
       <ul class="factory-ov2-progress">
         <oj-bind-for-each data="[[progress]]">
           <template>
-            <li>
+            <li :title="[[$current.data.title]]">
               <span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
               <span class="factory-ov2-prog-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
               <span class="factory-ov2-bar"><span :class="[[$current.data.barCss]]" :style.width="[[$current.data.width]]"></span></span>

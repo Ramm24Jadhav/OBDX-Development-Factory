@@ -4,13 +4,16 @@
       <h1>Project Profile</h1>
       <p>Detected OBDX stack, conventions, and reusable patterns</p>
     </div>
-    <div class="factory-pg-actions factory-pf-headright">
-      <oj-button id="detectButton" chroming="outlined" on-oj-action="[[detect]]" disabled="[[busy() || !canEdit() || !workspace()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Refresh Discovery</oj-button>
-      <oj-bind-if test="[[profile()]]">
-        <span class="factory-pg-meta"><oj-bind-text value="[['Last scanned: ' + detectedAt()]]"></oj-bind-text></span>
-        <span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span>
-      </oj-bind-if>
+    <div class="factory-pf2-headright">
+      <button type="button" id="detectButton" class="factory-pf2-refresh" :disabled="[[busy() || !canEdit() || !workspace()]]" on-click="[[detect]]"
+              :title="[[canEdit() ? 'Scan the imported code again' : 'Only members who manage the code can refresh discovery']]">
+        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Refresh Discovery</button>
+      <div class="factory-pf2-headmeta">
+        <oj-bind-if test="[[profile()]]">
+          <span class="factory-pg-meta"><oj-bind-text value="[['Last scanned: ' + detectedAt()]]"></oj-bind-text></span>
+        </oj-bind-if>
+        <span :class="[[discoveryPill().css + ' factory-pf2-pill']]" id="discoveryPill"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[discoveryPill().text]]"></oj-bind-text></span>
+      </div>
     </div>
   </div>
 
@@ -47,8 +50,8 @@
         <div><dt>Revision</dt><dd><oj-bind-text value="[[profile() && profile().revision !== null ? 'r' + profile().revision : '–']]"></oj-bind-text></dd></div>
         <div><dt>Last scanned</dt><dd><oj-bind-text value="[[detectedAt() || '–']]"></oj-bind-text></dd></div>
         <div><dt>Total files</dt><dd><oj-bind-text value="[[index() ? index().files.toLocaleString() : '–']]"></oj-bind-text></dd></div>
-        <div class="factory-pf-ringcell"><dt title="Share of profile facts that have a value">Coverage</dt>
-          <dd><span class="factory-ring factory-pf-ring" :style="[[coverageStyle]]"><span><oj-bind-text value="[[coverage() + '%']]"></oj-bind-text></span></span></dd></div>
+        <div class="factory-pf-ringcell" title="Share of the profile's facts that people confirmed or corrected, or that were detected with high or medium confidence"><dt>Confidence</dt>
+          <dd><span class="factory-ring factory-pf-ring" :style="[[confidenceStyle]]"><span><oj-bind-text value="[[confidence() + '%']]"></oj-bind-text></span></span></dd></div>
         <div><dt>Status</dt><dd><span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span></dd></div>
       </dl>
     </section>
@@ -61,7 +64,9 @@
         <template>
           <section class="factory-card factory-pf-card">
             <h2><span class="factory-cp-h"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span>
-              <span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></h2>
+              <span class="factory-pf2-cardtools"><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
+                <button type="button" class="factory-pf2-chev" :aria-label="[['All facts of ' + $current.data.title]]" title="See every fact of this section" on-click="[[$current.data.open]]">
+                  <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button></span></h2>
             <table class="factory-pf-table">
               <tbody>
                 <oj-bind-for-each data="[[$current.data.rows]]" as="row">
@@ -75,13 +80,18 @@
                 </oj-bind-for-each>
               </tbody>
             </table>
-            <div class="factory-pf-evidence">
+            <oj-bind-if test="[[$current.data.sparse]]">
+              <p class="factory-pf2-sparse">Click a fact to confirm or correct it. Refresh discovery after importing more code to find the rest.</p>
+            </oj-bind-if>
+            <div class="factory-pf-evidence factory-pf2-evidence">
               <strong><oj-bind-text value="[[$current.data.evidenceTitle]]"></oj-bind-text></strong>
-              <div>
+              <div class="factory-pf2-evrow">
                 <oj-bind-for-each data="[[$current.data.evidence]]" as="ev">
                   <template><span class="factory-pf-file" :title="[[ev.data.path]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><oj-bind-text value="[[ev.data.name]]"></oj-bind-text></span></template>
                 </oj-bind-for-each>
                 <oj-bind-if test="[[$current.data.more]]"><span class="factory-tag"><oj-bind-text value="[[$current.data.more]]"></oj-bind-text></span></oj-bind-if>
+                <button type="button" class="factory-pf2-chev factory-pf2-evchev" title="See the facts and their evidence files" :aria-label="[['Evidence of ' + $current.data.title]]" on-click="[[$current.data.open]]">
+                  <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button>
               </div>
             </div>
           </section>
@@ -111,14 +121,17 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[tab() === 'stack' && profile()]]">
-    <div class="factory-row factory-row-3w">
+    <div :class="[[aiExpanded() ? 'factory-row factory-row-3w factory-pf2-bottom factory-pf2-ai-wide' : 'factory-row factory-row-3w factory-pf2-bottom']]">
       <section class="factory-card">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Repository Structure</span>
           <oj-bind-if test="[[index()]]"><span class="factory-ov-pill factory-ov-pill-blue"><oj-bind-text value="[[index().files.toLocaleString() + ' files']]"></oj-bind-text></span></oj-bind-if></h2>
         <p class="factory-card-sub">Folders of the files the profile and reference patterns point at.</p>
         <ul class="factory-pf-tree">
           <oj-bind-for-each data="[[tree]]">
-            <template><li :style="[[$current.data.style]]"><span class="factory-nav-icon factory-ico-folder-fill" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></li></template>
+            <template><li :style="[[$current.data.style]]">
+              <oj-bind-if test="[[$current.data.hasChildren]]"><button type="button" class="factory-pf2-treebtn" :aria-label="[[$current.data.label]]" :title="[[$current.data.label]]" on-click="[[$current.data.toggle]]"><span :class="[[$current.data.caret]]" aria-hidden="true"></span></button></oj-bind-if>
+              <oj-bind-if test="[[!$current.data.hasChildren]]"><span class="factory-pf2-treegap"></span></oj-bind-if>
+              <span class="factory-nav-icon factory-ico-folder-fill" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></li></template>
           </oj-bind-for-each>
         </ul>
       </section>
@@ -126,26 +139,35 @@
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Key Configuration Files</span></h2>
         <div class="factory-ov2-table-wrap">
           <table class="factory-ov2-table">
-            <thead><tr><th>File Name</th><th>Used For</th><th>Path</th><th>Actions</th></tr></thead>
+            <thead><tr><th>File Name</th><th>Purpose</th><th>Status</th><th>Last Modified</th><th>Actions</th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[configFiles]]">
                 <template>
                   <tr>
                     <td><span class="factory-pf-file factory-pf-file-plain"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></td>
-                    <td><oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text></td>
-                    <td class="factory-ov2-path factory-mono" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
+                    <td class="factory-pf2-purpose" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text></td>
+                    <td><span :class="[[$current.data.status.css]]" :title="[[$current.data.statusTitle]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
+                    <td class="factory-cp-nowrap" :title="[[$current.data.modifiedTitle]]"><oj-bind-text value="[[$current.data.modified]]"></oj-bind-text></td>
                     <td><button type="button" class="factory-link-sm" on-click="[[$current.data.open]]">View</button></td>
                   </tr>
                 </template>
               </oj-bind-for-each>
             </tbody>
           </table>
-          <oj-bind-if test="[[configFiles().length === 0]]"><p class="factory-ov-empty">No configuration files among the evidence.</p></oj-bind-if>
+          <oj-bind-if test="[[configFiles().length === 0]]"><p class="factory-ov-empty">No configuration files (XML, properties, JSON, YAML) are among the evidence of this profile yet. Refresh discovery after importing code that has them.</p></oj-bind-if>
         </div>
       </section>
-      <section class="factory-card factory-ai">
+      <section class="factory-card factory-ai factory-pf2-ai" id="profileAssistant">
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
-          <button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></h2>
+          <span class="factory-pf2-cardtools">
+            <oj-bind-if test="[[ai.messages().length > 0]]"><button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></oj-bind-if>
+            <button type="button" class="factory-pf2-chev" id="expandAssistant" :title="[[aiExpanded() ? 'Make the assistant smaller' : 'Make the assistant wider']]" aria-label="Expand the assistant" on-click="[[toggleAi]]">
+              <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></h2>
+        <div class="factory-pf2-modes" role="tablist" aria-label="Assistant mode">
+          <oj-bind-for-each data="[[aiModes]]">
+            <template><button type="button" role="tab" :class="[[$current.data.selected() ? 'factory-pf2-mode factory-pf2-mode-on' : 'factory-pf2-mode']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></button></template>
+          </oj-bind-for-each>
+        </div>
         <div class="factory-ai-log">
           <oj-bind-for-each data="[[ai.messages]]">
             <template><div :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text>
@@ -154,7 +176,7 @@
         </div>
         <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
         <div class="factory-ai-input">
-          <oj-input-text id="profileAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about the project, framework, or specific files..."
+          <oj-input-text id="profileAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about the project or its files..."
                          value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
           <oj-button id="profileAskButton" chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
             <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
@@ -174,6 +196,10 @@
     <section class="factory-card">
       <h2><oj-bind-text value="[[tab() === 'conventions' ? 'Bank Conventions' : 'All facts']]"></oj-bind-text></h2>
       <p class="factory-card-sub"><oj-bind-text value="[[summary]]"></oj-bind-text> Click a fact to confirm or correct it.</p>
+      <oj-bind-if test="[[tab() === 'settings' && factSection()]]">
+        <p class="factory-pf2-filter"><oj-bind-text value="[['Showing the ' + factSectionTitle() + ' facts.']]"></oj-bind-text>
+          <button type="button" class="factory-link-sm" id="showAllFacts" on-click="[[showAllFacts]]">Show all facts</button></p>
+      </oj-bind-if>
       <div class="factory-ov2-table-wrap">
         <table class="factory-ov2-table" id="factTable">
           <thead><tr><th>Fact</th><th>Value</th><th>Detected</th><th>Confidence</th><th>Status</th><th>Evidence</th></tr></thead>

@@ -1,18 +1,26 @@
-<div class="factory-pg">
+<div class="factory-pg factory-im">
   <div class="factory-pg-head">
     <div>
       <h1>Impact Analysis &amp; Change Planning</h1>
       <p>Analyze the impact of changes, understand dependencies and create an implementation plan before code generation</p>
     </div>
-    <div class="factory-pg-actions">
-      <select class="factory-ws-select" id="impactChange" aria-label="Change" on-change="[[changeChange]]">
-        <oj-bind-for-each data="[[changes]]">
-          <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
-        </oj-bind-for-each>
-      </select>
-      <oj-button id="analyzeAgainButton" chroming="outlined" on-oj-action="[[analyzeAgain]]" disabled="[[!detail() || !canManage()]]">Analyze Again</oj-button>
-      <oj-button id="approvePlanButton" chroming="callToAction" on-oj-action="[[approvePlan]]" disabled="[[!detail() || detail().status !== 'PLAN_READY' || !canApprove()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Approve Change Plan</oj-button>
+    <div class="factory-im-headright">
+      <div class="factory-pg-actions">
+        <span :title="[[savePlanTitle]]"><oj-button id="savePlanButton" chroming="outlined" on-oj-action="[[savePlan]]" disabled="[[!canSavePlan()]]">Save Plan</oj-button></span>
+        <oj-button id="createPlanButton" chroming="callToAction" on-oj-action="[[createPlan]]" title="Plan a new change from an approved requirement on the Changes page">
+          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Create Change Plan</oj-button>
+      </div>
+      <div class="factory-pg-actions">
+        <label class="factory-im-pick"><span>Change</span>
+          <select class="factory-ws-select" id="impactChange" aria-label="Change" on-change="[[changeChange]]">
+            <oj-bind-for-each data="[[changes]]">
+              <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
+            </oj-bind-for-each>
+          </select></label>
+        <button type="button" class="factory-ov2-btn factory-im-smallbtn" id="analyzeAgainButton" on-click="[[analyzeAgain]]" :disabled="[[!detail() || !canManage()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Analyze Again</button>
+        <button type="button" class="factory-ov2-btn factory-im-smallbtn" id="approvePlanButton" on-click="[[approvePlan]]" :disabled="[[!detail() || detail().status !== 'PLAN_READY' || !canApprove()]]"
+          :title="[[detail() && detail().status !== 'PLAN_READY' ? 'This plan is already approved' : 'Approve the plan and write the code (Lead)']]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve Plan</button>
+      </div>
     </div>
   </div>
 
@@ -42,15 +50,20 @@
       <div class="factory-row factory-row-3w">
         <div class="factory-stack">
           <section class="factory-card">
-            <h2>Proposed Change <button type="button" class="factory-link-sm" on-click="[[openWorkbench]]">Open workbench</button></h2>
+            <h2>Proposed Change <button type="button" class="factory-ov2-btn factory-im-smallbtn" id="editPlanButton" on-click="[[toggleEdit]]" :disabled="[[!canEditPlan()]]" :title="[[editTitle]]">
+              <span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span><oj-bind-text value="[[editing() ? 'Cancel' : 'Edit']]"></oj-bind-text></button></h2>
             <dl class="factory-im-proposed">
               <dt>Title</dt><dd><oj-bind-text value="[[proposed().title]]"></oj-bind-text></dd>
-              <dt>Description</dt><dd><oj-bind-text value="[[proposed().description]]"></oj-bind-text></dd>
+              <dt>Description</dt>
+              <oj-bind-if test="[[!editing()]]"><dd><oj-bind-text value="[[proposed().description]]"></oj-bind-text></dd></oj-bind-if>
+              <oj-bind-if test="[[editing()]]"><dd><oj-text-area class="factory-im-edit" id="planSummaryEdit" label-hint="Description" label-edge="none" rows="4" value="{{summaryDraft}}"></oj-text-area>
+                <span class="factory-ov-subtle">Save Plan stores the new description.</span></dd></oj-bind-if>
             </dl>
             <dl class="factory-kv">
               <dt>Type</dt><dd><span :class="[[proposed().type.css]]"><oj-bind-text value="[[proposed().type.text]]"></oj-bind-text></span></dd>
               <dt>Module</dt><dd><oj-bind-text value="[[proposed().module]]"></oj-bind-text></dd>
               <dt>Target Version</dt><dd><oj-bind-text value="[[proposed().version]]"></oj-bind-text></dd>
+              <dt>Priority</dt><dd><span :class="[[proposed().priority.css]]" :title="[[proposed().priority.title]]"><oj-bind-text value="[[proposed().priority.text]]"></oj-bind-text></span></dd>
               <dt>Status</dt><dd><span :class="[[proposed().status.css]]"><oj-bind-text value="[[proposed().status.text]]"></oj-bind-text></span></dd>
             </dl>
           </section>
@@ -58,46 +71,60 @@
             <h2>Change Scope</h2>
             <ul class="factory-im-scope">
               <oj-bind-for-each data="[[scope]]">
-                <template><li><input type="checkbox" disabled :checked="[[$current.data.on]]" :aria-label="[[$current.data.label]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></li></template>
+                <template><li :title="[[$current.data.why]]"><span :class="[[$current.data.on ? 'factory-im-box factory-im-box-on' : 'factory-im-box']]" role="img" :aria-label="[[$current.data.on ? 'In scope' : 'Not in scope']]"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></li></template>
               </oj-bind-for-each>
             </ul>
-            <p class="factory-card-sub">From the layers of the files in the plan.</p>
+            <p class="factory-card-sub factory-im-scopenote">From the layers and paths of the files in the plan.</p>
           </section>
         </div>
 
         <div class="factory-stack">
-          <section class="factory-card">
-            <h2>Dependency Graph
-              <span class="factory-im-legend"><oj-bind-for-each data="[[legend]]"><template><span><i :style="[[$current.data.style]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></span></h2>
-            <p class="factory-card-sub">The plan's files by layer. Lines are inferred from the layer order, not read from the code.</p>
-            <div class="factory-im-graphwrap">
-              <div class="factory-im-graph" :style="[[graph().style]]" id="dependencyGraph">
-                <img class="factory-im-lines" :src="[[graph().lines]]" alt="">
-                <oj-bind-for-each data="[[graph().nodes]]">
-                  <template><div class="factory-im-node" :style="[[$current.data.style]]" :title="[[$current.data.path]]">
-                    <strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span><oj-bind-text value="[[$current.data.kind + ' · ' + $current.data.action]]"></oj-bind-text></span></div></template>
-                </oj-bind-for-each>
+          <section class="factory-card factory-im-graphcard" id="dependencyGraphCard">
+            <h2><span>Dependency Graph</span>
+              <span class="factory-im-graphtools">
+                <button type="button" class="factory-ov2-btn factory-im-iconbtn" on-click="[[zoomOut]]" title="Zoom out" aria-label="Zoom out">−</button>
+                <span class="factory-im-zoom"><oj-bind-text value="[[zoomText]]"></oj-bind-text></span>
+                <button type="button" class="factory-ov2-btn factory-im-iconbtn" on-click="[[zoomIn]]" title="Zoom in" aria-label="Zoom in">+</button>
+                <button type="button" class="factory-ov2-btn factory-im-iconbtn" on-click="[[fullscreen]]" title="Full screen" aria-label="Full screen"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></button>
+              </span></h2>
+            <div class="factory-im-legend"><oj-bind-for-each data="[[legend]]"><template><span><i :style="[[$current.data.style]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+            <div class="factory-im-graphwrap" id="dependencyGraphWrap">
+              <div class="factory-im-graphsize" :style="[[graph().outer]]">
+                <div class="factory-im-graph" :style="[[graph().style]]" id="dependencyGraph">
+                  <img class="factory-im-lines" :src="[[graph().lines]]" alt="">
+                  <oj-bind-for-each data="[[graph().nodes]]">
+                    <template><div class="factory-im-node" :style="[[$current.data.style]]" :title="[[$current.data.path]]">
+                      <span class="factory-im-nodeicon" :style="[[$current.data.iconStyle]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span>
+                      <span class="factory-im-nodetext"><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span><oj-bind-text value="[[$current.data.kind + ' · ' + $current.data.action]]"></oj-bind-text></span></span></div></template>
+                  </oj-bind-for-each>
+                </div>
               </div>
             </div>
+            <p class="factory-card-sub factory-im-graphnote">The plan's files by layer. Arrows follow the layer order (UI to service to data); they are inferred, not read from the code.</p>
           </section>
           <section class="factory-card">
             <h2><oj-bind-text value="[['Affected Files (' + files().length + ')']]"></oj-bind-text></h2>
-            <div class="factory-filters">
+            <div class="factory-filters factory-im-filters">
               <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-                <input type="search" placeholder="Search files..." aria-label="Search files" on-input="[[fileSearchInput]]"></span>
-              <select class="factory-ws-select" aria-label="Layer" on-change="[[layerChange]]">
-                <option value="">All Layers</option><option value="ui">UI</option><option value="service">Service</option><option value="integration">Integration</option>
+                <input type="search" placeholder="Search files..." aria-label="Search files" id="impactFileSearch" on-input="[[fileSearchInput]]"></span>
+              <select class="factory-ws-select" aria-label="Layer" id="impactLayer" on-change="[[layerChange]]">
+                <option value="">All Types</option><option value="ui">UI</option><option value="service">Service</option><option value="integration">Integration</option>
                 <option value="data">Data</option><option value="config">Config</option><option value="test">Test</option></select>
-              <select class="factory-ws-select" aria-label="Change type" on-change="[[actionChange]]">
-                <option value="">All Changes</option><option value="modify">Modified</option><option value="create">New</option></select>
+              <select class="factory-ws-select" aria-label="Module" id="impactModule" on-change="[[moduleChange]]">
+                <option value="">All Modules</option>
+                <oj-bind-for-each data="[[moduleOptions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+              <select class="factory-ws-select" aria-label="Impact" id="impactLevel" on-change="[[impactChange]]">
+                <option value="">All Impact</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+              <button type="button" class="factory-ov2-btn factory-im-iconbtn factory-im-filterbtn" id="clearFiltersButton" on-click="[[clearFilters]]" title="Clear the filters" aria-label="Clear the filters">
+                <span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
             </div>
             <div class="factory-ov2-table-wrap">
-              <table class="factory-ov2-table" id="affectedFiles">
-                <thead><tr><th>File Path</th><th>Type</th><th>Module</th><th title="Estimated from the change type and whether the file is shared">Impact</th><th>Change Type</th></tr></thead>
+              <table class="factory-ov2-table factory-im-ftable" id="affectedFiles">
+                <thead><tr><th>File Path</th><th class="factory-im-c2">Type</th><th class="factory-im-c3">Module</th><th class="factory-im-c4" title="Estimated from the change type and whether the file is shared">Impact</th><th class="factory-im-c5">Change Type</th></tr></thead>
                 <tbody>
                   <oj-bind-for-each data="[[filePager.rows]]">
-                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-cp-link factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
-                      <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
+                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-cp-link factory-mono factory-im-path" :title="[[$current.data.path]]"><bdi><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></bdi></td>
+                      <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td class="factory-im-mod" :title="[[$current.data.module]]"><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
                       <td><span :class="[[$current.data.impact.css]]"><oj-bind-text value="[[$current.data.impact.text]]"></oj-bind-text></span></td>
                       <td><span :class="[[$current.data.change.css]]"><oj-bind-text value="[[$current.data.change.text]]"></oj-bind-text></span></td></tr></template>
                   </oj-bind-for-each>
@@ -105,9 +132,11 @@
               </table>
             </div>
             <div class="factory-pager"><span><oj-bind-text value="[[filePager.text]]"></oj-bind-text></span>
-              <span><button type="button" class="factory-ov2-btn" on-click="[[filePager.prev]]">‹</button>
-                <oj-bind-text value="[[filePager.page() + ' / ' + filePager.pages()]]"></oj-bind-text>
-                <button type="button" class="factory-ov2-btn" on-click="[[filePager.next]]">›</button></span></div>
+              <span class="factory-im-pages"><button type="button" class="factory-ov2-btn" on-click="[[filePager.prev]]" aria-label="Previous page">‹</button>
+                <oj-bind-for-each data="[[pageButtons]]">
+                  <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]" :aria-label="[['Page ' + $current.data.n]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></button></template>
+                </oj-bind-for-each>
+                <button type="button" class="factory-ov2-btn" on-click="[[filePager.next]]" aria-label="Next page">›</button></span></div>
           </section>
         </div>
 

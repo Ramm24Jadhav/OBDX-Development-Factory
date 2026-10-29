@@ -4,7 +4,7 @@
  * again, check again, write a failed file again) and an assistant that answers from the build results.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
   function (ko, accUtils, api, workspaceSelection, session, ui, assistant) {
     const POLL_MS = 3000;
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
@@ -18,6 +18,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.detail = ko.observable(null);
       this.jenkins = ko.observable(null);
       this.changeChange = (event) => this.changeId(event.target.value);
+      // Requirement picker: narrows the change list to the changes made from one requirement
+      this.requirements = ko.observableArray([]);
+      this.requirementId = ko.observable('');
+      this.changeRequirement = ko.observable({});
+      this.changeOptions = ko.pureComputed(() => {
+        const req = this.requirementId();
+        return this.changes().filter((c) => !req || this.changeRequirement()[c.id] === req);
+      });
+      this.requirementChange = (event) => {
+        this.requirementId(event.target.value);
+        const list = this.changeOptions();
+        if (list.length && !list.some((c) => c.id === this.changeId())) {
+          this.changeId(list[0].id);
+        }
+      };
       const showError = (error) => this.errorMessage(error.message);
 
       // Lifecycle of the change: plan approved, code generated, validation, review, apply
@@ -79,10 +94,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           { value: files().filter((f) => f.status === 'GENERATED').length, label: 'Files changed',
             subs: [{ text: '+' + files().reduce((s, f) => s + f.linesAdded, 0), css: 'factory-ch-plus' }, { text: '-' + files().reduce((s, f) => s + f.linesRemoved, 0), css: 'factory-ch-minus' }] },
           { value: k.passed + k.failed + k.warning, label: 'Quick checks', subs: [{ text: k.passed + ' passed', css: 'factory-ov-pill factory-ov-pill-green' }, { text: k.failed + ' failed', css: 'factory-ov-pill factory-ov-pill-red' }] },
-          { value: k.warning, label: 'Warnings', subs: [{ text: 'shown to reviewers', css: 'factory-ov-subtle' }] },
+          { value: k.warning, label: 'Warnings', subs: [{ text: k.warning ? 'to review' : 'none', css: 'factory-ov-pill factory-ov-pill-' + (k.warning ? 'amber' : 'green') }] },
           { value: this.jenkinsBuilds().length, label: 'Jenkins rounds', subs: [{ text: b ? (b.result || 'running') : 'none yet', css: b && b.result === 'SUCCESS' ? 'factory-ov-pill factory-ov-pill-green' : 'factory-ov-pill factory-ov-pill-grey' }] },
-          { value: errors, label: 'Build errors', subs: [{ text: errors ? 'sent to the model to fix' : 'none', css: 'factory-ov-subtle' }] },
-          { value: builds().reduce((sum, x) => sum + x.fixedFiles.length, 0), label: 'Files fixed', subs: [{ text: 'by fix rounds', css: 'factory-ov-subtle' }] }
+          { value: errors, label: 'Build errors', subs: [{ text: !b ? 'not built' : errors ? errors + ' to fix' : 'none', css: 'factory-ov-pill factory-ov-pill-' + (!b ? 'grey' : errors ? 'red' : 'green') }] },
+          { value: builds().reduce((sum, x) => sum + x.fixedFiles.length, 0), label: 'Files fixed', subs: [{ text: 'by fix rounds', css: 'factory-ov-pill factory-ov-pill-grey' }] }
         ];
       });
 
@@ -91,6 +106,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'results', label: 'Build & Test Results' },
         { value: 'static', label: 'Static Analysis' },
         { value: 'obdx', label: 'OBDX Checks' },
+        { value: 'security', label: 'Security Scan' },
+        { value: 'comments', label: 'Reviewer Comments' },
         { value: 'approval', label: 'Approval History' },
         { value: 'deployment', label: 'Deployment' }
       ]);
@@ -115,15 +132,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
 
       // Failures: build errors and failed quick checks, each with its file
+      const findFile = (path) => (path ? files().find((x) => x.path === path || x.path.endsWith('/' + path) || path.endsWith(x.path)) : null);
+      const layerOf = (path) => (findFile(path) ? findFile(path).layer : '');
+      this.layerFilter = ko.observable('');
+      this.layerOptions = ko.pureComputed(() => [{ value: '', label: 'All layers' }].concat(
+        files().map((f) => f.layer).filter((l, i, a) => l && a.indexOf(l) === i).map((l) => ({ value: l, label: l }))));
+      this.layerAction = (event) => this.layerFilter(event.detail.selectedValue || '');
+      this.clearLayer = () => this.layerFilter('');
       this.failureFilter = ko.observable('all');
       this.failures = ko.pureComputed(() => {
         const list = [];
         builds().forEach((b) => b.errors.forEach((e) => {
           const m = e.match(/([\w./-]+\.(?:java|js|ts|tsx|html|xml|sql|properties))(?::(\d+))?/);
-          list.push({ kind: 'Build', source: b.job + ' round ' + b.round, message: e, file: m ? m[1] : '', line: m && m[2] ? m[2] : '', log: b.logExcerpt || '' });
+          list.push({ kind: 'Build', source: b.job + ' round ' + b.round, message: e, file: m ? m[1] : '', line: m && m[2] ? m[2] : '', log: b.logExcerpt || '', layer: layerOf(m ? m[1] : '') });
         }));
         files().filter((f) => f.checkStatus === 'FAILED' || f.checkStatus === 'WARNING').forEach((f) => list.push({
-          kind: f.checkStatus === 'FAILED' ? 'Quick check' : 'Warning', source: 'Quick checks', message: f.checkMessage || f.checkStatus, file: f.path, line: '', log: ''
+          kind: f.checkStatus === 'FAILED' ? 'Quick check' : 'Warning', source: 'Quick checks', message: f.checkMessage || f.checkStatus, file: f.path,
+          line: ((f.checkMessage || '').match(/^Line (\d+)/) || [])[1] || '', log: '', layer: f.layer
         }));
         return list.map((x, i) => Object.assign(x, {
           index: i, status: x.kind === 'Warning' ? ui.pill('WARNING', 'amber') : ui.pill('FAILED', 'red'),
@@ -141,6 +166,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.visibleFailures = ko.pureComputed(() => {
         const text = this.failureSearch().trim().toLowerCase();
         return this.failures().filter((f) => (this.failureFilter() === 'all' || f.kind === this.failureFilter())
+          && (!this.layerFilter() || f.layer === this.layerFilter())
           && (!text || (f.message + ' ' + f.file).toLowerCase().indexOf(text) >= 0));
       });
       this.selectedFailure = ko.observable(0);
@@ -149,17 +175,65 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.prevFailure = () => this.selectedFailure(Math.max(0, this.selectedFailure() - 1));
       this.nextFailure = () => this.selectedFailure(Math.min(this.failures().length - 1, this.selectedFailure() + 1));
       this.detailTab = ko.observable('message');
-      this.detailTabs = ui.tabs(this.detailTab, [{ value: 'message', label: 'Error Message' }, { value: 'log', label: 'Logs' }]);
+      this.detailTabs = ui.tabs(this.detailTab, [{ value: 'message', label: 'Error Message' }, { value: 'stack', label: 'Stack Trace' },
+        { value: 'code', label: 'Code' }, { value: 'log', label: 'Logs' }]);
+      // Stack trace: the exception and "at ..." lines of the failure's log
+      this.stackTrace = ko.pureComputed(() => {
+        const f = this.failure();
+        const lines = f && f.log ? f.log.split('\n').filter((t) => /^\s*at\s|Exception|Error:|Caused by/.test(t)) : [];
+        return lines.length ? lines.join('\n') : 'No stack trace in this failure\'s log.';
+      });
+      // Code: the generated file around the failing line
+      this.fileCache = ko.observable({});
+      this.failureCode = ko.pureComputed(() => {
+        const f = this.failure();
+        const file = f ? findFile(f.file) : null;
+        if (!file) {
+          return 'The failing file is not one of this change\'s files.';
+        }
+        const content = this.fileCache()[file.path];
+        if (content === undefined) {
+          api.get('changes/' + this.detail().id + '/file?path=' + encodeURIComponent(file.path)).then((r) => {
+            this.fileCache(Object.assign({}, this.fileCache(), { [file.path]: (r && r.generated) || '' }));
+          }).catch(() => this.fileCache(Object.assign({}, this.fileCache(), { [file.path]: '' })));
+          return 'Loading ' + file.path + '...';
+        }
+        if (!content) {
+          return 'No generated content for ' + file.path + '.';
+        }
+        const all = content.split('\n');
+        const at = f.line ? Number(f.line) : 1;
+        const from = Math.max(1, at - 6);
+        return all.slice(from - 1, from + 13).map((t, i) => String(from + i).padStart(4) + (from + i === at ? ' > ' : '   ') + t).join('\n');
+      });
+      this.showCode = () => this.detailTab('code');
 
-      // Logs: each build round's excerpt
+      // Logs: each build round's excerpt; the OBDX log is the quick checks result per file
+      this.logType = ko.observable('build');
+      this.logTypeTabs = ui.tabs(this.logType, [{ value: 'build', label: 'Build Log' }, { value: 'test', label: 'Test Log' },
+        { value: 'integration', label: 'Integration Log' }, { value: 'obdx', label: 'OBDX Log' }]);
       this.logRound = ko.observable(0);
       this.logs = ko.pureComputed(() => builds().map((b, i) => ({
         label: b.job + ' #' + (b.buildNumber || b.round), css: ko.pureComputed(() => 'factory-chip' + (this.logRound() === i ? ' factory-chip-on' : '')), pick: () => this.logRound(i)
       })));
       this.logText = ko.pureComputed(() => {
+        const type = this.logType();
+        if (type === 'obdx') {
+          return files().length ? files().map((f) => '[' + (f.checkStatus || 'NOT_CHECKED') + '] ' + f.path + (f.checkMessage ? ' - ' + f.checkMessage : '')).join('\n') : 'No files checked yet.';
+        }
+        if (type !== 'build') {
+          return 'Jenkins does not send a separate ' + type + ' log to the factory. Test output is part of the build log.';
+        }
         const b = builds()[this.logRound()];
-        return b ? (b.logExcerpt || '(no log excerpt for this round)') : 'No builds yet.';
+        return b ? (b.logExcerpt || '(no log excerpt for this round)') : 'No builds yet. Rebuild with Jenkins to see the build log.';
       });
+      this.logExpanded = ko.observable(false);
+      this.toggleLog = () => this.logExpanded(!this.logExpanded());
+      this.rawLog = () => {
+        const url = URL.createObjectURL(new Blob([this.logText()], { type: 'text/plain' }));
+        window.open(url, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      };
       this.logLines = ko.pureComputed(() => this.logText().split('\n').map((t, i) => ({ n: i + 1, text: t, css: /ERROR|FAIL/i.test(t) ? 'factory-bt-logline factory-bt-logerr' : 'factory-bt-logline' })));
       this.logDownload = ko.pureComputed(() => 'data:text/plain;charset=utf-8,' + encodeURIComponent(this.logText()));
 
@@ -199,6 +273,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return rows;
       });
+      this.securityRows = ko.pureComputed(() => this.fileRows().filter((r) => /sql|injection|secret|password|security|xss/i.test(r.message)));
+      this.reviewRows = ko.pureComputed(() => files().map((f) => ({ path: f.path, layer: f.layer, pill: f.edited ? ui.pill('Edited', 'blue') : ui.pill('Not edited', 'grey') })));
       this.headStatus = ko.pureComputed(() => ui.pill(this.headline().text, this.headline().tone));
 
       // Quick actions
@@ -228,6 +304,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.post(base() + '/regenerate', { path: file.path, note: 'Fix this failure: ' + f.message }).then(show).catch(showError);
       };
       this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      this.moreAction = (event) => {
+        const action = event.detail.selectedValue;
+        if (action === 'checks') {
+          this.checkAgain();
+        } else if (action === 'patch') {
+          window.location.href = 'api/changes/' + this.detail().id + '/patch';
+        } else {
+          window.dispatchEvent(new CustomEvent('factory-navigate', { detail: action }));
+        }
+      };
       this.deliver = () => {
         if (!window.confirm('Commit the reviewed code to a new SVN branch? Trunk is not changed.')) {
           return;
@@ -245,6 +331,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + '\nBuild rounds:\n' + builds().map((b) => 'Round ' + b.round + ' ' + b.job + ' ' + (b.result || '') + ' errors: ' + b.errors.join(' | ')
             + (b.logExcerpt ? '\nLog:\n' + b.logExcerpt.slice(-3000) : '')).join('\n');
       }, ['Why is the build failing?', 'Show the proposed fix', 'Explain the failing check', 'Which files are affected?']);
+      this.aiTab = ko.observable('chat');
+      this.aiTabs = ui.tabs(this.aiTab, [{ value: 'chat', label: 'Chat' }, { value: 'actions', label: 'Suggested Actions' }]);
+      this.aiExpanded = ko.observable(false);
+      this.toggleAi = () => this.aiExpanded(!this.aiExpanded());
+      const askChat = (text) => () => { this.aiTab('chat'); this.ai.ask(text); };
+      this.aiActions = ko.pureComputed(() => [
+        { text: 'Explain the selected failure', icon: 'factory-nav-icon factory-ico-help', disabled: !this.failure(), title: this.failure() ? '' : 'Nothing failed',
+          run: askChat('Explain this failure and how to fix it: ' + (this.failure() ? this.failure().message : '')) },
+        { text: 'Generate Fix with AI', icon: 'factory-nav-icon factory-ico-sparkle', disabled: !this.canManage() || !this.failure(), title: 'Writes the failing file again with the fix', run: this.fixWithAi },
+        { text: 'Run quick checks', icon: 'factory-nav-icon factory-ico-check', disabled: !this.canManage(), title: 'Checks every file again', run: this.checkAgain },
+        { text: 'Summarize the build for the reviewer', icon: 'factory-nav-icon factory-ico-doc', disabled: false, title: '', run: askChat('Summarize the checks and build of this change for the reviewer.') }
+      ]);
 
       let pollTimer = null;
       const show = (d) => {
@@ -263,7 +361,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         api.get('changes/' + id).then(show).catch(showError);
       };
-      this.changeId.subscribe(() => { this.selectedFailure(0); this.logRound(0); this.load(); });
+      this.changeId.subscribe(() => { this.selectedFailure(0); this.logRound(0); this.fileCache({}); this.load(); });
       const loadList = () => {
         const id = this.workspaceId();
         this.detail(null);
@@ -271,9 +369,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.changes([]);
           return;
         }
+        this.requirementId('');
+        api.get('workspaces/' + id + '/requirements').then((list) => this.requirements(list.map((r) => ({ id: r.id, label: code('REQ', r.id, 4) + ' – ' + r.title }))))
+          .catch(() => this.requirements([]));
         api.get('workspaces/' + id + '/jenkins').then((j) => this.jenkins(j)).catch(() => this.jenkins(null));
         api.get('workspaces/' + id + '/changes').then((list) => {
           this.changes(list.map((c) => ({ id: c.id, label: code('CHG', c.id, 3) + ' – ' + c.title })));
+          this.changeRequirement({});
+          Promise.all(list.map((c) => api.get('changes/' + c.id).then((d) => [c.id, d.requirementId]).catch(() => [c.id, '']))).then((pairs) => {
+            const map = {};
+            pairs.forEach((p) => { map[p[0]] = p[1]; });
+            this.changeRequirement(map);
+          });
           if (list.length) {
             this.changeId(list[0].id);
           }

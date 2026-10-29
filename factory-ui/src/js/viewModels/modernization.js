@@ -6,12 +6,14 @@
  * The screens can be downloaded as CSV for wave planning.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+        '../services/assistant', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
   function (ko, accUtils, api, workspaceSelection, session, ui, assistant) {
     const lastSegment = (id) => id.substring(id.lastIndexOf('/') + 1);
     // Days of work per screen by complexity, for the effort estimate
     const DAYS = { S: 1, M: 3, L: 5 };
     const PACK_JAVA = { '22.x': 8, '25.x': 11 };
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const go = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
 
     /** A literal word from a rule's regular expression, to find candidate files with code search. */
     function searchTerm(regex) {
@@ -82,10 +84,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.stack = ko.pureComputed(() => {
         const java = fact('backend.javaVersion');
         const targetJava = PACK_JAVA[this.target()];
-        const row = (name, value, status, tone, icon) => ({ name: name, value: value || 'Not detected', pill: ui.pill(status, tone), iconClass: 'factory-nav-icon factory-ico-' + icon });
+        const row = (name, value, status, tone, icon) => ({ name: name, value: value ? value.replace(/\s*\(\d+ files?\)$/, '') : 'Not detected', pill: ui.pill(status, tone), iconClass: 'factory-nav-icon factory-ico-' + icon,
+          tileCss: 'factory-mo-tile factory-ov2-icon-blue', open: () => (name === 'OBDX Framework' ? this.tab('compatibility') : go('profile')) });
         return [
-          row('OBDX Framework', 'OBDX ' + this.version(), this.version() !== this.target() ? 'Upgrade available: ' + this.target() : 'Current', this.version() !== this.target() ? 'amber' : 'green', 'cube'),
-          row('UI Framework', fact('ui.jetVersion') ? 'Oracle JET ' + fact('ui.jetVersion') : fact('ui.architecture'), 'From the profile', 'blue', 'monitor'),
+          row('OBDX Framework', 'OBDX ' + this.version(), this.version() !== this.target() ? 'Upgrade: ' + this.target() : 'Current', this.version() !== this.target() ? 'amber' : 'green', 'cube'),
+          row('UI Framework', fact('ui.jetVersion') ? 'Oracle JET ' + fact('ui.jetVersion') : fact('ui.architecture'), 'Detected', 'blue', 'monitor'),
           row('Backend (Java)', java ? 'Java ' + java : null, java && targetJava && Number(java) < targetJava ? 'Upgrade to Java ' + targetJava : (java ? 'Supported' : 'Unknown'),
             java && targetJava && Number(java) < targetJava ? 'red' : java ? 'green' : 'grey', 'code'),
           row('Database', fact('data.databaseType'), fact('data.databaseType') ? 'Supported' : 'Unknown', fact('data.databaseType') ? 'green' : 'grey', 'cube'),
@@ -98,15 +101,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!s) {
           return [];
         }
-        const row = (name, count, level, icon, tab) => ({ name: name, count: count + ' items', pill: ui.pill(level, level === 'High' ? 'red' : level === 'Medium' ? 'amber' : 'green'),
-          iconClass: 'factory-nav-icon factory-ico-' + icon, open: () => this.tab(tab) });
+        const row = (name, count, level, icon, tab, tone) => ({ name: name, count: count + ' items', pill: ui.pill(level, level === 'High' ? 'red' : level === 'Medium' ? 'amber' : 'green'),
+          iconClass: 'factory-nav-icon factory-ico-' + icon, tileCss: 'factory-mo-tile factory-mo-tile-' + tone, open: () => this.tab(tab) });
         return [
-          row('Framework Upgrade', this.version() !== this.target() ? 1 : 0, this.version() !== this.target() ? 'High' : 'Low', 'cube', 'compatibility'),
-          row('Deprecated Usage', this.findings().length, critical() ? 'High' : this.findings().length ? 'Medium' : 'Low', 'alert', 'deprecated'),
-          row('UI Screen Migration', s.screens, s.complexity.L > 0 ? 'Medium' : 'Low', 'monitor', 'plan'),
-          row('Services Outside This Code', s.callsWithoutBackend, s.callsWithoutBackend ? 'Medium' : 'Low', 'link', 'dependencies'),
-          row('Roles and Segments', s.roles, 'Low', 'user', 'dependencies'),
-          row('User Flows', s.flows, 'Low', 'branch', 'plan')
+          row('Framework Upgrade', this.version() !== this.target() ? 1 : 0, this.version() !== this.target() ? 'High' : 'Low', 'cube', 'compatibility', 'red'),
+          row('Deprecated Usage', this.findings().length, critical() ? 'High' : this.findings().length ? 'Medium' : 'Low', 'alert', 'deprecated', 'violet'),
+          row('UI Screen Migration', s.screens, s.complexity.L > 0 ? 'Medium' : 'Low', 'monitor', 'plan', 'blue'),
+          row('Outside Services', s.callsWithoutBackend, s.callsWithoutBackend ? 'Medium' : 'Low', 'link', 'dependencies', 'teal'),
+          row('Roles and Segments', s.roles, 'Low', 'user', 'dependencies', 'amber'),
+          row('User Flows', s.flows, 'Low', 'branch', 'plan', 'green')
         ];
       });
 
@@ -120,12 +123,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const screens = inv.screens.filter((x) => x.complexity === c);
           return { n: n, name: name, screens: screens.length, days: screens.length * DAYS[c], text: screens.length + ' screens · ' + screens.length * DAYS[c] + ' days (estimate)' };
         };
-        return [wave(1, 'Phase 1 - Small screens', 'S'), wave(2, 'Phase 2 - Medium screens', 'M'), wave(3, 'Phase 3 - Large screens', 'L')];
+        const list = [wave(1, 'Phase 1 - Small screens', 'S'), wave(2, 'Phase 2 - Medium screens', 'M'), wave(3, 'Phase 3 - Large screens', 'L')];
+        const total = list.reduce((sum, p) => sum + p.days, 0) || 1;
+        return list.map((p) => Object.assign(p, {
+          pct: Math.round(100 * p.days / total), barStyle: { width: Math.round(100 * p.days / total) + '%' },
+          title: 'Share of the estimated effort; the factory does not track migrated screens yet'
+        }));
       });
-      this.effortBars = ko.pureComputed(() => {
+      this.effortText = ko.pureComputed(() => 'Estimated effort: ' + this.phases().reduce((sum, p) => sum + p.days, 0) + ' days');
+      this.configureTarget = () => go('packs');
+      // Effort chart with a y-axis in round steps
+      const effortTop = ko.pureComputed(() => {
         const max = Math.max.apply(null, this.phases().map((p) => p.days).concat([1]));
-        return this.phases().map((p) => ({ name: 'Phase ' + p.n, days: p.days, style: { height: Math.max(4, Math.round(120 * p.days / max)) + 'px' } }));
+        const step = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000].find((s) => s * 4 >= max) || Math.ceil(max / 4);
+        return step * 4;
       });
+      this.effortAxis = ko.pureComputed(() => [4, 3, 2, 1, 0].map((i) => effortTop() * i / 4));
+      this.effortBars = ko.pureComputed(() => this.phases().map((p) => ({
+        name: 'Phase ' + p.n, days: p.days, screens: p.screens, style: { height: (100 * p.days / effortTop()) + '%' }
+      })));
       this.risk = ko.pureComputed(() => {
         const s = summary();
         if (!s || !s.screens) {
@@ -152,6 +168,53 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           };
         });
       });
+      // Dependency impact: the workspace in the middle, its modules and what they depend on around it (an SVG image)
+      this.radial = ko.pureComputed(() => {
+        const inv = this.inventory();
+        if (!inv) {
+          return { src: '', alt: '' };
+        }
+        const s = inv.summary;
+        const sats = inv.modules.slice(0, 6).map((m) => ({
+          name: m.name, detail: m.screens + ' screen' + (m.screens === 1 ? '' : 's'),
+          color: m.complexity.L > 0 ? '#ef4444' : m.complexity.M ? '#f59e0b' : '#22c55e'
+        })).concat([
+          { name: 'Backend services', detail: s.endpoints + ' in this code', color: '#2563eb' },
+          { name: 'Product services', detail: s.callsWithoutBackend + ' called by the UI', color: '#7c3aed' },
+          { name: 'Roles', detail: s.roles + ' found', color: '#0891b2' },
+          { name: 'User flows', detail: s.flows + ' found', color: '#64748b' }
+        ]);
+        const W = 380;
+        const H = 284;
+        const cx = W / 2;
+        const cy = H / 2;
+        const parts = [];
+        const nodes = [];
+        sats.forEach((n, i) => {
+          const a = (2 * Math.PI * i) / sats.length - Math.PI / 2;
+          const x = cx + 128 * Math.cos(a);
+          const y = cy + 96 * Math.sin(a);
+          const ex = cx + 46 * Math.cos(a);
+          const ey = cy + 46 * Math.sin(a);
+          parts.push('<line x1="' + ex.toFixed(1) + '" y1="' + ey.toFixed(1) + '" x2="' + (x - 12 * Math.cos(a)).toFixed(1) + '" y2="' + (y - 12 * Math.sin(a)).toFixed(1)
+            + '" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#h)"/>');
+          const anchor = 'middle';
+          const tx = Math.min(W - 52, Math.max(52, x));
+          const ty = Math.sin(a) < -0.2 ? y - 27 : y + 23;
+          nodes.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="10" fill="#fff" stroke="' + n.color + '" stroke-width="3"/>'
+            + '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4" fill="' + n.color + '"/>'
+            + '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" text-anchor="' + anchor + '" font-size="12" font-weight="600" fill="#0f172a">' + esc(n.name.length > 16 ? n.name.slice(0, 15) + '…' : n.name) + '</text>'
+            + '<text x="' + tx.toFixed(1) + '" y="' + (ty + 13).toFixed(1) + '" text-anchor="' + anchor + '" font-size="11" fill="#64748b">' + esc(n.detail) + '</text>');
+        });
+        const title = this.workspace() ? this.workspace().name : 'Workspace';
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" font-family="Segoe UI, Arial, sans-serif">'
+          + '<defs><marker id="h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>'
+          + parts.join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="50" fill="#dbe7fe"/><circle cx="' + cx + '" cy="' + cy + '" r="42" fill="#2563eb"/>'
+          + '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">' + esc(title.length > 14 ? title.slice(0, 13) + '…' : title) + '</text>'
+          + '<text x="' + cx + '" y="' + (cy + 13) + '" text-anchor="middle" font-size="10" fill="#dbeafe">' + s.screens + ' screens</text>'
+          + nodes.join('') + '</svg>';
+        return { src: 'data:image/svg+xml,' + encodeURIComponent(svg), alt: title + ': ' + sats.map((n) => n.name + ' ' + n.detail).join(', ') };
+      });
       this.actions = ko.pureComputed(() => {
         const list = [];
         if (this.version() !== this.target()) {
@@ -177,9 +240,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'ERROR', label: 'Critical', count: critical },
         { value: 'WARNING', label: 'Warning', count: ko.pureComputed(() => this.findings().length - critical()) }
       ]);
+      this.findingModule = ko.observable('');
+      this.findingStatus = ko.observable('');
+      this.findingModuleChange = ui.value(this.findingModule);
+      this.findingStatusChange = ui.value(this.findingStatus);
+      this.findingModules = ko.pureComputed(() => Array.from(new Set(this.findings().map((f) => f.module).filter(Boolean))).sort());
       this.visibleFindings = ko.pureComputed(() => {
         const text = this.findingSearch().trim().toLowerCase();
         return this.findings().filter((f) => (this.severityFilter() === 'all' || f.severity === this.severityFilter())
+          && (!this.findingModule() || f.module === this.findingModule()) && (!this.findingStatus() || f.severity === this.findingStatus())
           && (!text || (f.rule + ' ' + f.path).toLowerCase().indexOf(text) >= 0));
       });
       const findUsage = (workspaceId, rules) => {
@@ -198,7 +267,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return res.results.filter((hit) => !seen[hit.path] && pattern.test(hit.snippet) && (seen[hit.path] = true)).map((hit) => ({
             rule: c.rule.title, severity: c.rule.severity, path: hit.path, module: hit.path.split('/').slice(-2, -1)[0] || '',
             lines: hit.startLine + '-' + hit.endLine, replacement: c.rule.message, type: hit.language,
-            pill: c.rule.severity === 'ERROR' ? ui.pill('Critical', 'red') : ui.pill('Warning', 'amber')
+            current: this.version(), impact: c.rule.severity === 'ERROR' ? 'High' : 'Medium',
+            pill: c.rule.severity === 'ERROR' ? ui.pill('Critical', 'red') : ui.pill('Warning', 'amber'),
+            menuAction: (event) => {
+              const action = event.detail.selectedValue;
+              if (action === 'ask') {
+                this.aiTab('chat');
+                this.ai.ask('How do I replace "' + c.rule.title + '" in ' + hit.path + '? The rule says: ' + c.rule.message);
+              } else if (action === 'copy') {
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(hit.path).catch(() => null);
+                }
+              } else {
+                go('code');
+              }
+            }
           }));
         }).catch(() => []))).then((lists) => {
           if (workspaceId === this.workspaceId()) {
@@ -265,6 +348,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + '\nDeprecated usage found: ' + this.findings().slice(0, 40).map((f) => f.rule + ' in ' + f.path).join('; ')
           + '\nLarge screens: ' + inv.screens.filter((x) => x.complexity === 'L').slice(0, 20).map((x) => x.name).join(', ');
       }, ['What are the main changes for the upgrade?', 'Generate a migration plan', 'Which screens should go first?', 'Explain the deprecated usage']);
+      this.aiTab = ko.observable('chat');
+      this.aiTabs = ui.tabs(this.aiTab, [{ value: 'chat', label: 'Chat' }, { value: 'suggestions', label: 'Suggestions' }]);
+      this.aiExpanded = ko.observable(false);
+      this.toggleAi = () => this.aiExpanded(!this.aiExpanded());
 
       const show = (inventory) => {
         this.errorMessage('');
@@ -293,6 +380,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.rescanFindings = () => findUsage(this.workspaceId(), this.rules());
       this.showPlan = () => this.tab('plan');
+      this.moreAction = (event) => {
+        const action = event.detail.selectedValue;
+        if (action === 'findings') {
+          this.rescanFindings();
+        } else if (action === 'csv') {
+          window.location.href = this.csvUrl();
+        } else if (action === 'plan') {
+          this.tab('plan');
+        } else {
+          go('profile');
+        }
+      };
 
       let subscription = null;
       this.connected = () => {

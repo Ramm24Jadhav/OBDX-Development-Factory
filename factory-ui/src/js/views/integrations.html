@@ -1,4 +1,4 @@
-<div class="factory-pg">
+<div class="factory-pg factory-in">
   <div class="factory-pg-head">
     <div>
       <h1>Integrations &amp; Environment Configuration</h1>
@@ -12,103 +12,196 @@
     <oj-bind-for-each data="[[kpis]]">
       <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
         <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-          <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+          <span :class="[[$current.data.css]]" :title="[[$current.data.sub]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
     </oj-bind-for-each>
   </div>
 
-  <div class="factory-row factory-ag-main">
-    <section class="factory-card factory-ag-list">
-      <div class="factory-tabbar factory-ad-tabs" role="tablist" aria-label="Integration types">
-        <oj-bind-for-each data="[[tabs]]">
-          <template><button type="button" role="tab" :id="[['in-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-            <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-        </oj-bind-for-each>
-      </div>
-      <oj-bind-if test="[[tab() !== 'environments']]">
+  <div class="factory-card factory-in-bar">
+    <div class="factory-tabbar factory-in-tabs" role="tablist" aria-label="Integration types">
+      <oj-bind-for-each data="[[tabs]]">
+        <template><button type="button" role="tab" :id="[['in-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+          <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+    <span class="factory-in-split">
+      <button type="button" id="addIntegration" class="factory-in-split-main" on-click="[[addDefault]]" title="Set up SVN and Jenkins for a workspace on the Code page">
+        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Integration</button>
+      <button type="button" id="addIntegrationMore" class="factory-in-split-caret" aria-label="Choose what to add" aria-haspopup="true" on-click="[[openAddMenu]]">
+        <span class="factory-nav-icon factory-ico-caret" aria-hidden="true"></span></button>
+    </span>
+    <oj-menu id="addIntegrationMenu" on-oj-menu-action="[[addAction]]">
+      <oj-option value="svn">SVN repository (Code page)</oj-option>
+      <oj-option value="jenkins">Jenkins pipeline (Code page)</oj-option>
+      <oj-option value="model" disabled="[[!isAdmin()]]">Model provider (Models page)</oj-option>
+      <oj-option value="other" disabled>Other tools: not supported yet</oj-option>
+    </oj-menu>
+  </div>
+
+  <div class="factory-in-layout">
+    <div class="factory-in-left">
+      <section class="factory-card factory-in-list">
+        <oj-bind-if test="[[tab() === 'environments']]">
+          <p class="factory-note factory-in-envnote">Environments: this factory runs as one environment. Its settings are in Environment Configuration below. The table lists every integration.</p>
+        </oj-bind-if>
         <div class="factory-filters">
-          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search integrations by name or workspace..." aria-label="Search integrations" on-input="[[searchInput]]"></span>
-          <select class="factory-ws-select" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="connected">Connected</option>
+          <span class="factory-ws-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" id="intSearch" placeholder="Search integrations by name or type..." aria-label="Search integrations" on-input="[[searchInput]]"></span>
+          <select class="factory-ws-select" id="intType" aria-label="Type" on-change="[[typeChange]]"><option value="">All Types</option><option value="svn">Source Control</option>
+            <option value="jenkins">CI / CD</option><option value="model">Model Provider</option><option value="other">Other Tools</option></select>
+          <select class="factory-ws-select" id="intStatus" aria-label="Status" on-change="[[statusChange]]"><option value="">All Status</option><option value="connected">Connected</option>
             <option value="configured">Configured</option><option value="issue">Connection Issue</option><option value="inactive">Inactive</option></select>
+          <button type="button" class="factory-ov2-btn" on-click="[[resetFilters]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reset</button>
         </div>
         <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table" id="integrationTable">
-            <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Workspace</th><th>Status</th><th>Last Connected</th></tr></thead>
+          <table class="factory-ov2-table factory-in-table" id="integrationTable">
+            <thead><tr><th><input type="checkbox" id="intSelectAll" aria-label="Select all integrations on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></th>
+              <th>Name</th><th>Type</th><th>Description</th><th>Workspace</th><th>Status</th><th>Last Connected</th><th>Actions</th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[rows]]">
                 <template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+                  <td on-click="[[$current.data.stop]]"><input type="checkbox" :aria-label="[['Select ' + $current.data.name + ' ' + $current.data.workspace]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></td>
                   <td><span class="factory-name-cell"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></td>
                   <td><span :class="[[$current.data.typeCss]]"><oj-bind-text value="[[$current.data.typeLabel]]"></oj-bind-text></span></td>
-                  <td class="factory-ov-subtle factory-in-desc"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td>
-                  <td><span class="factory-tag"><oj-bind-text value="[[$current.data.workspace]]"></oj-bind-text></span></td>
+                  <td class="factory-ov-subtle factory-in-desc"><oj-bind-text value="[[$current.data.descText]]"></oj-bind-text></td>
+                  <td><span class="factory-tag factory-in-ws" :title="[[$current.data.workspace]]"><oj-bind-text value="[[$current.data.wsShort]]"></oj-bind-text></span></td>
                   <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
-                  <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.last]]"></oj-bind-text></td></tr></template>
+                  <td class="factory-in-last"><oj-bind-text value="[[$current.data.last]]"></oj-bind-text></td>
+                  <td on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
+                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.name + ' ' + $current.data.workspace]]"></oj-bind-text>
+                    <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
+                      <oj-option value="details">View details</oj-option>
+                      <oj-option value="test" disabled="[[!$current.data.test]]">Test connection</oj-option>
+                      <oj-option value="edit">Edit configuration</oj-option>
+                      <oj-option value="copy" disabled="[[!$current.data.hasTarget]]">Copy server URL</oj-option>
+                    </oj-menu></oj-menu-button></td></tr></template>
               </oj-bind-for-each>
             </tbody>
           </table>
+          <oj-bind-if test="[[rows().length === 0]]"><p class="factory-ov-empty"><oj-bind-text value="[[emptyText]]"></oj-bind-text></p></oj-bind-if>
         </div>
-      </oj-bind-if>
-      <oj-bind-if test="[[tab() === 'environments']]">
-        <h2>Environment Configuration</h2>
-        <p class="factory-card-sub">This factory runs as one environment. Its settings (port, database, model server defaults, sign-in) are in the
-          factory's settings file, set by whoever installs it; secrets there are never shown in the browser.</p>
-        <dl class="factory-kv">
-          <dt>Model server</dt><dd class="factory-mono"><oj-bind-text value="[[modelServer]]"></oj-bind-text></dd>
-          <dt>Code search server</dt><dd class="factory-mono"><oj-bind-text value="[[embedServer]]"></oj-bind-text></dd>
-          <dt>Workspaces</dt><dd><oj-bind-text value="[[workspaceCount]]"></oj-bind-text></dd>
-        </dl>
-        <div class="factory-note">DEV, SIT and UAT profiles are not part of the factory yet. Each bank's environments are reached through its own SVN and Jenkins jobs, set per workspace on the Code page.</div>
-      </oj-bind-if>
-    </section>
+        <div class="factory-pager"><span><oj-bind-text value="[[pager.text() + ' integrations' + selectedText()]]"></oj-bind-text></span>
+          <span class="factory-in-pages"><button type="button" class="factory-in-pg" aria-label="Previous page" on-click="[[pager.prev]]">‹</button>
+            <oj-bind-for-each data="[[pager.buttons]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></button></template></oj-bind-for-each>
+            <button type="button" class="factory-in-pg" aria-label="Next page" on-click="[[pager.next]]">›</button>
+            <select class="factory-ws-select factory-in-size" id="intPageSize" aria-label="Integrations per page" on-change="[[pager.sizeChange]]"><option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select></span></div>
+      </section>
 
-    <section class="factory-card factory-ag-detail">
-      <oj-bind-if test="[[!selected()]]"><p class="factory-empty">No integrations yet. Add a workspace to start.</p></oj-bind-if>
-      <oj-bind-if test="[[selected()]]">
-        <div class="factory-ag-dhead">
-          <span class="factory-name-cell"><span :class="[[selected().iconCss]]"><span :class="[[selected().iconClass]]" aria-hidden="true"></span></span>
-            <span><span class="factory-in-title"><oj-bind-text value="[[selected().name]]"></oj-bind-text></span><span class="factory-ov-subtle factory-ad-uname"><oj-bind-text value="[[selected().typeLabel]]"></oj-bind-text></span></span></span>
-          <span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
+      <section class="factory-card factory-in-env" id="environmentConfig">
+        <div class="factory-in-cardhead">
+          <div><h2>Environment Configuration</h2>
+            <p class="factory-card-sub">Settings this factory runs with. It is one environment: DEV, SIT and UAT profiles are not part of the factory.</p></div>
+          <button type="button" id="editEnvironment" class="factory-in-primary" on-click="[[editEnvironment]]" :disabled="[[!isAdmin()]]"
+                  :title="[[isAdmin() ? 'Model settings are edited on the Models page. The other settings are in the factory settings file, set by whoever installs it.' : 'Only administrators can change the factory settings']]">
+            <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Edit Environment</button>
         </div>
-        <dl class="factory-kv factory-in-kv">
-          <dt>Workspace</dt><dd><oj-bind-text value="[[selected().workspace]]"></oj-bind-text></dd>
-          <dt>Description</dt><dd><oj-bind-text value="[[selected().description]]"></oj-bind-text></dd>
-          <dt>Server URL</dt><dd class="factory-mono"><oj-bind-text value="[[selected().target]]"></oj-bind-text></dd>
-          <dt><oj-bind-text value="[[selected().envLabel]]"></oj-bind-text></dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
-          <oj-bind-if test="[[selected().jobs]]"><dt>Jobs</dt><dd class="factory-mono"><oj-bind-text value="[[selected().jobs]]"></oj-bind-text></dd></oj-bind-if>
-          <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
-          <dt>Last Connected</dt><dd><oj-bind-text value="[[selected().last]]"></oj-bind-text></dd>
-          <dt>Authentication</dt><dd><oj-bind-text value="[[selected().auth]]"></oj-bind-text></dd>
-        </dl>
-        <oj-bind-if test="[[selected().testText]]"><p :class="[[selected().state === 'connected' ? 'factory-note' : 'factory-note factory-note-warn']]" id="testResult"><oj-bind-text value="[[selected().testText]]"></oj-bind-text></p></oj-bind-if>
-        <div class="factory-btn-row">
-          <oj-button id="testIntegrationButton" chroming="callToAction" on-oj-action="[[testSelected]]" disabled="[[!selected().test || testing()]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Test Connection</oj-button>
-          <oj-button id="editIntegrationButton" chroming="outlined" on-oj-action="[[editSelected]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Configuration</oj-button>
+        <div class="factory-subtabs factory-in-envtabs">
+          <button type="button" class="factory-tab factory-tab-on">This factory</button>
         </div>
-        <oj-bind-if test="[[selected().type === 'jenkins']]">
-          <h3>Recent Builds</h3>
-          <div class="factory-ov2-table-wrap">
-            <table class="factory-ov2-table"><thead><tr><th>Build #</th><th>Branch</th><th>Status</th><th>Started</th><th>Duration</th></tr></thead>
-              <tbody><oj-bind-for-each data="[[selected().builds]]"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></td>
-                <td class="factory-mono"><oj-bind-text value="[[$current.data.branch]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
-                <td><oj-bind-text value="[[$current.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
-            <oj-bind-if test="[[selected().builds.length === 0]]"><p class="factory-ov-empty">No builds yet.</p></oj-bind-if>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table factory-in-envtable" id="envTable">
+            <thead><tr><th>Variable</th><th>Value</th><th>Description</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[envRows]]"><template><tr>
+              <td class="factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
+              <td class="factory-in-envval" :title="[[$current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></td>
+              <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+          </table>
+        </div>
+        <p class="factory-card-sub factory-in-envfoot">Secrets (database password, API keys, the secret key) are never shown in the browser. Each bank's own environments are reached through its SVN and Jenkins jobs.</p>
+      </section>
+    </div>
+
+    <div class="factory-in-right">
+      <section class="factory-card factory-in-detail">
+        <oj-bind-if test="[[!selected()]]"><p class="factory-empty">No integrations yet. Add a workspace to start.</p></oj-bind-if>
+        <oj-bind-if test="[[selected()]]">
+          <div class="factory-in-dhead">
+            <span :class="[[selected().iconCss]]"><span :class="[[selected().iconClass]]" aria-hidden="true"></span></span>
+            <span class="factory-in-dname"><span class="factory-in-title"><oj-bind-text value="[[selected().name]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[selected().typeLabel + ' · ' + selected().workspace]]"></oj-bind-text></span></span>
+            <span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
+            <oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
+              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
+              <oj-menu slot="menu" on-oj-menu-action="[[detailAction]]">
+                <oj-option value="copy" disabled="[[!selected().hasTarget]]">Copy server URL</oj-option>
+                <oj-option value="edit">Edit configuration</oj-option>
+                <oj-option value="troubleshooting">Troubleshooting</oj-option>
+              </oj-menu></oj-menu-button>
+          </div>
+          <div class="factory-subtabs factory-in-dtabs">
+            <oj-bind-for-each data="[[detailTabs]]">
+              <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+          <oj-bind-if test="[[detailTab() === 'overview']]">
+            <dl class="factory-kv factory-in-kv">
+              <dt>Name</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
+              <dt>Type</dt><dd><oj-bind-text value="[[selected().typeLabel]]"></oj-bind-text></dd>
+              <dt>Description</dt><dd><oj-bind-text value="[[selected().description]]"></oj-bind-text></dd>
+              <dt>Server URL</dt><dd class="factory-mono factory-in-url" :title="[[selected().target]]"><oj-bind-text value="[[selected().targetShort]]"></oj-bind-text></dd>
+              <dt><oj-bind-text value="[[selected().envLabel]]"></oj-bind-text></dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
+              <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Last Connected</dt><dd><oj-bind-text value="[[selected().last]]"></oj-bind-text></dd>
+              <dt>Authentication</dt><dd><oj-bind-text value="[[selected().auth]]"></oj-bind-text></dd>
+            </dl>
+          </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'config']]">
+            <dl class="factory-kv factory-in-kv">
+              <oj-bind-for-each data="[[selected().config]]"><template><dt><oj-bind-text value="[[$current.data.k]]"></oj-bind-text></dt><dd class="factory-in-url" :title="[[$current.data.v]]"><oj-bind-text value="[[$current.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each>
+            </dl>
+            <p class="factory-card-sub">Credentials stay on the server and are never shown. Change these with Edit Configuration.</p>
+          </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'jobs']]">
+            <oj-bind-if test="[[selected().jobList.length]]">
+              <ul class="factory-in-jobs"><oj-bind-for-each data="[[selected().jobList]]"><template><li class="factory-mono"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[!selected().jobList.length]]"><p class="factory-empty"><oj-bind-text value="[[selected().type === 'jenkins' ? 'No Jenkins jobs set up for this workspace. Add them on the Code page.' : 'Build jobs belong to Jenkins integrations.']]"></oj-bind-text></p></oj-bind-if>
+          </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'history']]">
+            <ul class="factory-in-hist"><oj-bind-for-each data="[[selected().history]]"><template><li><span :class="[[$current.data.dot]]"></span><span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            <oj-bind-if test="[[selected().history.length === 0]]"><p class="factory-empty">Nothing recorded yet. Test the connection to add an entry.</p></oj-bind-if>
+          </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'troubleshooting']]">
+            <ul class="factory-in-tips"><oj-bind-for-each data="[[selected().tips]]"><template><li><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[selected().testText]]"><p :class="[[selected().state === 'connected' ? 'factory-note' : 'factory-note factory-note-warn']]" id="testResult"><oj-bind-text value="[[selected().testText]]"></oj-bind-text></p></oj-bind-if>
+          <div class="factory-in-btns">
+            <button type="button" id="testIntegrationButton" class="factory-in-primary factory-in-grow" on-click="[[testSelected]]" :disabled="[[!selected().test || testing()]]"
+                    :title="[[selected().test ? 'Connect to it now' : selected().type === 'model' ? 'Only administrators can test model servers' : 'Set it up first']]">
+              <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span><oj-bind-text value="[[testing() ? 'Testing...' : 'Test Connection']]"></oj-bind-text></button>
+            <button type="button" id="editIntegrationButton" class="factory-ov2-btn factory-in-grow factory-in-edit" on-click="[[editSelected]]">
+              <span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Configuration</button>
+            <oj-menu-button chroming="outlined" display="icons" class="factory-in-moreb">
+              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
+              <oj-menu slot="menu" on-oj-menu-action="[[detailAction]]">
+                <oj-option value="copy" disabled="[[!selected().hasTarget]]">Copy server URL</oj-option>
+                <oj-option value="history">Show history</oj-option>
+                <oj-option value="troubleshooting">Troubleshooting</oj-option>
+              </oj-menu></oj-menu-button>
           </div>
         </oj-bind-if>
-      </oj-bind-if>
-    </section>
-  </div>
+        <div class="factory-in-builds">
+          <h2 class="factory-in-h3">Recent Builds <button type="button" class="factory-link-sm" on-click="[[viewBuilds]]">View All →</button></h2>
+          <div class="factory-ov2-table-wrap">
+            <table class="factory-ov2-table factory-in-btable"><thead><tr><th>Build #</th><th>Branch</th><th>Status</th><th>Started</th><th>Duration</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[builds]]"><template><tr><td class="factory-cp-link"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></td>
+                <td class="factory-in-branch" :title="[[$current.data.branch]]"><oj-bind-text value="[[$current.data.branch]]"></oj-bind-text></td><td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+                <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+            <oj-bind-if test="[[builds().length === 0]]"><p class="factory-ov-empty"><oj-bind-text value="[[buildsEmpty]]"></oj-bind-text></p></oj-bind-if>
+          </div>
+        </div>
+      </section>
 
-  <section class="factory-card factory-in-health">
-    <h2>Integration Health</h2>
-    <p class="factory-card-sub">Configured and connected integrations of each kind</p>
-    <ul class="factory-ov2-progress">
-      <oj-bind-for-each data="[[health]]">
-        <template><li><span class="factory-ov2-prog-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span>
-          <span class="factory-ov2-prog-label"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
-          <span class="factory-ov2-bar"><span :class="[[$current.data.barCss]]" :style="[[$current.data.style]]"></span></span>
-          <span class="factory-ov2-prog-n"><oj-bind-text value="[[$current.data.pct + '  ' + $current.data.text]]"></oj-bind-text></span></li></template>
-      </oj-bind-for-each>
-    </ul>
-  </section>
+      <section class="factory-card factory-in-health">
+        <h2>Integration Health <button type="button" class="factory-link-sm" on-click="[[healthDetails]]">View Details →</button></h2>
+        <p class="factory-card-sub">Configured and connected integrations of each kind</p>
+        <ul class="factory-in-hlist">
+          <oj-bind-for-each data="[[health]]">
+            <template><li><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+              <span class="factory-in-hname"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
+              <span class="factory-ov2-bar"><span :class="[[$current.data.barCss]]" :style="[[$current.data.style]]"></span></span>
+              <span class="factory-in-hpct"><oj-bind-text value="[[$current.data.pct]]"></oj-bind-text></span>
+              <span class="factory-in-hn"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+    </div>
+  </div>
 </div>

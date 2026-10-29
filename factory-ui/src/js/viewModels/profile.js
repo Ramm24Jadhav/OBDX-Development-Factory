@@ -43,6 +43,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Coverage: the share of facts that have a value (detected, confirmed or corrected)
       this.coverage = ko.pureComputed(() => (facts().length ? Math.round(100 * facts().filter((f) => f.value).length / facts().length) : 0));
       this.coverageStyle = ko.pureComputed(() => ({ background: 'conic-gradient(#2563eb ' + this.coverage() + '%, #e5eaf1 0)' }));
+      // Confidence: the share of facts confirmed or corrected by people, or detected with high or medium confidence
+      this.confidence = ko.pureComputed(() => (facts().length ? Math.round(100 * facts().filter((f) => f.status === 'confirmed' || f.status === 'corrected'
+        || (f.value && (f.confidence === 'HIGH' || f.confidence === 'MEDIUM'))).length / facts().length) : 0));
+      this.confidenceStyle = ko.pureComputed(() => ({ background: 'conic-gradient(#2563eb ' + this.confidence() + '%, #e5eaf1 0)' }));
+      // The discovery run under the Refresh Discovery button
+      this.discoveryPill = ko.pureComputed(() => (this.busy() ? ui.pill('Running', 'blue') : (this.profile() ? ui.pill('Completed', 'green') : ui.pill('Not run', 'grey'))));
       this.statusPill = ko.pureComputed(() => {
         if (!this.profile()) {
           return ui.pill('Not detected', 'grey');
@@ -77,12 +83,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           title: s.title, iconClass: 'factory-nav-icon factory-ico-' + s.icon, status: cardStatus(list),
           rows: list.map(factRow),
           evidenceTitle: 'Evidence (' + evidence.length + ' file' + (evidence.length === 1 ? '' : 's') + ')',
-          evidence: evidence.slice(0, 3).map((p) => ({ path: p, name: p.split('/').pop() })),
-          more: evidence.length > 3 ? '+' + (evidence.length - 3) : '',
-          toConventions: () => this.tab('conventions')
+          evidence: evidence.slice(0, 2).map((p) => ({ path: p, name: p.split('/').pop() })),
+          more: evidence.length > 2 ? '+' + (evidence.length - 2) : '',
+          sparse: list.length < 4,
+          toConventions: () => this.tab('conventions'),
+          open: () => { this.tab('settings'); this.factSection(s.key); this.factSectionTitle(s.title.replace(/^\d+\.\s*/, '')); }
         };
       }).filter((c) => c.rows.length > 0));
-      this.allFacts = ko.pureComputed(() => facts().map(factRow));
+      // The All facts table, for one card's section when opened from its chevron
+      this.factSection = ko.observable('');
+      this.factSectionTitle = ko.observable('');
+      this.tab.subscribe(() => this.factSection(''));
+      this.showAllFacts = () => this.factSection('');
+      this.allFacts = ko.pureComputed(() => facts().filter((f) => !this.factSection() || f.section === this.factSection()).map(factRow));
       this.conventionFacts = ko.pureComputed(() => facts().filter((f) => f.section === 'CONVENTIONS').map(factRow));
 
       // Dependencies: the frameworks and libraries the profile found, one tag each
@@ -103,24 +116,54 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         facts().forEach((f) => (f.evidence || []).forEach((p) => { (files[p] = files[p] || []).push(f.label); }));
         return files;
       });
-      this.configFiles = ko.pureComputed(() => Object.keys(evidenceFiles()).filter((p) => CONFIG.test(p)).sort().map((p) => ({
-        path: p, name: p.split('/').pop(), purpose: evidenceFiles()[p].slice(0, 2).join(', '),
-        open: () => this.searchFile(p)
-      })));
+      // A configuration file is Valid when the facts read from it are confirmed or of high or medium confidence, and
+      // Warning when one is of low confidence or the discovery warned about it.
+      const fileRevisions = ko.observable(null);
+      this.configFiles = ko.pureComputed(() => {
+        const warnings = this.profile() ? this.profile().warnings || [] : [];
+        return Object.keys(evidenceFiles()).filter((p) => CONFIG.test(p)).sort().map((p) => {
+          const name = p.split('/').pop();
+          const weak = facts().filter((f) => (f.evidence || []).indexOf(p) >= 0 && f.status === 'detected' && f.confidence === 'LOW');
+          const warned = warnings.filter((w) => w.indexOf(name) >= 0);
+          const warn = weak.length > 0 || warned.length > 0;
+          const revision = fileRevisions() ? fileRevisions()[p] : undefined;
+          return {
+            path: p, name: name, purpose: evidenceFiles()[p].slice(0, 2).join(', '),
+            status: warn ? ui.pill('Warning', 'amber') : ui.pill('Valid', 'green'),
+            statusTitle: warn ? (warned.concat(weak.map((f) => f.label + ' has low confidence'))).join('; ') : 'The facts read from this file are reliable',
+            modified: revision !== undefined ? 'r' + revision : 'Not known',
+            modifiedTitle: revision !== undefined ? 'Last indexed at this revision' : 'This factory server does not report file changes',
+            open: () => this.searchFile(p)
+          };
+        });
+      });
+
+      // Repository Structure: folders of the evidence and example files, which can be expanded and collapsed
+      const collapsed = ko.observable({});
       this.tree = ko.pureComputed(() => {
         const root = {};
         const paths = Object.keys(evidenceFiles()).concat(this.examplePaths());
         paths.forEach((p) => {
           let node = root;
-          p.split('/').slice(0, -1).slice(0, 4).forEach((part) => { node = node[part] = node[part] || {}; });
+          p.split('/').slice(0, -1).slice(0, 5).forEach((part) => { node = node[part] = node[part] || {}; });
         });
         const rows = [];
-        const walk = (node, depth) => Object.keys(node).sort().forEach((name) => {
-          rows.push({ name: name, style: { paddingLeft: (depth * 16) + 'px' } });
-          walk(node[name], depth + 1);
+        const walk = (node, depth, prefix) => Object.keys(node).sort().forEach((name) => {
+          const key = prefix + name;
+          const hasChildren = Object.keys(node[name]).length > 0;
+          const open = hasChildren && (collapsed()[key] === undefined ? depth < 2 : !collapsed()[key]);
+          rows.push({
+            name: name, style: { paddingLeft: (depth * 14) + 'px' }, hasChildren: hasChildren,
+            caret: 'factory-nav-icon factory-ico-caret factory-pf2-caret' + (open ? '' : ' factory-pf2-caret-closed'),
+            label: (open ? 'Collapse ' : 'Expand ') + name,
+            toggle: () => { const c = Object.assign({}, collapsed()); c[key] = open; collapsed(c); }
+          });
+          if (open) {
+            walk(node[name], depth + 1, key + '/');
+          }
         });
-        walk(root, 0);
-        return rows.slice(0, 40);
+        walk(root, 0, '');
+        return rows.slice(0, 60);
       });
 
       // Version pack recipes: each part has its reference examples and pin/unpin actions
@@ -182,6 +225,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         api.get('workspaces/' + id).then((w) => { if (id === this.workspaceId()) { this.workspace(w); } }).catch(() => null);
         api.get('workspaces/' + id + '/index').then((s) => { if (id === this.workspaceId()) { this.index(s); } }).catch(() => null);
+        fileRevisions(null);
+        api.get('workspaces/' + id + '/files?limit=20000').then((list) => {
+          if (id === this.workspaceId()) {
+            const map = {};
+            list.forEach((f) => { map[f.path] = f.revision; });
+            fileRevisions(map);
+          }
+        }).catch(() => null);
         api.get(base())
           .then((profile) => { if (id === this.workspaceId()) { show(profile); } })
           .catch((error) => (error.status === 404 ? this.emptyMessage(error.message) : showError(error)));
@@ -207,8 +258,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' }));
       };
 
+      // AI Assistant modes: each tells the model what kind of answer to give
+      this.aiMode = ko.observable('ask');
+      const MODES = {
+        ask: 'Answer the question.',
+        explain: 'Explain the detected configuration or file the question names, step by step.',
+        usage: 'Find where the named component, class or pattern is used, from the evidence files.',
+        generate: 'Suggest code that follows the conventions below; say which facts it relies on.',
+        compare: 'Compare the conventions below with what the question describes and list the differences.'
+      };
+      this.aiModes = ui.tabs(this.aiMode, [
+        { value: 'ask', label: 'Ask' }, { value: 'explain', label: 'Explain' }, { value: 'usage', label: 'Find Usage' },
+        { value: 'generate', label: 'Generate' }, { value: 'compare', label: 'Compare' }
+      ]);
+      this.aiExpanded = ko.observable(false);
+      this.toggleAi = () => this.aiExpanded(!this.aiExpanded());
       this.ai = assistant.create(() => (this.profile()
-        ? 'Project Profile of workspace ' + (this.workspace() ? this.workspace().name : '') + ' (detected ' + this.detectedAt() + '):\n'
+        ? 'Answer mode: ' + MODES[this.aiMode()] + '\n'
+          + 'Project Profile of workspace ' + (this.workspace() ? this.workspace().name : '') + ' (detected ' + this.detectedAt() + '):\n'
           + facts().map((f) => f.section + ' / ' + f.label + ': ' + (f.value || 'not found') + ' [' + f.status + ', confidence ' + f.confidence + ']'
             + (f.evidence && f.evidence.length ? ' evidence: ' + f.evidence.slice(0, 3).join(', ') : '')).join('\n')
         : ''), ['Explain OBDX configuration', 'Find transaction patterns', 'Show UI component usage', 'What should I confirm first?']);

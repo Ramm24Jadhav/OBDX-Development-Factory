@@ -6,8 +6,6 @@
     </div>
     <oj-bind-if test="[[workspace()]]">
       <div class="factory-cp-head-actions">
-        <oj-button id="openKnowledgeButton" chroming="outlined" on-oj-action="[[openKnowledge]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Knowledge Explorer</oj-button>
         <oj-bind-if test="[[lastIndexedText()]]">
           <span class="factory-cp-last"><oj-bind-text value="[['Last indexed: ' + lastIndexedText()]]"></oj-bind-text></span>
         </oj-bind-if>
@@ -21,6 +19,15 @@
         <oj-bind-if test="[[importRunning()]]">
           <oj-button id="importButton" chroming="callToAction" disabled="true">Indexing...</oj-button>
         </oj-bind-if>
+        <oj-menu-button id="codeMoreMenu" chroming="borderless" display="icons" class="factory-cp2-more">
+          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More
+          <oj-menu slot="menu" on-oj-menu-action="[[headerMenu]]">
+            <oj-option value="knowledge" id="openKnowledgeButton">Knowledge Explorer</oj-option>
+            <oj-option value="history">Import History</oj-option>
+            <oj-option value="index">Code Index</oj-option>
+            <oj-option value="settings">Settings</oj-option>
+          </oj-menu>
+        </oj-menu-button>
       </div>
     </oj-bind-if>
   </div>
@@ -47,22 +54,34 @@
     <!-- Repository: the configuration, rules, index and search at a glance -->
     <oj-bind-if test="[[tab() === 'repository']]">
       <div class="factory-cp-grid3">
-        <section class="factory-ov-card">
+        <section class="factory-ov-card" id="repositoryCard">
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>1. Repository Configuration</span>
-            <oj-bind-if test="[[svnOk()]]"><span class="factory-ov-pill factory-ov-pill-green factory-cp-pill"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Connected</span></oj-bind-if>
+            <oj-bind-if test="[[repoConnected()]]"><span class="factory-ov-pill factory-ov-pill-green factory-cp-pill" id="connectedPill" :title="[[connectedTitle]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Connected</span></oj-bind-if>
           </h2>
-          <oj-form-layout max-columns="2" direction="row" user-assistance-density="compact">
-            <oj-input-text id="svnUrl" colspan="2" label-hint="SVN repository URL" value="{{svnUrl}}" required readonly="[[!canManage()]]"
-                           help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
-            <oj-input-text id="svnUsername" autocomplete="off" label-hint="Username" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
-            <oj-input-password id="svnPassword" autocomplete="new-password" label-hint="Password" value="{{svnPassword}}" mask-icon="visible"
+          <div class="factory-cp2-kind" role="radiogroup" aria-label="Where is the code?">
+            <label :title="[[localEnabled() ? 'A local SVN repository or checkout folder on the factory computer' : 'Local folders are turned off on this factory']]">
+              <input type="radio" name="codeSourceKind" value="folder" :checked="[[sourceKind() === 'folder']]" :disabled="[[!localEnabled() || !canManage()]]" on-change="[[pickKind]]">Folder on this computer</label>
+            <label><input type="radio" name="codeSourceKind" value="url" :checked="[[sourceKind() === 'url']]" :disabled="[[!canManage()]]" on-change="[[pickKind]]">SVN server (URL)</label>
+          </div>
+          <oj-bind-if test="[[sourceKind() === 'url']]">
+            <oj-text-area id="svnUrl" class="factory-cp2-url" label-hint="SVN repository URL" label-edge="inside" rows="2" resize-behavior="none" value="{{svnUrl}}" required readonly="[[!canManage()]]"
+                          help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-text-area>
+          </oj-bind-if>
+          <oj-bind-if test="[[sourceKind() === 'folder']]">
+            <oj-text-area id="svnFolder" class="factory-cp2-url" label-hint="Folder (a local SVN repository or checkout)" label-edge="inside" rows="2" resize-behavior="none" value="{{folderPath}}" required readonly="[[!canManage()]]"
+                          help-hints.definition="For example C:\svn\obdx\trunk. It is saved as a file:/// SVN URL."></oj-text-area>
+          </oj-bind-if>
+          <div class="factory-cp2-pair">
+            <oj-input-text id="svnUsername" autocomplete="off" label-hint="Username" label-edge="inside" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
+            <oj-input-password id="svnPassword" autocomplete="new-password" label-hint="Password" label-edge="inside" value="{{svnPassword}}" mask-icon="visible"
                                placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
-          </oj-form-layout>
+          </div>
           <div class="factory-cp-actions">
             <oj-button id="testSvnButton" chroming="callToAction" on-oj-action="[[testSvn]]" disabled="[[busy() || !canManage()]]">
               <span slot="startIcon" class="factory-nav-icon factory-ico-link factory-btn-icon" aria-hidden="true"></span>Test Connection</oj-button>
             <oj-button id="saveSvnButton" on-oj-action="[[saveSvn]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
-            <oj-bind-if test="[[svnOk()]]"><span class="factory-cp-ok-inline"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Connection successful</span></oj-bind-if>
+            <oj-bind-if test="[[svnOk()]]"><span class="factory-cp-ok-inline" id="connectionResult"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Connection successful</span></oj-bind-if>
+            <oj-bind-if test="[[!svnOk() && lastImportOk()]]"><span class="factory-cp-ok-inline" id="connectionResult" title="The last code import read the repository"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Last import connected</span></oj-bind-if>
           </div>
           <oj-bind-if test="[[svnMessage()]]">
             <p class="factory-cp-ok-note"><oj-bind-text value="[[svnMessage]]"></oj-bind-text></p>
@@ -106,6 +125,11 @@
             </div>
           </oj-bind-if>
           <oj-bind-if test="[[!jenkinsSaved()]]">
+            <dl class="factory-cp-kv factory-cp2-empty-kv">
+              <dt>Jenkins URL</dt><dd class="factory-ov-subtle">Not set</dd>
+              <dt>Build jobs</dt><dd class="factory-ov-subtle">Not set</dd>
+              <dt>Mode</dt><dd class="factory-ov-subtle">Not set</dd>
+            </dl>
             <p class="factory-cp-help">Not set up. Jenkins builds generated changes with the bank's jobs and sends build errors back to the model to fix.</p>
             <oj-button id="setUpJenkinsButton" chroming="outlined" on-oj-action="[[editSettings]]">Set up Jenkins</oj-button>
           </oj-bind-if>
@@ -119,10 +143,20 @@
       </div>
 
       <div class="factory-cp-grid-main">
-        <section class="factory-ov-card">
-          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>Quick Check Rules</span></h2>
-          <div class="factory-cp-toolbar">
-            <div class="factory-chips" role="group" aria-label="Severity">
+        <div class="factory-cp2-left">
+          <section class="factory-ov-card" id="quickCheckRules">
+            <div class="factory-cp2-cardhead">
+              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>Quick Check Rules</span>
+                <span class="factory-cp2-help" tabindex="0" title="Rules of the workspace's OBDX version pack. They run on every generated file and again before each Jenkins build; errors go back to the model to fix, warnings go to reviewers. Status comes from the files the factory generated in this workspace.">
+                  <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span></span></h2>
+              <div class="factory-cp2-headtools">
+                <span class="factory-ws-search factory-cp2-rulesearch"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+                  <input id="ruleSearchBox" type="search" placeholder="Search rules..." aria-label="Search rules" :value="[[ruleQuery]]" on-input="[[ruleQueryInput]]"></span>
+                <button type="button" class="factory-cp2-addrule" id="addRuleButton" disabled title="Rules come from the OBDX version pack files. Add a rule to the pack on the Version Packs page, or in the pack's rules file.">
+                  <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Rule</button>
+              </div>
+            </div>
+            <div class="factory-chips factory-cp2-chips" role="group" aria-label="Severity">
               <oj-bind-for-each data="[[ruleFilters]]">
                 <template>
                   <button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
@@ -131,37 +165,110 @@
                 </template>
               </oj-bind-for-each>
             </div>
-            <oj-input-text id="ruleSearch" class="factory-cp-rule-search" label-hint="Search rules" label-edge="none" placeholder="Search rules..."
-                           value="{{ruleQuery}}" raw-value="{{ruleQuery}}" clear-icon="conditional"></oj-input-text>
-          </div>
-          <div class="factory-cp-table-wrap">
-            <table id="ruleTable" class="factory-ov2-table factory-cp-rules factory-cp-rules-compact">
-              <thead><tr><th>On</th><th>Rule Name</th><th>Category</th><th>Severity</th><th>Description</th><th>Files</th></tr></thead>
-              <tbody>
-                <oj-bind-for-each data="[[compactRules]]" as="r">
-                  <template>
-                    <tr>
-                      <td><oj-switch :id="[['rule-' + r.data.id]]" value="[[r.data.enabled]]" disabled="[[!r.data.canManage]]"
-                                     on-value-changed="[[r.data.toggle]]" label-hint="[[r.data.title]]" label-edge="none"></oj-switch></td>
-                      <td class="factory-cp-rule-name"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></td>
-                      <td class="factory-cp-nowrap"><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td>
-                      <td><span :class="[['factory-ov-pill ' + (r.data.severity === 'error' ? 'factory-ov-pill-red' : 'factory-ov-pill-amber')]]">
-                        <oj-bind-text value="[[r.data.severity === 'error' ? 'Error' : 'Warning']]"></oj-bind-text></span></td>
-                      <td class="factory-cp-desc" :title="[[r.data.message]]"><oj-bind-text value="[[r.data.message]]"></oj-bind-text></td>
-                      <td class="factory-cp-files"><oj-bind-text value="[[r.data.files]]"></oj-bind-text></td>
-                    </tr>
-                  </template>
-                </oj-bind-for-each>
-              </tbody>
-            </table>
-            <oj-bind-if test="[[visibleRules().length === 0]]">
-              <p class="factory-ov-empty">No rules match.</p>
-            </oj-bind-if>
+            <div class="factory-cp2-table-wrap">
+              <table id="ruleTable" class="factory-ov2-table factory-cp2-rules">
+                <thead><tr><th class="factory-cp2-on">On</th><th>Rule Name</th><th>Category</th><th>Severity</th><th>Description</th><th>Files</th><th>Status</th><th class="factory-cp2-act"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[compactRules]]" as="r">
+                    <template>
+                      <tr>
+                        <td class="factory-cp2-on"><oj-switch :id="[['rule-' + r.data.id]]" value="[[r.data.enabled]]" disabled="[[!r.data.canManage]]"
+                                       on-value-changed="[[r.data.toggle]]" label-hint="[[r.data.title]]" label-edge="none"></oj-switch></td>
+                        <td class="factory-cp2-name" :title="[[r.data.title]]"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></td>
+                        <td class="factory-cp-nowrap"><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td>
+                        <td><span :class="[['factory-ov-pill ' + (r.data.severity === 'error' ? 'factory-ov-pill-red' : 'factory-ov-pill-amber')]]">
+                          <oj-bind-text value="[[r.data.severity === 'error' ? 'Error' : 'Warning']]"></oj-bind-text></span></td>
+                        <td class="factory-cp2-desc" :title="[[r.data.message]]"><span><oj-bind-text value="[[r.data.message]]"></oj-bind-text></span></td>
+                        <td class="factory-cp2-files" :title="[[r.data.files]]"><oj-bind-text value="[[r.data.filesShort]]"></oj-bind-text></td>
+                        <td><span :class="[[r.data.status.css]]" :title="[[r.data.status.title]]"><span :class="[[r.data.status.icon]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></td>
+                        <td class="factory-cp2-act">
+                          <oj-menu-button :id="[['ruleMenu-' + r.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
+                            <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
+                            <oj-bind-text value="[['Actions for ' + r.data.title]]"></oj-bind-text>
+                            <oj-menu slot="menu" on-oj-menu-action="[[r.data.menu]]">
+                              <oj-option value="toggle" disabled="[[!r.data.canManage]]"><oj-bind-text value="[[r.data.enabled ? 'Turn off' : 'Turn on']]"></oj-bind-text></oj-option>
+                              <oj-option value="details">Show in Quick Checks</oj-option>
+                              <oj-option value="packs">Open Version Packs</oj-option>
+                            </oj-menu>
+                          </oj-menu-button>
+                        </td>
+                      </tr>
+                    </template>
+                  </oj-bind-for-each>
+                </tbody>
+              </table>
+              <oj-bind-if test="[[visibleRules().length === 0]]">
+                <p class="factory-ov-empty">No rules match.</p>
+              </oj-bind-if>
+            </div>
             <oj-bind-if test="[[visibleRules().length > compactRules().length]]">
               <p class="factory-cp-more"><a href="#" on-click="[[showChecks]]"><oj-bind-text value="[['View all ' + visibleRules().length + ' rules']]"></oj-bind-text></a></p>
             </oj-bind-if>
-          </div>
-        </section>
+          </section>
+
+          <section class="factory-ov-card" id="recentIndexResults">
+            <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Recent Index Results</span>
+              <a href="#" class="factory-cp-viewall" on-click="[[viewAllIndex]]">View All</a></h2>
+            <oj-bind-if test="[[filesListed()]]">
+              <div class="factory-ov2-table-wrap">
+                <table class="factory-ov2-table factory-cp2-files-table" id="recentFiles">
+                  <thead><tr><th>File Path</th><th>Type</th><th>Package</th><th>Size</th><th>Revision</th><th class="factory-cp2-act"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
+                  <tbody>
+                    <oj-bind-for-each data="[[recentFiles]]" as="f">
+                      <template>
+                        <tr>
+                          <td class="factory-cp2-path" :title="[[f.data.path]]"><oj-bind-text value="[[f.data.path]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[f.data.type]]"></oj-bind-text></td>
+                          <td class="factory-cp2-pkg" :title="[[f.data.pkg]]"><oj-bind-text value="[[f.data.pkg]]"></oj-bind-text></td>
+                          <td class="factory-cp-nowrap"><oj-bind-text value="[[f.data.size]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[f.data.revision]]"></oj-bind-text></td>
+                          <td class="factory-cp2-act">
+                            <oj-menu-button :id="[['fileMenu-' + f.data.key]]" chroming="borderless" display="icons" class="factory-ov2-more">
+                              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
+                              <oj-bind-text value="[['Actions for ' + f.data.path]]"></oj-bind-text>
+                              <oj-menu slot="menu" on-oj-menu-action="[[f.data.menu]]">
+                                <oj-option value="knowledge">Open in Knowledge Explorer</oj-option>
+                                <oj-option value="search">Search for this file</oj-option>
+                                <oj-option value="copy">Copy path</oj-option>
+                              </oj-menu>
+                            </oj-menu-button>
+                          </td>
+                        </tr>
+                      </template>
+                    </oj-bind-for-each>
+                  </tbody>
+                </table>
+              </div>
+              <p class="factory-cp2-foot"><oj-bind-text value="[[filesNote]]"></oj-bind-text></p>
+            </oj-bind-if>
+            <oj-bind-if test="[[!filesListed()]]">
+              <div class="factory-ov2-table-wrap">
+                <table class="factory-ov2-table factory-cp2-runs" id="recentImports">
+                  <thead><tr><th>Started</th><th>Status</th><th>Revision</th><th title="Files changed / removed">Files</th><th>Pieces</th><th>Took</th><th>Message</th></tr></thead>
+                  <tbody>
+                    <oj-bind-for-each data="[[recentJobs]]">
+                      <template>
+                        <tr>
+                          <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.created]]"></oj-bind-text></td>
+                          <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
+                          <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.revisions]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[$current.data.files]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[$current.data.chunksIndexed]]"></oj-bind-text></td>
+                          <td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
+                          <td class="factory-cp2-msg"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td>
+                        </tr>
+                      </template>
+                    </oj-bind-for-each>
+                  </tbody>
+                </table>
+                <oj-bind-if test="[[recentJobs().length === 0]]">
+                  <p class="factory-ov-empty">No imports yet. Use Reindex above.</p>
+                </oj-bind-if>
+              </div>
+              <p class="factory-cp2-foot">This factory server does not list indexed files, so the latest index runs are shown.</p>
+            </oj-bind-if>
+          </section>
+        </div>
 
         <div class="factory-cp-side">
           <section class="factory-ov-card" id="indexingStatus">
@@ -192,37 +299,45 @@
               <oj-button id="quickSearchButton" chroming="callToAction" display="icons" on-oj-action="[[searchFromCard]]">
                 <span slot="startIcon" class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Search</oj-button>
             </div>
-            <p class="factory-cp-help">Finds code by words and, where pieces have embeddings, by meaning.</p>
+            <div class="factory-cp2-searchopts">
+              <div class="factory-cp2-checks">
+                <label><input type="checkbox" :checked="[[inContent]]" on-change="[[inContentChange]]">Search in file content</label>
+                <label><input type="checkbox" :checked="[[inNames]]" on-change="[[inNamesChange]]">Search in class &amp; method names</label>
+                <label><input type="checkbox" :checked="[[inComments]]" on-change="[[inCommentsChange]]">Search in comments</label>
+              </div>
+              <select class="factory-ws-select factory-cp2-modules" aria-label="Module" :value="[[module]]" on-change="[[moduleChange]]" title="Limit results to a top-level folder of the code">
+                <option value="">All Modules</option>
+                <oj-bind-for-each data="[[modules]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
+              </select>
+            </div>
+          </section>
+
+          <section class="factory-ov-card factory-ai factory-cp2-ai" id="codeAssistant">
+            <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
+              <oj-bind-if test="[[ai.messages().length > 0]]"><button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></oj-bind-if></h2>
+            <p class="factory-cp2-ai-intro">Ask questions about your code, find usages, or get explanations.</p>
+            <oj-bind-if test="[[ai.messages().length > 0]]">
+              <div class="factory-ai-log">
+                <oj-bind-for-each data="[[ai.messages]]">
+                  <template><div :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text>
+                    <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
+                </oj-bind-for-each>
+              </div>
+            </oj-bind-if>
+            <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+            <div class="factory-ai-suggest">
+              <oj-bind-for-each data="[[ai.suggestions]]">
+                <template><button type="button" class="factory-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </div>
+            <div class="factory-ai-input">
+              <oj-input-text id="codeAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask something about the code..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
+              <oj-button id="codeAskSend" chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
+                <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+            </div>
           </section>
         </div>
       </div>
-
-      <section class="factory-ov-card">
-        <h2>Recent Index Results <a href="#" class="factory-cp-viewall" on-click="[[showHistory]]">View All</a></h2>
-        <div class="factory-ov2-table-wrap">
-          <table class="factory-ov2-table" id="recentImports">
-            <thead><tr><th>Started</th><th>Status</th><th>Revision</th><th>Files changed / removed</th><th>Pieces</th><th>Took</th><th>Message</th></tr></thead>
-            <tbody>
-              <oj-bind-for-each data="[[recentJobs]]">
-                <template>
-                  <tr>
-                    <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.created]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.status]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.revisions]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.files]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.chunksIndexed]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
-                    <td><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td>
-                  </tr>
-                </template>
-              </oj-bind-for-each>
-            </tbody>
-          </table>
-          <oj-bind-if test="[[recentJobs().length === 0]]">
-            <p class="factory-ov-empty">No imports yet. Use Reindex above.</p>
-          </oj-bind-if>
-        </div>
-      </section>
     </oj-bind-if>
 
     <!-- Quick Checks -->
@@ -350,7 +465,21 @@
         <oj-bind-if test="[[searchNote()]]">
           <p class="oj-text-color-secondary"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p>
         </oj-bind-if>
-        <oj-bind-for-each data="[[results]]">
+        <div class="factory-cp2-searchopts factory-cp2-searchopts-wide">
+          <div class="factory-cp2-checks">
+            <label><input type="checkbox" :checked="[[inContent]]" on-change="[[inContentChange]]">Search in file content</label>
+            <label><input type="checkbox" :checked="[[inNames]]" on-change="[[inNamesChange]]">Search in class &amp; method names</label>
+            <label><input type="checkbox" :checked="[[inComments]]" on-change="[[inCommentsChange]]">Search in comments</label>
+          </div>
+          <select class="factory-ws-select factory-cp2-modules" aria-label="Module" :value="[[module]]" on-change="[[moduleChange]]" title="Limit results to a top-level folder of the code">
+            <option value="">All Modules</option>
+            <oj-bind-for-each data="[[modules]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
+          </select>
+        </div>
+        <oj-bind-if test="[[results().length > 0 && filteredResults().length === 0]]">
+          <p class="oj-text-color-secondary">No results match the options above.</p>
+        </oj-bind-if>
+        <oj-bind-for-each data="[[filteredResults]]">
           <template>
             <div class="factory-result factory-cp-result">
               <div>

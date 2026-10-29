@@ -1,13 +1,14 @@
 /*
- * Screen designer: a workspace with a top bar (screen, status, viewport, import, share, save), a left panel
- * (component palette and layers), the live preview as the canvas (click to select, drop components on it) with
- * "Ask AI" below it, and an inspector on the right (properties of the selection, comments, history).
+ * Screen designer: the title row (design or code, screen size, zoom, more, preview, save version), a left panel (component
+ * palette, and the screens with the open screen's layers), the canvas card (journey stepper, the live preview to click and
+ * drop on, "Ask AI" to change it), an inspector on the right (properties, data, events, style), and under them the
+ * requirement's rules with the screen's validations, comments and history, beside the AI Assistant.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
-        'ojs/ojarraydataprovider',
+        'ojs/ojarraydataprovider', '../services/assistant',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
-        'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider) {
+        'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider, assistant) {
     // Screen sizes to check a design at; "fit" uses the canvas width, "custom" a width the designer types
     const VIEWPORTS = [
       { key: 'fit', label: 'Fit to canvas', width: null },
@@ -83,9 +84,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.showComponents = () => this.leftTab('components');
       this.showLayers = () => this.leftTab('layers');
       this.showProperties = () => this.rightTab('properties');
-      this.showComments = () => this.rightTab('comments');
-      this.showHistory = () => this.rightTab('history');
-      this.showCodeTab = () => this.rightTab('code');
+      this.showComments = () => { this.contextTab('comments'); this.contextOpen(true); };
+      this.showHistory = () => { this.contextTab('history'); this.contextOpen(true); };
+      this.showCodeTab = () => this.mode('code');
+      this.rightTabs = [['properties', 'Properties'], ['data', 'Data'], ['events', 'Events'], ['style', 'Style']].map(([key, label]) => ({
+        label: label,
+        on: ko.pureComputed(() => this.rightTab() === key),
+        css: ko.pureComputed(() => 'factory-dz-tab' + (this.rightTab() === key ? ' factory-dz-tab-active' : '')),
+        pick: () => this.rightTab(key)
+      }));
+      // Design shows the canvas; Code shows what the screen is made of (and the app code for app targets)
+      this.mode = ko.observable('design');
+      this.setDesignMode = () => this.mode('design');
+      this.setCodeMode = () => this.mode('code');
+      this.modelJson = ko.pureComputed(() => (this.working() ? JSON.stringify(this.working(), null, 2) : ''));
+      // Preview: the canvas alone, without the panels
+      this.previewMode = ko.observable(false);
+      this.togglePreview = () => {
+        this.previewMode(!this.previewMode());
+        this.mode('design');
+      };
 
       // The side panels float over the canvas and collapse to rails; whether each is open is remembered in this browser.
       const remembered = (key, fallback) => {
@@ -114,10 +132,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.railComponents = openLeftOn('components');
       this.railLayers = openLeftOn('layers');
       this.railProperties = openRightOn('properties');
-      this.railComments = openRightOn('comments');
-      this.railHistory = openRightOn('history');
+      this.railComments = () => this.showComments();
+      this.railHistory = () => this.showHistory();
       this.bodyClass = ko.pureComputed(() => 'factory-dz-body' + (this.leftOpen() ? ' factory-dz-left-open' : '')
-        + (this.rightOpen() ? ' factory-dz-right-open' : ''));
+        + (this.rightOpen() ? ' factory-dz-right-open' : '') + (this.detail() ? '' : ' factory-dz-nodetail')
+        + (this.previewMode() ? ' factory-dz-previewing' : ''));
 
       const catalog = ko.observableArray([]);
       this.typeProvider = new ArrayDataProvider(catalog, { keyAttributes: 'value' });
@@ -149,13 +168,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const custom = Math.round(Number(this.customWidth()) || 0);
         return vp.key === 'custom' ? Math.min(Math.max(custom, 320), 2560) : vp.width;
       });
+      // Zoom: fit (the chosen width scaled down to the canvas) or a fixed percentage
+      this.zoom = ko.observable('fit');
+      this.zoomOptions = [{ value: 'fit', label: 'Fit' }, { value: '100', label: '100%' }, { value: '75', label: '75%' }, { value: '50', label: '50%' }];
       this.deviceScale = ko.pureComputed(() => {
+        if (this.zoom() !== 'fit') {
+          return Number(this.zoom()) / 100;
+        }
         const width = this.deviceWidth();
         const room = Math.max(this.stageWidth() - 32, 200);
         return width ? Math.min(1, room / width) : 1;
       });
       this.frameWidth = ko.pureComputed(() => (this.deviceWidth() ? Math.round(this.deviceWidth() * this.deviceScale()) + 'px' : '100%'));
-      this.frameInnerWidth = ko.pureComputed(() => (this.deviceWidth() ? this.deviceWidth() + 'px' : '100%'));
+      this.frameInnerWidth = ko.pureComputed(() => (this.deviceWidth() ? this.deviceWidth() + 'px' : (100 / this.deviceScale()) + '%'));
+      const SIZE_GROUPS = [
+        { key: 'fit', keys: ['fit', 'desktop', 'laptop', 'custom'], title: 'Desktop (fit to the canvas)', icon: 'desktop' },
+        { key: 'tablet', keys: ['tablet', 'tablet-landscape'], title: 'Tablet · 768', icon: 'tablet' },
+        { key: 'phone', keys: ['phone', 'phone-small'], title: 'Mobile · 390', icon: 'phone' }
+      ];
+      this.sizeButtons = SIZE_GROUPS.map((g) => ({
+        title: g.title,
+        icon: 'factory-dz-devico factory-dz-devico-' + g.icon,
+        on: ko.pureComputed(() => g.keys.includes(this.viewport())),
+        css: ko.pureComputed(() => 'factory-dz-size' + (g.keys.includes(this.viewport()) ? ' factory-dz-size-on' : '')),
+        pick: () => this.viewport(g.key)
+      }));
       this.frameInnerHeight = ko.pureComputed(() => (100 / this.deviceScale()) + '%');
       this.frameTransform = ko.pureComputed(() => (this.deviceScale() < 1 ? 'scale(' + this.deviceScale() + ')' : 'none'));
       this.viewportText = ko.pureComputed(() => {
@@ -1054,6 +1091,270 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return list;
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
+      this.pageMenu = (event) => {
+        const value = event.detail.selectedValue;
+        if (value === 'new') {
+          this.openNew();
+        } else if (value === 'component') {
+          this.openNewComponent();
+        } else if (value === 'import') {
+          this.openImport();
+        } else if (value === 'board') {
+          this.backToBoard();
+        } else if (value && value.indexOf('size-') === 0) {
+          this.viewport(value.slice(5));
+        }
+      };
+      this.screenMenu = (event) => {
+        const value = event.detail.selectedValue;
+        if (value === 'share') {
+          this.openShare();
+        } else if (value === 'approve') {
+          this.approve();
+        } else if (value === 'reopen') {
+          this.reopen();
+        } else if (value === 'flow') {
+          this.makeFlowScreens();
+        } else if (value === 'comment') {
+          this.selectedId(null);
+          this.showComments();
+          setTimeout(() => { const box = document.getElementById('commentText'); if (box) { box.focus(); } }, 50);
+        } else if (value === 'delete') {
+          this.remove();
+        }
+      };
+      this.saveMenu = (event) => {
+        const value = event.detail.selectedValue;
+        if (value === 'save') {
+          this.save();
+        } else if (value === 'discard') {
+          this.discard();
+        } else if (value === 'previous') {
+          this.restorePrevious();
+        } else if (value === 'history') {
+          this.showHistory();
+        }
+      };
+      this.saveTitle = ko.pureComputed(() => {
+        if (!this.detail()) {
+          return '';
+        }
+        if (this.detail().status === 'APPROVED') {
+          return 'Approved screens are read-only. Reopen it to change it.';
+        }
+        if (!this.canDesign()) {
+          return 'You cannot change screens in this workspace.';
+        }
+        return this.dirty() ? 'Save the changes as version ' + (this.detail().currentVersion + 1) : 'No changes to save';
+      });
+      this.readOnlyNote = ko.pureComputed(() => (this.detail() && this.detail().status === 'APPROVED'
+        ? 'This screen is approved, so its components are locked. Reopen it to change it, or open another screen.'
+        : 'You can look at this screen but not change it.'));
+      this.screenHeading = ko.pureComputed(() => (this.working() ? this.working().title || this.detail().name : ''));
+      /** Back to the start page with every requirement and its screens. */
+      this.backToBoard = () => {
+        if (this.dirty() && !window.confirm('Discard your unsaved changes?')) {
+          return;
+        }
+        this.detail(null);
+        this.working(null);
+        this.dirty(false);
+        this.designPick(null);
+        this.previewMode(false);
+        this.mode('design');
+      };
+      // The workspace's screens, for the Screens tab
+      this.screenList = ko.pureComputed(() => {
+        const current = this.detail() ? this.detail().id : null;
+        return rawDesigns().map((d) => ({
+          name: d.name,
+          meta: d.components + ' components · v' + d.currentVersion,
+          statusText: statusLabel(d.status),
+          statusClass: 'factory-dz-badge factory-dz-badge-' + d.status.toLowerCase(),
+          css: 'factory-dz-scr' + (d.id === current ? ' factory-dz-scr-on' : ''),
+          openAction: () => { if (d.id !== current) { this.open(d.id); } }
+        }));
+      });
+
+      // The journey as a stepper: the requirement's screens in order, then the OBDX review and confirm steps still to make
+      const STAGE_NAMES = { initiate: 'Initiate', review: 'Review', confirm: 'Confirmation', inquiry: 'Inquiry' };
+      this.journeySteps = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const steps = this.journey().length ? this.journey().map((st) => ({
+          name: st.name, current: st.current, openable: !st.current, openAction: st.openAction, stage: st.stage,
+          statusText: st.statusText + (st.stage ? ' · ' + (STAGE_NAMES[st.stage] || st.stage) : ''),
+          done: st.status === 'APPROVED', ghost: false, title: st.current ? 'This screen' : 'Open ' + st.name
+        })) : [{
+          name: this.screenHeading() || d.name, current: true, openable: false, openAction: () => {}, done: d.status === 'APPROVED', ghost: false,
+          stage: this.working() ? this.working().stage : null, title: 'This screen',
+          statusText: statusLabel(d.status) + (this.working() && this.working().stage ? ' · ' + STAGE_NAMES[this.working().stage] : '')
+        }];
+        const stages = steps.map((st) => st.stage);
+        if (stages.includes('initiate')) {
+          ['review', 'confirm'].filter((stage) => !stages.includes(stage)).forEach((stage) => steps.push({
+            name: STAGE_NAMES[stage], current: false, openable: false, openAction: () => {}, done: false, ghost: true, stage: stage,
+            statusText: 'Not made yet', title: 'An OBDX transaction has a ' + STAGE_NAMES[stage].toLowerCase() + ' screen. Create it with Create review and confirmation screens.'
+          }));
+        }
+        return steps.map((st, i) => Object.assign(st, {
+          number: i + 1,
+          mark: st.done && !st.current ? '✓' : String(i + 1),
+          css: 'factory-dz-st' + (st.current ? ' factory-dz-st-current' : '') + (st.done ? ' factory-dz-st-done' : '') + (st.ghost ? ' factory-dz-st-ghost' : '')
+        }));
+      });
+
+      // Business rules of the requirement for this screen, as a table
+      this.ruleRows = ko.pureComputed(() => {
+        const requirement = this.requirement();
+        const d = this.detail();
+        if (!requirement || !requirement.spec || !d) {
+          return [];
+        }
+        const active = requirement.status === 'APPROVED';
+        return (requirement.spec.businessRules || [])
+          .filter((r) => !r.screens || r.screens.length === 0 || r.screens.some((x) => norm(x) === norm(d.name)))
+          .map((r, i) => {
+            const severity = r.severity ? String(r.severity) : '';
+            const tone = /error|high|critical/i.test(severity) ? 'red' : /warn|medium/i.test(severity) ? 'amber' : 'grey';
+            return {
+              id: r.id || 'BR-' + (i + 1),
+              number: i + 1,
+              name: r.name || r.description,
+              type: r.type || 'Business',
+              condition: r.condition || 'Not stated',
+              conditionCss: r.condition ? '' : 'factory-dz-muted',
+              action: r.action || 'Not stated',
+              actionCss: r.action ? '' : 'factory-dz-muted',
+              severity: severity ? { text: severity, css: 'factory-ov-pill factory-ov-pill-' + tone, title: 'Severity' }
+                : { text: 'Not set', css: 'factory-ov-pill factory-ov-pill-grey', title: 'The requirement does not give a severity for this rule.' },
+              active: active,
+              statusText: active ? 'Active' : 'Draft',
+              toggleCss: 'factory-dz-toggle' + (active ? ' factory-dz-toggle-on' : ''),
+              statusTitle: active ? 'Active: the rule is in the approved requirement. Change it there to turn it off.'
+                : 'The requirement is not approved yet.',
+              menuAction: (event) => {
+                const value = event.detail.selectedValue;
+                if (value === 'apply') {
+                  this.aiInstruction('Apply this business rule to the screen: ' + r.description);
+                  this.selectedId(null);
+                  setTimeout(() => { const box = document.getElementById('aiInstruction'); if (box) { box.focus(); } }, 50);
+                } else if (value === 'copy') {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText((r.id ? r.id + ': ' : '') + r.description).then(() => showInfo('Rule copied.')).catch(() => showInfo('Copying is not allowed here.'));
+                  }
+                } else if (value === 'requirement') {
+                  window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'requirements' }));
+                }
+              }
+            };
+          });
+      });
+      // Add Rule: a validation on the selected field (business rules come from the requirement)
+      this.validationOpen = ko.observable(false);
+      this.canAddRule = ko.pureComputed(() => this.editable() && this.selectedKind() === 'component');
+      this.addRuleTitle = ko.pureComputed(() => {
+        if (!this.editable()) {
+          return 'The screen is read-only. Reopen it to add rules. Business rules come from the requirement.';
+        }
+        return this.selectedKind() === 'component' ? 'Add a validation rule to "' + this.selectedTitle() + '"'
+          : 'Select a field on the canvas to add a validation rule to it. Business rules come from the requirement.';
+      });
+      this.addRule = () => {
+        if (!this.canAddRule()) {
+          return;
+        }
+        this.rightOpen(true);
+        this.rightTab('properties');
+        this.validationOpen(true);
+        setTimeout(() => {
+          const section = document.getElementById('validationSection');
+          if (section) {
+            section.open = true;
+            section.scrollIntoView({ block: 'nearest' });
+          }
+          const box = document.querySelector('#propValidations textarea');
+          if (box) {
+            box.focus();
+          }
+        }, 80);
+      };
+
+      // Data: where each field's value comes from
+      this.dataRows = ko.pureComputed(() => {
+        const model = this.working();
+        const selected = this.selectedId();
+        return model ? allComponents(model).map((c) => ({
+          field: c.label || c.name,
+          binding: c.dataSource ? 'API ' + (c.dataSource.api || '(not set)') + (c.dataSource.path ? ' · ' + c.dataSource.path : '')
+            : (c.options || []).length ? 'Fixed list · ' + c.options.length + ' choices'
+              : c.defaultValue ? 'Default: ' + c.defaultValue : c.readonly ? 'Shown, read-only' : 'Typed by the customer',
+          css: c.id === selected ? 'factory-dz-mini-on' : '',
+          selectAction: () => this.selectedId(c.id)
+        })) : [];
+      });
+      // Events: the buttons and the conditions between fields
+      this.eventRows = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model) {
+          return [];
+        }
+        const spec = this.specScreen();
+        const label = (id) => { const found = locate(model, id); return found ? found.component.label || found.component.name : id; };
+        const op = (cond) => (this.conditionOperators.find((o) => o.value === cond.operator) || { label: 'has a value' }).label
+          + (['equals', 'notEquals'].includes(cond.operator) ? ' "' + (cond.value || '') + '"' : '');
+        const rows = model.actions.map((a) => {
+          const specAction = spec ? (spec.actions || []).find((x) => norm(x.name) === norm(a.label)) : null;
+          return {
+            kind: 'Click', element: a.label + ' button',
+            does: specAction && specAction.description ? specAction.description : (a.kind === 'primary' ? 'The main action of the screen' : a.kind + ' action'),
+            selectAction: () => this.selectedId(a.id)
+          };
+        });
+        allComponents(model).forEach((c) => {
+          if (c.visibleWhen && c.visibleWhen.field) {
+            rows.push({ kind: 'Change', element: label(c.visibleWhen.field), does: 'Shows "' + (c.label || c.name) + '" when it ' + op(c.visibleWhen), selectAction: () => this.selectedId(c.id) });
+          }
+          if (c.requiredWhen && c.requiredWhen.field) {
+            rows.push({ kind: 'Change', element: label(c.requiredWhen.field), does: 'Makes "' + (c.label || c.name) + '" mandatory when it ' + op(c.requiredWhen), selectAction: () => this.selectedId(c.id) });
+          }
+        });
+        return rows;
+      });
+
+      // The AI Assistant answers questions about the screen from what the page shows
+      const assistantContext = () => {
+        const model = this.working();
+        if (!model) {
+          return '';
+        }
+        const lines = ['Screen "' + (model.title || this.detail().name) + '" (' + this.statusText() + ', stage ' + (model.stage || 'not set') + ').'];
+        model.sections.forEach((sct) => lines.push('Section ' + (sct.title || '') + ': ' + sct.components.map((c) => (c.label || c.name) + ' [' + c.type
+          + (c.required === true ? ', mandatory' : '') + ((c.validations || []).length ? ', ' + c.validations.join('; ') : '')
+          + (c.dataSource && c.dataSource.api ? ', from ' + c.dataSource.api : '') + ']').join(', ')));
+        lines.push('Buttons: ' + (model.actions.map((a) => a.label + ' (' + a.kind + ')').join(', ') || 'none'));
+        const requirement = this.requirement();
+        if (requirement && requirement.spec) {
+          const spec = requirement.spec;
+          lines.push('Requirement "' + requirement.title + '": ' + (spec.summary || ''));
+          lines.push('Business rules: ' + ((spec.businessRules || []).map((r) => r.description).join('; ') || 'none'));
+          lines.push('APIs: ' + ((spec.apis || []).map((a) => (a.method || '') + ' ' + a.name).join(', ') || 'none'));
+          lines.push('Host interfaces: ' + ((spec.hostInteractions || []).map((h) => h.system + ' (' + (h.description || '') + ')').join(', ') || 'none'));
+          lines.push('Roles: ' + ((spec.roles || []).map((r) => r.name + ': ' + r.access).join('; ') || 'none'));
+        }
+        lines.push('Other screens in the workspace: ' + (rawDesigns().filter((x) => x.id !== this.detail().id).map((x) => x.name + ' (' + x.components + ' components)').join(', ') || 'none'));
+        return lines.join('\n');
+      };
+      this.ai = assistant.create(assistantContext, ['Explain this screen', 'Suggest validations', 'Find similar screen', 'Generate API interface', 'Create test cases']);
+      this.aiChatKeydown = (event) => {
+        if (event.key === 'Enter') {
+          this.ai.send();
+          return false;
+        }
+        return true;
+      };
       this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
         : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
       this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); this.rightOpen(true); };
@@ -1225,6 +1526,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const show = (detail, keepSelection) => {
         if (!this.detail() || this.detail().id !== detail.id) {
           this.codeFiles([]);
+          this.ai.clear();
+          this.validationOpen(false);
           loadRequirement(detail.requirementId);
           undoStack([]);
           redoStack([]);

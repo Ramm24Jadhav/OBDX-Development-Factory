@@ -1,21 +1,20 @@
-<div class="factory-pg">
+<div class="factory-pg factory-rv">
   <div class="factory-pg-head">
     <div>
       <h1>External Review &amp; Approval</h1>
       <p>Share screens and changes with business stakeholders, collect feedback and track approvals</p>
     </div>
-    <oj-bind-if test="[[canEdit()]]">
-      <div class="factory-pg-actions">
-        <oj-menu-button id="createReviewLink" chroming="outlined">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Create Review Link
-          <oj-menu id="createReviewLinkMenu" slot="menu" on-oj-menu-action="[[newLinkFor]]">
-            <oj-bind-for-each data="[[withoutLink]]">
-              <template><oj-option :value="[[$current.data.id]]"><oj-bind-text value="[[$current.data.name + ' ' + $current.data.version]]"></oj-bind-text></oj-option></template>
-            </oj-bind-for-each>
-          </oj-menu>
-        </oj-menu-button>
-      </div>
-    </oj-bind-if>
+    <div class="factory-pg-actions">
+      <button type="button" id="createReviewLink" class="factory-rv-primary" on-click="[[openNewLinkMenu]]" :disabled="[[!canEdit()]]"
+              :title="[[!canEdit() ? 'You need the Edit designs permission in this workspace' : withoutLink().length === 0 ? 'Every screen already has an active review link' : 'Choose a screen to share']]">
+        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Review Link</button>
+      <oj-menu id="createReviewLinkMenu" on-oj-menu-action="[[newLinkFor]]">
+        <oj-bind-for-each data="[[withoutLink]]">
+          <template><oj-option :value="[[$current.data.id]]"><oj-bind-text value="[[$current.data.name + ' ' + $current.data.version]]"></oj-bind-text></oj-option></template>
+        </oj-bind-for-each>
+        <oj-bind-if test="[[withoutLink().length === 0]]"><oj-option value="none" disabled>Every screen has an active link or is approved</oj-option></oj-bind-if>
+      </oj-menu>
+    </div>
   </div>
 
   <oj-bind-if test="[[errorMessage()]]"><p class="oj-text-color-danger" id="reviewsError"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p></oj-bind-if>
@@ -29,126 +28,192 @@
     </oj-bind-for-each>
   </div>
 
-  <div class="factory-tabbar" role="tablist" aria-label="Review views">
-    <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['rv-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
-        <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-    </oj-bind-for-each>
-  </div>
+  <div class="factory-card factory-rv-shell">
+    <div class="factory-tabbar factory-rv-tabs" role="tablist" aria-label="Review views">
+      <oj-bind-for-each data="[[tabs]]">
+        <template><button type="button" role="tab" :id="[['rv-' + $current.data.value]]" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+          <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
 
-  <oj-bind-if test="[[tab() === 'links' || tab() === 'screens']]">
-    <div class="factory-row factory-rv-main">
-      <div class="factory-stack">
-        <section class="factory-card">
-          <h2><oj-bind-text value="[[tab() === 'links' ? 'Review Links' : 'Screens']]"></oj-bind-text></h2>
-          <p class="factory-card-sub"><oj-bind-text value="[[tab() === 'links' ? 'Manage and share review links with stakeholders' : 'Every screen design of the workspace']]"></oj-bind-text></p>
-          <span class="factory-ws-search factory-rv-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search by name..." aria-label="Search review links" on-input="[[linkSearchInput]]"></span>
+    <div class="factory-rv-main" :style.display="[[tab() === 'links' || tab() === 'screens' ? '' : 'none']]">
+      <div class="factory-rv-col">
+        <section class="factory-card factory-rv-linkcard">
+          <div class="factory-rv-cardhead">
+            <div><h2><oj-bind-text value="[[tab() === 'links' ? 'Review Links' : 'Screens']]"></oj-bind-text></h2>
+              <p class="factory-card-sub"><oj-bind-text value="[[tab() === 'links' ? 'Manage and share review links with stakeholders' : 'Every screen design of the workspace']]"></oj-bind-text></p></div>
+            <button type="button" id="newReviewLink" class="factory-rv-primary factory-rv-primary-sm" on-click="[[openNewLinkMenu]]" :disabled="[[!canEdit()]]"
+                    :title="[[!canEdit() ? 'You need the Edit designs permission in this workspace' : withoutLink().length === 0 ? 'Every screen already has an active review link' : 'Choose a screen to share']]">
+              <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Review Link</button>
+          </div>
+          <span class="factory-ws-search factory-rv-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span><input type="search" placeholder="Search by name or version..." aria-label="Search review links" on-input="[[linkSearchInput]]"></span>
           <div class="factory-rv-links">
             <oj-bind-for-each data="[[visibleLinks]]">
               <template>
-                <button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
+                <div :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
                   <span class="factory-kpi-icon factory-ov2-icon-blue"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></span>
-                  <span class="factory-rq-item-main"><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong>
+                  <span class="factory-rq-item-main"><strong :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></span>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.reviewers]]"></oj-bind-text></span></span>
                   <span class="factory-rq-item-side"><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span>
                     <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.expires]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.comments]]"></oj-bind-text></span></span>
-                </button>
+                  <span on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
+                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.name]]"></oj-bind-text>
+                    <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
+                      <oj-option value="copy" disabled="[[!$current.data.hasLink]]">Copy link</oj-option>
+                      <oj-option value="open" disabled="[[!$current.data.hasLink]]">Open as a reviewer</oj-option>
+                      <oj-option value="designer">Open in the designer</oj-option>
+                      <oj-option value="create" disabled="[[!$current.data.canCreate]]">Create a new link</oj-option>
+                      <oj-option value="revoke" disabled="[[!$current.data.canRevoke]]">Revoke link</oj-option>
+                    </oj-menu></oj-menu-button></span>
+                </div>
               </template>
             </oj-bind-for-each>
             <oj-bind-if test="[[!loading() && visibleLinks().length === 0]]"><p class="factory-empty">No review links yet. Use Create Review Link, or the Share button in the designer.</p></oj-bind-if>
           </div>
         </section>
-        <oj-bind-if test="[[selected()]]">
-          <section class="factory-card">
-            <h2>Link Settings</h2>
-            <p class="factory-card-sub">Control access and validity for the selected screen's review link</p>
-            <dl class="factory-kv">
-              <dt>Screen</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
-              <dt>Expiry</dt><dd><oj-bind-text value="[[expiryText]]"></oj-bind-text></dd>
-            </dl>
-            <p class="factory-card-sub factory-rv-rules">Anyone with the link can view the screen, comment and approve it until it expires. Approving a screen does not approve or apply any code.</p>
-            <oj-bind-if test="[[reviewUrl()]]">
-              <input class="factory-ov2-input factory-rv-url factory-mono" id="reviewUrl" readonly :value="[[reviewUrl]]" aria-label="Review link">
-              <div class="factory-btn-row">
-                <oj-button id="copyLinkButton" chroming="outlined" on-oj-action="[[copyLink]]"><span slot="startIcon" class="factory-nav-icon factory-ico-link factory-btn-icon" aria-hidden="true"></span>Copy Link</oj-button>
-                <oj-button id="revokeLinkButton" chroming="borderless" on-oj-action="[[revokeLink]]" disabled="[[!canEdit()]]">Revoke</oj-button>
-              </div>
+        <section class="factory-card factory-rv-settings">
+          <h2>Link Settings</h2>
+          <p class="factory-card-sub">Control access and validity for the current review link</p>
+          <oj-bind-if test="[[!selected()]]"><p class="factory-empty">Choose a screen to see its link settings.</p></oj-bind-if>
+          <oj-bind-if test="[[selected()]]">
+            <div class="factory-rv-fields">
+              <label class="factory-rv-field"><span>Link Name</span>
+                <input type="text" id="linkName" class="factory-ov2-input" :value="[[selected().name]]" disabled title="The link uses the screen's name. Rename the screen in the designer."></label>
+              <label class="factory-rv-field"><span>Expiry Date</span>
+                <input type="date" id="linkExpiry" class="factory-ov2-input" :value="[[expiryValue]]" :min="[[minExpiry]]" :max="[[maxExpiry]]" :disabled="[[!canEdit()]]" on-change="[[expiryChange]]"
+                       title="A link is valid for 1 to 90 days. Changing the date of an active link creates a new link address."></label>
+            </div>
+            <oj-bind-if test="[[expiryChanged()]]">
+              <p class="factory-rv-renew"><oj-bind-text value="[[reviewUrl() ? 'Saving a new date creates a new link address; the old one stops working.' : 'The new link will be valid until this date.']]"></oj-bind-text>
+                <button type="button" class="factory-link-sm" id="saveExpiry" on-click="[[createLink]]"><oj-bind-text value="[[reviewUrl() ? 'Save and create new link' : 'Create link']]"></oj-bind-text></button></p>
             </oj-bind-if>
-            <oj-bind-if test="[[!reviewUrl() && canEdit()]]">
-              <div class="factory-ai-input">
-                <label class="factory-rv-days">Valid for <input type="number" min="1" max="90" value="14" class="factory-ov2-input" aria-label="Days" on-input="[[linkDaysInput]]"> days</label>
-                <oj-button id="createLinkButton" chroming="callToAction" on-oj-action="[[createLink]]">New Review Link</oj-button>
-              </div>
-            </oj-bind-if>
-          </section>
-        </oj-bind-if>
+            <ul class="factory-rv-toggles">
+              <oj-bind-for-each data="[[toggles]]">
+                <template><li :title="[[$current.data.why]]"><span :class="[[$current.data.css]]" role="switch" :aria-checked="[[$current.data.on ? 'true' : 'false']]" aria-disabled="true"><i></i></span>
+                  <span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <div class="factory-rv-linkfoot">
+              <button type="button" id="copyLinkButton" class="factory-ov2-btn factory-rv-copy" on-click="[[copyLink]]" :disabled="[[!reviewUrl()]]" :title="[[reviewUrl() ? reviewUrl() : 'This screen has no active review link']]">
+                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy Link</button>
+              <oj-menu-button chroming="outlined" display="icons" class="factory-rv-linkmore">
+                <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More link actions
+                <oj-menu slot="menu" on-oj-menu-action="[[linkAction]]">
+                  <oj-option value="open" disabled="[[!reviewUrl()]]">Open as a reviewer</oj-option>
+                  <oj-option value="create" disabled="[[!canEdit()]]"><oj-bind-text value="[[reviewUrl() ? 'Create a new link' : 'Create link']]"></oj-bind-text></oj-option>
+                  <oj-option value="revoke" disabled="[[!reviewUrl() || !canEdit()]]">Revoke link</oj-option>
+                </oj-menu></oj-menu-button>
+            </div>
+          </oj-bind-if>
+        </section>
       </div>
 
       <section class="factory-card factory-rv-preview">
         <h2>Preview
           <span class="factory-segs factory-rv-devices">
             <oj-bind-for-each data="[[devices]]">
-              <template><button type="button" :class="[[$current.data.selected() ? 'factory-seg factory-seg-on' : 'factory-seg']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></button></template>
+              <template><button type="button" :class="[[$current.data.selected() ? 'factory-seg factory-seg-on' : 'factory-seg']]" on-click="[[$current.data.pick]]">
+                <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></button></template>
             </oj-bind-for-each>
           </span></h2>
-        <oj-bind-if test="[[reviewUrl()]]">
-          <div class="factory-rv-stage"><div :class="[[frameCss]]"><iframe id="reviewFrame" :src="[[reviewUrl]]" title="What the reviewer sees"></iframe></div></div>
-        </oj-bind-if>
-        <oj-bind-if test="[[!reviewUrl()]]">
-          <div class="factory-ws-placeholder factory-rv-empty"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>
-            <strong><oj-bind-text value="[[selected() ? 'No review link for this screen' : 'Choose a screen']]"></oj-bind-text></strong>
-            <span>Create a review link to see the screen as reviewers do.</span>
-            <oj-button chroming="outlined" on-oj-action="[[openDesigner]]">Open in the designer</oj-button></div>
-        </oj-bind-if>
+        <div class="factory-rv-stage">
+          <div :class="[[frameCss]]" :style.display="[[selected() ? '' : 'none']]">
+            <oj-bind-if test="[[device() === 'mobile']]"><div class="factory-rv-statusbar"><span>9:41</span><span class="factory-rv-notch"></span><span class="factory-rv-sig"></span></div></oj-bind-if>
+            <div class="factory-rv-screen"><iframe id="reviewFrame" :src="[[previewSrc]]" title="What the reviewer sees"></iframe></div>
+          </div>
+          <oj-bind-if test="[[!selected()]]">
+            <div class="factory-ws-placeholder factory-rv-empty"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>
+              <strong>Choose a screen</strong>
+              <span>Pick a review link to see the screen as reviewers do.</span>
+              <oj-button chroming="outlined" on-oj-action="[[openDesigner]]">Open in the designer</oj-button></div>
+          </oj-bind-if>
+        </div>
+        <p class="factory-card-sub factory-rv-previewnote">The screen with sample data, as reviewers see it. Click a field to comment on it in the review page.</p>
       </section>
 
       <section class="factory-card factory-rv-comments">
-        <h2><oj-bind-text value="[['Comments (' + commentCount() + ')']]"></oj-bind-text>
-          <select class="factory-ws-select" aria-label="Show comments" on-change="[[commentFilterChange]]"><option value="all">All Comments</option><option value="review">From reviewers</option><option value="team">From the team</option></select></h2>
-        <ul class="factory-rv-thread">
-          <oj-bind-for-each data="[[comments]]">
-            <template><li><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
-              <div><div class="factory-rv-who"><strong><oj-bind-text value="[[$current.data.author]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
-                <span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></div>
-                <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.role + ' · ' + $current.data.version + ($current.data.component ? ' · on ' + $current.data.component : '')]]"></oj-bind-text></span>
-                <p><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></p></div></li></template>
-          </oj-bind-for-each>
-        </ul>
-        <oj-bind-if test="[[comments().length === 0]]"><p class="factory-empty">No comments yet.</p></oj-bind-if>
-        <oj-bind-if test="[[selected() && canComment()]]">
-          <div class="factory-ai-input">
-            <oj-input-text id="newComment" class="factory-grow" label-hint="Comment" label-edge="none" placeholder="Add a comment..." value="{{newComment}}" on-oj-enter="[[postComment]]"></oj-input-text>
-            <oj-button id="postCommentButton" chroming="callToAction" on-oj-action="[[postComment]]">Post</oj-button>
+        <div class="factory-rv-chead">
+          <div class="factory-subtabs factory-rv-ctabs">
+            <oj-bind-for-each data="[[sideTabs]]">
+              <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
           </div>
+          <oj-bind-if test="[[sideTab() === 'comments']]">
+            <select class="factory-ws-select factory-rv-cfilter" aria-label="Show comments" on-change="[[commentFilterChange]]"><option value="all">All Comments</option><option value="review">From reviewers</option><option value="team">From the team</option></select>
+          </oj-bind-if>
+        </div>
+        <oj-bind-if test="[[sideTab() === 'comments']]">
+          <ul class="factory-rv-thread">
+            <oj-bind-for-each data="[[comments]]">
+              <template><li><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
+                <div><div class="factory-rv-who"><strong><oj-bind-text value="[[$current.data.author]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
+                  <span class="factory-ov-pill factory-ov-pill-red factory-rv-open" title="The factory does not store whether a comment is resolved yet, so every comment shows as open.">Open</span></div>
+                  <span class="factory-ov-subtle factory-rv-role"><oj-bind-text value="[[$current.data.role + ' · ' + $current.data.version + ($current.data.component ? ' · on ' + $current.data.component : '')]]"></oj-bind-text></span>
+                  <p><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></p>
+                  <div class="factory-rv-cactions">
+                    <button type="button" class="factory-rv-cact" on-click="[[$current.data.reply]]" :disabled="[[!canComment()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Reply</button>
+                    <button type="button" class="factory-rv-cact" disabled title="Not available yet: the factory cannot store a resolved state for comments."><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Mark Resolved</button>
+                  </div></div></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-bind-if test="[[comments().length === 0]]"><p class="factory-empty">No comments yet.</p></oj-bind-if>
+          <oj-bind-if test="[[selected() && canComment()]]">
+            <div class="factory-rv-composer">
+              <span class="factory-avatar-sm"><oj-bind-text value="[[myInitials]]"></oj-bind-text></span>
+              <span class="factory-rv-cinput">
+                <input type="text" id="newComment" placeholder="Add a comment..." aria-label="Add a comment" autocomplete="off" :value="[[newComment]]" on-input="[[commentInput]]" on-keydown="[[commentKey]]">
+                <button type="button" class="factory-rv-icon" disabled title="Attachments are not supported in comments yet" aria-label="Attach a file"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></button>
+                <button type="button" class="factory-rv-icon" title="Mention someone" aria-label="Mention someone" on-click="[[mention]]">@</button>
+              </span>
+              <button type="button" id="postCommentButton" class="factory-rv-primary factory-rv-primary-sm" on-click="[[postComment]]" :disabled="[[!newComment().trim()]]">Post</button>
+            </div>
+          </oj-bind-if>
+        </oj-bind-if>
+        <oj-bind-if test="[[sideTab() === 'details']]">
+          <oj-bind-if test="[[!selected()]]"><p class="factory-empty">Choose a screen.</p></oj-bind-if>
+          <oj-bind-if test="[[selected()]]">
+            <dl class="factory-kv factory-rv-details">
+              <dt>Screen</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
+              <dt>Version</dt><dd><oj-bind-text value="[['v' + selected().currentVersion + ' (' + selected().versions.length + ' saved)']]"></oj-bind-text></dd>
+              <dt>Status</dt><dd><span :class="[[details().pill.css]]"><oj-bind-text value="[[details().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Requirement</dt><dd><oj-bind-text value="[[details().requirement]]"></oj-bind-text></dd>
+              <dt>Sections</dt><dd><oj-bind-text value="[[details().sections]]"></oj-bind-text></dd>
+              <dt>Link expires</dt><dd><oj-bind-text value="[[expiryText]]"></oj-bind-text></dd>
+              <dt>Reviewers</dt><dd><oj-bind-text value="[[details().reviewers]]"></oj-bind-text></dd>
+              <dt>Comments</dt><dd><oj-bind-text value="[[details().comments]]"></oj-bind-text></dd>
+              <dt>Approved</dt><dd><oj-bind-text value="[[details().approved]]"></oj-bind-text></dd>
+            </dl>
+            <p class="factory-card-sub">Approving a screen does not approve or apply any code.</p>
+          </oj-bind-if>
         </oj-bind-if>
       </section>
     </div>
-  </oj-bind-if>
 
-  <oj-bind-if test="[[tab() === 'comments']]">
-    <section class="factory-card">
-      <h2>All Comments</h2>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table"><thead><tr><th>Screen</th><th>From</th><th>Who</th><th>Comment</th><th>When</th></tr></thead>
-          <tbody><oj-bind-for-each data="[[allComments]]"><template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td>
-            <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.author]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td><td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
-        <oj-bind-if test="[[allComments().length === 0]]"><p class="factory-ov-empty">No comments yet.</p></oj-bind-if>
+    <oj-bind-if test="[[tab() === 'comments']]">
+      <div class="factory-rv-pane">
+        <h2>All Comments</h2>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table"><thead><tr><th>Screen</th><th>From</th><th>Who</th><th>Comment</th><th>When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[allComments]]"><template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td>
+              <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td><td><oj-bind-text value="[[$current.data.author]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></td><td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          <oj-bind-if test="[[allComments().length === 0]]"><p class="factory-ov-empty">No comments yet.</p></oj-bind-if>
+        </div>
       </div>
-    </section>
-  </oj-bind-if>
+    </oj-bind-if>
 
-  <oj-bind-if test="[[tab() === 'history']]">
-    <section class="factory-card">
-      <h2>Approval History</h2>
-      <div class="factory-ov2-table-wrap">
-        <table class="factory-ov2-table"><thead><tr><th>Screen</th><th>Version</th><th>Approved by</th><th>How</th><th>When</th></tr></thead>
-          <tbody><oj-bind-for-each data="[[history]]"><template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[$current.data.by]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.how]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
-        <oj-bind-if test="[[history().length === 0]]"><p class="factory-ov-empty">No approved screens yet.</p></oj-bind-if>
+    <oj-bind-if test="[[tab() === 'history']]">
+      <div class="factory-rv-pane">
+        <h2>Approval History</h2>
+        <div class="factory-ov2-table-wrap">
+          <table class="factory-ov2-table"><thead><tr><th>Screen</th><th>Version</th><th>Approved by</th><th>How</th><th>When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[history]]"><template><tr><td><oj-bind-text value="[[$current.data.screen]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[$current.data.by]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.how]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          <oj-bind-if test="[[history().length === 0]]"><p class="factory-ov-empty">No approved screens yet.</p></oj-bind-if>
+        </div>
+        <p class="factory-card-sub">Design approval, the change plan's approval and delivering code are separate steps.</p>
       </div>
-      <p class="factory-card-sub">Design approval, the change plan's approval and delivering code are separate steps.</p>
-    </section>
-  </oj-bind-if>
+    </oj-bind-if>
+  </div>
 </div>

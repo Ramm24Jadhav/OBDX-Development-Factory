@@ -2,10 +2,10 @@
  * Code page: SVN settings, UI target, Jenkins settings, quick check rules, import jobs, index status and code search for
  * one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', 'ojs/ojarraydataprovider',
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', 'ojs/ojarraydataprovider',
         'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
-        'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch'],
-  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ArrayDataProvider) {
+        'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch', 'ojs/ojmenu'],
+  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, ArrayDataProvider) {
     const POLL_MS = 2000;
 
     /** "4m 32s", "12s" */
@@ -13,6 +13,37 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const seconds = Math.max(0, Math.round(ms / 1000));
       return seconds >= 60 ? Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's' : seconds + 's';
     }
+
+    // A file glob of a version pack rule as a regular expression on forward-slash paths
+    function globRegex(glob) {
+      let out = '';
+      for (let i = 0; i < glob.length; i++) {
+        const c = glob.charAt(i);
+        if (c === '*' && glob.charAt(i + 1) === '*') {
+          out += glob.charAt(i + 2) === '/' ? '(?:.*/)?' : '.*';
+          i += glob.charAt(i + 2) === '/' ? 2 : 1;
+        } else if (c === '*') {
+          out += '[^/]*';
+        } else if (c === '?') {
+          out += '[^/]';
+        } else {
+          out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+        }
+      }
+      return new RegExp('^' + out + '$');
+    }
+
+    /** A file:/// SVN URL as a folder path, and back */
+    const urlToFolder = (url) => {
+      const path = decodeURIComponent((url || '').replace(/^file:\/\/\/?/, ''));
+      return /^[A-Za-z]:/.test(path) ? path.replace(/\//g, '\\') : (path ? '/' + path.replace(/^\/+/, '') : '');
+    };
+    const folderToUrl = (path) => {
+      const p = (path || '').trim().replace(/\\/g, '/');
+      return p ? (/^[A-Za-z]:/.test(p) ? 'file:///' + p : 'file://' + (p.charAt(0) === '/' ? p : '/' + p)) : '';
+    };
+    const sizeText = (bytes) => (bytes >= 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) + ' MB' : (bytes >= 1024 ? Math.round(bytes / 1024) + ' KB' : bytes + ' B'));
+    const LANGUAGE_NAMES = { java: 'Java', javascript: 'JavaScript', html: 'HTML', css: 'CSS', sql: 'SQL', xml: 'XML', json: 'JSON', properties: 'Properties', typescript: 'TypeScript', jsp: 'JSP' };
 
     function CodeViewModel() {
       this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
@@ -220,12 +251,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const enabled = checks.rules.filter((r) => r.enabled).length;
         this.checksSummary(checks.description + ': ' + enabled + ' of ' + checks.rules.length + ' rules on. Java is checked at level '
           + checks.javaLevel + ' (from the ' + checks.javaLevelSource + ').');
+        const setEnabled = (r, enabled) => api.put('workspaces/' + id + '/checks/' + encodeURIComponent(r.id), { enabled: enabled })
+          .then(showChecks).catch(showError);
         this.checkRules(checks.rules.map((r) => ({
           id: r.id,
           title: r.title,
           message: r.message,
           severity: r.severity.toLowerCase(),
           files: r.files.join(', ') + (r.exclude.length ? ' (not ' + r.exclude.join(', ') + ')' : ''),
+          filesShort: r.files.join(', '),
+          include: r.files.map(globRegex),
+          exclude: r.exclude.map(globRegex),
           appliesTo: r.appliesTo,
           enabled: r.enabled,
           canManage: canManage,
@@ -234,8 +270,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             if (event.detail.updatedFrom !== 'internal') {
               return;
             }
-            api.put('workspaces/' + id + '/checks/' + encodeURIComponent(r.id), { enabled: event.detail.value })
-              .then(showChecks).catch(showError);
+            setEnabled(r, event.detail.value);
+          },
+          menu: (event) => {
+            const action = event.detail.selectedValue;
+            if (action === 'toggle') {
+              setEnabled(r, !r.enabled);
+            } else if (action === 'details') {
+              this.ruleQuery(r.title);
+              this.tab('checks');
+            } else {
+              window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' }));
+            }
           }
         })));
       };
@@ -253,6 +299,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return api.get('workspaces/' + id).then((workspace) => {
           this.workspace(workspace);
           this.svnUrl(workspace.svnUrl || '');
+          const local = /^file:/.test(workspace.svnUrl || '');
+          this.folderPath(urlToFolder(local ? workspace.svnUrl : ''));
+          this.sourceKind(local && this.localEnabled() ? 'folder' : 'url');
+          loadFiles(id);
           this.svnUsername(workspace.svnUsername || '');
           this.svnPassword('');
           this.jenkinsMessage('');
@@ -360,7 +410,145 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.openKnowledge = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'knowledge' }));
       this.showHistory = () => this.tab('history');
       this.showChecks = () => this.tab('checks');
-      this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8));
+      // A rule's status from the quick checks of the files the factory generated in this workspace
+      const checkedFiles = ko.pureComputed(() => {
+        const entry = dashboard.data().find((d) => d.workspace.id === this.workspaceId());
+        return entry ? (entry.changeDetails || []).filter(Boolean).reduce((list, c) => list.concat((c.files || [])
+          .filter((f) => f.checkStatus && f.checkStatus !== 'NOT_CHECKED')), []) : [];
+      });
+      const ruleStatus = (r) => {
+        const files = checkedFiles().filter((f) => r.include.some((x) => x.test(f.path)) && !r.exclude.some((x) => x.test(f.path)));
+        const pill = (text, tone, icon, title) => ({ text: text, css: 'factory-ov-pill factory-cp2-status factory-ov-pill-' + tone, icon: icon ? 'factory-nav-icon factory-ico-' + icon : '', title: title });
+        if (!files.length) {
+          return pill('Not run', 'grey', '', 'No generated file of this kind has been checked yet');
+        }
+        const hits = files.filter((f) => (f.checkMessage || '').indexOf('(' + r.id + ',') >= 0);
+        if (hits.length) {
+          return r.severity === 'error'
+            ? pill('Failed', 'red', 'x', 'Found in ' + hits.map((f) => f.path).join(', '))
+            : pill('Warning', 'amber', 'alert', 'Found in ' + hits.map((f) => f.path).join(', '));
+        }
+        return pill('Passed', 'green', 'check', files.length + ' generated file(s) checked');
+      };
+      this.compactRules = ko.pureComputed(() => this.visibleRules().slice(0, 8).map((r) => Object.assign({}, r, { status: ruleStatus(r) })));
+      this.ruleQueryInput = ui.value(this.ruleQuery);
+
+      // Repository configuration: a folder on this computer (saved as a file:/// URL) or an SVN server
+      this.localEnabled = ko.observable(false);
+      this.sourceKind = ko.observable('url');
+      this.folderPath = ko.observable('');
+      this.folderPath.subscribe((path) => {
+        if (this.sourceKind() === 'folder') {
+          this.svnUrl(folderToUrl(path));
+        }
+      });
+      this.pickKind = (event) => {
+        const kind = event.target.value;
+        if (kind === 'folder') {
+          this.folderPath(urlToFolder(this.svnUrl()));
+        }
+        this.sourceKind(kind);
+      };
+      this.lastImportOk = ko.pureComputed(() => jobs().length > 0 && jobs()[0].status === 'SUCCEEDED');
+      this.repoConnected = ko.pureComputed(() => this.svnOk() || this.lastImportOk());
+      this.connectedTitle = ko.pureComputed(() => (this.svnOk() ? 'The connection test succeeded' : 'The last code import read the repository'));
+
+      // Recent Index Results: the indexed files when the server lists them, else the latest index runs
+      const fileList = ko.observableArray([]);
+      this.filesListed = ko.observable(false);
+      const packageOf = (path) => {
+        const m = /(?:^|\/)(?:src\/(?:main\/java\/)?|java\/)((?:[a-z_][\w]*\/)+)[^/]+\.java$/.exec(path);
+        return m ? m[1].replace(/\/$/, '').replace(/\//g, '.') : '–';
+      };
+      this.recentFiles = ko.pureComputed(() => fileList().slice().sort((a, b) => (b.revision - a.revision) || a.path.localeCompare(b.path)).slice(0, 5)
+        .map((f, i) => ({
+          key: i, path: f.path, type: LANGUAGE_NAMES[f.language] || f.language || '–', pkg: packageOf(f.path), size: sizeText(f.sizeBytes || 0),
+          revision: 'r' + f.revision,
+          menu: (event) => {
+            const action = event.detail.selectedValue;
+            if (action === 'copy') {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(f.path).catch(() => null);
+              }
+            } else if (action === 'search') {
+              this.query(f.path.split('/').pop());
+              this.tab('search');
+              this.search();
+            } else {
+              this.openKnowledge();
+            }
+          }
+        })));
+      this.filesNote = ko.pureComputed(() => 'The latest of ' + fileList().length.toLocaleString() + ' indexed files. Import counts are not kept per file.');
+      this.viewAllIndex = (event) => {
+        event.preventDefault();
+        if (this.filesListed()) {
+          this.openKnowledge();
+        } else {
+          this.tab('history');
+        }
+      };
+      const loadFiles = (id) => api.get('workspaces/' + id + '/files?limit=20000')
+        .then((list) => { if (id === this.workspaceId()) { fileList(list); this.filesListed(true); } })
+        .catch(() => { fileList([]); this.filesListed(false); });
+
+      // Code Search options, applied to the results here: kinds of result and the top-level folder
+      this.inContent = ko.observable(true);
+      this.inNames = ko.observable(true);
+      this.inComments = ko.observable(false);
+      this.inContentChange = ui.checked(this.inContent);
+      this.inNamesChange = ui.checked(this.inNames);
+      this.inCommentsChange = ui.checked(this.inComments);
+      this.module = ko.observable('');
+      this.moduleChange = ui.value(this.module);
+      const topFolder = (path) => (path.indexOf('/') > 0 ? path.split('/')[0] : '');
+      this.modules = ko.pureComputed(() => Array.from(new Set(fileList().map((f) => topFolder(f.path))
+        .concat(this.results().map((r) => topFolder(r.path))).filter(Boolean))).sort());
+      const COMMENT = /(\/\/|\/\*|^\s*\*|<!--|^\s*#)(.*)$/;
+      const inComment = (r) => {
+        const words = this.query().toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+        return (r.snippet || '').split('\n').some((line) => {
+          const m = COMMENT.exec(line);
+          return m && words.some((w) => m[2].toLowerCase().indexOf(w) >= 0);
+        });
+      };
+      this.filteredResults = ko.pureComputed(() => this.results().filter((r) => {
+        const named = r.kind === 'class' || r.kind === 'method';
+        const kindOk = (named && this.inNames()) || (!named && this.inContent()) || (this.inComments() && inComment(r));
+        return kindOk && (!this.module() || topFolder(r.path) === this.module());
+      }));
+
+      // The page's ⋮ menu
+      this.headerMenu = (event) => {
+        const action = event.detail.selectedValue;
+        if (action === 'knowledge') {
+          this.openKnowledge();
+        } else {
+          this.tab(action);
+        }
+      };
+
+      // AI Assistant: answers from the workspace, its index and the current search results
+      this.ai = assistant.create(() => {
+        const w = this.workspace();
+        if (!w) {
+          return '';
+        }
+        const status = this.indexStatus();
+        const lines = ['Workspace: ' + w.name + ' (' + w.bankName + ', OBDX ' + w.obdxVersion + '), SVN ' + (w.svnUrl || 'not set')];
+        if (status) {
+          lines.push('Index: ' + status.files + ' files, ' + status.chunks + ' searchable pieces, revision ' + status.indexedRevision
+            + ', files by language: ' + JSON.stringify(status.filesByLanguage));
+        }
+        lines.push('Quick check rules: ' + this.checkRules().map((r) => r.title + ' (' + r.severity + (r.enabled ? '' : ', off') + ')').join('; '));
+        if (this.results().length) {
+          lines.push('Code search for "' + this.query() + '":');
+          this.results().slice(0, 6).forEach((r) => lines.push('--- ' + r.path + ' lines ' + r.startLine + '-' + r.endLine + ' (' + r.kind + ' ' + (r.symbol || '') + ')\n' + (r.snippet || '').slice(0, 1500)));
+        } else {
+          lines.push('No code search results yet; the user can search with Code Search to give more code.');
+        }
+        return lines.join('\n');
+      }, ['Explain this class', 'Find where this method is used', 'Suggest improvements', 'Generate unit tests']);
       this.searchFromCard = () => {
         if (this.query().trim()) {
           this.tab('search');
@@ -379,7 +567,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           value: this.jenkinsMode() === 'BRANCH' ? this.jenkinsBranchParameter() : this.jenkinsPatchParameter() },
         { label: 'Username', value: this.jenkinsUsername() || 'None' }
       ] : []));
-      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4));
+      const JOB_PILL = { SUCCEEDED: ui.pill('Succeeded', 'green'), FAILED: ui.pill('Failed', 'red'), RUNNING: ui.pill('Running', 'blue'), QUEUED: ui.pill('Queued', 'grey') };
+      this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || ui.pill(j.status, 'grey') })));
       // Indexing progress: the running import's files, or 100% once imported
       this.indexProgress = ko.pureComputed(() => {
         const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');
@@ -392,6 +581,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.connected = () => {
         accUtils.announce('Code page loaded.');
+        dashboard.load();
+        api.get('sources/local').then((local) => {
+          this.localEnabled(!!local.enabled);
+          if (local.enabled && /^file:/.test(this.svnUrl())) {
+            this.folderPath(urlToFolder(this.svnUrl()));
+            this.sourceKind('folder');
+          }
+        }).catch(() => null);
         document.title = 'Code';
         subscription = this.workspaceId.subscribe(loadWorkspace);
         const before = this.workspaceId();

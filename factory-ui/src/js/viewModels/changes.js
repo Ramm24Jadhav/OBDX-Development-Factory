@@ -49,7 +49,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks : []));
       this.planRows = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.items : []).map((item) => ({
         action: item.action, layer: item.layer, path: item.path, purpose: item.purpose || '', details: item.details || '',
-        basedOn: (item.basedOn || []).join(', ')
+        basedOn: (item.basedOn || []).join(', '), name: item.path.split('/').pop(),
+        badge: item.action === 'create' ? 'A' : 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (item.action === 'create' ? 'a' : 'm'),
+        open: () => this.openFile(item.path)
       })));
       this.canBuild = ko.pureComputed(() => {
         const d = this.detail();
@@ -121,7 +123,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.errorMessage('');
         if (!previous || previous.id !== detail.id) {
           this.file(null);
+          this.openTabs([]);
+          this.collapsed({});
           this.editingPlan(false);
+          const first = firstFile(detail);
+          if (first) {
+            this.openFile(first.path);
+          }
         } else if (this.file()) {
           this.openFile(this.file().path, true);
         }
@@ -201,15 +209,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.del(base()).then(() => { this.detail(null); this.file(null); loadList(); }).catch(showError);
       };
 
+      this.openTabs = ko.observableArray([]);
       this.openFile = (path, keepMode) => api.get(base() + '/file?path=' + encodeURIComponent(path))
         .then((file) => {
           this.file(file);
+          if (this.openTabs().indexOf(path) < 0) {
+            this.openTabs.push(path);
+          }
           if (!keepMode) {
             this.fileMode('diff');
+            this.tab('files');
           }
         }).catch(showError);
       this.showDiff = () => this.fileMode('diff');
       this.showFull = () => this.fileMode('full');
+      this.showSplit = () => this.fileMode('split');
       this.startEdit = () => {
         this.editContent(this.file().generated || '');
         this.fileMode('edit');
@@ -231,8 +245,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : ui.pill('', 'grey')));
       this.changeMenu = ko.pureComputed(() => this.changes());
       this.pickChange = (event) => this.open(event.detail.selectedValue);
-      this.requirementChoices = requirementOptions;
+      this.choosingRequirement = ko.observable(false);
+      this.cancelChoose = () => this.choosingRequirement(false);
+      this.requirementChoices = ko.pureComputed(() => requirementOptions().map((r) => Object.assign({}, r, {
+        start: () => { this.choosingRequirement(false); this.requirementId(r.value); this.create(); }
+      })));
       this.startFrom = (event) => { this.requirementId(event.detail.selectedValue); this.create(); };
+      this.saveDraftTitle = ko.pureComputed(() => (this.fileMode() === 'edit' ? 'Save your edit of the open file'
+        : 'Nothing to save: generated code is saved as it is written. Use Edit on a file to change it, then Save Draft.'));
       this.requirementTitle = ko.observable('');
 
       // Lifecycle: requirement approved, impact analysis, code generation, validation, review, apply changes
@@ -261,7 +281,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const created = d.files.filter((f) => f.action === 'create').length;
         return [
           { label: 'Requirement', value: 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase() },
-          { label: 'Created', value: ui.when(d.createdAt) },
+          { label: 'Created', value: new Date(d.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), title: ui.when(d.createdAt) },
           { label: 'Files', value: (d.files.length - created) + ' modified, ' + created + ' new' },
           { label: 'Branch', value: d.branchUrl ? d.branchUrl.split('/').slice(-2).join('/') : 'Not delivered' },
           { label: 'Code at', value: d.baseRevision ? 'r' + d.baseRevision : '–' },
@@ -276,37 +296,117 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'plan', label: 'Plan' },
         { value: 'impact', label: 'Impact Analysis' },
         { value: 'build', label: 'Build & Test' },
+        { value: 'review', label: 'Review Comments' },
         { value: 'history', label: 'History' }
       ]);
+      // The assistant can take more room, or the whole width
+      this.aiWide = ko.observable(false);
+      this.aiMax = ko.observable(false);
+      this.toggleAiWide = () => { this.aiWide(!this.aiWide()); this.aiMax(false); };
+      this.toggleAiMax = () => { this.aiMax(!this.aiMax()); this.aiWide(false); };
+      this.gridCss = ko.pureComputed(() => 'factory-ch-grid' + (this.aiWide() ? ' factory-ch-grid-wide' : '') + (this.aiMax() ? ' factory-ch-grid-max' : ''));
       this.fileFilter = ko.observable('');
       this.fileFilterInput = ui.value(this.fileFilter);
       const ACTION = { create: 'A', modify: 'M' };
+      this.treeFilter = ko.observable('all');
+      this.collapsed = ko.observable({});
+      const workspaceName = () => {
+        const option = workspaceSelection.options().find((o) => o.value === this.workspaceId());
+        return option ? option.label.split(' (')[0] : 'Workspace';
+      };
+      /** The change's files as nested folders, each folder with its files and subfolders, sorted. */
+      const folderTree = (files) => {
+        const root = { name: workspaceName(), path: '', folders: {}, files: [] };
+        files.forEach((f) => {
+          const parts = f.path.split('/');
+          let node = root;
+          parts.slice(0, -1).forEach((part, i) => {
+            if (!node.folders[part]) {
+              node.folders[part] = { name: part, path: parts.slice(0, i + 1).join('/'), folders: {}, files: [] };
+            }
+            node = node.folders[part];
+          });
+          node.files.push(f);
+        });
+        return root;
+      };
+      const pickFiles = (d) => {
+        const text = this.fileFilter().trim().toLowerCase();
+        const filter = this.treeFilter();
+        return d.files.filter((f) => (!text || f.path.toLowerCase().indexOf(text) >= 0)
+          && (filter === 'all' || (filter === 'warn' ? (f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED') : f.action === filter)));
+      };
+      /** Files in the order the tree shows them. */
+      const orderedFiles = (node) => Object.keys(node.folders).sort().reduce((list, key) => list.concat(orderedFiles(node.folders[key])), [])
+        .concat(node.files.slice().sort((a, b) => a.path.localeCompare(b.path)));
+      const firstFile = (d) => orderedFiles(folderTree(d.files)).find((f) => f.status === 'GENERATED') || orderedFiles(folderTree(d.files))[0] || null;
       this.tree = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
           return [];
         }
-        const text = this.fileFilter().trim().toLowerCase();
+        const collapsed = this.collapsed();
         const rows = [];
-        const seen = {};
-        d.files.filter((f) => !text || f.path.toLowerCase().indexOf(text) >= 0).slice().sort((a, b) => a.path.localeCompare(b.path)).forEach((f) => {
-          const parts = f.path.split('/');
-          parts.slice(0, -1).forEach((part, i) => {
-            const key = parts.slice(0, i + 1).join('/');
-            if (!seen[key]) {
-              seen[key] = true;
-              rows.push({ folder: true, name: part, style: { paddingLeft: (i * 14) + 'px' }, css: 'factory-ch-node factory-ch-folder' });
+        const toggle = (path) => () => {
+          const next = Object.assign({}, this.collapsed());
+          next[path] = !next[path];
+          this.collapsed(next);
+        };
+        const walk = (node, depth) => {
+          Object.keys(node.folders).sort().forEach((key) => {
+            // A folder with one subfolder and no files shows as one row: com/bank/obdx
+            let folder = node.folders[key];
+            let name = folder.name;
+            while (Object.keys(folder.folders).length === 1 && folder.files.length === 0) {
+              folder = folder.folders[Object.keys(folder.folders)[0]];
+              name += '/' + folder.name;
+            }
+            const open = !collapsed[folder.path];
+            rows.push({
+              folder: true, name: name, path: folder.path, open: open, toggle: toggle(folder.path),
+              icon: 'factory-nav-icon factory-ico-folder-fill', style: { paddingLeft: (depth * 12 + 2) + 'px' }, css: 'factory-ch-node factory-ch-folder'
+            });
+            if (open) {
+              walk(folder, depth + 1);
             }
           });
-          rows.push({
-            folder: false, name: parts[parts.length - 1], style: { paddingLeft: ((parts.length - 1) * 14) + 'px' }, path: f.path,
+          node.files.slice().sort((a, b) => a.path.localeCompare(b.path)).forEach((f) => rows.push({
+            folder: false, name: f.path.split('/').pop(), style: { paddingLeft: (depth * 12 + 2) + 'px' }, path: f.path,
             badge: ACTION[f.action] || 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (f.action === 'create' ? 'a' : 'm'),
             css: ko.pureComputed(() => 'factory-ch-node factory-ch-file' + (this.file() && this.file().path === f.path ? ' factory-ch-file-on' : '')),
             open: () => this.openFile(f.path)
-          });
+          }));
+        };
+        const files = pickFiles(d);
+        if (files.length === 0) {
+          return [];
+        }
+        const root = folderTree(files);
+        const rootOpen = !collapsed[''];
+        rows.push({
+          folder: true, name: root.name, path: '', open: rootOpen, toggle: toggle(''), icon: 'factory-nav-icon factory-ico-bank',
+          style: { paddingLeft: '2px' }, css: 'factory-ch-node factory-ch-folder factory-ch-root'
         });
+        if (rootOpen) {
+          walk(root, 1);
+        }
         return rows;
       });
+      this.pickTreeFilter = (event) => {
+        const value = event.detail.selectedValue;
+        if (value === 'expand') {
+          this.collapsed({});
+        } else if (value === 'collapse') {
+          const all = {};
+          (this.detail() ? this.detail().files : []).forEach((f) => {
+            const parts = f.path.split('/');
+            parts.slice(0, -1).forEach((part, i) => { all[parts.slice(0, i + 1).join('/')] = true; });
+          });
+          this.collapsed(all);
+        } else {
+          this.treeFilter(value);
+        }
+      };
       // The selected file's lines: the diff, or the whole generated file, with line numbers
       this.codeLines = ko.pureComputed(() => {
         const file = this.file();
@@ -336,12 +436,97 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           };
         });
       });
-      this.fileTabs = ko.pureComputed(() => (this.file() ? [{ name: this.file().path.split('/').pop(), badge: this.file().action === 'create' ? 'A' : 'M' }] : []));
-      this.closeFile = () => this.file(null);
+      // Before and after side by side: removed lines on the left, added lines on the right, paired in order
+      this.splitLines = ko.pureComputed(() => {
+        const file = this.file();
+        if (!file || !file.diff) {
+          return [{ css: 'factory-ch-srow', ln: '', lt: file && file.generated === null ? '(not written yet)' : '(no changes)', rn: '', rt: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' }];
+        }
+        const rows = [];
+        let dels = [];
+        let adds = [];
+        let oldN = 0;
+        let newN = 0;
+        const flush = () => {
+          for (let i = 0; i < Math.max(dels.length, adds.length); i++) {
+            const l = dels[i];
+            const r = adds[i];
+            rows.push({
+              css: 'factory-ch-srow', ln: l ? l.n : '', lt: l ? l.text : '', rn: r ? r.n : '', rt: r ? r.text : '',
+              lcss: 'factory-ch-sside' + (l ? ' factory-ch-del' : ' factory-ch-sempty'), rcss: 'factory-ch-sside' + (r ? ' factory-ch-add' : ' factory-ch-sempty')
+            });
+          }
+          dels = [];
+          adds = [];
+        };
+        file.diff.replace(/\n$/, '').split('\n').filter((line) => !/^(Index:|====|\+\+\+|---)/.test(line)).forEach((line) => {
+          const hunk = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)/);
+          if (hunk) {
+            flush();
+            oldN = Number(hunk[1]) - 1;
+            newN = Number(hunk[2]) - 1;
+            rows.push({ css: 'factory-ch-srow factory-ch-hunk', ln: '', lt: line, rn: '', rt: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
+            return;
+          }
+          const sign = line.charAt(0);
+          if (sign === '-') {
+            dels.push({ n: ++oldN, text: line.slice(1) });
+          } else if (sign === '+') {
+            adds.push({ n: ++newN, text: line.slice(1) });
+          } else {
+            flush();
+            rows.push({ css: 'factory-ch-srow', ln: ++oldN, lt: line.slice(1), rn: ++newN, rt: line.slice(1), lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
+          }
+        });
+        flush();
+        return rows;
+      });
+      const fileOf = (path) => (this.detail() ? this.detail().files.find((f) => f.path === path) : null);
+      this.fileTabs = ko.pureComputed(() => this.openTabs().map((path) => {
+        const f = fileOf(path);
+        const created = f && f.action === 'create';
+        return {
+          name: path.split('/').pop(), path: path, badge: created ? 'A' : 'M',
+          badgeCss: 'factory-ch-badge factory-ch-badge-' + (created ? 'a' : 'm'),
+          css: 'factory-ch-filetab' + (this.file() && this.file().path === path ? ' factory-ch-filetab-on' : ''),
+          open: () => { if (!this.file() || this.file().path !== path) { this.openFile(path); } },
+          close: () => this.closeTab(path)
+        };
+      }));
+      this.closeTab = (path) => {
+        const tabs = this.openTabs().filter((p) => p !== path);
+        this.openTabs(tabs);
+        if (this.file() && this.file().path === path) {
+          if (tabs.length) {
+            this.openFile(tabs[tabs.length - 1]);
+          } else {
+            this.file(null);
+          }
+        }
+      };
+      this.closeFile = () => (this.file() ? this.closeTab(this.file().path) : null);
       this.proposed = ko.pureComputed(() => (this.detail() ? this.detail().files : []).filter((f) => f.status === 'GENERATED').map((f) => ({
         name: f.path.split('/').pop(), path: f.path, added: '+' + f.linesAdded, removed: f.linesRemoved ? '-' + f.linesRemoved : '0',
-        badge: f.action === 'create' ? 'A' : 'M', open: () => this.openFile(f.path)
+        badge: f.action === 'create' ? 'A' : 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (f.action === 'create' ? 'a' : 'm'),
+        open: () => this.openFile(f.path)
       })));
+      this.viewDiff = () => {
+        const target = this.file() || (this.proposed()[0] ? { path: this.proposed()[0].path } : null);
+        if (target) {
+          this.tab('files');
+          this.fileMode('diff');
+          if (!this.file() || this.file().path !== target.path) {
+            this.openFile(target.path);
+          }
+        }
+      };
+      // Review notes: the quick checks' warnings and failures
+      this.reviewNotes = ko.pureComputed(() => (this.detail() ? this.detail().files : [])
+        .filter((f) => f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED').map((f) => ({
+          path: f.path, name: f.path.split('/').pop(), message: f.checkMessage || 'No message', level: f.checkStatus === 'FAILED' ? 'Failed' : 'Warning',
+          dot: 'factory-step-dot ' + (f.checkStatus === 'FAILED' ? 'factory-dot-red' : 'factory-dot-amber'),
+          openAction: () => this.openFile(f.path)
+        })));
       this.totals = ko.pureComputed(() => {
         const files = this.detail() ? this.detail().files : [];
         return {
@@ -400,8 +585,57 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.bottom = ko.observable('build');
       this.bottomTabs = ui.tabs(this.bottom, [
-        { value: 'build', label: 'Build & Test' }, { value: 'checks', label: 'Quick Checks' }, { value: 'builds', label: 'Build History' }
+        { value: 'build', label: 'Build & Test' }, { value: 'static', label: 'Static Analysis' }, { value: 'checks', label: 'Quick Checks' },
+        { value: 'tests', label: 'Test Results' }, { value: 'builds', label: 'Build History' }
       ]);
+      // What the last Jenkins build reported, split into test failures and the rest
+      const lastErrors = () => (this.lastBuild() ? this.lastBuild().errors || [] : []);
+      const isTest = (e) => /test|junit|assert|expected/i.test(e);
+      this.buildErrors = ko.pureComputed(() => lastErrors().filter((e) => !isTest(e)));
+      this.testErrors = ko.pureComputed(() => lastErrors().filter(isTest));
+      this.testNote = ko.pureComputed(() => {
+        const b = this.lastBuild();
+        if (!b) {
+          return 'Test results: no Jenkins build has run for this change yet. They come from the build\'s JUnit report.';
+        }
+        return b.result === 'SUCCESS' ? 'The last build (' + b.job + (b.buildNumber ? ' #' + b.buildNumber : '') + ') reported no failed tests.'
+          : 'The last build reported no failed tests; see Build History for its other errors.';
+      });
+      const seconds = (b) => (b && b.finishedAt && b.startedAt ? Math.max(1, Math.round((new Date(b.finishedAt) - new Date(b.startedAt)) / 1000)) : null);
+      const duration = (n) => (n === null ? '' : n >= 60 ? Math.floor(n / 60) + 'm ' + (n % 60) + 's' : n + 's');
+      // The build pipeline as five stages; Jenkins reports one result and one duration for the whole build
+      this.pipeline = ko.pureComputed(() => {
+        const s = this.checkSummary();
+        const b = this.lastBuild();
+        const running = b && (b.result === 'RUNNING' || b.result === 'QUEUED' || this.detail().buildStatus === 'BUILDING');
+        const ok = b && b.result === 'SUCCESS';
+        const total = duration(seconds(b));
+        const jenkinsState = !b ? 'none' : running ? 'run' : ok ? 'ok' : 'bad';
+        const stage = (name, state, time, title) => ({
+          name: name, time: time, title: title,
+          css: 'factory-ch-pipe factory-ch-pipe-' + state,
+          icon: 'factory-nav-icon factory-ico-' + (state === 'ok' ? 'check' : state === 'bad' ? 'x' : state === 'warn' ? 'alert' : 'clock')
+        });
+        const notRun = 'No Jenkins build of this change yet.';
+        return [
+          stage('Compile', !b ? 'none' : running ? 'run' : this.buildErrors().length ? 'bad' : ok ? 'ok' : 'bad', b ? (total || 'Running') : 'Not run',
+            b ? 'The whole Jenkins build took ' + (total || 'not finished yet') + '; Jenkins does not time each stage.' : notRun),
+          stage('Unit Tests', !b ? 'none' : running ? 'run' : this.testErrors().length ? 'bad' : ok ? 'ok' : 'none', b ? 'In the build' : 'Not run',
+            b ? 'Part of the Jenkins build; it has no separate duration.' : notRun),
+          stage('Integration Tests', !b ? 'none' : jenkinsState === 'ok' ? 'ok' : 'none', b ? 'In the build' : 'Not run',
+            b ? 'Part of the Jenkins build, if its job runs them.' : notRun),
+          stage('Static Analysis', 'none', b ? 'Not reported' : 'Not run', 'The Jenkins builds of this workspace do not publish static analysis separately.'),
+          stage('OBDX Checks', s.failed ? 'bad' : s.warning ? 'warn' : s.passed ? 'ok' : 'none', s.passed + ' passed · ' + s.warning + ' warn',
+            'Quick checks of each file: ' + s.passed + ' passed, ' + s.warning + ' warnings, ' + s.failed + ' failed. They take no measurable time.')
+        ];
+      });
+      this.buildTitle = ko.pureComputed(() => {
+        const jenkins = this.jenkins();
+        if (!jenkins || !jenkins.mode || jenkins.mode === 'NONE') {
+          return 'Set up Jenkins for this workspace on the Integrations page first.';
+        }
+        return this.canBuild() ? 'Build this change with Jenkins' : 'Jenkins builds this change once it is delivered or generated.';
+      });
 
       // History of the change from its own dates (the audit log has the rest, for administrators)
       this.history = ko.pureComputed(() => {
@@ -427,7 +661,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
       this.moreAction = (event) => {
         const action = event.detail.selectedValue;
+        if (action === 'patch') {
+          window.location.href = this.patchUrl();
+          return;
+        }
+        if (action === 'newchange') {
+          this.choosingRequirement(true);
+          return;
+        }
         ({ analyze: this.analyzeAgain, close: this.closeMerged, abandon: this.abandon, remove: this.remove })[action]();
+      };
+      this.aiTab = ko.observable('chat');
+      this.aiTabs = ui.tabs(this.aiTab, [
+        { value: 'chat', label: 'Chat' },
+        { value: 'suggested', label: 'Suggested Changes', count: ko.pureComputed(() => this.planRows().length) },
+        { value: 'analysis', label: 'Code Analysis' }
+      ]);
+      this.analyseFile = () => {
+        if (this.file()) {
+          this.aiTab('chat');
+          this.ai.ask('Review the open file ' + this.file().path + ': what could be wrong, and what would you change?');
+        }
       };
 
       this.ai = assistant.create(() => {
@@ -440,7 +694,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + '\nFiles:\n' + d.plan.items.map((i) => '- ' + i.action + ' ' + i.path + ' (' + i.layer + '): ' + i.purpose).join('\n') : 'none yet')
           + '\nQuick checks: ' + d.files.map((f) => f.path + ' ' + (f.checkStatus || 'not checked') + (f.checkMessage ? ' - ' + f.checkMessage : '')).join('; ')
           + (file ? '\n\nSelected file ' + file.path + ' diff:\n' + (file.diff || '').slice(0, 9000) : '');
-      }, ['Explain this code', 'Check impact on other screens', 'Add unit tests for validation', 'What could break?']);
+      }, ['Add unit tests for validation', 'Update error message in UI', 'Check impact on other screens', 'Explain this code']);
 
       let subscription = null;
       this.connected = () => {

@@ -28,6 +28,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       return ('0000' + (h % 10000)).slice(-4);
     };
 
+    const shortWhen = (value) => new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    /** Pages of a list with numbered page buttons and a page size: {rows, page, pages, text, prev, next, buttons, sizeChange}. */
+    function numberedPager(list, initialSize) {
+      const size = ko.observable(initialSize);
+      const page = ko.observable(1);
+      const pages = ko.pureComputed(() => Math.max(1, Math.ceil(ko.unwrap(list).length / size())));
+      const current = ko.pureComputed(() => Math.min(page(), pages()));
+      const rows = ko.pureComputed(() => ko.unwrap(list).slice((current() - 1) * size(), current() * size()));
+      const text = ko.pureComputed(() => {
+        const total = ko.unwrap(list).length;
+        return total === 0 ? 'Showing 0' : 'Showing ' + ((current() - 1) * size() + 1) + ' to ' + Math.min(total, current() * size()) + ' of ' + total;
+      });
+      const buttons = ko.pureComputed(() => {
+        const out = [];
+        for (let n = 1; n <= pages(); n++) {
+          out.push({ n: n, css: 'factory-ag-pg' + (n === current() ? ' factory-ag-pg-on' : ''), pick: () => page(n) });
+        }
+        return out;
+      });
+      return {
+        rows: rows, page: current, pages: pages, text: text, buttons: buttons,
+        prev: () => page(Math.max(1, current() - 1)),
+        next: () => page(Math.min(pages(), current() + 1)),
+        sizeChange: (event) => { size(Number(event.target.value) || initialSize); page(1); }
+      };
+    }
+    const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
+    const copy = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => null); } };
+
     function AgentsViewModel() {
       this.errorMessage = ko.observable('');
       this.loading = dashboard.loading;
@@ -74,7 +104,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               key: 'an' + c.id, agent: 'analysis', task: 'Impact analysis: ' + c.title, workspace: w.name, workspaceId: w.id,
               status: c.status === 'ANALYZING' ? 'running' : (!c.plan && c.status === 'FAILED') ? 'failed' : 'completed',
               started: c.createdAt, finished: c.status === 'ANALYZING' ? null : (c.planApprovedAt || c.updatedAt), approx: true,
-              requirement: req ? req.title : '', message: c.plan ? c.plan.summary : (c.message || ''), page: 'impact',
+              requirement: req ? req.title : '', message: c.plan ? c.plan.summary : (c.message || ''), page: 'impact', by: c.createdBy,
               steps: [
                 { name: 'Read the approved requirement and screens', done: true },
                 { name: 'Search reference implementations', done: !!c.plan },
@@ -90,7 +120,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
                 key: 'cg' + c.id, agent: 'code', task: 'Generate code: ' + c.title, workspace: w.name, workspaceId: w.id,
                 status: c.status === 'GENERATING' ? 'running' : (c.status === 'FAILED' || failedFiles.length) ? 'failed' : 'completed',
                 started: c.planApprovedAt, finished: c.status === 'GENERATING' ? null : c.updatedAt, approx: true,
-                requirement: req ? req.title : '', message: c.message || (c.files.filter((f) => f.status === 'GENERATED').length + ' files written'), page: 'changes',
+                requirement: req ? req.title : '', message: c.message || (c.files.filter((f) => f.status === 'GENERATED').length + ' files written'), page: 'changes', by: c.planApprovedBy,
                 steps: c.files.map((f) => ({ name: (f.action === 'create' ? 'Create ' : 'Modify ') + f.path.split('/').pop() + (f.attempts > 1 ? ' (' + f.attempts + ' attempts)' : '')
                   + (f.checkStatus ? ' · checks ' + f.checkStatus.toLowerCase().replace('_', ' ') : ''), done: f.status === 'GENERATED' || f.status === 'UNCHANGED', failed: f.status === 'FAILED' })),
                 files: c.files.map((f) => f.path + ' +' + f.linesAdded + ' -' + f.linesRemoved), rerun: null
@@ -120,8 +150,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           return Object.assign(r, {
             id: 'RUN-' + new Date(r.started).getFullYear() + '-' + hash(r.key), agentName: agent.name, model: r.model || model(),
             agentCss: 'factory-ag-agent factory-ov2-icon-' + agent.tone, agentIcon: 'factory-nav-icon factory-ico-' + agent.icon,
-            pill: STATUS[r.status], startedText: ui.when(r.started),
-            duration: ms === null ? '–' : (r.approx ? '~' : '') + (ms >= 60000 ? Math.floor(ms / 60000) + 'm ' + Math.round((ms % 60000) / 1000) + 's' : Math.max(0, Math.round(ms / 1000)) + 's')
+            pill: STATUS[r.status], startedText: ui.when(r.started), startedShort: shortWhen(r.started),
+            finishedText: r.finished ? ui.when(r.finished) + (r.approx ? ' (last update)' : '') : (r.status === 'running' || r.status === 'queued' ? 'Not finished yet' : '–'),
+            byInitials: ui.initials(r.by || ''),
+            duration: ms === null ? '–' : (r.approx ? '~' : '') + (Math.round(ms / 1000) >= 60 ? Math.floor(Math.round(ms / 1000) / 60) + 'm ' + (Math.round(ms / 1000) % 60) + 's' : Math.max(0, Math.round(ms / 1000)) + 's')
           });
         });
       });
@@ -152,6 +184,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.statusFilter = ko.observable('');
       this.agentFilter = ko.observable('');
       this.workspaceFilter = ko.observable('');
+      this.modelFilter = ko.observable('');
+      this.fromDate = ko.observable('');
+      this.toDate = ko.observable('');
+      this.modelChange = ui.value(this.modelFilter);
+      this.fromChange = ui.value(this.fromDate);
+      this.toChange = ui.value(this.toDate);
+      this.modelOptions = ko.pureComputed(() => Array.from(new Set(this.runs().map((r) => r.model))).sort());
       this.searchInput = ui.value(this.search);
       this.statusChange = ui.value(this.statusFilter);
       this.agentChange = ui.value(this.agentFilter);
@@ -159,20 +198,48 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.agentOptions = Object.keys(AGENTS).map((k) => ({ value: k, label: AGENTS[k].name }));
       this.workspaceOptions = ko.pureComputed(() => dashboard.data().map((d) => ({ value: d.workspace.id, label: d.workspace.name })));
       this.resetFilters = () => {
-        ['runSearch', 'runStatus', 'runAgent', 'runWorkspace'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
-        this.search(''); this.statusFilter(''); this.agentFilter(''); this.workspaceFilter('');
+        ['runSearch', 'runStatus', 'runAgent', 'runModel', 'runWorkspace', 'runFrom', 'runTo'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = ''; } });
+        this.search(''); this.statusFilter(''); this.agentFilter(''); this.workspaceFilter(''); this.modelFilter(''); this.fromDate(''); this.toDate('');
+        this.tab('all');
       };
       this.visibleRuns = ko.pureComputed(() => {
         const text = this.search().trim().toLowerCase();
         return this.runs().filter((r) => (this.tab() === 'all' || r.status === this.tab())
           && (!this.statusFilter() || r.status === this.statusFilter()) && (!this.agentFilter() || r.agent === this.agentFilter())
-          && (!this.workspaceFilter() || r.workspaceId === this.workspaceFilter())
+          && (!this.workspaceFilter() || r.workspaceId === this.workspaceFilter()) && (!this.modelFilter() || r.model === this.modelFilter())
+          && (!this.fromDate() || new Date(r.started) >= new Date(this.fromDate() + 'T00:00:00'))
+          && (!this.toDate() || new Date(r.started) <= new Date(this.toDate() + 'T23:59:59'))
           && (!text || (r.id + ' ' + r.task + ' ' + r.requirement + ' ' + r.model + ' ' + r.agentName).toLowerCase().indexOf(text) >= 0));
       });
-      this.pager = ui.pager(this.visibleRuns, 10);
+      this.pager = numberedPager(this.visibleRuns, 10);
       this.selectedKey = ko.observable(null);
+      const pickRun = (key) => { this.selectedKey(key); this.detailTab('overview'); this.openSteps([]); };
+      // Checked runs (client side)
+      this.checked = ko.observableArray([]);
+      this.allSelected = ko.pureComputed(() => this.pager.rows().length > 0 && this.pager.rows().every((r) => this.checked.indexOf(r.key) >= 0));
+      this.toggleAll = (event) => {
+        const keys = this.pager.rows().map((r) => r.key);
+        this.checked(event.target.checked ? Array.from(new Set(this.checked().concat(keys))) : this.checked().filter((k) => keys.indexOf(k) < 0));
+      };
+      this.selectedText = ko.pureComputed(() => (this.checked().length ? ' · ' + this.checked().length + ' selected' : ''));
       this.rows = ko.pureComputed(() => this.pager.rows().map((r) => Object.assign({}, r, {
-        css: this.selectedKey() === r.key ? 'factory-clickable factory-row-sel' : 'factory-clickable', pick: () => { this.selectedKey(r.key); this.detailTab('overview'); }
+        css: this.selectedKey() === r.key ? 'factory-clickable factory-row-sel' : 'factory-clickable', pick: () => pickRun(r.key),
+        isSelected: ko.pureComputed(() => this.checked.indexOf(r.key) >= 0),
+        toggle: (event) => { if (event.target.checked) { this.checked.push(r.key); } else { this.checked.remove(r.key); } },
+        stop: (event) => event.stopPropagation(),
+        action: (event) => {
+          const value = event.detail.selectedValue;
+          if (value === 'details') {
+            pickRun(r.key);
+          } else if (value === 'open') {
+            workspaceSelection.selectedId(r.workspaceId);
+            navigate(r.page);
+          } else if (value === 'copy') {
+            copy(r.id);
+          } else if (value === 'rerun' && r.rerun) {
+            r.rerun();
+          }
+        }
       })));
 
       // The selected run
@@ -181,12 +248,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.detailTab = ko.observable('overview');
       this.detailTabs = ui.tabs(this.detailTab, [
         { value: 'overview', label: 'Overview' }, { value: 'steps', label: 'Execution Steps' }, { value: 'logs', label: 'Logs' },
-        { value: 'files', label: 'Files', count: ko.pureComputed(() => (this.run() ? this.run().files.length : 0)) }
+        { value: 'files', label: 'Files', count: ko.pureComputed(() => (this.run() ? this.run().files.length : 0)) },
+        { value: 'related', label: 'Related', count: ko.pureComputed(() => this.related().length) }
       ]);
+      this.openSteps = ko.observableArray([]);
       this.steps = ko.pureComputed(() => (this.run() ? this.run().steps.map((s, i) => ({
         n: i + 1, name: s.name, css: 'factory-step-dot ' + (s.failed ? 'factory-dot-red' : s.done ? 'factory-dot-green' : 'factory-dot-grey'),
-        icon: 'factory-nav-icon factory-ico-' + (s.failed ? 'x' : s.done ? 'check' : 'clock')
+        icon: 'factory-nav-icon factory-ico-' + (s.failed ? 'x' : s.done ? 'check' : 'clock'),
+        state: s.failed ? 'Failed' : s.done ? 'Done' : 'Waiting',
+        open: ko.pureComputed(() => this.openSteps.indexOf(i) >= 0),
+        liCss: ko.pureComputed(() => (this.openSteps.indexOf(i) >= 0 ? 'factory-ag-open' : '')),
+        toggle: () => { if (this.openSteps.indexOf(i) >= 0) { this.openSteps.remove(i); } else { this.openSteps.push(i); } }
       })) : []));
+      // Runs for the same requirement (or, without one, the same workspace)
+      this.related = ko.pureComputed(() => {
+        const r = this.run();
+        if (!r) {
+          return [];
+        }
+        return this.runs().filter((x) => x.key !== r.key && x.workspaceId === r.workspaceId && (r.requirement ? x.requirement === r.requirement : true))
+          .slice(0, 12).map((x) => Object.assign({}, x, { pick: () => pickRun(x.key) }));
+      });
+      this.resultLabel = ko.pureComputed(() => (this.run() && this.run().page === 'changes' ? 'View Changes' : 'View Result'));
+      this.moreAction = (event) => {
+        const value = event.detail.selectedValue;
+        const r = this.run();
+        if (!r) {
+          return;
+        }
+        if (value === 'copy') {
+          copy(r.id);
+        } else if (value === 'workspace') {
+          workspaceSelection.selectedId(r.workspaceId);
+          navigate('workspaces');
+        } else {
+          this.detailTab(value);
+        }
+      };
       this.allStepsDone = ko.pureComputed(() => this.steps().length > 0 && this.run().steps.every((s) => s.done));
       this.viewResult = () => {
         const r = this.run();
@@ -197,23 +295,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
       this.rerun = () => { const r = this.run(); if (r && r.rerun) { r.rerun(); } };
       this.canRerun = ko.pureComputed(() => !!this.run() && !!this.run().rerun);
-      this.newTask = (event) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: event.detail.selectedValue }));
+      this.newTask = (event) => navigate(event.detail.selectedValue);
+      this.newTaskDefault = () => navigate('requirements');
+      this.openTaskMenu = (event) => document.getElementById('newAgentTaskMenu').open(event, {
+        launcher: document.getElementById('newAgentTaskMore'), position: { my: { horizontal: 'end', vertical: 'top' }, at: { horizontal: 'end', vertical: 'bottom' } }
+      });
+      this.viewAll = () => { this.resetFilters(); const el = document.getElementById('runList'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } };
+      this.viewModels = () => navigate('models');
 
       // Recent activity and runs by agent
+      const STATUS_TEXT = { completed: 'completed successfully', failed: 'failed', running: 'started', queued: 'queued' };
       this.recent = ko.pureComputed(() => this.runs().slice(0, 5).map((r) => ({
         time: new Date(r.started).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
-        text: r.id + ' ' + (r.status === 'completed' ? 'completed' : r.status) + ' (' + r.agentName + ')',
-        css: 'factory-step-dot factory-dot-' + (r.status === 'completed' ? 'green' : r.status === 'failed' ? 'red' : 'blue'),
+        id: r.id, text: STATUS_TEXT[r.status], agent: '(' + r.agentName + ')', full: r.id + ' ' + STATUS_TEXT[r.status] + ': ' + r.task,
+        css: 'factory-step-dot factory-dot-' + (r.status === 'completed' ? 'green' : r.status === 'failed' ? 'red' : r.status === 'queued' ? 'violet' : 'blue'),
         icon: 'factory-nav-icon factory-ico-' + (r.status === 'completed' ? 'check' : r.status === 'failed' ? 'x' : 'clock')
       })));
-      this.byAgent = ko.pureComputed(() => {
+      // Model usage this month: runs per model (the factory does not record tokens)
+      this.byModel = ko.pureComputed(() => {
         const colors = ['#2563eb', '#16a34a', '#7c3aed', '#f59e0b', '#db2777', '#0891b2'];
-        const total = this.runs().length || 1;
+        const month = this.runs().filter((r) => Date.now() - new Date(r.started).getTime() < MONTH_MS);
+        const total = month.length || 1;
         let at = 0;
-        const parts = Object.keys(AGENTS).map((k, i) => ({ label: AGENTS[k].name, n: this.runs().filter((r) => r.agent === k).length, color: colors[i] })).filter((p) => p.n);
+        const names = Array.from(new Set(month.map((r) => r.model)));
+        const parts = names.map((name, i) => ({ label: name, n: month.filter((r) => r.model === name).length, color: colors[i % colors.length] })).sort((a, b) => b.n - a.n);
         const stops = parts.map((p) => { const from = at; at += 100 * p.n / total; return p.color + ' ' + from + '% ' + at + '%'; });
         return {
-          total: this.runs().length, parts: parts.map((p) => Object.assign(p, { dot: { background: p.color }, text: p.n + ' (' + Math.round(100 * p.n / total) + '%)' })),
+          total: month.length, parts: parts.map((p) => Object.assign(p, { dot: { background: p.color }, text: p.n + ' (' + Math.round(100 * p.n / total) + '%)' })),
           style: { background: stops.length ? 'conic-gradient(' + stops.join(', ') + ')' : '#e5eaf1' }
         };
       });

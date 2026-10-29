@@ -4,7 +4,7 @@
  * automatically, or another one by URL, then its chat and embedding models), and a test prompt. Through /api/model.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojradioset', 'ojs/ojselectsingle'],
+        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojradioset', 'ojs/ojselectsingle', 'ojs/ojmenu', 'ojs/ojswitch'],
   function (ko, accUtils, api, session, ui, ArrayDataProvider) {
     function ModelsViewModel() {
       this.isAdmin = session.isAdmin;
@@ -58,6 +58,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'other', label: 'On another server (for example Ollama on this computer)' }
       ], { keyAttributes: 'value' });
       this.embeddingSource = ko.observable('same');
+      this.embeddingSourceChange = ui.value(this.embeddingSource);
       this.embeddingUrl = ko.observable('');
       this.embeddingApiKey = ko.observable('');
       this.embeddingApiKeyLabel = ko.pureComputed(() => (this.status() && this.status().embeddingApiKeySet
@@ -204,13 +205,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // ---- Provider cards: known cloud providers and the servers found on this computer ----
       this.tab = ko.observable('providers');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'providers', label: 'Providers' }, { value: 'routing', label: 'Model Routing' },
+        { value: 'providers', label: 'Providers' }, { value: 'routing', label: 'Model Routing' }, { value: 'usage', label: 'Usage & Cost' },
         { value: 'prompts', label: 'Prompts & Templates' }, { value: 'policies', label: 'Policies' }, { value: 'evaluation', label: 'Model Evaluation' }
       ]);
       const same = (a, b) => !!a && !!b && a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
+      const copy = (text) => { if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => null); } };
+      const scrollTo = (id) => window.setTimeout(() => { const el = document.getElementById(id); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } }, 100);
       const provider = (id, name, description, baseUrl, local) => {
         const p = {
           id: id, name: name, description: description, baseUrl: ko.observable(baseUrl), local: local,
+          short: name.replace(/^Local Model \((.*)\)$/, 'Local ($1)').replace(/ \(Grok\)$/, ''),
+          tiny: name.split(' ')[0],
+          selectedModel: ko.observable(''),
           logo: 'factory-md-logo factory-md-logo-' + id,
           key: ko.observable(''), state: ko.observable(''), models: ko.observableArray([]), latency: ko.observable(null), checked: ko.observable(''),
           testing: ko.observable(false), admin: session.isAdmin
@@ -219,7 +225,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         p.pill = ko.pureComputed(() => (p.active() ? ui.pill('In use', 'green') : p.state() === 'ok' ? ui.pill('Connected', 'green')
           : p.state() === 'failed' ? ui.pill('Not reachable', 'red') : ui.pill('Not tested', 'grey')));
         p.statusText = ko.pureComputed(() => (p.state() === 'ok' ? p.models().length + ' models available' : p.state() === 'failed' ? 'Failed: ' + p.error : (p.active() ? 'In use' : 'Not tested')));
-        p.defaultModel = ko.pureComputed(() => (p.active() ? this.status().chatModel : (p.models().find((m) => !m.embedding) || {}).id || '–'));
+        p.chatModels = ko.pureComputed(() => p.models().filter((m) => !m.embedding).map((m) => m.id));
+        p.defaultModel = ko.pureComputed(() => p.selectedModel()
+          || (p.active() ? find(p.models(), this.status().chatModel) || this.status().chatModel : (p.chatModels()[0] || '–')));
+        p.modelChange = (event) => p.selectedModel(event.target.value);
+        p.statusPill = ko.pureComputed(() => (p.state() === 'failed' ? ui.pill('Not reachable', 'red')
+          : (p.state() === 'ok' || p.active()) ? ui.pill('Available', 'green') : ui.pill('Not tested', 'grey')));
+        p.selectedAsDefault = ko.pureComputed(() => same(this.modelsUrl() || (this.status() || {}).baseUrl, p.baseUrl()));
+        // What the listed models can do: chat models write specs and code, embedding models search code
+        p.caps = ko.pureComputed(() => [
+          { label: 'Chat / Completion', on: p.chatModels().length > 0 },
+          { label: 'Code Generation', on: p.chatModels().length > 0 },
+          { label: 'Code-tuned model', on: p.chatModels().some((m) => /coder|code/i.test(m)) },
+          { label: 'Embeddings (code search)', on: p.models().some((m) => m.embedding) }
+        ]);
+        p.menuAction = (event) => {
+          const action = event.detail.selectedValue;
+          if (action === 'test') {
+            p.test();
+          } else if (action === 'use') {
+            p.use();
+          } else if (action === 'models') {
+            this.providerFilter(p.short);
+            scrollTo('availableModels');
+          } else {
+            copy(p.baseUrl());
+          }
+        };
         p.keyLabel = ko.pureComputed(() => (p.active() && this.status().apiKeySet ? 'Stored (leave empty to keep)' : (local ? 'Not needed' : 'API key')));
         p.test = () => {
           p.testing(true);
@@ -246,7 +278,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               this.getRemoteModels();
             }
           }
-          window.setTimeout(() => { const el = document.getElementById('defaultSettings'); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } }, 100);
+          if (p.selectedModel()) {
+            window.setTimeout(() => this.chatModel(find(this.models(), p.selectedModel()) || this.chatModel()), 400);
+          }
+          scrollTo('defaultSettings');
         };
         return p;
       };
@@ -273,6 +308,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return list;
       });
       this.testAll = () => this.providers().forEach((p) => { if (!p.local || p.state() !== 'ok') { p.test(); } });
+      // A custom provider: any OpenAI-compatible server by URL; its models go to Default Model Settings
+      this.addingProvider = ko.observable(false);
+      this.addProvider = () => { this.addingProvider(true); scrollTo('customProviderCard'); };
+      this.cancelProvider = () => this.addingProvider(false);
+      this.useCustom = () => {
+        const url = this.remoteUrl().trim();
+        this.serverKind('remote');
+        this.remoteUrl(url);
+        this.getRemoteModels();
+        scrollTo('defaultSettings');
+      };
+      this.defaultProviderChange = (event) => {
+        const p = this.providers().find((x) => x.baseUrl() === event.target.value);
+        if (p) {
+          p.use();
+        }
+      };
       this.providerFilter = ko.observable('');
       this.modelSearch = ko.observable('');
       this.providerFilterChange = ui.value(this.providerFilter);
@@ -280,7 +332,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.allModels = ko.pureComputed(() => {
         const rows = [];
         this.providers().forEach((p) => p.models().forEach((m) => rows.push({
-          id: m.id, provider: p.name, admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding (code search)' : 'Chat / Code',
+          id: m.id, provider: p.short, admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding' : 'Chat',
+          caps: m.embedding ? 'Code search' : 'Chat, Code' + (/coder|code/i.test(m.id) ? ' (tuned)' : ''),
+          menuAction: (event) => {
+            const action = event.detail.selectedValue;
+            if (action === 'default') {
+              p.use();
+              window.setTimeout(() => { if (m.embedding) { this.embeddingModel(m.id); } else { this.chatModel(m.id); } }, 400);
+            } else if (action === 'copy') {
+              copy(m.id);
+            } else {
+              this.tab('evaluation');
+            }
+          },
           isDefault: !!this.status() && same(this.status().baseUrl, p.baseUrl()) && (this.status().chatModel === m.id || this.status().embeddingModel === m.id),
           setDefault: () => {
             p.use();
@@ -290,9 +354,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const text = this.modelSearch().trim().toLowerCase();
         return rows.filter((r) => (!this.providerFilter() || r.provider === this.providerFilter()) && (!text || r.id.toLowerCase().indexOf(text) >= 0));
       });
-      this.providerNames = ko.pureComputed(() => this.providers().map((p) => p.name));
+      this.providerNames = ko.pureComputed(() => this.providers().map((p) => p.short));
+      this.modelsSummary = ko.pureComputed(() => {
+        const listed = this.providers().filter((p) => p.models().length);
+        const untested = this.providers().filter((p) => !p.models().length).map((p) => p.short);
+        return this.allModels().length + ' model(s) shown from ' + listed.length + ' provider(s).'
+          + (untested.length ? ' Test ' + untested.join(', ') + ' to list their models.' : '');
+      });
+      // Usage and cost are not recorded: the card keeps its place with the period and the providers
+      const day = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+      this.usageFrom = day(new Date(Date.now() - 29 * 86400000));
+      this.usageTo = day(new Date());
+      const colors = ['#2563eb', '#f59e0b', '#ea580c', '#16a34a', '#7c3aed'];
+      this.usageLegend = ko.pureComputed(() => this.providers().map((p, i) => ({ name: p.short, dot: { background: colors[i % colors.length] } })));
+      // Capabilities per provider, from the models each one lists
+      this.matrixProviders = this.providers;
+      this.matrix = ko.pureComputed(() => {
+        const cell = (p, on) => (!p.state() && !p.models().length ? { text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
+          : on ? { text: '✓', css: 'factory-md-cell factory-md-cell-yes', title: 'Yes' } : { text: '✕', css: 'factory-md-cell factory-md-cell-no', title: 'Not in its model list' });
+        const rows = [
+          { label: 'Chat / Completion', test: (p) => p.chatModels().length > 0 },
+          { label: 'Code Generation', test: (p) => p.chatModels().length > 0 },
+          { label: 'Code-tuned model', test: (p) => p.chatModels().some((m) => /coder|code/i.test(m)) },
+          { label: 'Embeddings', test: (p) => p.models().some((m) => m.embedding) }
+        ];
+        return rows.map((r) => ({ label: r.label, cells: this.providers().map((p) => cell(p, r.test(p))) }))
+          .concat([{ label: 'Models listed', cells: this.providers().map((p) => (!p.state() && !p.models().length ? { text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
+            : { text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
+      });
       this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
-        name: p.name, pill: p.state() === 'ok' ? ui.pill('Healthy', 'green') : ui.pill('Unavailable', 'red'),
+        name: p.short, pill: p.state() === 'ok' ? ui.pill('Healthy', 'green') : ui.pill('Unavailable', 'red'),
         latency: p.latency() !== null ? p.latency() + ' ms' : '–', checked: p.checked() || '–'
       })));
       this.routing = ko.pureComputed(() => {

@@ -1,6 +1,7 @@
 /*
  * About page: what the factory is, its version and build from the running server, updating it (administrators, when
- * updates are on), what it is built with, the AI models in use, its key features, and links to its documentation.
+ * updates are on), what it is built with, the AI models in use, its key features, licensing and support, and links to
+ * its documentation.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/updates', '../services/ui', 'ojs/ojbutton'],
   function (ko, accUtils, api, session, updates, ui) {
@@ -19,26 +20,34 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.tab = ko.observable('overview');
       this.tabs = ui.tabs(this.tab, [
         { value: 'overview', label: 'Overview', icon: 'cube' }, { value: 'version', label: 'Version Information', icon: 'info' },
+        { value: 'news', label: 'What\'s New', icon: 'sparkle' }, { value: 'license', label: 'License & Usage', icon: 'doc' },
         { value: 'stack', label: 'Technology Stack', icon: 'cog' }, { value: 'support', label: 'Support & Resources', icon: 'help' }
       ]);
       this.tab.subscribe((value) => { const el = document.getElementById('ab-sec-' + value); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+      const icons = (list) => list.map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }));
 
       this.product = ko.pureComputed(() => {
         const s = this.status();
-        return [
+        const rows = [
           { label: 'Product Name', value: 'OBDX Development Factory', icon: 'cube' },
-          { label: 'Build', value: s ? (s.build === 'dev' ? 'Development build' : 'Build ' + s.build) : '–', icon: 'info' },
           { label: 'Version', value: s ? s.version : '–', icon: 'doc' },
-          { label: 'Built', value: this.builtAtText() || '–', icon: 'clock' },
-          { label: 'Deployment', value: 'On-premise (runs inside the bank)', icon: 'bank' },
-          { label: 'Updates', value: s ? (s.enabled ? 'From the factory\'s GitHub releases' : 'Installed by the administrators') : '–', icon: 'refresh' },
-          { label: 'Sign-in', value: session.config() ? { local: 'Factory accounts', ldap: 'Bank directory (LDAP)', oidc: 'Single sign-on (OpenID Connect)', saml: 'Single sign-on (SAML)' }[session.config().mode] : '–', icon: 'shield' }
-        ].map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }));
+          { label: 'Build Number', value: s ? (s.build === 'dev' ? 'Development build' : s.build) : '–', icon: 'list' }
+        ];
+        // Reproducible builds have no real build date; leave the row out then
+        if (this.builtAtText()) {
+          rows.push({ label: 'Release Date', value: this.builtAtText(), icon: 'clock' });
+        }
+        rows.push(
+          { label: 'Deployment', value: 'On-premise', icon: 'bank' },
+          { label: 'Updates', value: s ? (s.enabled ? 'GitHub releases' : 'By administrators') : '–', icon: 'refresh' },
+          { label: 'Sign-in', value: session.config() ? { local: 'Factory accounts', ldap: 'Bank directory (LDAP)', oidc: 'Single sign-on (OIDC)', saml: 'Single sign-on (SAML)' }[session.config().mode] : '–', icon: 'shield' },
+          { label: 'Your Access', value: session.user() ? (session.user().admin ? 'Administrator' : 'Workspace member') : '–', icon: 'user' });
+        return icons(rows);
       });
       this.build = ko.pureComputed(() => {
         const s = this.status();
         const m = this.model();
-        return [
+        return icons([
           { label: 'Frontend', value: 'Oracle JET 21 (Knockout)', icon: 'monitor' },
           { label: 'Backend', value: 'Spring Boot 4, Java 21', icon: 'code' },
           { label: 'Database', value: 'PostgreSQL with pgvector', icon: 'cube' },
@@ -47,20 +56,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           { label: 'Chat model', value: m ? m.chatModel : '–', icon: 'chip' },
           { label: 'Code search model', value: m ? m.embeddingModel : '–', icon: 'search' },
           { label: 'Workspaces', value: this.workspaces() === null ? '–' : String(this.workspaces()), icon: 'folder' }
-        ].map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }));
+        ]);
       });
       this.features = [
-        'AI-assisted requirements, screens and code generation', 'OBDX version packs and the bank\'s own conventions',
-        'Traceability from requirement to screens, plan, files and builds', 'Reusable recipes, templates and components',
-        'Local or privately hosted models (Ollama, LM Studio, vLLM) or cloud APIs', 'Impact analysis and change planning before code',
-        'Quick checks and Jenkins builds with fix rounds', 'Roles, audit log and encrypted stored secrets'
-      ].map((t, i) => ({ text: t, css: 'factory-step-dot factory-dot-' + ['violet', 'blue', 'blue', 'green', 'amber', 'blue', 'blue', 'green'][i] }));
-      this.stack = [
-        { label: 'Frontend', value: 'Oracle JET 21, Knockout, RequireJS' }, { label: 'Backend', value: 'Java 21, Spring Boot 4, Jackson 3' },
-        { label: 'Database', value: 'PostgreSQL with pgvector (or the embedded trial database)' }, { label: 'Build Tools', value: 'Maven, Node.js for the UI' },
-        { label: 'Application Server', value: 'Embedded Tomcat; Oracle HTTP Server in front (optional)' }, { label: 'Source Control', value: 'Subversion (SVN)' },
-        { label: 'AI Providers', value: 'OpenAI-compatible APIs: Ollama, LM Studio, vLLM, OpenAI, xAI, Groq' }, { label: 'Other Tools', value: 'Jenkins' }
-      ];
+        ['AI-assisted requirements, screens and code generation', 'sparkle', 'violet'], ['OBDX version packs and the bank\'s own conventions', 'cube', 'blue'],
+        ['Traceability from requirement to delivered code', 'link', 'blue'], ['Reusable recipes, templates and components', 'list', 'green'],
+        ['Local, private or cloud AI models', 'chip', 'amber'], ['Impact analysis and change planning before code', 'target', 'blue'],
+        ['Quick checks and Jenkins builds with fix rounds', 'flask', 'blue'], ['Roles, audit log and encrypted stored secrets', 'shield', 'green']
+      ].map((f) => ({ text: f[0], iconClass: 'factory-nav-icon factory-ico-' + f[1], css: 'factory-ab-fico factory-ab-fico-' + f[2] }));
+      this.stack = icons([
+        { label: 'Frontend', value: 'Oracle JET 21, Knockout, RequireJS', icon: 'monitor' }, { label: 'Backend', value: 'Java 21, Spring Boot 4, Jackson 3', icon: 'code' },
+        { label: 'Database', value: 'PostgreSQL with pgvector, or the embedded trial database', icon: 'cube' }, { label: 'Build Tools', value: 'Maven, Node.js for the UI', icon: 'cog' },
+        { label: 'Application Server', value: 'Embedded Tomcat; Oracle HTTP Server in front (optional)', icon: 'laptop' }, { label: 'Source Control', value: 'Subversion (SVN)', icon: 'branch' },
+        { label: 'AI Providers', value: 'OpenAI-compatible: Ollama, LM Studio, vLLM, OpenAI, xAI, Groq', icon: 'chip' }, { label: 'Other Tools', value: 'Jenkins', icon: 'rocket' }
+      ]);
       this.links = [
         { label: 'Product Documentation', href: REPO + '/blob/HEAD/docs/DEVELOPMENT.md', icon: 'doc' },
         { label: 'Architecture', href: REPO + '/blob/HEAD/docs/ARCHITECTURE.md', icon: 'cube' },
@@ -68,8 +77,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { label: 'Release Notes', href: REPO + '/releases', icon: 'refresh' },
         { label: 'Source Code', href: REPO, icon: 'code' },
         { label: 'Report an Issue', href: REPO + '/issues', icon: 'alert' }
-      ].map((l) => Object.assign(l, { iconClass: 'factory-nav-icon factory-ico-' + l.icon }));
+      ].map((l) => Object.assign(l, { iconClass: 'factory-nav-icon factory-ico-' + l.icon + (l.icon === 'alert' ? ' factory-ab-red' : '') }));
+      this.releasesUrl = REPO + '/releases';
+      this.license = icons([
+        { label: 'License', value: 'No license file in the repository yet', icon: 'doc' },
+        { label: 'Usage limits', value: 'None set by the factory', icon: 'users' },
+        { label: 'Support', value: 'GitHub issues', icon: 'help' },
+        { label: 'Oracle code', value: 'Check the bank\'s Oracle terms', icon: 'bank' }
+      ]);
       this.openDocs = () => window.open(REPO + '/blob/HEAD/docs/DEVELOPMENT.md', '_blank', 'noopener');
+      this.openLicense = () => window.open(REPO + '/blob/HEAD/docs/ARCHITECTURE.md', '_blank', 'noopener');
+      this.openSupport = () => window.open(REPO + '/issues/new', '_blank', 'noopener');
 
       this.connected = () => {
         accUtils.announce('About page loaded.');

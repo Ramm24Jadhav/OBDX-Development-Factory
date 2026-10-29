@@ -19,7 +19,6 @@
 
     <!-- This is where you would add any app specific styling -->
     <link rel="stylesheet" href="css/app.css" type="text/css"/>
-
   </head>
   <body class="oj-web-applayout-body">
     <div id="globalBody" class="oj-web-applayout-page">
@@ -31,14 +30,75 @@
       <!-- Signed in: the sidebar, the top bar and the page -->
       <oj-bind-if test="[[!embedded && signedIn()]]">
       <div :class="[[shellClass]]">
-        <aside class="factory-sidebar" id="sidebar" role="navigation" aria-label="Main">
-          <div class="factory-brand">
+        <header role="banner" class="factory-topbar">
+          <button type="button" class="factory-menu-toggle" id="menuToggle" aria-label="Open the menu" on-click="[[toggleSidebar]]">
+            <span class="factory-nav-icon factory-ico-menu" aria-hidden="true"></span>
+          </button>
+          <a class="factory-brand" href="?ojr=overview" on-click="[[openHome]]" aria-label="OBDX Development Factory, overview">
             <span class="factory-brand-mark" aria-hidden="true"></span>
-            <span class="factory-brand-text">
-              <span class="factory-brand-name">OBDX</span>
-              <span class="factory-brand-sub">Development Factory</span>
-            </span>
+            <span class="factory-brand-name">OBDX Development Factory</span>
+          </a>
+          <div class="factory-topbar-workspace">
+            <oj-select-single id="topWorkspace" class="factory-topbar-select" label-hint="Workspace" label-edge="none"
+                              data="[[workspaceProvider]]" value="{{workspaceId}}" placeholder="Select a workspace"></oj-select-single>
           </div>
+          <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
+          <form class="factory-topbar-search" role="search" autocomplete="off" on-submit="[[globalSearchSubmit]]">
+            <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+            <input id="globalSearch" name="codeSearch" type="search" enterkeyhint="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
+                   autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
+            <kbd class="factory-kbd">Ctrl K</kbd>
+          </form>
+          <div class="factory-topbar-icons">
+            <a class="factory-icon-button" id="helpButton" href="?ojr=about" on-click="[[openHelp]]" title="Help" aria-label="Help">
+              <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>
+            </a>
+            <div class="factory-bell-wrap">
+              <button type="button" class="factory-icon-button" id="bellButton" on-click="[[toggleBell]]"
+                      :aria-label="[[attentionCount() + ' things need your attention']]" :aria-expanded="[[bellOpen() ? 'true' : 'false']]">
+                <span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span>
+                <oj-bind-if test="[[attentionCount() > 0]]">
+                  <span class="factory-bell-count"><oj-bind-text value="[[attentionCount]]"></oj-bind-text></span>
+                </oj-bind-if>
+              </button>
+              <oj-bind-if test="[[bellOpen()]]">
+                <div class="factory-bell-panel" id="bellPanel" role="dialog" aria-label="Needs your attention">
+                  <div class="factory-bell-head">Needs your attention</div>
+                  <oj-bind-if test="[[attentionCount() === 0]]">
+                    <p class="factory-bell-empty">Nothing is waiting on you.</p>
+                  </oj-bind-if>
+                  <ul>
+                    <oj-bind-for-each data="[[attention]]">
+                      <template>
+                        <li><button type="button" on-click="[[$current.data.open]]">
+                          <span :class="[['factory-bell-dot factory-bell-dot-' + $current.data.tone]]" aria-hidden="true"></span>
+                          <span class="factory-bell-text"><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
+                            <span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span>
+                          <span class="factory-bell-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
+                        </button></li>
+                      </template>
+                    </oj-bind-for-each>
+                  </ul>
+                  <a class="factory-bell-all" href="?ojr=notifications" on-click="[[openNotifications]]">View all notifications</a>
+                </div>
+              </oj-bind-if>
+            </div>
+          </div>
+          <oj-menu-button id="userMenu" chroming="borderless" class="factory-user-button">
+            <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
+            <span class="factory-user-text">
+              <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
+            </span>
+            <span class="factory-nav-icon factory-ico-caret factory-user-caret" aria-hidden="true"></span>
+            <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
+              <oj-option id="account" value="account">Account &amp; Preferences</oj-option>
+              <oj-option id="notificationsOption" value="notifications">Notifications</oj-option>
+              <oj-option id="about" value="about">About</oj-option>
+              <oj-option id="out" value="out">Sign out</oj-option>
+            </oj-menu>
+          </oj-menu-button>
+        </header>
+        <aside class="factory-sidebar" id="sidebar" role="navigation" aria-label="Main">
           <nav class="factory-nav">
             <ul>
               <oj-bind-for-each data="[[workNav]]">
@@ -53,8 +113,14 @@
               </oj-bind-for-each>
             </ul>
 
-            <ul>
-              <oj-bind-for-each data="[[setupNav]]">
+            <button type="button" class="factory-nav-group" id="adminGroup" on-click="[[toggleAdminOpen]]" title="Administration"
+                    :aria-expanded="[[adminOpen() ? 'true' : 'false']]">
+              <span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>
+              <span class="factory-nav-label">Administration</span>
+              <span :class="[[adminOpen() ? 'factory-nav-group-chev factory-nav-group-open' : 'factory-nav-group-chev']]" aria-hidden="true"></span>
+            </button>
+            <ul class="factory-nav-sub" :hidden="[[!adminOpen()]]">
+              <oj-bind-for-each data="[[adminNav]]">
                 <template>
                   <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
                          :title="[[$current.data.label]]" :aria-current="[[$current.data.active() ? 'page' : null]]"
@@ -75,75 +141,6 @@
         <div class="factory-scrim" on-click="[[closeSidebar]]"></div>
 
         <div class="factory-main">
-          <header role="banner" class="factory-topbar">
-            <button type="button" class="factory-menu-toggle" id="menuToggle" aria-label="Open the menu" on-click="[[toggleSidebar]]">
-              <span class="factory-nav-icon factory-ico-menu" aria-hidden="true"></span>
-            </button>
-            <div class="factory-topbar-workspace">
-              <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>
-              <oj-select-single id="topWorkspace" class="factory-topbar-select" label-hint="Workspace" label-edge="none"
-                                data="[[workspaceProvider]]" value="{{workspaceId}}" placeholder="Select a workspace"></oj-select-single>
-            </div>
-            <div class="factory-topbar-title">
-              <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
-              <oj-bind-if test="[[crumbWorkspace()]]">
-                <span class="factory-topbar-sep" aria-hidden="true">›</span>
-                <span class="factory-topbar-app"><oj-bind-text value="[[crumbWorkspace]]"></oj-bind-text></span>
-              </oj-bind-if>
-            </div>
-            <form class="factory-topbar-search" role="search" autocomplete="off" on-submit="[[globalSearchSubmit]]">
-              <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-              <input id="globalSearch" name="codeSearch" type="search" enterkeyhint="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
-                     autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
-              <kbd class="factory-kbd">Ctrl K</kbd>
-            </form>
-            <div class="factory-topbar-icons">
-              <div class="factory-bell-wrap">
-                <button type="button" class="factory-icon-button" id="bellButton" on-click="[[toggleBell]]"
-                        :aria-label="[[attentionCount() + ' things need your attention']]" :aria-expanded="[[bellOpen() ? 'true' : 'false']]">
-                  <span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span>
-                  <oj-bind-if test="[[attentionCount() > 0]]">
-                    <span class="factory-bell-count"><oj-bind-text value="[[attentionCount]]"></oj-bind-text></span>
-                  </oj-bind-if>
-                </button>
-                <oj-bind-if test="[[bellOpen()]]">
-                  <div class="factory-bell-panel" id="bellPanel" role="dialog" aria-label="Needs your attention">
-                    <div class="factory-bell-head">Needs your attention</div>
-                    <oj-bind-if test="[[attentionCount() === 0]]">
-                      <p class="factory-bell-empty">Nothing is waiting on you.</p>
-                    </oj-bind-if>
-                    <ul>
-                      <oj-bind-for-each data="[[attention]]">
-                        <template>
-                          <li><button type="button" on-click="[[$current.data.open]]">
-                            <span :class="[['factory-bell-dot factory-bell-dot-' + $current.data.tone]]" aria-hidden="true"></span>
-                            <span class="factory-bell-text"><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong>
-                              <span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></span>
-                            <span class="factory-bell-when"><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></span>
-                          </button></li>
-                        </template>
-                      </oj-bind-for-each>
-                    </ul>
-                  </div>
-                </oj-bind-if>
-              </div>
-              <a class="factory-icon-button" id="helpButton" href="?ojr=about" on-click="[[openHelp]]" title="Help" aria-label="Help">
-                <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>
-              </a>
-            </div>
-            <oj-menu-button id="userMenu" chroming="borderless" class="factory-user-button">
-              <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
-              <span class="factory-user-text">
-                <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
-              </span>
-              <span class="factory-nav-icon factory-ico-caret factory-user-caret" aria-hidden="true"></span>
-              <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
-                <oj-option id="account" value="account">Account</oj-option>
-                <oj-option id="about" value="about">About</oj-option>
-                <oj-option id="out" value="out">Sign out</oj-option>
-              </oj-menu>
-            </oj-menu-button>
-          </header>
           <oj-bind-if test="[[updateBanner()]]">
             <div class="factory-update-banner" role="status" id="updateBanner">
               <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
@@ -160,57 +157,107 @@
 
       <!-- Signed out: the sign-in page -->
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
-        <div role="main" class="factory-login">
-          <section class="factory-login-intro">
-            <div class="factory-brand">
-              <span class="factory-brand-mark" aria-hidden="true"></span>
-              <span class="factory-brand-text">
-                <span class="factory-brand-name">OBDX</span>
-                <span class="factory-brand-sub">Development Factory</span>
-              </span>
-            </div>
-            <div class="factory-login-copy">
-              <p class="factory-login-kicker">Analyze · Design · Change · Check</p>
-              <h1>From requirements to OBDX code</h1>
-              <p class="factory-login-lead">
-                Turn prompts, BRDs and FSDs into changes for your bank's Oracle Banking Digital Experience code,
-                with AI models that run on your own servers.
-              </p>
-              <ul class="factory-login-points">
-                <li><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>
-                  <span><strong>Understand your code</strong>Detects the OBDX version, frameworks and bank conventions.</span></li>
-                <li><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span>
-                  <span><strong>Design screens</strong>Build and review screens in the OBDX look before any code is written.</span></li>
-                <li><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>
-                  <span><strong>Plan and generate changes</strong>See the impact, approve the plan, then get the code.</span></li>
-                <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>
-                  <span><strong>Keep code private</strong>Code and documents stay in the workspace they belong to.</span></li>
+        <div class="factory-login">
+          <header class="factory-login-bar">
+            <span class="factory-brand-mark" aria-hidden="true"></span>
+            <span class="factory-login-bar-name">OBDX Development Factory</span>
+            <oj-bind-if test="[[loginVersion()]]"><span class="factory-login-version"><oj-bind-text value="[[loginVersion]]"></oj-bind-text></span></oj-bind-if>
+            <a class="factory-login-bar-help" href="https://github.com/Ramm24Jadhav/OBDX-Development-Factory/blob/HEAD/docs/DEVELOPMENT.md" target="_blank" rel="noopener">
+              <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Help</a>
+          </header>
+          <div role="main" class="factory-login-body">
+            <section class="factory-login-intro">
+              <p class="factory-login-kicker">Build <span aria-hidden="true">•</span> Analyze <span aria-hidden="true">•</span> Generate <span aria-hidden="true">•</span> Validate</p>
+              <h1>Accelerate OBDX Development</h1>
+              <p class="factory-login-lead">OBDX Development Factory helps you analyze your codebase, implement banking transactions using AI,
+                and ensure high-quality, standards-compliant deliverables.</p>
+              <div class="factory-login-hero">
+                <ul class="factory-login-points">
+                  <li><span class="factory-login-tile factory-login-tile-blue"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+                    <span><strong>Understand Your Codebase</strong>Detect OBDX version, frameworks and customizations</span></li>
+                  <li><span class="factory-login-tile factory-login-tile-violet"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span></span>
+                    <span><strong>AI-Assisted Development</strong>Generate transactions using GPT, Grok or local models</span></li>
+                  <li><span class="factory-login-tile factory-login-tile-green"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>
+                    <span><strong>Built-in Quality Checks</strong>Validate code, run builds and tests automatically</span></li>
+                  <li><span class="factory-login-tile factory-login-tile-amber"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span></span>
+                    <span><strong>Follow OBDX Standards</strong>Use proven patterns from your existing implementation</span></li>
+                </ul>
+                <div class="factory-login-art" aria-hidden="true">
+                  <div class="factory-login-editor">
+                    <div class="factory-login-editor-dots"><span></span><span></span><span></span></div>
+                    <div class="factory-login-editor-body">
+                      <ul class="factory-login-tree">
+                        <li class="factory-login-tree-root">OBDX</li><li>transactions</li><li>customer-services</li><li>funds-transfer</li>
+                        <li class="factory-login-tree-on">scheduled-transfers</li><li class="factory-login-tree-sub">ui</li><li class="factory-login-tree-sub">viewmodel</li>
+                        <li class="factory-login-tree-sub">services</li><li class="factory-login-tree-sub">api</li><li class="factory-login-tree-sub">config</li>
+                      </ul>
+                      <div class="factory-login-code">
+                        <div class="factory-login-code-tabs"><span>ScheduledTransferService.java</span><span>ScheduledTransferView.js</span></div>
+                        <p><i>public class</i> ScheduledTransferService {</p>
+                        <p>&nbsp;&nbsp;<i>public</i> List&lt;ScheduledTransfer&gt; getTransfers(</p>
+                        <p>&nbsp;&nbsp;&nbsp;&nbsp;<i>return</i> repository.findUpcoming(accountId);</p>
+                        <p>}</p>
+                        <p class="factory-login-code-line"></p>
+                        <p class="factory-login-code-line factory-login-code-short"></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="factory-login-flow">
+                    <span class="factory-login-step factory-login-step-blue"><span class="factory-nav-icon factory-ico-refresh"></span>Analyze Requirement</span>
+                    <span class="factory-login-arrow">→</span>
+                    <span class="factory-login-step factory-login-step-violet"><span class="factory-nav-icon factory-ico-sparkle"></span>Generate Implementation</span>
+                    <span class="factory-login-arrow">→</span>
+                    <span class="factory-login-step factory-login-step-green"><span class="factory-nav-icon factory-ico-check"></span>Validate Build &amp; Tests</span>
+                  </div>
+                </div>
+              </div>
+              <ul class="factory-login-benefits">
+                <li><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Faster Development</li>
+                <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>Higher Quality</li>
+                <li><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Consistent Standards</li>
+                <li><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span>Team Collaboration</li>
               </ul>
-            </div>
-          </section>
-          <section class="factory-login-panel">
-            <div class="factory-login-card">
-              <p class="factory-login-welcome">Welcome to OBDX Development Factory</p>
-              <h2>Sign in</h2>
+            </section>
+            <section class="factory-login-card" aria-labelledby="loginTitle">
+              <p class="factory-login-welcome">Welcome to</p>
+              <h2 id="loginTitle">OBDX Development Factory</h2>
+              <p class="factory-login-sub">Sign in to continue to your development workspace.</p>
+              <!-- One tab per sign-in method this installation offers -->
+              <div class="factory-login-tabs" role="tablist" aria-label="Sign-in method">
+                <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]"><span role="tab" aria-selected="true" class="factory-login-tab">Single Sign-On</span></oj-bind-if>
+                <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]"><span role="tab" aria-selected="true" class="factory-login-tab"><oj-bind-text value="[[loginTabLabel]]"></oj-bind-text></span></oj-bind-if>
+              </div>
               <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
-                <p class="oj-text-color-secondary">This installation uses your organization's single sign-on.</p>
-                <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">Sign in with single sign-on</a>
+                <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">
+                  <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>Sign in with Single Sign-On<span class="factory-sso-chev" aria-hidden="true">›</span></a>
+                <div class="factory-login-or"><span>or</span></div>
+                <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Use your organization's single sign-on to access the OBDX Development Factory.</p>
               </oj-bind-if>
               <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
-                <p class="oj-text-color-secondary"><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
-                <oj-form-layout max-columns="1">
+                <oj-form-layout max-columns="1" label-edge="top">
                   <oj-input-text id="loginUsername" label-hint="Username" value="{{loginUsername}}" autocomplete="username"></oj-input-text>
                   <oj-input-password id="loginPassword" label-hint="Password" value="{{loginPassword}}" autocomplete="current-password"
                                      mask-icon="visible" on-oj-enter="[[signIn]]"></oj-input-password>
                 </oj-form-layout>
                 <oj-button id="signInButton" class="factory-login-submit" chroming="callToAction" on-oj-action="[[signIn]]" disabled="[[signingIn]]">Sign in</oj-button>
+                <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
               </oj-bind-if>
               <oj-bind-if test="[[loginError()]]">
                 <p id="loginError" class="oj-text-color-danger"><oj-bind-text value="[[loginError]]"></oj-bind-text></p>
               </oj-bind-if>
               <p class="factory-login-help">No account yet? Ask an administrator of this factory to add you.</p>
-            </div>
-          </section>
+            </section>
+          </div>
+          <ul class="factory-login-strip">
+            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-target" aria-hidden="true"></span></span>
+              <span><strong>From Requirements to Code</strong>Convert business requirements into working OBDX transactions.</span></li>
+            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span></span>
+              <span><strong>Leverage Existing Patterns</strong>Reuse components and follow your bank's implementation standards.</span></li>
+            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-chart" aria-hidden="true"></span></span>
+              <span><strong>Integrated Quality Pipeline</strong>Build, test and validate with automated checks and security rules.</span></li>
+            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span></span>
+              <span><strong>Built for Teams</strong>Collaborate, review and track all development activities.</span></li>
+          </ul>
         </div>
       </oj-bind-if>
 

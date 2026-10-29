@@ -5,15 +5,15 @@
  * in the dependency view are inferred from the layers, not read from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        'ojs/ojknockout', 'ojs/ojbutton'],
+        'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
   function (ko, accUtils, api, workspaceSelection, session, ui) {
     const LAYERS = [
-      { key: 'ui', label: 'UI Component', color: '#2563eb' },
-      { key: 'service', label: 'Service', color: '#16a34a' },
-      { key: 'integration', label: 'Integration', color: '#7c3aed' },
-      { key: 'data', label: 'Database', color: '#ea580c' },
-      { key: 'config', label: 'Configuration', color: '#0891b2' },
-      { key: 'test', label: 'Test', color: '#db2777' }
+      { key: 'ui', label: 'UI Component', color: '#2563eb', bg: '#e4edff', icon: 'monitor' },
+      { key: 'service', label: 'Service', color: '#16a34a', bg: '#dcf3e5', icon: 'cog' },
+      { key: 'integration', label: 'Integration', color: '#7c3aed', bg: '#ece5ff', icon: 'plug' },
+      { key: 'data', label: 'Database', color: '#ea580c', bg: '#ffedd9', icon: 'cube' },
+      { key: 'config', label: 'Configuration', color: '#0891b2', bg: '#dff4f8', icon: 'cog' },
+      { key: 'test', label: 'Test', color: '#db2777', bg: '#fce7f3', icon: 'flask' }
     ];
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
     const moduleOf = (path) => {
@@ -72,39 +72,108 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           type: items().some((i) => i.action === 'modify') ? ui.pill('Enhancement', 'blue') : ui.pill('New Feature', 'green'),
           module: modules.slice(0, 2).join(', ') || '–',
           version: this.workspace() ? 'OBDX ' + this.workspace().obdxVersion : '–',
+          // Neither the change nor its requirement records a priority
+          priority: Object.assign(ui.pill('Not set', 'grey'), { title: 'The requirement and the plan do not record a priority.' }),
           status: ui.pill(d.status.replace('_', ' ').toLowerCase(), d.status === 'PLAN_READY' ? 'amber' : 'blue')
         };
       });
       this.scope = ko.pureComputed(() => {
         const has = (layer) => items().some((i) => i.layer === layer);
+        const path = (re) => items().some((i) => re.test(i.path));
+        const layerWhy = 'From the files of the plan in this layer';
         return [
-          { label: 'UI Changes', on: has('ui') }, { label: 'Backend Changes', on: has('service') }, { label: 'API Changes', on: has('integration') },
-          { label: 'Database Changes', on: has('data') }, { label: 'Configuration Changes', on: has('config') }, { label: 'Test Cases', on: has('test') }
+          { label: 'UI Changes', on: has('ui'), why: layerWhy }, { label: 'Backend Changes', on: has('service'), why: layerWhy },
+          { label: 'API Changes', on: has('integration'), why: layerWhy }, { label: 'Database Changes', on: has('data'), why: layerWhy },
+          { label: 'Configuration Changes', on: has('config'), why: layerWhy },
+          { label: 'Security Changes', on: path(/secur|auth|login|permission|role|crypt/i), why: 'A file path in the plan mentions security, authentication or roles' },
+          { label: 'Test Cases', on: has('test'), why: layerWhy },
+          { label: 'Documentation', on: path(/\.(md|txt|adoc|docx?)$|\/docs?\//i), why: 'A documentation file is in the plan' }
         ];
       });
 
-      // The dependency view: the plan's files in columns by layer; lines join each file to the files of the next layer
+      // Editing the plan's description; only possible while the plan waits for approval
+      this.editing = ko.observable(false);
+      this.summaryDraft = ko.observable('');
+      this.canEditPlan = ko.pureComputed(() => !!(this.detail() && this.detail().plan && this.detail().status === 'PLAN_READY' && this.canManage()));
+      this.editTitle = ko.pureComputed(() => (this.canEditPlan() ? 'Edit the description of the plan'
+        : (this.detail() && this.detail().status !== 'PLAN_READY' ? 'The plan can be edited only before it is approved' : 'You need the right to manage code')));
+      this.toggleEdit = () => {
+        this.summaryDraft(this.editing() ? '' : (this.detail().plan.summary || ''));
+        this.editing(!this.editing());
+      };
+      this.canSavePlan = ko.pureComputed(() => this.canEditPlan() && this.editing() && this.summaryDraft().trim() !== '' && this.summaryDraft() !== this.detail().plan.summary);
+      this.savePlanTitle = ko.pureComputed(() => (this.canSavePlan() ? 'Save the edited plan' : (this.canEditPlan() ? 'Use Edit to change the plan first' : this.editTitle())));
+      this.savePlan = () => {
+        const plan = Object.assign({}, this.detail().plan, { summary: this.summaryDraft().trim() });
+        api.put('changes/' + this.detail().id + '/plan', JSON.stringify(plan))
+          .then((d) => { this.editing(false); this.detail(d); this.errorMessage(''); }).catch(showError);
+      };
+      this.createPlan = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+
+      // The dependency view: the plan's files in columns by layer, sized to the card; arrows join each file to the files
+      // of the next layer
+      this.graphWidth = ko.observable(520);
+      this.zoom = ko.observable(1);
+      this.zoomText = ko.pureComputed(() => Math.round(this.zoom() * 100) + '%');
+      this.zoomIn = () => this.zoom(Math.min(2, Math.round((this.zoom() + 0.2) * 10) / 10));
+      this.zoomOut = () => this.zoom(Math.max(0.6, Math.round((this.zoom() - 0.2) * 10) / 10));
+      this.fullscreen = () => {
+        const card = document.getElementById('dependencyGraphCard');
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else if (card && card.requestFullscreen) {
+          card.requestFullscreen().catch(() => this.errorMessage('The browser does not allow full screen here.'));
+        }
+      };
+      const measureGraph = () => {
+        const wrap = document.getElementById('dependencyGraphWrap');
+        if (wrap && wrap.clientWidth) {
+          this.graphWidth(wrap.clientWidth - 2);
+        }
+      };
       this.graph = ko.pureComputed(() => {
         const columns = LAYERS.filter((l) => l.key !== 'test').map((l) => ({ layer: l, files: items().filter((i) => i.layer === l.key) })).filter((c) => c.files.length);
-        const width = Math.max(1, columns.length) * 200;
-        const rowH = 64;
-        const height = Math.max(1, Math.max.apply(null, columns.map((c) => c.files.length).concat([1]))) * rowH + 20;
+        const n = Math.max(1, columns.length);
+        const gap = 36;
+        const width = Math.max(n * 150 + (n - 1) * gap + 20, this.graphWidth());
+        const nodeW = Math.min(210, Math.floor((width - 20 - (n - 1) * gap) / n));
+        const step = n > 1 ? Math.floor((width - 20 - nodeW) / (n - 1)) : 0;
+        const rowH = 70;
+        const nodeH = 52;
+        const most = Math.max.apply(null, columns.map((c) => c.files.length).concat([1]));
+        const height = most * rowH + 16;
         const nodes = [];
-        columns.forEach((c, ci) => c.files.forEach((f, fi) => nodes.push({
-          x: ci * 200 + 10, y: fi * rowH + 10, w: 176, h: 48, ci: ci, color: c.layer.color, kind: c.layer.label,
-          name: f.path.split('/').pop(), path: f.path, action: f.action === 'create' ? 'new' : 'modified',
-          style: { left: (ci * 200 + 10) + 'px', top: (fi * rowH + 10) + 'px', borderColor: c.layer.color }
-        })));
+        columns.forEach((c, ci) => {
+          const top = 8 + (most - c.files.length) * rowH / 2;
+          c.files.forEach((f, fi) => {
+            const x = 10 + ci * step;
+            const y = top + fi * rowH;
+            nodes.push({
+              x: x, y: y, w: nodeW, h: nodeH, ci: ci, kind: c.layer.label,
+              name: f.path.split('/').pop(), path: f.path, action: f.action === 'create' ? 'new' : 'modified',
+              icon: 'factory-nav-icon factory-ico-' + c.layer.icon, iconStyle: { background: c.layer.bg, color: c.layer.color },
+              style: { left: x + 'px', top: y + 'px', width: nodeW + 'px', height: nodeH + 'px', borderColor: c.layer.color, background: '#fff' }
+            });
+          });
+        });
         const edges = [];
-        nodes.forEach((a) => nodes.filter((b) => b.ci === a.ci + 1).forEach((b) => edges.push({
-          d: 'M' + (a.x + a.w) + ',' + (a.y + a.h / 2) + ' C' + (a.x + a.w + 12) + ',' + (a.y + a.h / 2) + ' ' + (b.x - 12) + ',' + (b.y + b.h / 2) + ' ' + b.x + ',' + (b.y + b.h / 2)
-        })));
-        // The lines are drawn as one SVG image under the nodes
+        nodes.forEach((a) => nodes.filter((b) => b.ci === a.ci + 1).forEach((b) => {
+          const x1 = a.x + a.w;
+          const y1 = a.y + a.h / 2;
+          const x2 = b.x - 3;
+          const y2 = b.y + b.h / 2;
+          const mid = (x1 + x2) / 2;
+          edges.push('M' + x1 + ',' + y1 + ' C' + mid + ',' + y1 + ' ' + mid + ',' + y2 + ' ' + x2 + ',' + y2);
+        }));
+        // The arrows are drawn as one SVG image under the nodes
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '">'
-          + edges.slice(0, 80).map((e) => '<path d="' + e.d + '" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3"/>').join('') + '</svg>';
+          + '<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker></defs>'
+          + edges.slice(0, 80).map((d) => '<path d="' + d + '" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#a)"/>').join('') + '</svg>';
+        const z = this.zoom();
         return {
           nodes: nodes, width: width, height: height, lines: 'data:image/svg+xml,' + encodeURIComponent(svg),
-          style: { width: width + 'px', height: height + 'px' }
+          style: { width: width + 'px', height: height + 'px', transform: 'scale(' + z + ')', transformOrigin: '0 0' },
+          outer: { width: Math.round(width * z) + 'px', height: Math.round(height * z) + 'px' }
         };
       });
       this.legend = LAYERS.map((l) => ({ label: l.label, style: { background: l.color } }));
@@ -113,13 +182,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.fileSearch = ko.observable('');
       this.layerFilter = ko.observable('');
       this.actionFilter = ko.observable('');
+      this.moduleFilter = ko.observable('');
+      this.impactFilter = ko.observable('');
       this.fileSearchInput = ui.value(this.fileSearch);
       this.layerChange = ui.value(this.layerFilter);
       this.actionChange = ui.value(this.actionFilter);
+      this.moduleChange = ui.value(this.moduleFilter);
+      this.impactChange = ui.value(this.impactFilter);
+      this.moduleOptions = ko.pureComputed(() => Array.from(new Set(items().map((i) => moduleOf(i.path)))).sort());
+      this.clearFilters = () => {
+        ['impactFileSearch', 'impactLayer', 'impactModule', 'impactLevel'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = '';
+          }
+        });
+        [this.fileSearch, this.layerFilter, this.actionFilter, this.moduleFilter, this.impactFilter].forEach((o) => o(''));
+      };
       this.files = ko.pureComputed(() => {
         const text = this.fileSearch().trim().toLowerCase();
         return items().filter((i) => (!text || i.path.toLowerCase().indexOf(text) >= 0) && (!this.layerFilter() || i.layer === this.layerFilter())
-          && (!this.actionFilter() || i.action === this.actionFilter())).map((i) => {
+          && (!this.actionFilter() || i.action === this.actionFilter()) && (!this.moduleFilter() || moduleOf(i.path) === this.moduleFilter())).map((i) => {
           // Estimated impact: changing shared or existing code weighs more than adding a file
           const shared = /common|shared|util|base/i.test(i.path);
           const impact = i.action === 'modify' ? (shared ? ui.pill('High', 'red') : ui.pill('Medium', 'amber')) : ui.pill('Low', 'green');
@@ -127,9 +210,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             path: i.path, type: (i.path.split('.').pop() || '').toUpperCase(), module: moduleOf(i.path), layer: i.layer, impact: impact,
             change: i.action === 'create' ? ui.pill('New', 'blue') : ui.pill('Modified', 'violet'), purpose: i.purpose
           };
-        });
+        }).filter((f) => !this.impactFilter() || f.impact.text === this.impactFilter());
       });
       this.filePager = ui.pager(this.files, 8);
+      this.pageButtons = ko.pureComputed(() => {
+        const list = [];
+        for (let p = 1; p <= this.filePager.pages(); p++) {
+          const page = p;
+          list.push({ n: page, css: 'factory-ov2-btn factory-im-page' + (this.filePager.page() === page ? ' factory-im-page-on' : ''), pick: () => this.filePager.page(page) });
+        }
+        return list;
+      });
 
       // Summary by layer (donut) and by module (bars)
       this.byLayer = ko.pureComputed(() => {
@@ -162,7 +253,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const s = this.detail() ? this.detail().status : '';
         const steps = ['Review impacted files and dependencies', 'Validate the change plan with the business team', 'Approve the plan', 'Generate code using the AI agent', 'Run build, test and review'];
         const doneUntil = s === 'PLAN_READY' ? 0 : ['GENERATING'].indexOf(s) >= 0 ? 3 : ['GENERATED'].indexOf(s) >= 0 ? 4 : ['DELIVERED', 'CLOSED'].indexOf(s) >= 0 ? 5 : 0;
-        return steps.map((t, i) => ({ n: i + 1, text: t, css: i < doneUntil ? 'factory-step-dot factory-dot-green' : 'factory-step-dot factory-dot-blue' }));
+        return steps.map((t, i) => ({ n: i + 1, text: t, done: i < doneUntil, css: 'factory-step-dot factory-dot-blue' }));
       });
 
       this.planRows = ko.pureComputed(() => items().map((i, n) => ({
@@ -201,8 +292,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!id) {
           return;
         }
+        this.editing(false);
         api.get('changes/' + id).then((d) => {
           this.detail(d);
+          setTimeout(measureGraph, 60);
           return api.get('requirements/' + d.requirementId).then((r) => this.requirement(r)).catch(() => null);
         }).catch(showError);
       });
@@ -228,8 +321,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         document.title = 'Impact Analysis';
         subscription = this.workspaceId.subscribe(loadList);
         workspaceSelection.load().then(loadList).catch(showError);
+        window.addEventListener('resize', measureGraph);
+        this.tab.subscribe(() => setTimeout(measureGraph, 60));
       };
       this.disconnected = () => {
+        window.removeEventListener('resize', measureGraph);
         if (subscription) {
           subscription.dispose();
         }

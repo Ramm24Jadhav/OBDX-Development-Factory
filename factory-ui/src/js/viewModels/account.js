@@ -18,7 +18,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.tab = ko.observable('profile');
       this.tabs = ui.tabs(this.tab, [
         { value: 'profile', label: 'Profile', icon: 'user' }, { value: 'preferences', label: 'Preferences', icon: 'cog' },
-        { value: 'notifications', label: 'Notifications', icon: 'bell' }, { value: 'security', label: 'Security', icon: 'shield' }
+        { value: 'notifications', label: 'Notifications', icon: 'bell' }, { value: 'security', label: 'Security', icon: 'shield' },
+        { value: 'api', label: 'API Access', icon: 'link' }
       ]);
       this.tab.subscribe((value) => { const el = document.getElementById('ac-sec-' + value); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
       this.initials = ko.pureComputed(() => ui.initials(this.user() ? this.user().displayName : ''));
@@ -57,6 +58,41 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
       this.timezone = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return ''; } })();
       this.language = navigator.language || '';
+      this.profileRows = ko.pureComputed(() => {
+        const me = this.user();
+        if (!me) {
+          return [];
+        }
+        const names = this.workspaces().map((w) => w.name);
+        return [
+          { label: 'Username', value: me.username, icon: 'user' },
+          { label: 'Email', value: me.email || 'Not set', icon: 'doc' },
+          { label: 'Role', value: this.roleText(), icon: 'users' },
+          { label: 'Workspaces', value: names.length ? names.join(', ') : 'None yet; ask an administrator', icon: 'folder' },
+          { label: 'Default Workspace', value: this.defaultWorkspaceName(), icon: 'bank' },
+          { label: 'Timezone', value: this.timezone, icon: 'clock' },
+          { label: 'Language', value: this.language, icon: 'info' }
+        ].map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }));
+      });
+
+      // More preferences, kept in this browser beside the shared ones; the pages do not read them yet
+      const EXTRA_KEY = 'factory.account.preferences';
+      const extraStored = (() => { try { return JSON.parse(window.localStorage.getItem(EXTRA_KEY) || '{}'); } catch (e) { return {}; } })();
+      const EXTRA_DEFAULTS = { pageSize: '10', dateFormat: 'browser', editorTheme: 'light', autoSave: false, tooltips: true, confirmDelete: true, usageData: false };
+      this.extra = {};
+      Object.keys(EXTRA_DEFAULTS).forEach((k) => {
+        this.extra[k] = ko.observable(extraStored[k] === undefined ? EXTRA_DEFAULTS[k] : extraStored[k]);
+        this.extra[k].subscribe(() => {
+          const out = {};
+          Object.keys(EXTRA_DEFAULTS).forEach((key) => { out[key] = this.extra[key](); });
+          try { window.localStorage.setItem(EXTRA_KEY, JSON.stringify(out)); } catch (e) { /* kept for this visit only */ }
+        });
+      });
+      this.pageSizeOptions = ['10', '25', '50'];
+      this.dateFormatOptions = [{ value: 'browser', label: 'As the browser shows it' }, { value: 'iso', label: '2026-10-28' }, { value: 'dmy', label: '28/10/2026' }, { value: 'mdy', label: '10/28/2026' }];
+      this.pageSizeChange = ui.value(this.extra.pageSize);
+      this.dateFormatChange = ui.value(this.extra.dateFormat);
+      this.editorThemeChange = ui.value(this.extra.editorTheme);
 
       // Preferences
       this.workspaceOptions = workspaceSelection.options;
@@ -72,12 +108,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.assistantToggle = ui.checked(preferences.assistant);
       this.sample = ko.pureComputed(() => ui.when(new Date().toISOString()));
       this.notifyRows = [
-        { label: 'Build Results', icon: 'cog', key: 'build' }, { label: 'Agent Run Status', icon: 'robot', key: 'agent' },
-        { label: 'Reviews & Approvals', icon: 'doc', key: 'review' }, { label: 'System Notifications', icon: 'info', key: 'system' }
-      ].map((r) => Object.assign(r, { value: preferences.notify[r.key], change: ui.checked(preferences.notify[r.key]), iconClass: 'factory-nav-icon factory-ico-' + r.icon }));
+        { label: 'Build Results', icon: 'cog', key: 'build', tone: 'blue' }, { label: 'Agent Run Status', icon: 'robot', key: 'agent', tone: 'violet' },
+        { label: 'Reviews & Approvals', icon: 'doc', key: 'review', tone: 'amber' }, { label: 'System Notifications', icon: 'info', key: 'system', tone: 'green' }
+      ].map((r) => Object.assign(r, { value: preferences.notify[r.key], change: ui.checked(preferences.notify[r.key]), disabled: false, tip: '' }))
+        .concat([{ label: 'Security Alerts', icon: 'shield', tone: 'red' }, { label: 'Weekly Summary', icon: 'chart', tone: 'blue' }]
+          .map((r) => Object.assign(r, { value: false, change: () => true, disabled: true, tip: 'The factory does not send these yet' })))
+        .map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon, tileCss: 'factory-ac-tile factory-ov2-icon-' + r.tone }));
+      // A sample shown on this page only; notifications come from what happens in the workspaces
+      this.testShown = ko.observable(false);
+      let testTimer = null;
+      this.sendTest = () => { this.testShown(true); window.clearTimeout(testTimer); testTimer = window.setTimeout(() => this.testShown(false), 8000); };
+      this.hideTest = () => this.testShown(false);
+      this.settingsRows = [
+        { id: 'assistantToggle', label: 'AI suggestions', sub: 'Show the AI Assistant panels on the pages', icon: 'sparkle', value: preferences.assistant, change: ui.checked(preferences.assistant), disabled: false, tip: '' },
+        { id: 'autoSaveToggle', label: 'Auto-save changes', sub: 'Pages save when you press Save', icon: 'refresh', value: false, disabled: true, tip: 'There is no auto-save; each page saves when you press Save' },
+        { id: 'tooltipsToggle', label: 'Show helpful tooltips', sub: 'Tooltips always show', icon: 'help', value: true, disabled: true, tip: 'Tooltips cannot be turned off yet' },
+        { id: 'confirmDeleteToggle', label: 'Confirm before delete', sub: 'Each page decides when to ask', icon: 'trash', value: true, disabled: true, tip: 'Not a setting yet' },
+        { id: 'usageDataToggle', label: 'Anonymous usage data', sub: 'The factory collects none', icon: 'chart', value: false, disabled: true, tip: 'The factory sends no usage data anywhere' }
+      ].map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon + ' factory-ac-seticon', change: r.change || (() => true) }));
       this.resetPreferences = () => {
         preferences.reset();
-        ['landingPick', 'workspacePick', 'textPick'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = el.querySelector('option') ? el.querySelector('option').value : ''; } });
+        this.extra.pageSize('10');
+        this.extra.dateFormat('browser');
+        this.extra.editorTheme('light');
+        ['landingPick', 'workspacePick', 'textPick', 'pageSizePick', 'dateFormatPick', 'editorThemePick'].forEach((id) => { const el = document.getElementById(id); if (el) { el.value = el.querySelector('option') ? el.querySelector('option').value : ''; } });
       };
       this.landingIs = (v) => ko.pureComputed(() => preferences.landing() === v);
 
@@ -87,7 +141,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         rule('At least 12 characters', (p) => p.length >= 12),
         rule('Different from the current password', (p) => !!p && p !== this.currentPassword()),
         rule('Both new passwords match', (p) => !!p && p === this.repeatPassword())
-      ].map((r) => Object.assign(r, { css: ko.pureComputed(() => (r.ok() ? 'factory-ad-yes' : 'factory-ac-todo')) }));
+      ].map((r) => Object.assign(r, { css: ko.pureComputed(() => (r.ok() ? 'factory-ad-yes' : 'factory-ac-todo')), rowCss: ko.pureComputed(() => (r.ok() ? 'factory-ac-req-ok' : '')) }));
       this.canChange = ko.pureComputed(() => !!this.user() && this.user().canChangePassword);
       this.changePassword = () => {
         this.success(false);

@@ -1,4 +1,4 @@
-<div class="factory-pg">
+<div class="factory-pg factory-ad">
   <div class="factory-pg-head">
     <div>
       <h1>Administration &amp; Access Control</h1>
@@ -56,10 +56,11 @@
       </div>
       <div class="factory-ov2-table-wrap">
         <table class="factory-ov2-table factory-ad-users" id="userTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Workspaces</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <thead><tr><th class="factory-ad-check"><input type="checkbox" id="userSelectAll" aria-label="Select all users on this page" :checked="[[allSelected]]" on-click="[[toggleAll]]"></th><th>Name</th><th>Email</th><th>Role</th><th>Workspaces</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
           <tbody>
             <oj-bind-for-each data="[[userPager.rows]]">
-              <template><tr>
+              <template><tr :class="[[$current.data.rowCss]]">
+                <td class="factory-ad-check"><input type="checkbox" :aria-label="[['Select ' + $current.data.username]]" :checked="[[$current.data.isSelected]]" on-click="[[$current.data.toggle]]"></td>
                 <td><span class="factory-name-cell"><span class="factory-avatar-sm"><oj-bind-text value="[[$current.data.initials]]"></oj-bind-text></span>
                   <span><oj-bind-text value="[[$current.data.displayName]]"></oj-bind-text><span class="factory-ov-subtle factory-ad-uname"><oj-bind-text value="[[$current.data.username]]"></oj-bind-text></span></span></span></td>
                 <td><oj-bind-text value="[[$current.data.email || '–']]"></oj-bind-text></td>
@@ -80,10 +81,11 @@
           </tbody>
         </table>
       </div>
-      <div class="factory-pager"><span><oj-bind-text value="[[userPager.text() + ' users']]"></oj-bind-text></span>
-        <span><button type="button" class="factory-ov2-btn" on-click="[[userPager.prev]]">‹</button>
-          <oj-bind-text value="[[userPager.page() + ' / ' + userPager.pages()]]"></oj-bind-text>
-          <button type="button" class="factory-ov2-btn" on-click="[[userPager.next]]">›</button></span></div>
+      <div class="factory-pager"><span><oj-bind-text value="[[userPager.text() + ' users' + selectedText()]]"></oj-bind-text></span>
+        <span class="factory-ad-pages"><button type="button" class="factory-ad-pg" aria-label="Previous page" on-click="[[userPager.prev]]">‹</button>
+          <oj-bind-for-each data="[[userPager.buttons]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></button></template></oj-bind-for-each>
+          <button type="button" class="factory-ad-pg" aria-label="Next page" on-click="[[userPager.next]]">›</button>
+          <select class="factory-ws-select factory-ad-size" id="userPageSize" aria-label="Users per page" on-change="[[userPager.sizeChange]]"><option value="10">10 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select></span></div>
     </oj-bind-if>
 
     <oj-bind-if test="[[tab() === 'roles']]">
@@ -172,7 +174,7 @@
       </div>
     </section>
     <section class="factory-card">
-      <h2>Recent Activity <button type="button" class="factory-link-sm" on-click="[[showAudit]]">View All</button></h2>
+      <h2>Recent Activity <button type="button" class="factory-link-sm" on-click="[[showAudit]]">View All →</button></h2>
       <p class="factory-card-sub">Latest administrative actions and access changes</p>
       <ul class="factory-list factory-ad-activity">
         <oj-bind-for-each data="[[activity]]">
