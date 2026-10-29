@@ -334,7 +334,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const before = this.workspaceId();
         workspaceSelection.load().then(() => { if (this.workspaceId() === before) { load(before); } }).catch(showError);
         updates.refresh(false);
-        this.carousel.attach(document.getElementById('useCaseTrack'));
+        this.carousel.attach('useCaseTrack');
         document.addEventListener('click', outside);
         window.addEventListener('scroll', closeMenu, true);
       };

@@ -164,7 +164,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
         document.title = 'Design System';
         readTokens();
         api.get('workspaces').then((list) => this.workspaces(list)).catch((e) => toast.error(e.message));
-        window.setTimeout(() => this.carousel.attach(document.getElementById('dsCarouselTrack')), 0);
+        this.carousel.attach('dsCarouselTrack');
       };
     }
 

@@ -203,11 +203,19 @@ define(['knockout', './preferences'], function (ko, preferences) {
       }))),
       prev: () => scroll(-1),
       next: () => scroll(1),
-      attach: (element) => {
-        track = element;
+      // element: the track, or its id. An id is looked up until the page has drawn it (up to 2 seconds), so a page
+      // that renders late still gets a working carousel.
+      attach: function attachTrack(element, tries) {
+        track = typeof element === 'string' ? document.getElementById(element) : element;
         if (!track) {
+          if (typeof element === 'string' && (tries || 0) < 40) { window.setTimeout(() => attachTrack(element, (tries || 0) + 1), 50); }
           return;
         }
+        if (track.fxCarousel) {
+          update();
+          return;
+        }
+        track.fxCarousel = true;
         track.addEventListener('scroll', update, { passive: true });
         track.addEventListener('keydown', (e) => {
           if (e.key === 'ArrowRight') { e.preventDefault(); scroll(1); }

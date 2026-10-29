@@ -260,7 +260,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.connected = () => {
         accUtils.announce('Version Packs page loaded.');
         document.title = 'Version Packs';
-        window.setTimeout(() => this.carousel.attach(document.getElementById('pkCarouselTrack')), 0);
+        this.carousel.attach('pkCarouselTrack');
         api.get('targets').then(this.targets).catch(() => null);
         if (session.isAdmin()) {
           api.get('admin/audit?limit=300').then(audit).catch(() => null);
