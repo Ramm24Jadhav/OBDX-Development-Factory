@@ -4,10 +4,8 @@
  * the name, bank and OBDX version from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
-        '../services/pageRequests', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle',
-        'ojs/ojbutton', 'ojs/ojvalidationgroup', 'ojs/ojswitch', 'ojs/ojmenu'],
-  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog, ArrayDataProvider) {
+        '../services/pageRequests', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
     const WEEK_MS = 7 * 24 * 3600 * 1000;
     const STATUS = {
@@ -37,14 +35,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
     function WorkspacesViewModel() {
       this.isAdmin = session.isAdmin;
-      this.versionProvider = new ArrayDataProvider([
+      this.versionOptions = [
         { value: '22.x', label: 'OBDX 22.x' },
         { value: '25.x', label: 'OBDX 25.x' }
-      ], { keyAttributes: 'value' });
+      ];
 
       // Step 1: where the code is
-      const sources = ko.observableArray([{ value: 'url', label: 'SVN server (URL)' }]);
-      this.sourceProvider = new ArrayDataProvider(sources, { keyAttributes: 'value' });
       this.sourceKind = ko.observable('url');
       this.svnUrl = ko.observable('');
       this.svnUsername = ko.observable('');
@@ -63,7 +59,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.bankName = ko.observable('');
       this.obdxVersion = ko.observable('22.x');
       this.importNow = ko.observable(true);
-      this.formValid = ko.observable();
+      // Required fields show their message once Create was pressed with one empty
+      this.showErrors = ko.observable(false);
+      const required = (field, message) => ko.pureComputed(() => (this.showErrors() && !String(this[field]() || '').trim() ? message : ''));
+      this.nameError = required('name', 'Enter a name for the workspace.');
+      this.bankError = required('bankName', 'Enter the bank.');
+      this.versionError = required('obdxVersion', 'Choose the OBDX version.');
       this.saving = ko.observable(false);
 
       this.errorMessage = ko.observable('');
@@ -149,7 +150,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         this.localEnabled(true);
         this.home = local.home;
-        sources([{ value: 'folder', label: 'Folder on this computer' }, { value: 'url', label: 'SVN server (URL)' }]);
         this.sourceKind('folder');
         this.roots(local.roots.map((root) => Object.assign({}, root, { open: () => openFolder(root.path) })));
         this.found(local.found.map((repository) => Object.assign({}, repository, { use: () => useFolder(repository.path) })));
@@ -175,7 +175,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           }
         }
       };
-      this.newWorkspaceMenu = (event) => { this.sourceKind(event.detail.selectedValue); focusCreate(); };
+      this.newWorkspaceItems = ko.pureComputed(() => [
+        { value: 'folder', label: 'Folder on this computer', icon: 'laptop', disabled: !this.localEnabled() },
+        { value: 'url', label: 'SVN server (URL)', icon: 'link' }
+      ]);
+      this.newWorkspaceMenu = (event) => { this.sourceKind(event.detail.value); focusCreate(); };
       this.startCreate = () => focusCreate();
       this.folderPathInput = (event) => this.folderPath(event.target.value);
       this.folderPathKey = (event) => { if (event.key === 'Enter') { this.checkFolder(); } };
@@ -464,7 +468,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           }
         },
         select: () => this.selectedWsId(r.id),
-        menu: (event) => this.rowAction(event.detail.selectedValue, r.id)
+        menuItems: [
+          { value: 'code', label: 'Open code', icon: 'code' },
+          { value: 'profile', label: 'Project Profile', icon: 'doc' },
+          { value: 'requirements', label: 'Requirements', icon: 'list' },
+          { value: 'edit', label: 'Edit configuration', icon: 'edit' },
+          { separator: true },
+          { value: 'delete', label: 'Delete', icon: 'trash', danger: true, disabled: !r.canDelete }
+        ],
+        menu: (event) => this.rowAction(event.detail.value, r.id)
       })));
       this.checkedCount = ko.pureComputed(() => this.checkedIds().length);
       this.allChecked = ko.pureComputed(() => this.regRows().length > 0 && this.regRows().every((r) => r.checked));
@@ -487,7 +499,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           dashboard.open(action === 'edit' ? 'code' : action, id)();
         }
       };
-      this.detailMenu = (event) => this.selectedWs() && this.rowAction(event.detail.selectedValue, this.selectedWs().id);
+      this.detailMoreItems = ko.pureComputed(() => [
+        { value: 'code', label: 'Open code', icon: 'code' },
+        { value: 'profile', label: 'Project Profile', icon: 'doc' },
+        { value: 'copy', label: 'Copy repository URL', icon: 'share' },
+        { separator: true },
+        { value: 'delete', label: 'Delete', icon: 'trash', danger: true, disabled: !this.isAdmin() }
+      ]);
+      this.moreActionItems = [
+        { value: 'code', label: 'Open code', icon: 'code' },
+        { value: 'profile', label: 'Project Profile', icon: 'doc' },
+        { value: 'requirements', label: 'Requirements', icon: 'list' },
+        { value: 'designer', label: 'Designer', icon: 'design' },
+        { value: 'copy', label: 'Copy repository URL', icon: 'share' }
+      ];
+      this.detailMenu = (event) => this.selectedWs() && this.rowAction(event.detail.value, this.selectedWs().id);
       this.copyUrl = () => this.selectedWs() && this.rowAction('copy', this.selectedWs().id);
       this.openProfile = (event) => { event.preventDefault(); dashboard.open('profile', this.selectedWs() ? this.selectedWs().id : undefined)(); };
       this.openCode = (event) => { event.preventDefault(); dashboard.open('code', this.selectedWs() ? this.selectedWs().id : undefined)(); };
@@ -516,10 +542,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const load = () => Promise.all([dashboard.load(), workspaceSelection.load()]).catch(showError);
 
       this.createWorkspace = () => {
-        const form = document.getElementById('workspaceForm');
-        if (this.formValid() !== 'valid') {
-          form.showMessages();
-          form.focusOn('@firstInvalidShown');
+        this.showErrors(true);
+        const firstInvalid = [['name', this.nameError], ['bankName', this.bankError], ['obdxVersion', this.versionError]].find((f) => f[1]());
+        if (firstInvalid) {
+          const field = document.getElementById(firstInvalid[0]);
+          const control = field ? field.querySelector('input, button') : null;
+          if (control) {
+            control.focus();
+          }
           return;
         }
         const svnUrl = this.inspection().svnUrl;
@@ -545,6 +575,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             this.name('');
             this.bankName('');
             this.obdxVersion('22.x');
+            this.showErrors(false);
             suggested = initialSuggested();
             reset();
             return load();

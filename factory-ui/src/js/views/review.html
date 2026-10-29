@@ -50,11 +50,11 @@
       </oj-bind-if>
 
       <oj-bind-if test="[[review().status !== 'APPROVED']]">
-        <oj-form-layout max-columns="1" class="factory-rw-form">
-          <oj-input-text id="reviewerName" label-hint="Your name" value="{{author}}"></oj-input-text>
-          <oj-text-area id="reviewComment" rows="3" value="{{text}}"
-                        label-hint="[[selectedLabel() ? 'Comment on ' + selectedLabel() : 'Comment (click a field in the screen to comment on it)']]"></oj-text-area>
-        </oj-form-layout>
+        <div class="fx-form factory-rw-form">
+          <fx-input id="reviewerName" label="Your name" value="{{author}}" autocomplete="name"></fx-input>
+          <fx-textarea id="reviewComment" rows="3" value="{{text}}"
+                       label="[[selectedLabel() ? 'Comment on ' + selectedLabel() : 'Comment (click a field in the screen to comment on it)']]"></fx-textarea>
+        </div>
         <div class="fx-row factory-rw-actions">
           <span :data-fx-tip="[[author() && text() ? null : 'Type your name and a comment first']]"><button type="button" id="sendCommentButton" :class="[[sending() ? 'fx-btn fx-btn--secondary is-loading' : 'fx-btn fx-btn--secondary']]" on-click="[[sendComment]]" :disabled="[[!author() || !text()]]">Send comment</button></span>
           <span :data-fx-tip="[[author() ? null : 'Type your name first']]"><button type="button" id="reviewApproveButton" class="fx-btn fx-btn--primary" on-click="[[approve]]" :disabled="[[!author()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve this design</button></span>

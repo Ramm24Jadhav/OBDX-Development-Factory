@@ -6,7 +6,7 @@
  * The screens can be downloaded as CSV for wave planning.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', '../services/toast', '../services/preferences', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
+        '../services/assistant', '../services/toast', '../services/preferences', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, preferences) {
     // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
     const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
@@ -286,7 +286,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             current: this.version(), impact: c.rule.severity === 'ERROR' ? 'High' : 'Medium',
             pill: c.rule.severity === 'ERROR' ? pill('Critical', 'red') : pill('Warning', 'amber'),
             menuAction: (event) => {
-              const action = event.detail.selectedValue;
+              const action = event.detail.value;
               if (action === 'ask') {
                 this.aiTab('chat');
                 this.ai.ask('How do I replace "' + c.rule.title + '" in ' + hit.path + '? The rule says: ' + c.rule.message);
@@ -401,8 +401,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.showPlan = () => this.tab('plan');
+      this.moreItems = ko.pureComputed(() => [
+        { value: 'findings', label: 'Search deprecated usage again', disabled: !this.inventory() },
+        { value: 'csv', label: 'Download screens as CSV', disabled: !this.inventory() },
+        { value: 'plan', label: 'View the migration plan', disabled: !this.inventory() },
+        { value: 'profile', label: 'Open the Project Profile' }]);
+      // The actions menu of each deprecated usage row
+      this.findingItems = [{ value: 'ask', label: 'Ask the assistant how to replace it' }, { value: 'copy', label: 'Copy the file path' },
+        { value: 'code', label: 'Open the Code page' }];
       this.moreAction = (event) => {
-        const action = event.detail.selectedValue;
+        const action = event.detail.value;
         if (action === 'findings') {
           this.rescanFindings();
         } else if (action === 'csv') {

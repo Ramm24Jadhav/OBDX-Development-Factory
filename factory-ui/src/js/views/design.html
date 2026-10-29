@@ -141,6 +141,14 @@
         </template></oj-bind-for-each>
         <oj-bind-if test="[[wsFiltered().length === 0]]"><li class="fx-muted factory-ds-none">No workspace matches.</li></oj-bind-if>
       </ul>
+      <div class="fx-form factory-ds-own">
+        <fx-select id="dsFxSelect" label="Workspace (fx-select)" placeholder="Choose a workspace" options="[[wsOptions]]" value="{{wsPicked}}" searchable help="Type to search; arrow keys and Enter work."></fx-select>
+        <fx-input id="dsFxInput" label="Name (fx-input)" icon="user" placeholder="Your name" value="{{fxName}}" clearable required help="Required"></fx-input>
+        <fx-input id="dsFxPassword" label="Password (fx-input)" type="password" value="{{fxPassword}}"></fx-input>
+        <div class="fx-row"><fx-switch id="dsFxSwitch" label="Notify me (fx-switch)" value="{{switchOn}}"></fx-switch>
+          <fx-menu-button id="dsFxMenu" label="More actions" icon="more" items="[[menuItems]]" on-fx-action="[[menuAction]]"></fx-menu-button></div>
+        <p class="fx-help">Selected: <oj-bind-text value="[[wsPicked() || 'nothing']]"></oj-bind-text> · name: <oj-bind-text value="[[fxName]]"></oj-bind-text> · switch: <oj-bind-text value="[[switchOn() ? 'on' : 'off']]"></oj-bind-text></p>
+      </div>
     </section>
   </div>
 
@@ -175,12 +183,13 @@
 
     <section class="fx-card" aria-labelledby="dsDates">
       <h2 class="fx-card-title" id="dsDates">Date &amp; Time Picker</h2>
-      <oj-form-layout label-edge="top" columns="2" direction="row" class="factory-ds-dates">
-        <oj-input-date id="dsDate" label-hint="Date Picker" value="{{date}}"></oj-input-date>
-        <oj-input-time id="dsTime" label-hint="Time Picker" value="{{time}}"></oj-input-time>
-        <oj-input-date id="dsFrom" label-hint="Date Range: from" value="{{from}}" max="[[to]]"></oj-input-date>
-        <oj-input-date id="dsTo" label-hint="to" value="{{to}}" min="[[from]]"></oj-input-date>
-      </oj-form-layout>
+      <div class="fx-form fx-form--2">
+        <fx-date id="dsDate" label="Date Picker" value="{{date}}"></fx-date>
+        <fx-time id="dsTime" label="Time Picker" value="{{time}}"></fx-time>
+        <fx-date id="dsFrom" label="Date Range: from" value="{{from}}" max="[[to]]"></fx-date>
+        <fx-date id="dsTo" label="to" value="{{to}}" min="[[from]]"></fx-date>
+      </div>
+      <p class="fx-help">Picked: <oj-bind-text value="[[date() + ' ' + time() + ' · range ' + from() + ' to ' + to()]]"></oj-bind-text></p>
       <p class="fx-help">Dates follow this browser's locale. The range cannot end before it starts.</p>
     </section>
 

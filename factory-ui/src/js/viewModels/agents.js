@@ -6,7 +6,7 @@
  * The factory does not record which model did older work, so the model shown is the one in use now.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard', '../services/workspaceSelection',
-        '../services/ui', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojmenu'],
+        '../services/ui', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, session, dashboard, workspaceSelection, ui, toast) {
     const AGENTS = {
       requirements: { name: 'Requirements Agent', icon: 'doc', tone: 'amber' },
@@ -214,8 +214,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         isSelected: ko.pureComputed(() => this.checked.indexOf(r.key) >= 0),
         toggle: (event) => { if (event.target.checked) { this.checked.push(r.key); } else { this.checked.remove(r.key); } },
         stop: (event) => event.stopPropagation(),
+        menuItems: [{ value: 'details', label: 'View details' }, { value: 'open', label: 'Open result' }, { value: 'copy', label: 'Copy run ID' },
+          { value: 'rerun', label: 'Re-run', disabled: !r.rerun }],
         action: (event) => {
-          const value = event.detail.selectedValue;
+          const value = event.detail.value;
           if (value === 'details') {
             pickRun(r.key);
           } else if (value === 'open') {
@@ -257,8 +259,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .slice(0, 12).map((x) => Object.assign({}, x, { pick: () => pickRun(x.key) }));
       });
       this.resultLabel = ko.pureComputed(() => (this.run() && this.run().page === 'changes' ? 'View Changes' : 'View Result'));
+      this.moreItems = [{ value: 'steps', label: 'Show execution steps' }, { value: 'logs', label: 'Show logs' }, { value: 'files', label: 'Show files' },
+        { value: 'copy', label: 'Copy run ID' }, { value: 'workspace', label: 'Open the workspace' }];
       this.moreAction = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         const r = this.run();
         if (!r) {
           return;

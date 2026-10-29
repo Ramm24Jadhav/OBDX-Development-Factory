@@ -5,7 +5,7 @@
  * in the dependency view are inferred from the layers, not read from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const LAYERS = [
       { key: 'ui', label: 'UI Component', color: '#6366f1', icon: 'monitor' },

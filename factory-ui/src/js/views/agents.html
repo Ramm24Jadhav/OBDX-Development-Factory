@@ -85,14 +85,8 @@
                   <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-cp-nowrap" :title="[[$current.data.startedText]]"><oj-bind-text value="[[$current.data.startedShort]]"></oj-bind-text></td>
                   <td class="factory-cp-nowrap"><oj-bind-text value="[[$current.data.duration]]"></oj-bind-text></td>
-                  <td class="fx-table-actions" on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.id]]"></oj-bind-text>
-                    <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
-                      <oj-option value="details">View details</oj-option>
-                      <oj-option value="open">Open result</oj-option>
-                      <oj-option value="copy">Copy run ID</oj-option>
-                      <oj-option value="rerun" disabled="[[!$current.data.rerun]]">Re-run</oj-option>
-                    </oj-menu></oj-menu-button></td></tr></template>
+                  <td class="fx-table-actions" on-click="[[$current.data.stop]]"><fx-menu-button class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only :label="[['Actions for ' + $current.data.id]]"
+                    items="[[$current.data.menuItems]]" on-fx-action="[[$current.data.action]]"></fx-menu-button></td></tr></template>
               </oj-bind-for-each>
             </tbody>
           </table>
@@ -213,15 +207,7 @@
         <div class="factory-ag-foot">
           <button type="button" id="viewResultButton" class="fx-btn fx-btn--secondary factory-ag-footbtn" on-click="[[viewResult]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[resultLabel]]"></oj-bind-text></button>
           <button type="button" id="rerunButton" class="fx-btn fx-btn--secondary factory-ag-footbtn" on-click="[[rerun]]" :disabled="[[!canRerun()]]" :data-fx-tip="[[canRerun() ? 'Run this again' : 'Only failed runs (and plans waiting for approval) can be run again']]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-run</button>
-          <oj-menu-button id="runMoreActions" chroming="outlined" class="factory-ag-more">More Actions
-            <oj-menu slot="menu" on-oj-menu-action="[[moreAction]]">
-              <oj-option value="steps">Show execution steps</oj-option>
-              <oj-option value="logs">Show logs</oj-option>
-              <oj-option value="files">Show files</oj-option>
-              <oj-option value="copy">Copy run ID</oj-option>
-              <oj-option value="workspace">Open the workspace</oj-option>
-            </oj-menu>
-          </oj-menu-button>
+          <fx-menu-button id="runMoreActions" class="factory-ag-more" variant="secondary" label="More Actions" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
         </div>
       </oj-bind-if>
     </section>

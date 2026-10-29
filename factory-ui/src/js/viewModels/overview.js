@@ -4,8 +4,8 @@
  * dashboard service (the same endpoints the other pages use).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard',
-        '../services/pageRequests', 'ojs/ojarraydataprovider', 'ojs/ojbutton', 'ojs/ojmenu', 'ojs/ojselectsingle', 'ojs/ojinputtext'],
-  function (ko, accUtils, api, session, dashboard, pageRequests, ArrayDataProvider) {
+        '../services/pageRequests'],
+  function (ko, accUtils, api, session, dashboard, pageRequests) {
     const WEEK_MS = 7 * 24 * 3600 * 1000;
     // Status badges of the design system (fx-badge carries a dot, so status is not colour alone)
     const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
@@ -34,8 +34,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
 
       // Open Workspace: picks a workspace and opens its code.
-      this.workspaceMenu = ko.pureComputed(() => data().map((d) => ({ id: d.workspace.id, label: d.workspace.name + ' (' + d.workspace.bankName + ')' })));
-      this.openWorkspace = (event) => dashboard.open('code', event.detail.selectedValue)();
+      this.workspaceMenu = ko.pureComputed(() => data().map((d) => ({ value: d.workspace.id, label: d.workspace.name + ' (' + d.workspace.bankName + ')' })));
+      this.openWorkspace = (event) => dashboard.open('code', event.detail.value)();
 
       // The five totals
       this.tiles = ko.pureComputed(() => {
@@ -60,7 +60,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }));
       });
 
-      // Recent workspaces: the four most recently imported or created
+      // Recent workspaces: the four most recently imported or created, each with a menu of its pages
+      this.workspaceActions = [{ value: 'code', label: 'Open code' }, { value: 'profile', label: 'Project Profile' },
+        { value: 'requirements', label: 'Requirements' }, { value: 'designer', label: 'Designer' }];
       this.recentWorkspaces = ko.pureComputed(() => data().map((d) => {
         const w = d.workspace;
         const job = d.imports.length ? d.imports[0] : null;
@@ -71,7 +73,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           id: w.id, name: w.name, bank: w.bankName, version: w.obdxVersion, location: w.svnUrl || '', shortLocation: shortPath(w.svnUrl),
           status: CODE[dashboard.codeState(d).key], updatedDay: cut > 0 ? when.slice(0, cut) : when, updatedTime: cut > 0 ? when.slice(cut + 2) : '', at: updated,
           open: dashboard.open('code', w.id),
-          menu: (event) => dashboard.open(event.detail.selectedValue, w.id)()
+          menu: (event) => dashboard.open(event.detail.value, w.id)()
         };
       }).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4));
 
@@ -89,6 +91,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
       }));
       this.sourceValue = ko.observable('');
+      this.sourceLabel = ko.pureComputed(() => (this.sourceKind() === 'folder' ? 'Project folder' : 'SVN repository URL'));
       this.sourceInput = (event) => this.sourceValue(event.target.value);
       this.scanRepositories = ko.observable(true);
       this.scanToggle = (event) => this.scanRepositories(event.target.checked);
@@ -112,10 +115,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
       // Development progress, for all workspaces or one
       this.progressWorkspace = ko.observable('all');
-      const progressOptions = ko.observableArray([{ value: 'all', label: 'All workspaces' }]);
-      ko.computed(() => progressOptions([{ value: 'all', label: 'All workspaces' }]
-        .concat(data().map((d) => ({ value: d.workspace.id, label: d.workspace.name })))));
-      this.progressProvider = new ArrayDataProvider(progressOptions, { keyAttributes: 'value' });
+      this.progressOptions = ko.pureComputed(() => [{ value: 'all', label: 'All workspaces' }]
+        .concat(data().map((d) => ({ value: d.workspace.id, label: d.workspace.name }))));
       this.progress = ko.pureComputed(() => {
         const picked = this.progressWorkspace();
         const d = data().filter((e) => picked === 'all' || e.workspace.id === picked);

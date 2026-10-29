@@ -6,21 +6,13 @@
     </div>
     <div class="factory-pg-actions">
       <oj-bind-if test="[[canEdit()]]">
-        <oj-button id="uploadTabButton" chroming="outlined" class="factory-rq-upload-btn" on-oj-action="[[startUpload]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Upload BRD/FSD</oj-button>
-        <oj-button id="newRequirementButton" chroming="callToAction" on-oj-action="[[startUpload]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>New Requirement</oj-button>
+        <button type="button" id="uploadTabButton" class="fx-btn fx-btn--secondary factory-rq-upload-btn" on-click="[[startUpload]]">
+          <span class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Upload BRD/FSD</button>
+        <button type="button" id="newRequirementButton" class="fx-btn fx-btn--primary" on-click="[[startUpload]]">
+          <span class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>New Requirement</button>
       </oj-bind-if>
-      <oj-menu-button id="requirementsMore" chroming="borderless" display="icons" class="factory-rq-more">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-        <oj-menu id="requirementsMoreMenu" slot="menu" on-oj-menu-action="[[pageMenu]]">
-          <oj-option value="refresh">Refresh the list</oj-option>
-          <oj-option value="csv">Download the list (CSV)</oj-option>
-          <oj-option value="questions">Open questions</oj-option>
-          <oj-option value="traceability">Traceability</oj-option>
-          <oj-option value="reports">Reports</oj-option>
-        </oj-menu>
-      </oj-menu-button>
+      <fx-menu-button id="requirementsMore" class="factory-rq-more" label="More actions" icon="more" icon-only variant="ghost"
+        items="[[pageMenuItems]]" on-fx-action="[[pageMenu]]"></fx-menu-button>
     </div>
   </div>
 
@@ -40,21 +32,19 @@
       <section class="factory-card">
         <h2>Upload a BRD or FSD</h2>
         <p class="factory-card-sub">Word, PDF, text or Markdown, up to 25 MB. The factory drafts a structured specification from it.</p>
-        <oj-input-text id="reqTitle" label-hint="Title (optional)" value="{{newTitle}}"></oj-input-text>
+        <fx-input id="reqTitle" label="Title (optional)" value="{{newTitle}}"></fx-input>
         <div class="factory-rq-file">
-          <oj-file-picker id="reqFile" accept='[".docx", ".doc", ".pdf", ".txt", ".md"]' selection-mode="single" on-oj-select="[[fileSelected]]">
-            <oj-button slot="trigger" id="chooseFileButton">Choose document</oj-button>
-          </oj-file-picker>
+          <input type="file" id="reqFile" class="fx-visually-hidden" accept=".docx,.doc,.pdf,.txt,.md" on-change="[[fileSelected]]">
+          <label for="reqFile" id="chooseFileButton" class="fx-btn fx-btn--secondary"><span class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>Choose document</label>
           <span class="factory-ov-subtle"><oj-bind-text value="[[chosenFileName]]"></oj-bind-text></span>
         </div>
-        <oj-button id="uploadButton" chroming="callToAction" on-oj-action="[[upload]]" disabled="[[!chosenFile() || busy() || !canEdit()]]">Upload and draft spec</oj-button>
+        <button type="button" id="uploadButton" class="fx-btn fx-btn--primary" on-click="[[upload]]" :disabled="[[!chosenFile() || busy() || !canEdit()]]">Upload and draft spec</button>
       </section>
       <section class="factory-card">
         <h2>Or describe the change</h2>
         <p class="factory-card-sub">Write what the bank needs in plain words: screens, fields, rules and who uses it.</p>
-        <div class="fx-field factory-rq-field"><label class="fx-label" for="reqText">What the bank needs</label>
-          <textarea id="reqText" class="fx-textarea factory-rq-textarea" rows="8" placeholder="For example: customers can schedule a fund transfer..." on-input="[[newTextInput]]"></textarea></div>
-        <oj-button id="submitTextButton" chroming="callToAction" on-oj-action="[[submitText]]" disabled="[[busy() || !canEdit()]]">Draft spec from text</oj-button>
+        <fx-textarea id="reqText" class="factory-rq-field" label="What the bank needs" rows="8" placeholder="For example: customers can schedule a fund transfer..." value="{{newText}}"></fx-textarea>
+        <button type="button" id="submitTextButton" class="fx-btn fx-btn--primary" on-click="[[submitText]]" :disabled="[[busy() || !canEdit()]]">Draft spec from text</button>
       </section>
     </div>
   </oj-bind-if>
@@ -178,28 +168,21 @@
               <p class="factory-rq-summary"><oj-bind-text value="[[spec() ? (spec().summary || '') : (detail().message || 'The specification is being drafted.')]]"></oj-bind-text></p>
               <div class="factory-rq-detail-actions">
                 <oj-bind-if test="[[detail().status === 'READY' && canApprove()]]">
-                  <oj-button id="approveButton" chroming="callToAction" on-oj-action="[[approve]]">Approve</oj-button>
+                  <button type="button" id="approveButton" class="fx-btn fx-btn--primary" on-click="[[approve]]">Approve</button>
                 </oj-bind-if>
                 <oj-bind-if test="[[detail().status === 'FAILED' && canEdit()]]">
-                  <oj-button id="retryButton" chroming="callToAction" on-oj-action="[[retry]]">Try again</oj-button>
+                  <button type="button" id="retryButton" class="fx-btn fx-btn--primary" on-click="[[retry]]">Try again</button>
                 </oj-bind-if>
                 <oj-bind-if test="[[canEditSpec()]]">
-                  <oj-button id="editJsonButton" chroming="outlined" class="factory-rq-upload-btn" on-oj-action="[[toggleJson]]">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</oj-button>
+                  <button type="button" id="editJsonButton" class="fx-btn fx-btn--secondary factory-rq-upload-btn" on-click="[[toggleJson]]">
+                    <span class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</button>
                 </oj-bind-if>
                 <oj-bind-if test="[[!canEditSpec()]]">
-                  <span :title="[[editBlockedReason]]"><oj-button id="editJsonButtonOff" chroming="outlined" disabled="true">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</oj-button></span>
+                  <span class="fx-tip-wrap" :data-fx-tip="[[editBlockedReason]]" tabindex="0"><button type="button" id="editJsonButtonOff" class="fx-btn fx-btn--secondary" disabled>
+                    <span class="factory-nav-icon factory-ico-edit factory-btn-icon" aria-hidden="true"></span>Edit Requirement</button></span>
                 </oj-bind-if>
-                <oj-menu-button id="requirementMore" chroming="borderless" display="icons" class="factory-rq-more">
-                  <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>Requirement actions
-                  <oj-menu id="requirementMoreMenu" slot="menu" on-oj-menu-action="[[detailMenu]]">
-                    <oj-option value="screens" disabled="[[!(detail().status === 'APPROVED' && canEdit())]]">Make screens in the designer</oj-option>
-                    <oj-option value="change" disabled="[[!(detail().status === 'APPROVED' && canEdit())]]">Plan the change</oj-option>
-                    <oj-option value="copy">Copy the specification (JSON)</oj-option>
-                    <oj-option value="delete" disabled="[[!canEdit()]]">Delete</oj-option>
-                  </oj-menu>
-                </oj-menu-button>
+                <fx-menu-button id="requirementMore" class="factory-rq-more" label="Requirement actions" icon="more" icon-only variant="ghost"
+                  items="[[detailMenuItems]]" on-fx-action="[[detailMenu]]"></fx-menu-button>
               </div>
             </div>
             <div class="factory-rq-meta">
@@ -215,10 +198,10 @@
             <oj-bind-if test="[[editingJson()]]">
               <div class="factory-rq-json">
                 <h3 class="factory-cp-h3">Edit the specification (JSON)</h3>
-                <textarea id="specJson" class="fx-textarea factory-rq-textarea factory-mono" rows="18" aria-label="Specification (JSON)" :value="[[specJson]]" on-input="[[specJsonInput]]"></textarea>
+                <fx-textarea id="specJson" label="Specification (JSON)" hide-label rows="18" mono value="{{specJson}}"></fx-textarea>
                 <div class="factory-btn-row">
-                  <oj-button id="saveJsonButton" chroming="callToAction" on-oj-action="[[saveJson]]">Save</oj-button>
-                  <oj-button on-oj-action="[[toggleJson]]">Cancel</oj-button>
+                  <button type="button" id="saveJsonButton" class="fx-btn fx-btn--primary" on-click="[[saveJson]]">Save</button>
+                  <button type="button" class="fx-btn fx-btn--secondary" on-click="[[toggleJson]]">Cancel</button>
                 </div>
               </div>
             </oj-bind-if>
@@ -271,13 +254,9 @@
                               <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.size]]"></oj-bind-text></td>
                               <td><oj-bind-text value="[[$current.data.uploaded]]"></oj-bind-text></td>
                               <td class="factory-rq-actcol"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="attachDownload" data-fx-tip="Download the text the factory read from this document" aria-label="Download the text" on-click="[[downloadText]]">
-                                  <span class="factory-nav-icon factory-ico-arrow factory-rq-down" aria-hidden="true"></span></button>
-                                <oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more factory-rq-more-sm">
-                                  <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>Document actions
-                                  <oj-menu slot="menu" on-oj-menu-action="[[attachmentMenu]]">
-                                    <oj-option value="copy">Copy the text</oj-option>
-                                    <oj-option value="show"><oj-bind-text value="[[showingText() ? 'Hide the text' : 'Show the text']]"></oj-bind-text></oj-option>
-                                  </oj-menu></oj-menu-button></td></tr></template>
+                                  <span class="factory-nav-icon factory-ico-download" aria-hidden="true"></span></button>
+                                <fx-menu-button class="factory-ov2-more factory-rq-more-sm" label="Document actions" icon="more" icon-only variant="ghost" size="sm"
+                                  items="[[attachmentMenuItems]]" on-fx-action="[[attachmentMenu]]"></fx-menu-button></td></tr></template>
                           </oj-bind-for-each>
                         </tbody>
                       </table>
@@ -460,15 +439,15 @@
                           <template><button type="button" :class="[[opt.data.css]]" :disabled="[[!opt.data.editable]]" on-click="[[opt.data.pick]]"><oj-bind-text value="[[opt.data.label]]"></oj-bind-text></button></template>
                         </oj-bind-for-each>
                       </div>
-                      <oj-input-text label-hint="Answer" value="{{$current.data.answerValue}}" readonly="[[!$current.data.editable]]"></oj-input-text>
+                      <fx-input label="Answer" value="{{$current.data.answerValue}}" readonly="[[!$current.data.editable]]"></fx-input>
                     </div>
                   </template>
                 </oj-bind-for-each>
                 <oj-bind-if test="[[questions().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>No open questions</strong>The specification has no questions left to answer.</div></oj-bind-if>
                 <oj-bind-if test="[[questions().length > 0 && detail().status === 'READY' && canEdit()]]">
                   <div class="factory-btn-row">
-                    <oj-button id="saveAnswersButton" on-oj-action="[[saveAnswers]]">Save answers</oj-button>
-                    <oj-button id="refineButton" chroming="callToAction" on-oj-action="[[refine]]">Update the spec with the answers</oj-button>
+                    <button type="button" id="saveAnswersButton" class="fx-btn fx-btn--secondary" on-click="[[saveAnswers]]">Save answers</button>
+                    <button type="button" id="refineButton" class="fx-btn fx-btn--primary" on-click="[[refine]]">Update the spec with the answers</button>
                   </div>
                 </oj-bind-if>
               </oj-bind-if>

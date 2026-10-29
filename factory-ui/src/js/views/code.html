@@ -11,23 +11,14 @@
         </oj-bind-if>
         <span id="indexPill" :class="[[indexPill().css]]">
           <span :class="[[indexPill().icon]]" aria-hidden="true"></span><oj-bind-text value="[[indexPill().text]]"></oj-bind-text></span>
-        <!-- Two buttons, because a button keeps the label it was first rendered with -->
         <oj-bind-if test="[[!importRunning()]]">
-          <oj-button id="importButton" chroming="callToAction" on-oj-action="[[startImport]]" disabled="[[!canManage()]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Reindex</oj-button>
+          <button type="button" id="importButton" class="fx-btn fx-btn--primary" on-click="[[startImport]]" :disabled="[[!canManage()]]">
+            <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Reindex</button>
         </oj-bind-if>
         <oj-bind-if test="[[importRunning()]]">
-          <oj-button id="importButton" chroming="callToAction" disabled="true">Indexing...</oj-button>
+          <button type="button" id="importButton" class="fx-btn fx-btn--primary is-loading" disabled>Indexing...</button>
         </oj-bind-if>
-        <oj-menu-button id="codeMoreMenu" chroming="borderless" display="icons" class="factory-cp2-more">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More
-          <oj-menu slot="menu" on-oj-menu-action="[[headerMenu]]">
-            <oj-option value="knowledge" id="openKnowledgeButton">Knowledge Explorer</oj-option>
-            <oj-option value="history">Import History</oj-option>
-            <oj-option value="index">Code Index</oj-option>
-            <oj-option value="settings">Settings</oj-option>
-          </oj-menu>
-        </oj-menu-button>
+        <fx-menu-button id="codeMoreMenu" class="factory-cp2-more" label="More" icon="more" icon-only variant="ghost" items="[[headerMenuItems]]" on-fx-action="[[headerMenu]]"></fx-menu-button>
       </div>
     </oj-bind-if>
   </div>
@@ -64,30 +55,26 @@
             <label class="fx-check"><input type="radio" name="codeSourceKind" value="url" :checked="[[sourceKind() === 'url']]" :disabled="[[!canManage()]]" on-change="[[pickKind]]"><span>SVN server (URL)</span></label>
           </div>
           <oj-bind-if test="[[sourceKind() === 'url']]">
-            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
-              <oj-input-text id="svnUrl" class="factory-cp2-url" label-hint="SVN repository URL" value="{{svnUrl}}" :title="[[svnUrl]]" required readonly="[[!canManage()]]"
-                             help-hints.definition="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
-            </oj-form-layout>
+            <div class="fx-form factory-cp-form">
+              <fx-input id="svnUrl" class="factory-cp2-url" label="SVN repository URL" value="{{svnUrl}}" :title="[[svnUrl]]" type="url" required readonly="[[!canManage()]]"
+                        help="Folder to index, usually trunk, for example https://svn.bank.local/repos/obdx/trunk"></fx-input>
+            </div>
           </oj-bind-if>
           <oj-bind-if test="[[sourceKind() === 'folder']]">
-            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
-              <oj-input-text id="svnFolder" class="factory-cp2-url" label-hint="Folder (a local SVN repository or checkout)" value="{{folderPath}}" :title="[[folderPath]]" required readonly="[[!canManage()]]"
-                             help-hints.definition="For example C:\svn\obdx\trunk. It is saved as a file:/// SVN URL."></oj-input-text>
-            </oj-form-layout>
+            <div class="fx-form factory-cp-form">
+              <fx-input id="svnFolder" class="factory-cp2-url" label="Folder (a local SVN repository or checkout)" value="{{folderPath}}" :title="[[folderPath]]" required readonly="[[!canManage()]]"
+                        help="For example C:\svn\obdx\trunk. It is saved as a file:/// SVN URL."></fx-input>
+            </div>
           </oj-bind-if>
           <div class="factory-cp2-pair">
-            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
-              <oj-input-text id="svnUsername" autocomplete="off" label-hint="Username" value="{{svnUsername}}" readonly="[[!canManage()]]"></oj-input-text>
-            </oj-form-layout>
-            <oj-form-layout class="factory-cp-form" label-edge="top" max-columns="1" user-assistance-density="compact">
-              <oj-input-password id="svnPassword" autocomplete="new-password" label-hint="Password" value="{{svnPassword}}" mask-icon="visible"
-                                 placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></oj-input-password>
-            </oj-form-layout>
+            <fx-input id="svnUsername" autocomplete="off" label="Username" value="{{svnUsername}}" readonly="[[!canManage()]]"></fx-input>
+            <fx-input id="svnPassword" type="password" autocomplete="new-password" label="Password" value="{{svnPassword}}"
+                      placeholder="[[workspace().svnPasswordSet ? 'Stored (leave empty to keep)' : '']]"></fx-input>
           </div>
           <div class="factory-cp-actions">
-            <oj-button id="testSvnButton" chroming="callToAction" on-oj-action="[[testSvn]]" disabled="[[busy() || !canManage()]]">
-              <span slot="startIcon" class="factory-nav-icon factory-ico-link factory-btn-icon" aria-hidden="true"></span>Test Connection</oj-button>
-            <oj-button id="saveSvnButton" on-oj-action="[[saveSvn]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
+            <button type="button" id="testSvnButton" class="fx-btn fx-btn--primary" on-click="[[testSvn]]" :disabled="[[busy() || !canManage()]]">
+              <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Test Connection</button>
+            <button type="button" id="saveSvnButton" class="fx-btn fx-btn--secondary" on-click="[[saveSvn]]" :disabled="[[busy() || !canManage()]]">Save</button>
             <oj-bind-if test="[[svnOk()]]"><span class="factory-cp-ok-inline" id="connectionResult"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Connection successful</span></oj-bind-if>
             <oj-bind-if test="[[!svnOk() && lastImportOk()]]"><span class="factory-cp-ok-inline" id="connectionResult" title="The last code import read the repository"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Last import connected</span></oj-bind-if>
           </div>
@@ -128,8 +115,8 @@
               </oj-bind-for-each>
             </dl>
             <div class="factory-cp-actions">
-              <oj-button id="testJenkinsButton" chroming="outlined" on-oj-action="[[testJenkins]]" disabled="[[busy() || !canManage()]]">
-                <span slot="startIcon" class="factory-nav-icon factory-ico-link factory-btn-icon" aria-hidden="true"></span>Test Jenkins Connection</oj-button>
+              <button type="button" id="testJenkinsButton" class="fx-btn fx-btn--secondary" on-click="[[testJenkins]]" :disabled="[[busy() || !canManage()]]">
+                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Test Jenkins Connection</button>
             </div>
           </oj-bind-if>
           <oj-bind-if test="[[!jenkinsSaved()]]">
@@ -139,7 +126,7 @@
               <dt>Mode</dt><dd class="factory-ov-subtle">Not set</dd>
             </dl>
             <p class="factory-cp-help">Not set up. Jenkins builds generated changes with the bank's jobs and sends build errors back to the model to fix.</p>
-            <oj-button id="setUpJenkinsButton" chroming="outlined" on-oj-action="[[editSettings]]">Set up Jenkins</oj-button>
+            <button type="button" id="setUpJenkinsButton" class="fx-btn fx-btn--secondary" on-click="[[editSettings]]">Set up Jenkins</button>
           </oj-bind-if>
           <oj-bind-if test="[[jenkinsMessage()]]">
             <p id="jenkinsMessage" class="factory-cp-ok-note"><oj-bind-text value="[[jenkinsMessage]]"></oj-bind-text></p>
@@ -176,7 +163,7 @@
             </div>
             <div class="fx-table-wrap factory-cp2-table-wrap">
               <table id="ruleTable" class="fx-table factory-ov2-table factory-cp2-rules">
-                <thead><tr><th scope="col" class="factory-cp2-on">On</th><th scope="col">Rule Name</th><th scope="col">Category</th><th scope="col">Severity</th><th scope="col">Description</th><th scope="col">Files</th><th scope="col">Status</th><th scope="col" class="factory-cp2-act"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
+                <thead><tr><th scope="col" class="factory-cp2-on">On</th><th scope="col">Rule Name</th><th scope="col">Category</th><th scope="col">Severity</th><th scope="col">Description</th><th scope="col">Files</th><th scope="col">Status</th><th scope="col" class="factory-cp2-act"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
                 <tbody>
                   <oj-bind-for-each data="[[compactRules]]" as="r">
                     <template>
@@ -191,15 +178,8 @@
                         <td class="factory-cp2-files" :title="[[r.data.files]]"><oj-bind-text value="[[r.data.filesShort]]"></oj-bind-text></td>
                         <td><span :class="[[r.data.status.css]]" :title="[[r.data.status.title]]"><oj-bind-if test="[[r.data.status.icon]]"><span :class="[[r.data.status.icon]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></td>
                         <td class="factory-cp2-act">
-                          <oj-menu-button :id="[['ruleMenu-' + r.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
-                            <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
-                            <oj-bind-text value="[['Actions for ' + r.data.title]]"></oj-bind-text>
-                            <oj-menu slot="menu" on-oj-menu-action="[[r.data.menu]]">
-                              <oj-option value="toggle" disabled="[[!r.data.canManage]]"><oj-bind-text value="[[r.data.enabled ? 'Turn off' : 'Turn on']]"></oj-bind-text></oj-option>
-                              <oj-option value="details">Show in Quick Checks</oj-option>
-                              <oj-option value="packs">Open Version Packs</oj-option>
-                            </oj-menu>
-                          </oj-menu-button>
+                          <fx-menu-button :id="[['ruleMenu-' + r.data.id]]" class="factory-ov2-more" label="[['Actions for ' + r.data.title]]" icon="more" icon-only variant="ghost" size="sm"
+                                          items="[[r.data.menuItems]]" on-fx-action="[[r.data.menu]]"></fx-menu-button>
                         </td>
                       </tr>
                     </template>
@@ -221,7 +201,7 @@
             <oj-bind-if test="[[filesListed()]]">
               <div class="fx-table-wrap factory-ov2-table-wrap">
                 <table class="fx-table factory-ov2-table factory-cp2-files-table" id="recentFiles">
-                  <thead><tr><th scope="col">File Path</th><th scope="col">Type</th><th scope="col">Package</th><th scope="col">Size</th><th scope="col">Revision</th><th scope="col" class="factory-cp2-act"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
+                  <thead><tr><th scope="col">File Path</th><th scope="col">Type</th><th scope="col">Package</th><th scope="col">Size</th><th scope="col">Revision</th><th scope="col" class="factory-cp2-act"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
                   <tbody>
                     <oj-bind-for-each data="[[recentFiles]]" as="f">
                       <template>
@@ -232,15 +212,8 @@
                           <td class="factory-cp-nowrap"><oj-bind-text value="[[f.data.size]]"></oj-bind-text></td>
                           <td><oj-bind-text value="[[f.data.revision]]"></oj-bind-text></td>
                           <td class="factory-cp2-act">
-                            <oj-menu-button :id="[['fileMenu-' + f.data.key]]" chroming="borderless" display="icons" class="factory-ov2-more">
-                              <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
-                              <oj-bind-text value="[['Actions for ' + f.data.path]]"></oj-bind-text>
-                              <oj-menu slot="menu" on-oj-menu-action="[[f.data.menu]]">
-                                <oj-option value="knowledge">Open in Knowledge Explorer</oj-option>
-                                <oj-option value="search">Search for this file</oj-option>
-                                <oj-option value="copy">Copy path</oj-option>
-                              </oj-menu>
-                            </oj-menu-button>
+                            <fx-menu-button :id="[['fileMenu-' + f.data.key]]" class="factory-ov2-more" label="[['Actions for ' + f.data.path]]" icon="more" icon-only variant="ghost" size="sm"
+                                            items="[[fileMenuItems]]" on-fx-action="[[f.data.menu]]"></fx-menu-button>
                           </td>
                         </tr>
                       </template>
@@ -303,10 +276,10 @@
           <section class="factory-ov-card" id="codeSearchCard">
             <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Code Search</span></h2>
             <div class="factory-cp-search">
-              <oj-input-text id="quickSearch" class="factory-grow" label-hint="Search the code" label-edge="none" placeholder="Search classes, methods, files..."
-                             value="{{query}}" on-oj-enter="[[searchFromCard]]" clear-icon="conditional"></oj-input-text>
-              <oj-button id="quickSearchButton" chroming="callToAction" display="icons" on-oj-action="[[searchFromCard]]">
-                <span slot="startIcon" class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Search</oj-button>
+              <fx-input id="quickSearch" class="factory-grow" label="Search the code" hide-label placeholder="Search classes, methods, files..."
+                        value="{{query}}" on-fx-enter="[[searchFromCard]]" clearable></fx-input>
+              <button type="button" id="quickSearchButton" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Search" title="Search" on-click="[[searchFromCard]]">
+                <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></button>
             </div>
             <div class="factory-cp2-searchopts">
               <div class="factory-cp2-checks">
@@ -340,9 +313,9 @@
               </oj-bind-for-each>
             </div>
             <div class="factory-ai-input">
-              <oj-input-text id="codeAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask something about the code..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
-              <oj-button id="codeAskSend" chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
-                <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+              <fx-input id="codeAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask something about the code..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+              <button type="button" id="codeAskSend" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" title="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+                <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
             </div>
           </section>
         </div>
@@ -371,8 +344,8 @@
               </template>
             </oj-bind-for-each>
           </div>
-          <oj-input-text id="ruleSearch" class="factory-cp-rule-search" label-hint="Search rules" label-edge="none" placeholder="Search rules..."
-                         value="{{ruleQuery}}" raw-value="{{ruleQuery}}" clear-icon="conditional"></oj-input-text>
+          <fx-input id="ruleSearch" class="factory-cp-rule-search" label="Search rules" hide-label placeholder="Search rules..." icon="search"
+                    value="{{ruleQuery}}" clearable></fx-input>
         </div>
         <div class="fx-table-wrap factory-cp-table-wrap">
           <table id="ruleTable" class="fx-table factory-ov2-table factory-cp-rules">
@@ -385,7 +358,7 @@
                                        :aria-checked="[[r.data.enabled ? 'true' : 'false']]" :aria-label="[[r.data.title]]" :disabled="[[!r.data.canManage]]" on-click="[[r.data.flip]]"></button></span></td>
                     <td class="factory-cp-rule-name"><oj-bind-text value="[[r.data.title]]"></oj-bind-text>
                       <oj-bind-if test="[[r.data.note]]">
-                        <div class="oj-typography-body-xs factory-cp4-rule-note"><oj-bind-text value="[[r.data.note]]"></oj-bind-text></div>
+                        <div class="fx-help factory-cp4-rule-note"><oj-bind-text value="[[r.data.note]]"></oj-bind-text></div>
                       </oj-bind-if></td>
                     <td class="factory-cp-nowrap"><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td>
                     <td><span :class="[['fx-badge ' + (r.data.severity === 'error' ? 'fx-badge--danger' : 'fx-badge--warning')]]">
@@ -447,17 +420,30 @@
     <oj-bind-if test="[[tab() === 'history']]">
       <section class="factory-ov-card">
         <h2>Import History <span class="fx-badge fx-badge--plain"><oj-bind-text value="[[jobCount() + ' recent']]"></oj-bind-text></span></h2>
-        <oj-table id="jobTable" aria-label="Recent imports" data="[[jobProvider]]" style="width: 100%;"
-                  columns='[{"headerText": "Started", "field": "created"},
-                            {"headerText": "Status", "field": "status"},
-                            {"headerText": "Revision", "field": "revisions"},
-                            {"headerText": "Files changed / removed", "field": "files"},
-                            {"headerText": "Pieces", "field": "chunksIndexed"},
-                            {"headerText": "Embeddings", "field": "embeddingsCreated"},
-                            {"headerText": "Took", "field": "duration"},
-                            {"headerText": "Message", "field": "message"}]'>
-          <template slot="noData">No imports yet. Use Reindex above.</template>
-        </oj-table>
+        <div class="fx-table-wrap factory-ov2-table-wrap">
+          <table id="jobTable" class="fx-table factory-ov2-table factory-cp-jobs" aria-label="Recent imports">
+            <thead><tr><th scope="col">Started</th><th scope="col">Status</th><th scope="col">Revision</th><th scope="col">Files changed / removed</th><th scope="col">Pieces</th><th scope="col">Embeddings</th><th scope="col">Took</th><th scope="col">Message</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[historyJobs]]" as="j">
+                <template>
+                  <tr>
+                    <td class="factory-cp-nowrap"><oj-bind-text value="[[j.data.created]]"></oj-bind-text></td>
+                    <td><span :class="[[j.data.pill.css]]"><oj-bind-text value="[[j.data.pill.text]]"></oj-bind-text></span></td>
+                    <td class="factory-cp-nowrap"><oj-bind-text value="[[j.data.revisions]]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[j.data.files]]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[j.data.chunksIndexed]]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[j.data.embeddingsCreated]]"></oj-bind-text></td>
+                    <td class="factory-cp-nowrap"><oj-bind-text value="[[j.data.duration]]"></oj-bind-text></td>
+                    <td class="factory-cp2-msg"><oj-bind-text value="[[j.data.message]]"></oj-bind-text></td>
+                  </tr>
+                </template>
+              </oj-bind-for-each>
+            </tbody>
+          </table>
+          <oj-bind-if test="[[historyJobs().length === 0]]">
+            <div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span></span>No imports yet. Use Reindex above.</div>
+          </oj-bind-if>
+        </div>
       </section>
     </oj-bind-if>
 
@@ -467,12 +453,12 @@
         <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Code Search</span></h2>
         <p class="factory-cp-help">Finds code by words and, where pieces have embeddings, by meaning. For example: where is the transfer limit checked?</p>
         <div class="factory-cp-search">
-          <oj-input-text id="searchQuery" class="factory-grow" label-hint="Where is ... implemented?" label-edge="none"
-                         placeholder="Search classes, methods, files..." value="{{query}}" on-oj-enter="[[search]]" clear-icon="conditional"></oj-input-text>
-          <oj-button id="searchButton" chroming="callToAction" on-oj-action="[[search]]" disabled="[[searching]]">Search</oj-button>
+          <fx-input id="searchQuery" class="factory-grow" label="Where is ... implemented?" hide-label icon="search"
+                    placeholder="Search classes, methods, files..." value="{{query}}" on-fx-enter="[[search]]" clearable></fx-input>
+          <button type="button" id="searchButton" :class="[[searching() ? 'fx-btn fx-btn--primary is-loading' : 'fx-btn fx-btn--primary']]" on-click="[[search]]" :disabled="[[searching]]">Search</button>
         </div>
         <oj-bind-if test="[[searchNote()]]">
-          <p class="oj-text-color-secondary"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p>
+          <p class="fx-muted"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p>
         </oj-bind-if>
         <div class="factory-cp2-searchopts factory-cp2-searchopts-wide">
           <div class="factory-cp2-checks">
@@ -486,20 +472,20 @@
           </select>
         </div>
         <oj-bind-if test="[[results().length > 0 && filteredResults().length === 0]]">
-          <p class="oj-text-color-secondary">No results match the options above.</p>
+          <p class="fx-muted">No results match the options above.</p>
         </oj-bind-if>
         <oj-bind-for-each data="[[filteredResults]]">
           <template>
             <div class="factory-result factory-cp-result">
               <div>
                 <strong><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></strong>
-                <span class="oj-text-color-secondary">
+                <span class="fx-muted">
                   lines <oj-bind-text value="[[$current.data.startLine + '-' + $current.data.endLine]]"></oj-bind-text>
                   · <oj-bind-text value="[[$current.data.kind]]"></oj-bind-text>
                   · <oj-bind-text value="[[$current.data.matchedBy]]"></oj-bind-text>
                 </span>
               </div>
-              <div class="oj-typography-body-sm"><oj-bind-text value="[[$current.data.symbol]]"></oj-bind-text></div>
+              <div class="factory-cp-symbol"><oj-bind-text value="[[$current.data.symbol]]"></oj-bind-text></div>
               <pre class="factory-reply"><oj-bind-text value="[[$current.data.snippet]]"></oj-bind-text></pre>
             </div>
           </template>
@@ -516,15 +502,15 @@
             What screens are built with. Oracle JET enhances the bank's existing OBDX UI. React Native and React build the screens of a
             new app (in its own folder of the repository) on the same OBDX services, from the same approved Screen Models.
           </p>
-          <oj-form-layout max-columns="1" user-assistance-density="compact">
-            <oj-select-single id="targetSelect" label-hint="Target" data="[[targetProvider]]" value="{{targetId}}" readonly="[[!canManage()]]"></oj-select-single>
+          <div class="fx-form">
+            <fx-select id="targetSelect" label="Target" options="[[targets]]" value="{{targetId}}" readonly="[[!canManage()]]"></fx-select>
             <oj-bind-if test="[[targetId() !== 'jet']]">
-              <oj-input-text id="appFolder" label-hint="App folder in the repository" value="{{appFolder}}" readonly="[[!canManage()]]"
-                             help-hints.definition="Relative to the workspace's SVN URL, for example mobile"></oj-input-text>
+              <fx-input id="appFolder" label="App folder in the repository" value="{{appFolder}}" readonly="[[!canManage()]]"
+                        help="Relative to the workspace's SVN URL, for example mobile"></fx-input>
             </oj-bind-if>
-          </oj-form-layout>
+          </div>
           <div class="factory-cp-actions">
-            <oj-button id="saveTargetButton" chroming="callToAction" on-oj-action="[[saveTarget]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
+            <button type="button" id="saveTargetButton" class="fx-btn fx-btn--primary" on-click="[[saveTarget]]" :disabled="[[busy() || !canManage()]]">Save</button>
             <oj-bind-if test="[[targetId() !== 'jet']]">
               <a id="starterLink" class="fx-btn fx-btn--secondary" :href="[['api/targets/' + targetId() + '/starter.zip']]" download>Download starter project</a>
             </oj-bind-if>
@@ -555,26 +541,26 @@
             Builds generated changes with the bank's Jenkins jobs. Branch mode builds the change's SVN branch; patch mode sends the
             patch as a file parameter for jobs that apply it to trunk.
           </p>
-          <oj-form-layout max-columns="2" direction="row" user-assistance-density="compact">
-            <oj-input-text id="jenkinsUrl" label-hint="Jenkins URL" value="{{jenkinsUrl}}" readonly="[[!canManage()]]"
-                           help-hints.definition="For example https://jenkins.bank.local"></oj-input-text>
-            <oj-input-text id="jenkinsJobs" label-hint="Jobs (comma-separated, folder/job)" value="{{jenkinsJobs}}" readonly="[[!canManage()]]"></oj-input-text>
-            <oj-select-single id="jenkinsMode" label-hint="Mode" data="[[jenkinsModeProvider]]" value="{{jenkinsMode}}" readonly="[[!canManage()]]"></oj-select-single>
+          <div class="fx-form fx-form--2">
+            <fx-input id="jenkinsUrl" label="Jenkins URL" type="url" value="{{jenkinsUrl}}" readonly="[[!canManage()]]"
+                      help="For example https://jenkins.bank.local"></fx-input>
+            <fx-input id="jenkinsJobs" label="Jobs (comma-separated, folder/job)" value="{{jenkinsJobs}}" readonly="[[!canManage()]]"></fx-input>
+            <fx-select id="jenkinsMode" label="Mode" options="[[jenkinsModes]]" value="{{jenkinsMode}}" readonly="[[!canManage()]]"></fx-select>
             <oj-bind-if test="[[jenkinsMode() === 'BRANCH']]">
-              <oj-input-text id="jenkinsBranchParameter" label-hint="Branch parameter" value="{{jenkinsBranchParameter}}" readonly="[[!canManage()]]"></oj-input-text>
-              <oj-select-single id="jenkinsBranchValue" label-hint="Send the branch as" data="[[jenkinsBranchValueProvider]]" value="{{jenkinsBranchValue}}"
-                                readonly="[[!canManage()]]"></oj-select-single>
+              <fx-input id="jenkinsBranchParameter" label="Branch parameter" value="{{jenkinsBranchParameter}}" readonly="[[!canManage()]]"></fx-input>
+              <fx-select id="jenkinsBranchValue" label="Send the branch as" options="[[jenkinsBranchValues]]" value="{{jenkinsBranchValue}}"
+                         readonly="[[!canManage()]]"></fx-select>
             </oj-bind-if>
             <oj-bind-if test="[[jenkinsMode() === 'PATCH']]">
-              <oj-input-text id="jenkinsPatchParameter" label-hint="Patch file parameter" value="{{jenkinsPatchParameter}}" readonly="[[!canManage()]]"></oj-input-text>
+              <fx-input id="jenkinsPatchParameter" label="Patch file parameter" value="{{jenkinsPatchParameter}}" readonly="[[!canManage()]]"></fx-input>
             </oj-bind-if>
-            <oj-input-text id="jenkinsUsername" autocomplete="off" label-hint="Username" value="{{jenkinsUsername}}" readonly="[[!canManage()]]"></oj-input-text>
-            <oj-input-password id="jenkinsToken" autocomplete="new-password" label-hint="API token" value="{{jenkinsToken}}" mask-icon="visible"
-                               placeholder="[[jenkinsTokenSet() ? 'Stored (leave empty to keep)' : '']]" readonly="[[!canManage()]]"></oj-input-password>
-          </oj-form-layout>
+            <fx-input id="jenkinsUsername" autocomplete="off" label="Username" value="{{jenkinsUsername}}" readonly="[[!canManage()]]"></fx-input>
+            <fx-input id="jenkinsToken" type="password" autocomplete="new-password" label="API token" value="{{jenkinsToken}}"
+                      placeholder="[[jenkinsTokenSet() ? 'Stored (leave empty to keep)' : '']]" readonly="[[!canManage()]]"></fx-input>
+          </div>
           <div class="factory-cp-actions">
-            <oj-button id="saveJenkinsButton" chroming="callToAction" on-oj-action="[[saveJenkins]]" disabled="[[busy() || !canManage()]]">Save</oj-button>
-            <span class="factory-cp4-tipwrap" :data-fx-tip="[[jenkinsSaved() ? null : 'Save the Jenkins settings first']]"><oj-button id="testJenkinsButton" on-oj-action="[[testJenkins]]" disabled="[[busy() || !canManage() || !jenkinsSaved()]]">Test connection</oj-button></span>
+            <button type="button" id="saveJenkinsButton" class="fx-btn fx-btn--primary" on-click="[[saveJenkins]]" :disabled="[[busy() || !canManage()]]">Save</button>
+            <span class="fx-tip-wrap factory-cp4-tipwrap" :data-fx-tip="[[jenkinsSaved() ? null : 'Save the Jenkins settings first']]"><button type="button" id="testJenkinsButton" class="fx-btn fx-btn--secondary" on-click="[[testJenkins]]" :disabled="[[busy() || !canManage() || !jenkinsSaved()]]">Test connection</button></span>
           </div>
           <oj-bind-if test="[[jenkinsMessage()]]">
             <p id="jenkinsMessage" class="factory-cp-ok-note"><oj-bind-text value="[[jenkinsMessage]]"></oj-bind-text></p>

@@ -6,17 +6,10 @@
       <p class="factory-ov2-lead">Here's what's happening in your OBDX development factory.</p>
     </div>
     <div class="factory-ov2-actions">
-      <oj-menu-button id="openWorkspaceButton" chroming="outlined">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-folder factory-btn-icon" aria-hidden="true"></span>Open Workspace
-        <oj-menu id="openWorkspaceMenu" slot="menu" on-oj-menu-action="[[openWorkspace]]">
-          <oj-bind-for-each data="[[workspaceMenu]]">
-            <template><oj-option :value="[[$current.data.id]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></oj-option></template>
-          </oj-bind-for-each>
-        </oj-menu>
-      </oj-menu-button>
-      <oj-button id="overviewRequirement" chroming="callToAction" on-oj-action="[[go('requirements')]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>New Requirement
-      </oj-button>
+      <fx-menu-button id="openWorkspaceButton" label="Open Workspace" icon="folder" variant="secondary" items="[[workspaceMenu]]" on-fx-action="[[openWorkspace]]"></fx-menu-button>
+      <button type="button" id="overviewRequirement" class="fx-btn fx-btn--primary" on-click="[[go('requirements')]]">
+        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Requirement
+      </button>
     </div>
   </div>
 
@@ -56,16 +49,8 @@
                   <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
                   <td class="factory-ov3-when"><oj-bind-text value="[[$current.data.updatedDay]]"></oj-bind-text><br><oj-bind-text value="[[$current.data.updatedTime]]"></oj-bind-text></td>
                   <td>
-                    <oj-menu-button :id="[['wsActions-' + $current.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
-                      <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
-                      <oj-bind-text value="[['Actions for ' + $current.data.name]]"></oj-bind-text>
-                      <oj-menu slot="menu" on-oj-menu-action="[[$current.data.menu]]">
-                        <oj-option value="code">Open code</oj-option>
-                        <oj-option value="profile">Project Profile</oj-option>
-                        <oj-option value="requirements">Requirements</oj-option>
-                        <oj-option value="designer">Designer</oj-option>
-                      </oj-menu>
-                    </oj-menu-button>
+                    <fx-menu-button :id="[['wsActions-' + $current.data.id]]" class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only
+                                    :label="[['Actions for ' + $current.data.name]]" items="[[workspaceActions]]" on-fx-action="[[$current.data.menu]]"></fx-menu-button>
                   </td>
                 </tr>
               </template>
@@ -95,9 +80,9 @@
         </div>
         <p class="fx-label factory-ov2-field-label" id="setupSourceLabel"><oj-bind-text value="[[sourceKind() === 'folder' ? 'Project folder' : 'SVN repository URL']]"></oj-bind-text></p>
         <div class="factory-ov2-source">
-          <oj-input-text id="setupSource" class="factory-grow factory-ws-input" label-hint="Source" label-edge="none" labelled-by="setupSourceLabel" autocomplete="off"
-                         placeholder="[[sourceKind() === 'folder' ? 'Select OBDX repository folder...' : 'https://svn.bank.local/repos/obdx/trunk']]"
-                         value="{{sourceValue}}" on-oj-enter="[[createWorkspace]]"></oj-input-text>
+          <fx-input id="setupSource" class="factory-grow factory-ws-input" :label="[[sourceLabel]]" hide-label
+                    :placeholder="[[sourceKind() === 'folder' ? 'Select OBDX repository folder...' : 'https://svn.bank.local/repos/obdx/trunk']]"
+                    value="{{sourceValue}}" on-fx-enter="[[createWorkspace]]"></fx-input>
           <oj-bind-if test="[[sourceKind() === 'folder']]">
             <button type="button" class="fx-btn fx-btn--tertiary factory-ov4-browse" on-click="[[browse]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Browse</button>
           </oj-bind-if>
@@ -155,8 +140,8 @@
 
     <section class="factory-ov2-card" id="developmentProgress">
       <h2>Development Progress
-        <oj-select-single id="progressWorkspace" class="factory-ov2-mini-select" label-hint="Workspace" label-edge="none"
-                          data="[[progressProvider]]" value="{{progressWorkspace}}"></oj-select-single>
+        <fx-select id="progressWorkspace" class="factory-ov2-mini-select" label="Workspace" hide-label
+                   options="[[progressOptions]]" value="{{progressWorkspace}}"></fx-select>
       </h2>
       <ul class="factory-ov2-progress">
         <oj-bind-for-each data="[[progress]]">

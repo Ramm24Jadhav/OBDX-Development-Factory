@@ -3,7 +3,7 @@
  * lets the reviewer comment and approve. Only the token in the link is needed.
  */
 define(['knockout', '../services/api', '../services/previewFrame', '../services/ui', '../services/toast', '../services/dialog',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext'],
+        'ojs/ojknockout'],
   function (ko, api, PreviewFrame, ui, toast, dialog) {
     const VIEWPORTS = [
       { key: 'desktop', label: 'Desktop', width: '100%' },

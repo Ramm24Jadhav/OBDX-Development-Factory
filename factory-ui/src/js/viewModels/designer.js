@@ -5,10 +5,8 @@
  * requirement's rules with the screen's validations, comments and history, beside the AI Assistant.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
-        'ojs/ojarraydataprovider', '../services/assistant', '../services/ui', '../services/dialog', '../services/toast',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojinputnumber',
-        'ojs/ojswitch', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojfilepicker', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, ArrayDataProvider, assistant, ui, dialog, toast) {
+        '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast) {
     // Asks before an action (design system dialog); resolves true when confirmed
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
     // Status badges (design system fx-badge)
@@ -45,14 +43,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
     function DesignerViewModel() {
       const self = this;
-      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
       this.infoMessage = ko.observable('');
       this.busy = ko.observable(false);
 
       const requirementOptions = ko.observableArray([]);
-      this.requirementProvider = new ArrayDataProvider(requirementOptions, { keyAttributes: 'value' });
+      this.requirementOptions = requirementOptions;
       this.requirementId = ko.observable(null);
       this.blankName = ko.observable('');
       this.designs = ko.observableArray([]);
@@ -63,7 +60,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const bankNames = {};
       this.requirement = ko.observable(null);
       const designOptions = ko.observableArray([]);
-      this.designProvider = new ArrayDataProvider(designOptions, { keyAttributes: 'value' });
       this.designPick = ko.observable(null);
 
       this.detail = ko.observable(null);
@@ -148,11 +144,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         + (this.previewMode() ? ' factory-dz-previewing' : ''));
 
       const catalog = ko.observableArray([]);
-      this.typeProvider = new ArrayDataProvider(catalog, { keyAttributes: 'value' });
-      this.columnsProvider = new ArrayDataProvider([1, 2, 3].map((n) => ({ value: n, label: n + (n === 1 ? ' column' : ' columns') })), { keyAttributes: 'value' });
-      this.kindProvider = new ArrayDataProvider([
+      this.typeOptions = catalog;
+      this.columnsOptions = [1, 2, 3].map((n) => ({ value: n, label: n + (n === 1 ? ' column' : ' columns') }));
+      this.kindOptions = [
         { value: 'primary', label: 'Primary' }, { value: 'secondary', label: 'Secondary' }, { value: 'link', label: 'Link' }
-      ], { keyAttributes: 'value' });
+      ];
 
       // Errors stay above the canvas and show a toast; other feedback is a toast
       const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); toast.error(error.message); };
@@ -169,7 +165,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.viewport = ko.observable('fit');
       this.customWidth = ko.observable(1100);
-      this.viewportProvider = new ArrayDataProvider(VIEWPORTS.map((vp) => ({ value: vp.key, label: vp.label })), { keyAttributes: 'value' });
       // The canvas shows the chosen width, scaled down when it is wider than the canvas
       this.stageWidth = ko.observable(1000);
       let stageObserver = null;
@@ -520,7 +515,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.newComponentSource = ko.observable('prompt');
       this.newComponentFile = ko.observable(null);
       this.newComponentFileName = ko.pureComputed(() => (this.newComponentFile() ? this.newComponentFile().name : 'No file chosen'));
-      this.newComponentFileSelected = (event) => this.newComponentFile(event.detail.files[0] || null);
+      this.newComponentFileSelected = (event) => this.newComponentFile(event.target.files[0] || null);
       this.newComponentLink = ko.observable('');
       this.componentSources = ko.pureComputed(() => [['prompt', 'Describe it'], ['file', 'Image or PDF'], ['figma', 'Figma link']]
         .map(([key, label]) => ({
@@ -908,10 +903,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.propActionKind = actionProperty((a) => a.kind, (a, v) => { a.kind = v; });
 
       // The screen's place in an OBDX transaction flow, and the channels it is for
-      this.stageProvider = new ArrayDataProvider([
+      this.stageOptions = [
         { value: 'initiate', label: 'Initiate (enter the details)' }, { value: 'review', label: 'Review (check before confirming)' },
         { value: 'confirm', label: 'Confirm (the outcome)' }, { value: 'inquiry', label: 'Inquiry (list, lookup or details)' }
-      ], { keyAttributes: 'value' });
+      ];
       this.propStage = modelProperty((m) => m.stage || null, (m, v) => { m.stage = v || null; });
       const CHANNELS = [['desktop', 'Desktop web'], ['tablet', 'Tablet'], ['mobile-web', 'Mobile web'], ['mobile-app', 'Mobile app']];
       this.channelChoices = ko.pureComputed(() => {
@@ -1121,8 +1116,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return list;
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
+      // The title row's More menu and the screen card's actions menu
+      this.pageMenuItems = ko.pureComputed(() => [
+        { value: 'new', label: 'New screen', icon: 'plus', disabled: !this.canDesign() },
+        { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
+        { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() },
+        { value: 'board', label: 'All screens', icon: 'design' },
+        { separator: true },
+        { value: 'size-fit', label: 'Size: fit to the canvas' },
+        { value: 'size-desktop', label: 'Size: desktop · 1440' },
+        { value: 'size-laptop', label: 'Size: laptop · 1280' },
+        { value: 'size-tablet-landscape', label: 'Size: tablet landscape · 1024' },
+        { value: 'size-tablet', label: 'Size: tablet · 768' },
+        { value: 'size-phone', label: 'Size: phone · 390' },
+        { value: 'size-phone-small', label: 'Size: small phone · 360' },
+        { value: 'size-custom', label: 'Size: custom width' }
+      ]);
+      this.screenMenuItems = ko.pureComputed(() => {
+        const approved = !!this.detail() && this.detail().status === 'APPROVED';
+        return [
+          { value: 'share', label: 'Share for customer review', disabled: !this.editable() || this.dirty() },
+          { value: 'approve', label: 'Approve', disabled: !(this.editable() && this.canApprove()) || this.dirty() },
+          { value: 'reopen', label: 'Reopen for changes', disabled: !(approved && this.canApprove()) },
+          { value: 'flow', label: 'Create review and confirmation screens', disabled: !this.canMakeFlow() || this.busy() },
+          { value: 'comment', label: 'Comment on the screen' },
+          { separator: true },
+          { value: 'delete', label: 'Delete screen', icon: 'trash', danger: true, disabled: !this.canDesign() }
+        ];
+      });
       this.pageMenu = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'new') {
           this.openNew();
         } else if (value === 'component') {
@@ -1136,7 +1159,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.screenMenu = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'share') {
           this.openShare();
         } else if (value === 'approve') {
@@ -1154,7 +1177,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.saveMenu = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'save') {
           this.save();
         } else if (value === 'discard') {
@@ -1167,7 +1190,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       // The Save Version split button's menu
       this.saveSplit = ui.menu();
-      this.saveDo = (value) => () => { this.saveSplit.close(); this.saveMenu({ detail: { selectedValue: value } }); };
+      this.saveDo = (value) => () => { this.saveSplit.close(); this.saveMenu({ detail: { value: value } }); };
       this.saveTitle = ko.pureComputed(() => {
         if (!this.detail()) {
           return '';
@@ -1268,8 +1291,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               toggleCss: 'factory-dz-toggle' + (active ? ' factory-dz-toggle-on' : ''),
               statusTitle: active ? 'Active: the rule is in the approved requirement. Change it there to turn it off.'
                 : 'The requirement is not approved yet.',
+              menuLabel: 'Actions for ' + (r.id || 'BR-' + (i + 1)),
+              menuItems: [
+                { value: 'apply', label: 'Ask AI to apply it to this screen', disabled: !this.editable() },
+                { value: 'copy', label: 'Copy the rule' },
+                { value: 'requirement', label: 'Open the requirement' }
+              ],
               menuAction: (event) => {
-                const value = event.detail.selectedValue;
+                const value = event.detail.value;
                 if (value === 'apply') {
                   this.aiInstruction('Apply this business rule to the screen: ' + r.description);
                   this.selectedId(null);
@@ -1646,7 +1675,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.designFile = ko.observable(null);
       this.designFileName = ko.pureComputed(() => (this.designFile() ? this.designFile().name : 'No file chosen'));
-      this.designFileSelected = (event) => this.designFile(event.detail.files[0] || null);
+      this.designFileSelected = (event) => this.designFile(event.target.files[0] || null);
       this.figmaLink = ko.observable('');
       // Kept only while the page is open, so several frames can be imported without typing it again
       this.figmaToken = ko.observable('');

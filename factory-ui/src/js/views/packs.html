@@ -237,7 +237,7 @@
         <table class="fx-table" id="ruleList">
           <thead><tr><th scope="col">On</th><th scope="col">ID</th><th scope="col">Rule</th><th scope="col">Category</th><th scope="col">Severity</th><th scope="col">Applies to</th><th scope="col">Guidance</th></tr></thead>
           <tbody><oj-bind-for-each data="[[standards]]" as="s"><template><tr>
-            <td><oj-switch value="[[s.data.enabled]]" disabled="[[!s.data.canManage]]" on-value-changed="[[s.data.toggle]]" label-hint="[[s.data.title]]" label-edge="none"></oj-switch></td>
+            <td><fx-switch value="[[s.data.enabled]]" disabled="[[!s.data.canManage]]" on-value-changed="[[s.data.toggle]]" aria-label="[[s.data.title]]"></fx-switch></td>
             <td class="factory-mono"><oj-bind-text value="[[s.data.id]]"></oj-bind-text></td><td><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></td>
             <td><oj-bind-text value="[[s.data.area]]"></oj-bind-text></td><td><span :class="[[s.data.severity.css]]"><oj-bind-text value="[[s.data.severity.text]]"></oj-bind-text></span></td>
             <td><oj-bind-text value="[[s.data.applies]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[s.data.message]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>

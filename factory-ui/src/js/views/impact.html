@@ -6,9 +6,9 @@
     </div>
     <div class="factory-im-headright">
       <div class="factory-pg-actions">
-        <span :title="[[savePlanTitle]]"><oj-button id="savePlanButton" chroming="outlined" on-oj-action="[[savePlan]]" disabled="[[!canSavePlan()]]">Save Plan</oj-button></span>
-        <oj-button id="createPlanButton" chroming="callToAction" on-oj-action="[[createPlan]]" title="Plan a new change from an approved requirement on the Changes page">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Create Change Plan</oj-button>
+        <span class="fx-tip-wrap" :data-fx-tip="[[savePlanTitle]]"><button type="button" id="savePlanButton" class="fx-btn fx-btn--secondary" on-click="[[savePlan]]" :disabled="[[!canSavePlan()]]">Save Plan</button></span>
+        <button type="button" id="createPlanButton" class="fx-btn fx-btn--primary" on-click="[[createPlan]]" title="Plan a new change from an approved requirement on the Changes page">
+          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Change Plan</button>
       </div>
       <div class="factory-pg-actions">
         <label class="factory-im-pick" for="impactChange"><span class="fx-label">Change</span>
@@ -56,7 +56,7 @@
               <dt>Title</dt><dd><oj-bind-text value="[[proposed().title]]"></oj-bind-text></dd>
               <dt>Description</dt>
               <oj-bind-if test="[[!editing()]]"><dd><oj-bind-text value="[[proposed().description]]"></oj-bind-text></dd></oj-bind-if>
-              <oj-bind-if test="[[editing()]]"><dd><oj-text-area class="factory-im-edit" id="planSummaryEdit" label-hint="Description" label-edge="none" rows="4" value="{{summaryDraft}}"></oj-text-area>
+              <oj-bind-if test="[[editing()]]"><dd><fx-textarea class="factory-im-edit" id="planSummaryEdit" label="Description" hide-label rows="4" value="{{summaryDraft}}"></fx-textarea>
                 <span class="factory-ov-subtle">Save Plan stores the new description.</span></dd></oj-bind-if>
             </dl>
             <dl class="factory-kv">

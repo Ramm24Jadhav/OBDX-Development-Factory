@@ -4,7 +4,7 @@
  * changing the password of a factory account, this session, and signing out.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/preferences',
-        '../services/ui', '../services/toast', 'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton'],
+        '../services/ui', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, session, workspaceSelection, preferences, ui, toast) {
     // A design system switch (button role=switch) for an observable, or a fixed value when it cannot change yet
     const switchFor = (value) => ({

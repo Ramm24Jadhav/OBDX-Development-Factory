@@ -3,9 +3,9 @@
  * permission matrix, workspace access (members and roles), users who have not signed in yet, the audit log and the
  * sign-in settings. Only administrators see this page.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojselectsingle', 'ojs/ojswitch'],
-  function (ko, accUtils, api, session, ui, toast, dialog, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', '../services/dialog',
+        'ojs/ojknockout'],
+  function (ko, accUtils, api, session, ui, toast, dialog) {
     const PERMISSIONS = {
       ANALYST: 'view, comment, requirements, designs',
       DEVELOPER: 'view, comment, SVN and imports, profile, designs',
@@ -228,8 +228,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Workspace access
       const userOptions = ko.observableArray([]);
       rawUsers.subscribe((list) => userOptions(list.filter((u) => u.enabled && !u.admin).map((u) => ({ value: u.id, label: u.displayName + ' (' + u.username + ')' }))));
-      this.userProvider = new ArrayDataProvider(userOptions, { keyAttributes: 'value' });
-      this.workspaceProvider = new ArrayDataProvider(workspaces, { keyAttributes: 'value' });
+      this.userOptions = userOptions;
       this.workspaceList = workspaces;
       this.memberWorkspaceId = ko.observable(null);
       const rawMembers = ko.observableArray([]);
@@ -250,9 +249,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       })));
       this.memberUserId = ko.observable(null);
       this.memberRole = ko.observable('ANALYST');
-      this.roleProvider = new ArrayDataProvider([
+      this.roleOptions = [
         { value: 'ANALYST', label: 'Business Analyst' }, { value: 'DEVELOPER', label: 'Developer' }, { value: 'LEAD', label: 'Lead' }
-      ], { keyAttributes: 'value' });
+      ];
 
       const loadUsers = () => api.get('admin/users').then(rawUsers).catch(showError);
       const loadAudit = () => api.get('admin/audit?limit=300').then(rawAudit).catch(showError);

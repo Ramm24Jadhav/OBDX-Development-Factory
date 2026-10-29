@@ -5,7 +5,7 @@
  * changes to rules and reference examples (from the audit log, for administrators).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/ui',
-        '../services/toast', 'ojs/ojknockout', 'ojs/ojswitch'],
+        '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, session, workspaceSelection, ui, toast) {
     const VERSIONS = ['25.x', '22.x'];
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));

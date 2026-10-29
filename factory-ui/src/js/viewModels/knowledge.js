@@ -6,7 +6,7 @@
  * Files and content come from /files (a server without it falls back to code search hits).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/assistant',
-        '../services/pageRequests', '../services/toast', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext'],
+        '../services/pageRequests', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, ui, assistant, pageRequests, toast) {
     const size = (bytes) => (bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : bytes >= 1024 ? (bytes / 1024).toFixed(1) + ' KB' : bytes + ' B');
     const MAX_LINES = 3000;

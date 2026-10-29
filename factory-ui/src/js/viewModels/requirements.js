@@ -6,7 +6,7 @@
  * delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojfilepicker', 'ojs/ojmenu'],
+        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
@@ -99,8 +99,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.moreFilters(!this.moreFilters());
       };
       this.filterButtonCss = ko.pureComputed(() => 'fx-btn fx-btn--secondary fx-btn--icon factory-rq-filterbtn' + (this.moreFilters() ? ' factory-rq-filterbtn-on' : ''));
+      this.pageMenuItems = [
+        { value: 'refresh', label: 'Refresh the list' },
+        { value: 'csv', label: 'Download the list (CSV)' },
+        { value: 'questions', label: 'Open questions' },
+        { value: 'traceability', label: 'Traceability' },
+        { value: 'reports', label: 'Reports' }
+      ];
       this.pageMenu = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'refresh') {
           loadList();
         } else if (value === 'csv') {
@@ -254,8 +261,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const d = this.detail();
         saveFile((d.fileName ? d.fileName.replace(/\.[^.]+$/, '') : d.title) + '.txt', d.documentText || '');
       };
+      this.attachmentMenuItems = ko.pureComputed(() => [
+        { value: 'copy', label: 'Copy the text' },
+        { value: 'show', label: this.showingText() ? 'Hide the text' : 'Show the text' }
+      ]);
       this.attachmentMenu = (event) => {
-        if (event.detail.selectedValue === 'copy') {
+        if (event.detail.value === 'copy') {
           copy(this.detail().documentText || '').then(() => toast.success('Text copied.')).catch(failed);
         } else {
           this.showingText(!this.showingText());
@@ -455,7 +466,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.open = (id) => api.get('requirements/' + id).then(show).catch(showError);
 
-      this.fileSelected = (event) => this.chosenFile(event.detail.files[0] || null);
+      // The native picker: keep the file and empty the box so the same file can be chosen again after an upload
+      this.fileSelected = (event) => {
+        this.chosenFile(event.target.files[0] || null);
+        event.target.value = '';
+      };
       this.upload = () => {
         const form = new FormData();
         form.append('file', this.chosenFile());
@@ -506,8 +521,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.planChange = () => api.post(base() + '/changes')
         .then(() => { toast.success('Change planned.'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' })); })
         .catch(failed);
+      this.detailMenuItems = ko.pureComputed(() => {
+        const d = this.detail();
+        const approved = !!d && d.status === 'APPROVED' && this.canEdit();
+        return [
+          { value: 'screens', label: 'Make screens in the designer', disabled: !approved },
+          { value: 'change', label: 'Plan the change', disabled: !approved },
+          { value: 'copy', label: 'Copy the specification (JSON)' },
+          { value: 'delete', label: 'Delete', disabled: !this.canEdit(), danger: true }
+        ];
+      });
       this.detailMenu = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'screens') {
           this.makeScreens();
         } else if (value === 'change') {
@@ -518,8 +543,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.remove();
         }
       };
-      this.specJsonInput = ui.value(this.specJson);
-      this.newTextInput = ui.value(this.newText);
       this.createdText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
       this.updatedText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
       this.tab.subscribe((t) => { if (t === 'traceability') { this.part('trace'); } });

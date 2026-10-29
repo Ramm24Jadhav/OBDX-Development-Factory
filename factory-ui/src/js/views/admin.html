@@ -34,15 +34,15 @@
       <oj-bind-if test="[[adding()]]">
         <div class="factory-ad-panel" id="addUserForm">
           <h3>Add a user</h3>
-          <oj-form-layout max-columns="3" direction="row" user-assistance-density="compact">
-            <oj-input-text id="newUsername" label-hint="Username" value="{{newUsername}}" autocomplete="off" required></oj-input-text>
-            <oj-input-text id="newDisplayName" label-hint="Name" value="{{newDisplayName}}" autocomplete="off"></oj-input-text>
-            <oj-input-text id="newEmail" label-hint="Email" value="{{newEmail}}" autocomplete="off"></oj-input-text>
+          <div class="fx-form fx-form--3">
+            <fx-input id="newUsername" label="Username" value="{{newUsername}}" autocomplete="off" required></fx-input>
+            <fx-input id="newDisplayName" label="Name" value="{{newDisplayName}}" autocomplete="off"></fx-input>
+            <fx-input id="newEmail" label="Email" type="email" value="{{newEmail}}" autocomplete="off"></fx-input>
             <oj-bind-if test="[[localMode()]]">
-              <oj-input-password id="newPassword" label-hint="Password (at least 12 characters)" value="{{newPassword}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
+              <fx-input id="newPassword" type="password" label="Password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></fx-input>
             </oj-bind-if>
-            <oj-switch id="newAdmin" label-hint="Administrator" value="{{newAdmin}}"></oj-switch>
-          </oj-form-layout>
+            <div class="factory-ad-switch"><fx-switch id="newAdmin" label="Administrator" value="{{newAdmin}}"></fx-switch></div>
+          </div>
           <div class="factory-btn-row"><button type="button" id="addUserButton" :class="[[busyCss]]" :disabled="[[busy() || !newUsername()]]" on-click="[[addUser]]">Add user</button>
             <button type="button" class="fx-btn fx-btn--secondary" on-click="[[cancelAdd]]">Cancel</button></div>
         </div>
@@ -50,9 +50,9 @@
       <oj-bind-if test="[[resetUser()]]">
         <div class="factory-ad-panel" id="resetPasswordForm">
           <h3><oj-bind-text value="[['New password for ' + resetUser().username]]"></oj-bind-text></h3>
-          <oj-form-layout max-columns="2" direction="row" user-assistance-density="compact">
-            <oj-input-password id="resetPassword" label-hint="New password (at least 12 characters)" value="{{resetPassword}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
-          </oj-form-layout>
+          <div class="fx-form fx-form--2">
+            <fx-input id="resetPassword" type="password" label="New password (at least 12 characters)" value="{{resetPassword}}" autocomplete="new-password"></fx-input>
+          </div>
           <div class="factory-btn-row"><button type="button" id="resetPasswordButton" :class="[[busyCss]]" :disabled="[[busy() || resetPassword().length < 12]]" on-click="[[savePassword]]">Reset password</button>
             <button type="button" class="fx-btn fx-btn--secondary" on-click="[[cancelReset]]">Cancel</button></div>
         </div>
@@ -122,7 +122,7 @@
       <h2 class="fx-card-title">Workspace Access</h2>
       <p class="fx-card-sub">Give people a role in a workspace. They see only the workspaces they are members of.</p>
       <div class="factory-filters">
-        <oj-select-single id="memberWorkspace" class="factory-ad-pick" label-hint="Workspace" data="[[workspaceProvider]]" value="{{memberWorkspaceId}}"></oj-select-single>
+        <fx-select id="memberWorkspace" class="factory-ad-pick" label="Workspace" placeholder="Choose a workspace" options="[[workspaceList]]" value="{{memberWorkspaceId}}" searchable></fx-select>
       </div>
       <oj-bind-if test="[[memberWorkspaceId()]]">
         <div class="fx-table-wrap">
@@ -137,8 +137,8 @@
           <oj-bind-if test="[[members().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No members yet</strong>Administrators see every workspace. Give someone access below.</div></oj-bind-if>
         </div>
         <div class="factory-ai-input factory-ad-grant">
-          <oj-select-single id="memberUser" label-hint="User" data="[[userProvider]]" value="{{memberUserId}}"></oj-select-single>
-          <oj-select-single id="memberRole" label-hint="Role" data="[[roleProvider]]" value="{{memberRole}}"></oj-select-single>
+          <fx-select id="memberUser" label="User" placeholder="Choose a user" options="[[userOptions]]" value="{{memberUserId}}" searchable></fx-select>
+          <fx-select id="memberRole" label="Role" options="[[roleOptions]]" value="{{memberRole}}"></fx-select>
           <button type="button" id="setMemberButton" class="fx-btn fx-btn--primary" :disabled="[[!memberUserId() || busy()]]" :data-fx-tip="[[memberUserId() ? null : 'Pick a user first']]" on-click="[[setMember]]">Give access</button>
         </div>
       </oj-bind-if>

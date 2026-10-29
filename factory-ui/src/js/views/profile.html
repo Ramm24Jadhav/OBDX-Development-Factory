@@ -108,10 +108,10 @@
       <h2><oj-bind-text value="[[editingTitle]]"></oj-bind-text><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[closeEditing]]">Close</button></h2>
       <p class="factory-card-sub"><oj-bind-text value="[['Detected: ' + editingDetected()]]"></oj-bind-text></p>
       <div class="factory-ai-input">
-        <oj-input-text id="factValue" class="factory-grow" label-hint="Value" label-edge="none" value="{{editValue}}" readonly="[[!canEdit()]]"></oj-input-text>
-        <oj-button id="confirmFactButton" chroming="callToAction" on-oj-action="[[confirmEditing]]" disabled="[[!canEdit()]]">Confirm detected</oj-button>
-        <oj-button id="saveFactButton" on-oj-action="[[saveEditing]]" disabled="[[!canEdit()]]">Save correction</oj-button>
-        <oj-button id="resetFactButton" chroming="borderless" on-oj-action="[[resetEditing]]" disabled="[[!canEdit()]]">Reset</oj-button>
+        <fx-input id="factValue" class="factory-grow" label="Value" hide-label value="{{editValue}}" readonly="[[!canEdit()]]"></fx-input>
+        <button type="button" id="confirmFactButton" class="fx-btn fx-btn--primary" on-click="[[confirmEditing]]" :disabled="[[!canEdit()]]">Confirm detected</button>
+        <button type="button" id="saveFactButton" class="fx-btn fx-btn--secondary" on-click="[[saveEditing]]" :disabled="[[!canEdit()]]">Save correction</button>
+        <button type="button" id="resetFactButton" class="fx-btn fx-btn--ghost" on-click="[[resetEditing]]" :disabled="[[!canEdit()]]">Reset</button>
       </div>
       <oj-bind-if test="[[editingEvidence().length > 0]]">
         <h3>Evidence</h3>
@@ -178,10 +178,10 @@
         </div>
         <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
         <div class="factory-ai-input">
-          <oj-input-text id="profileAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about the project or its files..."
-                         value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
-          <oj-button id="profileAskButton" chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+          <fx-input id="profileAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask about the project or its files..."
+                    value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+          <button type="button" id="profileAskButton" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" title="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+            <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
         </div>
         <p class="factory-ai-label">Example prompts</p>
         <div class="factory-ai-suggest">
@@ -265,8 +265,8 @@
                 </ul>
                 <oj-bind-if test="[[part.data.canEdit]]">
                   <div class="factory-ai-input factory-pf-pin">
-                    <oj-input-text class="factory-grow" label-hint="Pin an example (file path)" label-edge="none" placeholder="Pin an example: path of a file in the code" value="{{part.data.newPath}}"></oj-input-text>
-                    <oj-button on-oj-action="[[part.data.pin]]">Pin</oj-button>
+                    <fx-input class="factory-grow" label="Pin an example (file path)" hide-label placeholder="Pin an example: path of a file in the code" value="{{part.data.newPath}}"></fx-input>
+                    <button type="button" class="fx-btn fx-btn--secondary" on-click="[[part.data.pin]]">Pin</button>
                   </div>
                 </oj-bind-if>
                 <oj-bind-if test="[[part.data.template]]">

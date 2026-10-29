@@ -6,7 +6,7 @@
  * and have no review or retirement steps, so nothing is under review or deprecated.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/updates', '../services/ui', '../services/toast',
-        '../services/preferences', 'ojs/ojknockout', 'ojs/ojbutton'],
+        '../services/preferences', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences) {
     // Badges (design system .fx-badge): statuses carry a dot, categories are plain labels
     const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };

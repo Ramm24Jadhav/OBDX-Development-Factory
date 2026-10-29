@@ -5,9 +5,8 @@
  * build, deliver as a patch or an SVN branch, close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        '../services/ui', '../services/assistant', 'ojs/ojarraydataprovider', '../services/dialog', '../services/toast',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, ArrayDataProvider, dialog, toast) {
+        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
@@ -19,7 +18,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     };
 
     function ChangesViewModel() {
-      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.canManage = ko.pureComputed(() => session.can(this.workspaceId(), 'MANAGE_CODE'));
       this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
@@ -27,7 +25,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.busy = ko.observable(false);
 
       const requirementOptions = ko.observableArray([]);
-      this.requirementProvider = new ArrayDataProvider(requirementOptions, { keyAttributes: 'value' });
       this.requirementId = ko.observable(null);
       this.changes = ko.observableArray([]);
 
@@ -247,14 +244,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
       this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
       this.statusPill = ko.pureComputed(() => (this.detail() ? STATUS_PILLS[this.detail().status] : pill('', 'grey')));
-      this.changeMenu = ko.pureComputed(() => this.changes());
-      this.pickChange = (event) => this.open(event.detail.selectedValue);
+      // The header menus: switch to another change, start one from an approved requirement, more actions
+      this.changeMenu = ko.pureComputed(() => (this.changes().length
+        ? this.changes().map((c) => ({ value: c.id, label: c.label, icon: c.selected ? 'check' : '' }))
+        : [{ value: '', label: 'No changes yet', disabled: true }]));
+      this.pickChange = (event) => { if (event.detail.value) { this.open(event.detail.value); } };
       this.choosingRequirement = ko.observable(false);
       this.cancelChoose = () => this.choosingRequirement(false);
       this.requirementChoices = ko.pureComputed(() => requirementOptions().map((r) => Object.assign({}, r, {
         start: () => { this.choosingRequirement(false); this.requirementId(r.value); this.create(); }
       })));
-      this.startFrom = (event) => { this.requirementId(event.detail.selectedValue); this.create(); };
+      this.requirementMenu = ko.pureComputed(() => (requirementOptions().length
+        ? requirementOptions().map((r) => ({ value: r.value, label: r.label }))
+        : [{ value: '', label: 'No approved requirements yet', disabled: true }]));
+      this.startFrom = (event) => { if (event.detail.value) { this.requirementId(event.detail.value); this.create(); } };
       this.saveDraftTitle = ko.pureComputed(() => (this.fileMode() === 'edit' ? 'Save your edit of the open file'
         : 'Nothing to save: generated code is saved as it is written. Use Edit on a file to change it, then Save Draft.'));
       this.requirementTitle = ko.observable('');
@@ -396,8 +399,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return rows;
       });
+      const TREE_FILTERS = [
+        { value: 'all', label: 'All files' }, { value: 'create', label: 'New files (A)' }, { value: 'modify', label: 'Modified files (M)' },
+        { value: 'warn', label: 'With check warnings or failures' }
+      ];
+      this.treeFilterItems = ko.pureComputed(() => TREE_FILTERS.map((f) => ({ value: f.value, label: f.label, icon: this.treeFilter() === f.value ? 'check' : '' }))
+        .concat([{ separator: true }, { value: 'expand', label: 'Expand all folders' }, { value: 'collapse', label: 'Collapse all folders' }]));
+      this.treeFilterLabel = ko.pureComputed(() => (this.treeFilter() === 'all' ? 'Filter files'
+        : 'Filter files: ' + TREE_FILTERS.find((f) => f.value === this.treeFilter()).label));
       this.pickTreeFilter = (event) => {
-        const value = event.detail.selectedValue;
+        const value = event.detail.value;
         if (value === 'expand') {
           this.collapsed({});
         } else if (value === 'collapse') {
@@ -663,8 +674,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' : '#'));
       this.openImpact = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'impact' }));
       this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
+      this.moreItems = ko.pureComputed(() => [
+        { value: 'analyze', label: 'Analyze again', icon: 'refresh', disabled: !this.canManage() },
+        { value: 'newchange', label: 'New change from a requirement…', icon: 'plus', disabled: !this.canManage() || this.requirementChoices().length === 0 },
+        { value: 'patch', label: 'Download patch', icon: 'doc' },
+        { separator: true },
+        { value: 'close', label: 'Close as merged', icon: 'check', disabled: !this.canClose() },
+        { value: 'abandon', label: 'Abandon', icon: 'x', disabled: !this.canClose() },
+        { value: 'remove', label: 'Delete', icon: 'trash', danger: true, disabled: !this.canManage() }
+      ]);
       this.moreAction = (event) => {
-        const action = event.detail.selectedValue;
+        const action = event.detail.value;
         if (action === 'patch') {
           window.location.href = this.patchUrl();
           return;

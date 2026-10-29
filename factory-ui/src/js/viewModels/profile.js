@@ -4,7 +4,7 @@
  * reference patterns (with pinning of examples), and an assistant that answers from the profile.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui', '../services/toast',
-        '../services/assistant', '../services/pageRequests', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojbutton'],
+        '../services/assistant', '../services/pageRequests', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, toast, assistant, pageRequests) {
     // Status badges of the design system (fx-badge carries a dot, so status is never colour alone)
     const TONES = { green: 'success', amber: 'warning', red: 'danger', blue: 'primary', violet: 'violet', grey: '' };

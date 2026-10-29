@@ -4,7 +4,7 @@
  * component shows data (carousel, select, table).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/ui', '../services/toast', '../services/dialog', '../services/preferences',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojdatetimepicker', 'ojs/ojbutton'],
+        'ojs/ojknockout'],
   function (ko, accUtils, api, ui, toast, dialog, preferences) {
     const ICONS = ['home', 'folder', 'code', 'profile', 'list', 'design', 'branch', 'flask', 'refresh', 'chip', 'robot', 'cog', 'share', 'plug',
       'cube', 'sparkle', 'bell', 'user', 'users', 'info', 'search', 'plus', 'edit', 'trash', 'check', 'alert', 'clock', 'doc', 'link', 'shield',
@@ -90,6 +90,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
       this.cards = ko.pureComputed(() => this.workspaces().map((w) => ({ name: w.name, sub: (w.bankName || '') + ' · OBDX ' + w.obdxVersion,
         open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'workspaces' })) })));
 
+      // The factory's own elements (fx-select, fx-input, fx-switch, fx-menu-button)
+      this.wsOptions = ko.pureComputed(() => this.workspaces().map((w) => ({ value: w.id, label: w.name, description: (w.bankName || '') + ' · OBDX ' + w.obdxVersion })));
+      this.fxName = ko.observable('');
+      this.fxPassword = ko.observable('');
+      this.menuItems = [{ value: 'edit', label: 'Edit', icon: 'edit' }, { value: 'copy', label: 'Duplicate', icon: 'doc' }, { separator: true }, { value: 'delete', label: 'Delete…', icon: 'trash', danger: true }];
+      this.menuAction = (event) => {
+        if (event.detail.value === 'delete') {
+          dialog.confirm({ title: 'Delete this item?', message: 'This is the Design System page, so nothing is deleted.', confirmLabel: 'Delete', danger: true }).then((ok) => toast.info(ok ? 'Confirmed.' : 'Cancelled.'));
+        } else {
+          toast.info(event.detail.value + ' chosen.');
+        }
+      };
       // Selection controls
       this.agree = ko.observable(true);
       this.agreeChange = ui.checked(this.agree);

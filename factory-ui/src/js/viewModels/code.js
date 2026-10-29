@@ -2,10 +2,9 @@
  * Code page: SVN settings, UI target, Jenkins settings, quick check rules, import jobs, index status and code search for
  * one workspace.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton',
-        'ojs/ojtoolbar', 'ojs/ojtable', 'ojs/ojswitch', 'ojs/ojmenu'],
-  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, toast, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast',
+        'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, pageRequests, ui, assistant, dashboard, toast) {
     // Status badges of the design system; with an icon the dot is left out, so status is never colour alone
     const badge = (text, tone, icon, title) => ({
       text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') + (icon ? ' fx-badge--plain factory-cp4-badge' : ''),
@@ -52,7 +51,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const LANGUAGE_NAMES = { java: 'Java', javascript: 'JavaScript', html: 'HTML', css: 'CSS', sql: 'SQL', xml: 'XML', json: 'JSON', properties: 'Properties', typescript: 'TypeScript', jsp: 'JSP' };
 
     function CodeViewModel() {
-      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.workspace = ko.observable(null);
       this.canManage = ko.pureComputed(() => session.can(this.workspaceId(), 'MANAGE_CODE'));
@@ -66,7 +64,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // UI target: Oracle JET (the bank's OBDX UI) or a new React Native / React app in its own folder
       this.targets = ko.observableArray([]);
-      this.targetProvider = new ArrayDataProvider(this.targets, { keyAttributes: 'value' });
       this.targetId = ko.observable('jet');
       this.appFolder = ko.observable('');
       this.targetMessage = ko.observable('');
@@ -156,12 +153,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.jenkinsSaved = ko.observable(false);
       this.jenkinsMessage = ko.observable('');
       this.jenkinsWarnings = ko.observableArray([]);
-      this.jenkinsModeProvider = new ArrayDataProvider([
+      this.jenkinsModes = [
         { value: 'BRANCH', label: 'Build the change branch' }, { value: 'PATCH', label: 'Send the patch to apply on trunk' }
-      ], { keyAttributes: 'value' });
-      this.jenkinsBranchValueProvider = new ArrayDataProvider([
+      ];
+      this.jenkinsBranchValues = [
         { value: 'PATH', label: 'Path, e.g. branches/factory/cr-1a2b3c4d' }, { value: 'URL', label: 'Full SVN URL' }
-      ], { keyAttributes: 'value' });
+      ];
 
       const showJenkins = (settings) => {
         this.jenkinsSaved(!!settings);
@@ -209,7 +206,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.indexStatus = ko.observable(null);
       const jobs = ko.observableArray([]);
-      this.jobProvider = new ArrayDataProvider(jobs, { keyAttributes: 'id' });
       this.importRunning = ko.pureComputed(() => jobs().some((job) => job.status === 'QUEUED' || job.status === 'RUNNING'));
       // The files of each language as a share of all indexed files, for the bars on the Code index tab.
       this.languages = ko.pureComputed(() => {
@@ -278,8 +274,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           note: r.matchesProfile ? '' : 'Does not apply to this codebase (Project Profile).',
           switchTip: canManage ? null : 'Only workspace managers can turn rules on or off',
           flip: () => setEnabled(r, !r.enabled),
+          menuItems: [
+            { value: 'toggle', label: r.enabled ? 'Turn off' : 'Turn on', disabled: !canManage },
+            { value: 'details', label: 'Show in Quick Checks' },
+            { value: 'packs', label: 'Open Version Packs' }
+          ],
           menu: (event) => {
-            const action = event.detail.selectedValue;
+            const action = event.detail.value;
             if (action === 'toggle') {
               setEnabled(r, !r.enabled);
             } else if (action === 'details') {
@@ -471,7 +472,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           key: i, path: f.path, type: LANGUAGE_NAMES[f.language] || f.language || '–', pkg: packageOf(f.path), size: sizeText(f.sizeBytes || 0),
           revision: 'r' + f.revision,
           menu: (event) => {
-            const action = event.detail.selectedValue;
+            const action = event.detail.value;
             if (action === 'copy') {
               ui.copy(f.path).then(() => toast.success('Path copied.'))
                 .catch(() => toast.error('The path could not be copied. Select it and copy it by hand.'));
@@ -484,6 +485,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             }
           }
         })));
+      this.fileMenuItems = [
+        { value: 'knowledge', label: 'Open in Knowledge Explorer' },
+        { value: 'search', label: 'Search for this file' },
+        { value: 'copy', label: 'Copy path' }
+      ];
       this.filesNote = ko.pureComputed(() => 'The latest of ' + fileList().length.toLocaleString() + ' indexed files. Import counts are not kept per file.');
       this.viewAllIndex = (event) => {
         event.preventDefault();
@@ -524,8 +530,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       }));
 
       // The page's ⋮ menu
+      this.headerMenuItems = [
+        { value: 'knowledge', label: 'Knowledge Explorer', id: 'openKnowledgeButton' },
+        { value: 'history', label: 'Import History' },
+        { value: 'index', label: 'Code Index' },
+        { value: 'settings', label: 'Settings' }
+      ];
       this.headerMenu = (event) => {
-        const action = event.detail.selectedValue;
+        const action = event.detail.value;
         if (action === 'knowledge') {
           this.openKnowledge();
         } else {
@@ -574,6 +586,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ] : []));
       const JOB_PILL = { SUCCEEDED: badge('Succeeded', 'success'), FAILED: badge('Failed', 'danger'), RUNNING: badge('Running', 'primary'), QUEUED: badge('Queued', '') };
       this.recentJobs = ko.pureComputed(() => jobs().slice(0, 4).map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || badge(j.status, '') })));
+      this.historyJobs = ko.pureComputed(() => jobs().map((j) => Object.assign({}, j, { pill: JOB_PILL[j.status] || badge(j.status, '') })));
       // Indexing progress: the running import's files, or 100% once imported
       this.indexProgress = ko.pureComputed(() => {
         const running = jobs().find((job) => job.status === 'QUEUED' || job.status === 'RUNNING');

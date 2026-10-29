@@ -6,17 +6,9 @@
     </div>
     <div class="factory-pg-actions">
       <oj-bind-if test="[[inventory()]]"><span class="factory-pg-meta">Last analysis<br><strong><oj-bind-text value="[[scannedText]]"></oj-bind-text></strong></span></oj-bind-if>
-      <oj-button id="scanButton" chroming="callToAction" on-oj-action="[[scan]]" disabled="[[busy() || !canScan() || !workspaceId()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Run Analysis</oj-button>
-      <oj-menu-button id="moMoreButton" chroming="borderless" display="icons">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-        <oj-menu id="moMoreMenu" slot="menu" on-oj-menu-action="[[moreAction]]">
-          <oj-option value="findings" disabled="[[!inventory()]]">Search deprecated usage again</oj-option>
-          <oj-option value="csv" disabled="[[!inventory()]]">Download screens as CSV</oj-option>
-          <oj-option value="plan" disabled="[[!inventory()]]">View the migration plan</oj-option>
-          <oj-option value="profile">Open the Project Profile</oj-option>
-        </oj-menu>
-      </oj-menu-button>
+      <button type="button" id="scanButton" class="fx-btn fx-btn--primary" on-click="[[scan]]" :disabled="[[busy() || !canScan() || !workspaceId()]]">
+        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Run Analysis</button>
+      <fx-menu-button id="moMoreButton" variant="ghost" icon="more" icon-only label="More actions" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
     </div>
   </div>
 
@@ -116,13 +108,8 @@
                         <td class="factory-mo-mod" :title="[[f.data.module]]"><oj-bind-text value="[[f.data.module]]"></oj-bind-text></td>
                         <td><oj-bind-text value="[[f.data.impact]]"></oj-bind-text></td>
                         <td><span :class="[[f.data.pill.css]]"><oj-bind-text value="[[f.data.pill.text]]"></oj-bind-text></span></td>
-                        <td><oj-menu-button chroming="borderless" display="icons" class="factory-mo-more">
-                          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + f.data.rule]]"></oj-bind-text>
-                          <oj-menu slot="menu" on-oj-menu-action="[[f.data.menuAction]]">
-                            <oj-option value="ask">Ask the assistant how to replace it</oj-option>
-                            <oj-option value="copy">Copy the file path</oj-option>
-                            <oj-option value="code">Open the Code page</oj-option>
-                          </oj-menu></oj-menu-button></td></tr></template>
+                        <td><fx-menu-button class="factory-mo-more" variant="ghost" size="sm" icon="more" icon-only :label="[['Actions for ' + f.data.rule]]"
+                          items="[[findingItems]]" on-fx-action="[[f.data.menuAction]]"></fx-menu-button></td></tr></template>
                     </oj-bind-for-each>
                   </tbody>
                 </table>
@@ -211,9 +198,9 @@
             </div>
           </oj-bind-if>
           <div class="factory-ai-input">
-            <oj-input-text id="moAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about modernization..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
-            <oj-button chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
-              <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+            <fx-input id="moAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask about modernization..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" data-fx-tip="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+              <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
           </div>
         </section>
       </div>

@@ -88,8 +88,8 @@
             </button>
             <div class="factory-topbar-workspace">
               <span class="factory-topbar-wslabel" aria-hidden="true">Workspace</span>
-              <oj-select-single id="topWorkspace" class="factory-topbar-select" label-hint="Workspace" label-edge="none"
-                                data="[[workspaceProvider]]" value="{{workspaceId}}" placeholder="Select a workspace"></oj-select-single>
+              <fx-select id="topWorkspace" class="factory-topbar-select" label="Workspace" hide-label searchable
+                         options="[[workspaceOptions]]" value="{{workspaceId}}" placeholder="Select a workspace"></fx-select>
             </div>
             <div class="factory-topbar-title">
               <span class="factory-topbar-page" id="pageTitle"><oj-bind-text value="[[pageTitle]]"></oj-bind-text></span>
@@ -142,24 +142,30 @@
                 <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>
               </a>
             </div>
-            <oj-menu-button id="userMenu" chroming="borderless" class="factory-user-button">
-              <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
-              <span class="factory-user-text">
-                <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
-              </span>
-              <span class="factory-nav-icon factory-ico-caret factory-user-caret" aria-hidden="true"></span>
-              <oj-menu id="menu1" slot="menu" on-oj-menu-action="[[userMenuAction]]">
-                <oj-option id="account" value="account">Account</oj-option>
-                <oj-option id="about" value="about">About</oj-option>
-                <oj-option id="out" value="out">Sign out</oj-option>
-              </oj-menu>
-            </oj-menu-button>
+            <div class="fx-menu-wrap factory-user-wrap">
+              <button type="button" id="userMenu" class="factory-user-button fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[userMenu.open() ? 'true' : 'false']]"
+                      aria-controls="userMenuList" on-click="[[userMenu.toggle]]" on-keydown="[[userMenu.key]]">
+                <span class="factory-avatar" aria-hidden="true"><oj-bind-text value="[[userInitials]]"></oj-bind-text></span>
+                <span class="factory-user-text">
+                  <span class="factory-user-name"><oj-bind-text value="[[userLogin]]"></oj-bind-text></span>
+                </span>
+                <span class="factory-nav-icon factory-ico-caret factory-user-caret" aria-hidden="true"></span>
+              </button>
+              <oj-bind-if test="[[userMenu.open()]]">
+                <div class="fx-menu" role="menu" id="userMenuList" aria-labelledby="userMenu" on-keydown="[[userMenu.key]]">
+                  <button type="button" role="menuitem" id="account" on-click="[[userGo('account')]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Account &amp; Preferences</button>
+                  <button type="button" role="menuitem" id="about" on-click="[[userGo('about')]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>About</button>
+                  <div class="fx-menu-sep" role="separator"></div>
+                  <button type="button" role="menuitem" id="out" on-click="[[userGo('out')]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Sign out</button>
+                </div>
+              </oj-bind-if>
+            </div>
           </header>
           <oj-bind-if test="[[updateBanner()]]">
             <div class="factory-update-banner" role="status" id="updateBanner">
               <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
               <oj-bind-if test="[[updateAvailable()]]">
-                <oj-button id="updateNowButton" chroming="callToAction" on-oj-action="[[installUpdate]]">Update now</oj-button>
+                <button type="button" id="updateNowButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[installUpdate]]">Update now</button>
               </oj-bind-if>
             </div>
           </oj-bind-if>
@@ -254,12 +260,11 @@
                 <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Use your organization's single sign-on to access the OBDX Development Factory.</p>
               </oj-bind-if>
               <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
-                <oj-form-layout max-columns="1" label-edge="top">
-                  <oj-input-text id="loginUsername" label-hint="Username" value="{{loginUsername}}" autocomplete="username"></oj-input-text>
-                  <oj-input-password id="loginPassword" label-hint="Password" value="{{loginPassword}}" autocomplete="current-password"
-                                     mask-icon="visible" on-oj-enter="[[signIn]]"></oj-input-password>
-                </oj-form-layout>
-                <oj-button id="signInButton" class="factory-login-submit" chroming="callToAction" on-oj-action="[[signIn]]" disabled="[[signingIn]]">Sign in</oj-button>
+                <form class="fx-form factory-login-form" on-submit="[[signInSubmit]]">
+                  <fx-input id="loginUsername" label="Username" value="{{loginUsername}}" autocomplete="username" name="username" input-id="loginUsernameInput"></fx-input>
+                  <fx-input id="loginPassword" label="Password" type="password" value="{{loginPassword}}" autocomplete="current-password" name="password" input-id="loginPasswordInput"></fx-input>
+                  <button type="submit" id="signInButton" :class="[[signingIn() ? 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit is-loading' : 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit']]" :disabled="[[signingIn]]">Sign in</button>
+                </form>
                 <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
               </oj-bind-if>
               <oj-bind-if test="[[loginError()]]">

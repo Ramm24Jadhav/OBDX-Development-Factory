@@ -18,17 +18,10 @@
     </div>
     <oj-bind-if test="[[isAdmin()]]">
       <div class="factory-ov2-actions">
-        <oj-menu-button id="newWorkspaceButton" chroming="outlined" class="factory-ws3-menu-btn">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-folder factory-btn-icon" aria-hidden="true"></span>New Workspace
-          <span slot="endIcon" class="factory-nav-icon factory-ico-caret factory-ws3-caret" aria-hidden="true"></span>
-          <oj-menu id="newWorkspaceMenu" slot="menu" on-oj-menu-action="[[newWorkspaceMenu]]">
-            <oj-option value="folder" disabled="[[!localEnabled()]]">Folder on this computer</oj-option>
-            <oj-option value="url">SVN server (URL)</oj-option>
-          </oj-menu>
-        </oj-menu-button>
-        <oj-button id="startCreateButton" chroming="callToAction" on-oj-action="[[startCreate]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Create Workspace
-        </oj-button>
+        <fx-menu-button id="newWorkspaceButton" class="factory-ws3-menu-btn" label="New Workspace" icon="folder" variant="secondary" align="end"
+                        items="[[newWorkspaceItems]]" on-fx-action="[[newWorkspaceMenu]]"></fx-menu-button>
+        <button type="button" id="startCreateButton" class="fx-btn fx-btn--primary" on-click="[[startCreate]]">
+          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Workspace</button>
       </div>
     </oj-bind-if>
   </div>
@@ -94,8 +87,8 @@
         <oj-bind-if test="[[sourceKind() === 'folder']]">
           <p class="fx-label factory-ws4-label" id="folderPathLabel">Select folder</p>
           <div class="factory-ws-source">
-            <oj-input-text id="folderPath" class="factory-grow factory-ws-input" label-hint="Select folder" label-edge="none" labelled-by="folderPathLabel" autocomplete="off"
-                           placeholder="Choose a local folder containing OBDX code..." value="{{folderPath}}" on-oj-enter="[[checkFolder]]"></oj-input-text>
+            <fx-input id="folderPath" class="factory-grow factory-ws-input" label="Select folder" hide-label
+                      placeholder="Choose a local folder containing OBDX code..." value="{{folderPath}}" on-fx-enter="[[checkFolder]]"></fx-input>
             <oj-bind-if test="[[!browsing()]]">
               <button type="button" id="browseButton" class="fx-btn fx-btn--tertiary factory-ws4-btn" on-click="[[toggleBrowse]]">Browse...</button>
             </oj-bind-if>
@@ -122,44 +115,42 @@
               <div>
                 <oj-bind-for-each data="[[roots]]">
                   <template>
-                    <oj-button chroming="borderless" on-oj-action="[[$current.data.open]]">
-                      <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
-                    </oj-button>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[$current.data.open]]">
+                      <oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button>
                   </template>
                 </oj-bind-for-each>
               </div>
               <div class="factory-browser-path">
-                <oj-button id="folderUpButton" chroming="borderless" on-oj-action="[[folderUp]]" disabled="[[!listing().parent]]">Up</oj-button>
+                <button type="button" id="folderUpButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[folderUp]]" :disabled="[[!listing().parent]]">Up</button>
                 <strong><oj-bind-text value="[[listing().path]]"></oj-bind-text></strong>
-                <oj-button id="chooseFolderButton" chroming="callToAction" on-oj-action="[[chooseFolder]]">Use this folder</oj-button>
+                <button type="button" id="chooseFolderButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[chooseFolder]]">Use this folder</button>
               </div>
               <ul class="factory-folder-list">
                 <oj-bind-for-each data="[[listing().folders]]">
                   <template>
                     <li>
-                      <oj-button chroming="borderless" on-oj-action="[[$current.data.open]]">
-                        <oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
-                      </oj-button>
+                      <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[$current.data.open]]">
+                        <oj-bind-text value="[[$current.data.name]]"></oj-bind-text></button>
                       <oj-bind-if test="[[$current.data.label]]">
                         <span class="fx-badge fx-badge--info"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-                        <oj-button chroming="borderless" on-oj-action="[[$current.data.use]]">Use</oj-button>
+                        <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[$current.data.use]]">Use</button>
                       </oj-bind-if>
                     </li>
                   </template>
                 </oj-bind-for-each>
-                <oj-bind-if test="[[listing().folders.length === 0]]"><li class="oj-text-color-secondary">No folders here.</li></oj-bind-if>
+                <oj-bind-if test="[[listing().folders.length === 0]]"><li class="fx-muted">No folders here.</li></oj-bind-if>
               </ul>
             </div>
           </oj-bind-if>
         </oj-bind-if>
 
         <oj-bind-if test="[[sourceKind() === 'url']]">
-          <oj-form-layout max-columns="3" direction="row" user-assistance-density="compact">
-            <oj-input-text id="svnUrl" label-hint="SVN repository URL" value="{{svnUrl}}" autocomplete="off"
-                           help-hints.definition="The folder with the bank's code, for example https://svn.bank.local/repos/obdx/trunk"></oj-input-text>
-            <oj-input-text id="svnUsername" label-hint="SVN username (if the server asks)" value="{{svnUsername}}" autocomplete="off"></oj-input-text>
-            <oj-input-password id="svnPassword" label-hint="SVN password" value="{{svnPassword}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
-          </oj-form-layout>
+          <div class="fx-form fx-form--3">
+            <fx-input id="svnUrl" label="SVN repository URL" value="{{svnUrl}}" type="url"
+                      help="The folder with the bank's code, for example https://svn.bank.local/repos/obdx/trunk"></fx-input>
+            <fx-input id="svnUsername" label="SVN username (if the server asks)" value="{{svnUsername}}"></fx-input>
+            <fx-input id="svnPassword" label="SVN password" type="password" value="{{svnPassword}}" autocomplete="new-password"></fx-input>
+          </div>
           <button type="button" id="checkUrlButton" class="fx-btn fx-btn--primary factory-ws4-btn" :disabled="[[checking]]" on-click="[[checkUrl]]">
             <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Check</button>
         </oj-bind-if>
@@ -181,7 +172,7 @@
         <div class="factory-ws-details">
           <p id="checkMessage" class="factory-ws-check-message"><oj-bind-text value="[[inspection().message]]"></oj-bind-text></p>
           <oj-bind-if test="[[inspection().kind === 'FOLDER']]">
-            <oj-button id="makeRepositoryButton" on-oj-action="[[makeRepository]]" disabled="[[checking]]">Copy into a new SVN repository</oj-button>
+            <button type="button" id="makeRepositoryButton" class="fx-btn fx-btn--secondary" on-click="[[makeRepository]]" :disabled="[[checking]]">Copy into a new SVN repository</button>
           </oj-bind-if>
           <oj-bind-if test="[[inspection().svnUrl]]">
             <oj-bind-if test="[[reasons().length > 0]]">
@@ -194,23 +185,16 @@
               </div>
             </oj-bind-if>
             <oj-bind-if test="[[reasons().length === 0]]">
-              <p class="oj-text-color-secondary">The bank and OBDX version could not be told from the code; enter them.</p>
+              <p class="fx-muted">The bank and OBDX version could not be told from the code; enter them.</p>
             </oj-bind-if>
-            <oj-validation-group id="workspaceForm" valid="{{formValid}}">
-              <oj-form-layout max-columns="2" direction="row" user-assistance-density="compact">
-                <oj-input-text id="name" label-hint="Workspace name" value="{{name}}" required></oj-input-text>
-                <oj-input-text id="bankName" label-hint="Bank" value="{{bankName}}" required></oj-input-text>
-                <oj-select-single id="obdxVersion" label-hint="OBDX version" data="[[versionProvider]]" value="{{obdxVersion}}" required></oj-select-single>
-                <oj-switch id="importNow" label-hint="Import the code now" value="{{importNow}}"></oj-switch>
-              </oj-form-layout>
-            </oj-validation-group>
-            <!-- Two buttons, because a button keeps the label it was first rendered with -->
-            <oj-bind-if test="[[importNow()]]">
-              <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace and import</oj-button>
-            </oj-bind-if>
-            <oj-bind-if test="[[!importNow()]]">
-              <oj-button id="createButton" chroming="callToAction" on-oj-action="[[createWorkspace]]" disabled="[[saving]]">Create workspace</oj-button>
-            </oj-bind-if>
+            <div id="workspaceForm" class="fx-form fx-form--2">
+              <fx-input id="name" label="Workspace name" value="{{name}}" required error="[[nameError]]"></fx-input>
+              <fx-input id="bankName" label="Bank" value="{{bankName}}" required error="[[bankError]]"></fx-input>
+              <fx-select id="obdxVersion" label="OBDX version" options="[[versionOptions]]" value="{{obdxVersion}}" required error="[[versionError]]"></fx-select>
+              <div class="fx-field factory-ws5-switch"><fx-switch id="importNow" label="Import the code now" value="{{importNow}}"></fx-switch></div>
+            </div>
+            <button type="button" id="createButton" class="fx-btn fx-btn--primary" on-click="[[createWorkspace]]" :disabled="[[saving]]">
+              <oj-bind-text value="[[importNow() ? 'Create workspace and import' : 'Create workspace']]"></oj-bind-text></button>
           </oj-bind-if>
         </div>
       </oj-bind-if>
@@ -320,9 +304,8 @@
     </div>
     <oj-bind-if test="[[isAdmin()]]">
       <div class="factory-ov2-actions">
-        <oj-button id="registerWorkspaceButton" chroming="callToAction" on-oj-action="[[registerWorkspace]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Register Workspace
-        </oj-button>
+        <button type="button" id="registerWorkspaceButton" class="fx-btn fx-btn--primary" on-click="[[registerWorkspace]]">
+          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Register Workspace</button>
       </div>
     </oj-bind-if>
   </div>
@@ -389,17 +372,8 @@
                   <td class="factory-ws3-when"><oj-bind-text value="[[r.data.indexedDay]]"></oj-bind-text><br><oj-bind-text value="[[r.data.indexedTime]]"></oj-bind-text></td>
                   <td><span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-ws3-act">
-                    <oj-menu-button :id="[['regActions-' + r.data.id]]" chroming="borderless" display="icons" class="factory-ov2-more">
-                      <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>
-                      <oj-bind-text value="[['Actions for ' + r.data.name]]"></oj-bind-text>
-                      <oj-menu slot="menu" on-oj-menu-action="[[r.data.menu]]">
-                        <oj-option value="code">Open code</oj-option>
-                        <oj-option value="profile">Project Profile</oj-option>
-                        <oj-option value="requirements">Requirements</oj-option>
-                        <oj-option value="edit">Edit configuration</oj-option>
-                        <oj-option value="delete" disabled="[[!r.data.canDelete]]">Delete</oj-option>
-                      </oj-menu>
-                    </oj-menu-button>
+                    <fx-menu-button :id="[['regActions-' + r.data.id]]" class="factory-ov2-more" icon="more" icon-only variant="ghost" size="sm"
+                                    label="[['Actions for ' + r.data.name]]" items="[[r.data.menuItems]]" on-fx-action="[[r.data.menu]]"></fx-menu-button>
                   </td>
                 </tr>
               </template>
@@ -424,15 +398,8 @@
           <span class="factory-grow"><strong class="factory-ws3-dname"><oj-bind-text value="[[selectedWs().name]]"></oj-bind-text></strong>
             <span class="factory-ws3-dsub"><oj-bind-text value="[[selectedWs().description]]"></oj-bind-text></span></span>
           <span :class="[[selectedWs().pill.css]]"><oj-bind-text value="[[selectedWs().pill.text]]"></oj-bind-text></span>
-          <oj-menu-button id="detailMoreMenu" chroming="borderless" display="icons" class="factory-ov2-more">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More for this workspace
-            <oj-menu slot="menu" on-oj-menu-action="[[detailMenu]]">
-              <oj-option value="code">Open code</oj-option>
-              <oj-option value="profile">Project Profile</oj-option>
-              <oj-option value="copy">Copy repository URL</oj-option>
-              <oj-option value="delete" disabled="[[!isAdmin()]]">Delete</oj-option>
-            </oj-menu>
-          </oj-menu-button>
+          <fx-menu-button id="detailMoreMenu" class="factory-ov2-more" icon="more" icon-only variant="ghost" size="sm" label="More for this workspace"
+                          items="[[detailMoreItems]]" on-fx-action="[[detailMenu]]"></fx-menu-button>
         </div>
         <div class="factory-subtabs factory-ws3-subtabs" role="tablist" aria-label="Workspace details">
           <oj-bind-for-each data="[[detailTabs]]">
@@ -504,16 +471,7 @@
         <div class="factory-ws3-dactions">
           <span class="factory-ws4-tipwrap" :tabindex="[[selectedWs().canReindex ? null : '0']]" :data-fx-tip="[[selectedWs().reindexTip]]"><button type="button" id="reindexButton" class="fx-btn fx-btn--primary factory-ws4-dbtn" :disabled="[[!selectedWs().canReindex]]" on-click="[[selectedWs().reindex]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Re-index Workspace</button></span>
           <button type="button" id="editConfigButton" class="fx-btn fx-btn--tertiary factory-ws4-dbtn" on-click="[[selectedWs().edit]]"><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Configuration</button>
-          <oj-menu-button id="moreActionsButton" chroming="outlined">More Actions
-            <span slot="endIcon" class="factory-nav-icon factory-ico-caret factory-ws3-caret" aria-hidden="true"></span>
-            <oj-menu slot="menu" on-oj-menu-action="[[detailMenu]]">
-              <oj-option value="code">Open code</oj-option>
-              <oj-option value="profile">Project Profile</oj-option>
-              <oj-option value="requirements">Requirements</oj-option>
-              <oj-option value="designer">Designer</oj-option>
-              <oj-option value="copy">Copy repository URL</oj-option>
-            </oj-menu>
-          </oj-menu-button>
+          <fx-menu-button id="moreActionsButton" label="More Actions" variant="secondary" items="[[moreActionItems]]" on-fx-action="[[detailMenu]]"></fx-menu-button>
         </div>
       </oj-bind-if>
     </section>

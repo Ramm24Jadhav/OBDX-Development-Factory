@@ -3,9 +3,8 @@
  * tests, the models they offer, the model server and models in use, choosing them (administrators: a server on this computer, found
  * automatically, or another one by URL, then its chat and embedding models), and a test prompt. Through /api/model.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojradioset', 'ojs/ojselectsingle', 'ojs/ojmenu', 'ojs/ojswitch'],
-  function (ko, accUtils, api, session, ui, toast, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, ui, toast) {
     // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
     const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
     const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '') });
@@ -30,14 +29,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const actionError = (error) => toast.error(error.message);
 
       // Choosing the server
-      this.serverKindProvider = new ArrayDataProvider([
-        { value: 'local', label: 'On this computer' },
-        { value: 'remote', label: 'Another server' }
-      ], { keyAttributes: 'value' });
       this.serverKind = ko.observable('local');
       this.searching = ko.observable(false);
       this.localServers = ko.observableArray([]);
-      this.localServerProvider = new ArrayDataProvider(this.localServers, { keyAttributes: 'value' });
       this.localServerUrl = ko.observable(null);
       this.remoteUrl = ko.observable('');
       this.apiKey = ko.observable('');
@@ -49,8 +43,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.models = ko.observableArray([]);
       const chatOptions = ko.observableArray([]);
       const embeddingOptions = ko.observableArray([]);
-      this.chatProvider = new ArrayDataProvider(chatOptions, { keyAttributes: 'value' });
-      this.embeddingProvider = new ArrayDataProvider(embeddingOptions, { keyAttributes: 'value' });
+      this.chatOptions = chatOptions;
+      this.embeddingOptions = embeddingOptions;
       this.chatModel = ko.observable(null);
       this.embeddingModel = ko.observable(null);
       this.saving = ko.observable(false);
@@ -58,10 +52,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
       // Code search: the embedding model on the same server, or on another one (for example chat from a cloud API
       // and embeddings from Ollama on this computer)
-      this.embeddingSourceProvider = new ArrayDataProvider([
-        { value: 'same', label: 'On the same server' },
-        { value: 'other', label: 'On another server (for example Ollama on this computer)' }
-      ], { keyAttributes: 'value' });
       this.embeddingSource = ko.observable('same');
       this.embeddingSourceChange = ui.value(this.embeddingSource);
       this.embeddingUrl = ko.observable('');
@@ -250,8 +240,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           { label: 'Code-tuned model', on: p.chatModels().some((m) => /coder|code/i.test(m)) },
           { label: 'Embeddings (code search)', on: p.models().some((m) => m.embedding) }
         ]);
+        p.menuItems = ko.pureComputed(() => [
+          { value: 'test', label: 'Test connection', disabled: !p.admin() },
+          { value: 'use', label: 'Use this provider', disabled: !p.admin() },
+          { value: 'models', label: 'Show its models' },
+          { value: 'copy', label: 'Copy base URL' }
+        ]);
         p.menuAction = (event) => {
-          const action = event.detail.selectedValue;
+          const action = event.detail.value;
           if (action === 'test') {
             p.test(event);
           } else if (action === 'use') {
@@ -344,26 +340,34 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.modelSearchInput = ui.value(this.modelSearch);
       this.allModels = ko.pureComputed(() => {
         const rows = [];
-        this.providers().forEach((p) => p.models().forEach((m) => rows.push({
-          id: m.id, provider: p.short, logo: p.logo + ' factory-md-logo-sm', admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding' : 'Chat',
-          caps: m.embedding ? 'Code search' : 'Chat, Code' + (/coder|code/i.test(m.id) ? ' (tuned)' : ''),
-          menuAction: (event) => {
-            const action = event.detail.selectedValue;
-            if (action === 'default') {
+        this.providers().forEach((p) => p.models().forEach((m) => {
+          const isDefault = !!this.status() && same(this.status().baseUrl, p.baseUrl()) && (this.status().chatModel === m.id || this.status().embeddingModel === m.id);
+          rows.push({
+            id: m.id, provider: p.short, logo: p.logo + ' factory-md-logo-sm', admin: session.isAdmin, providerId: p.id + p.baseUrl(), type: m.embedding ? 'Embedding' : 'Chat',
+            caps: m.embedding ? 'Code search' : 'Chat, Code' + (/coder|code/i.test(m.id) ? ' (tuned)' : ''),
+            menuItems: [
+              { value: 'default', label: 'Set as default', disabled: isDefault || !session.isAdmin() },
+              { value: 'copy', label: 'Copy model name' },
+              { value: 'evaluate', label: 'Open Model Evaluation' }
+            ],
+            menuAction: (event) => {
+              const action = event.detail.value;
+              if (action === 'default') {
+                p.use();
+                window.setTimeout(() => { if (m.embedding) { this.embeddingModel(m.id); } else { this.chatModel(m.id); } }, 400);
+              } else if (action === 'copy') {
+                copy(m.id);
+              } else {
+                this.tab('evaluation');
+              }
+            },
+            isDefault: isDefault,
+            setDefault: () => {
               p.use();
               window.setTimeout(() => { if (m.embedding) { this.embeddingModel(m.id); } else { this.chatModel(m.id); } }, 400);
-            } else if (action === 'copy') {
-              copy(m.id);
-            } else {
-              this.tab('evaluation');
             }
-          },
-          isDefault: !!this.status() && same(this.status().baseUrl, p.baseUrl()) && (this.status().chatModel === m.id || this.status().embeddingModel === m.id),
-          setDefault: () => {
-            p.use();
-            window.setTimeout(() => { if (m.embedding) { this.embeddingModel(m.id); } else { this.chatModel(m.id); } }, 400);
-          }
-        })));
+          });
+        }));
         const text = this.modelSearch().trim().toLowerCase();
         return rows.filter((r) => (!this.providerFilter() || r.provider === this.providerFilter()) && (!text || r.id.toLowerCase().indexOf(text) >= 0));
       });

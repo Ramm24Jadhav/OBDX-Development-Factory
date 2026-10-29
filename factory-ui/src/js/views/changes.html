@@ -5,42 +5,19 @@
       <p>Generate, review and apply code changes for OBDX transactions</p>
     </div>
     <div class="factory-pg-actions factory-ch-actions">
-      <oj-menu-button id="switchChangeButton" chroming="outlined" class="factory-ch-switch">Switch Change
-        <span slot="endIcon" class="factory-nav-icon factory-ico-caret factory-ch-caret" aria-hidden="true"></span>
-        <oj-menu id="switchChangeMenu" slot="menu" on-oj-menu-action="[[pickChange]]">
-          <oj-bind-for-each data="[[changeMenu]]">
-            <template><oj-option :value="[[$current.data.id]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></oj-option></template>
-          </oj-bind-for-each>
-        </oj-menu>
-      </oj-menu-button>
+      <fx-menu-button id="switchChangeButton" class="factory-ch-switch" label="Switch Change" variant="secondary" items="[[changeMenu]]" on-fx-action="[[pickChange]]"></fx-menu-button>
       <oj-bind-if test="[[canManage() && !detail()]]">
-        <oj-menu-button id="newChangeButton" chroming="outlined">New Change from Requirement
-          <oj-menu id="newChangeMenu" slot="menu" on-oj-menu-action="[[startFrom]]">
-            <oj-bind-for-each data="[[requirementChoices]]">
-              <template><oj-option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></oj-option></template>
-            </oj-bind-for-each>
-          </oj-menu>
-        </oj-menu-button>
+        <fx-menu-button id="newChangeButton" label="New Change from Requirement" variant="secondary" items="[[requirementMenu]]" on-fx-action="[[startFrom]]"></fx-menu-button>
       </oj-bind-if>
       <oj-bind-if test="[[detail()]]">
-        <span :title="[[saveDraftTitle]]">
-          <oj-button id="saveDraftButton" chroming="outlined" class="factory-ch-blue" on-oj-action="[[saveEdit]]" disabled="[[fileMode() !== 'edit' || !canManage()]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>Save Draft</oj-button></span>
-        <oj-button id="validateButton" chroming="outlined" class="factory-ch-blue" on-oj-action="[[checkAgain]]" disabled="[[!hasCode() || !canManage()]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Validate</oj-button>
-        <oj-button id="deliverButton" chroming="callToAction" on-oj-action="[[deliver]]" disabled="[[busy() || !canManage() || !detail() || detail().status !== 'GENERATED']]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-share factory-btn-icon" aria-hidden="true"></span>Submit for Review</oj-button>
-        <oj-menu-button id="moreButton" chroming="borderless" display="icons">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-          <oj-menu id="moreMenu" slot="menu" on-oj-menu-action="[[moreAction]]">
-            <oj-option value="analyze" disabled="[[!canManage()]]">Analyze again</oj-option>
-            <oj-option value="newchange" disabled="[[!canManage() || requirementChoices().length === 0]]">New change from a requirement…</oj-option>
-            <oj-option value="patch">Download patch</oj-option>
-            <oj-option value="close" disabled="[[!canClose()]]">Close as merged</oj-option>
-            <oj-option value="abandon" disabled="[[!canClose()]]">Abandon</oj-option>
-            <oj-option value="remove" disabled="[[!canManage()]]">Delete</oj-option>
-          </oj-menu>
-        </oj-menu-button>
+        <span class="fx-tip-wrap" :tabindex="[[fileMode() !== 'edit' || !canManage() ? '0' : null]]" :data-fx-tip="[[saveDraftTitle]]">
+          <button type="button" id="saveDraftButton" class="fx-btn fx-btn--secondary" on-click="[[saveEdit]]" :disabled="[[fileMode() !== 'edit' || !canManage()]]">
+            <span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Save Draft</button></span>
+        <button type="button" id="validateButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!hasCode() || !canManage()]]">
+          <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Validate</button>
+        <button type="button" id="deliverButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[busy() || !canManage() || !detail() || detail().status !== 'GENERATED']]">
+          <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button>
+        <fx-menu-button id="moreButton" label="More actions" icon="more" icon-only variant="ghost" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
       </oj-bind-if>
     </div>
   </div>
@@ -117,17 +94,8 @@
               <div class="factory-ch-treesearch">
                 <span class="fx-control factory-ch-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
                   <input type="search" class="fx-input" placeholder="Search files..." aria-label="Search files" on-input="[[fileFilterInput]]"></span>
-                <oj-menu-button id="treeFilterButton" chroming="outlined" display="icons" :class="[[treeFilter() === 'all' ? 'factory-ch-treefilter' : 'factory-ch-treefilter factory-ch-treefilter-on']]">
-                  <span slot="startIcon" class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Filter files
-                  <oj-menu id="treeFilterMenu" slot="menu" on-oj-menu-action="[[pickTreeFilter]]">
-                    <oj-option value="all">All files</oj-option>
-                    <oj-option value="create">New files (A)</oj-option>
-                    <oj-option value="modify">Modified files (M)</oj-option>
-                    <oj-option value="warn">With check warnings or failures</oj-option>
-                    <oj-option value="expand">Expand all folders</oj-option>
-                    <oj-option value="collapse">Collapse all folders</oj-option>
-                  </oj-menu>
-                </oj-menu-button>
+                <fx-menu-button id="treeFilterButton" :class="[[treeFilter() === 'all' ? 'factory-ch-treefilter' : 'factory-ch-treefilter factory-ch-treefilter-on']]"
+                                label="[[treeFilterLabel]]" icon="list" icon-only variant="secondary" items="[[treeFilterItems]]" on-fx-action="[[pickTreeFilter]]"></fx-menu-button>
               </div>
               <ul>
                 <oj-bind-for-each data="[[tree]]">
@@ -182,16 +150,17 @@
                 </oj-bind-if>
                 <oj-bind-if test="[[fileMode() !== 'edit' && canManage() && detail().status !== 'CLOSED']]">
                   <div class="factory-ai-input factory-ch-fileactions">
-                    <oj-input-text class="factory-grow" id="regenerateNote" label-hint="What to change" label-edge="none" placeholder="Note for the model (optional)" value="{{regenerateNote}}"></oj-input-text>
-                    <oj-button id="regenerateButton" on-oj-action="[[regenerate]]">Write again</oj-button>
-                    <oj-button id="editFileButton" chroming="outlined" on-oj-action="[[startEdit]]" disabled="[[!file().generated]]">Edit</oj-button>
+                    <fx-input class="factory-grow" id="regenerateNote" label="What to change" hide-label placeholder="Note for the model (optional)" value="{{regenerateNote}}"></fx-input>
+                    <button type="button" id="regenerateButton" class="fx-btn fx-btn--secondary" on-click="[[regenerate]]">Write again</button>
+                    <span class="fx-tip-wrap" :tabindex="[[file().generated ? null : '0']]" :data-fx-tip="[[file().generated ? null : 'The file is not written yet, so there is nothing to edit.']]">
+                      <button type="button" id="editFileButton" class="fx-btn fx-btn--secondary" on-click="[[startEdit]]" :disabled="[[!file().generated]]">Edit</button></span>
                   </div>
                 </oj-bind-if>
                 <oj-bind-if test="[[fileMode() === 'edit']]">
-                  <oj-text-area id="editContent" class="factory-mono factory-ch-editor" label-hint="File content" label-edge="none" value="{{editContent}}" rows="22"></oj-text-area>
+                  <fx-textarea id="editContent" class="factory-ch-editor" label="File content" hide-label mono value="{{editContent}}" rows="22"></fx-textarea>
                   <div class="factory-btn-row">
-                    <oj-button id="saveEditButton" chroming="callToAction" on-oj-action="[[saveEdit]]">Save Draft</oj-button>
-                    <oj-button on-oj-action="[[showDiff]]">Cancel</oj-button>
+                    <button type="button" id="saveEditButton" class="fx-btn fx-btn--primary" on-click="[[saveEdit]]">Save Draft</button>
+                    <button type="button" class="fx-btn fx-btn--tertiary" on-click="[[showDiff]]">Cancel</button>
                   </div>
                 </oj-bind-if>
               </oj-bind-if>
@@ -222,17 +191,17 @@
             </oj-bind-if>
             <div class="factory-btn-row">
               <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
-                <oj-button id="approvePlanButton" chroming="callToAction" on-oj-action="[[approvePlan]]">Approve the plan and write the code</oj-button>
+                <button type="button" id="approvePlanButton" class="fx-btn fx-btn--primary" on-click="[[approvePlan]]">Approve the plan and write the code</button>
               </oj-bind-if>
               <oj-bind-if test="[[detail().status === 'PLAN_READY' && canManage()]]">
-                <oj-button id="editPlanButton" on-oj-action="[[togglePlanJson]]">Edit the plan</oj-button>
+                <button type="button" id="editPlanButton" class="fx-btn fx-btn--secondary" on-click="[[togglePlanJson]]">Edit the plan</button>
               </oj-bind-if>
               <a class="fx-btn fx-btn--tertiary" :href="[[patchUrl]]" id="patchLink">Download patch</a>
             </div>
             <oj-bind-if test="[[editingPlan()]]">
-              <oj-text-area id="planJson" class="factory-mono" label-hint="Plan (JSON)" value="{{planJson}}" rows="16"></oj-text-area>
-              <div class="factory-btn-row"><oj-button id="savePlanButton" chroming="callToAction" on-oj-action="[[savePlan]]">Save the plan</oj-button>
-                <oj-button on-oj-action="[[togglePlanJson]]">Cancel</oj-button></div>
+              <fx-textarea id="planJson" label="Plan (JSON)" mono value="{{planJson}}" rows="16"></fx-textarea>
+              <div class="factory-btn-row"><button type="button" id="savePlanButton" class="fx-btn fx-btn--primary" on-click="[[savePlan]]">Save the plan</button>
+                <button type="button" class="fx-btn fx-btn--tertiary" on-click="[[togglePlanJson]]">Cancel</button></div>
             </oj-bind-if>
           </oj-bind-if>
           <oj-bind-if test="[[!detail().plan]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span><strong>The impact analysis is running</strong>The plan appears here.</div></oj-bind-if>
@@ -241,13 +210,13 @@
         <!-- Impact analysis -->
         <oj-bind-if test="[[tab() === 'impact']]">
           <p class="factory-card-sub">The files the plan changes by layer, the risks, and the dependency view.</p>
-          <oj-button id="openImpactButton" chroming="callToAction" on-oj-action="[[openImpact]]">Open Impact Analysis</oj-button>
+          <button type="button" id="openImpactButton" class="fx-btn fx-btn--primary" on-click="[[openImpact]]">Open Impact Analysis</button>
         </oj-bind-if>
 
         <!-- Build & Test -->
         <oj-bind-if test="[[tab() === 'build']]">
           <p class="factory-card-sub">Quick checks and Jenkins builds of this change, with logs and failures.</p>
-          <oj-button id="openBuildButton" chroming="callToAction" on-oj-action="[[openBuild]]">Open Build, Test &amp; Review</oj-button>
+          <button type="button" id="openBuildButton" class="fx-btn fx-btn--primary" on-click="[[openBuild]]">Open Build, Test &amp; Review</button>
         </oj-bind-if>
 
         <!-- Review comments -->
@@ -291,8 +260,8 @@
                 <span :class="[[validationOk() ? 'factory-step-dot factory-dot-green factory-ch-big' : 'factory-step-dot factory-dot-grey factory-ch-big']]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
                 <div><strong id="validationTitle"><oj-bind-text value="[[validationTitle]]"></oj-bind-text></strong>
                   <span class="factory-ov-subtle"><oj-bind-text value="[[validationNote]]"></oj-bind-text></span></div>
-                <span :title="[[buildTitle]]" class="factory-ch-buildwrap"><oj-button id="buildButton" chroming="outlined" class="factory-ch-blue factory-ch-runagain" on-oj-action="[[build]]" disabled="[[!canBuild()]]">
-                  <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span><oj-bind-text value="[[lastBuild() ? 'Run Again' : 'Build with Jenkins']]"></oj-bind-text></oj-button></span>
+                <span class="fx-tip-wrap factory-ch-buildwrap" :tabindex="[[canBuild() ? null : '0']]" :data-fx-tip="[[buildTitle]]"><button type="button" id="buildButton" class="fx-btn fx-btn--secondary fx-btn--sm factory-ch-runagain" on-click="[[build]]" :disabled="[[!canBuild()]]">
+                  <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[lastBuild() ? 'Run Again' : 'Build with Jenkins']]"></oj-bind-text></button></span>
               </div>
               <ol class="factory-ch-pipeline" id="buildPipeline">
                 <oj-bind-for-each data="[[pipeline]]">
@@ -434,9 +403,9 @@
             <oj-bind-text value="[[file() ? 'Ask the assistant to review ' + file().path.split('/').pop() : 'Open a file to have it reviewed']]"></oj-bind-text></button>
         </oj-bind-if>
         <div class="factory-ai-input factory-ch-askrow">
-          <oj-input-text id="changeAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask something about the changes..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
-          <oj-button chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+          <fx-input id="changeAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask something about the changes..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+          <button type="button" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" data-fx-tip="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+            <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
         </div>
       </section>
     </div>

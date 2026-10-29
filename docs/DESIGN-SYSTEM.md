@@ -69,3 +69,26 @@ internal classes. Inter is used when installed; there is no web font download (b
   phone screen.
 - Not done: automated accessibility or visual-regression tests (the project has none set up); Inter is not bundled,
   so the system UI font is used where Inter is not installed.
+
+## The factory's own elements (no Oracle JET visual components)
+
+The screens use the factory's own elements instead of JET's visual components; JET remains only as the framework
+(router, page modules, Knockout binding: `oj-bind-if`, `oj-bind-for-each`, `oj-bind-text`). The screen preview is the one
+exception: it renders the bank's OBDX screens, which are built with JET, so it keeps JET's components.
+
+`js/components/fx-elements.js` defines them (as JET composites, so `value="{{x}}"` writes back like before):
+
+| Element | Use | Main properties |
+|---|---|---|
+| `fx-input` | text, email, url, search, number, password (with show/hide) | `value` (writeback), `label`, `hide-label`, `placeholder`, `type`, `icon`, `clearable`, `required`, `disabled`, `readonly`, `help`, `error`, `maxlength`, `autocomplete`; event `fxEnter` (`on-fx-enter`) |
+| `fx-textarea` | multi-line text | `value`, `label`, `rows`, `counter`, `maxlength`, `mono`, `help`, `error` |
+| `fx-select` | one value from a list, with optional search | `value`, `options` (`[{value, label, description?, disabled?}]` or strings) or `data` (an ArrayDataProvider), `label`, `placeholder`, `searchable`; keyboard: arrows, Enter, Escape, type-ahead |
+| `fx-date` | a date (`yyyy-mm-dd`) with a calendar | `value`, `min`, `max`, `label`; typing a date also works; arrow keys move in the calendar |
+| `fx-time` | a time (`hh:mm`; keeps JET's `Thh:mm:ss` if that is what it was given) | `value`, `label` |
+| `fx-switch` | on / off | `value` (boolean), `label` or `aria-label`, `disabled` |
+| `fx-menu-button` | a button with a menu of actions | `label`, `icon`, `icon-only`, `variant`, `size`, `align`, `items` (`[{value, label, icon?, disabled?, danger?, separator?, title?}]`); event `fxAction` (`on-fx-action`, `event.detail.value`) |
+
+Buttons are plain `<button class="fx-btn fx-btn--primary|secondary|tertiary|ghost|link|danger|success">`; form layouts
+are `<div class="fx-form fx-form--2">`; file pickers are a native file input with a button label; tables are `fx-table`.
+Popups (select lists, calendars, menus) are positioned against the window so cards and tables never clip them, and close
+on Escape, an outside click or scrolling.

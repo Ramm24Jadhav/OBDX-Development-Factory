@@ -8,8 +8,8 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', 'ojs/ojselectsingle', 'ojs/ojmenu'],
-  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements'],
+  function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
 
@@ -133,7 +133,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
 
       // Top bar: the workspace the pages work on (shared with their own pickers), the page and workspace as a breadcrumb,
       // search of the workspace's code (opens the Code page's Search tab), what needs attention, and help.
-      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
+      this.workspaceOptions = workspaceSelection.options;
       this.workspaceId = workspaceSelection.selectedId;
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
       const workspacePages = ['code', 'profile', 'requirements', 'designer', 'changes', 'build', 'modernization', 'knowledge', 'impact', 'reviews', 'packs', 'prompts'];
@@ -209,6 +209,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.loginError = ko.observable(new URLSearchParams(window.location.search).get('signInError') === 'sso'
         ? 'Single sign-on did not complete. Try again or contact your administrator.' : '');
       this.signingIn = ko.observable(false);
+      this.signInSubmit = (event) => { event.preventDefault(); this.signIn(); };
       this.signIn = () => {
         this.signingIn(true);
         this.loginError('');
@@ -233,6 +234,9 @@ define(['knockout', './services/session', './services/updates', './services/dash
       session.user.subscribe(checkUpdates);
       window.setInterval(checkUpdates, 30 * 60 * 1000);
 
+      // The user menu (design system menu: keyboard, Escape, outside click)
+      this.userMenu = ui.menu();
+      this.userGo = (value) => () => { this.userMenu.close(); this.userMenuAction({ detail: { selectedValue: value } }); };
       this.userMenuAction = (event) => {
         const value = event.detail.selectedValue;
         if (value === 'out') {

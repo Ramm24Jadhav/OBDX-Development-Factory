@@ -88,15 +88,15 @@
         <h2>Change Password</h2>
         <p class="factory-card-sub">Update your account password</p>
         <oj-bind-if test="[[canChange()]]">
-          <oj-form-layout max-columns="1" label-edge="start" label-width="38%" user-assistance-density="compact" class="factory-ac-pwform">
-            <oj-input-password id="currentPassword" label-hint="Current Password" placeholder="Enter current password" value="{{currentPassword}}" autocomplete="current-password" mask-icon="visible"></oj-input-password>
-            <oj-input-password id="newPassword" label-hint="New Password" placeholder="Enter new password" value="{{newPassword}}" raw-value="{{newPassword}}" autocomplete="new-password" mask-icon="visible"></oj-input-password>
-            <oj-input-password id="repeatPassword" label-hint="Confirm New Password" placeholder="Confirm new password" value="{{repeatPassword}}" raw-value="{{repeatPassword}}" autocomplete="new-password" mask-icon="visible"></oj-input-password>
-          </oj-form-layout>
+          <div class="fx-form factory-ac-pwform">
+            <fx-input id="currentPassword" type="password" label="Current Password" placeholder="Enter current password" value="{{currentPassword}}" autocomplete="current-password"></fx-input>
+            <fx-input id="newPassword" type="password" label="New Password" placeholder="Enter new password" value="{{newPassword}}" autocomplete="new-password"></fx-input>
+            <fx-input id="repeatPassword" type="password" label="Confirm New Password" placeholder="Confirm new password" value="{{repeatPassword}}" autocomplete="new-password"></fx-input>
+          </div>
           <p class="factory-ac-reqtitle" id="passwordRulesTitle">Password Requirements:</p>
           <ul class="factory-ac-reqs" aria-labelledby="passwordRulesTitle"><oj-bind-for-each data="[[rules]]"><template><li :class="[[$current.data.rowCss]]"><span :class="[[$current.data.css]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text><span class="factory-sr"><oj-bind-text value="[[$current.data.ok() ? ': done' : ': not yet']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
           <oj-bind-if test="[[message()]]"><p class="fx-error" id="passwordMessage" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[message]]"></oj-bind-text></p></oj-bind-if>
-          <div class="factory-ac-pwbtn"><oj-button id="changePasswordButton" class="factory-md-save" chroming="callToAction" on-oj-action="[[changePassword]]">Update Password</oj-button></div>
+          <div class="factory-ac-pwbtn"><button type="button" id="changePasswordButton" class="fx-btn fx-btn--primary factory-md-save" on-click="[[changePassword]]">Update Password</button></div>
         </oj-bind-if>
         <oj-bind-if test="[[!canChange()]]">
           <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>

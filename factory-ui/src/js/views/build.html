@@ -18,19 +18,13 @@
             <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
           </oj-bind-for-each>
         </select></label>
-      <oj-button id="rebuildButton" chroming="outlined" on-oj-action="[[rebuild]]" disabled="[[!canBuild()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Rebuild</oj-button>
-      <oj-button id="submitReviewButton" chroming="callToAction" on-oj-action="[[deliver]]" disabled="[[!detail() || detail().status !== 'GENERATED' || !canManage()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-share factory-btn-icon" aria-hidden="true"></span>Submit for Review</oj-button>
-      <oj-menu-button id="buildMoreButton" chroming="borderless" display="icons" disabled="[[!detail()]]">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>More actions
-        <oj-menu id="buildMoreMenu" slot="menu" on-oj-menu-action="[[moreAction]]">
-          <oj-option value="checks" disabled="[[!canManage()]]">Run quick checks</oj-option>
-          <oj-option value="patch">Download patch</oj-option>
-          <oj-option value="changes">Open in Changes</oj-option>
-          <oj-option value="impact">Open Impact Analysis</oj-option>
-        </oj-menu>
-      </oj-menu-button>
+      <span class="fx-tip-wrap" :tabindex="[[canBuild() ? null : '0']]" :data-fx-tip="[[rebuildTip]]">
+        <button type="button" id="rebuildButton" class="fx-btn fx-btn--secondary" on-click="[[rebuild]]" :disabled="[[!canBuild()]]">
+          <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Rebuild</button></span>
+      <button type="button" id="submitReviewButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[!detail() || detail().status !== 'GENERATED' || !canManage()]]">
+        <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button>
+      <fx-menu-button id="buildMoreButton" variant="ghost" icon="more" icon-only label="More actions" :disabled="[[!detail()]]"
+                      items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
     </div>
   </div>
 
@@ -96,20 +90,14 @@
               <div class="factory-bt-searchrow">
                 <span class="fx-control factory-bt-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
                   <input type="search" class="fx-input" placeholder="Search file or error message..." aria-label="Search failures" on-input="[[failureSearchInput]]"></span>
-                <oj-menu-button id="failureFilterButton" chroming="outlined" display="icons">
-                  <span slot="startIcon" class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Filter by layer
-                  <oj-menu id="failureFilterMenu" slot="menu" on-oj-menu-action="[[layerAction]]">
-                    <oj-bind-for-each data="[[layerOptions]]">
-                      <template><oj-option :value="[[$current.data.value]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></oj-option></template>
-                    </oj-bind-for-each>
-                  </oj-menu>
-                </oj-menu-button>
+                <fx-menu-button id="failureFilterButton" variant="secondary" icon="list" icon-only label="Filter by layer"
+                                items="[[layerOptions]]" on-fx-action="[[layerAction]]"></fx-menu-button>
               </div>
               <oj-bind-if test="[[layerFilter()]]"><p class="factory-bt-layer">Layer: <b><oj-bind-text value="[[layerFilter]]"></oj-bind-text></b>
                 <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearLayer]]">Show all</button></p></oj-bind-if>
               <div class="fx-table-wrap">
                 <table class="fx-table factory-bt-ftable" id="failureTable">
-                  <thead><tr><th class="factory-bt-c1">Status</th><th class="factory-bt-c3">File</th><th>Error Message</th><th class="factory-bt-c4 fx-table-actions"><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
+                  <thead><tr><th class="factory-bt-c1">Status</th><th class="factory-bt-c3">File</th><th>Error Message</th><th class="factory-bt-c4 fx-table-actions"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
                   <tbody>
                     <oj-bind-for-each data="[[visibleFailures]]">
                       <template><tr :class="[[$current.data.index === selectedFailure() ? 'factory-clickable is-selected' : 'factory-clickable']]" on-click="[[$current.data.pick]]">
@@ -117,15 +105,8 @@
                           <span class="factory-bt-kind"><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></span></td>
                         <td class="factory-bt-path" :title="[[$current.data.file]]"><bdi><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></bdi></td>
                         <td class="factory-bt-msg" :title="[[$current.data.message]]"><div><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></div></td>
-                        <td class="factory-bt-more fx-table-actions" on-click="[[$current.data.stop]]"><oj-menu-button chroming="borderless" display="icons" class="factory-ov2-more">
-                          <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>Failure actions
-                          <oj-menu slot="menu" on-oj-menu-action="[[$current.data.action]]">
-                            <oj-option value="details">View details</oj-option>
-                            <oj-option value="code">Show the code</oj-option>
-                            <oj-option value="copy">Copy error message</oj-option>
-                            <oj-option value="ask">Ask the AI Assistant</oj-option>
-                            <oj-option value="fix" disabled="[[!canManage()]]">Generate fix with AI</oj-option>
-                          </oj-menu></oj-menu-button></td></tr></template>
+                        <td class="factory-bt-more fx-table-actions" on-click="[[$current.data.stop]]"><fx-menu-button class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only label="Failure actions"
+                          items="[[failureItems]]" on-fx-action="[[$current.data.action]]"></fx-menu-button></td></tr></template>
                     </oj-bind-for-each>
                   </tbody>
                 </table>
@@ -157,7 +138,7 @@
                     <span class="factory-bt-fpath" :title="[[failure().file]]"><bdi><oj-bind-text value="[[failure().file + (failure().line ? ':' + failure().line : '')]]"></oj-bind-text></bdi></span>
                     <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showCode]]">View</button></div>
                 </oj-bind-if>
-                <div class="factory-btn-row factory-bt-center"><oj-button id="openWorkbenchButton" chroming="callToAction" on-oj-action="[[openWorkbench]]">Open in Code Workbench</oj-button></div>
+                <div class="factory-btn-row factory-bt-center"><button type="button" id="openWorkbenchButton" class="fx-btn fx-btn--primary" on-click="[[openWorkbench]]">Open in Code Workbench</button></div>
               </oj-bind-if>
             </section>
           </div>
@@ -209,7 +190,7 @@
         <oj-bind-if test="[[tab() === 'static' || tab() === 'obdx']]">
           <section class="factory-card">
             <h2><oj-bind-text value="[[tab() === 'obdx' ? 'OBDX Checks' : 'Static Analysis']]"></oj-bind-text>
-              <oj-button id="checkAgainButton" chroming="outlined" on-oj-action="[[checkAgain]]" disabled="[[!canManage()]]">Run quick checks</oj-button></h2>
+              <button type="button" id="checkAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!canManage()]]">Run quick checks</button></h2>
             <p class="factory-card-sub">Syntax at the bank's Java level and the version pack rules, on the lines each file adds.</p>
             <div class="fx-table-wrap">
               <table class="fx-table" id="checkTable">
@@ -339,9 +320,9 @@
             </div>
           </oj-bind-if>
           <div class="factory-ai-input">
-            <oj-input-text id="buildAsk" class="factory-grow" label-hint="Ask" label-edge="none" placeholder="Ask about the build or tests..." value="{{ai.input}}" on-oj-enter="[[ai.send]]"></oj-input-text>
-            <oj-button chroming="callToAction" display="icons" on-oj-action="[[ai.send]]" disabled="[[ai.busy]]">
-              <span slot="startIcon" class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Send</oj-button>
+            <fx-input id="buildAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask about the build or tests..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" data-fx-tip="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
+              <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
           </div>
         </section>
       </div>

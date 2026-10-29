@@ -241,8 +241,8 @@
     <section class="factory-card">
       <h2>Search the code</h2>
       <div class="factory-cp-search">
-        <oj-input-text id="knowledgeQuery" class="factory-grow" label-hint="Search" label-edge="none" placeholder="Search code, classes, APIs, UI components, services..." value="{{query}}" on-oj-enter="[[search]]" clear-icon="conditional"></oj-input-text>
-        <oj-button id="knowledgeSearchButton" chroming="callToAction" on-oj-action="[[search]]" disabled="[[searching]]">Search</oj-button>
+        <fx-input id="knowledgeQuery" class="factory-grow" label="Search" hide-label icon="search" clearable placeholder="Search code, classes, APIs, UI components, services..." value="{{query}}" on-fx-enter="[[search]]"></fx-input>
+        <button type="button" id="knowledgeSearchButton" class="fx-btn fx-btn--primary" on-click="[[search]]" :disabled="[[searching]]">Search</button>
       </div>
       <oj-bind-if test="[[searchNote()]]"><p class="factory-ov-subtle"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p></oj-bind-if>
       <oj-bind-for-each data="[[results]]">

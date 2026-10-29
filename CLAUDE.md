@@ -40,8 +40,11 @@ All 115 tests pass at the last commit.
 ## Known pitfalls
 
 - `.gitignore`/`.dockerignore` must not ignore `target/` everywhere: the Java package `com.obdx.factory.target` is source.
-- JET: an `oj-button` keeps the label it was first rendered with (show different buttons with `oj-bind-if` instead of
-  changing the text); JET binding expressions cannot use `new` (compute in the view model); a floating label hides
-  `placeholder`.
+- UI elements: pages use the factory's own elements (`fx-input`, `fx-select`, `fx-date`, `fx-menu-button` ...,
+  `js/components/fx-elements.js`) and `fx-*` classes from the design system (`docs/DESIGN-SYSTEM.md`, `?ojr=design`),
+  not JET visual components; only the screen preview keeps JET (it renders the bank's OBDX screens). Colours come from
+  the `--fx-*` tokens so the dark theme works.
+- JET binding expressions cannot use `new` or function literals, and `$parent` does not work in `oj-bind-for-each`
+  (use `as="x"`); compute per-row values in the view model.
 - The embedded trial database refuses to run as root on Linux.
 - Startup `ApplicationReadyEvent` listeners that start imports must run after `ImportService.failInterruptedJobs`.

@@ -6,12 +6,12 @@
     </div>
     <oj-bind-if test="[[isAdmin()]]">
       <div class="factory-pg-actions">
-        <oj-button id="testAllButton" chroming="outlined" on-oj-action="[[testAll]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Test All Providers</oj-button>
-        <oj-button id="lookAgainButton" chroming="outlined" on-oj-action="[[findLocal]]" disabled="[[searching]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Find Local Servers</oj-button>
-        <oj-button id="addProviderButton" chroming="callToAction" on-oj-action="[[addProvider]]">
-          <span slot="startIcon" class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Add Provider</oj-button>
+        <button type="button" id="testAllButton" class="fx-btn fx-btn--secondary" on-click="[[testAll]]">
+          <span class="factory-nav-icon factory-ico-check factory-btn-icon" aria-hidden="true"></span>Test All Providers</button>
+        <button type="button" id="lookAgainButton" class="fx-btn fx-btn--secondary" on-click="[[findLocal]]" :disabled="[[searching]]">
+          <span class="factory-nav-icon factory-ico-search factory-btn-icon" aria-hidden="true"></span>Find Local Servers</button>
+        <button type="button" id="addProviderButton" class="fx-btn fx-btn--primary" on-click="[[addProvider]]">
+          <span class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Add Provider</button>
       </div>
     </oj-bind-if>
   </div>
@@ -33,22 +33,15 @@
               <span :class="[[p.data.logo]]" aria-hidden="true"></span>
               <div class="factory-md-name"><strong><oj-bind-text value="[[p.data.name]]"></oj-bind-text></strong></div>
               <span class="factory-md-headright"><span :class="[[p.data.pill().css]]"><oj-bind-text value="[[p.data.pill().text]]"></oj-bind-text></span>
-                <oj-menu-button chroming="borderless" display="icons" class="factory-md-more">
-                  <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + p.data.name]]"></oj-bind-text>
-                  <oj-menu slot="menu" on-oj-menu-action="[[p.data.menuAction]]">
-                    <oj-option value="test" disabled="[[!p.data.admin()]]">Test connection</oj-option>
-                    <oj-option value="use" disabled="[[!p.data.admin()]]">Use this provider</oj-option>
-                    <oj-option value="models">Show its models</oj-option>
-                    <oj-option value="copy">Copy base URL</oj-option>
-                  </oj-menu>
-                </oj-menu-button></span>
+                <fx-menu-button class="factory-md-more" :label="[['Actions for ' + p.data.name]]" icon="more" icon-only variant="ghost" size="sm"
+                  items="[[p.data.menuItems]]" on-fx-action="[[p.data.menuAction]]"></fx-menu-button></span>
               <span class="factory-ov-subtle factory-md-desc"><oj-bind-text value="[[p.data.description]]"></oj-bind-text></span>
             </div>
             <dl class="factory-md-rows">
               <dt>Base URL</dt><dd class="factory-mono factory-md-url" :title="[[p.data.baseUrl]]"><oj-bind-text value="[[p.data.baseUrl]]"></oj-bind-text></dd>
               <oj-bind-if test="[[!p.data.local]]">
                 <dt>API Key</dt>
-                <dd><oj-bind-if test="[[p.data.admin()]]"><oj-input-password class="factory-md-key" label-hint="API Key" label-edge="none" placeholder="[[p.data.keyLabel]]" value="{{p.data.key}}" mask-icon="visible" autocomplete="new-password"></oj-input-password></oj-bind-if>
+                <dd><oj-bind-if test="[[p.data.admin()]]"><fx-input type="password" class="factory-md-key" :label="[['API key for ' + p.data.name]]" hide-label placeholder="[[p.data.keyLabel]]" value="{{p.data.key}}" autocomplete="new-password"></fx-input></oj-bind-if>
                   <oj-bind-if test="[[!p.data.admin()]]"><span class="factory-ov-subtle">Administrators only</span></oj-bind-if></dd>
               </oj-bind-if>
               <dt><oj-bind-text value="[[p.data.local ? 'Model' : 'Default Model']]"></oj-bind-text></dt>
@@ -79,8 +72,8 @@
             <div class="factory-md-name"><strong>Custom Provider</strong><span class="factory-ov-subtle">Any OpenAI-compatible server, for example vLLM or the bank's own gateway</span></div>
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[cancelProvider]]">Cancel</button>
           </div>
-          <oj-input-text id="customUrl" label-hint="Base URL" value="{{remoteUrl}}" placeholder="https://.../v1"></oj-input-text>
-          <oj-input-password id="customKey" label-hint="[[apiKeyLabel]]" value="{{apiKey}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
+          <fx-input id="customUrl" label="Base URL" type="url" value="{{remoteUrl}}" placeholder="https://.../v1"></fx-input>
+          <fx-input id="customKey" type="password" label="[[apiKeyLabel]]" value="{{apiKey}}" autocomplete="new-password"></fx-input>
           <div class="factory-md-btns">
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-md-btn" id="customTestButton" on-click="[[useCustom]]" :disabled="[[searching]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Get Models</button>
           </div>
@@ -99,7 +92,7 @@
           </span></h2>
         <div class="fx-table-wrap">
           <table class="fx-table factory-md-table" id="modelTable">
-            <thead><tr><th>Model Name</th><th>Provider</th><th>Type</th><th title="Model servers do not report the context length">Context Length</th><th>Capabilities</th><th>Status</th><th>Actions</th><th class="factory-md-menucol fx-table-actions"><span class="oj-helper-hidden-accessible">More</span></th></tr></thead>
+            <thead><tr><th>Model Name</th><th>Provider</th><th>Type</th><th title="Model servers do not report the context length">Context Length</th><th>Capabilities</th><th>Status</th><th>Actions</th><th class="factory-md-menucol fx-table-actions"><span class="fx-visually-hidden">More</span></th></tr></thead>
             <tbody>
               <oj-bind-for-each data="[[allModels]]" as="m">
                 <template><tr><td class="factory-md-mname" :title="[[m.data.id]]"><oj-bind-text value="[[m.data.id]]"></oj-bind-text></td><td><span class="factory-md-prov"><span :class="[[m.data.logo]]" aria-hidden="true"></span><oj-bind-text value="[[m.data.provider]]"></oj-bind-text></span></td>
@@ -109,13 +102,8 @@
                   <td><span class="fx-badge fx-badge--success">Available</span></td>
                   <td><oj-bind-if test="[[m.data.isDefault]]"><span class="fx-badge fx-badge--primary">Default</span></oj-bind-if>
                     <oj-bind-if test="[[!m.data.isDefault && m.data.admin()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-md-setdefault" on-click="[[m.data.setDefault]]">Set Default</button></oj-bind-if></td>
-                  <td class="factory-md-menucol fx-table-actions"><oj-menu-button chroming="borderless" display="icons" class="factory-md-more">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + m.data.id]]"></oj-bind-text>
-                    <oj-menu slot="menu" on-oj-menu-action="[[m.data.menuAction]]">
-                      <oj-option value="default" disabled="[[m.data.isDefault || !m.data.admin()]]">Set as default</oj-option>
-                      <oj-option value="copy">Copy model name</oj-option>
-                      <oj-option value="evaluate">Open Model Evaluation</oj-option>
-                    </oj-menu></oj-menu-button></td></tr></template>
+                  <td class="factory-md-menucol fx-table-actions"><fx-menu-button class="factory-md-more" :label="[['Actions for ' + m.data.id]]" icon="more" icon-only variant="ghost" size="sm"
+                    items="[[m.data.menuItems]]" on-fx-action="[[m.data.menuAction]]"></fx-menu-button></td></tr></template>
               </oj-bind-for-each>
             </tbody>
           </table>
@@ -143,14 +131,14 @@
             <oj-bind-if test="[[serverKind() === 'remote' && models().length === 0]]">
               <span class="factory-md-lbl">Server</span>
               <div class="factory-md-stack">
-                <oj-input-text id="remoteUrl" label-hint="Model server URL" label-edge="none" placeholder="https://.../v1" value="{{remoteUrl}}"></oj-input-text>
-                <oj-input-password id="apiKey" label-hint="API key" label-edge="none" placeholder="[[apiKeyLabel]]" value="{{apiKey}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
-                <oj-button id="getModelsButton" on-oj-action="[[getRemoteModels]]" disabled="[[searching]]">Get models</oj-button>
+                <fx-input id="remoteUrl" label="Model server URL" hide-label type="url" placeholder="https://.../v1" value="{{remoteUrl}}"></fx-input>
+                <fx-input id="apiKey" type="password" label="API key" hide-label placeholder="[[apiKeyLabel]]" value="{{apiKey}}" autocomplete="new-password"></fx-input>
+                <button type="button" id="getModelsButton" class="fx-btn fx-btn--secondary" on-click="[[getRemoteModels]]" :disabled="[[searching]]">Get models</button>
               </div>
             </oj-bind-if>
             <oj-bind-if test="[[models().length > 0]]">
               <span class="factory-md-lbl">Default Model</span>
-              <div><oj-select-single id="chatModel" label-hint="Default model" label-edge="none" data="[[chatProvider]]" value="{{chatModel}}"></oj-select-single>
+              <div><fx-select id="chatModel" label="Default model" hide-label options="[[chatOptions]]" value="{{chatModel}}" searchable></fx-select>
                 </div>
               <label for="embeddingSourceSelect">Code Search</label>
               <select class="fx-select" id="embeddingSourceSelect" on-change="[[embeddingSourceChange]]">
@@ -160,14 +148,14 @@
               <oj-bind-if test="[[embeddingSource() === 'other']]">
                 <span class="factory-md-lbl">Search Server</span>
                 <div class="factory-md-stack">
-                  <oj-input-text id="embeddingUrl" label-hint="Code search server URL" label-edge="none" placeholder="http://localhost:11434/v1" value="{{embeddingUrl}}"></oj-input-text>
-                  <oj-input-password id="embeddingApiKey" label-hint="API key" label-edge="none" placeholder="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" mask-icon="visible" autocomplete="new-password"></oj-input-password>
-                  <oj-button id="getEmbeddingModelsButton" on-oj-action="[[getEmbeddingModels]]" disabled="[[searching]]">Get models</oj-button>
+                  <fx-input id="embeddingUrl" label="Code search server URL" hide-label type="url" placeholder="http://localhost:11434/v1" value="{{embeddingUrl}}"></fx-input>
+                  <fx-input id="embeddingApiKey" type="password" label="Code search API key" hide-label placeholder="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" autocomplete="new-password"></fx-input>
+                  <button type="button" id="getEmbeddingModelsButton" class="fx-btn fx-btn--secondary" on-click="[[getEmbeddingModels]]" :disabled="[[searching]]">Get models</button>
                 </div>
               </oj-bind-if>
               <oj-bind-if test="[[embeddingCandidates().length > 0]]">
                 <span class="factory-md-lbl">Embedding Model</span>
-                <div><oj-select-single id="embeddingModel" label-hint="Embedding model" label-edge="none" data="[[embeddingProvider]]" value="{{embeddingModel}}"></oj-select-single>
+                <div><fx-select id="embeddingModel" label="Embedding model" hide-label options="[[embeddingOptions]]" value="{{embeddingModel}}" searchable></fx-select>
                   <oj-bind-if test="[[!hasEmbeddingModel()]]"><span class="factory-md-hint factory-md-warn">No embedding model on this server; choose another server for code search.</span></oj-bind-if></div>
               </oj-bind-if>
             </oj-bind-if>
@@ -179,10 +167,10 @@
           </div>
           <div class="factory-md-toggle" title="Not available yet: the factory has no fallback provider.">
             <div><strong>Auto Fallback on Failure</strong><span class="factory-md-hint">Switch to the fallback provider if the primary fails</span></div>
-            <oj-switch id="autoFallback" label-hint="Auto Fallback on Failure" label-edge="none" value="[[false]]" disabled="[[true]]"></oj-switch>
+            <fx-switch id="autoFallback" aria-label="Auto Fallback on Failure" value="[[false]]" disabled></fx-switch>
           </div>
           <oj-bind-if test="[[models().length > 0]]">
-            <oj-button id="saveModelsButton" class="factory-md-save" chroming="callToAction" on-oj-action="[[save]]" disabled="[[saving]]">Save Settings</oj-button>
+            <button type="button" id="saveModelsButton" class="fx-btn fx-btn--primary factory-md-save" on-click="[[save]]" :disabled="[[saving]]">Save Settings</button>
           </oj-bind-if>
           <oj-bind-if test="[[models().length === 0 && serverKind() === 'local']]">
             <p class="factory-card-sub">Choose a provider above, or use Settings on a card, to choose its models here.</p>
@@ -265,7 +253,7 @@
   <oj-bind-if test="[[tab() === 'prompts']]">
     <section class="factory-card"><h2>Prompts &amp; Templates</h2>
       <p class="factory-card-sub">The prompts and version pack templates the models work with are in the AI Prompt Library.</p>
-      <oj-button chroming="callToAction" on-oj-action="[[openPrompts]]">Open the AI Prompt Library</oj-button></section>
+      <button type="button" class="fx-btn fx-btn--primary" on-click="[[openPrompts]]">Open the AI Prompt Library</button></section>
   </oj-bind-if>
 
   <oj-bind-if test="[[tab() === 'policies']]">
@@ -282,8 +270,8 @@
     <section class="factory-card">
       <h2>Model Evaluation</h2>
       <p class="factory-card-sub">Send a prompt to the model in use and see its reply and how long it took.</p>
-      <oj-text-area id="prompt" label-hint="Prompt" value="{{prompt}}" rows="4"></oj-text-area>
-      <div class="factory-btn-row"><oj-button id="sendButton" chroming="callToAction" on-oj-action="[[send]]" disabled="[[busy]]">Send</oj-button></div>
+      <fx-textarea id="prompt" label="Prompt" value="{{prompt}}" rows="4"></fx-textarea>
+      <div class="factory-btn-row"><button type="button" id="sendButton" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[busy]]">Send</button></div>
       <oj-bind-if test="[[reply()]]">
         <h3>Reply <span class="factory-ov-subtle">(<oj-bind-text value="[[reply().model]]"></oj-bind-text>, <oj-bind-text value="[[reply().latencyMs]]"></oj-bind-text> ms)</span></h3>
         <pre class="factory-code factory-code-light" id="modelReply"><oj-bind-text value="[[reply().reply]]"></oj-bind-text></pre>

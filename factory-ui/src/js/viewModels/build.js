@@ -4,7 +4,7 @@
  * again, check again, write a failed file again) and an assistant that answers from the build results.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', '../services/toast', '../services/dialog', 'ojs/ojknockout', 'ojs/ojbutton', 'ojs/ojinputtext', 'ojs/ojmenu'],
+        '../services/assistant', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, dialog) {
     const POLL_MS = 3000;
     // Status badges (design system .fx-badge); the tones are the ones ui.pill takes
@@ -145,8 +145,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.layerFilter = ko.observable('');
       this.layerOptions = ko.pureComputed(() => [{ value: '', label: 'All layers' }].concat(
         files().map((f) => f.layer).filter((l, i, a) => l && a.indexOf(l) === i).map((l) => ({ value: l, label: l }))));
-      this.layerAction = (event) => this.layerFilter(event.detail.selectedValue || '');
+      this.layerAction = (event) => this.layerFilter(event.detail.value || '');
       this.clearLayer = () => this.layerFilter('');
+      // The actions menu of each failure row
+      this.failureItems = ko.pureComputed(() => [{ value: 'details', label: 'View details' }, { value: 'code', label: 'Show the code' },
+        { value: 'copy', label: 'Copy error message' }, { value: 'ask', label: 'Ask the AI Assistant' },
+        { value: 'fix', label: 'Generate fix with AI', disabled: !this.canManage() }]);
       this.failureFilter = ko.observable('all');
       this.failures = ko.pureComputed(() => {
         const list = [];
@@ -164,7 +168,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           pick: () => this.selectedFailure(i),
           stop: (event) => event.stopPropagation(),
           action: (event) => {
-            const value = event.detail.selectedValue;
+            const value = event.detail.value;
             this.selectedFailure(i);
             if (value === 'code') {
               this.detailTab('code');
@@ -340,8 +344,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then((d) => { show(d); toast.info('Writing ' + file.path.split('/').pop() + ' again with the fix.'); }).catch(actionError);
       };
       this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      this.moreItems = ko.pureComputed(() => [{ value: 'checks', label: 'Run quick checks', disabled: !this.canManage() },
+        { value: 'patch', label: 'Download patch' }, { value: 'changes', label: 'Open in Changes' }, { value: 'impact', label: 'Open Impact Analysis' }]);
       this.moreAction = (event) => {
-        const action = event.detail.selectedValue;
+        const action = event.detail.value;
         if (action === 'checks') {
           this.checkAgain();
         } else if (action === 'patch') {

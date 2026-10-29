@@ -19,23 +19,8 @@
         </oj-bind-for-each>
       </div>
       <select id="zoomSelect" class="fx-select factory-dz-zoom" aria-label="Zoom" title="Zoom" data-bind="options: zoomOptions, optionsText: 'label', optionsValue: 'value', value: zoom"></select>
-      <oj-menu-button id="designerMore" chroming="outlined" display="icons" class="factory-dz-morebtn">
-        <span slot="startIcon" class="factory-nav-icon factory-ico-more factory-dz-more-h" aria-hidden="true"></span>More
-        <oj-menu id="designerMoreMenu" slot="menu" on-oj-menu-action="[[pageMenu]]">
-          <oj-option value="new" disabled="[[!canDesign()]]">New screen</oj-option>
-          <oj-option value="component" disabled="[[!canDesign()]]">Create a component</oj-option>
-          <oj-option value="import" disabled="[[!editable()]]">Import from Figma, an image or a PDF</oj-option>
-          <oj-option value="board">All screens</oj-option>
-          <oj-option value="size-fit">Size: fit to the canvas</oj-option>
-          <oj-option value="size-desktop">Size: desktop · 1440</oj-option>
-          <oj-option value="size-laptop">Size: laptop · 1280</oj-option>
-          <oj-option value="size-tablet-landscape">Size: tablet landscape · 1024</oj-option>
-          <oj-option value="size-tablet">Size: tablet · 768</oj-option>
-          <oj-option value="size-phone">Size: phone · 390</oj-option>
-          <oj-option value="size-phone-small">Size: small phone · 360</oj-option>
-          <oj-option value="size-custom">Size: custom width</oj-option>
-        </oj-menu>
-      </oj-menu-button>
+      <fx-menu-button id="designerMore" class="factory-dz-morebtn" label="More" icon="more" icon-only variant="secondary"
+                      items="[[pageMenuItems]]" on-fx-action="[[pageMenu]]"></fx-menu-button>
       <oj-bind-if test="[[!previewMode()]]">
         <button type="button" id="previewButton" class="fx-btn fx-btn--secondary" on-click="[[togglePreview]]" data-fx-tip="See the screen without the panels">
           <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>Preview</button>
@@ -90,8 +75,8 @@
         <h3>From an approved requirement</h3>
         <p class="factory-dz-hint">One screen for each screen of its spec, with every field.</p>
         <div class="factory-dz-row">
-          <oj-select-single id="requirementSelect" class="factory-dz-grow" aria-label="Approved requirement" label-edge="none"
-                            data="[[requirementProvider]]" value="{{requirementId}}" placeholder="Choose an approved requirement"></oj-select-single>
+          <fx-select id="requirementSelect" class="factory-dz-grow" label="Approved requirement" hide-label
+                     options="[[requirementOptions]]" value="{{requirementId}}" placeholder="Choose an approved requirement" searchable></fx-select>
           <button type="button" id="fromRequirementButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createFromRequirement]]"
                   :disabled="[[!requirementId()]]">Create screens</button>
         </div>
@@ -100,8 +85,8 @@
         <h3>Blank screen</h3>
         <p class="factory-dz-hint">Start empty and build it from the components.</p>
         <div class="factory-dz-row">
-          <oj-input-text id="blankName" class="factory-dz-grow" aria-label="Screen name" label-edge="none" placeholder="Fixed deposit opening"
-                         value="{{blankName}}"></oj-input-text>
+          <fx-input id="blankName" class="factory-dz-grow" label="Screen name" hide-label placeholder="Fixed deposit opening"
+                    value="{{blankName}}"></fx-input>
           <button type="button" id="blankButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[createBlank]]" :disabled="[[!blankName()]]">Create</button>
         </div>
       </div>
@@ -113,11 +98,11 @@
       <div class="factory-dz-drawer-col">
         <h3>Figma</h3>
         <p class="factory-dz-hint">Select the frame in Figma and use Copy link to selection. The token is used for this import only.</p>
-        <oj-input-text id="figmaLink" aria-label="Figma frame link" label-edge="none" placeholder="https://www.figma.com/design/…?node-id=12-34"
-                       value="{{figmaLink}}"></oj-input-text>
+        <fx-input id="figmaLink" type="url" label="Figma frame link" hide-label placeholder="https://www.figma.com/design/…?node-id=12-34"
+                  value="{{figmaLink}}"></fx-input>
         <div class="factory-dz-row">
-          <oj-input-password id="figmaToken" class="factory-dz-grow" aria-label="Figma personal access token" label-edge="none"
-                             placeholder="Figma personal access token" value="{{figmaToken}}" mask-icon="visible"></oj-input-password>
+          <fx-input id="figmaToken" type="password" class="factory-dz-grow" label="Figma personal access token" hide-label
+                    placeholder="Figma personal access token" value="{{figmaToken}}"></fx-input>
           <button type="button" id="importFigmaButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[importFigma]]"
                   :disabled="[[!figmaLink() || !figmaToken() || busy()]]">Import frame</button>
         </div>
@@ -126,10 +111,8 @@
         <h3>Image or PDF</h3>
         <p class="factory-dz-hint">A PDF exported from Adobe XD, Sketch or Figma works with any model; an image needs a model that reads images.</p>
         <div class="factory-dz-row">
-          <oj-file-picker id="designFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
-                          on-oj-select="[[designFileSelected]]">
-            <button type="button" slot="trigger" id="chooseDesignButton" class="fx-btn fx-btn--secondary fx-btn--sm">Choose file</button>
-          </oj-file-picker>
+          <input type="file" id="designFile" class="fx-visually-hidden" accept=".png,.jpg,.jpeg,.webp,.pdf" on-change="[[designFileSelected]]">
+          <label for="designFile" id="chooseDesignButton" class="fx-btn fx-btn--secondary fx-btn--sm">Choose file</label>
           <span class="factory-dz-hint factory-dz-grow"><oj-bind-text value="[[designFileName]]"></oj-bind-text></span>
           <button type="button" id="importFileButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[importFile]]"
                   :disabled="[[!designFile() || busy()]]">Import file</button>
@@ -157,10 +140,8 @@
                data-bind="textInput: newComponentName"/>
         <oj-bind-if test="[[newComponentSource() === 'file']]">
           <div class="factory-dz-row">
-            <oj-file-picker id="newComponentFile" accept='[".png", ".jpg", ".jpeg", ".webp", ".pdf"]' selection-mode="single"
-                            on-oj-select="[[newComponentFileSelected]]">
-              <button type="button" slot="trigger" class="fx-btn fx-btn--secondary fx-btn--sm">Choose image or PDF</button>
-            </oj-file-picker>
+            <input type="file" id="newComponentFile" class="fx-visually-hidden" accept=".png,.jpg,.jpeg,.webp,.pdf" on-change="[[newComponentFileSelected]]">
+            <label for="newComponentFile" class="fx-btn fx-btn--secondary fx-btn--sm">Choose image or PDF</label>
             <span class="factory-dz-hint factory-dz-grow"><oj-bind-text value="[[newComponentFileName]]"></oj-bind-text></span>
           </div>
           <p class="factory-dz-hint">An image needs a chat model that reads images; a PDF works with any model.</p>
@@ -168,8 +149,8 @@
         <oj-bind-if test="[[newComponentSource() === 'figma']]">
           <input type="text" id="newComponentLink" class="fx-input factory-dz-input" placeholder="https://www.figma.com/design/…?node-id=12-34"
                  aria-label="Figma frame link" data-bind="textInput: newComponentLink"/>
-          <oj-input-password id="newComponentToken" aria-label="Figma personal access token" label-edge="none" placeholder="Figma personal access token"
-                             value="{{figmaToken}}" mask-icon="visible"></oj-input-password>
+          <fx-input id="newComponentToken" type="password" label="Figma personal access token" hide-label placeholder="Figma personal access token"
+                    value="{{figmaToken}}"></fx-input>
         </oj-bind-if>
         <textarea id="newComponentPrompt" class="fx-textarea factory-dz-input factory-dz-textarea" rows="3" aria-label="What the component should be"
                   data-bind="textInput: newComponentPrompt"
@@ -433,17 +414,8 @@
               <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
             </div>
           </oj-bind-if>
-          <oj-menu-button id="screenMore" chroming="borderless" display="icons" class="factory-dz-cardmore">
-            <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span>Screen actions
-            <oj-menu id="screenMoreMenu" slot="menu" on-oj-menu-action="[[screenMenu]]">
-              <oj-option value="share" disabled="[[!editable() || dirty()]]">Share for customer review</oj-option>
-              <oj-option value="approve" disabled="[[!(editable() && canApprove()) || dirty()]]">Approve</oj-option>
-              <oj-option value="reopen" disabled="[[!(detail().status === 'APPROVED' && canApprove())]]">Reopen for changes</oj-option>
-              <oj-option value="flow" disabled="[[!canMakeFlow() || busy()]]">Create review and confirmation screens</oj-option>
-              <oj-option value="comment">Comment on the screen</oj-option>
-              <oj-option value="delete" disabled="[[!canDesign()]]">Delete screen</oj-option>
-            </oj-menu>
-          </oj-menu-button>
+          <fx-menu-button id="screenMore" class="factory-dz-cardmore" label="Screen actions" icon="more" icon-only variant="ghost" size="sm"
+                          items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
         </div>
         <div id="journeyStrip" class="factory-dz-journey2">
           <ol class="factory-dz-stepper">
@@ -504,8 +476,8 @@
             <p class="factory-dz-hint">What code generation starts from for the <oj-bind-text value="[[targetTitle]]"></oj-bind-text> app (last saved
               version): the screen with every field and action as a testID, its test and its texts.</p>
             <div class="factory-dz-row">
-              <oj-input-text id="codeModule" class="factory-dz-grow" aria-label="Module folder" label-edge="none" placeholder="Module folder"
-                             value="{{codeModule}}"></oj-input-text>
+              <fx-input id="codeModule" class="factory-dz-grow" label="Module folder" hide-label placeholder="Module folder"
+                        value="{{codeModule}}"></fx-input>
               <button type="button" id="showCodeButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[showCode]]">Show code</button>
             </div>
             <oj-bind-for-each data="[[codeFiles]]" as="f">
@@ -553,13 +525,8 @@
                   <td><span :class="[[$current.data.severity.css]]" :title="[[$current.data.severity.title]]"><oj-bind-text value="[[$current.data.severity.text]]"></oj-bind-text></span></td>
                   <td><span class="factory-dz-toggle-wrap" :title="[[$current.data.statusTitle]]"><span :class="[[$current.data.toggleCss]]" role="switch" :aria-checked="[[$current.data.active ? 'true' : 'false']]" aria-disabled="true"></span>
                     <oj-bind-text value="[[$current.data.statusText]]"></oj-bind-text></span></td>
-                  <td><oj-menu-button chroming="borderless" display="icons" class="factory-dz-rowmore">
-                    <span slot="startIcon" class="factory-nav-icon factory-ico-more" aria-hidden="true"></span><oj-bind-text value="[['Actions for ' + $current.data.id]]"></oj-bind-text>
-                    <oj-menu slot="menu" on-oj-menu-action="[[$current.data.menuAction]]">
-                      <oj-option value="apply" disabled="[[!editable()]]">Ask AI to apply it to this screen</oj-option>
-                      <oj-option value="copy">Copy the rule</oj-option>
-                      <oj-option value="requirement">Open the requirement</oj-option>
-                    </oj-menu></oj-menu-button></td></tr></template></oj-bind-for-each></tbody></table>
+                  <td><fx-menu-button class="factory-dz-rowmore" label="[[$current.data.menuLabel]]" icon="more" icon-only variant="ghost" size="sm"
+                    items="[[$current.data.menuItems]]" on-fx-action="[[$current.data.menuAction]]"></fx-menu-button></td></tr></template></oj-bind-for-each></tbody></table>
               <oj-bind-if test="[[ruleRows().length === 0]]"><p class="factory-dz-hint">The requirement has no business rules for this screen.</p></oj-bind-if>
             </oj-bind-if>
             <oj-bind-if test="[[contextTab() === 'apis' && hasRequirement()]]">
@@ -671,16 +638,16 @@
               <div>
                 <details class="factory-dz-sec" open>
                   <summary>General</summary>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-select-single id="propType" label-hint="Component" data="[[typeProvider]]" value="{{propType}}"></oj-select-single>
-                    <oj-input-text id="propName" label-hint="ID (field name in code)" value="{{propName}}"></oj-input-text>
-                    <oj-input-text id="propLabel" label-hint="Label" value="{{propLabel}}"></oj-input-text>
-                    <oj-input-text id="propPlaceholder" label-hint="Placeholder" value="{{propPlaceholder}}"></oj-input-text>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-select id="propType" label="Component" options="[[typeOptions]]" value="{{propType}}" readonly="[[!editable()]]" searchable></fx-select>
+                    <fx-input id="propName" label="ID (field name in code)" value="{{propName}}" readonly="[[!editable()]]"></fx-input>
+                    <fx-input id="propLabel" label="Label" value="{{propLabel}}" readonly="[[!editable()]]"></fx-input>
+                    <fx-input id="propPlaceholder" label="Placeholder" value="{{propPlaceholder}}" readonly="[[!editable()]]"></fx-input>
                     <oj-bind-if test="[[selectedIsComponent()]]">
-                      <oj-input-text id="propComponent" label-hint="Component (as named in the code)" value="{{propComponent}}"></oj-input-text>
-                      <oj-text-area id="propParams" label-hint="Parameters (one per line, name: value)" value="{{propParams}}" rows="4"></oj-text-area>
+                      <fx-input id="propComponent" label="Component (as named in the code)" value="{{propComponent}}" readonly="[[!editable()]]"></fx-input>
+                      <fx-textarea id="propParams" label="Parameters (one per line, name: value)" value="{{propParams}}" rows="4" mono readonly="[[!editable()]]"></fx-textarea>
                     </oj-bind-if>
-                  </oj-form-layout>
+                  </div>
                   <div class="factory-dz-field-label">Required</div>
                   <div class="factory-dz-segmented factory-dz-segmented-full" role="group" aria-label="Mandatory">
                     <oj-bind-for-each data="[[requiredChoices]]" as="r">
@@ -692,10 +659,10 @@
                       </template>
                     </oj-bind-for-each>
                   </div>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-switch id="propReadonly" label-hint="Read Only" value="{{propReadonly}}"></oj-switch>
-                    <oj-input-number id="propMaxLength" label-hint="Max Length" value="{{propMaxLength}}" min="1"></oj-input-number>
-                  </oj-form-layout>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-switch id="propReadonly" label="Read Only" value="{{propReadonly}}" readonly="[[!editable()]]"></fx-switch>
+                    <fx-input id="propMaxLength" type="number" label="Max Length" value="{{propMaxLength}}" min="1" readonly="[[!editable()]]"></fx-input>
+                  </div>
                 </details>
                 <details class="factory-dz-sec" open>
                   <summary>Data Binding</summary>
@@ -737,19 +704,19 @@
                     </div>
                   </oj-bind-if>
                   <oj-bind-if test="[[selectedHasOptions() && !selectedFromApi()]]">
-                    <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                      <oj-text-area id="propOptions" label-hint="[[optionsLabel]]" value="{{propOptions}}" rows="4"></oj-text-area>
-                    </oj-form-layout>
+                    <div class="fx-form factory-dz-propform">
+                      <fx-textarea id="propOptions" label="[[optionsLabel]]" value="{{propOptions}}" rows="4" readonly="[[!editable()]]"></fx-textarea>
+                    </div>
                   </oj-bind-if>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-input-text id="propDefault" label-hint="Default value" value="{{propDefault}}"></oj-input-text>
-                  </oj-form-layout>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-input id="propDefault" label="Default value" value="{{propDefault}}" readonly="[[!editable()]]"></fx-input>
+                  </div>
                 </details>
                 <details class="factory-dz-sec" id="validationSection" :open="[[validationOpen]]">
                   <summary>Validation</summary>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-text-area id="propValidations" label-hint="Validations (one per line)" value="{{propValidations}}" rows="3"></oj-text-area>
-                  </oj-form-layout>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-textarea id="propValidations" label="Validations (one per line)" value="{{propValidations}}" rows="3" readonly="[[!editable()]]"></fx-textarea>
+                  </div>
                 </details>
                 <details class="factory-dz-sec">
                   <summary>Conditional Display</summary>
@@ -787,9 +754,9 @@
                 </details>
                 <details class="factory-dz-sec">
                   <summary>Help Text</summary>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-input-text id="propHelp" label-hint="Help text" value="{{propHelp}}"></oj-input-text>
-                  </oj-form-layout>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-input id="propHelp" label="Help text" value="{{propHelp}}" readonly="[[!editable()]]"></fx-input>
+                  </div>
                 </details>
               </div>
             </oj-bind-if>
@@ -797,21 +764,21 @@
             <oj-bind-if test="[[selectedKind() === 'section']]">
               <details class="factory-dz-sec" open>
                 <summary>General</summary>
-                <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                  <oj-input-text id="propSectionTitle" label-hint="Section title" value="{{propSectionTitle}}"></oj-input-text>
-                  <oj-select-single id="propSectionColumns" label-hint="Columns on wide screens" data="[[columnsProvider]]"
-                                    value="{{propSectionColumns}}"></oj-select-single>
-                </oj-form-layout>
+                <div class="fx-form factory-dz-propform">
+                  <fx-input id="propSectionTitle" label="Section title" value="{{propSectionTitle}}" readonly="[[!editable()]]"></fx-input>
+                  <fx-select id="propSectionColumns" label="Columns on wide screens" options="[[columnsOptions]]"
+                             value="{{propSectionColumns}}" readonly="[[!editable()]]"></fx-select>
+                </div>
               </details>
             </oj-bind-if>
 
             <oj-bind-if test="[[selectedKind() === 'action']]">
               <details class="factory-dz-sec" open>
                 <summary>General</summary>
-                <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                  <oj-input-text id="propActionLabel" label-hint="Button label" value="{{propActionLabel}}"></oj-input-text>
-                  <oj-select-single id="propActionKind" label-hint="Style" data="[[kindProvider]]" value="{{propActionKind}}"></oj-select-single>
-                </oj-form-layout>
+                <div class="fx-form factory-dz-propform">
+                  <fx-input id="propActionLabel" label="Button label" value="{{propActionLabel}}" readonly="[[!editable()]]"></fx-input>
+                  <fx-select id="propActionKind" label="Style" options="[[kindOptions]]" value="{{propActionKind}}" readonly="[[!editable()]]"></fx-select>
+                </div>
               </details>
             </oj-bind-if>
 
@@ -838,12 +805,12 @@
                 </details>
                 <details class="factory-dz-sec" open>
                   <summary>General</summary>
-                  <oj-form-layout max-columns="1" readonly="[[!editable()]]" user-assistance-density="compact" label-edge="start" label-width="40%">
-                    <oj-input-text id="screenTitle" label-hint="Title" value="{{screenTitle}}"></oj-input-text>
-                    <oj-input-text id="screenName" label-hint="Name" value="{{screenName}}"></oj-input-text>
-                    <oj-select-single id="propStage" label-hint="Stage in the OBDX flow" data="[[stageProvider]]" value="{{propStage}}"
-                                      placeholder="Not set"></oj-select-single>
-                  </oj-form-layout>
+                  <div class="fx-form factory-dz-propform">
+                    <fx-input id="screenTitle" label="Title" value="{{screenTitle}}" readonly="[[!editable()]]"></fx-input>
+                    <fx-input id="screenName" label="Name" value="{{screenName}}" readonly="[[!editable()]]"></fx-input>
+                    <fx-select id="propStage" label="Stage in the OBDX flow" options="[[stageOptions]]" value="{{propStage}}"
+                               placeholder="Not set" readonly="[[!editable()]]"></fx-select>
+                  </div>
                   <oj-bind-if test="[[canMakeFlow()]]">
                     <button type="button" id="makeFlowButton" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[makeFlowScreens]]" :disabled="[[busy()]]">
                       Create review and confirmation screens</button>
