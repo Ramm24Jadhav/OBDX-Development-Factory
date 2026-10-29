@@ -77,7 +77,7 @@
               <dt>Type</dt><dd><oj-bind-text value="[[fileInfo().type]]"></oj-bind-text></dd>
               <dt>Size</dt><dd><oj-bind-text value="[[fileInfo().size]]"></oj-bind-text></dd>
               <dt>Revision</dt><dd><oj-bind-text value="[[fileInfo().revision]]"></oj-bind-text></dd>
-              <dt>Lines of Code</dt><dd><oj-bind-text value="[[fileInfo().lines + (fileInfo().truncated ? ' (cut)' : '')]]"></oj-bind-text></dd>
+              <dt>Lines of Code</dt><dd><oj-bind-text value="[[fileInfo().lines]]"></oj-bind-text></dd>
               <dt>Imports</dt><dd><oj-bind-text value="[[fileInfo().imports]]"></oj-bind-text></dd>
               <dt>Used By</dt><dd><button type="button" class="factory-link-sm" on-click="[[searchUsages]]">Search usages</button></dd>
               <dt>Related APIs</dt><dd><oj-bind-text value="[[fileInfo().endpoints.length + ' endpoints']]"></oj-bind-text></dd>

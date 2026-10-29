@@ -72,7 +72,7 @@
           <dt>Workspace</dt><dd><oj-bind-text value="[[selected().workspace]]"></oj-bind-text></dd>
           <dt>Description</dt><dd><oj-bind-text value="[[selected().description]]"></oj-bind-text></dd>
           <dt>Server URL</dt><dd class="factory-mono"><oj-bind-text value="[[selected().target]]"></oj-bind-text></dd>
-          <dt>Mode</dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
+          <dt><oj-bind-text value="[[selected().envLabel]]"></oj-bind-text></dt><dd><oj-bind-text value="[[selected().environment]]"></oj-bind-text></dd>
           <oj-bind-if test="[[selected().jobs]]"><dt>Jobs</dt><dd class="factory-mono"><oj-bind-text value="[[selected().jobs]]"></oj-bind-text></dd></oj-bind-if>
           <dt>Status</dt><dd><span :class="[[selected().pill.css]]"><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span></dd>
           <dt>Last Connected</dt><dd><oj-bind-text value="[[selected().last]]"></oj-bind-text></dd>

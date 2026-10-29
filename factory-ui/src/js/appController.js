@@ -145,6 +145,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
       });
       this.globalQuery = ko.observable('');
       this.globalQueryInput = (event) => this.globalQuery(event.target.value);
+      // The search box has its own form, so browsers do not take it for the username of a password on the page
+      this.globalSearchSubmit = (event) => event.preventDefault();
       this.globalSearchKey = (event) => {
         if (event.key === 'Enter' && this.globalQuery().trim()) {
           pageRequests.codeSearch(this.globalQuery().trim());

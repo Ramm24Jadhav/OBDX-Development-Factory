@@ -30,7 +30,7 @@
         </oj-bind-for-each>
         <div class="factory-kpi" title="Share of screens of small or medium complexity">
           <span class="factory-ring factory-mo-ring" :style="[[readinessStyle]]"><span><oj-bind-text value="[[readiness() + '%']]"></oj-bind-text></span></span>
-          <span><span class="factory-kpi-label">Modernization Readiness</span><span :class="[[readinessPill().css]]"><oj-bind-text value="[[readinessPill().text]]"></oj-bind-text></span></span>
+          <span><span class="factory-kpi-label">Modernization Readiness</span><span :class="[[readinessPill().css]]"><oj-bind-text value="[[readinessPill().text]]"></oj-bind-text></span><span class="factory-kpi-sub">Screens without large rework</span></span>
         </div>
       </div>
 

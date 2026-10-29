@@ -97,7 +97,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const related = requirements().filter((r) => r.spec && r.spec.screens.some((s) => (s.relatedCode || []).some((p) => p === f.path)));
         return {
           name: f.path.split('/').pop(), folder: f.path.split('/').slice(0, -1).join('/'), type: f.language, size: size(f.sizeBytes || f.content.length),
-          lines: f.lines, revision: f.revision ? 'r' + f.revision : '–', imports: imports, endpoints: endpoints.map((e) => ({ method: e.method, path: e.path, code: e.javaMethod })),
+          lines: f.partial ? 'Not known (only the indexed pieces are shown)' : f.lines + (f.truncated ? ' (shown up to 512 KB)' : ''), revision: f.revision ? 'r' + f.revision : '–', imports: imports, endpoints: endpoints.map((e) => ({ method: e.method, path: e.path, code: e.javaMethod })),
           related: related.map((r) => ({ code: 'REQ-' + r.id.replace(/-/g, '').slice(0, 4).toUpperCase(), title: r.title })),
           tags: [f.language, f.path.split('/')[0]].concat(/controller/i.test(f.path) ? ['Controller'] : []).concat(/service/i.test(f.path) ? ['Service'] : [])
             .concat(/\/(ofss|oracle)\//i.test(f.path) ? ['OBDX product'] : ['Bank code']).filter(Boolean),
@@ -116,7 +116,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             // Older server: show the file's indexed pieces from code search
             return api.get('workspaces/' + id + '/search?q=' + encodeURIComponent(path.split('/').pop()) + '&limit=20').then((res) => {
               const pieces = res.results.filter((r) => r.path === path);
-              this.file({ path: path, language: pieces.length ? pieces[0].language : '', sizeBytes: 0, revision: 0, truncated: true,
+              this.file({ path: path, language: pieces.length ? pieces[0].language : '', sizeBytes: 0, revision: 0, truncated: false, partial: true,
                 content: pieces.map((r) => r.snippet).join('\n') || '(no content in the index)', lines: 0 });
             });
           })

@@ -91,12 +91,12 @@
                 <span class="factory-topbar-app"><oj-bind-text value="[[crumbWorkspace]]"></oj-bind-text></span>
               </oj-bind-if>
             </div>
-            <div class="factory-topbar-search" role="search">
+            <form class="factory-topbar-search" role="search" autocomplete="off" on-submit="[[globalSearchSubmit]]">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
               <input id="globalSearch" name="codeSearch" type="search" enterkeyhint="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
                      autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
               <kbd class="factory-kbd">Ctrl K</kbd>
-            </div>
+            </form>
             <div class="factory-topbar-icons">
               <div class="factory-bell-wrap">
                 <button type="button" class="factory-icon-button" id="bellButton" on-click="[[toggleBell]]"

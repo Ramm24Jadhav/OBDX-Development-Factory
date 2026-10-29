@@ -27,7 +27,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const job = d.imports.find((j) => j.status === 'SUCCEEDED' || j.status === 'FAILED');
           list.push({
             key: 'svn-' + w.id, type: 'svn', name: 'SVN Repository', workspace: w.name, workspaceId: w.id, description: 'OBDX source of ' + w.name,
-            environment: w.obdxVersion, target: w.svnUrl || 'Not set', lastAt: job ? (job.finishedAt || job.createdAt) : null,
+            environment: w.obdxVersion, envLabel: 'OBDX version', target: w.svnUrl || 'Not set', lastAt: job ? (job.finishedAt || job.createdAt) : null,
             baseState: !w.svnUrl ? 'inactive' : job && job.status === 'FAILED' ? 'issue' : job ? 'connected' : 'configured',
             auth: w.svnUsername ? 'User ' + w.svnUsername + (w.svnPasswordSet ? ' (password stored)' : '') : 'No login',
             test: () => api.post('workspaces/' + w.id + '/svn/test').then((r) => setTest('svn-' + w.id, true, 'Connected, latest revision r' + r.headRevision))
@@ -37,7 +37,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const j = jenkins()[w.id];
           list.push({
             key: 'jenkins-' + w.id, type: 'jenkins', name: 'Jenkins CI', workspace: w.name, workspaceId: w.id, description: 'Build and test pipeline of ' + w.name,
-            environment: j ? (j.mode === 'BRANCH' ? 'Branch builds' : 'Patch builds') : '–', target: j ? j.url : 'Not set up',
+            envLabel: 'Builds', environment: j ? (j.mode === 'BRANCH' ? 'Branch builds' : 'Patch builds') : '–', target: j ? j.url : 'Not set up',
             lastAt: d.builds.length ? d.builds.map((b) => b.finishedAt || b.startedAt).sort().pop() : null,
             baseState: !j ? 'inactive' : d.builds.some((b) => b.result && b.result !== 'SUCCESS' && b.result !== 'RUNNING' && b.result !== 'QUEUED') ? 'issue' : 'configured',
             auth: j ? (j.username ? 'User ' + j.username + (j.tokenSet ? ' (API token stored)' : '') : 'No login') : '–', jobs: j ? j.jobs : '',
@@ -54,7 +54,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         if (m) {
           list.push({
             key: 'model-chat', type: 'model', name: 'Model Server', workspace: 'All workspaces', description: 'Writing specs, designs and code: ' + m.chatModel,
-            environment: 'All', target: m.baseUrl, lastAt: m.updatedAt, baseState: 'configured', auth: m.apiKeySet ? 'API key stored' : 'No API key',
+            envLabel: 'Used by', environment: 'All workspaces', target: m.baseUrl, lastAt: m.updatedAt, baseState: 'configured', auth: m.apiKeySet ? 'API key stored' : 'No API key',
             test: this.isAdmin() ? () => api.post('model/servers/models', { baseUrl: m.baseUrl, apiKey: null }).then((r) => setTest('model-chat', true, r.length + ' models available'))
               .catch((e) => setTest('model-chat', false, e.message)) : null,
             builds: [], open: 'models'
@@ -62,7 +62,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           if (m.embeddingBaseUrl) {
             list.push({
               key: 'model-embed', type: 'model', name: 'Code Search Server', workspace: 'All workspaces', description: 'Embeddings for code search: ' + m.embeddingModel,
-              environment: 'All', target: m.embeddingBaseUrl, lastAt: m.updatedAt, baseState: 'configured', auth: m.embeddingApiKeySet ? 'API key stored' : 'No API key',
+              envLabel: 'Used by', environment: 'All workspaces', target: m.embeddingBaseUrl, lastAt: m.updatedAt, baseState: 'configured', auth: m.embeddingApiKeySet ? 'API key stored' : 'No API key',
               test: this.isAdmin() ? () => api.post('model/servers/models', { baseUrl: m.embeddingBaseUrl, apiKey: null }).then((r) => setTest('model-embed', true, r.length + ' models available'))
                 .catch((e) => setTest('model-embed', false, e.message)) : null,
               builds: [], open: 'models'
