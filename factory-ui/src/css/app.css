@@ -8927,3 +8927,17 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 @media (max-width: 767px) { .factory-nav-notch { display: none; } }
 /* Dragging a carousel: no snapping or smooth scrolling while the mouse moves; on release it settles on a card */
 .fx-carousel-track.fx-strip--dragging { cursor: grabbing; scroll-behavior: auto; scroll-snap-type: none; user-select: none; }
+
+/* Phones: the notification panel spans the window under the top bar (it was anchored to the bell and ran off the left) */
+@media (max-width: 767px) { .factory-bell-panel { position: fixed; left: 12px; right: 12px; top: 58px; width: auto; max-height: calc(100dvh - 76px); } }
+
+/* Sign-in: the illustration starts level with the feature list (a fixed pull-up ran it into the lead paragraph);
+   the four benefits share one row as equal columns (a wrapping row of fixed-width items dropped the fourth) */
+.factory-login-art { margin-top: 0; }
+.factory-login-benefits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.factory-login-benefits li { max-width: none; padding: 0 18px; min-width: 0; }
+@media (max-width: 640px) { .factory-login-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 8px; } .factory-login-benefits li { padding: 8px 12px; } }
+
+/* Resizer handles: focus shows the standard ring and a wider grip (a 2px colour change alone was too faint to see) */
+.fx-resizer:focus-visible { outline: none; border-radius: var(--fx-radius-sm); box-shadow: var(--fx-focus); }
+.fx-resizer:focus-visible .fx-resizer-grip { width: 4px; }

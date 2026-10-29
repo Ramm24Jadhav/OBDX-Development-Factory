@@ -348,6 +348,23 @@ error. It writes `report.json` and a screenshot per page and size. It only reads
 `--pages`, `--sizes` (for example `375x667,1440x900`, or `640x400@2` for 200% zoom), `--workspace` and `--theme dark`
 narrow or vary the run.
 
+`npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
+drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
+- the page transition runs (or is off with reduced motion);
+- nothing stays busy after loading;
+- Tab reaches visible controls, each with a visible focus change.
+
+Once for the shell, it checks:
+- the collapse notch, by keyboard;
+- the phone drawer: Escape and a swipe close it;
+- the command palette, the user menu, the notification panel and dialogs open and close by keyboard, with focus returning;
+- switching workspace by keyboard;
+- carousel keys;
+- Workspaces refresh, Code search and Knowledge search, on a slow network and offline, end with nothing left busy and,
+  on failure, a message.
+
+It ends by signing out to check the sign-in page. It only reads. Both checks share `scripts/qa-browser.js`.
+
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
 Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the dark sidebar with the product name (collapsible; it slides in on phones), the top bar, and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), a bell listing what needs attention (with a link to the Notification Center), Help (the About page) and the user menu. Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.

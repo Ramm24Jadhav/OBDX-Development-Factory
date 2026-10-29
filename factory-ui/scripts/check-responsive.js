@@ -8,13 +8,13 @@
 // Options: --pages overview,code   --sizes 375x667,1440x900   --out <folder for report.json and screenshots>
 //          --workspace <id>   --theme light|dark   --reduced-motion 1   --browser <path to msedge.exe or chrome>
 // It only reads: it signs in and opens pages, and never saves or deletes anything. Exit code 1 when a defect is found.
-// No dependencies: it talks to the browser over the DevTools protocol with the small WebSocket client below.
+// No dependencies: it talks to the browser over the DevTools protocol (scripts/qa-browser.js).
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const http = require('http');
-const crypto = require('crypto');
-const { spawn } = require('child_process');
+const qa = require('./qa-browser');
+
+const sleep = qa.sleep;
+let browserProcess = null;
 
 const args = {};
 for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]; }
@@ -25,75 +25,6 @@ const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,desi
 // The device classes, plus 1280x800 and 1440x900 at 200% browser zoom (the same CSS width as 640 and 720 pixels).
 const SIZES = (args.sizes || '320x568,375x667,430x932,768x1024,1024x768,1280x800,1440x900,1920x1080,640x400@2,720x450@2')
   .split(',').map((s) => { const m = /^(\d+)x(\d+)(?:@(\d))?$/.exec(s); return { w: +m[1], h: +m[2], scale: +(m[3] || 1), name: s.replace('@2', '-zoom200') }; });
-
-// ---------- A minimal WebSocket client (text frames only), enough for the DevTools protocol ----------
-function connect(wsUrl) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(wsUrl);
-    const key = crypto.randomBytes(16).toString('base64');
-    const req = http.request({ host: u.hostname, port: u.port, path: u.pathname, headers: {
-      Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Version': '13', 'Sec-WebSocket-Key': key } });
-    req.on('upgrade', (res, socket) => {
-      let buffer = Buffer.alloc(0);
-      const listeners = [];
-      socket.on('data', (chunk) => {
-        buffer = Buffer.concat([buffer, chunk]);
-        for (;;) {
-          if (buffer.length < 2) { return; }
-          let len = buffer[1] & 0x7f;
-          let offset = 2;
-          if (len === 126) { if (buffer.length < 4) { return; } len = buffer.readUInt16BE(2); offset = 4; }
-          else if (len === 127) { if (buffer.length < 10) { return; } len = Number(buffer.readBigUInt64BE(2)); offset = 10; }
-          if (buffer.length < offset + len) { return; }
-          const opcode = buffer[0] & 0x0f;
-          const payload = buffer.subarray(offset, offset + len);
-          buffer = buffer.subarray(offset + len);
-          if (opcode === 1) { listeners.forEach((l) => l(payload.toString('utf8'))); }
-        }
-      });
-      resolve({
-        send(text) {
-          const data = Buffer.from(text, 'utf8');
-          const mask = crypto.randomBytes(4);
-          let head;
-          if (data.length < 126) { head = Buffer.from([0x81, 0x80 | data.length]); }
-          else if (data.length < 65536) { head = Buffer.alloc(4); head[0] = 0x81; head[1] = 0x80 | 126; head.writeUInt16BE(data.length, 2); }
-          else { head = Buffer.alloc(10); head[0] = 0x81; head[1] = 0x80 | 127; head.writeBigUInt64BE(BigInt(data.length), 2); }
-          const masked = Buffer.alloc(data.length);
-          for (let i = 0; i < data.length; i++) { masked[i] = data[i] ^ mask[i % 4]; }
-          socket.write(Buffer.concat([head, mask, masked]));
-        },
-        onMessage(l) { listeners.push(l); },
-        close() { socket.destroy(); }
-      });
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
-
-function getJson(port, p, method) {
-  return new Promise((resolve, reject) => {
-    const req = http.request({ host: '127.0.0.1', port: port, path: p, method: method || 'GET' }, (res) => {
-      let body = '';
-      res.on('data', (c) => { body += c; });
-      res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
-
-let browserProcess = null;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-function findBrowser() {
-  const candidates = [args.browser, process.env.FACTORY_QA_BROWSER,
-    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
-    'C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/microsoft-edge',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
-  return candidates.find((c) => c && fs.existsSync(c));
-}
 
 // ---------- What is measured on each page (runs in the page) ----------
 function measure() {
@@ -226,58 +157,10 @@ async function popupsInWindow() {
 }
 
 (async () => {
-  const browser = findBrowser();
-  if (!browser) { console.error('No Edge or Chrome found: pass --browser <path>.'); process.exit(2); }
-  const user = process.env.FACTORY_QA_USER || 'admin';
-  const password = process.env.FACTORY_QA_PASSWORD;
-  if (!password) { console.error('Set FACTORY_QA_PASSWORD (and FACTORY_QA_USER) for the factory at ' + BASE + '.'); process.exit(2); }
   fs.mkdirSync(OUT, { recursive: true });
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-qa-'));
-  const proc = spawn(browser, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile, '--no-first-run',
-    '--disable-extensions', '--hide-scrollbars=false', 'about:blank'], { stdio: 'ignore' });
-  browserProcess = proc;
-  let port;
-  for (let i = 0; i < 100 && !port; i++) {
-    await sleep(200);
-    try { port = +fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]; } catch (e) { /* not yet */ }
-  }
-  const tab = (await getJson(port, '/json/list')).find((t) => t.type === 'page');
-  const ws = await connect(tab.webSocketDebuggerUrl);
-  let id = 0;
-  const waiting = new Map();
-  const errors = [];
-  ws.onMessage((text) => {
-    const m = JSON.parse(text);
-    if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); return; }
-    if (m.method === 'Runtime.exceptionThrown') { errors.push('exception: ' + (m.params.exceptionDetails.exception || {}).description); }
-    if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') { errors.push('console: ' + m.params.args.map((a) => a.value || a.description || '').join(' ').slice(0, 200)); }
-    if (m.method === 'Network.responseReceived' && m.params.response.status >= 400 && /\/api\//.test(m.params.response.url)) {
-      errors.push('HTTP ' + m.params.response.status + ' ' + m.params.response.url.replace(BASE, ''));
-    }
-    if (m.method === 'Network.loadingFailed' && !m.params.canceled) { errors.push('failed request: ' + m.params.errorText); }
-  });
-  const cdp = (method, params) => new Promise((resolve) => { const n = ++id; waiting.set(n, resolve); ws.send(JSON.stringify({ id: n, method: method, params: params || {} })); });
-  const run = async (fn, arg) => {
-    const r = await cdp('Runtime.evaluate', { expression: '(' + fn.toString() + ')(' + (arg === undefined ? '' : JSON.stringify(arg)) + ')', awaitPromise: true, returnByValue: true });
-    if (r.result.exceptionDetails) { throw new Error(r.result.exceptionDetails.exception.description); }
-    return r.result.result.value;
-  };
-  await cdp('Runtime.enable'); await cdp('Network.enable'); await cdp('Page.enable');
-  if (args['reduced-motion']) { await cdp('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }); }
-
-  const open = async (url) => { await cdp('Page.navigate', { url: url }); for (let i = 0; i < 60; i++) { await sleep(500); try { if (await run(() => !!(window.require && document.querySelector('.factory-shell, .factory-login, #loginUsername')))) { break; } } catch (e) { /* loading */ } } await sleep(1500); };
-  await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-  await open(BASE + '/?ojr=overview');
-  const signedIn = await run(async (cred) => {
-    const session = await new Promise((r) => window.require(['services/session'], r));
-    // The first read gives the browser the server's CSRF cookie, which sign-in must send back
-    for (let i = 0; i < 3 && !session.user(); i++) {
-      await fetch('api/auth/me', { credentials: 'same-origin' }).catch(() => null);
-      try { await session.login(cred.user, cred.password); } catch (e) { await new Promise((r) => setTimeout(r, 1000)); }
-    }
-    return !!session.user();
-  }, { user: user, password: password });
-  if (!signedIn) { console.error('Could not sign in as ' + user + '.'); process.exit(2); }
+  const session = await qa.start({ base: BASE, browser: args.browser, reducedMotion: !!args['reduced-motion'] });
+  browserProcess = session.proc;
+  const { cdp, run, open, errors, ws, proc, profile } = session;
 
   const report = { url: BASE, at: new Date().toISOString(), sizes: SIZES.map((s) => s.name), pages: PAGES, results: [] };
   for (const size of SIZES) {

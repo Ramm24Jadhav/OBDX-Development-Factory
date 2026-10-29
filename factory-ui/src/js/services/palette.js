@@ -89,7 +89,14 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
         .filter((it) => it.score > 0);
       // Without a query, a short list: actions and pages first
       const limited = q ? scored : scored.filter((it) => ['Actions', 'Pages', 'Workspaces'].indexOf(it.group) >= 0);
-      limited.sort((a, b) => (ORDER.indexOf(a.group) - ORDER.indexOf(b.group)) || (b.score - a.score));
+      // Groups follow their best match, so typing a page's name puts that page first (Enter opens it); searching the
+      // code comes first only when nothing else matches the words themselves
+      const best = {};
+      limited.forEach((it) => { if (!it.always) { best[it.group] = Math.max(best[it.group] || 0, it.score); } });
+      const strong = Object.keys(best).some((g) => best[g] >= 60);
+      best.Code = strong ? -1 : 1000;
+      limited.sort((a, b) => (q ? (best[b.group] || 0) - (best[a.group] || 0) : 0)
+        || (ORDER.indexOf(a.group) - ORDER.indexOf(b.group)) || (b.score - a.score));
       return limited.slice(0, 40);
     });
     // Rows with group headings, each knowing its index for the keyboard

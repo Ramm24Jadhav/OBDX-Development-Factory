@@ -223,6 +223,21 @@ define(['knockout', './services/session', './services/updates', './services/dash
       });
       // Opening an item from the bell closes it.
       window.addEventListener('factory-navigate', () => this.bellOpen(false));
+      // Escape closes the notification panel, then the phone menu drawer, and focus goes back to the button that opened
+      // it. Dialogs, the palette, sheets and menus close themselves on Escape first.
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || document.querySelector('.fx-dialog, .fx-cmd, .fx-sheet, .fx-shortcuts, .fx-overlay')) {
+          return;
+        }
+        const back = (id) => window.setTimeout(() => { const b = document.getElementById(id); if (b) { b.focus(); } }, 0);
+        if (this.bellOpen()) {
+          this.bellOpen(false);
+          back('bellButton');
+        } else if (this.sidebarOpen()) {
+          this.sidebarOpen(false);
+          back('menuToggle');
+        }
+      });
       this.openHelp = (event) => {
         event.preventDefault();
         router.go({ path: 'about' });
@@ -270,7 +285,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.loginUsername = ko.observable('');
       this.loginPassword = ko.observable('');
       this.loginError = ko.observable(new URLSearchParams(window.location.search).get('signInError') === 'sso'
-        ? 'Single sign-on did not complete. Try again or contact your administrator.' : '');
+        ? 'Single sign-on did not complete. Try again or contact your administrator.' : session.unreachable());
+      session.unreachable.subscribe((message) => { if (message) { this.loginError(message); } });
       this.signingIn = ko.observable(false);
       this.signInSubmit = (event) => { event.preventDefault(); this.signIn(); };
       this.signIn = () => {

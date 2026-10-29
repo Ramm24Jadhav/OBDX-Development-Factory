@@ -234,7 +234,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return e && e.target && e.target.tagName === 'A' ? true : this.wsKeys.key(a, b);
       };
       this.total = ko.pureComputed(() => data().length);
-      this.refresh = () => { dashboard.load(); };
+      // A refresh that fails says so (the list keeps what it had)
+      this.refresh = () => dashboard.load().then(() => {
+        if (dashboard.error()) {
+          toast.error('Could not refresh the workspaces: ' + dashboard.error() + '. Check that the factory is running, then try again.');
+        }
+      });
 
       // The four totals
       this.tiles = ko.pureComputed(() => {
