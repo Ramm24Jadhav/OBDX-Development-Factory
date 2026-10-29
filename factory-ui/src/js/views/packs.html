@@ -47,7 +47,7 @@
             <h2>Bank Standards <button type="button" class="factory-link-sm" on-click="[[showStandards]]">View All</button></h2>
             <p class="factory-card-sub">Implementation rules the generated code must follow</p>
             <div class="factory-ov2-table-wrap">
-              <table class="factory-ov2-table"><thead><tr><th>Standard ID</th><th>Category</th><th>Description</th><th>Status</th></tr></thead>
+              <table class="factory-ov2-table factory-pk-std"><thead><tr><th>Standard ID</th><th>Category</th><th>Description</th><th>Status</th></tr></thead>
                 <tbody><oj-bind-for-each data="[[standards().slice(0, 6)]]"><template><tr><td class="factory-cp-link factory-mono"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
                   <td><oj-bind-text value="[[$current.data.area]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></td>
                   <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table>

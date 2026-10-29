@@ -93,7 +93,7 @@
             </div>
             <div class="factory-topbar-search" role="search">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
-              <input id="globalSearch" type="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
+              <input id="globalSearch" name="codeSearch" type="search" enterkeyhint="search" placeholder="Search across code in this workspace..." aria-label="Search the code"
                      autocomplete="off" :value="[[globalQuery]]" on-input="[[globalQueryInput]]" on-keydown="[[globalSearchKey]]">
               <kbd class="factory-kbd">Ctrl K</kbd>
             </div>
