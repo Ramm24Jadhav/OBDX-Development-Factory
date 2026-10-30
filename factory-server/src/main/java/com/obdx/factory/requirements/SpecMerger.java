@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * Combines specs drafted from different sections of one long document. Screens and fields with the same name are
  * merged, keeping the first value found for each attribute and adding what later sections add; other lists are
- * combined without duplicates. Business rules are numbered again afterwards (BR-1, BR-2, ...).
+ * combined without duplicates. Business rules keep the document's IDs (BR-001); those without one are numbered after them.
  */
 public final class SpecMerger {
 
@@ -26,11 +26,26 @@ public final class SpecMerger {
         }
         String summary = specs.stream().map(RequirementSpec::summary).filter(Objects::nonNull).distinct()
                 .collect(Collectors.joining(" "));
-        List<RequirementSpec.BusinessRule> rules = unique(specs, RequirementSpec::businessRules, r -> r.description(), (a, b) -> a);
+        List<RequirementSpec.BusinessRule> rules = unique(specs, RequirementSpec::businessRules, RequirementSpec.BusinessRule::description, (a, b) -> a);
+        // The document's own rule IDs (BR-001) stay, for traceability; rules without one, or with an ID another rule
+        // already has, are numbered after the highest
+        java.util.Set<String> taken = new java.util.HashSet<>();
+        int next = 1;
+        String pattern = "BR-%d";
+        for (RequirementSpec.BusinessRule rule : rules) {
+            if (documentId(rule.id())) {
+                if (next == 1) {
+                    // Numbered like the document's own: R7 → R8, BR-010 → BR-011
+                    String digits = rule.id().strip().replaceAll("^\\D*", "");
+                    pattern = rule.id().strip().replaceAll("\\d+$", "") + (digits.startsWith("0") ? "%0" + digits.length() + "d" : "%d");
+                }
+                next = Math.max(next, number(rule.id()) + 1);
+            }
+        }
         List<RequirementSpec.BusinessRule> numbered = new ArrayList<>();
-        for (int i = 0; i < rules.size(); i++) {
-            RequirementSpec.BusinessRule rule = rules.get(i);
-            numbered.add(new RequirementSpec.BusinessRule("BR-" + (i + 1), rule.description(), rule.screens(), rule.reference()));
+        for (RequirementSpec.BusinessRule rule : rules) {
+            String id = documentId(rule.id()) && taken.add(normalize(rule.id())) ? rule.id() : pattern.formatted(next++);
+            numbered.add(new RequirementSpec.BusinessRule(id, rule.description(), rule.screens(), rule.reference()));
         }
         return new RequirementSpec(
                 specs.stream().map(RequirementSpec::title).filter(Objects::nonNull).findFirst().orElse(title),
@@ -42,7 +57,26 @@ public final class SpecMerger {
                 unique(specs, RequirementSpec::hostInteractions, h -> h.system() + " " + h.description(), (a, b) -> a),
                 unique(specs, RequirementSpec::messages, m -> m.code() != null ? m.code() : m.text(), (a, b) -> a),
                 unique(specs, RequirementSpec::openQuestions, RequirementSpec.OpenQuestion::question, (a, b) -> a),
-                unique(specs, RequirementSpec::decisions, RequirementSpec.Decision::question, (a, b) -> b));
+                unique(specs, RequirementSpec::decisions, RequirementSpec.Decision::question, (a, b) -> b),
+                unique(specs, RequirementSpec::scope, s -> s, (a, b) -> a),
+                unique(specs, RequirementSpec::outOfScope, s -> s, (a, b) -> a),
+                unique(specs, RequirementSpec::assumptions, s -> s, (a, b) -> a),
+                unique(specs, RequirementSpec::requirements, r -> r.id() != null ? r.id() : r.description(),
+                        (a, b) -> new RequirementSpec.FunctionalRequirement(a.id(), first(a.title(), b.title()), first(a.description(), b.description()),
+                                first(a.priority(), b.priority()), uniqueList(a.screens(), b.screens(), s -> s, (x, y) -> x))),
+                unique(specs, RequirementSpec::acceptanceCriteria, c -> c.id() != null ? c.id() : c.description(),
+                        (a, b) -> new RequirementSpec.AcceptanceCriterion(a.id(), first(a.description(), b.description()),
+                                uniqueList(a.requirements(), b.requirements(), s -> s, (x, y) -> x))),
+                unique(specs, RequirementSpec::nonFunctional, n -> n.id() != null ? n.id() : n.description(), (a, b) -> a));
+    }
+
+    /** An ID the document gave (BR-001, BR-12): letters, a dash or none, and a number. */
+    static boolean documentId(String id) {
+        return id != null && id.strip().matches("[A-Za-z]{1,6}[-_ ]?\\d{1,4}");
+    }
+
+    private static int number(String id) {
+        return Integer.parseInt(id.replaceAll("\\D", ""));
     }
 
     static RequirementSpec.Screen mergeScreens(RequirementSpec.Screen a, RequirementSpec.Screen b) {

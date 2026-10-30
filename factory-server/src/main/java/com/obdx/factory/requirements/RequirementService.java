@@ -307,8 +307,7 @@ public class RequirementService {
             screens.add(new RequirementSpec.Screen(screen.name(), screen.changeType(), screen.description(),
                     screen.reference(), screen.fields(), screen.actions(), related));
         }
-        return new RequirementSpec(spec.title(), spec.summary(), screens, spec.businessRules(), spec.roles(), spec.apis(),
-                spec.hostInteractions(), spec.messages(), spec.openQuestions(), spec.decisions());
+        return spec.withScreens(screens);
     }
 
     private List<String> searchRelated(UUID workspaceId, RequirementSpec.Screen screen) {
@@ -336,8 +335,7 @@ public class RequirementService {
 
     private static RequirementSpec withQuestions(RequirementSpec spec, List<RequirementSpec.OpenQuestion> questions,
                                                  List<RequirementSpec.Decision> decisions) {
-        return new RequirementSpec(spec.title(), spec.summary(), spec.screens(), spec.businessRules(), spec.roles(),
-                spec.apis(), spec.hostInteractions(), spec.messages(), questions, decisions);
+        return spec.withQuestions(questions, decisions);
     }
 
     private RequirementDetail detail(Requirement r) {

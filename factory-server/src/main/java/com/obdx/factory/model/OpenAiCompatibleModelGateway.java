@@ -39,23 +39,30 @@ import java.util.function.Consumer;
 @Component
 public class OpenAiCompatibleModelGateway implements ModelGateway {
 
-    /** The models of one choice of servers; replaced as a whole when the settings change. */
+    /**
+     * The models of one choice of servers; replaced as a whole when the settings change. jsonStreams: false once the
+     * server refused a streamed answer in JSON mode (some cloud servers do), so JSON answers come in one piece there.
+     */
     private record Connection(String baseUrl, String chatModelName, String embeddingUrl, String embeddingModelName,
-                              ChatModel chatModel, StreamingChatModel streamingChatModel, EmbeddingModel embeddingModel) {
+                              ChatModel chatModel, StreamingChatModel streamingChatModel, EmbeddingModel embeddingModel,
+                              java.util.concurrent.atomic.AtomicBoolean jsonStreams) {
     }
 
     private final Duration timeout;
+    private final OllamaChat ollama;
     private volatile Connection connection;
 
     @Autowired
     public OpenAiCompatibleModelGateway(ModelProperties properties, ModelSettings settings) {
         this.timeout = properties.timeout();
+        this.ollama = new OllamaChat(properties.maxContext());
         this.connection = connect(settings.current());
     }
 
     /** With the FACTORY_MODEL_* settings only (tests). */
     public OpenAiCompatibleModelGateway(ModelProperties properties) {
         this.timeout = properties.timeout();
+        this.ollama = new OllamaChat(properties.maxContext());
         this.connection = connect(new ModelSettings.Current(properties.baseUrl(), properties.apiKey(), properties.chatModel(),
                 properties.embeddingModel(), null, null, false, null, null));
     }
@@ -86,7 +93,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .modelName(settings.embeddingModel())
                         .timeout(timeout)
                         .maxRetries(0)
-                        .build());
+                        .build(),
+                new java.util.concurrent.atomic.AtomicBoolean(true));
     }
 
     @Override
@@ -94,8 +102,28 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         return chat(systemPrompt, userPrompt, null);
     }
 
+    /**
+     * A JSON answer, streamed where the server allows it: a long answer from a slow model (a spec drafted from a BRD,
+     * a file written on a laptop's CPU) is then not cut off while the model is still writing, because the timeout
+     * counts from the last piece. A server that refuses JSON in a stream answers in one piece from then on.
+     */
     @Override
     public ChatResult chatJson(String systemPrompt, String userPrompt) {
+        Connection current = connection;
+        if (ollama.isOllama(current.baseUrl())) {
+            return ollamaChat(current, systemPrompt, userPrompt, true, piece -> { });
+        }
+        if (current.jsonStreams().get()) {
+            AtomicLong pieces = new AtomicLong();
+            try {
+                return streamed(current, systemPrompt, UserMessage.from(userPrompt), ResponseFormat.JSON, piece -> pieces.incrementAndGet());
+            } catch (ModelGatewayException e) {
+                if (pieces.get() > 0 || !refused(e)) {
+                    throw e;
+                }
+                current.jsonStreams().set(false);
+            }
+        }
         return chat(systemPrompt, userPrompt, ResponseFormat.JSON);
     }
 
@@ -108,11 +136,71 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     @Override
     public ChatResult chatStream(String systemPrompt, String userPrompt, Consumer<String> pieces) {
         Connection current = connection;
+        if (ollama.isOllama(current.baseUrl())) {
+            return ollamaChat(current, systemPrompt, userPrompt, false, pieces);
+        }
+        return streamed(current, systemPrompt, UserMessage.from(userPrompt), null, pieces);
+    }
+
+    /**
+     * A chat with an Ollama server through its own API, which takes a context large enough for the prompt (see
+     * OllamaChat); timed from the last piece, like a streamed answer.
+     */
+    private ChatResult ollamaChat(Connection current, String systemPrompt, String userPrompt, boolean jsonFormat, Consumer<String> pieces) {
+        long start = System.nanoTime();
+        AtomicLong lastPiece = new AtomicLong(start);
+        java.util.concurrent.atomic.AtomicReference<java.io.InputStream> body = new java.util.concurrent.atomic.AtomicReference<>();
+        CompletableFuture<String> done = new CompletableFuture<>();
+        Thread worker = Thread.ofVirtual().name("ollama-chat").start(() -> {
+            try {
+                done.complete(ollama.chat(current.baseUrl(), current.chatModelName(), systemPrompt, userPrompt, jsonFormat, pieces, lastPiece::set, body::set));
+            } catch (Throwable t) {
+                done.completeExceptionally(t);
+            }
+        });
+        try {
+            while (true) {
+                try {
+                    String reply = done.get(1, TimeUnit.SECONDS);
+                    return new ChatResult(reply, current.chatModelName(), (System.nanoTime() - start) / 1_000_000);
+                } catch (TimeoutException e) {
+                    if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
+                        stop(worker, body.get());
+                        throw chatFailure(current, new IllegalStateException("timed out", new java.net.http.HttpTimeoutException("request timed out")));
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            stop(worker, body.get());
+            Thread.currentThread().interrupt();
+            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            throw chatFailure(current, cause instanceof RuntimeException r ? r : new IllegalStateException(cause.getMessage(), cause));
+        }
+    }
+
+    private static void stop(Thread worker, java.io.InputStream body) {
+        worker.interrupt();
+        if (body != null) {
+            try {
+                body.close();
+            } catch (java.io.IOException e) {
+                // closed already
+            }
+        }
+    }
+
+    private ChatResult streamed(Connection current, String systemPrompt, UserMessage userMessage, ResponseFormat format, Consumer<String> pieces) {
         long start = System.nanoTime();
         AtomicLong lastPiece = new AtomicLong(start);
         CompletableFuture<ChatResponse> done = new CompletableFuture<>();
         try {
-            current.streamingChatModel().chat(ChatRequest.builder().messages(messages(systemPrompt, UserMessage.from(userPrompt))).build(),
+            ChatRequest.Builder request = ChatRequest.builder().messages(messages(systemPrompt, userMessage));
+            if (format != null) {
+                request.responseFormat(format);
+            }
+            current.streamingChatModel().chat(request.build(),
                     new StreamingChatResponseHandler() {
                         @Override
                         public void onPartialResponse(String piece) {
@@ -158,6 +246,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     private ChatResult chat(String systemPrompt, String userPrompt, ResponseFormat format) {
+        Connection current = connection;
+        if (ollama.isOllama(current.baseUrl())) {
+            return ollamaChat(current, systemPrompt, userPrompt, format != null, piece -> { });
+        }
         return chat(systemPrompt, UserMessage.from(userPrompt), format);
     }
 
@@ -270,6 +362,18 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     /** The client reports a call that ran out of time in several ways, depending on where it stopped. */
+    /** The server turned the request down (400 Bad Request and the like), not a server that is down or slow. */
+    static boolean refused(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof dev.langchain4j.exception.InvalidRequestException
+                    || (t instanceof dev.langchain4j.exception.HttpException h && h.statusCode() >= 400 && h.statusCode() < 500
+                    && h.statusCode() != 401 && h.statusCode() != 403 && h.statusCode() != 429)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static boolean timedOut(Throwable e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
             if (t instanceof java.net.http.HttpTimeoutException || t instanceof java.net.SocketTimeoutException

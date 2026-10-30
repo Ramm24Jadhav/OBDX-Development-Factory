@@ -224,7 +224,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!s) {
           return { items: [], note: '' };
         }
-        const own = texts(s.acceptanceCriteria);
+        // The document's own, with their IDs and the requirements they verify
+        const own = (s.acceptanceCriteria || []).filter((c) => c.description).map((c) => (c.id ? c.id + ' · ' : '') + c.description
+          + ((c.requirements || []).length ? ' (verifies ' + c.requirements.join(', ') + ')' : ''));
         if (own.length) {
           return { items: own, note: '' };
         }
@@ -243,7 +245,34 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           note: items.length ? 'Worked out from the screens, messages and roles: the specification has no acceptance criteria yet. Add them with Edit the specification (JSON) in the requirement actions menu.' : ''
         };
       });
-      this.rules = ko.pureComputed(() => (this.spec() ? this.spec().businessRules : []));
+      this.rules = ko.pureComputed(() => (this.spec() ? this.spec().businessRules.map((r) => Object.assign({}, r, {
+        text: (r.id ? r.id + ' · ' : '') + r.description
+      })) : []));
+      // Traceability: each functional requirement of the document with its priority, screens and the acceptance
+      // criteria that verify it
+      this.traceRows = ko.pureComputed(() => {
+        const s = this.spec();
+        if (!s) {
+          return [];
+        }
+        const criteria = s.acceptanceCriteria || [];
+        return (s.requirements || []).map((r) => {
+          const verified = criteria.filter((c) => (c.requirements || []).indexOf(r.id) >= 0).map((c) => c.id).filter(Boolean);
+          const priority = (r.priority || '').toLowerCase();
+          return {
+            id: r.id || '–',
+            title: r.title || '',
+            description: r.description || '',
+            priority: r.priority ? pill(r.priority, priority === 'must' ? 'blue' : priority === 'should' ? 'amber' : 'grey') : null,
+            screens: (r.screens || []).join(', ') || '–',
+            criteria: verified.join(', ') || 'None',
+            untested: verified.length === 0
+          };
+        });
+      });
+      this.nonFunctional = ko.pureComputed(() => (this.spec() ? (this.spec().nonFunctional || []).map((n) => ({
+        text: [n.id, n.category].filter(Boolean).join(' · ') + (n.id || n.category ? ': ' : '') + n.description
+      })) : []));
       this.screens = ko.pureComputed(() => (this.spec() ? this.spec().screens.map((s) => Object.assign({}, s, {
         kind: s.changeType === 'new' ? pill('New', 'blue') : s.changeType === 'enhance' ? pill('Change', 'amber') : pill('Unknown', 'grey'),
         fieldCount: s.fields.length + ' fields', actionNames: s.actions.map((a) => a.name).join(', '),

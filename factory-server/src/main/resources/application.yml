@@ -145,6 +145,9 @@ factory:
     # Empty: the embedding model is on base-url. Set to use another server for code search.
     embedding-base-url: ${FACTORY_MODEL_EMBEDDING_BASE_URL:}
     embedding-api-key: ${FACTORY_MODEL_EMBEDDING_API_KEY:}
+    # The most context (tokens) asked of an Ollama server, which runs models with 4,096 unless asked: each call gets
+    # what its prompt and answer need up to this and the model's own limit. Larger needs more memory there.
+    max-context: ${FACTORY_MODEL_MAX_CONTEXT:16384}
 
 management:
   endpoints:

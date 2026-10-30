@@ -22,6 +22,13 @@ public class SpecDrafter {
             {
               "title": "short name of the requirement",
               "summary": "two or three sentences: what is being built and why",
+              "scope": ["what is in scope, as the document lists it"],
+              "outOfScope": ["what the document excludes"],
+              "assumptions": ["what the document assumes rather than requires"],
+              "requirements": [{"id": "FR-001 as in the document", "title": "short name", "description": "what the system shall do",
+                "priority": "Must | Should | Could | null", "screens": ["screen name"]}],
+              "acceptanceCriteria": [{"id": "AC-001", "description": "Given ... when ... then ...", "requirements": ["FR-001"]}],
+              "nonFunctional": [{"id": "NFR-001", "category": "Performance", "description": "requirement"}],
               "screens": [{
                 "name": "screen name as in the document",
                 "changeType": "new | enhance | unknown",
@@ -50,7 +57,14 @@ public class SpecDrafter {
 
             Rules:
             - Use only what the document says. Never invent screens, fields, rules, limits, codes or messages.
-            - Keep names and labels as written in the document.
+            - Keep names and labels as written in the document, and its own IDs exactly (FR-001, BR-001, AC-001, NFR-001);
+              number only items that have none.
+            - screens: one per screen or step the user sees, named for what it does ("Beneficiary List", "Add
+              Beneficiary", "Transfer Review"), including the review and acknowledgement steps the document describes.
+              Link each functional requirement to the screens it needs.
+            - fields: only those the document names. When it leaves fields to be defined ("bank-defined fields"), list
+              the ones it names and ask an open question for the rest.
+            - The document's own open questions (an "Open questions" section) are open questions of the spec too.
             - changeType is "enhance" when the document changes an existing screen, "new" for a new screen, otherwise "unknown".
             - mandatory is true or false only when the document says so; otherwise null.
             - Add an open question for everything a developer would need but the document leaves missing or unclear:
@@ -135,9 +149,7 @@ public class SpecDrafter {
     }
 
     private static RequirementSpec withoutDecisions(RequirementSpec spec) {
-        return new RequirementSpec(spec.title(), spec.summary(), spec.screens(), spec.businessRules(), spec.roles(),
-                spec.apis(), spec.hostInteractions(), spec.messages(),
-                spec.openQuestions().stream().filter(q -> q.answer() == null).toList(), List.of());
+        return spec.withQuestions(spec.openQuestions().stream().filter(q -> q.answer() == null).toList(), List.of());
     }
 
     /** Splits at paragraph boundaries into pieces of at most maxChars; a single longer paragraph is cut. */

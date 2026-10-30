@@ -66,7 +66,16 @@ public final class SpecParser {
                 list(root, "openQuestions", node -> new RequirementSpec.OpenQuestion(textOrSelf(node, "question"),
                         text(node, "reason"), text(node, "reference"), strings(node, "options"),
                         text(node, "suggestedAnswer"), text(node, "answer"))),
-                list(root, "decisions", node -> new RequirementSpec.Decision(text(node, "question"), text(node, "answer"))));
+                list(root, "decisions", node -> new RequirementSpec.Decision(text(node, "question"), text(node, "answer"))),
+                texts(root, "scope"),
+                texts(root, "outOfScope"),
+                texts(root, "assumptions"),
+                list(root, "requirements", node -> new RequirementSpec.FunctionalRequirement(text(node, "id"), text(node, "title"),
+                        textOrSelf(node, "description"), text(node, "priority"), strings(node, "screens"))),
+                list(root, "acceptanceCriteria", node -> new RequirementSpec.AcceptanceCriterion(text(node, "id"),
+                        textOrSelf(node, "description"), strings(node, "requirements"))),
+                list(root, "nonFunctional", node -> new RequirementSpec.NonFunctional(text(node, "id"), text(node, "category"),
+                        textOrSelf(node, "description"))));
     }
 
     private static RequirementSpec.Screen screen(JsonNode node) {
@@ -110,6 +119,9 @@ public final class SpecParser {
             case RequirementSpec.Message m -> blank(m.text());
             case RequirementSpec.OpenQuestion q -> blank(q.question());
             case RequirementSpec.Decision d -> blank(d.question());
+            case RequirementSpec.FunctionalRequirement r -> blank(r.description()) && blank(r.title()) && blank(r.id());
+            case RequirementSpec.AcceptanceCriterion c -> blank(c.description());
+            case RequirementSpec.NonFunctional n -> blank(n.description());
             default -> false;
         };
     }
@@ -148,6 +160,17 @@ public final class SpecParser {
         for (JsonNode item : value.isArray() ? value : List.of(value)) {
             if (item.isValueNode() && !item.isNull() && !item.asString().isBlank()) {
                 result.add(item.asString().trim());
+            }
+        }
+        return result;
+    }
+
+    /** A list of texts the model may also write as objects ({"description": "..."}) or as one text. */
+    private static List<String> texts(JsonNode node, String name) {
+        List<String> result = new ArrayList<>();
+        for (String item : list(node, name, item -> textOrSelf(item, "description") != null ? textOrSelf(item, "description") : text(item, "text"))) {
+            if (item != null && !item.isBlank()) {
+                result.add(item);
             }
         }
         return result;

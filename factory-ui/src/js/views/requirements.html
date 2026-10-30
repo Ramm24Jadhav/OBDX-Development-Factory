@@ -302,13 +302,40 @@
                     <oj-bind-if test="[[related().length === 0]]"><p class="fx-muted factory-rq-tableempty">No other requirements in this workspace yet.</p></oj-bind-if>
                   </div>
                 </section>
+                <oj-bind-if test="[[traceRows().length > 0 || nonFunctional().length > 0]]">
+                  <section class="factory-card factory-card-inner" id="requirementTrace">
+                    <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Requirements and Traceability</span></h2>
+                    <oj-bind-if test="[[traceRows().length > 0]]">
+                      <div class="fx-table-wrap">
+                        <table class="fx-table factory-rq-trace">
+                          <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Screens</th><th>Verified by</th></tr></thead>
+                          <tbody>
+                            <oj-bind-for-each data="[[traceRows]]">
+                              <template><tr><td class="factory-rq-id"><oj-bind-text value="[[$current.data.id]]"></oj-bind-text></td>
+                                <td class="factory-rq-wrap"><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong><oj-bind-if test="[[$current.data.title && $current.data.description]]"><br></oj-bind-if><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></td>
+                                <td><oj-bind-if test="[[$current.data.priority]]"><span :class="[[$current.data.priority.css]]"><oj-bind-text value="[[$current.data.priority.text]]"></oj-bind-text></span></oj-bind-if></td>
+                                <td class="factory-rq-wrap"><oj-bind-text value="[[$current.data.screens]]"></oj-bind-text></td>
+                                <td :class="[[$current.data.untested ? 'factory-rq-wrap fx-muted' : 'factory-rq-wrap']]"><oj-bind-text value="[[$current.data.criteria]]"></oj-bind-text></td></tr></template>
+                            </oj-bind-for-each>
+                          </tbody>
+                        </table>
+                      </div>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[nonFunctional().length > 0]]">
+                      <h3 class="factory-cp-h3">Non-functional requirements</h3>
+                      <ul class="factory-rq-nfr">
+                        <oj-bind-for-each data="[[nonFunctional]]"><template><li><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></li></template></oj-bind-for-each>
+                      </ul>
+                    </oj-bind-if>
+                  </section>
+                </oj-bind-if>
                 <div class="factory-row factory-row-2 factory-rq-even">
                   <section class="factory-card factory-card-inner">
                     <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Business Rules</span>
                       <button type="button" class="factory-link-sm" on-click="[[showRules]]">View All</button></h2>
                     <ol class="factory-rq-numbered">
                       <oj-bind-for-each data="[[rules]]">
-                        <template><li><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></li></template>
+                        <template><li><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></li></template>
                       </oj-bind-for-each>
                     </ol>
                     <oj-bind-if test="[[rules().length === 0]]"><p class="fx-muted factory-rq-none">No business rules in the specification.</p></oj-bind-if>

@@ -85,6 +85,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_MODEL_TIMEOUT` | `120s` |
 | `FACTORY_MODEL_EMBEDDING_BASE_URL` | empty (the embedding model is on `FACTORY_MODEL_BASE_URL`) |
 | `FACTORY_MODEL_EMBEDDING_API_KEY` | empty |
+| `FACTORY_MODEL_MAX_CONTEXT` | `16384`: the most context (tokens) asked of an Ollama server |
 
 To try the model gateway with Ollama:
 
@@ -166,7 +167,9 @@ On the **Profile** page a developer can **Confirm** a detected value, **Correct*
    **Use suggested answers** for every empty one, and click **Update spec with answers**: answered questions become decisions, and the model updates the spec with them. The spec can also be edited as JSON. Every change is stored as a new spec version.
 5. **Approve** locks the spec. It needs at least one screen and no open questions.
 
-Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes; raise `FACTORY_MODEL_TIMEOUT` if calls time out, and lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
+The spec keeps the document's own structure for traceability: its scope, out of scope and assumptions, its functional requirements (ID, priority, the screens each needs), its acceptance criteria (ID, the requirements each verifies), its non-functional requirements and its business rules, all with the document's own IDs (FR-001, AC-001, NFR-001, BR-001; items without one are numbered after them). The document's own open questions become the spec's. The Requirements page shows them, with a traceability table (requirement, priority, screens, the criteria that verify it), and impact analysis and code generation receive them with the rest of the spec.
+
+Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes. Every JSON call (drafting, impact analysis, code generation) is streamed where the server allows it, so `FACTORY_MODEL_TIMEOUT` counts from the last piece the model wrote, not from the start; a server that refuses JSON in a stream (some cloud APIs) answers in one piece. On an Ollama server the factory chats through Ollama's own API and asks for a context large enough for each prompt and its answer (Ollama otherwise runs a model with 4,096 tokens and cuts longer prompts without a word), up to the model's own limit and `FACTORY_MODEL_MAX_CONTEXT` (16,384; a larger context needs more memory on the model server). Lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
 
 ## Screen designer
 

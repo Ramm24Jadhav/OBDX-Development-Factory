@@ -57,6 +57,35 @@ class OpenAiCompatibleModelGatewayTest {
         server.createContext("/broken/v1/chat/completions", exchange -> respond(exchange, 500, """
                 {"error": {"message": "model not loaded", "type": "server_error"}}
                 """));
+        // An Ollama server: its own API, a model with a 32k context, and a streamed answer in lines of JSON
+        server.createContext("/ollama/api/version", exchange -> respond(exchange, 200, "{\"version\": \"0.12.0\"}"));
+        server.createContext("/ollama/api/show", exchange -> respond(exchange, 200,
+                "{\"model_info\": {\"general.architecture\": \"qwen2\", \"qwen2.context_length\": 32768}}"));
+        server.createContext("/ollama/api/chat", exchange -> {
+            lastChatRequest.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] bytes = ("{\"message\": {\"role\": \"assistant\", \"content\": \"{\\\"ok\\\": \"}, \"done\": false}\n"
+                    + "{\"message\": {\"role\": \"assistant\", \"content\": \"true}\"}, \"done\": false}\n"
+                    + "{\"message\": {\"role\": \"assistant\", \"content\": \"\"}, \"done\": true}\n").getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/x-ndjson");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream out = exchange.getResponseBody()) {
+                out.write(bytes);
+            }
+        });
+        // A server that refuses JSON in a stream (as some cloud servers do) but answers it in one piece
+        server.createContext("/nostream/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (body.matches("(?s).*\"stream\"\\s*:\\s*true.*")) {
+                respond(exchange, 400, """
+                        {"error": {"message": "response_format json_object is not supported with stream", "type": "invalid_request_error"}}
+                        """);
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-2", "object": "chat.completion", "created": 1, "model": "cloud-model",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{\\"ok\\": true}"}}]}
+                    """);
+        });
         server.createContext("/slow/v1/chat/completions", exchange -> {
             try {
                 Thread.sleep(3000);
@@ -89,10 +118,45 @@ class OpenAiCompatibleModelGatewayTest {
     }
 
     @Test
-    void asksForJsonObjectInJsonMode() {
-        gatewayFor("/v1").chatJson("Answer in JSON.", "Give me a spec");
+    void asksForJsonObjectInJsonModeAndStreamsIt() {
+        // Streamed, so a slow model writing a long JSON answer is timed from its last piece, not from the start
+        assertThat(gatewayFor("/v1").chatJson("Answer in JSON.", "Give me a spec").reply()).isEqualTo("OBDX is a platform.");
 
-        assertThat(lastChatRequest.get()).contains("json_object");
+        assertThat(lastChatRequest.get()).contains("json_object").containsPattern("\"stream\"\\s*:\\s*true");
+    }
+
+    @Test
+    void ollamaGetsAContextLargeEnoughForThePrompt() {
+        ModelGateway gateway = gatewayFor("/ollama/v1");
+        List<String> pieces = new java.util.ArrayList<>();
+
+        assertThat(gateway.chatStream("Be brief.", "x".repeat(30_000), pieces::add).reply()).isEqualTo("{\"ok\": true}");
+        assertThat(pieces).containsExactly("{\"ok\": ", "true}");
+        // 30,000 characters is about 10,000 tokens, with 4,096 for the answer: 14,336, not Ollama's 4,096
+        assertThat(lastChatRequest.get()).contains("\"num_ctx\":14336").contains("\"stream\":true").doesNotContain("\"format\"");
+
+        gateway.chatJson("Answer in JSON.", "short");
+        // JSON mode, and the context stays as large as before, so the model is not loaded again
+        assertThat(lastChatRequest.get()).contains("\"format\":\"json\"").contains("\"num_ctx\":14336");
+    }
+
+    @Test
+    void ollamaContextFollowsThePromptWithinTheLimits() {
+        OllamaChat chat = new OllamaChat(16384);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort() + "/ollama/v1";
+        assertThat(OllamaChat.root(base)).endsWith("/ollama");
+        assertThat(chat.contextFor(base, "small", 1_000)).isEqualTo(6144);
+        assertThat(chat.contextFor(base, "small", 100)).isEqualTo(6144);
+        assertThat(chat.contextFor(base, "small", 20_000)).isEqualTo(12288);
+        assertThat(chat.contextFor(base, "small", 200_000)).isEqualTo(16384);
+    }
+
+    @Test
+    void aServerThatRefusesJsonInAStreamAnswersInOnePiece() {
+        ModelGateway gateway = gatewayFor("/nostream/v1");
+
+        assertThat(gateway.chatJson("Answer in JSON.", "Give me a spec").reply()).isEqualTo("{\"ok\": true}");
+        assertThat(gateway.chatJson("Answer in JSON.", "Again").reply()).isEqualTo("{\"ok\": true}");
     }
 
     @Test
@@ -169,7 +233,7 @@ class OpenAiCompatibleModelGatewayTest {
     private ModelGateway gatewayFor(String path, Duration timeout) {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null));
+                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384));
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
