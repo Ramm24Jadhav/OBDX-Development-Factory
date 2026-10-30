@@ -212,12 +212,20 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     /**
      * What the common open embedding models expect before a search question: nomic-embed-text "search_query: ", the e5
-     * family "query: ", bge and mxbai an instruction. Others take the text as it is.
+     * family "query: ", Qwen3-Embedding a task instruction, the English bge models and mxbai their retrieval
+     * instruction. bge-m3 and the others take the text as it is.
      */
     static String queryPrefix(String model) {
         String m = model == null ? "" : model.toLowerCase(java.util.Locale.ROOT);
         if (m.contains("nomic-embed")) {
             return "search_query: ";
+        }
+        if (m.contains("qwen3-embedding")) {
+            return "Instruct: Given a question about Oracle Banking Digital Experience, retrieve the manual sections, notes or code "
+                    + "that answer it\nQuery: ";
+        }
+        if (m.contains("bge-m3")) {
+            return "";
         }
         if (m.contains("e5-") || m.contains("/e5") || m.startsWith("e5")) {
             return "query: ";

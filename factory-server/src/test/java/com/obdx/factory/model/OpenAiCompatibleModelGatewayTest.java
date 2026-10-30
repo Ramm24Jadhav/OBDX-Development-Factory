@@ -148,6 +148,11 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(OpenAiCompatibleModelGateway.queryPrefix("mxbai-embed-large")).startsWith("Represent this sentence");
         assertThat(OpenAiCompatibleModelGateway.passagePrefix("mxbai-embed-large")).isEmpty();
         assertThat(OpenAiCompatibleModelGateway.queryPrefix("text-embedding-3-small")).isEmpty();
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("qwen3-embedding:4b")).startsWith("Instruct: ").endsWith("\nQuery: ");
+        assertThat(OpenAiCompatibleModelGateway.passagePrefix("qwen3-embedding:4b")).isEmpty();
+        // bge-m3 takes questions as they are; the English bge models want their instruction
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("bge-m3:latest")).isEmpty();
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("BAAI/bge-large-en-v1.5")).startsWith("Represent this sentence");
     }
 
     @Test

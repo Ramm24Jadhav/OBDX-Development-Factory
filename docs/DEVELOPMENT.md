@@ -247,7 +247,8 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   index): in "how do I unlock a retail user" the sections about unlocking rank above those that repeat "user". A word in
   a section's heading counts twice, and the words around a question ("give me the steps for") count for nothing. Questions
   and sections are embedded the way the embedding model expects: `nomic-embed-text` with "search_query: " and
-  "search_document: ", the e5 models with "query: " and "passage: ", bge and mxbai with their query instruction. The bank's own
+  "search_document: ", the e5 models with "query: " and "passage: ", Qwen3-Embedding with a task instruction before
+  questions, the English bge models and mxbai with their query instruction; bge-m3 takes text as it is. The bank's own
   documents and notes rank a little higher, and the model is told they describe the bank's customised system and
   patchset and win where they differ from Oracle's manuals. On the trial
   database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2
