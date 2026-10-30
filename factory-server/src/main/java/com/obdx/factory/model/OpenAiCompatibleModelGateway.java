@@ -113,6 +113,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();
             return new ChatResult(response.aiMessage().text(), model, latencyMs);
         } catch (RuntimeException e) {
+            if (timedOut(e)) {
+                throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " did not answer within "
+                        + readable(timeout) + ". It may be busy, for example embedding documents an import added: try again when that "
+                        + "finishes. If it keeps happening, use a faster model server (one with a GPU) or a longer FACTORY_MODEL_TIMEOUT.", e);
+            }
             throw new ModelGatewayException(
                     "Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
         }
@@ -137,6 +142,23 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         } catch (RuntimeException e) {
             throw embeddingFailure(current, e);
         }
+    }
+
+    /** The client reports a call that ran out of time in several ways, depending on where it stopped. */
+    static boolean timedOut(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.http.HttpTimeoutException || t instanceof java.net.SocketTimeoutException
+                    || t instanceof java.util.concurrent.TimeoutException || t.getClass().getSimpleName().contains("Timeout")
+                    || (t.getMessage() != null && t.getMessage().toLowerCase(java.util.Locale.ROOT).contains("timed out"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static String readable(Duration d) {
+        long s = d.toSeconds();
+        return s % 60 == 0 && s >= 60 ? (s / 60) + (s == 60 ? " minute" : " minutes") : s + " seconds";
     }
 
     /** Local servers accept any key, but the client needs one. */

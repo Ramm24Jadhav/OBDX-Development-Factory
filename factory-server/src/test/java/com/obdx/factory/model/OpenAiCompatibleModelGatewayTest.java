@@ -43,6 +43,14 @@ class OpenAiCompatibleModelGatewayTest {
         server.createContext("/broken/v1/chat/completions", exchange -> respond(exchange, 500, """
                 {"error": {"message": "model not loaded", "type": "server_error"}}
                 """));
+        server.createContext("/slow/v1/chat/completions", exchange -> {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            respond(exchange, 500, "{}");
+        });
         server.start();
     }
 
@@ -88,10 +96,31 @@ class OpenAiCompatibleModelGatewayTest {
                 .hasMessageContaining("/broken/v1");
     }
 
+    @Test
+    void saysWhatToDoWhenTheModelTakesTooLong() {
+        ModelGateway gateway = gatewayFor("/slow/v1", Duration.ofSeconds(1));
+
+        assertThatThrownBy(() -> gateway.chat(null, "hello"))
+                .isInstanceOf(ModelGatewayException.class)
+                .hasMessageContaining("did not answer within 1 seconds")
+                .hasMessageContaining("try again");
+    }
+
+    @Test
+    void readsTimeoutsInMinutes() {
+        assertThat(OpenAiCompatibleModelGateway.readable(Duration.ofSeconds(300))).isEqualTo("5 minutes");
+        assertThat(OpenAiCompatibleModelGateway.readable(Duration.ofSeconds(60))).isEqualTo("1 minute");
+        assertThat(OpenAiCompatibleModelGateway.readable(Duration.ofSeconds(90))).isEqualTo("90 seconds");
+    }
+
     private ModelGateway gatewayFor(String path) {
+        return gatewayFor(path, Duration.ofSeconds(5));
+    }
+
+    private ModelGateway gatewayFor(String path, Duration timeout) {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", Duration.ofSeconds(5), null, null));
+                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null));
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
