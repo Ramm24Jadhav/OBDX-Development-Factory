@@ -35,8 +35,11 @@ public class KnowledgeService {
             knowledge notes) and the page the user is looking at. Cite the sources you use in square brackets, like [2] or \
             [1][3], right after the statement they support. Notes marked "suggested" are not approved yet: say so when you \
             rely on one. Sources marked "Bank document" or "bank note" are the bank's own documentation of its customised \
-            system and patchset: where they differ from Oracle's manuals, follow them and say that the bank's version differs. When the sources do not answer the question, say plainly that the manuals in the factory do not \
-            cover it, then add what you know in general, marked as general knowledge, without citations. Cite a source only \
+            system and patchset: where they differ from Oracle's manuals, follow them and say that the bank's version differs. \
+            Read every source before deciding: a source that covers the general case (any user) answers a question about \
+            a particular case (a retail user) unless it says otherwise, and a source that answers part of the question \
+            is used for that part. Only when no source answers any of it, say plainly that the manuals in the factory do \
+            not cover it, then add what you know in general, marked as general knowledge, without citations. Cite a source only \
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
             sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
             procedures, and code blocks only for code.""";

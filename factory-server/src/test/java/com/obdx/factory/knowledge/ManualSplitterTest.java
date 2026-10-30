@@ -88,6 +88,41 @@ class ManualSplitterTest {
     }
 
     @Test
+    void keepsTheNumberedStepsOfAProcedureInItsSection() {
+        String step = "The User Management screen appears with the users that match the search criteria entered. ";
+        List<ManualSplitter.Section> sections = ManualSplitter.split(List.of(
+                "2.3 User Management - Change user status\nThis section allows you to lock and unlock a user.\n"
+                        + "1. Navigate to the above path.\n" + step + "\n2. Enter the search criteria, click Search.\n" + step
+                        + "\n3. Click the icon in the Status column to lock / unlock a user.\n" + step
+                        + "\n15. If a user's User ID is locked, does the admin need to unlock it?\nNo, it is unlocked when the password is reset.\n"
+                        + "3 Party Preferences\n" + "Party preferences hold the limits and approvals of a party. ".repeat(3)));
+
+        assertThat(sections).extracting(ManualSplitter.Section::heading).containsExactly("2.3 User Management - Change user status", "3 Party Preferences");
+        assertThat(sections.get(0).content()).contains("lock and unlock").contains("1. Navigate").contains("3. Click the icon").contains("15. If a user");
+        assertThat(ManualSplitter.isNumberedHeading("4.3 Transfer Limits")).isTrue();
+        assertThat(ManualSplitter.isNumberedHeading("12 Party Resource Access")).isTrue();
+        assertThat(ManualSplitter.isNumberedHeading("1. Navigate to the above path.")).isFalse();
+        assertThat(ManualSplitter.isNumberedHeading("4. Perform any one of the following navigation to access the create screen:")).isFalse();
+    }
+
+    @Test
+    void takesThePdfsBookmarksAsHeadings() {
+        String text = "Each user of the bank has a status that an administrator changes on the User Management screen. ";
+        List<ManualSplitter.Section> sections = ManualSplitter.split(List.of(
+                "Chapter 2\nUser Management\n" + text.repeat(2),
+                "2.2 User Management - Search and View\n" + text + "\n1. Navigate to the above path.\n" + text,
+                // The title of this one is split over two lines on its page: its section starts at the top of the page
+                text.repeat(2)),
+                List.of(new ManualSplitter.Bookmark(1, "2 User Management"), new ManualSplitter.Bookmark(2, "2.2 User Management - Search and View"),
+                        new ManualSplitter.Bookmark(3, "2.3 User Management - Edit")));
+
+        assertThat(sections).extracting(ManualSplitter.Section::heading)
+                .containsExactly("2 User Management", "2.2 User Management - Search and View", "2.3 User Management - Edit");
+        assertThat(sections.get(1).content()).contains("1. Navigate");
+        assertThat(sections.get(1).pageFrom()).isEqualTo(2);
+    }
+
+    @Test
     void searchesForAnyMeaningfulWord() {
         assertThat(KnowledgeSearch.toTsQuery("How do I add a field to the fund transfer in OBDX?")).isEqualTo("add | field:* | fund:* | transfer:*");
         assertThat(KnowledgeSearch.toTsQuery("the of a")).isEmpty();

@@ -71,9 +71,7 @@ public class KnowledgeSearch {
         String scope = " AND (workspace_id IS NULL OR workspace_id = ?) AND (?::text IS NULL OR version_line IS NULL OR version_line = ?)";
         String noteStatus = suggestedNotes ? " AND status IN ('TRUSTED', 'SUGGESTED')" : " AND status = 'TRUSTED'";
         if (!tsQuery.isEmpty()) {
-            rank(scores, "M", jdbc.query("SELECT id FROM knowledge_chunk, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope
-                    + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
-                    tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
+            rank(scores, "M", keywordSections(tsQuery, scope, workspaceId, versionLine));
             rank(scores, "N", jdbc.query("SELECT id FROM knowledge_note, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope + noteStatus
                     + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
                     tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
@@ -173,6 +171,37 @@ public class KnowledgeSearch {
         }
         hits.sort(Comparator.comparingDouble(Hit::score).reversed());
         return hits;
+    }
+
+    /**
+     * Sections matching the question's words, the rare words counting most: in "how do I unlock a retail user" a
+     * section about unlocking ranks above one that says "user" many times. PostgreSQL's own ranking counts every word
+     * alike, so each word is weighted by how few of the searched sections contain it (its inverse document frequency,
+     * counted with the full-text index), and that ranking only breaks ties.
+     */
+    private List<UUID> keywordSections(String tsQuery, String scope, UUID workspaceId, String versionLine) {
+        Integer total = jdbc.queryForObject("SELECT count(*) FROM knowledge_chunk WHERE true" + scope, Integer.class,
+                workspaceId, versionLine, versionLine);
+        StringBuilder score = new StringBuilder("0.1 * ts_rank_cd(search_vector, q, 1)");
+        // The weighted words come first in the statement, then the query, the scope and the limit
+        List<Object> args = new ArrayList<>();
+        for (String term : tsQuery.split(" \\| ")) {
+            Integer matching = jdbc.queryForObject("SELECT count(*) FROM knowledge_chunk WHERE search_vector @@ to_tsquery('english', ?)" + scope,
+                    Integer.class, term, workspaceId, versionLine, versionLine);
+            if (matching == null || matching == 0) {
+                continue;
+            }
+            double weight = Math.log((total + 1.0) / (matching + 1.0));
+            score.append(" + ").append(String.format(Locale.ROOT, "%.4f", weight)).append(" * (search_vector @@ to_tsquery('english', ?))::int");
+            args.add(term);
+        }
+        args.add(tsQuery);
+        args.add(workspaceId);
+        args.add(versionLine);
+        args.add(versionLine);
+        args.add(CANDIDATES);
+        return jdbc.query("SELECT id, " + score + " AS score FROM knowledge_chunk, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope
+                + " ORDER BY score DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class), args.toArray());
     }
 
     /**

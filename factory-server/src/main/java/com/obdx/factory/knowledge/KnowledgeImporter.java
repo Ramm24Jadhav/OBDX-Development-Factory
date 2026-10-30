@@ -7,6 +7,10 @@ import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.requirements.DocumentTextExtractor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +48,8 @@ public class KnowledgeImporter {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeImporter.class);
     private static final int EMBED_BATCH = 16;
+    // Raised when the reading changes in a way worth reading every document again (2: bookmarks as headings)
+    static final int READER_VERSION = 2;
     static final Set<String> EXTENSIONS = Set.of("pdf", "docx", "doc", "txt", "md", "html", "htm");
 
     private final KnowledgeRepository repository;
@@ -237,9 +243,10 @@ public class KnowledgeImporter {
         try {
             Path file = file(id, document.fileName());
             if ("pdf".equals(extension(document.fileName()))) {
-                List<String> pageTexts = pdfPages(file);
+                List<ManualSplitter.Bookmark> bookmarks = new ArrayList<>();
+                List<String> pageTexts = pdfPages(file, bookmarks);
                 pages = pageTexts.size();
-                sections = ManualSplitter.split(pageTexts);
+                sections = ManualSplitter.split(pageTexts, bookmarks);
             } else {
                 // Word, text and HTML have no pages: their sections are cited by heading
                 String text = extractor.extract(document.fileName(), Files.readAllBytes(file));
@@ -256,14 +263,20 @@ public class KnowledgeImporter {
             return;
         }
         repository.replaceSections(id, document.workspaceId(), document.versionLine(), sections);
+        repository.readWith(id, READER_VERSION);
         vectors.changed();
         repository.updateDocument(id, "EMBEDDING", null, pages, sections.size(), 0);
         embed(id);
     }
 
-    private static List<String> pdfPages(Path file) throws IOException {
+    /** The text of each page; the PDF's bookmarks (its chapters and sections) go to bookmarks. */
+    private static List<String> pdfPages(Path file, List<ManualSplitter.Bookmark> bookmarks) throws IOException {
         List<String> pages = new ArrayList<>();
         try (PDDocument pdf = Loader.loadPDF(file.toFile())) {
+            PDDocumentOutline outline = pdf.getDocumentCatalog().getDocumentOutline();
+            if (outline != null) {
+                bookmarks(pdf, outline, 0, bookmarks);
+            }
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             for (int p = 1; p <= pdf.getNumberOfPages(); p++) {
@@ -273,6 +286,37 @@ public class KnowledgeImporter {
             }
         }
         return pages;
+    }
+
+    private static void bookmarks(PDDocument pdf, PDOutlineNode node, int depth, List<ManualSplitter.Bookmark> out) throws IOException {
+        if (depth > 5) {
+            return;
+        }
+        for (PDOutlineItem item : node.children()) {
+            if (out.size() >= 5000) {
+                return;
+            }
+            PDPage page = item.findDestinationPage(pdf);
+            String title = item.getTitle() == null ? "" : item.getTitle().replaceAll("\\s+", " ").strip();
+            if (page != null && !title.isEmpty() && title.length() <= 300) {
+                out.add(new ManualSplitter.Bookmark(pdf.getPages().indexOf(page) + 1, title));
+            }
+            bookmarks(pdf, item, depth + 1, out);
+        }
+    }
+
+    /**
+     * Documents read by an earlier version of the reading (before bookmarks were headings and numbered steps stayed in
+     * their procedure) are read and embedded again, in the background, one at a time.
+     */
+    private void readAgainOlder() {
+        List<UUID> older = repository.readBefore(READER_VERSION);
+        for (UUID id : older) {
+            executor.execute(() -> read(id));
+        }
+        if (!older.isEmpty()) {
+            log.info("Reading {} knowledge document(s) again with the improved section splitting", older.size());
+        }
     }
 
     private void embed(UUID id) {
@@ -339,6 +383,7 @@ public class KnowledgeImporter {
         if (!unfinished.isEmpty()) {
             log.info("Resuming {} knowledge document import(s) stopped when the factory stopped", unfinished.size());
         }
+        readAgainOlder();
     }
 
     // --- helpers ---

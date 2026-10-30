@@ -203,11 +203,14 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   files belong to the selected workspace only; a workspace's Managers import those too. The bank's own and
   patchset-specific documents can be PDF, Word (.docx, .doc), text, Markdown or HTML (an exported wiki page), and any
   import can carry a **patchset** (25.2.0.1, a patch number), shown with every citation. Each file is copied to
-  `<storage>/knowledge/<id>.<type>`, read (PDF page by page with PDFBox; Word headings become sections), split at
-  numbered or Word/Markdown headings into sections of at most about 1,800 characters with their pages (headers, footers
-  and contents pages dropped), and embedded in the background, one document at a time. Without the embedding model a
-  document is searched by keywords; **Embed again** finishes it later. Imports the factory stopped carry on at the next
-  start.
+  `<storage>/knowledge/<id>.<type>`, read (PDF page by page with PDFBox; Word headings become sections), split into
+  sections of at most about 1,800 characters with their own pages (headers, footers and contents pages dropped), and
+  embedded in the background, one document at a time. The headings are the PDF's bookmarks when it has them (Oracle's
+  manuals do: "2.2 User Management - Search and View"), so a procedure stays under its real section; otherwise numbered
+  headings ("4.3 Transfer Limits", not the numbered steps of a procedure) and Word/Markdown headings. Without the
+  embedding model a document is searched by keywords; **Embed again** finishes it later. Imports the factory stopped
+  carry on at the next start. When the reading improves (`KnowledgeImporter.READER_VERSION`), the documents read before
+  are read and embedded again at startup, in the background, one at a time.
 - **Keeping it current**: Oracle republishes manuals for patchsets and fixes, and banks update their own documents. A
   file already imported (same content) is skipped. A changed file with the name of one already imported for that
   version and owner is a **newer revision**: the older one answers until the newer one is ready, then it is kept as
@@ -234,7 +237,9 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   The factory uses the computer's proxy settings (`-Djava.net.useSystemProxies=true`, in the start scripts).
 - **Search** is hybrid, as in code search: PostgreSQL full text and embeddings merged by reciprocal rank fusion, limited
   to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
-  at most two sections of one document, so a long user manual does not crowd out the guide that answers. The bank's own
+  at most two sections of one document, so a long user manual does not crowd out the guide that answers. In the full-text
+  part each word counts by how rare it is in the sections searched (inverse document frequency, counted with the
+  index): in "how do I unlock a retail user" the sections about unlocking rank above those that repeat "user". The bank's own
   documents and notes rank a little higher, and the model is told they describe the bank's customised system and
   patchset and win where they differ from Oracle's manuals. On the trial
   database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2

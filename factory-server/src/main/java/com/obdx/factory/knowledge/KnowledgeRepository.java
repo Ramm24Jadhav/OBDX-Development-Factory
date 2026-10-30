@@ -116,6 +116,16 @@ public class KnowledgeRepository {
                 (rs, row) -> rs.getObject(1, UUID.class));
     }
 
+    /** Current documents, ready or failed, read by an earlier version of the reading. */
+    public List<UUID> readBefore(int readerVersion) {
+        return jdbc.query("SELECT id FROM knowledge_document WHERE reader_version < ? AND status IN ('READY', 'FAILED') "
+                + "AND superseded_by IS NULL ORDER BY created_at", (rs, row) -> rs.getObject(1, UUID.class), readerVersion);
+    }
+
+    public void readWith(UUID id, int readerVersion) {
+        jdbc.update("UPDATE knowledge_document SET reader_version = ? WHERE id = ?", readerVersion, id);
+    }
+
     // --- sections ---
 
     public void replaceSections(UUID documentId, UUID workspaceId, String versionLine, List<ManualSplitter.Section> sections) {
