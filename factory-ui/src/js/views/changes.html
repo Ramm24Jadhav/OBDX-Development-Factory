@@ -383,7 +383,7 @@
           <div class="factory-ch-chat">
             <div class="factory-ai-log">
               <oj-bind-for-each data="[[ai.messages]]">
-                <template><div :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text>
+                <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]"></fx-markdown>
                   <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
               </oj-bind-for-each>
               <oj-bind-if test="[[ai.messages().length === 0]]">
@@ -454,7 +454,7 @@
           <oj-bind-for-each data="[[aiContext]]" as="chip"><template><span class="fx-chip" :title="[[chip.data.title]]"><oj-bind-text value="[[chip.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></div>
         <div class="factory-ai-log factory-ch-sheetlog">
           <oj-bind-for-each data="[[ai.messages]]" as="msg">
-            <template><div :class="[[msg.data.css]]"><oj-bind-text value="[[msg.data.text]]"></oj-bind-text>
+            <template><div :class="[[msg.data.css]]"><fx-markdown text="[[msg.data.text]]"></fx-markdown>
               <oj-bind-if test="[[msg.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[msg.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
           </oj-bind-for-each>
           <oj-bind-if test="[[ai.messages().length === 0]]">

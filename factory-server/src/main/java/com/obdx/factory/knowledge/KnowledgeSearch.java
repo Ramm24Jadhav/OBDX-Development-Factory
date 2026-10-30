@@ -96,8 +96,8 @@ public class KnowledgeSearch {
      * answers a developer's question is on it next to the user manual that matches the words best, then the best of the
      * rest wherever they are (the fourth section of one long manual can be the answer).
      */
-    public Result shortList(String question, String versionLine, UUID workspaceId, int size, boolean suggestedNotes) {
-        return search(List.of(question), versionLine, workspaceId, size, suggestedNotes, true);
+    public Result shortList(List<String> wordings, String versionLine, UUID workspaceId, int size, boolean suggestedNotes) {
+        return search(wordings, versionLine, workspaceId, size, suggestedNotes, true);
     }
 
     private Result search(List<String> wordings, String versionLine, UUID workspaceId, int limit, boolean suggestedNotes, boolean shortList) {
@@ -113,6 +113,8 @@ public class KnowledgeSearch {
             queries.add(subject);
         }
         Map<String, Double> scores = new HashMap<>();
+        // A class name, configuration key or error code is looked for exactly as written: the sections that have it
+        List<String> identifiers = wordings.isEmpty() ? List.of() : QueryUnderstanding.identifiers(wordings.getFirst());
         String semanticNote = null;
         boolean semanticUsed = false;
         String scope = " AND (workspace_id IS NULL OR workspace_id = ?) AND (?::text IS NULL OR version_line IS NULL OR version_line = ?)";
@@ -126,6 +128,10 @@ public class KnowledgeSearch {
                         + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
                         tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
             }
+        }
+        for (String identifier : identifiers) {
+            rank(scores, "M", jdbc.query("SELECT id FROM knowledge_chunk WHERE strpos(content, ?) > 0" + scope + " ORDER BY (strpos(coalesce(heading, ''), ?) > 0) DESC, position LIMIT ?",
+                    (rs, r) -> rs.getObject(1, UUID.class), identifier, workspaceId, versionLine, versionLine, identifier, CANDIDATES));
         }
         if (!policy.embeddingAllowed()) {
             // The question is not sent to an embedding model outside the bank

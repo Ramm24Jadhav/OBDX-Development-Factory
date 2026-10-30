@@ -54,8 +54,13 @@ public class KnowledgeService {
             not cover it and name the closest sections the sources do cover; do not answer from general knowledge, and \
             never describe other vendors' products or systems as part of OBDX. Cite a source only \
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
-            sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
-            procedures, and code blocks only for code.""";
+            sources: a wrong detail is worse than none.""";
+
+    private static final String CORRECT = """
+
+            Your previous answer to this question is below, with the problems a check against the sources found in it. \
+            Write the whole answer again from the sources, without those problems: cite only the numbered sources given, \
+            and leave out what they do not say.""";
 
     private static final String STANDALONE_SYSTEM = """
             You rewrite the last question of a conversation about Oracle Banking Digital Experience (OBDX) so that it can \
@@ -84,9 +89,12 @@ public class KnowledgeService {
     private final ObjectMapper json;
     private final KnowledgePolicy policy;
     private final KnowledgeProperties properties;
+    private final QueryUnderstanding understanding;
 
     public KnowledgeService(KnowledgeSearch search, KnowledgeRepository repository, ModelGateway modelGateway, AccessGuard guard,
-                            WorkspaceRepository workspaces, ObjectMapper json, KnowledgePolicy policy, KnowledgeProperties properties) {
+                            WorkspaceRepository workspaces, ObjectMapper json, KnowledgePolicy policy, KnowledgeProperties properties,
+                            QueryUnderstanding understanding) {
+        this.understanding = understanding;
         this.policy = policy;
         this.properties = properties;
         this.search = search;
@@ -107,8 +115,22 @@ public class KnowledgeService {
                          String oracleUrl) {
     }
 
+    /**
+     * An answer as checked against its sources (see AnswerPostProcessor): answer is the checked Markdown, report its
+     * structure and how well the sources support it.
+     */
     public record Answer(String answer, String model, long latencyMs, String versionLine, boolean grounded, List<Source> sources,
-                         String note) {
+                         String note, Report report) {
+    }
+
+    /**
+     * The answer's structure for the page: the kind of question and the detail asked for, the direct answer, its
+     * sections, code and tables, the sources it cites, what it does not cover, the quality check, and whether the model
+     * wrote it again after the check.
+     */
+    public record Report(String answerType, String style, String summary, List<AnswerPostProcessor.Section> sections,
+                         List<AnswerPostProcessor.CodeExample> codeExamples, List<String> tables, List<Integer> cited,
+                         List<String> limitations, AnswerPostProcessor.Quality quality, boolean corrected) {
     }
 
     // --- asking ---
@@ -116,7 +138,12 @@ public class KnowledgeService {
     /**
      * A question with what the knowledge base found for it, ready for the model.
      */
-    public record Question(String prompt, String versionLine, List<Source> sources, String note, Diagnostics diagnostics) {
+    /**
+     * asked: the question with the conversation before it (identifiers there are the user's); texts: what each source
+     * gave the model, for the check of its answer; system: the instruction for this question's kind and detail.
+     */
+    public record Question(String prompt, String versionLine, List<Source> sources, String note, Diagnostics diagnostics,
+                           String asked, List<String> texts, String type, String style, String system) {
     }
 
     /**
@@ -139,19 +166,49 @@ public class KnowledgeService {
     record Retrieved(String searched, List<KnowledgeSearch.Hit> shortList, List<KnowledgeSearch.Hit> kept, String note) {
     }
 
-    public Answer ask(String question, UUID workspaceId, String pageContext) {
-        Question prepared = prepare(question, List.of(), workspaceId, pageContext);
-        return answered(prepared, modelGateway.chat(ASK_SYSTEM, prepared.prompt()));
-    }
-
     /** The answer to a prepared question, handed to {@code pieces} as the model writes it. */
     public Answer answer(Question prepared, Consumer<String> pieces) {
-        return answered(prepared, modelGateway.chatStream(ASK_SYSTEM, prepared.prompt(), pieces));
+        return answer(prepared, pieces, s -> { });
     }
 
-    private static Answer answered(Question prepared, ModelGateway.ChatResult result) {
-        return new Answer(result.reply(), result.model(), result.latencyMs(), prepared.versionLine(), !prepared.sources().isEmpty(),
-                prepared.sources(), prepared.note());
+    /**
+     * The answer to a prepared question, handed to {@code pieces} as the model writes it, then checked against the
+     * sources; {@code status} hears what is being done after the model has written.
+     */
+    public Answer answer(Question prepared, Consumer<String> pieces, Consumer<String> status) {
+        return checked(prepared, modelGateway.chatStream(prepared.system(), prepared.prompt(), pieces), status);
+    }
+
+    /**
+     * The model's answer checked against its sources. When the check finds what the model can fix (citations to sources
+     * that do not exist, identifiers or vendors not in the sources, no citation at all), the model writes it once more
+     * with the problems listed, and the better of the two is kept: one attempt, never a loop.
+     */
+    private Answer checked(Question prepared, ModelGateway.ChatResult result, Consumer<String> status) {
+        status.accept("Checking the answer against the sources…");
+        AnswerPostProcessor.Checked checked = AnswerPostProcessor.process(result.reply(), prepared.texts(), prepared.asked(), prepared.versionLine());
+        boolean corrected = false;
+        long latency = result.latencyMs();
+        if (checked.needsCorrection() && properties.correctAnswers() && !prepared.sources().isEmpty()) {
+            status.accept("Correcting what the check found…");
+            try {
+                String problems = String.join("\n- ", checked.quality().findings());
+                ModelGateway.ChatResult again = modelGateway.chat(prepared.system() + CORRECT,
+                        prepared.prompt() + "\n\nYour previous answer:\n" + cap(result.reply(), 6000) + "\n\nProblems found:\n- " + problems);
+                AnswerPostProcessor.Checked second = AnswerPostProcessor.process(again.reply(), prepared.texts(), prepared.asked(), prepared.versionLine());
+                latency += again.latencyMs();
+                if (second.quality().findings().size() <= checked.quality().findings().size() && !second.answer().isBlank()) {
+                    checked = second;
+                    corrected = true;
+                }
+            } catch (RuntimeException e) {
+                log.info("The answer was not corrected: {}", e.getMessage());
+            }
+        }
+        Report report = new Report(prepared.type(), prepared.style(), checked.summary(), checked.sections(), checked.codeExamples(),
+                checked.tables(), checked.cited(), checked.limitations(), checked.quality(), corrected);
+        return new Answer(checked.answer(), result.model(), latency, prepared.versionLine(), !prepared.sources().isEmpty(),
+                prepared.sources(), prepared.note(), report);
     }
 
     /** The problems that stop a question before anything is searched: none given, a chat model outside the bank. */
@@ -168,12 +225,23 @@ public class KnowledgeService {
      * cannot tell ("onboard a retail customer" also matches Corporate and Biller Onboarding).
      */
     public Question prepare(String question, List<Turn> history, UUID workspaceId, String pageContext) {
+        return prepare(question, history, workspaceId, pageContext, null, null);
+    }
+
+    /**
+     * @param style    CONCISE, DETAILED (the default) or DEEP_DIVE
+     * @param improved the question as the user approved it after Improve My Question: it is searched, and the answer
+     *                 answers the user's question in its terms; null when none
+     */
+    public Question prepare(String question, List<Turn> history, UUID workspaceId, String pageContext, String style, String improved) {
         requireAskable(question);
         String versionLine = versionLineOf(workspaceId);
         List<Turn> earlier = recent(history);
         long start = System.nanoTime();
-        Retrieved found = retrieve(question, earlier, versionLine, workspaceId, properties.chooseSources());
-        Question prepared = prepared(question, earlier, versionLine, pageContext, found);
+        String searchedFor = improved == null || improved.isBlank() ? question : cap(improved.strip(), 2000);
+        Retrieved found = retrieve(searchedFor, earlier, versionLine, workspaceId, properties.chooseSources());
+        Question prepared = prepared(question, earlier, versionLine, pageContext, found, AnswerGeneration.Style.of(style),
+                improved == null || improved.isBlank() ? null : searchedFor);
         return withDiagnostics(prepared, found, (System.nanoTime() - start) / 1_000_000);
     }
 
@@ -182,15 +250,17 @@ public class KnowledgeService {
                 + " | " + h.score();
         int chars = q.prompt().length();
         return new Question(q.prompt(), q.versionLine(), q.sources(), q.note(), new Diagnostics(found.searched(),
-                found.shortList().stream().map(row).toList(), found.kept().stream().map(row).toList(), millis, chars, found.note()));
+                found.shortList().stream().map(row).toList(), found.kept().stream().map(row).toList(), millis, chars, found.note()),
+                q.asked(), q.texts(), q.type(), q.style(), q.system());
     }
 
     /** The prompt for sources already retrieved (the evaluation retrieves them itself). */
     Question prepareFor(String question, List<Turn> history, String versionLine, Retrieved found) {
-        return prepared(question, recent(history), versionLine, null, found);
+        return prepared(question, recent(history), versionLine, null, found, AnswerGeneration.Style.DETAILED, null);
     }
 
-    private Question prepared(String question, List<Turn> earlier, String versionLine, String pageContext, Retrieved found) {
+    private Question prepared(String question, List<Turn> earlier, String versionLine, String pageContext, Retrieved found,
+                              AnswerGeneration.Style style, String improved) {
         List<KnowledgeSearch.Hit> hits = found.kept();
         List<Source> sources = sources(hits);
         StringBuilder user = new StringBuilder();
@@ -216,10 +286,18 @@ public class KnowledgeService {
             user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(texts.get(i)).append("\n\n");
         }
         user.append("Question: ").append(question.strip());
-        if (!found.searched().equals(question.strip())) {
+        if (improved != null) {
+            user.append("\n(The user approved this fuller wording of it: ").append(improved).append(')');
+        } else if (!found.searched().equals(question.strip())) {
             user.append("\n(In the context of the conversation: ").append(found.searched()).append(')');
         }
-        return new Question(user.toString(), versionLine, sources, found.note(), null);
+        StringBuilder asked = new StringBuilder();
+        earlier.forEach(t -> asked.append(t.question()).append('\n'));
+        asked.append(nz(pageContext)).append('\n');
+        asked.append(question).append('\n').append(nz(improved));
+        QueryUnderstanding.Type type = QueryUnderstanding.type(improved == null ? found.searched() : improved);
+        return new Question(user.toString(), versionLine, sources, found.note(), null, asked.toString(), texts,
+                type.name(), style.name(), AnswerGeneration.system(ASK_SYSTEM, style, type));
     }
 
     /**
@@ -271,11 +349,26 @@ public class KnowledgeService {
     Retrieved retrieve(String question, List<Turn> history, String versionLine, UUID workspaceId, boolean choose) {
         String searched = standalone(question.strip(), history);
         int wanted = properties.answerSources();
+        List<String> wordings = wordings(understanding.understand(searched));
         KnowledgeSearch.Result found = choose
-                ? search.shortList(searched, versionLine, workspaceId, Math.max(wanted, SHORT_LIST), true)
-                : search.search(searched, versionLine, workspaceId, wanted, true);
+                ? search.shortList(wordings, versionLine, workspaceId, Math.max(wanted, SHORT_LIST), true)
+                : search.search(wordings, versionLine, workspaceId, wanted, true);
         List<KnowledgeSearch.Hit> kept = choose ? choose(searched, found.hits(), wanted) : found.hits();
         return new Retrieved(searched, found.hits(), kept, found.note());
+    }
+
+    /**
+     * What is searched for a question: as understood (typos corrected, abbreviations written out), then each of its
+     * parts when it asks several things, so every part finds its own sections.
+     */
+    static List<String> wordings(QueryUnderstanding.Understood understood) {
+        List<String> wordings = new ArrayList<>();
+        wordings.add(understood.searched());
+        if (!understood.searched().equals(understood.original())) {
+            wordings.add(understood.original());
+        }
+        wordings.addAll(understood.parts());
+        return wordings;
     }
 
     /**

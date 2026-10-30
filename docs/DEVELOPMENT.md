@@ -279,6 +279,35 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   seconds. The answer streams in as the model writes it (`POST /api/knowledge/ask/stream`): the sources show as soon as
   the search finds them, then the words as they come, so a slow local model is read while it writes. The model timeout
   (`FACTORY_MODEL_TIMEOUT`) then counts from the last word written, so a long answer is not cut off.
+- **Question understanding and answer quality** (`QueryUnderstanding`, `QueryEnhancementService`,
+  `AnswerGeneration`, `AnswerPostProcessor`). Before the search, without a model: words no manual has are corrected
+  to the nearest word the manuals use ("benficiary" → "beneficiary"; the vocabulary is counted in the background at
+  startup and when the library changes), abbreviations are written out (txn, acct, config, SSO, TD), technical
+  identifiers (`TransferService`, `digx.payment.timeout`, `DIGX-PY-0042`, file paths, quoted text) are searched exactly
+  and never corrected, and a question with several parts ("explain the payment flow and how errors are handled") is
+  searched part by part as well as whole. **Improve My Question** (`POST /api/knowledge/improve-question`) sends the
+  question, the conversation, the workspace's version and the headings of the sections a search finds to the chat
+  model, which rewrites it precisely or answers NEEDS_CLARIFICATION / AMBIGUOUS with questions; nothing is answered.
+  Its reply is used only when it is JSON, keeps every identifier of the question exactly, brings in no name the
+  question and those headings do not have, and says more than the question; otherwise the factory improves it
+  without the model. A one- or two-word question whose sections fall in three or more chapters asks which is meant.
+  The user edits the improved question and asks it (`improved` on the ask request), or cancels; their own question
+  stays. Answers come **Concise**, **Detailed** (default) or **Technical deep dive** (`style`), laid out for the kind of
+  question (procedure, configuration, troubleshooting, comparison, API, architecture ...), in Markdown, which the page
+  renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, citations that
+  jump to their source. Before it is shown, every answer is checked against its sources without a model: citations
+  to sources that do not exist are removed ("[1, 3]" becomes [1][3]), identifiers, menu paths and code examples the
+  sources do not have are marked, sentences about other vendors' products go, OBDX versions other than the
+  workspace's are noted, each statement is compared with the words of the source it cites, statements and steps
+  without citations are counted, invalid JSON is flagged, and the Markdown is tidied (one heading level, no empty or
+  repeated sections, no repeated paragraphs, unclosed code closed, filler at the start and end removed). The answer
+  is labelled VERIFIED, PARTIALLY_VERIFIED (with what the check found) or INSUFFICIENT_EVIDENCE. When the check finds
+  what the model can fix (citations to sources that do not exist, unsupported identifiers, other vendors, most
+  statements without a citation), the model writes the answer once more with the problems listed and the better of
+  the two is kept; one attempt, never a loop (`FACTORY_KNOWLEDGE_CORRECT_ANSWERS=false` turns it off). The answer's
+  `report` carries its kind, detail, summary, sections, code, tables, cited sources, limitations and the check. The
+  checks find unsupported details; they cannot prove an answer right, and a statement that uses the sources' words
+  for a wrong conclusion passes them.
 - **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
   topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
   *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
@@ -608,7 +637,8 @@ object: compute those in the view model.
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
 | `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
-| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `done` (the whole answer) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first |
+| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `status` while it is checked, then `done` (the checked answer with its `report`) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first; `style`: `CONCISE`, `DETAILED` (default) or `DEEP_DIVE`; `improved`: the wording the user approved after Improve My Question |
+| `POST /api/knowledge/improve-question` | Improve My Question (`question`, `workspaceId`, `history`): `status` (`READY`, `NEEDS_CLARIFICATION`, `AMBIGUOUS`), `enhancedQuery`, `detectedIntent`, `detectedModule`, `detectedVersion`, `technicalEntities`, `assumptions`, `clarificationQuestions`, `suggestedScope`, `byModel`; nothing is answered |
 | `POST /api/knowledge/evaluation` | Run the evaluation questions through the Library (`mode`: `SEARCH`, `CHOOSE` or `ANSWER`; administrators; see docs/KNOWLEDGE-AUDIT.md) |
 | `GET /api/knowledge/evaluation` | The running or last evaluation: Recall@5, Recall@15, MRR, answers passed, unanswerable questions refused, each question's row |
 | `GET` / `POST /api/knowledge/notes`, `PUT` / `DELETE /api/knowledge/notes/{id}` | Knowledge notes (`status` filter) |

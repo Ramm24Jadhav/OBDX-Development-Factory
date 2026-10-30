@@ -61,7 +61,7 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
           const cited = (result.sources || []).map((s) => '[' + s.n + '] ' + (s.kind === 'NOTE'
             ? (s.status === 'TRUSTED' ? 'Approved note: ' : 'Suggested note: ') + s.title
             : s.title + ' ' + s.obdxVersion + (s.heading ? ', ' + s.heading : '') + (s.pageFrom ? ', p. ' + s.pageFrom : '')));
-          write(result.answer + (cited.length ? '\n\nSources:\n' + cited.join('\n') : ''));
+          write(result.answer + (cited.length ? '\n\n**Sources**\n\n' + cited.map((c) => '- ' + c).join('\n') : ''));
           reply.meta(result.model + ' · ' + Math.round(result.latencyMs / 100) / 10 + 's' + (cited.length ? ' · ' + cited.length + ' sources' : ' · not from the manuals'));
           reply.css('factory-ai-msg');
         } else if (event.type === 'error') {

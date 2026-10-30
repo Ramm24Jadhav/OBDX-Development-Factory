@@ -1,9 +1,9 @@
 /*
  * More of the factory's own elements (design system): <fx-multiselect>, <fx-radio-group>, <fx-segmented>,
- * <fx-date-range>, <fx-popover>, <fx-sheet> and <fx-resizer>. Same rules as fx-elements.js: JET composites so
+ * <fx-date-range>, <fx-popover>, <fx-sheet>, <fx-resizer> and <fx-markdown>. Same rules as fx-elements.js: JET composites so
  * value="{{x}}" writes back, design-system markup and keyboard behaviour.
  */
-define(['knockout', 'ojs/ojcomposite', './fx-elements', 'ojs/ojknockout'], function (ko, Composite, fx) {
+define(['knockout', 'ojs/ojcomposite', './fx-elements', '../services/markdown', 'ojs/ojknockout'], function (ko, Composite, fx, markdown) {
   let seq = 0;
   const nextId = (p) => p + '-' + (++seq);
   const opts = (list) => (list || []).map((o) => (o !== null && typeof o === 'object'
@@ -356,6 +356,38 @@ define(['knockout', 'ojs/ojcomposite', './fx-elements', 'ojs/ojknockout'], funct
     metadata: { properties: { storageKey: { type: 'string', value: '' }, min: { type: 'number', value: 180 }, max: { type: 'number', value: 640 },
       container: { type: 'string', value: '' }, variable: { type: 'string', value: '' }, offset: { type: 'number', value: 0 }, label: { type: 'string', value: '' },
       nextMin: { type: 'number', value: 240 } } }
+  });
+
+  /* ---------- fx-markdown: Markdown text (an answer) rendered safely; [n] links to the element with id cite-prefix + n ---------- */
+  class MarkdownModel {
+    constructor(c) {
+      this.props = c.properties;
+      this.element = c.element;
+      this.pending = false;
+    }
+    draw() {
+      // While an answer streams in, the text changes many times a second: drawn at most once a frame
+      if (this.pending) { return; }
+      this.pending = true;
+      let done = false;
+      const run = () => {
+        if (done) { return; }
+        done = true;
+        this.pending = false;
+        const box = this.element.querySelector('.fx-md');
+        if (box) { markdown.render(box, this.props.text, { sources: this.props.sources, citePrefix: this.props.citePrefix }); }
+      };
+      // The next frame, or a short timer when there is none (a page in a background tab gets no frames)
+      window.requestAnimationFrame(run);
+      setTimeout(run, 150);
+    }
+    bindingsApplied() { this.draw(); }
+    propertyChanged() { this.draw(); }
+  }
+  Composite.register('fx-markdown', {
+    view: '<div class="fx-md"></div>',
+    viewModel: MarkdownModel,
+    metadata: { properties: { text: { type: 'string', value: '' }, sources: { type: 'number', value: 0 }, citePrefix: { type: 'string', value: 'src-' } } }
   });
 
   return {};

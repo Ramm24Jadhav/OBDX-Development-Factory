@@ -15,6 +15,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     const ORIGIN = { USER: 'Written by a user', AGENT: 'Learned from a change', SUMMARY: 'Summarised from the manuals' };
     const when = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
     const pages = (s) => (s.pageFrom ? (s.pageFrom === s.pageTo ? 'p. ' + s.pageFrom : 'pp. ' + s.pageFrom + '–' + s.pageTo) : '');
+    // How well the sources support an answer (the check after the model has written it)
+    const QUALITY = {
+      VERIFIED: ['fx-badge fx-badge--success', 'Verified against the sources'],
+      PARTIALLY_VERIFIED: ['fx-badge fx-badge--warning', 'Partly verified'],
+      INSUFFICIENT_EVIDENCE: ['fx-badge fx-badge--neutral', 'Not enough in the manuals']
+    };
+    const STYLES = [{ value: 'CONCISE', label: 'Concise' }, { value: 'DETAILED', label: 'Detailed' }, { value: 'DEEP_DIVE', label: 'Technical deep dive' }];
+    const copy = (text, what) => {
+      if (!navigator.clipboard) { toast.error('Copying is not available in this browser.'); return; }
+      navigator.clipboard.writeText(text).then(() => toast.success(what + ' copied.'), () => toast.error('Could not copy.'));
+    };
 
     function LibraryViewModel() {
       this.isAdmin = session.isAdmin;
@@ -239,6 +250,42 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.answerText = ko.observable('');
       this.thinking = ko.observable('');
       this.rated = ko.observable(null);
+      // How much detail the answer has
+      this.styleOptions = STYLES;
+      this.style = ko.observable('DETAILED');
+
+      // Improve My Question: the question rewritten precisely (or what to clarify), to edit and approve before asking
+      this.improvement = ko.observable(null);
+      this.improving = ko.observable(false);
+      this.improvedText = ko.observable('');
+      this.improve = () => {
+        const q = (this.question() || '').trim();
+        if (!q) { toast.info('Write a question first, even a few words.'); return; }
+        this.improving(true);
+        api.post('knowledge/improve-question', { question: q, workspaceId: this.workspaceId() || null, history: this.turns().slice(-3) })
+          .then((r) => {
+            const ready = r.status === 'READY';
+            this.improvedText(r.enhancedQuery || q);
+            this.improvement(Object.assign({}, r, {
+              ready: ready,
+              title: ready ? 'Improved question' : r.status === 'AMBIGUOUS' ? 'The question can mean different things' : 'Something is missing first',
+              lead: ready ? 'Edit it if needed, then ask it. Your own question stays as you wrote it.'
+                : 'Answer these in your question, or edit the improved one and ask it anyway.',
+              facts: [['Kind', r.detectedIntent], ['Area', r.detectedModule], ['Version', r.detectedVersion]].filter(([, v]) => !!v).map(([k, v]) => ({ k: k, v: v })),
+              made: r.byModel ? '' : 'Improved without the model (none available or its reply could not be used).'
+            }));
+          })
+          .catch((e) => toast.error('Not improved: ' + e.message))
+          .finally(() => this.improving(false));
+      };
+      this.cancelImprove = () => { this.improvement(null); this.improvedText(''); };
+      this.copyImproved = () => copy(this.improvedText(), 'The improved question is');
+      this.useImproved = () => {
+        const text = (this.improvedText() || '').trim();
+        if (!text) { return; }
+        this.improvement(null);
+        this.askWith({ improved: text });
+      };
       // The conversation so far (questions and answers), so a follow-up such as "and how do I clone one?" is understood
       this.turns = ko.observableArray([]);
       this.followingUp = ko.pureComputed(() => this.turns().length > 0);
@@ -249,9 +296,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.exampleRows = this.examples.map((text) => ({ text: text, ask: () => { this.question(text); this.ask(); } }));
       this.setImportForBank = (event) => this.importForBank(!!event.target.checked);
       this.setNewForBank = (event) => this.newForBank(!!event.target.checked);
-      this.ask = () => {
+      this.ask = () => this.askWith({});
+      // The last question again (with the detail now chosen), in place of its answer
+      this.regenerate = () => {
+        const last = this.turns().length ? this.turns()[this.turns().length - 1] : null;
+        if (!last || this.asking()) { return; }
+        this.turns.pop();
+        this.question(last.question);
+        this.askWith({ improved: last.improved || null });
+      };
+      this.copyAnswer = () => copy(this.answerText(), 'The answer is');
+      this.askWith = (opts) => {
         const q = (this.question() || '').trim();
         if (!q || this.asking()) { return; }
+        const improved = opts.improved || null;
+        this.improvement(null);
         this.asking(true);
         this.rated(null);
         this.answer(null);
@@ -259,6 +318,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.thinking('Searching the manuals and notes…');
         const shown = (a) => Object.assign({}, a, {
           question: q,
+          improved: improved,
+          sourceCount: (a.sources || []).length,
+          quality: a.report ? {
+            css: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[0],
+            label: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[1],
+            reason: a.report.quality.reason,
+            findings: a.report.quality.findings || [],
+            limitations: a.report.limitations || [],
+            corrected: a.report.corrected,
+            details: (a.report.quality.findings || []).length > 0
+          } : null,
           meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : '') : '',
           sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
             label: '[' + s.n + ']',
@@ -274,9 +344,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         let diagnostics = null;
         let failed = null;
         const history = this.turns().slice(-3);
-        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history }, (event) => {
+        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history, style: this.style(), improved: improved }, (event) => {
           if (event.type === 'status') {
             this.thinking(event.text);
+            if (this.answer() && this.answerText()) { this.answer(Object.assign({}, this.answer(), { checking: event.text })); }
           } else if (event.type === 'sources') {
             diagnostics = event.diagnostics || null;
             this.answer(shown(event));
@@ -288,7 +359,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           } else if (event.type === 'done') {
             this.answer(shown(Object.assign({}, event.answer, { diagnostics: diagnostics })));
             this.answerText(event.answer.answer);
-            this.turns.push({ question: q, answer: event.answer.answer });
+            this.turns.push({ question: q, answer: event.answer.answer, improved: improved });
             this.question('');
           } else if (event.type === 'error') {
             failed = event.message;
@@ -306,7 +377,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.rate = (helpful) => () => {
         const a = this.answer();
         if (!a || this.rated() !== null) { return; }
-        api.post('knowledge/feedback', { workspaceId: this.workspaceId() || null, question: a.question, answer: this.answerText(), helpful: helpful, sources: a.sources })
+        api.post('knowledge/feedback', { workspaceId: this.workspaceId() || null, question: a.question, answer: this.answerText(), helpful: helpful, sources: a.sources,
+          comment: a.report ? 'quality ' + a.report.quality.status + (a.improved ? '; improved question: ' + a.improved : '') : null })
           .then(() => { this.rated(helpful); toast.success('Thank you. Feedback shows which answers need better knowledge.'); }).catch((e) => toast.error(e.message));
       };
       this.saveAnswer = () => {

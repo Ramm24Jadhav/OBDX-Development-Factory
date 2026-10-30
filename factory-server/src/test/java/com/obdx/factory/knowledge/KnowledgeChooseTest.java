@@ -41,7 +41,7 @@ class KnowledgeChooseTest {
         }
     };
 
-    private final KnowledgeService service = new KnowledgeService(null, null, gateway, null, null, JsonMapper.builder().build(), null, null);
+    private final KnowledgeService service = new KnowledgeService(null, null, gateway, null, null, JsonMapper.builder().build(), null, null, null);
 
     private static final List<KnowledgeSearch.Hit> SHORT_LIST = List.of(
             hit("7.1.2 Biller Onboarding - Create (continued)"), hit("15. Group Corporate Onboarding"),

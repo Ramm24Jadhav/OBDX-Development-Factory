@@ -59,10 +59,13 @@ public class KnowledgeController {
     private final ObjectMapper json;
     private final OracleManuals oracle;
     private final KnowledgeEvaluation evaluation;
+    private final QueryEnhancementService enhancement;
 
     public KnowledgeController(KnowledgeService knowledge, KnowledgeImporter importer, KnowledgeRepository repository, AccessGuard guard,
                                AuditLog audit, @Value("${factory.local-folders.enabled}") boolean localFolders,
-                               KnowledgePolicy policy, ObjectMapper json, OracleManuals oracle, KnowledgeEvaluation evaluation) {
+                               KnowledgePolicy policy, ObjectMapper json, OracleManuals oracle, KnowledgeEvaluation evaluation,
+                               QueryEnhancementService enhancement) {
+        this.enhancement = enhancement;
         this.evaluation = evaluation;
         this.policy = policy;
         this.oracle = oracle;
@@ -267,14 +270,33 @@ public class KnowledgeController {
         return knowledge.find(q, workspaceId, version);
     }
 
-    /** history: the conversation's earlier questions and answers, oldest first, so follow-up questions are understood. */
-    public record AskRequest(String question, UUID workspaceId, String context, List<KnowledgeService.Turn> history) {
+    /**
+     * history: the conversation's earlier questions and answers, oldest first, so follow-up questions are understood;
+     * style: CONCISE, DETAILED (default) or DEEP_DIVE; improved: the fuller wording the user approved after Improve My
+     * Question, or null.
+     */
+    public record AskRequest(String question, UUID workspaceId, String context, List<KnowledgeService.Turn> history, String style,
+                             String improved) {
+    }
+
+    public record ImproveRequest(String question, UUID workspaceId, List<KnowledgeService.Turn> history) {
+    }
+
+    /**
+     * Improve My Question: the question rewritten precisely, or what to clarify first. Nothing is answered: the user
+     * edits and approves the improved question, then asks it (AskRequest.improved).
+     */
+    @PostMapping("/api/knowledge/improve-question")
+    public QueryEnhancementService.Improvement improve(@RequestBody ImproveRequest request) {
+        requireReader(request.workspaceId());
+        return enhancement.improve(request.question(), request.history(), request.workspaceId());
     }
 
     @PostMapping("/api/knowledge/ask")
     public KnowledgeService.Answer ask(@RequestBody AskRequest request) {
         requireReader(request.workspaceId());
-        return knowledge.ask(request.question(), request.workspaceId(), request.context());
+        return knowledge.answer(knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context(),
+                request.style(), request.improved()), piece -> { });
     }
 
     /**
@@ -296,7 +318,8 @@ public class KnowledgeController {
             KnowledgeService.Question question;
             try {
                 lines.send(Map.of("type", "status", "text", "Searching the manuals and notes, and choosing the sections that answer the question…"));
-                question = knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context());
+                question = knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context(),
+                        request.style(), request.improved());
             } catch (RuntimeException e) {
                 lines.send(Map.of("type", "error", "message", e.getMessage() == null ? "The question could not be searched." : e.getMessage()));
                 emitter.complete();
@@ -313,7 +336,8 @@ public class KnowledgeController {
             }
             lines.send(found);
             try {
-                KnowledgeService.Answer answer = knowledge.answer(question, piece -> lines.send(Map.of("type", "text", "text", piece)));
+                KnowledgeService.Answer answer = knowledge.answer(question, piece -> lines.send(Map.of("type", "text", "text", piece)),
+                        status -> lines.send(Map.of("type", "status", "text", status)));
                 lines.send(Map.of("type", "done", "answer", answer));
             } catch (ModelGatewayException e) {
                 lines.send(Map.of("type", "error", "message", e.getMessage()));

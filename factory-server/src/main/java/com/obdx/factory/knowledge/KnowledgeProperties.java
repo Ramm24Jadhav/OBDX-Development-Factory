@@ -25,6 +25,9 @@ import java.util.List;
  * @param chooseSources     the search hands the chat model a short list of sections (their headings and first words)
  *                          and it picks those that answer the question: one short extra model call that tells apart
  *                          what words alone cannot (retail from corporate onboarding)
+ * @param correctAnswers    when the check of an answer against its sources finds what the model can fix (citations to
+ *                          sources that do not exist, identifiers not in them, no citation), the model writes it once
+ *                          more with the problems listed; false: the checked first answer is shown as it is
  * @param oracle            getting Oracle's manuals from its documentation site
  */
 @ConfigurationProperties(prefix = "factory.knowledge")
@@ -36,6 +39,7 @@ public record KnowledgeProperties(
         @DefaultValue("3000") int pageContextChars,
         @DefaultValue("8000") int contextChars,
         @DefaultValue("true") boolean chooseSources,
+        @DefaultValue("true") boolean correctAnswers,
         @DefaultValue Oracle oracle) {
 
     /**

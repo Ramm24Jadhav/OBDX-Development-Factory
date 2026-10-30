@@ -269,6 +269,16 @@ workspace, rank above Oracle's generic manuals, and win where they differ.
 Follow-up questions are understood from the conversation, and an evaluation set of 119 questions measures the
 retrieval and the answers (docs/KNOWLEDGE-AUDIT.md: findings, root causes, results, limitations).
 
+Every question is read before it is searched, without a model (typos corrected from the manuals' own words,
+abbreviations written out, technical identifiers searched exactly and never changed, a question with several parts
+searched part by part), and **Improve My Question** rewrites a short or loose question precisely, or asks what to
+clarify, for the user to edit and approve. Answers come in three levels of detail, laid out for the kind of question,
+and every answer is checked against its sources before it is shown: citations to sources that do not exist are
+removed, identifiers, menu paths and code the sources do not have are marked, other vendors' products and other OBDX
+versions are caught, and the answer is labelled *Verified*, *Partly verified* or *Not enough in the manuals*; when the
+check finds what the model can fix, it writes the answer once more. The checks are deterministic: they catch
+unsupported details, they do not prove an answer right.
+
 *Not yet:* a 22.x/25.x difference view.
 
 ---

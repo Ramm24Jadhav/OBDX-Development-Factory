@@ -60,11 +60,12 @@ public class KnowledgeEvaluation {
      * How one question went. rank: where the first expected section came among the sources kept (1 is best, 0: not
      * among them); shortListRank: the same in the short list. searched: the question as searched (a follow-up made
      * standalone). passed: for an answer, whether it holds up (the sources found it, citations are real, and an
-     * unanswerable question was said to be so).
+     * unanswerable question was said to be so). unknownCitations: citations to sources that do not exist, which the
+     * check of the answer removed; quality: that check's verdict, and corrected whether the model wrote it again.
      */
     public record Row(String id, String version, String kind, String question, String searched, int rank, int shortListRank,
                       List<String> kept, String answer, int citations, int unknownCitations, boolean saysNotCovered, boolean passed,
-                      long millis) {
+                      long millis, String quality, boolean corrected) {
     }
 
     /** The whole run: the cases, the scores, and each row. recallAt5: the share whose expected section was kept. */
@@ -145,23 +146,25 @@ public class KnowledgeEvaluation {
         int citations = 0;
         int unknown = 0;
         boolean notCovered = false;
+        String quality = null;
+        boolean corrected = false;
         boolean passed = c.isUnsupported() || rank > 0;
         if (mode == Mode.ANSWER) {
             KnowledgeService.Question prepared = knowledge.prepareFor(c.question(), history, line, found);
-            answer = knowledge.answer(prepared, piece -> { }).answer();
+            KnowledgeService.Answer answered = knowledge.answer(prepared, piece -> { });
+            answer = answered.answer();
+            quality = answered.report().quality().status().name();
+            corrected = answered.report().corrected();
             Matcher m = CITATION.matcher(answer);
             while (m.find()) {
                 citations++;
-                int n = Integer.parseInt(m.group(1));
-                if (n < 1 || n > prepared.sources().size()) {
-                    unknown++;
-                }
             }
+            unknown = (int) answered.report().quality().findings().stream().filter(x -> x.startsWith("Removed citations")).count();
             notCovered = NOT_COVERED.matcher(answer).find();
             passed = unknown == 0 && (c.isUnsupported() ? notCovered : rank > 0 && citations > 0);
         }
         return new Row(c.id(), c.version(), c.kind(), c.question(), found.searched(), rank, shortRank, kept, answer, citations, unknown,
-                notCovered, passed, (System.nanoTime() - start) / 1_000_000);
+                notCovered, passed, (System.nanoTime() - start) / 1_000_000, quality, corrected);
     }
 
     /** Where the first section that answers the case is among the hits: 1 is first, 0 none of them. */

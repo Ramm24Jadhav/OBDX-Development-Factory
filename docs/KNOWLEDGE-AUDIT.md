@@ -37,7 +37,7 @@ folders, uploads ──────────────┐            │ co
 
 | Area | What exists | Problem found (evidence) | Correction |
 |---|---|---|---|
-| Documentation discovery | `OracleLibrary` reads Oracle's FSGBU documentation index, each release's library page (22.x tech/um folders per patchset, 25.x book-data JSON), keeps the newest patchset's file per manual | Works (39 technical guides of 25.2 found and imported, re-check 0 downloads). robots.txt is not read; HTML books are not ingested, only their PDFs | Kept. Recorded as a limitation (section 6) |
+| Documentation discovery | `OracleLibrary` reads Oracle's FSGBU documentation index, each release's library page (22.x tech/um folders per patchset, 25.x book-data JSON), keeps the newest patchset's file per manual | Works (39 technical guides of 25.2 found and imported, re-check 0 downloads). robots.txt is not read; HTML books are not ingested, only their PDFs | Kept. Recorded as a limitation (section 7) |
 | Parsing | PDFBox page text; PDF bookmarks as headings | 25.x manuals indexed their *Contents*, *Index*, *Diversity and Inclusion*, *Critical Patches* pages as content; 22.x contents lines ending "… 39-1" became headings | Front and back matter skipped by title; contents lines with page ranges recognised (`ManualSplitter`, reader version 4) |
 | Chunking | Sections at bookmarks or numbered headings, ≤ 1,800 characters, parts keep their pages | A subsection had only its own heading: "3.5.1 Custom Domain Objects" did not know it is under "3.5 Domain Extensions", so a question about domain extensions missed it (evaluation q005, q006, q007) | Every heading carries its two nearest parents ("3 Extensible Points in Service Tier › 3.5 Domain Extensions › 3.5.1 …"): in the full-text index, the embeddings, the model's short list and the citations |
 | Embeddings | `nomic-embed-text` on Ollama; per-document record of the model; re-embedding on model change | Fixed earlier this round: query/passage prefixes, model change detection, privacy checked per batch | Kept; Qwen3-Embedding instruction added, bge-m3 instruction removed |
@@ -108,7 +108,26 @@ needs a judge model or a person; the ANSWER mode checks citations and refusals o
   (conversation in the AI Assistant panels).
 - Tests: `KnowledgeEvaluationTest`, splitter and update tests for the heading paths.
 
-## 6. Limitations and recommended next steps
+## 6. Question understanding and answer quality (second round)
+
+| Part | Reused | Added |
+|---|---|---|
+| Understanding every question | glossary, follow-up rewrite, search with several wordings | `QueryUnderstanding`: identifiers kept and searched exactly, typos corrected from the manuals' words, abbreviations, several parts searched one by one, the kind of question; no model call |
+| Improve My Question | `ModelGateway.chatJson`, the search | `QueryEnhancementService`, `POST /api/knowledge/improve-question`: READY / NEEDS_CLARIFICATION / AMBIGUOUS, the reply checked (JSON, identifiers kept, no invented names, says more), an improvement without the model when it fails |
+| Answer generation | the answer rules, streaming | `AnswerGeneration`: Concise / Detailed / Technical deep dive, a layout per kind of question, Markdown rules |
+| Answer check | – | `AnswerPostProcessor`: citations, identifiers, menu paths, code, vendors, versions, statements against their sources, uncited statements, Markdown; VERIFIED / PARTIALLY_VERIFIED / INSUFFICIENT_EVIDENCE; one rewrite at most |
+| Page | Ask tab, sources, feedback | Markdown rendered by the page (`services/markdown.js`, `<fx-markdown>`, also in every AI Assistant panel), the Improve panel, the detail selector, the quality label and findings, Copy answer, Regenerate, sources that open their excerpt |
+
+No database change: the report travels with the answer. The evaluation's ANSWER mode records each answer's check and
+whether it was rewritten. Tests: `QueryUnderstandingTest`, `QueryEnhancementTest`, `AnswerGenerationTest`,
+`AnswerPostProcessorTest`.
+
+What the checks cannot do: they compare words, not meaning. A statement made of the sources' words that draws a wrong
+conclusion from them passes; a correct paraphrase in other words can be marked. Improve My Question and the rewrite
+are only as good as the chat model: a 3B local model often fails the checks on its rewrite, and the factory then
+improves the question without it.
+
+## 7. Limitations and recommended next steps
 
 - **HTML books and robots.txt.** The 25.x libraries also publish each book as HTML pages with section anchors; the
   factory ingests the PDF of each book. robots.txt is not read: the factory requests only the index page, the library
@@ -123,7 +142,7 @@ needs a judge model or a person; the ANSWER mode checks citations and refusals o
 - **A native Anthropic adapter** is not built; Anthropic's OpenAI-compatible endpoint works through the same gateway.
 - **The laptop.** Re-reading all manuals after a reading change re-embeds them: 20–30 minutes on a laptop CPU.
 
-## 7. Results after the changes
+## 8. Results after the changes
 
 - Search only: Recall@5 0.826 → 0.843, MRR 0.723 → 0.767, 0.7 s per question.
 - The short list of 15 holds an expected section for 92 % of the questions (106 of 115).
@@ -137,5 +156,7 @@ needs a judge model or a person; the ANSWER mode checks citations and refusals o
   "unblock") and the 22.2 manuals that have no bookmarks.
 - Not yet run: ANSWER mode on the whole set (about an hour with the 3B model on a laptop CPU; minutes with a hosted
   model) and the same runs with a cloud chat model. The four unanswerable questions are scored only in ANSWER mode.
-- The whole server test suite: 177 tests, 20 skipped (they need the test database), 1 failure on Windows only
+- After the retrieval fixes for onboarding and deleting a user, and the question understanding (typos, abbreviations,
+  exact identifiers, parts): Recall@5 0.887, MRR 0.801 (security 93 %, follow-ups 83 %), no question worse than before.
+- The whole server test suite: 206 tests, 20 skipped (they need the test database), 1 failure on Windows only
   (`ScreenScaffolderTest`, which passes on CI).

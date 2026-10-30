@@ -40,6 +40,35 @@
           <button type="button" class="fx-btn fx-btn--primary is-busy" disabled aria-busy="true"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Ask</button>
         </oj-bind-if>
       </div>
+      <div class="factory-lb-asktools">
+        <button type="button" :class="[[improving() ? 'fx-btn fx-btn--tertiary fx-btn--sm is-busy' : 'fx-btn fx-btn--tertiary fx-btn--sm']]" id="libraryImprove" on-click="[[improve]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>Improve My Question</button>
+        <fx-segmented id="libraryStyle" class="factory-lb-style" label="Answer detail" hide-label options="[[styleOptions]]" value="{{style}}"></fx-segmented>
+      </div>
+      <oj-bind-if test="[[improvement()]]">
+        <section class="factory-lb-improve" aria-labelledby="lbImproveTitle">
+          <div class="factory-lb-improvehead">
+            <h3 class="factory-lb-h3" id="lbImproveTitle"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span><oj-bind-text value="[[improvement().title]]"></oj-bind-text></h3>
+            <span class="fx-muted"><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></span>
+          </div>
+          <oj-bind-if test="[[improvement().clarificationQuestions.length > 0]]">
+            <ul class="factory-lb-clarify"><oj-bind-for-each data="[[improvement().clarificationQuestions]]" as="c"><template><li><oj-bind-text value="[[c.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <fx-textarea id="libraryImproved" label="Improved question" hide-label rows="3" value="{{improvedText}}"></fx-textarea>
+          <oj-bind-if test="[[improvement().facts.length > 0 || improvement().assumptions.length > 0]]">
+            <div class="factory-lb-improvefacts">
+              <oj-bind-for-each data="[[improvement().facts]]" as="f"><template><span class="fx-chip is-static"><span class="fx-muted"><oj-bind-text value="[[f.data.k + ':']]"></oj-bind-text></span> <oj-bind-text value="[[f.data.v]]"></oj-bind-text></span></template></oj-bind-for-each>
+              <oj-bind-for-each data="[[improvement().assumptions]]" as="a"><template><span class="fx-muted factory-lb-assume"><oj-bind-text value="[['Assumes: ' + a.data]]"></oj-bind-text></span></template></oj-bind-for-each>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[improvement().made]]"><p class="fx-help"><oj-bind-text value="[[improvement().made]]"></oj-bind-text></p></oj-bind-if>
+          <div class="factory-lb-improvebar">
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="libraryUseImproved" on-click="[[useImproved]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Use improved question</button>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="libraryRegenerateImproved" on-click="[[improve]]" :disabled="[[improving()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCopyImproved" on-click="[[copyImproved]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCancelImprove" on-click="[[cancelImprove]]">Cancel</button>
+          </div>
+        </section>
+      </oj-bind-if>
       <oj-bind-if test="[[followingUp()]]">
         <p class="fx-muted factory-lb-followup">Follow-up questions continue from: <strong><oj-bind-text value="[[lastQuestion]]"></oj-bind-text></strong>
           <button type="button" class="factory-link-sm" id="libraryNewConversation" on-click="[[newConversation]]">New conversation</button></p>
@@ -57,18 +86,34 @@
           <oj-bind-if test="[[!answer().grounded]]">
             <div class="fx-alert fx-alert--warning"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">The knowledge base has nothing on this yet, so the answer below is general and not from the manuals.</span></div>
           </oj-bind-if>
-          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><oj-bind-text value="[[answerText]]"></oj-bind-text></div>
+          <oj-bind-if test="[[answer().improved]]"><p class="fx-muted factory-lb-askedas">Asked as: <oj-bind-text value="[[answer().improved]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-if test="[[answer().quality]]">
+            <div class="factory-lb-quality">
+              <span :class="[[answer().quality.css]]"><oj-bind-text value="[[answer().quality.label]]"></oj-bind-text></span>
+              <span class="fx-muted"><oj-bind-text value="[[answer().quality.reason]]"></oj-bind-text><oj-bind-if test="[[answer().quality.corrected]]"> The model rewrote it once after the check.</oj-bind-if></span>
+              <oj-bind-if test="[[answer().quality.details]]">
+                <details class="factory-lb-findings"><summary>What the check found</summary>
+                  <ul><oj-bind-for-each data="[[answer().quality.findings]]" as="f"><template><li><oj-bind-text value="[[f.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                </details>
+              </oj-bind-if>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[asking() && answer().checking]]"><div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[answer().checking]]"></oj-bind-text></div></oj-bind-if>
+          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sourceCount]]" cite-prefix="lbSrc-"></fx-markdown></div>
+          <oj-bind-if test="[[answer().quality && answer().quality.limitations.length > 0]]">
+            <ul class="factory-lb-limits"><oj-bind-for-each data="[[answer().quality.limitations]]" as="l"><template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[l.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
           <p class="fx-muted factory-lb-meta"><oj-bind-text value="[[answer().meta]]"></oj-bind-text><oj-bind-if test="[[answer().note]]"> · <oj-bind-text value="[[answer().note]]"></oj-bind-text></oj-bind-if></p>
           <oj-bind-if test="[[answer().sourceRows.length > 0]]">
             <h3 class="factory-lb-h3">Sources</h3>
             <ol class="factory-lb-sources">
               <oj-bind-for-each data="[[answer().sourceRows]]" as="s">
-                <template><li :class="[[s.data.css]]"><span class="factory-lb-n"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span>
+                <template><li :class="[[s.data.css]]" :id="[['lbSrc-' + s.data.n]]"><span class="factory-lb-n"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span>
                   <span class="factory-lb-sourcebody">
                     <oj-bind-if test="[[s.data.url]]"><a :href="[[s.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></a></oj-bind-if>
                     <oj-bind-if test="[[!s.data.url]]"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></oj-bind-if>
                     <span class="fx-muted"><oj-bind-text value="[[s.data.where]]"></oj-bind-text><oj-bind-if test="[[s.data.oracleUrl]]"> · <a :href="[[s.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
-                    <span class="factory-lb-excerpt"><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></span></span></li></template>
+                    <oj-bind-if test="[[s.data.excerpt]]"><details class="factory-lb-excerpt"><summary>What it says</summary><p><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></p></details></oj-bind-if></span></li></template>
               </oj-bind-for-each>
             </ol>
           </oj-bind-if>
@@ -83,6 +128,8 @@
             <span class="fx-muted">Was this helpful?</span>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerHelpful" on-click="[[rate(true)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Yes</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerNotHelpful" on-click="[[rate(false)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>No</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="copyAnswer" on-click="[[copyAnswer]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy answer</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="regenerateAnswer" on-click="[[regenerate]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
             <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm factory-lb-save" id="saveAnswer" on-click="[[saveAnswer]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Save as knowledge</button>
           </div></oj-bind-if>
         </div>
