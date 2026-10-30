@@ -36,6 +36,8 @@ public class ImpactAnalyzer {
               forward slashes, exactly as shown.
             - basedOn lists existing files whose patterns the new or changed code should follow.
             - details says precisely what to add or change in the file.
+            - When the spec has acceptance criteria, plan the tests that check them (layer test) and name in details the
+              criteria (AC-001) each covers; name in each item's details the requirements (FR-001) it implements.
             - Put anything uncertain (missing information, assumptions, risky changes) in risks.
 
             Answer with one JSON object in exactly this format, and nothing else:

@@ -12,7 +12,7 @@ import java.util.Set;
  * adding a field to a screen extends a UI component. A question is also
  * searched in these words, which needs no model and works however small the configured one is.
  */
-final class ObdxGlossary {
+public final class ObdxGlossary {
 
     private static final Map<String, String> TERMS = Map.ofEntries(
             Map.entry("onboard", "user management create registration"),
@@ -72,7 +72,7 @@ final class ObdxGlossary {
      * The question in the manuals' words, or null when none of its words has another name there. The words without one
      * are kept, so "onboarding a retail customer" becomes "user management create registration retail party user".
      */
-    static String inManualWords(String question) {
+    public static String inManualWords(String question) {
         Set<String> words = new LinkedHashSet<>();
         boolean changed = false;
         List<String> asked = List.of((question == null ? "" : question).toLowerCase(Locale.ROOT).split("[^a-z0-9]+"));

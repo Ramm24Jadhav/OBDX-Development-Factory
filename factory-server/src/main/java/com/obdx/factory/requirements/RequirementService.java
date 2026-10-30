@@ -234,7 +234,14 @@ public class RequirementService {
         Requirement requirement = find(id);
         try {
             RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId(),
-                    requirement.getTitle() + "\n" + head(requirement.getDocumentText(), 1500)));
+                    requirement.getTitle() + "\n" + head(requirement.getDocumentText(), 1500)), progress -> {
+                        // A long document on a local model takes a while: the page shows how far it is
+                        requirement.processing(progress);
+                        requirements.save(requirement);
+                    });
+            // The document's own tables and lists (requirements, rules, criteria, questions) exactly as written
+            spec = DocumentStructure.apply(spec, DocumentStructure.read(requirement.getDocumentText()));
+            spec = SpecGrounding.apply(spec, requirement.getDocumentText());
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
@@ -260,8 +267,10 @@ public class RequirementService {
                     .collect(Collectors.toMap(s -> SpecMerger.normalize(s.name()), RequirementSpec.Screen::relatedCode, (a, b) -> a));
             RequirementSpec result = linkRelatedCode(requirement.getWorkspaceId(),
                     withQuestions(refined, stillOpen, withDecisions.decisions()), previousCode);
+            result = DocumentStructure.apply(result, DocumentStructure.read(requirement.getDocumentText()));
+            result = SpecGrounding.apply(result, requirement.getDocumentText());
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
-            requirement.ready(version, "Spec updated with the answers; " + stillOpen.size() + " open question(s) left.");
+            requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left.");
         } catch (RuntimeException e) {
             log.error("Updating the spec for requirement {} failed", id, e);
             requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + e.getMessage()
@@ -311,7 +320,10 @@ public class RequirementService {
     }
 
     private List<String> searchRelated(UUID workspaceId, RequirementSpec.Screen screen) {
-        String query = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        String asWritten = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+        String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+        String query = inCode == null ? asWritten : asWritten + " " + inCode;
         try {
             Set<String> paths = new LinkedHashSet<>();
             for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 10).results()) {

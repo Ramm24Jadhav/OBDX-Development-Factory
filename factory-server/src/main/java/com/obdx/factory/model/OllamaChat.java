@@ -125,7 +125,10 @@ final class OllamaChat {
         }
         messages.addObject().put("role", "user").put("content", user);
         int chars = (system == null ? 0 : system.length()) + user.length();
-        request.putObject("options").put("num_ctx", contextFor(baseUrl, model, chars));
+        int context = contextFor(baseUrl, model, chars);
+        // The answer ends where the context does: Ollama otherwise shifts the context and a small model caught in a
+        // loop writes on for hours
+        request.putObject("options").put("num_ctx", context).put("num_predict", Math.max(1024, context - chars / 3));
         HttpResponse<InputStream> response = http.send(HttpRequest.newBuilder(URI.create(root(baseUrl) + "/api/chat"))
                         .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(request))).build(),
                 HttpResponse.BodyHandlers.ofInputStream());

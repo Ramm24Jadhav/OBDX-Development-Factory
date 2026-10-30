@@ -133,7 +133,7 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(gateway.chatStream("Be brief.", "x".repeat(30_000), pieces::add).reply()).isEqualTo("{\"ok\": true}");
         assertThat(pieces).containsExactly("{\"ok\": ", "true}");
         // 30,000 characters is about 10,000 tokens, with 4,096 for the answer: 14,336, not Ollama's 4,096
-        assertThat(lastChatRequest.get()).contains("\"num_ctx\":14336").contains("\"stream\":true").doesNotContain("\"format\"");
+        assertThat(lastChatRequest.get()).contains("\"num_ctx\":14336").contains("\"num_predict\":4333").contains("\"stream\":true").doesNotContain("\"format\"");
 
         gateway.chatJson("Answer in JSON.", "short");
         // JSON mode, and the context stays as large as before, so the model is not loaded again

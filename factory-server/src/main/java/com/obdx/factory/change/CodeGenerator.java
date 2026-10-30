@@ -30,6 +30,9 @@ public class CodeGenerator {
             - Implement what the plan item says, consistent with the other files of the change (same class, field,
               service and label names).
             - Use only APIs and classes that exist in the code shown, or that this change creates.
+            - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
+              say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
+              test per criterion, named or commented with the criterion's ID.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
 

@@ -65,6 +65,9 @@ public class SpecDrafter {
             - fields: only those the document names. When it leaves fields to be defined ("bank-defined fields"), list
               the ones it names and ask an open question for the rest.
             - The document's own open questions (an "Open questions" section) are open questions of the spec too.
+            - roles: the people who use the screens (a retail customer, a bank administrator), not the document's
+              stakeholders, owners or approvers. apis and hostInteractions: only those the document names; when it
+              names none, leave them empty and ask which services to use.
             - changeType is "enhance" when the document changes an existing screen, "new" for a new screen, otherwise "unknown".
             - mandatory is true or false only when the document says so; otherwise null.
             - Add an open question for everything a developer would need but the document leaves missing or unclear:
@@ -105,10 +108,18 @@ public class SpecDrafter {
 
     /** Drafts a spec section by section and merges the results. */
     public RequirementSpec draft(String title, String documentText, String systemContext) {
+        return draft(title, documentText, systemContext, progress -> { });
+    }
+
+    /** The same, telling {@code progress} which section is being read ("Reading section 2 of 5 ..."). */
+    public RequirementSpec draft(String title, String documentText, String systemContext, java.util.function.Consumer<String> progress) {
         List<String> sections = split(documentText, properties.maxCharsPerCall());
         String system = DRAFT_SYSTEM.formatted(context(systemContext), SPEC_FORMAT);
         List<RequirementSpec> drafts = new ArrayList<>();
         for (int i = 0; i < sections.size(); i++) {
+            if (sections.size() > 1) {
+                progress.accept("Drafting the spec: reading section " + (i + 1) + " of " + sections.size() + " of the document...");
+            }
             String user = "Document: " + title + "\nSection " + (i + 1) + " of " + sections.size() + ":\n\n" + sections.get(i);
             drafts.add(ask(system, user, title));
         }

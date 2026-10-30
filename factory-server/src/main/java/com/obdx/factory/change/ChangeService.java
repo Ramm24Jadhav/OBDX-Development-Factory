@@ -600,7 +600,10 @@ public class ChangeService {
         spec.hostInteractions().forEach(host -> queries.add((host.system() == null ? "" : host.system()) + " " + host.description()));
 
         Map<String, ImpactAnalyzer.Candidate> found = new LinkedHashMap<>();
-        for (String query : queries) {
+        for (String asWritten : queries) {
+            // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+            String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+            String query = inCode == null ? asWritten : asWritten + " " + inCode;
             try {
                 for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 6).results()) {
                     found.putIfAbsent(result.path() + ":" + result.startLine(), new ImpactAnalyzer.Candidate(
