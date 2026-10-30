@@ -51,6 +51,9 @@ public class SpecDrafter {
                 "reference": "section", "options": ["short answer", "another answer"], "suggestedAnswer": "the usual choice"}]
             }""";
 
+    /** The format without the document's own lists, for updating a spec with answers (see refine). */
+    static final String CORE_FORMAT = SPEC_FORMAT.replaceAll("(?s)\\n\\s*\"scope\":.*?\"nonFunctional\":[^\\n]*", "");
+
     private static final String DRAFT_SYSTEM = """
             You are a senior business analyst for Oracle Banking Digital Experience (OBDX) customizations.
             Read a section of a requirement document (BRD, FSD or a short request) and write a structured specification.
@@ -128,13 +131,21 @@ public class SpecDrafter {
 
     /** Applies decisions to the spec. The spec passed in already lists the decisions. */
     public RequirementSpec refine(RequirementSpec spec, String systemContext) {
-        String system = REFINE_SYSTEM.formatted(context(systemContext), SPEC_FORMAT);
-        StringBuilder user = new StringBuilder("Specification:\n").append(json.writeValueAsString(withoutDecisions(spec)))
+        String system = REFINE_SYSTEM.formatted(context(systemContext), CORE_FORMAT);
+        // The document's own lists (scope, requirements, criteria, non-functional) are not sent and come back as they
+        // were: answers change screens, fields and rules, and writing those lists out again only made the call slow
+        RequirementSpec working = withoutDecisions(spec);
+        RequirementSpec sent = new RequirementSpec(working.title(), working.summary(), working.screens(), working.businessRules(),
+                working.roles(), working.apis(), working.hostInteractions(), working.messages(), working.openQuestions(), List.of());
+        StringBuilder user = new StringBuilder("Specification:\n").append(json.writeValueAsString(sent))
                 .append("\n\nDecisions:\n");
         for (RequirementSpec.Decision decision : spec.decisions()) {
             user.append("- Q: ").append(decision.question()).append("\n  A: ").append(decision.answer()).append('\n');
         }
-        return ask(system, user.toString(), spec.title());
+        RequirementSpec refined = ask(system, user.toString(), spec.title());
+        return new RequirementSpec(refined.title(), refined.summary(), refined.screens(), refined.businessRules(), refined.roles(), refined.apis(),
+                refined.hostInteractions(), refined.messages(), refined.openQuestions(), refined.decisions(), spec.scope(), spec.outOfScope(),
+                spec.assumptions(), spec.requirements(), spec.acceptanceCriteria(), spec.nonFunctional());
     }
 
     private RequirementSpec ask(String system, String user, String title) {

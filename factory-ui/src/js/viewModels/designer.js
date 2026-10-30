@@ -1466,16 +1466,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
         : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
       this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); this.rightOpen(true); };
-      /** What the requirement's rules say about this screen. */
+      /**
+       * What the requirement says about this screen: the functional requirements it serves (FR-001), the acceptance
+       * criteria that check them (AC-001) and the business rules.
+       */
       this.screenRules = ko.pureComputed(() => {
         const requirement = this.requirement();
         const d = this.detail();
         if (!requirement || !requirement.spec || !d) {
           return [];
         }
-        return (requirement.spec.businessRules || [])
-          .filter((r) => !r.screens || r.screens.length === 0 || r.screens.some((s) => norm(s) === norm(d.name)))
-          .map((r) => (r.id ? r.id + ': ' : '') + r.description);
+        const spec = requirement.spec;
+        const served = (spec.requirements || []).filter((r) => (r.screens || []).some((s) => norm(s) === norm(d.name)));
+        const ids = served.map((r) => r.id).filter(Boolean);
+        return served.map((r) => (r.id ? r.id + (r.priority ? ' (' + r.priority + ')' : '') + ': ' : '') + (r.description || r.title))
+          .concat((spec.acceptanceCriteria || []).filter((c) => (c.requirements || []).some((id) => ids.indexOf(id) >= 0))
+            .map((c) => (c.id ? c.id + ': ' : '') + c.description))
+          .concat((spec.businessRules || [])
+            .filter((r) => !r.screens || r.screens.length === 0 || r.screens.some((s) => norm(s) === norm(d.name)))
+            .map((r) => (r.id ? r.id + ': ' : '') + r.description));
       });
 
       // --- the canvas shows the screen in an OBDX page, with the journey's steps and the checks' warnings ---

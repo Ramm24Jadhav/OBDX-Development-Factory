@@ -93,4 +93,21 @@ class SpecDrafterTest {
         assertThat(SpecDrafter.split("aaaa\n\nbbbb\n\ncccc", 10)).containsExactly("aaaa\n\nbbbb", "cccc");
         assertThat(SpecDrafter.split("x".repeat(25), 10)).containsExactly("x".repeat(10), "x".repeat(10), "x".repeat(5));
     }
+
+    @Test
+    void refineLeavesTheDocumentsListsOutAndKeepsThem() {
+        model.replies.add("{\"title\": \"Limits\", \"screens\": [{\"name\": \"Limits\"}], \"requirements\": []}");
+        RequirementSpec spec = new RequirementSpec("Limits", null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                List.of(new RequirementSpec.Decision("Per day?", "Yes")), List.of("Daily limits"), List.of(), List.of(),
+                List.of(new RequirementSpec.FunctionalRequirement("FR-001", "Limit", "Check the daily limit", "Must", List.of("Limits"))),
+                List.of(), List.of());
+
+        RequirementSpec refined = drafter.refine(spec, "");
+
+        assertThat(model.userPrompts.getLast()).doesNotContain("FR-001").doesNotContain("Daily limits");
+        assertThat(model.systemPrompts.getLast()).doesNotContain("acceptanceCriteria").contains("openQuestions");
+        assertThat(refined.requirements()).extracting(RequirementSpec.FunctionalRequirement::id).containsExactly("FR-001");
+        assertThat(refined.scope()).containsExactly("Daily limits");
+        assertThat(refined.screens()).hasSize(1);
+    }
 }

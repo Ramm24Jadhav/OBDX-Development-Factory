@@ -215,6 +215,12 @@ public class RequirementService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void failInterrupted() {
+        // Updating a spec with answers: the spec and the answers are kept, so it is not drafted again from the start
+        int updating = requirements.readyAgain("Updating the spec with the answers was interrupted because the server restarted. "
+                + "The answers are kept: click Update spec with answers again.", OffsetDateTime.now());
+        if (updating > 0) {
+            log.warn("{} requirement(s) were being updated with answers when the server stopped; their specs are kept", updating);
+        }
         int count = requirements.failProcessing("Interrupted because the server restarted. Click Retry.", OffsetDateTime.now());
         if (count > 0) {
             log.warn("Marked {} requirement(s) as failed after restart", count);
