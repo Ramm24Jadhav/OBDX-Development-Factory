@@ -41,7 +41,7 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
       waiting(true);
       const page = (context() || '').slice(0, MAX_PROMPT);
       // The reply joins the conversation with the first piece the model writes and grows as more arrive
-      const reply = { mine: false, text: ko.observable(''), meta: ko.observable(''), css: ko.observable('factory-ai-msg is-writing') };
+      const reply = { mine: false, text: ko.observable(''), meta: ko.observable(''), css: ko.observable('factory-ai-msg is-writing'), sources: ko.observable([]) };
       const write = (value) => {
         if (waiting()) {
           waiting(false);
@@ -57,11 +57,10 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
           write(written);
         } else if (event.type === 'done') {
           const result = event.answer;
-          // The sources the answer cites, listed under it: [n] the manual, its section and page (or the note)
-          const cited = (result.sources || []).map((s) => '[' + s.n + '] ' + (s.kind === 'NOTE'
-            ? (s.status === 'TRUSTED' ? 'Approved note: ' : 'Suggested note: ') + s.title
-            : s.title + ' ' + s.obdxVersion + (s.heading ? ', ' + s.heading : '') + (s.pageFrom ? ', p. ' + s.pageFrom : '')));
-          write(result.answer + (cited.length ? '\n\n**Sources**\n\n' + cited.map((c) => '- ' + c).join('\n') : ''));
+          // Each citation in the text becomes a link named after the section it cites, opening the manual at the page
+          const cited = result.sources || [];
+          reply.sources(cited);
+          write(result.answer);
           reply.meta(result.model + ' · ' + Math.round(result.latencyMs / 100) / 10 + 's' + (cited.length ? ' · ' + cited.length + ' sources' : ' · not from the manuals'));
           reply.css('factory-ai-msg');
         } else if (event.type === 'error') {

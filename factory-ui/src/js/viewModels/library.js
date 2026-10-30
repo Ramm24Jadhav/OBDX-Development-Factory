@@ -6,8 +6,8 @@
  * code generation; notes whose cited sections changed in a newer revision come back for review).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/ui',
-        '../services/toast', '../services/dialog', 'ojs/ojknockout'],
-  function (ko, accUtils, api, session, workspaceSelection, ui, toast, dialog) {
+        '../services/toast', '../services/dialog', '../services/markdown', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, workspaceSelection, ui, toast, dialog, markdown) {
     // Document and note states shown in the factory's status words
     const DOC_STATUS = { QUEUED: ['QUEUED', 'Queued'], READING: ['PROCESSING', 'Reading'], EMBEDDING: ['PROCESSING', 'Embedding'], READY: ['SUCCEEDED', 'Ready'], FAILED: ['FAILED', 'Failed'],
       SUPERSEDED: ['CLOSED', 'Older revision'] };
@@ -305,7 +305,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.question(last.question);
         this.askWith({ improved: last.improved || null });
       };
-      this.copyAnswer = () => copy(this.answerText(), 'The answer is');
+      // Copied with each citation written out (manual, version, section, page) in place of its number
+      this.copyAnswer = () => copy(markdown.plain(this.answerText(), (this.answer() || {}).sources), 'The answer is');
       this.askWith = (opts) => {
         const q = (this.question() || '').trim();
         if (!q || this.asking()) { return; }
@@ -319,7 +320,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const shown = (a) => Object.assign({}, a, {
           question: q,
           improved: improved,
-          sourceCount: (a.sources || []).length,
           quality: a.report ? {
             css: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[0],
             label: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[1],

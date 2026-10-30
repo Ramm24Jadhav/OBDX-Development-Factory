@@ -99,13 +99,13 @@
             </div>
           </oj-bind-if>
           <oj-bind-if test="[[asking() && answer().checking]]"><div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[answer().checking]]"></oj-bind-text></div></oj-bind-if>
-          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sourceCount]]" cite-prefix="lbSrc-"></fx-markdown></div>
+          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sources || []]]" cite-prefix="lbSrc-"></fx-markdown></div>
           <oj-bind-if test="[[answer().quality && answer().quality.limitations.length > 0]]">
             <ul class="factory-lb-limits"><oj-bind-for-each data="[[answer().quality.limitations]]" as="l"><template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[l.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
           </oj-bind-if>
           <p class="fx-muted factory-lb-meta"><oj-bind-text value="[[answer().meta]]"></oj-bind-text><oj-bind-if test="[[answer().note]]"> · <oj-bind-text value="[[answer().note]]"></oj-bind-text></oj-bind-if></p>
           <oj-bind-if test="[[answer().sourceRows.length > 0]]">
-            <h3 class="factory-lb-h3">Sources</h3>
+            <details class="factory-lb-allsources"><summary><oj-bind-text value="[['All sources searched (' + answer().sourceRows.length + ')']]"></oj-bind-text></summary>
             <ol class="factory-lb-sources">
               <oj-bind-for-each data="[[answer().sourceRows]]" as="s">
                 <template><li :class="[[s.data.css]]" :id="[['lbSrc-' + s.data.n]]"><span class="factory-lb-n"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span>
@@ -116,6 +116,7 @@
                     <oj-bind-if test="[[s.data.excerpt]]"><details class="factory-lb-excerpt"><summary>What it says</summary><p><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></p></details></oj-bind-if></span></li></template>
               </oj-bind-for-each>
             </ol>
+            </details>
           </oj-bind-if>
           <oj-bind-if test="[[answer().shortList.length > 0]]">
             <details class="factory-lb-diagnostics"><summary>How the sources were found (administrators)</summary>

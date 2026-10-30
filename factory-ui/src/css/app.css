@@ -9135,6 +9135,8 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-sourcebody a { font-weight: var(--fx-weight-semibold); }
 .factory-lb-excerpt { color: var(--fx-text-body); font-size: var(--fx-text-caption); line-height: 1.5; }
 .factory-lb-excerpt summary { cursor: pointer; color: var(--fx-text-muted); width: fit-content; }
+.factory-lb-allsources { margin-top: 14px; }
+.factory-lb-allsources > summary { cursor: pointer; width: fit-content; font-size: var(--fx-text-sm); color: var(--fx-text-muted); margin-bottom: 8px; }
 .factory-lb-excerpt p { margin: 6px 0 0; }
 .factory-lb-answerbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; font-size: var(--fx-text-sm); }
 .factory-lb-save { margin-left: auto; }
@@ -9241,7 +9243,10 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .fx-md .fx-md-table th, .fx-md .fx-md-table td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--fx-border); }
 .fx-md .fx-md-table th { background: var(--fx-surface-2); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
 .fx-md .fx-md-table tr:last-child td { border-bottom: 0; }
-.fx-md .fx-md-cite { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5em; height: 1.35em; margin: 0 1px; padding: 0 4px; border-radius: var(--fx-radius-pill); background: var(--fx-primary-soft); color: var(--fx-primary-text); font-size: 0.75em; font-weight: var(--fx-weight-semibold); text-decoration: none; vertical-align: 0.15em; }
+/* A citation is a link named after the section it cites, opening the manual at the page */
+.fx-md .fx-md-cite { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; margin: 0 2px; padding: 0 8px 0 6px; line-height: 1.6; border-radius: var(--fx-radius-pill); background: var(--fx-primary-soft); color: var(--fx-primary-text); font-size: 0.8em; font-weight: var(--fx-weight-medium, 500); text-decoration: none; vertical-align: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background var(--fx-dur-fast, 120ms) var(--fx-ease-out); }
+.fx-md .fx-md-cite .factory-nav-icon { flex: 0 0 auto; width: 12px; height: 12px; }
+.fx-md .fx-md-cite.is-note { background: var(--fx-surface-3); color: var(--fx-text-body); }
 .fx-md .fx-md-cite:hover, .fx-md .fx-md-cite:focus-visible { background: var(--fx-primary); color: var(--fx-on-primary); }
 .fx-md em { color: var(--fx-text-body); }
 .factory-lb-source.is-flash { border-color: var(--fx-primary); box-shadow: 0 0 0 3px var(--fx-primary-soft); transition: box-shadow var(--fx-dur-panel) var(--fx-ease-out); }

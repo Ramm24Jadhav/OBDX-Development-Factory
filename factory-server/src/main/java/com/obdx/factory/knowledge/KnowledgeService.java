@@ -197,7 +197,7 @@ public class KnowledgeService {
                         prepared.prompt() + "\n\nYour previous answer:\n" + cap(result.reply(), 6000) + "\n\nProblems found:\n- " + problems);
                 AnswerPostProcessor.Checked second = AnswerPostProcessor.process(again.reply(), prepared.texts(), prepared.asked(), prepared.versionLine());
                 latency += again.latencyMs();
-                if (second.quality().findings().size() <= checked.quality().findings().size() && !second.answer().isBlank()) {
+                if (problems(second) <= problems(checked) && !second.answer().isBlank()) {
                     checked = second;
                     corrected = true;
                 }
@@ -209,6 +209,11 @@ public class KnowledgeService {
                 checked.tables(), checked.cited(), checked.limitations(), checked.quality(), corrected);
         return new Answer(checked.answer(), result.model(), latency, prepared.versionLine(), !prepared.sources().isEmpty(),
                 prepared.sources(), prepared.note(), report);
+    }
+
+    /** How much is wrong with a checked answer, to keep the better of two: its findings, and citing nothing counts most. */
+    private static int problems(AnswerPostProcessor.Checked c) {
+        return c.quality().findings().size() + (c.cited().isEmpty() ? 3 : 0);
     }
 
     /** The problems that stop a question before anything is searched: none given, a chat model outside the bank. */

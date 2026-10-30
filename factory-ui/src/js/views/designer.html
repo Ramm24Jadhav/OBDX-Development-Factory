@@ -992,7 +992,7 @@
         <oj-bind-if test="[[ai.messages().length > 0 || ai.busy()]]">
           <div class="factory-ai-log factory-dz-assist-log">
             <oj-bind-for-each data="[[ai.messages]]">
-              <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]"></fx-markdown>
+              <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]" sources="[[$current.data.sources]]"></fx-markdown>
                 <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
             </oj-bind-for-each>
             <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>

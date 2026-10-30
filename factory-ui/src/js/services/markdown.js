@@ -44,20 +44,9 @@ define([], function () {
         parent.appendChild(a);
       } else if (m[6]) {
         const n = Number(m[7]);
-        if (opts.sources && n >= 1 && n <= opts.sources) {
-          const a = el('a', 'fx-md-cite', String(n));
-          a.href = '#' + opts.citePrefix + n;
-          a.setAttribute('aria-label', 'Source ' + n);
-          a.addEventListener('click', (e) => {
-            const target = document.getElementById(opts.citePrefix + n);
-            if (target) {
-              e.preventDefault();
-              target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              target.classList.add('is-flash');
-              setTimeout(() => target.classList.remove('is-flash'), 1200);
-            }
-          });
-          parent.appendChild(a);
+        const source = opts.sources[n - 1];
+        if (source) {
+          parent.appendChild(citation(source, n, opts));
         } else {
           parent.appendChild(document.createTextNode(m[6]));
         }
@@ -65,6 +54,52 @@ define([], function () {
       at = m.index + m[0].length;
     }
     if (at < text.length) { parent.appendChild(document.createTextNode(text.slice(at))); }
+  }
+
+  /** What a citation says in the text: the section it cites and its page ("User Management - Search and View, p. 79"). */
+  function citeLabel(s) {
+    if (s.kind === 'NOTE' || !s.heading) { return s.title; }
+    const section = s.heading.split('›').pop().trim().replace(/\(continued\)/i, '').replace(/^[\d.]+\s*/, '').trim() || s.title;
+    return section + (s.pageFrom ? ', p. ' + s.pageFrom : '');
+  }
+
+  /** The whole reference, for the tooltip: manual, version, section path, pages. */
+  function citeTitle(s) {
+    if (s.kind === 'NOTE') { return (s.status === 'TRUSTED' ? 'Approved note: ' : 'Suggested note: ') + s.title; }
+    const pages = s.pageFrom ? (s.pageFrom === s.pageTo ? 'p. ' + s.pageFrom : 'pp. ' + s.pageFrom + '–' + s.pageTo) : '';
+    return [s.title, s.obdxVersion ? 'OBDX ' + s.obdxVersion : '', s.heading, pages].filter(Boolean).join(' · ');
+  }
+
+  /**
+   * A citation as a named link in the text: it opens the manual at the page (the factory's copy, else Oracle's), or,
+   * for a note, shows it in the list of sources.
+   */
+  function citation(s, n, opts) {
+    const a = el('a', 'fx-md-cite' + (s.kind === 'NOTE' ? ' is-note' : ''));
+    a.appendChild(el('span', 'factory-nav-icon factory-ico-' + (s.kind === 'NOTE' ? 'edit' : 'book'))).setAttribute('aria-hidden', 'true');
+    a.appendChild(document.createTextNode(citeLabel(s)));
+    a.title = citeTitle(s);
+    a.setAttribute('aria-label', 'Source ' + n + ': ' + citeTitle(s));
+    const url = s.url || s.oracleUrl;
+    if (url) {
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+    } else {
+      a.href = '#' + opts.citePrefix + n;
+      a.addEventListener('click', (e) => {
+        const target = document.getElementById(opts.citePrefix + n);
+        if (target) {
+          e.preventDefault();
+          const list = target.closest('details');
+          if (list) { list.open = true; }
+          target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          target.classList.add('is-flash');
+          setTimeout(() => target.classList.remove('is-flash'), 1200);
+        }
+      });
+    }
+    return a;
   }
 
   function copyButton(getText) {
@@ -139,11 +174,12 @@ define([], function () {
 
   /**
    * Renders Markdown into container (its children are replaced).
-   * @param opts.sources     how many sources there are: [n] up to it link to an element with id citePrefix + n
+   * @param opts.sources     the answer's sources: [n] becomes a link named after source n (see citation)
    * @param opts.citePrefix  the prefix of the sources' element ids
    */
   function render(container, markdown, opts) {
-    const o = Object.assign({ sources: 0, citePrefix: 'src-' }, opts || {});
+    const o = Object.assign({ citePrefix: 'src-' }, opts || {});
+    o.sources = Array.isArray(o.sources) ? o.sources : [];
     const lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
     const out = document.createDocumentFragment();
     let i = 0;
@@ -210,9 +246,10 @@ define([], function () {
     container.replaceChildren(out);
   }
 
-  /** The answer as plain text, for copying: Markdown marks taken off, code kept. */
-  function plain(markdown) {
-    return String(markdown || '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/(^|\s)_([^_]+)_(?=\s|$|[.,;:])/g, '$1$2');
+  /** The answer as plain text, for copying: Markdown marks taken off, code kept, citations named. */
+  function plain(markdown, sources) {
+    const list = Array.isArray(sources) ? sources : [];
+    return String(markdown || '').replace(/ ?\[(\d{1,2})\]/g, (all, n) => (list[n - 1] ? ' (' + citeTitle(list[n - 1]) + ')' : all)).replace(/\*\*([^*]+)\*\*/g, '$1').replace(/(^|\s)_([^_]+)_(?=\s|$|[.,;:])/g, '$1$2');
   }
 
   return { render: render, plain: plain, copyButton: copyButton };

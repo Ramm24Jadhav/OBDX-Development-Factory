@@ -179,7 +179,7 @@
             <div class="factory-ai-log factory-mo-ailog">
               <oj-bind-if test="[[ai.messages().length === 0]]"><p class="factory-mo-aihint">Ask about the upgrade to OBDX <oj-bind-text value="[[target]]"></oj-bind-text>. The answer uses this workspace's inventory, stack and deprecated usage.</p></oj-bind-if>
               <oj-bind-for-each data="[[ai.messages]]">
-                <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]"></fx-markdown>
+                <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]" sources="[[$current.data.sources]]"></fx-markdown>
                   <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
               </oj-bind-for-each>
             </div>

@@ -358,7 +358,7 @@ define(['knockout', 'ojs/ojcomposite', './fx-elements', '../services/markdown', 
       nextMin: { type: 'number', value: 240 } } }
   });
 
-  /* ---------- fx-markdown: Markdown text (an answer) rendered safely; [n] links to the element with id cite-prefix + n ---------- */
+  /* ---------- fx-markdown: Markdown text (an answer) rendered safely; [n] becomes a link named after source n ---------- */
   class MarkdownModel {
     constructor(c) {
       this.props = c.properties;
@@ -387,7 +387,7 @@ define(['knockout', 'ojs/ojcomposite', './fx-elements', '../services/markdown', 
   Composite.register('fx-markdown', {
     view: '<div class="fx-md"></div>',
     viewModel: MarkdownModel,
-    metadata: { properties: { text: { type: 'string', value: '' }, sources: { type: 'number', value: 0 }, citePrefix: { type: 'string', value: 'src-' } } }
+    metadata: { properties: { text: { type: 'string', value: '' }, sources: { type: 'array', value: [] }, citePrefix: { type: 'string', value: 'src-' } } }
   });
 
   return {};

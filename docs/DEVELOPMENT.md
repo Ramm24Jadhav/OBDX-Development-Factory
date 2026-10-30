@@ -294,8 +294,10 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   The user edits the improved question and asks it (`improved` on the ask request), or cancels; their own question
   stays. Answers come **Concise**, **Detailed** (default) or **Technical deep dive** (`style`), laid out for the kind of
   question (procedure, configuration, troubleshooting, comparison, API, architecture ...), in Markdown, which the page
-  renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, citations that
-  jump to their source. Before it is shown, every answer is checked against its sources without a model: citations
+  renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, and each citation as
+  a link named after the section it cites ("User Management - Search and View, p. 79"; the whole reference on hover)
+  that opens the manual at the page, the factory's copy or Oracle's; a note opens in the list of all sources, folded
+  under the answer. Copy answer writes each citation out in full. Before it is shown, every answer is checked against its sources without a model: citations
   to sources that do not exist are removed ("[1, 3]" becomes [1][3]), identifiers, menu paths and code examples the
   sources do not have are marked, sentences about other vendors' products go, OBDX versions other than the
   workspace's are noted, each statement is compared with the words of the source it cites, statements and steps

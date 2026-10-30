@@ -172,7 +172,7 @@
         </div>
         <div class="factory-ai-log">
           <oj-bind-for-each data="[[ai.messages]]">
-            <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]"></fx-markdown>
+            <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]" sources="[[$current.data.sources]]"></fx-markdown>
               <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
           </oj-bind-for-each>
         </div>
