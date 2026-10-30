@@ -130,6 +130,18 @@ public class KnowledgeController {
         audit.record("KNOWLEDGE_DELETED", document.workspaceId(), document.fileName(), "OBDX " + document.obdxVersion());
     }
 
+    public record EmbedAll(int queued) {
+    }
+
+    /** Embeds every document not embedded by the embedding model in use (Oracle's manuals and all banks': administrators). */
+    @PostMapping("/api/knowledge/embed-all")
+    public EmbedAll embedAll() {
+        guard.requireAdmin();
+        int queued = importer.embedAll();
+        audit.record("KNOWLEDGE_EMBED_ALL", null, null, queued + " document(s)");
+        return new EmbedAll(queued);
+    }
+
     @PostMapping("/api/knowledge/documents/{id}/embed")
     public void embedAgain(@PathVariable UUID id) {
         var document = repository.findDocument(id).orElseThrow(() -> new NotFoundException("Document not found"));

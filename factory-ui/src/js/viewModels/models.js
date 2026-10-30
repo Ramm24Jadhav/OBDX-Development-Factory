@@ -70,11 +70,45 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // The model in use, also when the server lists it with ":latest" (Ollama treats both names the same)
       const find = (models, name) => models.map((m) => m.id).find((id) => name && id.replace(/:latest$/, '') === name.replace(/:latest$/, ''));
 
-      /** Embedding models first, then the others (some servers do not mark embedding models). */
+      // The embedding models that work best with the factory, best first (it adds the prefixes they expect)
+      const RECOMMENDED = ['nomic-embed-text', 'qwen3-embedding', 'bge-m3', 'snowflake-arctic-embed', 'mxbai-embed-large', 'all-minilm'];
+      const rank = (id) => { const i = RECOMMENDED.findIndex((r) => id.toLowerCase().indexOf(r) >= 0); return i < 0 ? RECOMMENDED.length : i; };
+      const recommended = (models) => models.filter((m) => m.embedding).map((m) => m.id).sort((a, b) => rank(a) - rank(b))[0] || null;
+
+      /** Embedding models first (the recommended one on top), then the others (some servers do not mark them). */
       this.embeddingCandidates.subscribe((models) => {
-        const options = models.map((m) => ({ value: m.id, label: m.id }));
-        embeddingOptions(options.filter((o, i) => models[i].embedding).concat(options.filter((o, i) => !models[i].embedding)));
-        this.embeddingModel(find(models, (this.status() || {}).embeddingModel) || (embeddingOptions()[0] || {}).value || null);
+        const options = models.map((m) => ({ value: m.id, label: m.id + (m.id === recommended(models) ? ' (recommended)' : '') }));
+        const embedders = options.filter((o, i) => models[i].embedding).sort((a, b) => rank(a.value) - rank(b.value));
+        embeddingOptions(embedders.concat(options.filter((o, i) => !models[i].embedding)));
+        this.embeddingModel(find(models, (this.status() || {}).embeddingModel) || recommended(models) || (embeddingOptions()[0] || {}).value || null);
+      });
+
+      /**
+       * What the code search server has, after Get models: which of its models embed, the one chosen, and what to do
+       * next; or, when none embeds, how to get one.
+       */
+      this.embeddingGuide = ko.pureComputed(() => {
+        const models = this.embeddingServerModels();
+        if (this.embeddingSource() !== 'other' || !models.length) {
+          return null;
+        }
+        const embedders = models.filter((m) => m.embedding);
+        const best = recommended(models);
+        return {
+          found: models.length + ' model' + (models.length === 1 ? '' : 's') + ' on ' + this.embeddingUrl().trim() + '.',
+          none: embedders.length === 0,
+          summary: embedders.length
+            ? embedders.length + ' of them can embed' + (best ? '; ' + best + ' is recommended and chosen as the Code Search Model above.' : '.')
+            : 'None of them can embed: they are chat models.',
+          next: embedders.length
+            ? 'Next: check the Code Search Model above, then click Save Settings. The factory embeds the code and the OBDX Library with it in the background.'
+            : 'On this computer run "ollama pull nomic-embed-text" in a terminal, then click Get models again.',
+          rows: models.slice().sort((a, b) => (b.embedding - a.embedding) || (rank(a.id) - rank(b.id))).map((m) => ({
+            id: m.id,
+            tag: m.embedding ? (m.id === best ? 'Embeds · recommended' : 'Embeds') : 'Chat model, cannot embed',
+            css: 'factory-md-guiderow' + (m.embedding ? ' is-embedding' : '') + (m.id === best ? ' is-best' : '')
+          }))
+        };
       });
 
       /** Shows a server's models and preselects the ones in use, or else the likely chat model. */
@@ -120,7 +154,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.searching(true);
         this.errorMessage('');
         api.post('model/servers/models', { baseUrl: url, apiKey: this.embeddingApiKey() || null })
-          .then((models) => { this.embeddingServerModels(models); toast.success(models.length + ' model' + (models.length === 1 ? '' : 's') + ' on the code search server.'); })
+          .then((models) => {
+            this.embeddingServerModels(models);
+            const embed = models.filter((m) => m.embedding).length;
+            if (embed) {
+              toast.success(models.length + ' model' + (models.length === 1 ? '' : 's') + ' found, ' + embed + ' can embed. Check the Code Search Model, then Save Settings.');
+            } else {
+              toast.warning('None of the ' + models.length + ' models on this server can embed. See the steps under the server.');
+            }
+          })
           .catch(actionError)
           .finally(() => this.searching(false));
       };

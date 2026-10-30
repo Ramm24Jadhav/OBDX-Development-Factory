@@ -69,6 +69,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           when: when(d.updatedAt)
         });
       }));
+      // How much of the library is searchable by meaning, and one button to embed the rest
+      this.embedding = ko.pureComputed(() => {
+        const current = this.documents().filter((d) => !d.older && d.sections > 0);
+        const sections = current.reduce((n, d) => n + d.sections, 0);
+        const embedded = current.reduce((n, d) => n + Math.min(d.embedded, d.sections), 0);
+        const waiting = current.filter((d) => d.embedded < d.sections).length;
+        const percent = sections ? Math.floor((embedded / sections) * 100) : 0;
+        return {
+          show: current.length > 0, sections: sections, waiting: waiting, percent: percent,
+          running: current.some((d) => d.status === 'EMBEDDING' || d.status === 'QUEUED' || d.status === 'READING'),
+          text: embedded.toLocaleString() + ' of ' + sections.toLocaleString() + ' sections searchable by meaning',
+          sub: waiting ? waiting + ' document' + (waiting === 1 ? '' : 's') + ' not fully embedded' : 'Every document is embedded',
+          barStyle: { width: percent + '%' }
+        };
+      });
+      this.embedAllBusy = ko.observable(false);
+      this.embedAll = () => {
+        this.embedAllBusy(true);
+        api.post('knowledge/embed-all')
+          .then((r) => {
+            toast.success(r.queued ? r.queued + ' document' + (r.queued === 1 ? '' : 's') + ' are being embedded in the background, one at a time.'
+              : 'Every document is already embedded with the current model.');
+            return this.load();
+          })
+          .catch((e) => toast.error(e.message))
+          .finally(() => this.embedAllBusy(false));
+      };
       // Older revisions are kept as history; they are listed only on request
       this.showOlder = ko.observable(false);
       this.setShowOlder = (event) => this.showOlder(!!event.target.checked);

@@ -172,8 +172,14 @@
             <div :class="[[busy.barVisible() ? 'fx-progressbar is-on' : 'fx-progressbar']]" aria-hidden="true"></div>
           </header>
           <oj-bind-if test="[[updateBanner()]]">
-            <div class="factory-update-banner" role="status" id="updateBanner">
-              <span><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
+            <div :class="[[updateProgress() ? 'factory-update-banner is-progress' : 'factory-update-banner']]" role="status" id="updateBanner">
+              <span class="factory-update-text"><oj-bind-text value="[[updateBanner]]"></oj-bind-text></span>
+              <oj-bind-if test="[[updateProgress()]]">
+                <span class="factory-update-progress">
+                  <span :class="[[updateProgress().css]]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[updateProgress().percent]]" aria-label="Update download"><span :style="[[updateProgress().style]]"></span></span>
+                  <strong class="factory-update-pct"><oj-bind-text value="[[updateProgress().label]]"></oj-bind-text></strong>
+                </span>
+              </oj-bind-if>
               <oj-bind-if test="[[updateAvailable()]]">
                 <button type="button" id="updateNowButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[installUpdate]]">Update now</button>
               </oj-bind-if>

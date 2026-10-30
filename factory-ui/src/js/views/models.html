@@ -168,6 +168,17 @@
                       <fx-input id="embeddingApiKey" type="password" label="Code search API key" hide-label placeholder="[[embeddingApiKeyLabel]]" value="{{embeddingApiKey}}" autocomplete="new-password"></fx-input>
                       <button type="button" id="getEmbeddingModelsButton" class="fx-btn fx-btn--secondary" on-click="[[getEmbeddingModels]]" :disabled="[[searching]]">Get models</button>
                     </div>
+                  <oj-bind-if test="[[embeddingGuide()]]">
+                    <span></span>
+                    <div :class="[[embeddingGuide().none ? 'factory-md-guide is-none' : 'factory-md-guide']]" role="status" id="embeddingGuide">
+                      <p class="factory-md-guidehead"><span :class="[[embeddingGuide().none ? 'factory-nav-icon factory-ico-alert' : 'factory-nav-icon factory-ico-check']]" aria-hidden="true"></span>
+                        <span><strong><oj-bind-text value="[[embeddingGuide().found]]"></oj-bind-text></strong> <oj-bind-text value="[[embeddingGuide().summary]]"></oj-bind-text></span></p>
+                      <ul class="factory-md-guidelist">
+                        <oj-bind-for-each data="[[embeddingGuide().rows]]" as="g"><template><li :class="[[g.data.css]]"><span class="factory-mono"><oj-bind-text value="[[g.data.id]]"></oj-bind-text></span><span class="factory-md-guidetag"><oj-bind-text value="[[g.data.tag]]"></oj-bind-text></span></li></template></oj-bind-for-each>
+                      </ul>
+                      <p class="factory-md-guidenext"><oj-bind-text value="[[embeddingGuide().next]]"></oj-bind-text></p>
+                    </div>
+                  </oj-bind-if>
                   </oj-bind-if>
                 </oj-bind-if>
                 <label for="fallbackProvider">Fallback Provider</label>

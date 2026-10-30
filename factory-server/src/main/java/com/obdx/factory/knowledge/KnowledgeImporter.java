@@ -339,18 +339,34 @@ public class KnowledgeImporter {
      */
     @EventListener
     public void modelsChanged(ModelSettings.Changed event) {
-        if (policy.embeddingProblem() != null) {
-            return;
+        if (policy.embeddingProblem() == null) {
+            embedAll();
+        }
+    }
+
+    /**
+     * Embeds, in the background, every current document not embedded by the embedding model in use: those whose
+     * embedding stopped, and those embedded by another model. Returns how many were queued.
+     *
+     * @throws BadRequestException when the embedding model is outside the bank
+     */
+    public int embedAll() {
+        String problem = policy.embeddingProblem();
+        if (problem != null) {
+            throw new BadRequestException(problem);
         }
         String model = embeddingModel();
         List<UUID> again = repository.embeddedByAnother(model);
         again.forEach(repository::clearEmbeddings);
         List<UUID> todo = repository.unfinishedEmbeddings();
+        // Shown as embedding at once, so the Library follows them until they are done
+        todo.forEach(id -> repository.updateDocument(id, "EMBEDDING", null, null, null, null));
         todo.forEach(id -> executor.execute(() -> embed(id)));
         if (!todo.isEmpty()) {
             vectors.changed();
             log.info("Embedding {} knowledge document(s) with {} ({} embedded by another model)", todo.size(), model, again.size());
         }
+        return todo.size();
     }
 
     private void embed(UUID id) {

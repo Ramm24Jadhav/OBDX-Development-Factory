@@ -297,6 +297,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         ? 'Use your bank network username and password.' : 'Use your OBDX Development Factory account.'));
       // Update banner for administrators: checked after sign-in and every 30 minutes.
       this.updateBanner = updates.banner;
+      this.updateProgress = updates.progress;
       this.updateAvailable = ko.pureComputed(() => !!updates.status() && updates.status().state === 'AVAILABLE');
       this.installUpdate = () => updates.install();
       const checkUpdates = () => { if (session.isAdmin()) { updates.refresh(false); } };

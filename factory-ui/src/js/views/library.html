@@ -174,6 +174,21 @@
       </section>
     </oj-bind-if>
 
+    <oj-bind-if test="[[embedding().show]]">
+      <section class="fx-card factory-lb-embedding" aria-labelledby="lbEmbeddingTitle">
+        <div class="factory-lb-embedtext">
+          <h2 class="fx-card-title" id="lbEmbeddingTitle"><oj-bind-text value="[[embedding().text]]"></oj-bind-text></h2>
+          <p class="fx-muted"><oj-bind-text value="[[embedding().sub]]"></oj-bind-text></p>
+        </div>
+        <div :class="[[embedding().running ? 'factory-lb-embedbar is-running' : 'factory-lb-embedbar']]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[embedding().percent]]" aria-label="Sections embedded">
+          <span :style="[[embedding().barStyle]]"></span>
+        </div>
+        <strong class="factory-lb-embedpct"><oj-bind-text value="[[embedding().percent + '%']]"></oj-bind-text></strong>
+        <oj-bind-if test="[[isAdmin() && embedding().waiting > 0]]">
+          <button type="button" class="fx-btn fx-btn--primary" id="embedAllButton" on-click="[[embedAll]]" :disabled="[[embedAllBusy() || embedding().running]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Embed all</button>
+        </oj-bind-if>
+      </section>
+    </oj-bind-if>
     <oj-bind-if test="[[olderCount() > 0]]">
       <label class="fx-check factory-lb-older"><input type="checkbox" :checked="[[showOlder]]" on-change="[[setShowOlder]]"><span>Show older revisions (<oj-bind-text value="[[olderCount]]"></oj-bind-text>)</span></label>
     </oj-bind-if>

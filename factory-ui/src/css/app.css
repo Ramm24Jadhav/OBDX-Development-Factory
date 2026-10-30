@@ -9186,3 +9186,35 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-diagnostics dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0; }
 .factory-lb-diagnostics dt { font-weight: 600; }
 .factory-lb-shortlist { margin: 4px 0 0; padding-left: 18px; }
+/* Models page: what the code search server has after Get models, and what to do next */
+.factory-md-guide { padding: 12px 14px; border: 1px solid var(--fx-border); border-left: 4px solid var(--fx-success); border-radius: var(--fx-radius); background: var(--fx-surface-2); font-size: var(--fx-text-sm); animation: fx-rise var(--fx-dur-pop) var(--fx-ease-out); }
+.factory-md-guide.is-none { border-left-color: var(--fx-warning); }
+.factory-md-guidehead { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 8px; }
+.factory-md-guidehead .factory-ico-check { color: var(--fx-success); }
+.factory-md-guide.is-none .factory-md-guidehead .factory-ico-alert { color: var(--fx-warning); }
+.factory-md-guidelist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; max-height: 180px; overflow-y: auto; }
+.factory-md-guiderow { display: flex; justify-content: space-between; gap: 12px; padding: 4px 8px; border-radius: 6px; color: var(--fx-text-muted); }
+.factory-md-guiderow.is-embedding { color: var(--fx-text); background: var(--fx-surface); }
+.factory-md-guiderow.is-best { box-shadow: inset 0 0 0 1px var(--fx-success); }
+.factory-md-guidetag { white-space: nowrap; font-size: var(--fx-text-caption); }
+.factory-md-guiderow.is-embedding .factory-md-guidetag { color: var(--fx-success); font-weight: 600; }
+.factory-md-guidenext { margin: 0; font-weight: 600; color: var(--fx-text); }
+/* Premium progress bars: the update download (banner) and the Library's embedding. The fill glides to its value,
+   a sheen runs over it while work goes on, and an install without a percentage sweeps. */
+.factory-update-bar, .factory-lb-embedbar { position: relative; display: block; height: 10px; border-radius: var(--fx-radius-pill); background: var(--fx-surface-3); overflow: hidden; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12); }
+.factory-update-bar > span, .factory-lb-embedbar > span { position: relative; display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--fx-primary), var(--fx-violet)); box-shadow: 0 0 10px color-mix(in srgb, var(--fx-primary) 45%, transparent); transition: width var(--fx-dur-panel) var(--fx-ease-out); }
+.factory-update-bar.is-running > span::after, .factory-lb-embedbar.is-running > span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent); animation: fx-bar 1.6s var(--fx-ease-in-out) infinite; }
+.factory-update-bar.is-indeterminate > span { width: 40% !important; animation: fx-bar 1.4s var(--fx-ease-in-out) infinite; }
+/* The update banner stays in view below the top bar while the page scrolls */
+.factory-update-banner { position: sticky; top: 64px; z-index: 9; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
+.factory-update-banner.is-progress { display: grid; grid-template-columns: 1fr minmax(180px, 360px); align-items: center; }
+.factory-update-progress { display: flex; align-items: center; gap: 12px; }
+.factory-update-progress .factory-update-bar { flex: 1 1 auto; }
+.factory-update-pct, .factory-lb-embedpct { min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; font-size: var(--fx-text-sm); color: var(--fx-text); }
+.factory-lb-embedding { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 320px) auto auto; align-items: center; gap: 16px; }
+.factory-lb-embedtext .fx-card-title { margin: 0; }
+.factory-lb-embedtext p { margin: 2px 0 0; font-size: var(--fx-text-sm); }
+@media (max-width: 720px) {
+    .factory-update-banner.is-progress, .factory-lb-embedding { grid-template-columns: 1fr auto; }
+    .factory-update-banner.is-progress .factory-update-text, .factory-lb-embedtext { grid-column: 1 / -1; }
+}

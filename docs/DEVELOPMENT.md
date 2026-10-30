@@ -603,6 +603,7 @@ object: compute those in the view model.
 | `POST /api/knowledge/oracle/follow` | Get a version's manuals from Oracle's site and keep them current (`obdxVersion`, `scope`: `TECHNICAL` or `ALL`) |
 | `POST /api/knowledge/oracle/{version}/check` | Check a followed version for changed manuals now |
 | `DELETE /api/knowledge/oracle/{version}` | Stop following a version (its manuals stay) |
+| `POST /api/knowledge/embed-all` | Embed every document not embedded by the embedding model in use (Embed all on the Documents tab; administrators) |
 | `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
