@@ -38,6 +38,19 @@ public interface ModelGateway {
     /** Embeds several texts in one call; the result has one vector per text, in the same order. */
     List<float[]> embedAll(List<String> texts);
 
+    /**
+     * Embeds a search question. Some embedding models are trained to tell questions from the passages that answer them
+     * and match far better when told which is which; {@link #embedPassages} is its counterpart.
+     */
+    default float[] embedQuery(String text) {
+        return embed(text);
+    }
+
+    /** Embeds passages that questions are matched against (manual sections, notes). */
+    default List<float[]> embedPassages(List<String> texts) {
+        return embedAll(texts);
+    }
+
     record ChatResult(String reply, String model, long latencyMs) {
     }
 }

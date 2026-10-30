@@ -48,8 +48,9 @@ public class KnowledgeImporter {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeImporter.class);
     private static final int EMBED_BATCH = 16;
-    // Raised when the reading changes in a way worth reading every document again (2: bookmarks as headings)
-    static final int READER_VERSION = 2;
+    // Raised when the reading changes in a way worth reading every document again (2: bookmarks as headings; 3: sections
+    // embedded as passages, for the embedding models that tell questions from passages)
+    static final int READER_VERSION = 3;
     static final Set<String> EXTENSIONS = Set.of("pdf", "docx", "doc", "txt", "md", "html", "htm");
 
     private final KnowledgeRepository repository;
@@ -332,7 +333,7 @@ public class KnowledgeImporter {
                 if (batch.isEmpty()) {
                     break;
                 }
-                List<float[]> embeddings = modelGateway.embedAll(batch.stream().map(KnowledgeRepository.PendingEmbedding::text).toList());
+                List<float[]> embeddings = modelGateway.embedPassages(batch.stream().map(KnowledgeRepository.PendingEmbedding::text).toList());
                 for (int i = 0; i < batch.size(); i++) {
                     repository.saveSectionEmbedding(batch.get(i).id(), embeddings.get(i));
                 }

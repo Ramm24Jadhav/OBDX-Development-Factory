@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 public class KnowledgeService {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeService.class);
+    // The sections the search hands the model to choose from
+    private static final int SHORT_LIST = 15;
     private static final String ASK_SYSTEM = """
             You are the knowledge assistant of OBDX Development Factory, a tool that changes banks' Oracle Banking Digital \
             Experience (OBDX) code. Answer the question from the numbered sources (sections of Oracle's OBDX manuals and \
@@ -38,11 +40,20 @@ public class KnowledgeService {
             system and patchset: where they differ from Oracle's manuals, follow them and say that the bank's version differs. \
             Read every source before deciding: a source that covers the general case (any user) answers a question about \
             a particular case (a retail user) unless it says otherwise, and a source that answers part of the question \
-            is used for that part. Only when no source answers any of it, say plainly that the manuals in the factory do \
+            is used for that part. A source about a different case than the one asked (corporate users when the \
+            question is about retail users) is not the answer: do not present its steps as if they were. Only when no \
+            source answers any of it, say plainly that the manuals in the factory do \
             not cover it, then add what you know in general, marked as general knowledge, without citations. Cite a source only \
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
             sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
             procedures, and code blocks only for code.""";
+
+    private static final String CHOOSE_SYSTEM = """
+            You pick the sections of the Oracle Banking Digital Experience (OBDX) manuals and notes that answer a question. \
+            Read the question and the numbered sections (where each is from, its heading, its first words). Choose the \
+            ones that answer it, best first, at most %d. Mind the case asked about: retail, corporate or administrator \
+            users, the transaction, the module, a business user's steps or a developer's change; a section about another \
+            case does not answer it. Answer with a JSON object only: {"sections": [numbers]}""";
 
     private static final String SUMMARY_SYSTEM = """
             You write knowledge notes for developers who change a bank's OBDX code. From the numbered sources, write one \
@@ -84,7 +95,9 @@ public class KnowledgeService {
 
     // --- asking ---
 
-    /** A question with what the knowledge base found for it, ready for the model. */
+    /**
+     * A question with what the knowledge base found for it, ready for the model.
+     */
     public record Question(String prompt, String versionLine, List<Source> sources, String note) {
     }
 
@@ -103,15 +116,28 @@ public class KnowledgeService {
                 prepared.sources(), prepared.note());
     }
 
-    /** Searches the knowledge base for the question; problems (no question, a model outside the bank) show here. */
-    public Question prepare(String question, UUID workspaceId, String pageContext) {
+    /** The problems that stop a question before anything is searched: none given, a chat model outside the bank. */
+    public void requireAskable(String question) {
         if (question == null || question.isBlank()) {
             throw new BadRequestException("Enter a question.");
         }
         requireInternalChat();
+    }
+
+    /**
+     * Searches the knowledge base for the question and keeps the sections that answer it: the search finds a short list
+     * (by words and by meaning), and the chat model picks from it the ones that answer this question, which words alone
+     * cannot tell ("onboard a retail customer" also matches Corporate and Biller Onboarding).
+     */
+    public Question prepare(String question, UUID workspaceId, String pageContext) {
+        requireAskable(question);
         String versionLine = versionLineOf(workspaceId);
-        KnowledgeSearch.Result found = search.search(question, versionLine, workspaceId, properties.answerSources(), true);
-        List<Source> sources = sources(found.hits());
+        int wanted = properties.answerSources();
+        KnowledgeSearch.Result found = properties.chooseSources()
+                ? search.shortList(question, versionLine, workspaceId, Math.max(wanted, SHORT_LIST), true)
+                : search.search(question, versionLine, workspaceId, wanted, true);
+        List<KnowledgeSearch.Hit> hits = properties.chooseSources() ? choose(question, found.hits(), wanted) : found.hits();
+        List<Source> sources = sources(hits);
         StringBuilder user = new StringBuilder();
         user.append("OBDX version of the user's workspace: ").append(versionLine == null ? "not known" : versionLine + ".x").append("\n\n");
         if (pageContext != null && !pageContext.isBlank()) {
@@ -123,10 +149,42 @@ public class KnowledgeService {
         }
         for (int i = 0; i < sources.size(); i++) {
             Source s = sources.get(i);
-            user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(cap(found.hits().get(i).text(), properties.sourceChars())).append("\n\n");
+            user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(cap(hits.get(i).text(), properties.sourceChars())).append("\n\n");
         }
         user.append("Question: ").append(question.strip());
         return new Question(user.toString(), versionLine, sources, found.note());
+    }
+
+    /**
+     * The sections of the short list that answer the question, as the chat model picks them, best first. When it picks
+     * none it can read, the search's own order stands.
+     */
+    List<KnowledgeSearch.Hit> choose(String question, List<KnowledgeSearch.Hit> shortList, int wanted) {
+        if (shortList.size() <= 1) {
+            return shortList;
+        }
+        StringBuilder list = new StringBuilder("Question: ").append(cap(question.strip(), 1000)).append("\n\nSections:\n");
+        for (int i = 0; i < shortList.size(); i++) {
+            KnowledgeSearch.Hit h = shortList.get(i);
+            list.append('[').append(i + 1).append("] ").append(h.title()).append(h.heading() == null ? "" : " | " + KnowledgeRepository.baseHeading(h.heading()))
+                    .append(" | ").append(cap(h.text().replaceAll("\\s+", " "), 160)).append('\n');
+        }
+        try {
+            String reply = modelGateway.chatJson(CHOOSE_SYSTEM.formatted(wanted), list.toString()).reply();
+            List<KnowledgeSearch.Hit> chosen = new ArrayList<>();
+            json.readTree(reply).path("sections").forEach(n -> {
+                int i = n.asInt(0) - 1;
+                if (i >= 0 && i < shortList.size() && !chosen.contains(shortList.get(i)) && chosen.size() < wanted) {
+                    chosen.add(shortList.get(i));
+                }
+            });
+            if (!chosen.isEmpty()) {
+                return chosen;
+            }
+        } catch (RuntimeException e) {
+            log.info("The sources were not chosen by the model: {}", e.getMessage());
+        }
+        return shortList.subList(0, Math.min(wanted, shortList.size()));
     }
 
     public KnowledgeSearch.Result find(String query, UUID workspaceId, String versionLine) {
@@ -270,7 +328,7 @@ public class KnowledgeService {
             if (batch.isEmpty()) {
                 return;
             }
-            List<float[]> vectors = modelGateway.embedAll(batch.stream().map(KnowledgeRepository.PendingEmbedding::text).toList());
+            List<float[]> vectors = modelGateway.embedPassages(batch.stream().map(KnowledgeRepository.PendingEmbedding::text).toList());
             for (int i = 0; i < batch.size(); i++) {
                 repository.saveNoteEmbedding(batch.get(i).id(), vectors.get(i));
             }

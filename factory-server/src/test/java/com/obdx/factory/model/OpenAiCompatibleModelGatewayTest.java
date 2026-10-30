@@ -140,6 +140,17 @@ class OpenAiCompatibleModelGatewayTest {
     }
 
     @Test
+    void tellsQuestionsFromPassagesForTheModelsThatExpectIt() {
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("nomic-embed-text:latest")).isEqualTo("search_query: ");
+        assertThat(OpenAiCompatibleModelGateway.passagePrefix("nomic-embed-text:latest")).isEqualTo("search_document: ");
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("intfloat/multilingual-e5-large")).isEqualTo("query: ");
+        assertThat(OpenAiCompatibleModelGateway.passagePrefix("intfloat/multilingual-e5-large")).isEqualTo("passage: ");
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("mxbai-embed-large")).startsWith("Represent this sentence");
+        assertThat(OpenAiCompatibleModelGateway.passagePrefix("mxbai-embed-large")).isEmpty();
+        assertThat(OpenAiCompatibleModelGateway.queryPrefix("text-embedding-3-small")).isEmpty();
+    }
+
+    @Test
     void readsTimeoutsInMinutes() {
         assertThat(OpenAiCompatibleModelGateway.readable(Duration.ofSeconds(300))).isEqualTo("5 minutes");
         assertThat(OpenAiCompatibleModelGateway.readable(Duration.ofSeconds(60))).isEqualTo("1 minute");

@@ -79,6 +79,8 @@ factory:
     answer-sources: ${FACTORY_KNOWLEDGE_ANSWER_SOURCES:5}
     source-chars: ${FACTORY_KNOWLEDGE_SOURCE_CHARS:1000}
     page-context-chars: ${FACTORY_KNOWLEDGE_PAGE_CONTEXT_CHARS:3000}
+    # The chat model picks, from a short list the search finds, the sections that answer the question (one short call)
+    choose-sources: ${FACTORY_KNOWLEDGE_CHOOSE_SOURCES:true}
     # How often the folders documents were imported from are checked for new and changed files (ISO-8601 duration)
     folder-check-interval: ${FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL:PT6H}
     # Oracle's manuals from Oracle's documentation site for the OBDX versions an administrator follows (OBDX Library).

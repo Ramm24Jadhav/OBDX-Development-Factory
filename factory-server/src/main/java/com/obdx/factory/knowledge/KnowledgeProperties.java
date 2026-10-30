@@ -20,6 +20,9 @@ import java.util.List;
  * @param sourceChars       characters of each of them
  * @param pageContextChars  characters of the page the user is looking at. The defaults fit a 4k-token model; raise
  *                          them for models with a larger context
+ * @param chooseSources     the search hands the chat model a short list of sections (their headings and first words)
+ *                          and it picks those that answer the question: one short extra model call that tells apart
+ *                          what words alone cannot (retail from corporate onboarding)
  * @param oracle            getting Oracle's manuals from its documentation site
  */
 @ConfigurationProperties(prefix = "factory.knowledge")
@@ -29,6 +32,7 @@ public record KnowledgeProperties(
         @DefaultValue("5") int answerSources,
         @DefaultValue("1000") int sourceChars,
         @DefaultValue("3000") int pageContextChars,
+        @DefaultValue("true") boolean chooseSources,
         @DefaultValue Oracle oracle) {
 
     /**

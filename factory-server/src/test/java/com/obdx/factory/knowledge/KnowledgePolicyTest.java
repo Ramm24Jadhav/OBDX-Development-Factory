@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class KnowledgePolicyTest {
 
     private static KnowledgePolicy policy(List<String> internalHosts) {
-        return new KnowledgePolicy(null, new KnowledgeProperties(false, internalHosts, 5, 1000, 3000, null));
+        return new KnowledgePolicy(null, new KnowledgeProperties(false, internalHosts, 5, 1000, 3000, true, null));
     }
 
     @Test

@@ -29,10 +29,16 @@ public class KnowledgeSearch {
     private static final int CANDIDATES = 40;
     private static final int RRF_K = 60;
     private static final int PER_DOCUMENT = 2;
+    private static final int PER_SECTION = 2;
     private static final double BANK_BOOST = 1.2;
     private static final Set<String> STOP_WORDS = Set.of("a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "is",
             "are", "was", "be", "it", "this", "that", "where", "what", "which", "how", "who", "when", "does", "do", "with",
-            "from", "by", "as", "at", "can", "i", "we", "my", "our", "me", "you", "obdx", "oracle", "banking", "digital", "experience");
+            "from", "by", "as", "at", "can", "i", "we", "my", "our", "me", "you", "obdx", "oracle", "banking", "digital", "experience",
+            // the words around a question, which say nothing about what is asked
+            "give", "show", "tell", "explain", "list", "describe", "steps", "step", "procedure", "process", "way", "ways", "please",
+            "need", "want", "should", "would", "could", "will", "shall", "new", "using", "via", "into", "about", "details", "detail",
+            "help", "know", "get", "let", "us", "there", "any", "some", "all", "also", "then", "than", "so", "if", "not", "no", "yes",
+            "possible", "able", "kindly", "regarding", "related", "flow", "guide", "information", "info");
 
     private final JdbcTemplate jdbc;
     private final ModelGateway modelGateway;
@@ -64,37 +70,68 @@ public class KnowledgeSearch {
      * @param suggestedNotes  include notes nobody has approved yet (the AI chat shows them, marked; code generation does not)
      */
     public Result search(String query, String versionLine, UUID workspaceId, int limit, boolean suggestedNotes) {
-        String tsQuery = toTsQuery(query);
+        return search(List.of(query), versionLine, workspaceId, limit, suggestedNotes);
+    }
+
+    /**
+     * Searches for several wordings of one question (the user's own, and the same question in the manuals' words) and
+     * merges the rankings: a section that several of them find ranks highest.
+     */
+    public Result search(List<String> wordings, String versionLine, UUID workspaceId, int limit, boolean suggestedNotes) {
+        return search(wordings, versionLine, workspaceId, limit, suggestedNotes, false);
+    }
+
+    /**
+     * A short list of sections for the chat model to choose from: spread over the manuals first, so the guide that
+     * answers a developer's question is on it next to the user manual that matches the words best, then the best of the
+     * rest wherever they are (the fourth section of one long manual can be the answer).
+     */
+    public Result shortList(String question, String versionLine, UUID workspaceId, int size, boolean suggestedNotes) {
+        return search(List.of(question), versionLine, workspaceId, size, suggestedNotes, true);
+    }
+
+    private Result search(List<String> wordings, String versionLine, UUID workspaceId, int limit, boolean suggestedNotes, boolean shortList) {
+        // The question in the manuals' own names for things is searched too (see ObdxGlossary)
+        List<String> queries = new ArrayList<>(wordings);
+        String glossary = wordings.isEmpty() ? null : ObdxGlossary.inManualWords(wordings.getFirst());
+        if (glossary != null) {
+            queries.add(glossary);
+        }
         Map<String, Double> scores = new HashMap<>();
         String semanticNote = null;
         boolean semanticUsed = false;
         String scope = " AND (workspace_id IS NULL OR workspace_id = ?) AND (?::text IS NULL OR version_line IS NULL OR version_line = ?)";
         String noteStatus = suggestedNotes ? " AND status IN ('TRUSTED', 'SUGGESTED')" : " AND status = 'TRUSTED'";
-        if (!tsQuery.isEmpty()) {
-            rank(scores, "M", keywordSections(tsQuery, scope, workspaceId, versionLine));
-            rank(scores, "N", jdbc.query("SELECT id FROM knowledge_note, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope + noteStatus
-                    + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
-                    tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
+        for (String query : queries) {
+            String tsQuery = toTsQuery(query);
+            if (!tsQuery.isEmpty()) {
+                rank(scores, "M", keywordSections(tsQuery, scope, workspaceId, versionLine));
+                rank(scores, "N", jdbc.query("SELECT id FROM knowledge_note, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope + noteStatus
+                        + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
+                        tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
+            }
         }
         if (!policy.embeddingAllowed()) {
             // The question is not sent to an embedding model outside the bank
             semanticNote = policy.embeddingProblem() + " Matching by keywords only.";
         } else {
             try {
-                float[] embedding = modelGateway.embed(query);
-                String vector = CodeIndexRepository.toVectorLiteral(embedding);
-                String near = " AND embedding IS NOT NULL AND vector_dims(embedding) = vector_dims(?::vector)";
-                // On the trial database (no pgvector) the sections are compared in memory: the SQL search takes seconds there
-                List<UUID> chunks = vectors.inUse() ? vectors.nearest(embedding, versionLine, workspaceId, CANDIDATES) : null;
-                if (chunks == null) {
-                    chunks = jdbc.query("SELECT id FROM knowledge_chunk WHERE true" + scope + near + " ORDER BY embedding <=> ?::vector LIMIT ?",
+                for (String query : queries) {
+                    float[] embedding = modelGateway.embedQuery(query);
+                    String vector = CodeIndexRepository.toVectorLiteral(embedding);
+                    String near = " AND embedding IS NOT NULL AND vector_dims(embedding) = vector_dims(?::vector)";
+                    // On the trial database (no pgvector) the sections are compared in memory: the SQL search takes seconds there
+                    List<UUID> chunks = vectors.inUse() ? vectors.nearest(embedding, versionLine, workspaceId, CANDIDATES) : null;
+                    if (chunks == null) {
+                        chunks = jdbc.query("SELECT id FROM knowledge_chunk WHERE true" + scope + near + " ORDER BY embedding <=> ?::vector LIMIT ?",
+                                (rs, r) -> rs.getObject(1, UUID.class), workspaceId, versionLine, versionLine, vector, vector, CANDIDATES);
+                    }
+                    List<UUID> notes = jdbc.query("SELECT id FROM knowledge_note WHERE true" + scope + noteStatus + near + " ORDER BY embedding <=> ?::vector LIMIT ?",
                             (rs, r) -> rs.getObject(1, UUID.class), workspaceId, versionLine, versionLine, vector, vector, CANDIDATES);
+                    rank(scores, "M", chunks);
+                    rank(scores, "N", notes);
+                    semanticUsed |= !chunks.isEmpty() || !notes.isEmpty();
                 }
-                List<UUID> notes = jdbc.query("SELECT id FROM knowledge_note WHERE true" + scope + noteStatus + near + " ORDER BY embedding <=> ?::vector LIMIT ?",
-                        (rs, r) -> rs.getObject(1, UUID.class), workspaceId, versionLine, versionLine, vector, vector, CANDIDATES);
-                rank(scores, "M", chunks);
-                rank(scores, "N", notes);
-                semanticUsed = !chunks.isEmpty() || !notes.isEmpty();
                 if (!semanticUsed) {
                     semanticNote = "Nothing is embedded yet; matching by keywords only.";
                 }
@@ -106,26 +143,63 @@ public class KnowledgeSearch {
         int wanted = Math.clamp(limit, 1, CANDIDATES);
         List<Map.Entry<String, Double>> top = scores.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
-                .limit(Math.min(wanted * 3L, CANDIDATES)).toList();
-        return new Result(fewPerDocument(load(top), wanted), semanticUsed, semanticNote);
+                .limit(shortList ? CANDIDATES : Math.min(wanted * 3L, CANDIDATES)).toList();
+        List<Hit> ranked = load(top);
+        return new Result(shortList ? spread(ranked, wanted) : fewPerDocument(ranked, wanted), semanticUsed, semanticNote);
     }
 
     /**
-     * At most {@link #PER_DOCUMENT} sections of one document, so one long user manual does not crowd out the guide
-     * that answers the question (a developer question about adding a field matches many pages of a user manual).
+     * At most {@link #PER_DOCUMENT} sections of one document and {@link #PER_SECTION} parts of one of its sections, so
+     * one long user manual does not crowd out the guide that answers the question (a developer question about adding a
+     * field matches many pages of a user manual), and one long section does not crowd out the others of its manual.
      */
     static List<Hit> fewPerDocument(List<Hit> hits, int limit) {
         Map<UUID, Integer> perDocument = new HashMap<>();
+        Map<String, Integer> perSection = new HashMap<>();
         List<Hit> kept = new ArrayList<>();
         for (Hit h : hits) {
             if (kept.size() == limit) {
                 break;
             }
-            if (h.documentId() == null || perDocument.merge(h.documentId(), 1, Integer::sum) <= PER_DOCUMENT) {
+            if (h.documentId() == null) {
+                kept.add(h);
+                continue;
+            }
+            String section = h.documentId() + "/" + KnowledgeRepository.baseHeading(h.heading());
+            if (perDocument.getOrDefault(h.documentId(), 0) < PER_DOCUMENT && perSection.getOrDefault(section, 0) < PER_SECTION) {
+                perDocument.merge(h.documentId(), 1, Integer::sum);
+                perSection.merge(section, 1, Integer::sum);
                 kept.add(h);
             }
         }
         return kept;
+    }
+
+    /** First the best section of each manual (and the notes), in their order; then the best of the rest. */
+    static List<Hit> spread(List<Hit> hits, int size) {
+        List<Hit> list = new ArrayList<>();
+        Set<UUID> manuals = new java.util.HashSet<>();
+        for (Hit h : hits) {
+            if (list.size() >= size) {
+                break;
+            }
+            if (h.documentId() == null || manuals.add(h.documentId())) {
+                list.add(h);
+            }
+        }
+        Map<String, Integer> perSection = new HashMap<>();
+        list.forEach(h -> perSection.merge(h.documentId() + "/" + KnowledgeRepository.baseHeading(h.heading()), 1, Integer::sum));
+        for (Hit h : hits) {
+            if (list.size() >= size) {
+                break;
+            }
+            String section = h.documentId() + "/" + KnowledgeRepository.baseHeading(h.heading());
+            if (!list.contains(h) && (h.documentId() == null || perSection.getOrDefault(section, 0) < PER_SECTION)) {
+                perSection.merge(section, 1, Integer::sum);
+                list.add(h);
+            }
+        }
+        return list;
     }
 
     private static void rank(Map<String, Double> scores, String kind, List<UUID> ids) {
@@ -192,7 +266,10 @@ public class KnowledgeSearch {
                 continue;
             }
             double weight = Math.log((total + 1.0) / (matching + 1.0));
-            score.append(" + ").append(String.format(Locale.ROOT, "%.4f", weight)).append(" * (search_vector @@ to_tsquery('english', ?))::int");
+            // A word in the section's heading ("4.1 User Management - Create") counts twice: it is what the section is about
+            score.append(" + ").append(String.format(Locale.ROOT, "%.4f", weight)).append(" * ((search_vector @@ to_tsquery('english', ?))::int "
+                    + "+ (to_tsvector('english', coalesce(heading, '')) @@ to_tsquery('english', ?))::int)");
+            args.add(term);
             args.add(term);
         }
         args.add(tsQuery);

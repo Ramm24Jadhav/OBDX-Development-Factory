@@ -23,7 +23,7 @@ class OracleLibraryTest {
 
     private static final String INDEX = "https://www.oracle.com/technical-resources/documentation/fsgbu.html";
 
-    private final OracleLibrary library = new OracleLibrary(new KnowledgeProperties(false, List.of(), 5, 1000, 3000,
+    private final OracleLibrary library = new OracleLibrary(new KnowledgeProperties(false, List.of(), 5, 1000, 3000, true,
             new KnowledgeProperties.Oracle(true, INDEX, List.of("docs.oracle.com", "www.oracle.com"), Duration.ofDays(7),
                     DataSize.ofMegabytes(150), Duration.ZERO)), JsonMapper.builder().build());
 

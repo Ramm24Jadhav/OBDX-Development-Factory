@@ -126,5 +126,11 @@ class ManualSplitterTest {
     void searchesForAnyMeaningfulWord() {
         assertThat(KnowledgeSearch.toTsQuery("How do I add a field to the fund transfer in OBDX?")).isEqualTo("add | field:* | fund:* | transfer:*");
         assertThat(KnowledgeSearch.toTsQuery("the of a")).isEmpty();
+        // The manuals' names for what people ask about
+        assertThat(ObdxGlossary.inManualWords("onboarding new customer as Retail user"))
+                .isEqualTo("user management create registration new party user as retail user");
+        assertThat(ObdxGlossary.inManualWords("how do I add a payee")).isNull();
+        // The words around a question say nothing about what is asked
+        assertThat(KnowledgeSearch.toTsQuery("Give me steps for onboarding new customer in OBDX as Retail user")).isEqualTo("onboarding:* | customer:* | retail:* | user:*");
     }
 }

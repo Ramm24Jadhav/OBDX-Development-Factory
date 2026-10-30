@@ -239,12 +239,23 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
   at most two sections of one document, so a long user manual does not crowd out the guide that answers. In the full-text
   part each word counts by how rare it is in the sections searched (inverse document frequency, counted with the
-  index): in "how do I unlock a retail user" the sections about unlocking rank above those that repeat "user". The bank's own
+  index): in "how do I unlock a retail user" the sections about unlocking rank above those that repeat "user". A word in
+  a section's heading counts twice, and the words around a question ("give me the steps for") count for nothing. Questions
+  and sections are embedded the way the embedding model expects: `nomic-embed-text` with "search_query: " and
+  "search_document: ", the e5 models with "query: " and "passage: ", bge and mxbai with their query instruction. The bank's own
   documents and notes rank a little higher, and the model is told they describe the bank's customised system and
   patchset and win where they differ from Oracle's manuals. On the trial
   database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2
   manuals) and compared there: a search takes well under a second instead of many seconds.
-- **Ask** (Library page and every AI Assistant panel): the question, the page the user is looking at (up to 3,000
+- **Ask** (Library page and every AI Assistant panel): the question is searched as asked and in the manuals' own names
+  for things (a built-in OBDX glossary: a customer is a party or user, onboarding a user is User Management - Create or
+  Self Registration, a beneficiary is a payee, a developer adding a field to a screen extends a UI component), which
+  gives a short list of 15 sections: the best section of each manual first, so a developer's guide is on it next to the
+  user manual that matches the words best, then the best of the rest. The chat model then picks from
+  their headings and first words the ones that answer the question, best first: words alone cannot tell "onboard a
+  retail customer" from Corporate or Biller Onboarding. It is one short extra model call (a few seconds; the better the
+  model, the better the choice); `FACTORY_KNOWLEDGE_CHOOSE_SOURCES=false` keeps the search's own order. Then the
+  question, the page the user is looking at (up to 3,000
   characters) and the best five sources (up to 1,000 characters each) go to the chat model, which answers with [n]
   citations; each source links to the PDF at its page. Answers can be rated (Helpful / Not helpful, kept for review) or
   saved as a suggested note. The prompt is sized for small local models with a 4k context; for larger models raise

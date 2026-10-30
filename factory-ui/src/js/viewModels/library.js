@@ -237,7 +237,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
         let failed = null;
         api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null }, (event) => {
-          if (event.type === 'sources') {
+          if (event.type === 'status') {
+            this.thinking(event.text);
+          } else if (event.type === 'sources') {
             this.answer(shown(event));
             this.thinking(event.sources.length
               ? 'Found ' + event.sources.length + ' sources. The model is reading them; the answer appears here as it is written…'

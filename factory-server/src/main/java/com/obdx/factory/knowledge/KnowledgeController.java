@@ -242,18 +242,28 @@ public class KnowledgeController {
     }
 
     /**
-     * The answer as the model writes it, one JSON object per line: "sources" (what the search found, before the model
-     * starts), "text" (the next piece of the answer), then "done" (the whole answer) or "error". Problems found before
-     * the model is asked (no question, a model outside the bank) are ordinary error responses.
+     * The answer as the model writes it, one JSON object per line: "status" (what is being done), "sources" (what the
+     * search found and kept), "text" (the next piece of the answer),
+     * then "done" (the whole answer) or "error". Problems found before anything is searched (no question, a model
+     * outside the bank) are ordinary error responses.
      */
     @PostMapping("/api/knowledge/ask/stream")
     public ResponseEntity<ResponseBodyEmitter> askStream(@RequestBody AskRequest request) {
         requireReader(request.workspaceId());
-        KnowledgeService.Question question = knowledge.prepare(request.question(), request.workspaceId(), request.context());
+        knowledge.requireAskable(request.question());
         // The model times out on its own when it stops writing; this only ends a stream nobody finishes
         ResponseBodyEmitter emitter = new ResponseBodyEmitter(Duration.ofHours(1).toMillis());
         Thread.ofVirtual().name("knowledge-answer").start(() -> {
             Lines lines = new Lines(emitter);
+            KnowledgeService.Question question;
+            try {
+                lines.send(Map.of("type", "status", "text", "Searching the manuals and notes, and choosing the sections that answer the question…"));
+                question = knowledge.prepare(request.question(), request.workspaceId(), request.context());
+            } catch (RuntimeException e) {
+                lines.send(Map.of("type", "error", "message", e.getMessage() == null ? "The question could not be searched." : e.getMessage()));
+                emitter.complete();
+                return;
+            }
             Map<String, Object> found = new LinkedHashMap<>();
             found.put("type", "sources");
             found.put("sources", question.sources());

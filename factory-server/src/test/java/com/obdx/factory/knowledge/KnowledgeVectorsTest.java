@@ -35,8 +35,18 @@ class KnowledgeVectorsTest {
         assertThat(KnowledgeSearch.fewPerDocument(hits, 4)).extracting(KnowledgeSearch.Hit::pageFrom).containsExactly(1, 2, 0, 4);
     }
 
+    @Test
+    void aShortListSpreadsOverTheManualsThenTakesTheBestOfTheRest() {
+        UUID manual = UUID.randomUUID();
+        UUID guide = UUID.randomUUID();
+        // The user manual matches best, many times over; the guide comes last
+        List<KnowledgeSearch.Hit> hits = List.of(hit(manual, 1), hit(manual, 2), hit(manual, 3), hit(manual, 4), hit(manual, 5), hit(guide, 9));
+
+        assertThat(KnowledgeSearch.spread(hits, 4)).extracting(KnowledgeSearch.Hit::pageFrom).containsExactly(1, 9, 2, 3);
+    }
+
     private static KnowledgeSearch.Hit hit(UUID documentId, int page) {
-        return new KnowledgeSearch.Hit(documentId == null ? "NOTE" : "MANUAL", UUID.randomUUID(), documentId, "t", "h", "25.2", page, page,
+        return new KnowledgeSearch.Hit(documentId == null ? "NOTE" : "MANUAL", UUID.randomUUID(), documentId, "t", "h" + page, "25.2", page, page,
                 null, "text", 0, false, null);
     }
 }

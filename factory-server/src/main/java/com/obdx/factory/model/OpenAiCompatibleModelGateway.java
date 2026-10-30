@@ -200,6 +200,47 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     @Override
+    public float[] embedQuery(String text) {
+        return embed(queryPrefix(connection.embeddingModelName()) + text);
+    }
+
+    @Override
+    public List<float[]> embedPassages(List<String> texts) {
+        String prefix = passagePrefix(connection.embeddingModelName());
+        return embedAll(prefix.isEmpty() ? texts : texts.stream().map(t -> prefix + t).toList());
+    }
+
+    /**
+     * What the common open embedding models expect before a search question: nomic-embed-text "search_query: ", the e5
+     * family "query: ", bge and mxbai an instruction. Others take the text as it is.
+     */
+    static String queryPrefix(String model) {
+        String m = model == null ? "" : model.toLowerCase(java.util.Locale.ROOT);
+        if (m.contains("nomic-embed")) {
+            return "search_query: ";
+        }
+        if (m.contains("e5-") || m.contains("/e5") || m.startsWith("e5")) {
+            return "query: ";
+        }
+        if (m.contains("bge-") || m.contains("mxbai-embed")) {
+            return "Represent this sentence for searching relevant passages: ";
+        }
+        return "";
+    }
+
+    /** The counterpart for passages: nomic-embed-text "search_document: ", e5 "passage: ". */
+    static String passagePrefix(String model) {
+        String m = model == null ? "" : model.toLowerCase(java.util.Locale.ROOT);
+        if (m.contains("nomic-embed")) {
+            return "search_document: ";
+        }
+        if (m.contains("e5-") || m.contains("/e5") || m.startsWith("e5")) {
+            return "passage: ";
+        }
+        return "";
+    }
+
+    @Override
     public float[] embed(String text) {
         Connection current = connection;
         try {
