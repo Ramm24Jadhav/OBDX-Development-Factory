@@ -45,7 +45,11 @@ public class KnowledgeService {
             Read every source before deciding: a source that covers the general case (any user) answers a question about \
             a particular case (a retail user) unless it says otherwise, and a source that answers part of the question \
             is used for that part. A source about a different case than the one asked (corporate users when the \
-            question is about retail users) is not the answer: do not present its steps as if they were. Only when no \
+            question is about retail users) is not the answer: do not present its steps as if they were. Likewise a \
+            source that does the same action to something else (deleting a payee when the question is about deleting a \
+            user) is not the answer. When the sources cover what the question is about but not the action asked (they \
+            show a user can be locked or have its channel access revoked, but not deleted), say that the manuals do not \
+            describe that action, then give what they do offer for it, with its menu and citations. Only when no \
             source answers any of it, say plainly that the manuals in the factory do \
             not cover it and name the closest sections the sources do cover; do not answer from general knowledge, and \
             never describe other vendors' products or systems as part of OBDX. Cite a source only \

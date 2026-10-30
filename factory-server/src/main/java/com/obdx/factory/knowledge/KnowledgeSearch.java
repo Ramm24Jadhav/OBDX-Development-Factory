@@ -40,6 +40,16 @@ public class KnowledgeSearch {
             "help", "know", "get", "let", "us", "there", "any", "some", "all", "also", "then", "than", "so", "if", "not", "no", "yes",
             "possible", "able", "kindly", "regarding", "related", "flow", "guide", "information", "info");
 
+    /** The subject searched on its own counts this much of the question itself: it adds the subject's chapter, not more */
+    private static final double SUBJECT_WEIGHT = 1.0;
+
+    /**
+     * What a question asks to do with its subject (see subject): the actions every maintenance screen has. Not "block",
+     * "unlock" or "reset": in OBDX those name features of their own (Block Card, Reset Password).
+     */
+    private static final Set<String> ACTIONS = Set.of("delete", "deletion", "remove", "removal", "create", "creation", "edit",
+            "modify", "modification", "update", "view", "deactivate", "disable", "maintain", "manage");
+
     private final JdbcTemplate jdbc;
     private final ModelGateway modelGateway;
     private final KnowledgeVectors vectors;
@@ -97,6 +107,11 @@ public class KnowledgeSearch {
         if (glossary != null) {
             queries.add(glossary);
         }
+        // And what the question is about, without what is to be done with it (see subject)
+        String subject = wordings.isEmpty() ? null : subject(wordings.getFirst());
+        if (subject != null) {
+            queries.add(subject);
+        }
         Map<String, Double> scores = new HashMap<>();
         String semanticNote = null;
         boolean semanticUsed = false;
@@ -105,7 +120,8 @@ public class KnowledgeSearch {
         for (String query : queries) {
             String tsQuery = toTsQuery(query);
             if (!tsQuery.isEmpty()) {
-                rank(scores, "M", keywordSections(tsQuery, scope, workspaceId, versionLine));
+                double weight = query.equals(subject) ? SUBJECT_WEIGHT : 1.0;
+                rank(scores, "M", keywordSections(tsQuery, scope, workspaceId, versionLine), weight);
                 rank(scores, "N", jdbc.query("SELECT id FROM knowledge_note, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope + noteStatus
                         + " ORDER BY ts_rank_cd(search_vector, q, 1) DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class),
                         tsQuery, workspaceId, versionLine, versionLine, CANDIDATES));
@@ -128,7 +144,7 @@ public class KnowledgeSearch {
                     }
                     List<UUID> notes = jdbc.query("SELECT id FROM knowledge_note WHERE true" + scope + noteStatus + near + " ORDER BY embedding <=> ?::vector LIMIT ?",
                             (rs, r) -> rs.getObject(1, UUID.class), workspaceId, versionLine, versionLine, vector, vector, CANDIDATES);
-                    rank(scores, "M", chunks);
+                    rank(scores, "M", chunks, query.equals(subject) ? SUBJECT_WEIGHT : 1.0);
                     rank(scores, "N", notes);
                     semanticUsed |= !chunks.isEmpty() || !notes.isEmpty();
                 }
@@ -144,7 +160,7 @@ public class KnowledgeSearch {
         List<Map.Entry<String, Double>> top = scores.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(shortList ? CANDIDATES : Math.min(wanted * 3L, CANDIDATES)).toList();
-        List<Hit> ranked = forSegment(load(top), wordings.isEmpty() ? "" : wordings.getFirst());
+        List<Hit> ranked = forSubject(forSegment(load(top), wordings.isEmpty() ? "" : wordings.getFirst()), subject);
         return new Result(shortList ? spread(ranked, wanted) : fewPerDocument(ranked, wanted), semanticUsed, semanticNote);
     }
 
@@ -203,8 +219,12 @@ public class KnowledgeSearch {
     }
 
     private static void rank(Map<String, Double> scores, String kind, List<UUID> ids) {
+        rank(scores, kind, ids, 1.0);
+    }
+
+    private static void rank(Map<String, Double> scores, String kind, List<UUID> ids, double weight) {
         for (int i = 0; i < ids.size(); i++) {
-            scores.merge(kind + ids.get(i), 1.0 / (RRF_K + i + 1), Double::sum);
+            scores.merge(kind + ids.get(i), weight / (RRF_K + i + 1), Double::sum);
         }
     }
 
@@ -293,6 +313,26 @@ public class KnowledgeSearch {
     }
 
     /**
+     * What a question is about without what is to be done with it: "user" for "where can I delete a user". Searched too,
+     * it brings up the subject's own chapter (User Management, where a user is locked and its channel access revoked)
+     * next to the sections that only share the action ("Delete Payee", "Sweep In - Delete"), so the answer can say what
+     * the manuals offer for the subject even when they do not have the action asked for. Null when the question names
+     * no action or nothing else.
+     */
+    static String subject(String question) {
+        List<String> words = new ArrayList<>();
+        boolean action = false;
+        for (String word : forMeaning(question).toLowerCase(Locale.ROOT).split("[^a-z0-9_.-]+")) {
+            if (ACTIONS.contains(word)) {
+                action = true;
+            } else if (!word.isEmpty() && !STOP_WORDS.contains(word)) {
+                words.add(word);
+            }
+        }
+        return action && !words.isEmpty() ? String.join(" ", words) : null;
+    }
+
+    /**
      * The question for the meaning search: its meaningful words in their order, without the product's name and the words
      * around a question ("How do I ... in OBDX?"). Every manual says "OBDX" many times, so left in, it pulls up the
      * sections that talk about OBDX in general (installation, configuration) instead of what is asked.
@@ -307,6 +347,29 @@ public class KnowledgeSearch {
             }
         }
         return words.isEmpty() ? (query == null ? "" : query) : String.join(" ", words);
+    }
+
+    /**
+     * A section whose heading names none of the subject's words shares only the action with the question ("Delete
+     * Debtor" for deleting a user): it counts half.
+     */
+    static List<Hit> forSubject(List<Hit> hits, String subject) {
+        if (subject == null) {
+            return hits;
+        }
+        List<String> words = new ArrayList<>();
+        for (String w : subject.split(" ")) {
+            words.add(w.endsWith("s") && w.length() > 3 ? w.substring(0, w.length() - 1) : w);
+        }
+        List<Hit> adjusted = new ArrayList<>();
+        for (Hit h : hits) {
+            String heading = h.heading() == null ? "" : h.heading().toLowerCase(Locale.ROOT);
+            boolean named = h.heading() == null || words.stream().anyMatch(heading::contains);
+            adjusted.add(named ? h : new Hit(h.kind(), h.id(), h.documentId(), h.title(), h.heading(), h.obdxVersion(), h.pageFrom(), h.pageTo(),
+                    h.status(), h.text(), h.score() / 2, h.bank(), h.patchset()));
+        }
+        adjusted.sort(Comparator.comparingDouble(Hit::score).reversed());
+        return adjusted;
     }
 
     /**

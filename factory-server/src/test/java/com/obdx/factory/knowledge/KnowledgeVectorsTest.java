@@ -50,6 +50,11 @@ class KnowledgeVectorsTest {
         assertThat(KnowledgeSearch.forMeaning("How do I onboard a retail customer in OBDX?")).isEqualTo("onboard retail customer");
         assertThat(KnowledgeSearch.forMeaning("Explain Oracle Banking Digital Experience service extensions")).isEqualTo("service extensions");
         assertThat(KnowledgeSearch.forMeaning("how do I")).isEqualTo("how do I");
+        assertThat(KnowledgeSearch.subject("From where can I delete the user from OBDX?")).isEqualTo("user");
+        assertThat(KnowledgeSearch.subject("How do I modify a term deposit?")).isEqualTo("term deposit");
+        assertThat(KnowledgeSearch.subject("How does a customer block a debit card?")).isNull();
+        assertThat(KnowledgeSearch.subject("What is a user group?")).isNull();
+        assertThat(KnowledgeSearch.subject("delete")).isNull();
     }
 
     @Test
@@ -61,6 +66,15 @@ class KnowledgeVectorsTest {
         assertThat(KnowledgeSearch.forSegment(hits, "How do I onboard a retail customer?")).extracting(KnowledgeSearch.Hit::heading)
                 .containsExactly("2.1 User Management - Create", "66.3 User Groups - Retail & Business User", "15 Group Corporate Onboarding");
         assertThat(KnowledgeSearch.forSegment(hits, "How do I onboard a customer?")).isEqualTo(hits);
+    }
+
+    @Test
+    void sectionsThatOnlyShareTheActionCountHalf() {
+        UUID doc = UUID.randomUUID();
+        List<KnowledgeSearch.Hit> hits = List.of(scored(doc, "15.3 Delete Debtor", 0.05), scored(doc, "4.2 User Management - Search and View", 0.04));
+        assertThat(KnowledgeSearch.forSubject(hits, "users")).extracting(KnowledgeSearch.Hit::heading)
+                .containsExactly("4.2 User Management - Search and View", "15.3 Delete Debtor");
+        assertThat(KnowledgeSearch.forSubject(hits, null)).isEqualTo(hits);
     }
 
     private static KnowledgeSearch.Hit scored(UUID documentId, String heading, double score) {

@@ -133,6 +133,8 @@ class ManualSplitterTest {
         assertThat(ObdxGlossary.inManualWords("onboarding new customer as Retail user"))
                 .isEqualTo("user management create registration new party user as retail user");
         assertThat(ObdxGlossary.inManualWords("how do I add a payee")).isNull();
+        assertThat(ObdxGlossary.inManualWords("where can I delete the user")).isEqualTo("where can i the user user status lock channel access revoke");
+        assertThat(ObdxGlossary.inManualWords("how do I delete a payee")).isNull();
         // The words around a question say nothing about what is asked
         assertThat(KnowledgeSearch.toTsQuery("Give me steps for onboarding new customer in OBDX as Retail user")).isEqualTo("onboarding:* | customer:* | retail:* | user:*");
     }

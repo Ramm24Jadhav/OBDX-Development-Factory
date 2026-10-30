@@ -1,6 +1,7 @@
 package com.obdx.factory.knowledge;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +57,14 @@ final class ObdxGlossary {
             Map.entry("cbs", "host integration"),
             Map.entry("flexcube", "host integration fcubs"));
 
+    /**
+     * Things the manuals do not do to a subject under the name people use: a user is not deleted or deactivated in OBDX,
+     * it is locked (User Management, change user status) or its channel access is revoked.
+     */
+    private static final Map<String, Map<Set<String>, String>> ACTIONS = Map.of(
+            "user", Map.of(Set.of("delete", "deleting", "deletion", "remove", "removing", "deactivate", "disable", "block", "terminate", "suspend"),
+                    "user status lock channel access revoke"));
+
     private ObdxGlossary() {
     }
 
@@ -66,13 +75,26 @@ final class ObdxGlossary {
     static String inManualWords(String question) {
         Set<String> words = new LinkedHashSet<>();
         boolean changed = false;
-        for (String word : (question == null ? "" : question).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+        List<String> asked = List.of((question == null ? "" : question).toLowerCase(Locale.ROOT).split("[^a-z0-9]+"));
+        for (String word : asked) {
             String manual = TERMS.get(word);
             if (manual != null) {
                 changed = true;
                 words.add(manual);
             } else if (!word.isEmpty()) {
                 words.add(word);
+            }
+        }
+        for (Map.Entry<String, Map<Set<String>, String>> subject : ACTIONS.entrySet()) {
+            if (asked.contains(subject.getKey()) || asked.contains(subject.getKey() + "s")) {
+                for (Map.Entry<Set<String>, String> action : subject.getValue().entrySet()) {
+                    if (asked.stream().anyMatch(action.getKey()::contains)) {
+                        // in the manuals' words instead of the action asked, which would find it done to other things
+                        changed = true;
+                        words.removeAll(action.getKey());
+                        words.add(action.getValue());
+                    }
+                }
             }
         }
         return changed ? String.join(" ", words) : null;
