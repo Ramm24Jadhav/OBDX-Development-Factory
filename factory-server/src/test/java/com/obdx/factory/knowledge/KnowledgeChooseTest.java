@@ -48,13 +48,14 @@ class KnowledgeChooseTest {
             hit("4.1 User Management - Create"), hit("4.1 User Management - Create (continued)"));
 
     @Test
-    void keepsTheSectionsTheModelPicksInItsOrder() {
+    void keepsTheModelsPicksFirstThenTheSearchsBest() {
         reply.set("{\"sections\": [3, 4, 3, 9]}");
 
         List<KnowledgeSearch.Hit> chosen = service.choose("Steps for onboarding a retail user", SHORT_LIST, 5);
 
-        assertThat(chosen).extracting(KnowledgeSearch.Hit::heading)
-                .containsExactly("4.1 User Management - Create", "4.1 User Management - Create (continued)");
+        // The model's picks first, then the search's best it did not pick
+        assertThat(chosen).extracting(KnowledgeSearch.Hit::heading).containsExactly("4.1 User Management - Create",
+                "4.1 User Management - Create (continued)", "7.1.2 Biller Onboarding - Create (continued)", "15. Group Corporate Onboarding");
         assertThat(asked.get()).contains("[3] User Manual Core | 4.1 User Management - Create | ").contains("[4] User Manual Core | 4.1 User Management - Create |");
     }
 

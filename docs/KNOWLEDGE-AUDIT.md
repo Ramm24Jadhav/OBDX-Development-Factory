@@ -86,8 +86,9 @@ Results on the test factory (67 manuals; llama3.2 3B and nomic-embed-text on Oll
 | Run | Recall@5 | Recall@15 | MRR | Notes |
 |---|---|---|---|---|
 | Before this round's changes (SEARCH) | 0.826 | 0.826 | 0.723 | misses: subsections without their chapter, follow-up, vocabulary |
-| After (SEARCH) | see section 7 | | | |
-| After (CHOOSE) | see section 7 | | | |
+| After: search only (SEARCH) | 0.843 | – | 0.767 | headings with parents, whole context, follow-ups rewritten |
+| After: the 3B model chooses alone (CHOOSE) | 0.765 | 0.922 | 0.668 | the right section is in the short list 92 % of the time, but the small model drops it too often |
+| After: 3 model picks + the search's best 2 (simulated on the CHOOSE rows) | 0.852 | 0.922 | – | now the default in `KnowledgeService.choose` |
 
 What is not measured automatically: whether every sentence of an answer is supported by its sources (faithfulness)
 needs a judge model or a person; the ANSWER mode checks citations and refusals only.
@@ -123,4 +124,17 @@ needs a judge model or a person; the ANSWER mode checks citations and refusals o
 
 ## 7. Results after the changes
 
-(Filled in from the evaluation runs below.)
+- Search only: Recall@5 0.826 → 0.843, MRR 0.723 → 0.767, 0.7 s per question.
+- The short list of 15 holds an expected section for 92 % of the questions (106 of 115).
+- With a 3B local model, letting it choose the five sources alone lowered Recall@5 to 0.765: it often drops the right
+  section. Keeping its first three picks and filling with the search's best (0.852 when simulated on the same rows) is
+  now the default. A larger model is expected to choose better; run CHOOSE with it to see.
+- By kind (search only): administration, API, architecture and deployment 100 %; procedure 90 %; configuration and
+  integration 90 %; extensibility 82 %; UI 70 %; security 67 %; follow-up 67 %.
+- Remaining misses (search only, 18 of 115) are mostly the right manual and chapter but a sibling section (SSL in the
+  OBO guide instead of the Security Guide, 2FA login instead of custom 2FA), one vocabulary gap ("re-enable" for
+  "unblock") and the 22.2 manuals that have no bookmarks.
+- Not yet run: ANSWER mode on the whole set (about an hour with the 3B model on a laptop CPU; minutes with a hosted
+  model) and the same runs with a cloud chat model. The four unanswerable questions are scored only in ANSWER mode.
+- The whole server test suite: 177 tests, 20 skipped (they need the test database), 1 failure on Windows only
+  (`ScreenScaffolderTest`, which passes on CI).
