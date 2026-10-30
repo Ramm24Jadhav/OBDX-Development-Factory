@@ -122,6 +122,28 @@ public class KnowledgeRepository {
                 + "AND superseded_by IS NULL ORDER BY created_at", (rs, row) -> rs.getObject(1, UUID.class), readerVersion);
     }
 
+    /** Which embedding server and model embedded the document's sections. */
+    public void embeddedWith(UUID id, String model) {
+        jdbc.update("UPDATE knowledge_document SET embedded_with = ? WHERE id = ?", model, id);
+    }
+
+    /** Current documents embedded by another embedding model than the given one. */
+    public List<UUID> embeddedByAnother(String model) {
+        return jdbc.query("SELECT id FROM knowledge_document WHERE superseded_by IS NULL AND embedded > 0 AND embedded_with IS NOT NULL "
+                + "AND embedded_with <> ? AND status IN ('READY', 'FAILED')", (rs, row) -> rs.getObject(1, UUID.class), model);
+    }
+
+    /** Current documents, ready or failed, with sections not embedded yet. */
+    public List<UUID> unfinishedEmbeddings() {
+        return jdbc.query("SELECT id FROM knowledge_document WHERE superseded_by IS NULL AND status IN ('READY', 'FAILED') "
+                + "AND sections > 0 AND embedded < sections ORDER BY created_at", (rs, row) -> rs.getObject(1, UUID.class));
+    }
+
+    public void clearEmbeddings(UUID id) {
+        jdbc.update("UPDATE knowledge_chunk SET embedding = NULL WHERE document_id = ?", id);
+        jdbc.update("UPDATE knowledge_document SET embedded = 0, embedded_with = NULL WHERE id = ?", id);
+    }
+
     public void readWith(UUID id, int readerVersion) {
         jdbc.update("UPDATE knowledge_document SET reader_version = ? WHERE id = ?", readerVersion, id);
     }

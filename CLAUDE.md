@@ -11,7 +11,7 @@ configure; every setting and REST endpoint).
   shared services in `src/js/services/`; styles in `src/css/app.css` (the build serves `app.css`).
 - `factory-server/`: Spring Boot 4 / Java 21 server, one package per feature under `com.obdx.factory` (workspace,
   importing, indexing, profile, requirements, design, change, pack, target, modernization, source, model, update,
-  trial, auth, svn, jenkins, knowledge). Flyway migrations in `src/main/resources/db/migration` (V1..V21; add V22 next).
+  trial, auth, svn, jenkins, knowledge). Flyway migrations in `src/main/resources/db/migration` (V1..V22; add V23 next).
 - `target-packs/`: React Native and React target packs (rules, templates, starter projects).
 - `deploy/`: systemd unit and env template, `ohs/` (Oracle HTTP Server), `docker/` (compose stack, demo code),
   `bundle/` (the Windows/Linux download: start scripts, settings, README).

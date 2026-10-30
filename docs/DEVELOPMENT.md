@@ -211,6 +211,11 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   embedding model a document is searched by keywords; **Embed again** finishes it later. Imports the factory stopped
   carry on at the next start. When the reading improves (`KnowledgeImporter.READER_VERSION`), the documents read before
   are read and embedded again at startup, in the background, one at a time.
+  Each document remembers which embedding server and model embedded it. When the models change on the Models page,
+  documents embedded by another model are embedded again and those whose embedding stopped (the model was
+  unavailable, or outside the bank) are finished, in the background; the same happens at startup. Whether the
+  embedding model is inside the bank is checked before every batch, so a model changed while a document is embedded
+  never receives the rest of it.
 - **Keeping it current**: Oracle republishes manuals for patchsets and fixes, and banks update their own documents. A
   file already imported (same content) is skipped. A changed file with the name of one already imported for that
   version and owner is a **newer revision**: the older one answers until the newer one is ready, then it is kept as

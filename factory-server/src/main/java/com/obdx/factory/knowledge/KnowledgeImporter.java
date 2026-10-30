@@ -4,6 +4,7 @@ import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.ModelSettings;
 import com.obdx.factory.requirements.DocumentTextExtractor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -62,11 +63,13 @@ public class KnowledgeImporter {
     private final KnowledgeRevisions revisions;
     private final DocumentTextExtractor extractor;
     private final boolean localFolders;
+    private final ModelSettings settings;
 
     public KnowledgeImporter(KnowledgeRepository repository, ModelGateway modelGateway, StorageProperties storage,
                              @Qualifier("knowledgeExecutor") TaskExecutor executor, KnowledgeVectors vectors,
                              KnowledgePolicy policy, KnowledgeRevisions revisions, DocumentTextExtractor extractor,
-                             @Value("${factory.local-folders.enabled}") boolean localFolders) {
+                             @Value("${factory.local-folders.enabled}") boolean localFolders, ModelSettings settings) {
+        this.settings = settings;
         this.repository = repository;
         this.modelGateway = modelGateway;
         this.storage = storage;
@@ -320,6 +323,33 @@ public class KnowledgeImporter {
         }
     }
 
+    /** The embedding server and model, as one name: sections embedded by another one do not compare with its vectors. */
+    private String embeddingModel() {
+        var current = settings.current();
+        return current.embeddingUrl() + " " + current.embeddingModel();
+    }
+
+    /**
+     * When the models change on the Models page: the documents embedded by another embedding model are embedded again
+     * (their vectors do not compare with the new model's), and those whose embedding stopped (the model was unavailable
+     * or outside the bank) are finished, in the background, one at a time. Nothing goes to a model outside the bank.
+     */
+    @EventListener
+    public void modelsChanged(ModelSettings.Changed event) {
+        if (policy.embeddingProblem() != null) {
+            return;
+        }
+        String model = embeddingModel();
+        List<UUID> again = repository.embeddedByAnother(model);
+        again.forEach(repository::clearEmbeddings);
+        List<UUID> todo = repository.unfinishedEmbeddings();
+        todo.forEach(id -> executor.execute(() -> embed(id)));
+        if (!todo.isEmpty()) {
+            vectors.changed();
+            log.info("Embedding {} knowledge document(s) with {} ({} embedded by another model)", todo.size(), model, again.size());
+        }
+    }
+
     private void embed(UUID id) {
         String problem = policy.embeddingProblem();
         if (problem != null) {
@@ -327,10 +357,18 @@ public class KnowledgeImporter {
             ready(id, "Searched by keywords only. " + problem);
             return;
         }
+        String model = embeddingModel();
         try {
             while (true) {
                 List<KnowledgeRepository.PendingEmbedding> batch = repository.sectionsWithoutEmbedding(id, EMBED_BATCH);
                 if (batch.isEmpty()) {
+                    break;
+                }
+                // Checked before every batch: the models can change on the Models page while a document is embedded
+                String now = policy.embeddingProblem();
+                if (now != null || !model.equals(embeddingModel())) {
+                    problem = now != null ? "Searched by keywords only. " + now : null;
+                    log.info("Knowledge document {}: the embedding model changed while it was embedded", id);
                     break;
                 }
                 List<float[]> embeddings = modelGateway.embedPassages(batch.stream().map(KnowledgeRepository.PendingEmbedding::text).toList());
@@ -339,6 +377,7 @@ public class KnowledgeImporter {
                 }
                 vectors.changed();
                 repository.updateDocument(id, "EMBEDDING", null, null, null, repository.embeddedSections(id));
+                repository.embeddedWith(id, model);
             }
         } catch (RuntimeException e) {  // the model gateway reports problems as ModelGatewayException
             problem = "Searched by keywords only: the embedding model is unavailable (" + e.getMessage() + "). Use Embed again when it is back.";
@@ -385,6 +424,10 @@ public class KnowledgeImporter {
             log.info("Resuming {} knowledge document import(s) stopped when the factory stopped", unfinished.size());
         }
         readAgainOlder();
+        // Documents whose embedding stopped (the model was unavailable, or outside the bank then) are finished
+        if (policy.embeddingProblem() == null) {
+            repository.unfinishedEmbeddings().forEach(id -> executor.execute(() -> embed(id)));
+        }
     }
 
     // --- helpers ---
