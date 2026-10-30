@@ -152,8 +152,9 @@ public class UpdateService {
             }
         } catch (IOException | RuntimeException e) {
             state = State.FAILED;
-            message = "Could not check for updates at " + baseUrl + ": " + e.getMessage();
-            log.info(message);
+            message = publishing(e) ? "A new build is being published right now, so its files are not there for a minute or two. "
+                    + "Check for updates again in a few minutes." : "Could not check for updates at " + baseUrl + ": " + e.getMessage();
+            log.info("Update check failed: {}", e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -239,6 +240,15 @@ public class UpdateService {
         return curlAvailable;
     }
 
+    /**
+     * GitHub answers 404 for the release's files while the build that replaces them is being published (each build
+     * replaces the files of the "latest" release).
+     */
+    static boolean publishing(Exception e) {
+        String m = String.valueOf(e.getMessage());
+        return m.contains("404") || m.contains("(22)");
+    }
+
     private String curlText(String url) throws IOException, InterruptedException {
         Path errors = Files.createTempFile("factory-curl", ".log");
         try {
@@ -250,7 +260,7 @@ public class UpdateService {
                 throw new IOException("curl did not finish");
             }
             if (process.exitValue() != 0) {
-                throw new IOException("curl: " + Files.readString(errors).strip());
+                throw new IOException("curl: " + Files.readString(errors).strip().replaceFirst("^curl: ", ""));
             }
             return new String(body, StandardCharsets.UTF_8);
         } finally {
