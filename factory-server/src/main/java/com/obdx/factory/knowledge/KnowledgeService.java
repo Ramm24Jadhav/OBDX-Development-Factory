@@ -31,6 +31,8 @@ public class KnowledgeService {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeService.class);
     // The sections the search hands the model to choose from
     private static final int SHORT_LIST = 15;
+    // The turns of a conversation the model sees with a follow-up
+    private static final int MAX_TURNS = 3;
     private static final String ASK_SYSTEM = """
             You are the knowledge assistant of OBDX Development Factory, a tool that changes banks' Oracle Banking Digital \
             Experience (OBDX) code. Answer the question from the numbered sources (sections of Oracle's OBDX manuals and \
@@ -47,6 +49,11 @@ public class KnowledgeService {
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
             sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
             procedures, and code blocks only for code.""";
+
+    private static final String STANDALONE_SYSTEM = """
+            You rewrite the last question of a conversation about Oracle Banking Digital Experience (OBDX) so that it can \
+            be understood without the conversation: name what "it", "that" or "one" refers to. If the new question does not \
+            depend on the conversation, return it unchanged. Answer with a JSON object only: {"question": "..."}""";
 
     private static final String CHOOSE_SYSTEM = """
             You pick the sections of the Oracle Banking Digital Experience (OBDX) manuals and notes that answer a question. \
@@ -83,10 +90,14 @@ public class KnowledgeService {
         this.json = json;
     }
 
-    /** A cited source. n is its number in the answer ([n]); url opens a manual at its page. */
+    /**
+     * A cited source. n is its number in the answer ([n]); url opens the factory's copy of a manual at its page,
+     * oracleUrl the manual on Oracle's documentation site (for those fetched from there).
+     */
     /** bank: the bank's own document or note; patchset: the patchset a document is for. pageFrom 0: no pages. */
     public record Source(int n, String kind, String title, String heading, String obdxVersion, int pageFrom, int pageTo,
-                         String status, UUID documentId, UUID noteId, String url, String excerpt, boolean bank, String patchset) {
+                         String status, UUID documentId, UUID noteId, String url, String excerpt, boolean bank, String patchset,
+                         String oracleUrl) {
     }
 
     public record Answer(String answer, String model, long latencyMs, String versionLine, boolean grounded, List<Source> sources,
@@ -98,11 +109,31 @@ public class KnowledgeService {
     /**
      * A question with what the knowledge base found for it, ready for the model.
      */
-    public record Question(String prompt, String versionLine, List<Source> sources, String note) {
+    public record Question(String prompt, String versionLine, List<Source> sources, String note, Diagnostics diagnostics) {
+    }
+
+    /**
+     * How the sources were found, for administrators looking into an answer: the question as searched (a follow-up
+     * made standalone), the short list with its scores ("title | heading | score"), the sections kept, the search time,
+     * and how many characters of manual text went to the model.
+     */
+    public record Diagnostics(String searched, List<String> shortList, List<String> kept, long searchMillis, int contextChars,
+                              String note) {
+    }
+
+    /** An earlier question of the conversation and the answer it got. */
+    public record Turn(String question, String answer) {
+    }
+
+    /**
+     * What the search found for a question: the question as searched (a follow-up made standalone), the short list
+     * and the sections kept from it.
+     */
+    record Retrieved(String searched, List<KnowledgeSearch.Hit> shortList, List<KnowledgeSearch.Hit> kept, String note) {
     }
 
     public Answer ask(String question, UUID workspaceId, String pageContext) {
-        Question prepared = prepare(question, workspaceId, pageContext);
+        Question prepared = prepare(question, List.of(), workspaceId, pageContext);
         return answered(prepared, modelGateway.chat(ASK_SYSTEM, prepared.prompt()));
     }
 
@@ -129,30 +160,150 @@ public class KnowledgeService {
      * (by words and by meaning), and the chat model picks from it the ones that answer this question, which words alone
      * cannot tell ("onboard a retail customer" also matches Corporate and Biller Onboarding).
      */
-    public Question prepare(String question, UUID workspaceId, String pageContext) {
+    public Question prepare(String question, List<Turn> history, UUID workspaceId, String pageContext) {
         requireAskable(question);
         String versionLine = versionLineOf(workspaceId);
-        int wanted = properties.answerSources();
-        KnowledgeSearch.Result found = properties.chooseSources()
-                ? search.shortList(question, versionLine, workspaceId, Math.max(wanted, SHORT_LIST), true)
-                : search.search(question, versionLine, workspaceId, wanted, true);
-        List<KnowledgeSearch.Hit> hits = properties.chooseSources() ? choose(question, found.hits(), wanted) : found.hits();
+        List<Turn> earlier = recent(history);
+        long start = System.nanoTime();
+        Retrieved found = retrieve(question, earlier, versionLine, workspaceId, properties.chooseSources());
+        Question prepared = prepared(question, earlier, versionLine, pageContext, found);
+        return withDiagnostics(prepared, found, (System.nanoTime() - start) / 1_000_000);
+    }
+
+    private Question withDiagnostics(Question q, Retrieved found, long millis) {
+        java.util.function.Function<KnowledgeSearch.Hit, String> row = h -> h.title() + " | " + KnowledgeRepository.baseHeading(h.heading())
+                + " | " + h.score();
+        int chars = q.prompt().length();
+        return new Question(q.prompt(), q.versionLine(), q.sources(), q.note(), new Diagnostics(found.searched(),
+                found.shortList().stream().map(row).toList(), found.kept().stream().map(row).toList(), millis, chars, found.note()));
+    }
+
+    /** The prompt for sources already retrieved (the evaluation retrieves them itself). */
+    Question prepareFor(String question, List<Turn> history, String versionLine, Retrieved found) {
+        return prepared(question, recent(history), versionLine, null, found);
+    }
+
+    private Question prepared(String question, List<Turn> earlier, String versionLine, String pageContext, Retrieved found) {
+        List<KnowledgeSearch.Hit> hits = found.kept();
         List<Source> sources = sources(hits);
         StringBuilder user = new StringBuilder();
         user.append("OBDX version of the user's workspace: ").append(versionLine == null ? "not known" : versionLine + ".x").append("\n\n");
         if (pageContext != null && !pageContext.isBlank()) {
             user.append("The page the user is looking at:\n").append(cap(pageContext, properties.pageContextChars())).append("\n\n");
         }
+        if (!earlier.isEmpty()) {
+            // The conversation so far, so a follow-up ("which service is called first?") is read in its context
+            user.append("Earlier in this conversation:\n");
+            for (Turn t : earlier) {
+                user.append("Q: ").append(cap(t.question().strip(), 300)).append("\nA: ").append(cap(nz(t.answer()).strip(), 600)).append("\n");
+            }
+            user.append('\n');
+        }
         user.append("Sources:\n");
         if (sources.isEmpty()) {
             user.append("(none: the knowledge base has nothing on this yet)\n");
         }
+        List<String> texts = expanded(hits);
         for (int i = 0; i < sources.size(); i++) {
             Source s = sources.get(i);
-            user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(cap(hits.get(i).text(), properties.sourceChars())).append("\n\n");
+            user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(texts.get(i)).append("\n\n");
         }
         user.append("Question: ").append(question.strip());
-        return new Question(user.toString(), versionLine, sources, found.note());
+        if (!found.searched().equals(question.strip())) {
+            user.append("\n(In the context of the conversation: ").append(found.searched()).append(')');
+        }
+        return new Question(user.toString(), versionLine, sources, found.note(), null);
+    }
+
+    /**
+     * The text of each source, and what the context budget leaves goes to the parts of the same section before and
+     * after the best sources: a long procedure is cut into parts, and the step a question needs can be in the next one.
+     */
+    List<String> expanded(List<KnowledgeSearch.Hit> hits) {
+        List<StringBuilder> texts = new ArrayList<>();
+        int used = 0;
+        for (KnowledgeSearch.Hit h : hits) {
+            String text = cap(h.text(), properties.sourceChars());
+            texts.add(new StringBuilder(text));
+            used += text.length();
+        }
+        for (int i = 0; i < hits.size() && used < properties.contextChars(); i++) {
+            KnowledgeSearch.Hit h = hits.get(i);
+            if (!"MANUAL".equals(h.kind())) {
+                continue;
+            }
+            for (KnowledgeRepository.Part part : repository.neighbours(h.id())) {
+                boolean already = hits.stream().anyMatch(other -> other.id().equals(part.id()));
+                if (already || used + part.content().length() > properties.contextChars()) {
+                    continue;
+                }
+                if (part.before()) {
+                    texts.get(i).insert(0, part.content() + "\n");
+                } else {
+                    texts.get(i).append("\n").append(part.content());
+                }
+                used += part.content().length();
+            }
+        }
+        return texts.stream().map(StringBuilder::toString).toList();
+    }
+
+    /** The last few turns of the conversation, the newest last; the rest is too far back to matter. */
+    private static List<Turn> recent(List<Turn> history) {
+        if (history == null) {
+            return List.of();
+        }
+        List<Turn> valid = history.stream().filter(t -> t != null && t.question() != null && !t.question().isBlank()).toList();
+        return valid.subList(Math.max(0, valid.size() - MAX_TURNS), valid.size());
+    }
+
+    /**
+     * Searches for the question (made standalone when it follows on from the conversation) and keeps the sections that
+     * answer it: from a short list when the model chooses.
+     */
+    Retrieved retrieve(String question, List<Turn> history, String versionLine, UUID workspaceId, boolean choose) {
+        String searched = standalone(question.strip(), history);
+        int wanted = properties.answerSources();
+        KnowledgeSearch.Result found = choose
+                ? search.shortList(searched, versionLine, workspaceId, Math.max(wanted, SHORT_LIST), true)
+                : search.search(searched, versionLine, workspaceId, wanted, true);
+        List<KnowledgeSearch.Hit> kept = choose ? choose(searched, found.hits(), wanted) : found.hits();
+        return new Retrieved(searched, found.hits(), kept, found.note());
+    }
+
+    /**
+     * A follow-up ("which service is called first?", "and how do I clone one?") cannot be searched on its own: the chat
+     * model writes it as a standalone question from the conversation. A question that does not lean on the conversation
+     * is searched as asked, so earlier topics are not carried into a new one.
+     */
+    String standalone(String question, List<Turn> history) {
+        if (history == null || history.isEmpty() || !looksLikeFollowUp(question)) {
+            return question;
+        }
+        StringBuilder conversation = new StringBuilder();
+        for (Turn t : history) {
+            conversation.append("Q: ").append(cap(t.question().strip(), 300)).append("\nA: ").append(cap(nz(t.answer()).strip(), 300)).append("\n");
+        }
+        conversation.append("\nNew question: ").append(cap(question, 500));
+        try {
+            String reply = modelGateway.chatJson(STANDALONE_SYSTEM, conversation.toString()).reply();
+            String rewritten = json.readTree(reply).path("question").asString("").strip();
+            if (!rewritten.isEmpty() && rewritten.length() <= 500) {
+                return rewritten;
+            }
+        } catch (RuntimeException e) {
+            log.info("The follow-up was not rewritten by the model: {}", e.getMessage());
+        }
+        // Without the model, the last question gives the follow-up its subject
+        return cap(history.getLast().question().strip(), 300) + " " + question;
+    }
+
+    /** Short, or leaning on something said before (it, that, this one, and ...). */
+    static boolean looksLikeFollowUp(String question) {
+        String q = question.toLowerCase(java.util.Locale.ROOT).strip();
+        return q.split("\\s+").length <= 6
+                || q.matches("^(and|also|then|so|but|what about|how about|why|which one|what else)\\b.*")
+                || q.matches(".*\\b(it|its|this|that|these|those|they|them|their|there|one|ones|the same|above|previous|earlier)\\b.*");
     }
 
     /**
@@ -365,14 +516,18 @@ public class KnowledgeService {
     }
 
     private List<Source> sources(List<KnowledgeSearch.Hit> hits) {
+        // The manuals fetched from Oracle's site link to it too, at the page
+        Map<UUID, String> oracle = repository.oracleUrls(hits.stream().map(KnowledgeSearch.Hit::documentId).filter(java.util.Objects::nonNull).toList());
         List<Source> out = new ArrayList<>();
         for (int i = 0; i < hits.size(); i++) {
             KnowledgeSearch.Hit h = hits.get(i);
             boolean manual = "MANUAL".equals(h.kind());
+            String page = h.pageFrom() > 0 ? "#page=" + h.pageFrom() : "";
+            String oracleUrl = manual && oracle.containsKey(h.documentId()) ? oracle.get(h.documentId()) + page : null;
             out.add(new Source(i + 1, h.kind(), h.title(), h.heading(), h.obdxVersion(), h.pageFrom(), h.pageTo(), h.status(),
                     manual ? h.documentId() : null, manual ? null : h.id(),
-                    manual ? "api/knowledge/documents/" + h.documentId() + "/file" + (h.pageFrom() > 0 ? "#page=" + h.pageFrom() : "") : null,
-                    cap(h.text(), 280), h.bank(), h.patchset()));
+                    manual ? "api/knowledge/documents/" + h.documentId() + "/file" + page : null,
+                    cap(h.text(), 280), h.bank(), h.patchset(), oracleUrl));
         }
         return out;
     }

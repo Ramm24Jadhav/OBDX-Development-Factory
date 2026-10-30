@@ -212,6 +212,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.answerText = ko.observable('');
       this.thinking = ko.observable('');
       this.rated = ko.observable(null);
+      // The conversation so far (questions and answers), so a follow-up such as "and how do I clone one?" is understood
+      this.turns = ko.observableArray([]);
+      this.followingUp = ko.pureComputed(() => this.turns().length > 0);
+      this.lastQuestion = ko.pureComputed(() => (this.turns().length ? this.turns()[this.turns().length - 1].question : ''));
+      this.newConversation = () => { this.turns([]); this.answer(null); this.answerText(''); this.question(''); };
       this.examples = ['How do I add a field to an existing OBDX transaction screen?', 'How is a fund transfer sent to the host?',
         'Where are UI components extended without changing the product code?', 'What does the Extensibility API toolkit provide?'];
       this.exampleRows = this.examples.map((text) => ({ text: text, ask: () => { this.question(text); this.ask(); } }));
@@ -233,13 +238,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
               : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
             css: 'factory-lb-source' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
-          }))
+          })),
+          // For administrators: how the sources were found
+          diagnosticRows: a.diagnostics ? [['Searched for', a.diagnostics.searched], ['Search', a.diagnostics.searchMillis + ' ms'],
+            ['Sent to the model', a.diagnostics.contextChars + ' characters']].map(([k, v]) => ({ k: k, v: String(v) })) : [],
+          shortList: a.diagnostics ? a.diagnostics.shortList.map((row, i) => ({ text: (i + 1) + '. ' + row, kept: a.diagnostics.kept.indexOf(row) >= 0 ? 'kept' : '' })) : []
         });
+        let diagnostics = null;
         let failed = null;
-        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null }, (event) => {
+        const history = this.turns().slice(-3);
+        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history }, (event) => {
           if (event.type === 'status') {
             this.thinking(event.text);
           } else if (event.type === 'sources') {
+            diagnostics = event.diagnostics || null;
             this.answer(shown(event));
             this.thinking(event.sources.length
               ? 'Found ' + event.sources.length + ' sources. The model is reading them; the answer appears here as it is written…'
@@ -247,8 +259,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           } else if (event.type === 'text') {
             this.answerText(this.answerText() + event.text);
           } else if (event.type === 'done') {
-            this.answer(shown(event.answer));
+            this.answer(shown(Object.assign({}, event.answer, { diagnostics: diagnostics })));
             this.answerText(event.answer.answer);
+            this.turns.push({ question: q, answer: event.answer.answer });
+            this.question('');
           } else if (event.type === 'error') {
             failed = event.message;
           }

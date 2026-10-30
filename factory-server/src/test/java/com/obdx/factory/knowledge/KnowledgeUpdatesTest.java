@@ -20,7 +20,7 @@ class KnowledgeUpdatesTest {
                 + "Purpose codes come from the bank's own list, maintained by operations, and are shown as a drop-down on the "
                 + "transfer screen with the code and its description.";
         List<ManualSplitter.Section> sections = ManualSplitter.split(List.of(text));
-        assertThat(sections).extracting(ManualSplitter.Section::heading).containsExactly("Payments customisation", "Purpose codes");
+        assertThat(sections).extracting(ManualSplitter.Section::heading).containsExactly("Payments customisation", "Payments customisation › Purpose codes");
         assertThat(sections.get(1).content()).startsWith("Purpose codes come from");
     }
 

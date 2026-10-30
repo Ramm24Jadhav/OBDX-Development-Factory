@@ -262,10 +262,19 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   retail customer" from Corporate or Biller Onboarding. It is one short extra model call (a few seconds; the better the
   model, the better the choice); `FACTORY_KNOWLEDGE_CHOOSE_SOURCES=false` keeps the search's own order. Then the
   question, the page the user is looking at (up to 3,000
-  characters) and the best five sources (up to 1,000 characters each) go to the chat model, which answers with [n]
-  citations; each source links to the PDF at its page. Answers can be rated (Helpful / Not helpful, kept for review) or
-  saved as a suggested note. The prompt is sized for small local models with a 4k context; for larger models raise
-  `factory.knowledge.answer-sources`, `source-chars` and `page-context-chars` (`FACTORY_KNOWLEDGE_*`). On a laptop with 8 GB of
+  characters), the conversation's last three turns and the best five sources go to the chat model, which answers with
+  [n] citations. Each source is a whole section (`source-chars`, 1,800) labelled with its manual, version, patchset,
+  section path ("3 Extensible Points in Service Tier › 3.5 Domain Extensions") and page; what the
+  `context-chars` budget (8,000) leaves goes to the parts of the same sections before and after the best sources, so a
+  procedure cut in two arrives whole. Each source links to the factory's copy of the PDF at its page and, for manuals
+  fetched from Oracle's site, to Oracle's PDF at the page. A follow-up ("and how do I clone one?") is rewritten by the
+  chat model into a standalone question before the search, from the conversation; a question that does not lean on it is
+  searched as asked. The Library shows what a follow-up continues from and offers **New conversation**; the AI Assistant
+  panels send their own conversation. Administrators see under each answer how the sources were found: the question as
+  searched, the short list with its scores, the sections the model kept, the search time and the size of the text sent.
+  Answers can be rated (Helpful / Not helpful, kept for review) or saved as a suggested note. The prompt is sized for
+  small local models with a 4k context; for larger models raise `factory.knowledge.answer-sources`, `source-chars`,
+  `context-chars` and `page-context-chars` (`FACTORY_KNOWLEDGE_*`). On a laptop with 8 GB of
   memory a local 3B model needs one to two minutes per answer; a model server with a GPU or a cloud model answers in
   seconds. The answer streams in as the model writes it (`POST /api/knowledge/ask/stream`): the sources show as soon as
   the search finds them, then the words as they come, so a slow local model is read while it writes. The model timeout
@@ -598,7 +607,9 @@ object: compute those in the view model.
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
 | `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
-| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `sources`, then `text` pieces, then `done` (the whole answer) or `error` |
+| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `done` (the whole answer) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first |
+| `POST /api/knowledge/evaluation` | Run the evaluation questions through the Library (`mode`: `SEARCH`, `CHOOSE` or `ANSWER`; administrators; see docs/KNOWLEDGE-AUDIT.md) |
+| `GET /api/knowledge/evaluation` | The running or last evaluation: Recall@5, Recall@15, MRR, answers passed, unanswerable questions refused, each question's row |
 | `GET` / `POST /api/knowledge/notes`, `PUT` / `DELETE /api/knowledge/notes/{id}` | Knowledge notes (`status` filter) |
 | `POST /api/knowledge/notes/{id}/review` | Approve or reject a note (`status`: TRUSTED, REJECTED, SUGGESTED) |
 | `POST /api/knowledge/summaries` | Draft a suggested note on a topic from the manuals (`topic`, `workspaceId`) |

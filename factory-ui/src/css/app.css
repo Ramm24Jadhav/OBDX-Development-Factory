@@ -9178,3 +9178,11 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-answertext.is-writing::after, .factory-ai-msg.is-writing::after { content: ""; display: inline-block; width: 0.5em; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: var(--fx-primary); border-radius: 1px; animation: fx-pulse 1s steps(2, jump-none) infinite; }
 .factory-lb-oracle .factory-lb-folders { margin-bottom: 12px; }
 .factory-lb-oraclenote { margin-top: 10px; }
+/* Library: a follow-up continues from the last question; administrators see how the sources were found */
+.factory-lb-followup { margin: 8px 0 0; font-size: var(--fx-text-sm); }
+.factory-lb-followup .factory-link-sm { margin-left: 8px; }
+.factory-lb-diagnostics { margin-top: 12px; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-lb-diagnostics summary { cursor: pointer; }
+.factory-lb-diagnostics dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 8px 0; }
+.factory-lb-diagnostics dt { font-weight: 600; }
+.factory-lb-shortlist { margin: 4px 0 0; padding-left: 18px; }

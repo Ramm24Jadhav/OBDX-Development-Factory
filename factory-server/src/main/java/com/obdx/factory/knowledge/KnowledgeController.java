@@ -58,10 +58,12 @@ public class KnowledgeController {
     private final KnowledgePolicy policy;
     private final ObjectMapper json;
     private final OracleManuals oracle;
+    private final KnowledgeEvaluation evaluation;
 
     public KnowledgeController(KnowledgeService knowledge, KnowledgeImporter importer, KnowledgeRepository repository, AccessGuard guard,
                                AuditLog audit, @Value("${factory.local-folders.enabled}") boolean localFolders,
-                               KnowledgePolicy policy, ObjectMapper json, OracleManuals oracle) {
+                               KnowledgePolicy policy, ObjectMapper json, OracleManuals oracle, KnowledgeEvaluation evaluation) {
+        this.evaluation = evaluation;
         this.policy = policy;
         this.oracle = oracle;
         this.json = json;
@@ -179,6 +181,27 @@ public class KnowledgeController {
         return ResponseEntity.noContent().build();
     }
 
+    // --- evaluation ---
+
+    public record EvaluationRequest(KnowledgeEvaluation.Mode mode) {
+    }
+
+    /**
+     * Runs the evaluation questions through the Library (administrators): SEARCH the search only, CHOOSE with the model
+     * choosing the sources, ANSWER with whole answers. The report comes from GET while it runs and after.
+     */
+    @PostMapping("/api/knowledge/evaluation")
+    public KnowledgeEvaluation.Report evaluate(@RequestBody EvaluationRequest request) {
+        guard.requireAdmin();
+        return evaluation.start(request.mode() == null ? KnowledgeEvaluation.Mode.SEARCH : request.mode());
+    }
+
+    @GetMapping("/api/knowledge/evaluation")
+    public KnowledgeEvaluation.Report evaluation() {
+        guard.requireAdmin();
+        return evaluation.last();
+    }
+
     // --- watched folders ---
 
     /** Checks a watched folder for new and changed documents now (they are also checked on a schedule). */
@@ -232,7 +255,8 @@ public class KnowledgeController {
         return knowledge.find(q, workspaceId, version);
     }
 
-    public record AskRequest(String question, UUID workspaceId, String context) {
+    /** history: the conversation's earlier questions and answers, oldest first, so follow-up questions are understood. */
+    public record AskRequest(String question, UUID workspaceId, String context, List<KnowledgeService.Turn> history) {
     }
 
     @PostMapping("/api/knowledge/ask")
@@ -251,6 +275,8 @@ public class KnowledgeController {
     public ResponseEntity<ResponseBodyEmitter> askStream(@RequestBody AskRequest request) {
         requireReader(request.workspaceId());
         knowledge.requireAskable(request.question());
+        // Administrators see how the sources were found, to look into an answer
+        boolean admin = guard.current().isAdmin();
         // The model times out on its own when it stops writing; this only ends a stream nobody finishes
         ResponseBodyEmitter emitter = new ResponseBodyEmitter(Duration.ofHours(1).toMillis());
         Thread.ofVirtual().name("knowledge-answer").start(() -> {
@@ -258,7 +284,7 @@ public class KnowledgeController {
             KnowledgeService.Question question;
             try {
                 lines.send(Map.of("type", "status", "text", "Searching the manuals and notes, and choosing the sections that answer the question…"));
-                question = knowledge.prepare(request.question(), request.workspaceId(), request.context());
+                question = knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context());
             } catch (RuntimeException e) {
                 lines.send(Map.of("type", "error", "message", e.getMessage() == null ? "The question could not be searched." : e.getMessage()));
                 emitter.complete();
@@ -270,6 +296,9 @@ public class KnowledgeController {
             found.put("grounded", !question.sources().isEmpty());
             found.put("versionLine", question.versionLine());
             found.put("note", question.note());
+            if (admin) {
+                found.put("diagnostics", question.diagnostics());
+            }
             lines.send(found);
             try {
                 KnowledgeService.Answer answer = knowledge.answer(question, piece -> lines.send(Map.of("type", "text", "text", piece)));

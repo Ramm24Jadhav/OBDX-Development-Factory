@@ -167,6 +167,33 @@ public class KnowledgeRepository {
                 documentId, limit);
     }
 
+    /** Where on Oracle's documentation site the documents fetched from there came from. */
+    public Map<UUID, String> oracleUrls(List<UUID> documentIds) {
+        Map<UUID, String> urls = new HashMap<>();
+        if (documentIds.isEmpty()) {
+            return urls;
+        }
+        jdbc.query("SELECT document_id, url FROM knowledge_oracle_file WHERE document_id = ANY (?)",
+                rs -> {
+                    urls.put(rs.getObject("document_id", UUID.class), rs.getString("url"));
+                }, (Object) documentIds.toArray(new UUID[0]));
+        return urls;
+    }
+
+    /** A part of a section next to another one: before it (its beginning) or after it (what follows). */
+    public record Part(UUID id, String content, boolean before) {
+    }
+
+    /** The parts of the same section just before and after a section part ("4.1 Create" and "4.1 Create (continued)"). */
+    public List<Part> neighbours(UUID chunkId) {
+        return jdbc.query("""
+                SELECT n.id, n.content, n.position < c.position AS before, n.heading AS next_heading, c.heading AS heading
+                FROM knowledge_chunk c JOIN knowledge_chunk n ON n.document_id = c.document_id AND n.position IN (c.position - 1, c.position + 1)
+                WHERE c.id = ? ORDER BY n.position""", (rs, row) -> baseHeading(rs.getString("next_heading")).equals(baseHeading(rs.getString("heading")))
+                ? new Part(rs.getObject("id", UUID.class), rs.getString("content"), rs.getBoolean("before")) : null, chunkId)
+                .stream().filter(java.util.Objects::nonNull).toList();
+    }
+
     public void saveSectionEmbedding(UUID id, float[] vector) {
         jdbc.update("UPDATE knowledge_chunk SET embedding = ?::vector WHERE id = ?", CodeIndexRepository.toVectorLiteral(vector), id);
     }

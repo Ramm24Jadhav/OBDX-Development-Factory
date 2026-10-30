@@ -12,16 +12,32 @@ import java.util.regex.Pattern;
  * paragraph breaks, and each keeps the pages it spans so answers can cite them. The headings are the PDF's bookmarks
  * when it has them (Oracle's manuals do: "2.2 User Management - Search and View"); otherwise numbered headings ("4.3
  * Transfer Limits", but not the numbered steps of a procedure) and, in Word, Markdown and HTML documents, "#" headings.
- * The lines repeated on most pages (running headers, footers, copyright) and the table of contents are left out.
+ * Each heading carries its parents ("3.5 Domain Extensions › 3.5.1 Custom Domain Objects"), so a subsection is found
+ * and cited with its chapter. The lines repeated on most pages (running headers, footers, copyright), the table of
+ * contents, the index and the front matter (preface, audience, accessibility, support) are left out.
  */
 final class ManualSplitter {
 
     record Section(String heading, int pageFrom, int pageTo, String content) {
     }
 
-    /** A bookmark of the PDF: the page it points to and its title. */
-    record Bookmark(int page, String title) {
+    /** A bookmark of the PDF: the page it points to, its title, and the titles of the bookmarks above it. */
+    record Bookmark(int page, String title, List<String> parents) {
+
+        Bookmark(int page, String title) {
+            this(page, title, List.of());
+        }
     }
+
+    /** Between two headings: " › ". At most this many parents are kept, the nearest. */
+    static final String PATH = " › ";
+    private static final int PARENTS = 2;
+    // The front and back matter of Oracle's manuals: nothing a question is answered from
+    private static final java.util.Set<String> BOILERPLATE = java.util.Set.of("contents", "index", "preface", "audience",
+            "intended audience", "documentation accessibility", "access to oracle support", "diversity and inclusion", "critical patches",
+            "related resources", "related information sources", "related documents", "conventions", "screenshot disclaimer",
+            "acronyms and abbreviations", "title and copyright information", "structure", "purpose", "basic actions", "symbols and icons");
+    private static final String SKIP = "\u0000";
 
     static final int MAX_CHARS = 1800;
     private static final int MIN_CHARS = 120;
@@ -29,14 +45,16 @@ final class ManualSplitter {
     private static final Pattern MARKDOWN_HEADING = Pattern.compile("^#{1,4}\\s+(\\S[^\\n]{0,200})$");
     private static final Pattern HEADING = Pattern.compile("^(\\d{1,2}(\\.\\d{1,2}){0,4})\\.?\\s+(\\p{Lu}[^\\n]{2,110})$");
     // A contents line: a title, dot leaders or spaces, and a page number at the end
-    private static final Pattern CONTENTS_LINE = Pattern.compile(".*(\\.{3,}|\\s{2,}|…)\\s*\\d{1,4}\\s*$");
+    private static final Pattern CONTENTS_LINE = Pattern.compile(".*(\\.{3,}|\\s{2,}|…)\\s*\\d{1,4}([-–]\\d{1,4})?\\s*$");
     // The first word of a numbered step ("1. Navigate to the above path.") or question, which is not a heading
     private static final java.util.Set<String> STEP_WORDS = java.util.Set.of("click", "navigate", "enter", "select", "perform",
             "type", "choose", "specify", "provide", "if", "can", "does", "do", "is", "are", "what", "how", "why", "when", "in", "from",
             "on", "the", "to", "a", "an", "check", "view", "update", "add", "delete", "modify", "go", "open", "log", "login", "verify",
             "upload", "download", "search", "set", "define", "tap", "swipe", "scroll", "press", "fill", "edit", "save", "submit",
             "confirm", "review", "approve", "reject", "create", "run", "copy", "install", "start", "stop", "restart", "ensure", "make",
-            "use", "repeat", "once", "after", "before", "for", "this", "user", "system", "all", "you", "it", "there", "note");
+            "use", "repeat", "once", "after", "before", "for", "this", "user", "system", "all", "you", "it", "there", "note",
+            "configure", "implement", "register", "deploy", "build", "generate", "import", "export", "write", "extract", "place", "put",
+            "rename", "replace", "execute", "call", "invoke", "map", "access", "get", "refer", "following", "below", "above");
     // The footer of Oracle's manuals: "Copyright © 2015, 2026, Oracle and/or its affiliates." and "Page 23 of 37"
     private static final Pattern FOOTER = Pattern.compile("Oracle and/or its affiliates|^Page \\d+ of \\d+\\b", Pattern.CASE_INSENSITIVE);
     private static final char PAGE_MARK = '\u0001';
@@ -62,6 +80,9 @@ final class ManualSplitter {
         int repeated = Math.max(3, pages.size() / 2);
 
         List<Section> sections = new ArrayList<>();
+        // The numbered headings met so far by number ("4.2" -> "4.2 Service Extensions"), and Markdown ones by level
+        Map<String, String> numbered = new HashMap<>();
+        String[] levels = new String[5];
         String heading = null;
         StringBuilder text = new StringBuilder();
         int from = 1;
@@ -80,7 +101,7 @@ final class ManualSplitter {
             for (Bookmark b : List.copyOf(here)) {
                 if (kept.stream().noneMatch(l -> sameTitle(l, b.title()))) {
                     flush(sections, heading, from, last, text);
-                    heading = b.title();
+                    heading = withParents(b);
                     from = pageNo;
                     text.setLength(0);
                     here.remove(b);
@@ -104,7 +125,7 @@ final class ManualSplitter {
                 }
                 if (mark != null || markdown.matches() || (bookmarks.isEmpty() && isNumberedHeading(line))) {
                     flush(sections, heading, from, last, text);
-                    heading = mark != null ? mark.title() : markdown.matches() ? markdown.group(1).strip() : line;
+                    heading = mark != null ? withParents(mark) : markdown.matches() ? markdownHeading(markdown.group(0), levels) : numberedHeading(line, numbered);
                     from = pageNo;
                     text.setLength(0);
                 } else {
@@ -122,6 +143,63 @@ final class ManualSplitter {
         }
         flush(sections, heading, from, last, text);
         return merge(sections);
+    }
+
+    /** The bookmark's title after its nearest parents; front and back matter is skipped. */
+    private static String withParents(Bookmark b) {
+        if (isBoilerplate(b.title())) {
+            return SKIP;
+        }
+        List<String> parents = b.parents().stream().filter(p -> !isBoilerplate(p)).toList();
+        List<String> path = new ArrayList<>(parents.subList(Math.max(0, parents.size() - PARENTS), parents.size()));
+        path.add(b.title());
+        return String.join(PATH, path);
+    }
+
+    /** "4.2.1 Service Extension Interface" after "4.2 Service Extensions" and "4 Extensible Points", when met before. */
+    private static String numberedHeading(String line, Map<String, String> numbered) {
+        if (isBoilerplate(line)) {
+            return SKIP;
+        }
+        var m = HEADING.matcher(line);
+        if (!m.matches()) {
+            return line;
+        }
+        String number = m.group(1);
+        numbered.put(number, line);
+        List<String> path = new ArrayList<>();
+        String[] parts = number.split("\\.");
+        for (int i = Math.max(1, parts.length - PARENTS); i < parts.length; i++) {
+            String parent = numbered.get(String.join(".", java.util.Arrays.copyOfRange(parts, 0, i)));
+            if (parent != null) {
+                path.add(parent);
+            }
+        }
+        path.add(line);
+        return String.join(PATH, path);
+    }
+
+    /** "## Limits" under "# Payments" becomes "Payments › Limits". */
+    private static String markdownHeading(String line, String[] levels) {
+        int level = Math.min(levels.length, (int) line.chars().takeWhile(ch -> ch == '#').count());
+        String title = line.replaceFirst("^#+\\s+", "").strip();
+        if (isBoilerplate(title)) {
+            return SKIP;
+        }
+        levels[level - 1] = title;
+        java.util.Arrays.fill(levels, level, levels.length, null);
+        List<String> path = new ArrayList<>();
+        for (int i = Math.max(0, level - 1 - PARENTS); i < level - 1; i++) {
+            if (levels[i] != null) {
+                path.add(levels[i]);
+            }
+        }
+        path.add(title);
+        return String.join(PATH, path);
+    }
+
+    static boolean isBoilerplate(String title) {
+        return BOILERPLATE.contains(titleWords(title));
     }
 
     /**
@@ -163,6 +241,9 @@ final class ManualSplitter {
     }
 
     private static void flush(List<Section> sections, String heading, int from, int to, StringBuilder text) {
+        if (SKIP.equals(heading)) {
+            return;  // front or back matter
+        }
         String content = text.toString().replaceAll("[ \\t]+", " ").replaceAll(" ?\\n ?", "\n").strip();
         if (content.isEmpty()) {
             return;

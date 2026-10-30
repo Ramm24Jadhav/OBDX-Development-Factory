@@ -50,8 +50,9 @@ public class KnowledgeImporter {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeImporter.class);
     private static final int EMBED_BATCH = 16;
     // Raised when the reading changes in a way worth reading every document again (2: bookmarks as headings; 3: sections
-    // embedded as passages, for the embedding models that tell questions from passages)
-    static final int READER_VERSION = 3;
+    // embedded as passages, for the embedding models that tell questions from passages; 4: headings carry their parents,
+    // front and back matter left out)
+    static final int READER_VERSION = 4;
     static final Set<String> EXTENSIONS = Set.of("pdf", "docx", "doc", "txt", "md", "html", "htm");
 
     private final KnowledgeRepository repository;
@@ -279,7 +280,7 @@ public class KnowledgeImporter {
         try (PDDocument pdf = Loader.loadPDF(file.toFile())) {
             PDDocumentOutline outline = pdf.getDocumentCatalog().getDocumentOutline();
             if (outline != null) {
-                bookmarks(pdf, outline, 0, bookmarks);
+                bookmarks(pdf, outline, List.of(), bookmarks);
             }
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
@@ -292,8 +293,8 @@ public class KnowledgeImporter {
         return pages;
     }
 
-    private static void bookmarks(PDDocument pdf, PDOutlineNode node, int depth, List<ManualSplitter.Bookmark> out) throws IOException {
-        if (depth > 5) {
+    private static void bookmarks(PDDocument pdf, PDOutlineNode node, List<String> parents, List<ManualSplitter.Bookmark> out) throws IOException {
+        if (parents.size() > 5) {
             return;
         }
         for (PDOutlineItem item : node.children()) {
@@ -303,9 +304,11 @@ public class KnowledgeImporter {
             PDPage page = item.findDestinationPage(pdf);
             String title = item.getTitle() == null ? "" : item.getTitle().replaceAll("\\s+", " ").strip();
             if (page != null && !title.isEmpty() && title.length() <= 300) {
-                out.add(new ManualSplitter.Bookmark(pdf.getPages().indexOf(page) + 1, title));
+                out.add(new ManualSplitter.Bookmark(pdf.getPages().indexOf(page) + 1, title, parents));
             }
-            bookmarks(pdf, item, depth + 1, out);
+            List<String> below = new ArrayList<>(parents);
+            below.add(title);
+            bookmarks(pdf, item, below, out);
         }
     }
 

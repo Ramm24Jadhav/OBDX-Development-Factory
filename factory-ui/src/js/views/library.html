@@ -40,6 +40,10 @@
           <button type="button" class="fx-btn fx-btn--primary is-busy" disabled aria-busy="true"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Ask</button>
         </oj-bind-if>
       </div>
+      <oj-bind-if test="[[followingUp()]]">
+        <p class="fx-muted factory-lb-followup">Follow-up questions continue from: <strong><oj-bind-text value="[[lastQuestion]]"></oj-bind-text></strong>
+          <button type="button" class="factory-link-sm" id="libraryNewConversation" on-click="[[newConversation]]">New conversation</button></p>
+      </oj-bind-if>
       <oj-bind-if test="[[!answer() && !asking()]]">
         <div class="factory-lb-examples"><span class="fx-muted">Try:</span>
           <oj-bind-for-each data="[[exampleRows]]" as="e"><template><button type="button" class="fx-chip" on-click="[[e.data.ask]]"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
@@ -63,10 +67,17 @@
                   <span class="factory-lb-sourcebody">
                     <oj-bind-if test="[[s.data.url]]"><a :href="[[s.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></a></oj-bind-if>
                     <oj-bind-if test="[[!s.data.url]]"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></oj-bind-if>
-                    <span class="fx-muted"><oj-bind-text value="[[s.data.where]]"></oj-bind-text></span>
+                    <span class="fx-muted"><oj-bind-text value="[[s.data.where]]"></oj-bind-text><oj-bind-if test="[[s.data.oracleUrl]]"> · <a :href="[[s.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
                     <span class="factory-lb-excerpt"><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></span></span></li></template>
               </oj-bind-for-each>
             </ol>
+          </oj-bind-if>
+          <oj-bind-if test="[[answer().shortList.length > 0]]">
+            <details class="factory-lb-diagnostics"><summary>How the sources were found (administrators)</summary>
+              <dl><oj-bind-for-each data="[[answer().diagnosticRows]]" as="d"><template><dt><oj-bind-text value="[[d.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[d.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+              <p class="fx-muted">The short list, by score; the model kept those marked kept:</p>
+              <ol class="factory-lb-shortlist"><oj-bind-for-each data="[[answer().shortList]]" as="r"><template><li><oj-bind-text value="[[r.data.text]]"></oj-bind-text> <strong><oj-bind-text value="[[r.data.kept]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ol>
+            </details>
           </oj-bind-if>
           <oj-bind-if test="[[!asking()]]"><div class="factory-lb-answerbar">
             <span class="fx-muted">Was this helpful?</span>

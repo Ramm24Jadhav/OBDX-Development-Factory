@@ -18,6 +18,18 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
     // Busy, and the model has not written anything yet
     const waiting = ko.observable(false);
 
+    // The last questions and answers of this panel, so a follow-up is understood
+    const history = () => {
+      const all = messages();
+      const turns = [];
+      for (let i = 0; i < all.length - 1; i++) {
+        if (all[i].mine && !all[i + 1].mine && !/factory-ai-error/.test(ko.unwrap(all[i + 1].css))) {
+          turns.push({ question: all[i].text, answer: ko.unwrap(all[i + 1].text) });
+        }
+      }
+      return turns.slice(-3);
+    };
+
     const send = (text) => {
       const question = (typeof text === 'string' ? text : input()).trim();
       if (!question || busy()) {
@@ -39,7 +51,7 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
       };
       let written = '';
       let failed = null;
-      api.stream('knowledge/ask/stream', { question: question, workspaceId: workspaceSelection.selectedId() || null, context: page }, (event) => {
+      api.stream('knowledge/ask/stream', { question: question, workspaceId: workspaceSelection.selectedId() || null, context: page, history: history() }, (event) => {
         if (event.type === 'text') {
           written += event.text;
           write(written);

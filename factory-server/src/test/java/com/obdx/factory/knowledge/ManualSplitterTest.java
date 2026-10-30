@@ -33,9 +33,10 @@ class ManualSplitterTest {
 
         List<ManualSplitter.Section> sections = ManualSplitter.split(pages);
 
+        // The preface is front matter; a subsection carries its chapter
         assertThat(sections).extracting(ManualSplitter.Section::heading)
-                .containsExactly("1. Preface", "2. Extending services", "2.1 Service hooks", "3. UI extensions");
-        ManualSplitter.Section hooks = sections.get(2);
+                .containsExactly("2. Extending services", "2. Extending services › 2.1 Service hooks", "3. UI extensions");
+        ManualSplitter.Section hooks = sections.get(1);
         assertThat(hooks.pageFrom()).isEqualTo(4);
         assertThat(hooks.pageTo()).isEqualTo(5);
         assertThat(hooks.content()).contains("registered in the extension configuration table").contains("business error");
