@@ -391,7 +391,7 @@
                   <button type="button" class="factory-link-sm" on-click="[[ai.clear]]">New Chat</button></p>
               </oj-bind-if>
             </div>
-            <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+            <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
           </div>
           <h3>Proposed Changes</h3>
           <ul class="factory-ch-proposed">
@@ -461,7 +461,7 @@
             <p class="factory-ch-chatempty">Ask about this change: the assistant answers from its plan, files, checks and the open file.</p>
           </oj-bind-if>
         </div>
-        <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+        <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
         <div class="factory-ch-suggest">
           <oj-bind-for-each data="[[ai.suggestions]]" as="s">
             <template><button type="button" class="fx-chip factory-ch-pill" on-click="[[s.data.ask]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><oj-bind-text value="[[s.data.text]]"></oj-bind-text></button></template>

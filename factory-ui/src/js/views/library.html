@@ -45,15 +45,15 @@
           <oj-bind-for-each data="[[exampleRows]]" as="e"><template><button type="button" class="fx-chip" on-click="[[e.data.ask]]"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
         </div>
       </oj-bind-if>
-      <oj-bind-if test="[[asking()]]">
-        <div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span>Searching the manuals and notes, then asking the model…</div>
+      <oj-bind-if test="[[asking() && !answerText()]]">
+        <div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[thinking]]"></oj-bind-text></div>
       </oj-bind-if>
-      <oj-bind-if test="[[answer() && !asking()]]">
+      <oj-bind-if test="[[answer()]]">
         <div class="factory-lb-answer" role="region" aria-label="Answer">
           <oj-bind-if test="[[!answer().grounded]]">
             <div class="fx-alert fx-alert--warning"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">The knowledge base has nothing on this yet, so the answer below is general and not from the manuals.</span></div>
           </oj-bind-if>
-          <div class="factory-lb-answertext"><oj-bind-text value="[[answer().answer]]"></oj-bind-text></div>
+          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><oj-bind-text value="[[answerText]]"></oj-bind-text></div>
           <p class="fx-muted factory-lb-meta"><oj-bind-text value="[[answer().meta]]"></oj-bind-text><oj-bind-if test="[[answer().note]]"> · <oj-bind-text value="[[answer().note]]"></oj-bind-text></oj-bind-if></p>
           <oj-bind-if test="[[answer().sourceRows.length > 0]]">
             <h3 class="factory-lb-h3">Sources</h3>
@@ -68,12 +68,12 @@
               </oj-bind-for-each>
             </ol>
           </oj-bind-if>
-          <div class="factory-lb-answerbar">
+          <oj-bind-if test="[[!asking()]]"><div class="factory-lb-answerbar">
             <span class="fx-muted">Was this helpful?</span>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerHelpful" on-click="[[rate(true)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Yes</button>
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerNotHelpful" on-click="[[rate(false)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>No</button>
             <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm factory-lb-save" id="saveAnswer" on-click="[[saveAnswer]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Save as knowledge</button>
-          </div>
+          </div></oj-bind-if>
         </div>
       </oj-bind-if>
     </section>

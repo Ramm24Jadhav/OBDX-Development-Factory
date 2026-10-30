@@ -230,7 +230,9 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   saved as a suggested note. The prompt is sized for small local models with a 4k context; for larger models raise
   `factory.knowledge.answer-sources`, `source-chars` and `page-context-chars` (`FACTORY_KNOWLEDGE_*`). On a laptop with 8 GB of
   memory a local 3B model needs one to two minutes per answer; a model server with a GPU or a cloud model answers in
-  seconds.
+  seconds. The answer streams in as the model writes it (`POST /api/knowledge/ask/stream`): the sources show as soon as
+  the search finds them, then the words as they come, so a slow local model is read while it writes. The model timeout
+  (`FACTORY_MODEL_TIMEOUT`) then counts from the last word written, so a long answer is not cut off.
 - **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
   topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
   *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
@@ -554,6 +556,7 @@ object: compute those in the view model.
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
 | `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
+| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `sources`, then `text` pieces, then `done` (the whole answer) or `error` |
 | `GET` / `POST /api/knowledge/notes`, `PUT` / `DELETE /api/knowledge/notes/{id}` | Knowledge notes (`status` filter) |
 | `POST /api/knowledge/notes/{id}/review` | Approve or reject a note (`status`: TRUSTED, REJECTED, SUGGESTED) |
 | `POST /api/knowledge/summaries` | Draft a suggested note on a topic from the manuals (`topic`, `workspaceId`) |
@@ -703,7 +706,6 @@ Several factory servers can sit behind one OHS for availability: list them in a 
 ## Not built yet
 
 For the OBDX Library: a view of what differs between the 22.x and 25.x manuals; a set of test questions with expected
-sources to measure answers; when Oracle publishes new manuals, re-importing them should keep the notes and flag the notes
-whose cited pages changed; answers shown word by word as the model writes them.
+sources to measure answers.
 
 The rest of modernization (section 6 of the architecture): reverse-engineering existing JET screens into Screen Models, wave planning on top of the inventory, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

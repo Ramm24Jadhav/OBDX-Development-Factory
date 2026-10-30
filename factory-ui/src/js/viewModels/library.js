@@ -153,6 +153,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.question = ko.observable('');
       this.asking = ko.observable(false);
       this.answer = ko.observable(null);
+      // The answer as the model writes it; the sources come first, from the search
+      this.answerText = ko.observable('');
+      this.thinking = ko.observable('');
       this.rated = ko.observable(null);
       this.examples = ['How do I add a field to an existing OBDX transaction screen?', 'How is a fund transfer sent to the host?',
         'Where are UI components extended without changing the product code?', 'What does the Extensibility API toolkit provide?'];
@@ -164,30 +167,54 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         if (!q || this.asking()) { return; }
         this.asking(true);
         this.rated(null);
-        api.post('knowledge/ask', { question: q, workspaceId: this.workspaceId() || null })
-          .then((a) => this.answer(Object.assign(a, {
-            question: q,
-            meta: a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : ''),
-            sourceRows: a.sources.map((s) => Object.assign({}, s, {
-              label: '[' + s.n + ']',
-              where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
-                : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
-              css: 'factory-lb-source' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
-            }))
-          })))
-          .catch((e) => toast.error('Not answered: ' + e.message))
+        this.answer(null);
+        this.answerText('');
+        this.thinking('Searching the manuals and notes…');
+        const shown = (a) => Object.assign({}, a, {
+          question: q,
+          meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : '') : '',
+          sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
+            label: '[' + s.n + ']',
+            where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
+              : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
+            css: 'factory-lb-source' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
+          }))
+        });
+        let failed = null;
+        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null }, (event) => {
+          if (event.type === 'sources') {
+            this.answer(shown(event));
+            this.thinking(event.sources.length
+              ? 'Found ' + event.sources.length + ' sources. The model is reading them; the answer appears here as it is written…'
+              : 'Nothing in the knowledge base on this. Asking the model…');
+          } else if (event.type === 'text') {
+            this.answerText(this.answerText() + event.text);
+          } else if (event.type === 'done') {
+            this.answer(shown(event.answer));
+            this.answerText(event.answer.answer);
+          } else if (event.type === 'error') {
+            failed = event.message;
+          }
+        })
+          .then(() => {
+            if (failed) {
+              toast.error('Not answered: ' + failed);
+              if (!this.answerText()) { this.answer(null); }
+            }
+          })
+          .catch((e) => { this.answer(null); toast.error('Not answered: ' + e.message); })
           .finally(() => this.asking(false));
       };
       this.rate = (helpful) => () => {
         const a = this.answer();
         if (!a || this.rated() !== null) { return; }
-        api.post('knowledge/feedback', { workspaceId: this.workspaceId() || null, question: a.question, answer: a.answer, helpful: helpful, sources: a.sources })
+        api.post('knowledge/feedback', { workspaceId: this.workspaceId() || null, question: a.question, answer: this.answerText(), helpful: helpful, sources: a.sources })
           .then(() => { this.rated(helpful); toast.success('Thank you. Feedback shows which answers need better knowledge.'); }).catch((e) => toast.error(e.message));
       };
       this.saveAnswer = () => {
         const a = this.answer();
         if (!a) { return; }
-        api.post('knowledge/notes', { workspaceId: null, versionLine: a.versionLine, topic: null, title: a.question.slice(0, 280), body: a.answer, sources: a.sources })
+        api.post('knowledge/notes', { workspaceId: null, versionLine: a.versionLine, topic: null, title: a.question.slice(0, 280), body: this.answerText(), sources: a.sources })
           .then(() => { toast.success('Saved as a suggested note. A reviewer approves it on the Notes tab.'); return this.load(); }).catch((e) => toast.error(e.message));
       };
 

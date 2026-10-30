@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +30,18 @@ class OpenAiCompatibleModelGatewayTest {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/chat/completions", exchange -> {
             lastChatRequest.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            if (lastChatRequest.get().matches("(?s).*\"stream\"\\s*:\\s*true.*")) {
+                String chunk = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"qwen2.5-coder:7b\","
+                        + "\"choices\":[{\"index\":0,\"delta\":{\"content\":\"%s\"},\"finish_reason\":%s}]}\n\n";
+                byte[] bytes = (chunk.formatted("OBDX is ", "null") + chunk.formatted("a platform.", "null") + chunk.formatted("", "\"stop\"")
+                        + "data: [DONE]\n\n").getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream out = exchange.getResponseBody()) {
+                    out.write(bytes);
+                }
+                return;
+            }
             respond(exchange, 200, """
                     {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": "qwen2.5-coder:7b",
                      "choices": [{"index": 0, "finish_reason": "stop",
@@ -93,6 +107,25 @@ class OpenAiCompatibleModelGatewayTest {
         assertThatThrownBy(() -> gateway.chat(null, "hello"))
                 .isInstanceOf(ModelGatewayException.class)
                 .hasMessageContaining("qwen2.5-coder:7b")
+                .hasMessageContaining("/broken/v1");
+    }
+
+    @Test
+    void streamsTheReplyInPieces() {
+        List<String> pieces = new ArrayList<>();
+
+        ModelGateway.ChatResult result = gatewayFor("/v1").chatStream("Be brief.", "What is OBDX?", pieces::add);
+
+        assertThat(pieces).containsExactly("OBDX is ", "a platform.");
+        assertThat(result.reply()).isEqualTo("OBDX is a platform.");
+        assertThat(result.model()).isEqualTo("qwen2.5-coder:7b");
+        assertThat(lastChatRequest.get()).contains("Be brief.").containsPattern("\"stream\"\\s*:\\s*true");
+    }
+
+    @Test
+    void streamingReportsServerErrors() {
+        assertThatThrownBy(() -> gatewayFor("/broken/v1").chatStream(null, "hello", piece -> { }))
+                .isInstanceOf(ModelGatewayException.class)
                 .hasMessageContaining("/broken/v1");
     }
 

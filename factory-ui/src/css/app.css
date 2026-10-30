@@ -9174,3 +9174,5 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
     .factory-lb-save { margin-left: 0; }
     .factory-lb-folder { flex-wrap: wrap; }
 }
+/* An answer still being written ends in a blinking caret */
+.factory-lb-answertext.is-writing::after, .factory-ai-msg.is-writing::after { content: ""; display: inline-block; width: 0.5em; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: var(--fx-primary); border-radius: 1px; animation: fx-pulse 1s steps(2, jump-none) infinite; }

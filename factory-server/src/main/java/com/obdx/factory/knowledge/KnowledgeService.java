@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -80,7 +81,27 @@ public class KnowledgeService {
 
     // --- asking ---
 
+    /** A question with what the knowledge base found for it, ready for the model. */
+    public record Question(String prompt, String versionLine, List<Source> sources, String note) {
+    }
+
     public Answer ask(String question, UUID workspaceId, String pageContext) {
+        Question prepared = prepare(question, workspaceId, pageContext);
+        return answered(prepared, modelGateway.chat(ASK_SYSTEM, prepared.prompt()));
+    }
+
+    /** The answer to a prepared question, handed to {@code pieces} as the model writes it. */
+    public Answer answer(Question prepared, Consumer<String> pieces) {
+        return answered(prepared, modelGateway.chatStream(ASK_SYSTEM, prepared.prompt(), pieces));
+    }
+
+    private static Answer answered(Question prepared, ModelGateway.ChatResult result) {
+        return new Answer(result.reply(), result.model(), result.latencyMs(), prepared.versionLine(), !prepared.sources().isEmpty(),
+                prepared.sources(), prepared.note());
+    }
+
+    /** Searches the knowledge base for the question; problems (no question, a model outside the bank) show here. */
+    public Question prepare(String question, UUID workspaceId, String pageContext) {
         if (question == null || question.isBlank()) {
             throw new BadRequestException("Enter a question.");
         }
@@ -102,8 +123,7 @@ public class KnowledgeService {
             user.append('[').append(s.n()).append("] ").append(label(s)).append('\n').append(cap(found.hits().get(i).text(), properties.sourceChars())).append("\n\n");
         }
         user.append("Question: ").append(question.strip());
-        ModelGateway.ChatResult result = modelGateway.chat(ASK_SYSTEM, user.toString());
-        return new Answer(result.reply(), result.model(), result.latencyMs(), versionLine, !sources.isEmpty(), sources, found.note());
+        return new Question(user.toString(), versionLine, sources, found.note());
     }
 
     public KnowledgeSearch.Result find(String query, UUID workspaceId, String versionLine) {

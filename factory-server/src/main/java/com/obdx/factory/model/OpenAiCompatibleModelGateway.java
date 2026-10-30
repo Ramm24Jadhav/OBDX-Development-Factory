@@ -8,12 +8,15 @@ import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -22,6 +25,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * {@link ModelGateway} for any server that speaks the OpenAI-compatible API (Ollama, vLLM, private cloud endpoints).
@@ -32,7 +41,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     /** The models of one choice of servers; replaced as a whole when the settings change. */
     private record Connection(String baseUrl, String chatModelName, String embeddingUrl, String embeddingModelName,
-                              ChatModel chatModel, EmbeddingModel embeddingModel) {
+                              ChatModel chatModel, StreamingChatModel streamingChatModel, EmbeddingModel embeddingModel) {
     }
 
     private final Duration timeout;
@@ -65,6 +74,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .timeout(timeout)
                         .maxRetries(0)
                         .build(),
+                OpenAiStreamingChatModel.builder()
+                        .baseUrl(settings.baseUrl())
+                        .apiKey(keyOrPlaceholder(settings.apiKey()))
+                        .modelName(settings.chatModel())
+                        .timeout(timeout)
+                        .build(),
                 OpenAiEmbeddingModel.builder()
                         .baseUrl(settings.embeddingUrl())
                         .apiKey(keyOrPlaceholder(settings.embeddingKey()))
@@ -90,17 +105,74 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 ImageContent.from(Base64.getEncoder().encodeToString(image), mimeType)), ResponseFormat.JSON);
     }
 
+    @Override
+    public ChatResult chatStream(String systemPrompt, String userPrompt, Consumer<String> pieces) {
+        Connection current = connection;
+        long start = System.nanoTime();
+        AtomicLong lastPiece = new AtomicLong(start);
+        CompletableFuture<ChatResponse> done = new CompletableFuture<>();
+        try {
+            current.streamingChatModel().chat(ChatRequest.builder().messages(messages(systemPrompt, UserMessage.from(userPrompt))).build(),
+                    new StreamingChatResponseHandler() {
+                        @Override
+                        public void onPartialResponse(String piece) {
+                            lastPiece.set(System.nanoTime());
+                            pieces.accept(piece);
+                        }
+
+                        @Override
+                        public void onCompleteResponse(ChatResponse response) {
+                            done.complete(response);
+                        }
+
+                        @Override
+                        public void onError(Throwable error) {
+                            done.completeExceptionally(error);
+                        }
+                    });
+            // The timeout counts from the last piece: a slow model that keeps writing is not cut off
+            while (true) {
+                try {
+                    ChatResponse response = done.get(1, TimeUnit.SECONDS);
+                    String model = response.metadata() != null && response.metadata().modelName() != null
+                            ? response.metadata().modelName() : current.chatModelName();
+                    String reply = response.aiMessage() == null || response.aiMessage().text() == null ? "" : response.aiMessage().text();
+                    return new ChatResult(reply, model, (System.nanoTime() - start) / 1_000_000);
+                } catch (TimeoutException e) {
+                    if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
+                        done.cancel(true);
+                        throw e;
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped", e);
+        } catch (ExecutionException e) {
+            throw chatFailure(current, e.getCause() instanceof RuntimeException r ? r : new IllegalStateException(e.getCause()));
+        } catch (TimeoutException e) {
+            throw chatFailure(current, new IllegalStateException("timed out", e));
+        } catch (RuntimeException e) {
+            throw chatFailure(current, e);
+        }
+    }
+
     private ChatResult chat(String systemPrompt, String userPrompt, ResponseFormat format) {
         return chat(systemPrompt, UserMessage.from(userPrompt), format);
     }
 
-    private ChatResult chat(String systemPrompt, UserMessage userMessage, ResponseFormat format) {
-        Connection current = connection;
+    private static List<ChatMessage> messages(String systemPrompt, UserMessage userMessage) {
         List<ChatMessage> messages = new ArrayList<>();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
             messages.add(SystemMessage.from(systemPrompt));
         }
         messages.add(userMessage);
+        return messages;
+    }
+
+    private ChatResult chat(String systemPrompt, UserMessage userMessage, ResponseFormat format) {
+        Connection current = connection;
+        List<ChatMessage> messages = messages(systemPrompt, userMessage);
 
         long start = System.nanoTime();
         try {
@@ -113,14 +185,18 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();
             return new ChatResult(response.aiMessage().text(), model, latencyMs);
         } catch (RuntimeException e) {
-            if (timedOut(e)) {
-                throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " did not answer within "
-                        + readable(timeout) + ". It may be busy, for example embedding documents an import added: try again when that "
-                        + "finishes. If it keeps happening, use a faster model server (one with a GPU) or a longer FACTORY_MODEL_TIMEOUT.", e);
-            }
-            throw new ModelGatewayException(
-                    "Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
+            throw chatFailure(current, e);
         }
+    }
+
+    private ModelGatewayException chatFailure(Connection current, RuntimeException e) {
+        if (timedOut(e)) {
+            return new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " did not answer within "
+                    + readable(timeout) + ". It may be busy, for example embedding documents an import added: try again when that "
+                    + "finishes. If it keeps happening, use a faster model server (one with a GPU) or a longer FACTORY_MODEL_TIMEOUT.", e);
+        }
+        return new ModelGatewayException(
+                "Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
     }
 
     @Override

@@ -9,6 +9,10 @@ import com.obdx.factory.common.NotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import com.obdx.factory.model.ModelGatewayException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,12 +26,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -38,6 +47,8 @@ import java.util.UUID;
 @RestController
 public class KnowledgeController {
 
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeController.class);
+
     private final KnowledgeService knowledge;
     private final KnowledgeImporter importer;
     private final KnowledgeRepository repository;
@@ -45,11 +56,13 @@ public class KnowledgeController {
     private final AuditLog audit;
     private final boolean localFolders;
     private final KnowledgePolicy policy;
+    private final ObjectMapper json;
 
     public KnowledgeController(KnowledgeService knowledge, KnowledgeImporter importer, KnowledgeRepository repository, AccessGuard guard,
                                AuditLog audit, @Value("${factory.local-folders.enabled}") boolean localFolders,
-                               KnowledgePolicy policy) {
+                               KnowledgePolicy policy, ObjectMapper json) {
         this.policy = policy;
+        this.json = json;
         this.knowledge = knowledge;
         this.importer = importer;
         this.repository = repository;
@@ -180,6 +193,65 @@ public class KnowledgeController {
     public KnowledgeService.Answer ask(@RequestBody AskRequest request) {
         requireReader(request.workspaceId());
         return knowledge.ask(request.question(), request.workspaceId(), request.context());
+    }
+
+    /**
+     * The answer as the model writes it, one JSON object per line: "sources" (what the search found, before the model
+     * starts), "text" (the next piece of the answer), then "done" (the whole answer) or "error". Problems found before
+     * the model is asked (no question, a model outside the bank) are ordinary error responses.
+     */
+    @PostMapping("/api/knowledge/ask/stream")
+    public ResponseEntity<ResponseBodyEmitter> askStream(@RequestBody AskRequest request) {
+        requireReader(request.workspaceId());
+        KnowledgeService.Question question = knowledge.prepare(request.question(), request.workspaceId(), request.context());
+        // The model times out on its own when it stops writing; this only ends a stream nobody finishes
+        ResponseBodyEmitter emitter = new ResponseBodyEmitter(Duration.ofHours(1).toMillis());
+        Thread.ofVirtual().name("knowledge-answer").start(() -> {
+            Lines lines = new Lines(emitter);
+            Map<String, Object> found = new LinkedHashMap<>();
+            found.put("type", "sources");
+            found.put("sources", question.sources());
+            found.put("grounded", !question.sources().isEmpty());
+            found.put("versionLine", question.versionLine());
+            found.put("note", question.note());
+            lines.send(found);
+            try {
+                KnowledgeService.Answer answer = knowledge.answer(question, piece -> lines.send(Map.of("type", "text", "text", piece)));
+                lines.send(Map.of("type", "done", "answer", answer));
+            } catch (ModelGatewayException e) {
+                lines.send(Map.of("type", "error", "message", e.getMessage()));
+            } catch (RuntimeException e) {
+                log.warn("Answer stream failed", e);
+                lines.send(Map.of("type", "error", "message", "The answer could not be finished. Try again."));
+            }
+            emitter.complete();
+        });
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/x-ndjson"))
+                .cacheControl(CacheControl.noStore())
+                .header("X-Accel-Buffering", "no")  // proxies pass each line on at once
+                .body(emitter);
+    }
+
+    /** Writes JSON lines; once the reader has gone (closed the page), the rest is dropped. */
+    private final class Lines {
+        private final ResponseBodyEmitter emitter;
+        private volatile boolean gone;
+
+        Lines(ResponseBodyEmitter emitter) {
+            this.emitter = emitter;
+        }
+
+        void send(Object event) {
+            if (gone) {
+                return;
+            }
+            try {
+                emitter.send(json.writeValueAsString(event) + "\n", MediaType.TEXT_PLAIN);
+            } catch (IOException | IllegalStateException e) {
+                gone = true;
+            }
+        }
     }
 
     // --- notes ---

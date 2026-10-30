@@ -176,7 +176,7 @@
               <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
           </oj-bind-for-each>
         </div>
-        <oj-bind-if test="[[ai.busy()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+        <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
         <div class="factory-ai-input">
           <fx-input id="profileAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask about the project or its files..."
                     value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>

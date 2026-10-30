@@ -264,7 +264,7 @@ becomes a newer revision of its document (the older one is kept as history), and
 back to review. The bank's own and patchset-specific documents (PDF, Word, text, Markdown, HTML) belong to its
 workspace, rank above Oracle's generic manuals, and win where they differ.
 
-*Not yet:* a 22.x/25.x difference view, an evaluation set of test questions, and answers shown word by word.
+*Not yet:* a 22.x/25.x difference view and an evaluation set of test questions.
 
 ---
 
