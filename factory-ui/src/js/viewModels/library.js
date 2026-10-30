@@ -59,6 +59,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             + (older ? ' · replaced ' + when(d.supersededAt) : ''),
           progress: d.sections ? Math.round((d.embedded / d.sections) * 100) : 0,
           progressStyle: { width: (d.sections ? Math.round((d.embedded / d.sections) * 100) : 0) + '%' },
+          // Only a document still being read or embedded animates; the list reloads every few seconds while one is
+          progressCss: 'fx-progress factory-lb-progress' + (d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING' ? ' is-running' : ''),
           busy: d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING',
           canEmbed: (d.status === 'READY' || d.status === 'FAILED') && d.sections > d.embedded,
           url: 'api/knowledge/documents/' + d.id + '/file',

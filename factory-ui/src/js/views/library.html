@@ -152,7 +152,7 @@
                     <td><span :class="[[d.data.statusCss]]"><span :class="[[d.data.statusIcon]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span></td>
                     <td><oj-bind-text value="[[d.data.pages || '–']]"></oj-bind-text></td>
                     <td><oj-bind-text value="[[d.data.sections || '–']]"></oj-bind-text></td>
-                    <td><oj-bind-if test="[[!d.data.older]]"><span class="fx-progress factory-lb-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[d.data.progress]]" :aria-label="[['Embedded ' + d.data.progress + '%']]"><span :style="[[d.data.progressStyle]]"></span></span>
+                    <td><oj-bind-if test="[[!d.data.older]]"><span :class="[[d.data.progressCss]]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[d.data.progress]]" :aria-label="[['Embedded ' + d.data.progress + '%']]"><span :style="[[d.data.progressStyle]]"></span></span>
                       <span class="fx-muted factory-lb-pct"><oj-bind-text value="[[d.data.progress + '%']]"></oj-bind-text></span></oj-bind-if><oj-bind-if test="[[d.data.older]]">–</oj-bind-if></td>
                     <td class="factory-lb-actions">
                       <oj-bind-if test="[[d.data.canEmbed && d.data.admin]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[d.data.embed]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Embed again</button></oj-bind-if>

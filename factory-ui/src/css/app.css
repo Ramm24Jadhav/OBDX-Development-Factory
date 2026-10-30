@@ -9144,6 +9144,10 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-sub { display: block; margin: 2px 0 0; font-size: var(--fx-text-caption); }
 .factory-lb-progress { display: inline-block; width: 90px; vertical-align: middle; }
 .factory-lb-pct { margin-left: 6px; font-size: var(--fx-text-caption); }
+/* The list reloads while documents import, so the bars do not replay their entrance; a sheen runs only on the ones in progress */
+.fx-progress.factory-lb-progress > span { animation: none; }
+.factory-lb-progress.is-running { position: relative; }
+.factory-lb-progress.is-running::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fx-primary) 45%, transparent), transparent); animation: fx-bar 1.4s var(--fx-ease-in-out) infinite; }
 .factory-lb-actions { white-space: nowrap; text-align: right; }
 .factory-lb-summary { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .factory-lb-newnote { display: grid; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--fx-border); }
