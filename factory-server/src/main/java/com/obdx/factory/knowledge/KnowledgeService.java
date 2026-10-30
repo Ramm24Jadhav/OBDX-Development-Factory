@@ -47,7 +47,8 @@ public class KnowledgeService {
             is used for that part. A source about a different case than the one asked (corporate users when the \
             question is about retail users) is not the answer: do not present its steps as if they were. Only when no \
             source answers any of it, say plainly that the manuals in the factory do \
-            not cover it, then add what you know in general, marked as general knowledge, without citations. Cite a source only \
+            not cover it and name the closest sections the sources do cover; do not answer from general knowledge, and \
+            never describe other vendors' products or systems as part of OBDX. Cite a source only \
             for what it says. Never make up OBDX menu paths, configuration, file names, XML or code that are not in the \
             sources: a wrong detail is worse than none. Keep it short and practical; use steps or a short list for \
             procedures, and code blocks only for code.""";

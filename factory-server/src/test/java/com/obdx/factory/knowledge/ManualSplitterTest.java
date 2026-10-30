@@ -102,6 +102,8 @@ class ManualSplitterTest {
         assertThat(sections.get(0).content()).contains("lock and unlock").contains("1. Navigate").contains("3. Click the icon").contains("15. If a user");
         assertThat(ManualSplitter.isNumberedHeading("4.3 Transfer Limits")).isTrue();
         assertThat(ManualSplitter.isNumberedHeading("12 Party Resource Access")).isTrue();
+        assertThat(ManualSplitter.isNumberedHeading("4. User Management")).isTrue();
+        assertThat(ManualSplitter.isNumberedHeading("38. System Rules")).isTrue();
         assertThat(ManualSplitter.isNumberedHeading("1. Navigate to the above path.")).isFalse();
         assertThat(ManualSplitter.isNumberedHeading("4. Perform any one of the following navigation to access the create screen:")).isFalse();
     }

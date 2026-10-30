@@ -89,6 +89,7 @@ Results on the test factory (67 manuals; llama3.2 3B and nomic-embed-text on Oll
 | After: search only (SEARCH) | 0.843 | – | 0.767 | headings with parents, whole context, follow-ups rewritten |
 | After: the 3B model chooses alone (CHOOSE) | 0.765 | 0.922 | 0.668 | the right section is in the short list 92 % of the time, but the small model drops it too often |
 | After: 3 model picks + the search's best 2 (simulated on the CHOOSE rows) | 0.852 | 0.922 | – | now the default in `KnowledgeService.choose` |
+| Later: search only, after the retail-onboarding fixes (reader version 5) | 0.878 | – | 0.796 | chapter headings starting "User"/"System" kept, heading phrases, meaning search without the product's name, retail/corporate |
 
 What is not measured automatically: whether every sentence of an answer is supported by its sources (faithfulness)
 needs a judge model or a person; the ANSWER mode checks citations and refusals only.

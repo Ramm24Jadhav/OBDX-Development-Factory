@@ -150,13 +150,29 @@ public class KnowledgeRepository {
 
     // --- sections ---
 
+    /**
+     * Replaces a document's sections. A section whose heading and text are the same as before keeps its embedding,
+     * so reading a document again (after a better way of splitting) embeds only what changed.
+     */
     public void replaceSections(UUID documentId, UUID workspaceId, String versionLine, List<ManualSplitter.Section> sections) {
+        Map<String, String> kept = new HashMap<>();
+        jdbc.query("SELECT heading, content, embedding::text AS embedding FROM knowledge_chunk WHERE document_id = ? AND embedding IS NOT NULL",
+                rs -> {
+                    kept.put(sameSection(rs.getString("heading"), rs.getString("content")), rs.getString("embedding"));
+                }, documentId);
         jdbc.update("DELETE FROM knowledge_chunk WHERE document_id = ?", documentId);
         int[] position = {0};
-        jdbc.batchUpdate("INSERT INTO knowledge_chunk (id, document_id, workspace_id, version_line, heading, page_from, page_to, position, content) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                sections.stream().map(s -> new Object[]{UUID.randomUUID(), documentId, workspaceId, versionLine,
-                        s.heading() == null ? null : truncate(s.heading(), 500), s.pageFrom(), s.pageTo(), position[0]++, s.content()}).toList());
+        jdbc.batchUpdate("INSERT INTO knowledge_chunk (id, document_id, workspace_id, version_line, heading, page_from, page_to, position, content, embedding) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::vector)",
+                sections.stream().map(s -> {
+                    String heading = s.heading() == null ? null : truncate(s.heading(), 500);
+                    return new Object[]{UUID.randomUUID(), documentId, workspaceId, versionLine, heading, s.pageFrom(), s.pageTo(), position[0]++,
+                            s.content(), kept.get(sameSection(heading, s.content()))};
+                }).toList());
+    }
+
+    private static String sameSection(String heading, String content) {
+        return (heading == null ? "" : heading) + '\u0000' + content;
     }
 
     public List<PendingEmbedding> sectionsWithoutEmbedding(UUID documentId, int limit) {

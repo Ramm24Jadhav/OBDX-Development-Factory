@@ -45,6 +45,28 @@ class KnowledgeVectorsTest {
         assertThat(KnowledgeSearch.spread(hits, 4)).extracting(KnowledgeSearch.Hit::pageFrom).containsExactly(1, 9, 2, 3);
     }
 
+    @Test
+    void theMeaningSearchGetsWhatIsAskedWithoutTheProductsName() {
+        assertThat(KnowledgeSearch.forMeaning("How do I onboard a retail customer in OBDX?")).isEqualTo("onboard retail customer");
+        assertThat(KnowledgeSearch.forMeaning("Explain Oracle Banking Digital Experience service extensions")).isEqualTo("service extensions");
+        assertThat(KnowledgeSearch.forMeaning("how do I")).isEqualTo("how do I");
+    }
+
+    @Test
+    void aRetailQuestionCountsCorporateOnlySectionsHalf() {
+        UUID manual = UUID.randomUUID();
+        List<KnowledgeSearch.Hit> hits = List.of(scored(manual, "15 Group Corporate Onboarding", 0.04), scored(manual, "2.1 User Management - Create", 0.03),
+                scored(manual, "66.3 User Groups - Retail & Business User", 0.025));
+
+        assertThat(KnowledgeSearch.forSegment(hits, "How do I onboard a retail customer?")).extracting(KnowledgeSearch.Hit::heading)
+                .containsExactly("2.1 User Management - Create", "66.3 User Groups - Retail & Business User", "15 Group Corporate Onboarding");
+        assertThat(KnowledgeSearch.forSegment(hits, "How do I onboard a customer?")).isEqualTo(hits);
+    }
+
+    private static KnowledgeSearch.Hit scored(UUID documentId, String heading, double score) {
+        return new KnowledgeSearch.Hit("MANUAL", UUID.randomUUID(), documentId, "User Manual Core", heading, "25.2", 1, 1, null, "text", score, false, null);
+    }
+
     private static KnowledgeSearch.Hit hit(UUID documentId, int page) {
         return new KnowledgeSearch.Hit(documentId == null ? "NOTE" : "MANUAL", UUID.randomUUID(), documentId, "t", "h" + page, "25.2", page, page,
                 null, "text", 0, false, null);

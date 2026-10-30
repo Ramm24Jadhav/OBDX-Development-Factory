@@ -117,7 +117,7 @@ public class KnowledgeSearch {
         } else {
             try {
                 for (String query : queries) {
-                    float[] embedding = modelGateway.embedQuery(query);
+                    float[] embedding = modelGateway.embedQuery(forMeaning(query));
                     String vector = CodeIndexRepository.toVectorLiteral(embedding);
                     String near = " AND embedding IS NOT NULL AND vector_dims(embedding) = vector_dims(?::vector)";
                     // On the trial database (no pgvector) the sections are compared in memory: the SQL search takes seconds there
@@ -144,7 +144,7 @@ public class KnowledgeSearch {
         List<Map.Entry<String, Double>> top = scores.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .limit(shortList ? CANDIDATES : Math.min(wanted * 3L, CANDIDATES)).toList();
-        List<Hit> ranked = load(top);
+        List<Hit> ranked = forSegment(load(top), wordings.isEmpty() ? "" : wordings.getFirst());
         return new Result(shortList ? spread(ranked, wanted) : fewPerDocument(ranked, wanted), semanticUsed, semanticNote);
     }
 
@@ -259,6 +259,7 @@ public class KnowledgeSearch {
         StringBuilder score = new StringBuilder("0.1 * ts_rank_cd(search_vector, q, 1)");
         // The weighted words come first in the statement, then the query, the scope and the limit
         List<Object> args = new ArrayList<>();
+        Map<String, Double> weights = new java.util.LinkedHashMap<>();
         for (String term : tsQuery.split(" \\| ")) {
             Integer matching = jdbc.queryForObject("SELECT count(*) FROM knowledge_chunk WHERE search_vector @@ to_tsquery('english', ?)" + scope,
                     Integer.class, term, workspaceId, versionLine, versionLine);
@@ -266,11 +267,21 @@ public class KnowledgeSearch {
                 continue;
             }
             double weight = Math.log((total + 1.0) / (matching + 1.0));
+            weights.put(term, weight);
             // A word in the section's heading ("4.1 User Management - Create") counts twice: it is what the section is about
             score.append(" + ").append(String.format(Locale.ROOT, "%.4f", weight)).append(" * ((search_vector @@ to_tsquery('english', ?))::int "
                     + "+ (to_tsvector('english', coalesce(heading, '')) @@ to_tsquery('english', ?))::int)");
             args.add(term);
             args.add(term);
+        }
+        // Two neighbouring words of the question together in a heading ("User Management - Create" for "user management
+        // create") name what the section is about: their weights count again
+        List<String> terms = new ArrayList<>(weights.keySet());
+        for (int i = 0; i + 1 < terms.size(); i++) {
+            double weight = weights.get(terms.get(i)) + weights.get(terms.get(i + 1));
+            score.append(" + ").append(String.format(Locale.ROOT, "%.4f", weight))
+                    .append(" * (to_tsvector('english', coalesce(heading, '')) @@ to_tsquery('english', ?))::int");
+            args.add(terms.get(i) + " <-> " + terms.get(i + 1));
         }
         args.add(tsQuery);
         args.add(workspaceId);
@@ -279,6 +290,47 @@ public class KnowledgeSearch {
         args.add(CANDIDATES);
         return jdbc.query("SELECT id, " + score + " AS score FROM knowledge_chunk, to_tsquery('english', ?) q WHERE search_vector @@ q" + scope
                 + " ORDER BY score DESC LIMIT ?", (rs, r) -> rs.getObject(1, UUID.class), args.toArray());
+    }
+
+    /**
+     * The question for the meaning search: its meaningful words in their order, without the product's name and the words
+     * around a question ("How do I ... in OBDX?"). Every manual says "OBDX" many times, so left in, it pulls up the
+     * sections that talk about OBDX in general (installation, configuration) instead of what is asked.
+     */
+    static String forMeaning(String query) {
+        String q = query == null ? "" : query.replaceAll("(?i)oracle banking digital experience", " ");
+        List<String> words = new ArrayList<>();
+        for (String word : q.split("[^A-Za-z0-9_.-]+")) {
+            String w = word.toLowerCase(Locale.ROOT).replaceAll("^[.-]+|[.-]+$", "");
+            if (w.length() > 1 && !STOP_WORDS.contains(w)) {
+                words.add(word.replaceAll("^[.-]+|[.-]+$", ""));
+            }
+        }
+        return words.isEmpty() ? (query == null ? "" : query) : String.join(" ", words);
+    }
+
+    /**
+     * OBDX has its retail and its corporate side, and many features exist for both: a question about one does not want
+     * the sections only about the other ("Group Corporate Onboarding" for onboarding a retail user). Those count half.
+     */
+    static List<Hit> forSegment(List<Hit> hits, String question) {
+        String q = question.toLowerCase(Locale.ROOT);
+        boolean retail = q.matches(".*\\bretail\\b.*");
+        boolean corporate = q.matches(".*\\b(corporate|business)\\b.*");
+        if (retail == corporate) {
+            return hits;
+        }
+        String other = retail ? "corporate" : "retail";
+        String own = retail ? "retail" : "corporate";
+        List<Hit> adjusted = new ArrayList<>();
+        for (Hit h : hits) {
+            String about = (h.title() + " " + (h.heading() == null ? "" : h.heading())).toLowerCase(Locale.ROOT);
+            boolean otherOnly = about.contains(other) && !about.contains(own);
+            adjusted.add(otherOnly ? new Hit(h.kind(), h.id(), h.documentId(), h.title(), h.heading(), h.obdxVersion(), h.pageFrom(), h.pageTo(),
+                    h.status(), h.text(), h.score() / 2, h.bank(), h.patchset()) : h);
+        }
+        adjusted.sort(Comparator.comparingDouble(Hit::score).reversed());
+        return adjusted;
     }
 
     /**

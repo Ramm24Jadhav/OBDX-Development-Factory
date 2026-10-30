@@ -51,8 +51,8 @@ public class KnowledgeImporter {
     private static final int EMBED_BATCH = 16;
     // Raised when the reading changes in a way worth reading every document again (2: bookmarks as headings; 3: sections
     // embedded as passages, for the embedding models that tell questions from passages; 4: headings carry their parents,
-    // front and back matter left out)
-    static final int READER_VERSION = 4;
+    // front and back matter left out; 5: chapters whose title starts with "User" or "System" are headings again)
+    static final int READER_VERSION = 5;
     static final Set<String> EXTENSIONS = Set.of("pdf", "docx", "doc", "txt", "md", "html", "htm");
 
     private final KnowledgeRepository repository;
@@ -270,7 +270,7 @@ public class KnowledgeImporter {
         repository.replaceSections(id, document.workspaceId(), document.versionLine(), sections);
         repository.readWith(id, READER_VERSION);
         vectors.changed();
-        repository.updateDocument(id, "EMBEDDING", null, pages, sections.size(), 0);
+        repository.updateDocument(id, "EMBEDDING", null, pages, sections.size(), repository.embeddedSections(id));
         embed(id);
     }
 

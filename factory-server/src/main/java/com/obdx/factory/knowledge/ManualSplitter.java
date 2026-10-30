@@ -52,7 +52,7 @@ final class ManualSplitter {
             "on", "the", "to", "a", "an", "check", "view", "update", "add", "delete", "modify", "go", "open", "log", "login", "verify",
             "upload", "download", "search", "set", "define", "tap", "swipe", "scroll", "press", "fill", "edit", "save", "submit",
             "confirm", "review", "approve", "reject", "create", "run", "copy", "install", "start", "stop", "restart", "ensure", "make",
-            "use", "repeat", "once", "after", "before", "for", "this", "user", "system", "all", "you", "it", "there", "note",
+            "use", "repeat", "once", "after", "before", "for", "this", "all", "you", "it", "there", "note",
             "configure", "implement", "register", "deploy", "build", "generate", "import", "export", "write", "extract", "place", "put",
             "rename", "replace", "execute", "call", "invoke", "map", "access", "get", "refer", "following", "below", "above");
     // The footer of Oracle's manuals: "Copyright © 2015, 2026, Oracle and/or its affiliates." and "Page 23 of 37"
