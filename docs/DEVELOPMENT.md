@@ -216,7 +216,22 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
   generation does not follow outdated guidance until someone approves it again. Every imported folder is **watched**:
   checked again every `factory.knowledge.folder-check-interval` (default 6 hours, `FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL`)
   and on **Check now**. Put Oracle's updated PDFs (or the bank's) in the folder, a shared drive works, and the factory does
-  the rest; it does not download from oracle.com itself, so nothing leaves the bank's network.
+  the rest.
+- **Oracle's manuals from Oracle's site**: an administrator picks an OBDX version and **Get and keep current**
+  (technical guides, or all manuals with the user manuals). The factory reads Oracle's documentation index
+  (`factory.knowledge.oracle.index-url`) for the version's releases, each release's library page for its manuals, and
+  takes the newest patchset's file of each (22.2 has a folder per patchset, 22.2.1 to 22.2.6). Then, and every
+  `check-interval` after (default 7 days, looked at hourly; **Check now** too), it asks Oracle for each file only if it
+  changed since the last check (ETag, Last-Modified): an unchanged manual is one small request, so a weekly check of 40
+  manuals is about 45 requests and no downloads. Requests go one after another with a pause (`pause`, 2 s), one check at
+  a time; downloads go through the same queue as uploads, one document read and embedded at a time. Every file must pass
+  a safety check before it is kept: HTTPS to Oracle's documentation hosts only (`hosts`; every redirect is checked
+  too, links to Oracle's staging copy go to the published site), at most `max-file-size` (150 MB), a real PDF that
+  opens without a password, with no scripts, automatic or launch actions and no embedded files. Only GET requests
+  without cookies: nothing of the bank's is sent to Oracle. A manual already in the library (the same file) is linked,
+  not imported twice; a changed one is a newer revision, as above. Nothing contacts Oracle until a version is followed;
+  `FACTORY_KNOWLEDGE_ORACLE=false` turns it off for factories without internet access, which import from folders.
+  The factory uses the computer's proxy settings (`-Djava.net.useSystemProxies=true`, in the start scripts).
 - **Search** is hybrid, as in code search: PostgreSQL full text and embeddings merged by reciprocal rank fusion, limited
   to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
   at most two sections of one document, so a long user manual does not crowd out the guide that answers. The bank's own
@@ -552,6 +567,11 @@ object: compute those in the view model.
 | `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
 | `POST /api/knowledge/folders/{id}/check` | Check a watched folder for new and changed documents now |
 | `DELETE /api/knowledge/folders/{id}` | Stop watching a folder (its documents stay) |
+| `GET /api/knowledge/oracle` | Whether the factory may fetch from Oracle's site, and the followed versions with their last check |
+| `GET /api/knowledge/oracle/versions` | The OBDX versions on Oracle's documentation index (administrators) |
+| `POST /api/knowledge/oracle/follow` | Get a version's manuals from Oracle's site and keep them current (`obdxVersion`, `scope`: `TECHNICAL` or `ALL`) |
+| `POST /api/knowledge/oracle/{version}/check` | Check a followed version for changed manuals now |
+| `DELETE /api/knowledge/oracle/{version}` | Stop following a version (its manuals stay) |
 | `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |

@@ -98,7 +98,62 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.load = () => api.get('knowledge').then((o) => { this.overview(o); this.errorMessage(''); })
         .catch((e) => this.errorMessage('Could not load the library: ' + e.message));
       let timer = null;
-      const poll = () => { window.clearTimeout(timer); timer = window.setTimeout(() => { if (this.importing()) { this.load().finally(poll); } else { poll(); } }, 4000); };
+      const poll = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          if (this.importing() || this.oracleRunning()) { Promise.all([this.load(), this.loadOracle()]).finally(poll); } else { poll(); }
+        }, 4000);
+      };
+
+      // --- Oracle's manuals, fetched from Oracle's site and kept current ---
+      this.oracle = ko.observable({ enabled: false, follows: [] });
+      this.oracleVersions = ko.observableArray([]);
+      this.oracleVersion = ko.observable('');
+      this.oracleScope = ko.observable('TECHNICAL');
+      this.oracleScopes = [{ value: 'TECHNICAL', label: 'Technical guides (recommended)' },
+        { value: 'ALL', label: 'All manuals, user manuals too (many more to read and embed)' }];
+      this.oracleBusy = ko.observable(false);
+      // Why Oracle's versions could not be listed (no internet access, for example)
+      this.oracleNote = ko.observable('');
+      this.showOracle = ko.pureComputed(() => this.oracle().enabled && (session.isAdmin() || this.oracle().follows.length > 0));
+      this.oracleRunning = ko.pureComputed(() => this.oracle().follows.some((f) => f.running));
+      this.oracleFollows = ko.pureComputed(() => this.oracle().follows.map((f) => ({
+        version: f.obdxVersion,
+        about: (f.scope === 'ALL' ? 'All manuals' : 'Technical guides') + (f.release ? ' · release ' + f.release : '') + ' · ' + f.files + ' file' + (f.files === 1 ? '' : 's'),
+        last: f.running ? 'Checking Oracle’s site now…' : f.lastCheckAt ? 'Checked ' + when(f.lastCheckAt) + (f.lastResult ? ': ' + f.lastResult : '') : 'Not checked yet',
+        running: f.running,
+        checkCss: f.running ? 'fx-btn fx-btn--secondary fx-btn--sm is-busy' : 'fx-btn fx-btn--secondary fx-btn--sm',
+        check: () => this.checkOracle(f.obdxVersion), stop: () => this.stopOracle(f.obdxVersion)
+      })));
+      this.loadOracle = () => api.get('knowledge/oracle').then((o) => this.oracle(o)).catch(() => null);
+      let versionsLoaded = false;
+      this.loadOracleVersions = () => {
+        if (versionsLoaded || !session.isAdmin() || !this.oracle().enabled) { return; }
+        versionsLoaded = true;
+        api.get('knowledge/oracle/versions').then((list) => {
+          this.oracleVersions(list.map((v) => ({ value: v, label: 'OBDX ' + v })));
+          if (!this.oracleVersion() && list.length) { this.oracleVersion(list[0]); }
+          this.oracleNote('');
+        }).catch((e) => { versionsLoaded = false; this.oracleNote(e.message); });
+      };
+      this.followOracle = () => {
+        if (!this.oracleVersion()) { return; }
+        this.oracleBusy(true);
+        api.post('knowledge/oracle/follow', { obdxVersion: this.oracleVersion(), scope: this.oracleScope() })
+          .then((f) => {
+            toast.success('Checking Oracle’s site for the OBDX ' + f.obdxVersion + ' manuals. New and changed ones are imported in the background.');
+            return this.loadOracle().then(poll);
+          })
+          .catch((e) => toast.error(e.message)).finally(() => this.oracleBusy(false));
+      };
+      this.checkOracle = (version) => api.post('knowledge/oracle/' + version + '/check')
+        .then(() => { toast.info('Checking Oracle’s site for changed OBDX ' + version + ' manuals.'); return this.loadOracle().then(poll); })
+        .catch((e) => toast.error(e.message));
+      this.stopOracle = (version) => dialog.confirm({ title: 'Stop following OBDX ' + version + '?',
+        message: 'The manuals already imported stay in the library; Oracle’s new patchsets and fixes are no longer picked up.', confirmLabel: 'Stop following' })
+        .then((ok) => (ok ? api.del('knowledge/oracle/' + version).then(() => { toast.success('No longer following OBDX ' + version); return this.loadOracle(); }) : null))
+        .catch((e) => toast.error(e.message));
+      this.tab.subscribe((t) => { if (t === 'documents') { this.loadOracleVersions(); } });
 
       // --- import ---
       this.importVersion = ko.observable('25.2');
@@ -274,6 +329,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         accUtils.announce('OBDX Library page loaded.');
         document.title = 'OBDX Library';
         this.load();
+        this.loadOracle().then(() => { if (this.tab() === 'documents') { this.loadOracleVersions(); } });
         poll();
       };
       this.disconnected = () => window.clearTimeout(timer);

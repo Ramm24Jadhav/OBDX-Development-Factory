@@ -81,6 +81,41 @@
 
   <!-- Documents -->
   <oj-bind-if test="[[tab() === 'documents']]">
+    <oj-bind-if test="[[showOracle()]]">
+      <section class="fx-card factory-lb-oracle" aria-labelledby="lbOracleTitle">
+        <h2 class="fx-card-title" id="lbOracleTitle">Oracle's manuals from Oracle's site</h2>
+        <p class="fx-card-sub">The factory gets the OBDX manuals from docs.oracle.com and keeps them current: every week it asks Oracle which manuals changed (a new patchset or a fix) and downloads only those, one at a time. Each file must be a genuine PDF from Oracle's site with no scripts or embedded files before it is read. Nothing of the bank's is sent to Oracle.</p>
+        <oj-bind-if test="[[oracleFollows().length > 0]]">
+          <ul class="factory-lb-folders">
+            <oj-bind-for-each data="[[oracleFollows]]" as="o">
+              <template>
+                <li class="factory-lb-folder">
+                  <span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span>
+                  <span class="factory-lb-folderbody"><strong class="factory-lb-folderpath"><oj-bind-text value="[['OBDX ' + o.data.version]]"></oj-bind-text></strong>
+                    <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[o.data.about + ' · ' + o.data.last]]"></oj-bind-text></span></span>
+                  <oj-bind-if test="[[isAdmin()]]">
+                    <span class="factory-lb-actions">
+                      <button type="button" :class="[[o.data.checkCss]]" :disabled="[[o.data.running]]" :aria-busy="[[o.data.running ? 'true' : 'false']]" on-click="[[o.data.check]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Check now</button>
+                      <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Stop following OBDX ' + o.data.version]]" on-click="[[o.data.stop]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
+                    </span>
+                  </oj-bind-if>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+        </oj-bind-if>
+        <oj-bind-if test="[[isAdmin()]]">
+          <div class="factory-lb-importrow">
+            <fx-select id="oracleVersion" class="factory-lb-version" label="OBDX version" placeholder="Reading Oracle's site…" options="[[oracleVersions]]" value="{{oracleVersion}}"></fx-select>
+            <fx-select id="oracleScope" class="factory-grow" label="Manuals" options="[[oracleScopes]]" value="{{oracleScope}}"></fx-select>
+            <button type="button" class="fx-btn fx-btn--primary" id="oracleFollow" on-click="[[followOracle]]" :disabled="[[oracleBusy() || !oracleVersion()]]"><span class="factory-nav-icon factory-ico-download" aria-hidden="true"></span>Get and keep current</button>
+          </div>
+          <oj-bind-if test="[[oracleNote()]]">
+            <div class="fx-alert fx-alert--warning factory-lb-oraclenote"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[oracleNote]]"></oj-bind-text></span></div>
+          </oj-bind-if>
+        </oj-bind-if>
+      </section>
+    </oj-bind-if>
     <oj-bind-if test="[[canImport()]]">
       <section class="fx-card factory-lb-import" aria-labelledby="lbImportTitle">
         <h2 class="fx-card-title" id="lbImportTitle">Add documents</h2>

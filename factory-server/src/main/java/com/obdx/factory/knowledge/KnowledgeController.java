@@ -57,11 +57,13 @@ public class KnowledgeController {
     private final boolean localFolders;
     private final KnowledgePolicy policy;
     private final ObjectMapper json;
+    private final OracleManuals oracle;
 
     public KnowledgeController(KnowledgeService knowledge, KnowledgeImporter importer, KnowledgeRepository repository, AccessGuard guard,
                                AuditLog audit, @Value("${factory.local-folders.enabled}") boolean localFolders,
-                               KnowledgePolicy policy, ObjectMapper json) {
+                               KnowledgePolicy policy, ObjectMapper json, OracleManuals oracle) {
         this.policy = policy;
+        this.oracle = oracle;
         this.json = json;
         this.knowledge = knowledge;
         this.importer = importer;
@@ -131,6 +133,50 @@ public class KnowledgeController {
         var document = repository.findDocument(id).orElseThrow(() -> new NotFoundException("Document not found"));
         requireImporter(document.workspaceId());
         importer.embedAgain(id);
+    }
+
+    // --- Oracle's manuals from Oracle's site ---
+
+    /** enabled: the factory may fetch from Oracle's site; follows: the OBDX versions kept current from it. */
+    public record OracleStatus(boolean enabled, List<OracleManuals.Follow> follows) {
+    }
+
+    public record OracleFollow(String obdxVersion, String scope) {
+    }
+
+    @GetMapping("/api/knowledge/oracle")
+    public OracleStatus oracleStatus() {
+        guard.current();
+        return new OracleStatus(oracle.enabled(), oracle.follows());
+    }
+
+    /** The OBDX versions on Oracle's documentation index, read from Oracle's site. */
+    @GetMapping("/api/knowledge/oracle/versions")
+    public List<String> oracleVersions() {
+        guard.requireAdmin();
+        return oracle.versions();
+    }
+
+    @PostMapping("/api/knowledge/oracle/follow")
+    public OracleManuals.Follow followOracle(@RequestBody OracleFollow request) {
+        AppUser user = guard.requireAdmin();
+        OracleManuals.Follow follow = oracle.follow(request.obdxVersion(), request.scope(), user.getUsername());
+        audit.record("KNOWLEDGE_ORACLE_FOLLOWED", null, "OBDX " + follow.obdxVersion(), follow.scope());
+        return follow;
+    }
+
+    @PostMapping("/api/knowledge/oracle/{version}/check")
+    public OracleManuals.Follow checkOracle(@PathVariable("version") String version) {
+        guard.requireAdmin();
+        return oracle.check(version);
+    }
+
+    @DeleteMapping("/api/knowledge/oracle/{version}")
+    public ResponseEntity<Void> unfollowOracle(@PathVariable("version") String version) {
+        guard.requireAdmin();
+        oracle.unfollow(version);
+        audit.record("KNOWLEDGE_ORACLE_UNFOLLOWED", null, "OBDX " + version, null);
+        return ResponseEntity.noContent().build();
     }
 
     // --- watched folders ---

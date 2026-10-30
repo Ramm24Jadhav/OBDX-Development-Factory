@@ -81,6 +81,15 @@ factory:
     page-context-chars: ${FACTORY_KNOWLEDGE_PAGE_CONTEXT_CHARS:3000}
     # How often the folders documents were imported from are checked for new and changed files (ISO-8601 duration)
     folder-check-interval: ${FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL:PT6H}
+    # Oracle's manuals from Oracle's documentation site for the OBDX versions an administrator follows (OBDX Library).
+    # Only HTTPS GET requests to these hosts; only new and changed files are downloaded, one at a time. false: never contact Oracle.
+    oracle:
+      enabled: ${FACTORY_KNOWLEDGE_ORACLE:true}
+      index-url: ${FACTORY_KNOWLEDGE_ORACLE_INDEX_URL:https://www.oracle.com/technical-resources/documentation/fsgbu.html}
+      hosts: ${FACTORY_KNOWLEDGE_ORACLE_HOSTS:docs.oracle.com,www.oracle.com}
+      check-interval: ${FACTORY_KNOWLEDGE_ORACLE_CHECK_INTERVAL:P7D}
+      max-file-size: ${FACTORY_KNOWLEDGE_ORACLE_MAX_FILE_SIZE:150MB}
+      pause: ${FACTORY_KNOWLEDGE_ORACLE_PAUSE:PT2S}
   trial-database:
     # true: the factory starts its own PostgreSQL (data in FACTORY_DATA_DIR/trial-database) and ignores FACTORY_DB_*.
     # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.

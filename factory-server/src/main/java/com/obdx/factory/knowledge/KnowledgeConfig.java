@@ -11,11 +11,14 @@ public class KnowledgeConfig {
 
     private final KnowledgeService knowledge;
     private final KnowledgeImporter importer;
+    private final OracleManuals oracle;
 
     public KnowledgeConfig(@org.springframework.context.annotation.Lazy KnowledgeService knowledge,
-                           @org.springframework.context.annotation.Lazy KnowledgeImporter importer) {
+                           @org.springframework.context.annotation.Lazy KnowledgeImporter importer,
+                           @org.springframework.context.annotation.Lazy OracleManuals oracle) {
         this.knowledge = knowledge;
         this.importer = importer;
+        this.oracle = oracle;
     }
 
     /** Reading and embedding manuals, one document at a time, apart from imports, changes and builds. */
@@ -41,5 +44,14 @@ public class KnowledgeConfig {
     @Scheduled(fixedDelayString = "${factory.knowledge.folder-check-interval:PT6H}", initialDelayString = "PT10M")
     public void checkFolders() {
         importer.rescanAll();
+    }
+
+    /**
+     * The followed OBDX versions whose manuals were last checked longer ago than factory.knowledge.oracle.check-interval
+     * are checked against Oracle's site. Looked at hourly, so a factory that restarts often still checks on time.
+     */
+    @Scheduled(fixedDelayString = "PT1H", initialDelayString = "PT15M")
+    public void checkOracle() {
+        oracle.checkDue();
     }
 }
