@@ -579,7 +579,7 @@ object: compute those in the view model.
 | `GET /api/model/status` | The model server and models in use, and whether they were chosen on the Models page |
 | `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
 | `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
-| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server) (administrators) |
+| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server); the reply's `embeddingProblem` says when the embedding model cannot embed (a fixed test phrase is sent to it) or does not look like an embedding model, and the Models page shows it with the OBDX Library's privacy notice (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`) |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
 | `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, and `privacy` when the models are outside the bank |

@@ -185,6 +185,9 @@
           <oj-bind-if test="[[models().length > 0]]">
             <button type="button" id="saveModelsButton" class="fx-btn fx-btn--primary factory-md-save" on-click="[[save]]" :disabled="[[saving]]">Save Settings</button>
           </oj-bind-if>
+          <oj-bind-for-each data="[[saveWarnings]]" as="w">
+            <template><div class="fx-alert fx-alert--warning factory-md-alert" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[w.data]]"></oj-bind-text></span></div></template>
+          </oj-bind-for-each>
           <oj-bind-if test="[[models().length === 0 && serverKind() === 'local']]">
             <p class="factory-card-sub">Choose a provider above, or use Settings on a card, to choose its models here.</p>
           </oj-bind-if>

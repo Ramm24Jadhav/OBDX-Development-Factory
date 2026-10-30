@@ -48,6 +48,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.chatModel = ko.observable(null);
       this.embeddingModel = ko.observable(null);
       this.saving = ko.observable(false);
+      // What the last save found: an embedding model that cannot embed, models the OBDX Library keeps its knowledge from
+      this.saveWarnings = ko.observableArray([]);
       this.savedMessage = ko.observable('');
 
       // Code search: the embedding model on the same server, or on another one (for example chat from a cloud API
@@ -177,6 +179,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         this.saving(true);
         this.errorMessage('');
+        this.saveWarnings([]);
         api.put('model/settings', {
           baseUrl: this.modelsUrl(),
           apiKey: this.serverKind() === 'remote' ? (this.apiKey() || null) : '',
@@ -193,6 +196,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             + (s.embeddingBaseUrl ? ' at ' + s.embeddingBaseUrl : '') + '.'
             + (result.embeddingsRemoved ? ' The embedding model changed, so import the code of each workspace again (Code page) to search it by meaning.' : ''),
             { timeout: result.embeddingsRemoved ? 0 : 6000 });
+          const warnings = result.embeddingProblem ? [result.embeddingProblem] : [];
+          // The OBDX Library says when these models are outside the bank: its knowledge is then not sent to them
+          return api.get('knowledge').then((o) => {
+            if (o && o.privacy) {
+              warnings.push(o.privacy + ' To send it anyway, set FACTORY_KNOWLEDGE_EXTERNAL_MODELS=true in settings.properties and start the factory again.');
+            }
+          }).catch(() => null).then(() => this.saveWarnings(warnings));
         }).catch(actionError).finally(() => this.saving(false));
       };
 

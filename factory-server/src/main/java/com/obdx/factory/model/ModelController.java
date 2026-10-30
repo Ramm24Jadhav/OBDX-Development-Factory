@@ -74,7 +74,35 @@ public class ModelController {
         ModelSettings.Current current = settings.current();
         audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel()
                 + (current.embeddingBaseUrl() != null ? " at " + current.embeddingBaseUrl() : ""));
-        return new SaveResponse(status(), embeddingsRemoved);
+        return new SaveResponse(status(), embeddingsRemoved, embeddingProblem(current));
+    }
+
+    /**
+     * Whether the embedding model embeds: a short fixed phrase (nothing of the bank's) is sent to it. Code search and
+     * the OBDX Library search by meaning with it, and a chat model in its place fails there (or, on a server that
+     * embeds with any model, matches poorly). Null when it embeds and looks like an embedding model.
+     */
+    String embeddingProblem(ModelSettings.Current current) {
+        String model = current.embeddingModel();
+        try {
+            if (gateway.embed("OBDX Development Factory embedding check").length == 0) {
+                return "The embedding model '" + model + "' returned no vector. Choose an embedding model, for example nomic-embed-text on Ollama.";
+            }
+        } catch (ModelGatewayException e) {
+            return "The embedding model '" + model + "' at " + current.embeddingUrl() + " cannot embed (" + e.getMessage() + "). Choose an "
+                    + "embedding model, for example nomic-embed-text on Ollama: chat models do not embed, and some servers (Groq) have "
+                    + "no embedding models, so set a code search server (an Ollama on this computer) for embeddings.";
+        }
+        return looksLikeEmbeddingModel(model) ? null : "'" + model + "' embeds, but it does not look like an embedding model: a chat "
+                + "model used for embeddings finds far less. Prefer an embedding model, for example nomic-embed-text, mxbai-embed-large "
+                + "or bge-m3.";
+    }
+
+    /** The names of the common embedding models: nomic-embed-text, mxbai-embed-large, bge-m3, e5, gte, all-minilm ... */
+    static boolean looksLikeEmbeddingModel(String model) {
+        String m = model == null ? "" : model.toLowerCase(java.util.Locale.ROOT);
+        return m.contains("embed") || m.contains("bge") || m.matches(".*(^|[/_-])e5([/_-]|$).*") || m.contains("gte-") || m.contains("minilm")
+                || m.contains("mpnet") || m.contains("arctic") || m.contains("granite-embedding") || m.contains("jina");
     }
 
     @PostMapping("/chat")
@@ -98,8 +126,11 @@ public class ModelController {
     public record ServerRequest(String baseUrl, String apiKey) {
     }
 
-    /** @param embeddingsRemoved the embedding model changed: imports create the search embeddings again */
-    public record SaveResponse(StatusResponse status, boolean embeddingsRemoved) {
+    /**
+     * @param embeddingsRemoved the embedding model changed: imports create the search embeddings again
+     * @param embeddingProblem  why the embedding model cannot embed (or does not look like an embedding model); null: fine
+     */
+    public record SaveResponse(StatusResponse status, boolean embeddingsRemoved, String embeddingProblem) {
     }
 
     public record ChatRequest(@NotBlank @Size(max = 20_000) String prompt) {
