@@ -39,6 +39,7 @@ public final class ScreenModels {
     private static final int MAX_CODE = 20_000;
     public static final Set<String> STAGES = Set.of("initiate", "review", "confirm", "inquiry");
     public static final Set<String> CHANNELS = Set.of("desktop", "tablet", "mobile-web", "mobile-app");
+    static final List<String> CHANNELS_ORDER = List.of("desktop", "tablet", "mobile-web", "mobile-app");
     private static final Set<String> OPERATORS = Set.of("filled", "empty", "equals", "notEquals");
     private static final Pattern NEGATIVE = Pattern.compile("\\b(no|not|never|unchanged|out of scope|excluded?|without|nor|none)\\b|n't\\b");
 
@@ -76,6 +77,10 @@ public final class ScreenModels {
             // A step where the customer enters a secret (an OTP, a PIN) takes input, whatever its name says
             stage = "initiate";
         }
+        if ("inquiry".equals(stage) && !isList(screen.name()) && screen.fields().stream().anyMatch(ScreenModels::takesInput)) {
+            // A dashboard widget or details screen with mandatory or validated fields captures data: its inputs stay
+            stage = "initiate";
+        }
         boolean shows = "review".equals(stage) || "confirm".equals(stage);
         List<ScreenModel.Component> components = new ArrayList<>();
         if ("inquiry".equals(stage) && isList(screen.name()) && !screen.fields().isEmpty()) {
@@ -85,12 +90,16 @@ public final class ScreenModels {
         } else {
             boolean details = "inquiry".equals(stage);
             for (RequirementSpec.Field field : screen.fields()) {
+                String fieldType = ComponentCatalog.normalize(field.type());
                 Integer maxLength = null;
                 for (String validation : field.validations()) {
-                    maxLength = maxLengthIn(validation, maxLength);
+                    // "Up to 13 digits and 2 decimals" sizes an amount, not its length in characters
+                    if (!(NUMERIC.contains(fieldType) && validation != null && validation.toLowerCase(Locale.ROOT).contains("digit"))) {
+                        maxLength = maxLengthIn(validation, maxLength);
+                    }
                 }
                 boolean readOnly = shows || details;
-                String type = readOnly ? "display" : ComponentCatalog.normalize(field.type());
+                String type = isListField(field) ? "table" : readOnly ? "display" : fieldType;
                 String label = field.label() != null ? field.label() : humanize(field.name());
                 List<String> options = List.of();
                 if (ComponentCatalog.find(type).orElseThrow().hasOptions()) {
@@ -116,6 +125,10 @@ public final class ScreenModels {
         } else if (actions.isEmpty() && "confirm".equals(stage)) {
             actions.addAll(List.of(new ScreenModel.ActionButton(null, "Go to dashboard", "primary"),
                     new ScreenModel.ActionButton(null, "Start another", "secondary")));
+        } else if ("confirm".equals(stage) && actions.size() == 1 && actions.getFirst().label().strip().toLowerCase(Locale.ROOT)
+                .matches("done|ok|close|finish")) {
+            // A lone "Done" leads nowhere in OBDX: the confirmation also offers the way back to the dashboard
+            actions.add(new ScreenModel.ActionButton(null, "Go to dashboard", "secondary"));
         } else if (actions.isEmpty() && "inquiry".equals(stage)) {
             // A list, history or details screen shows; it has nothing to submit
             actions.add(new ScreenModel.ActionButton(null, "Back", "primary"));
@@ -137,17 +150,39 @@ public final class ScreenModels {
         return "password".equalsIgnoreCase(field.type()) || SECRET.matcher(label).find();
     }
 
+    private static final Set<String> NUMERIC = Set.of("amount", "number");
+    /** "Last five runs", "recent executions": a field that is a list of records */
+    private static final Pattern LIST_FIELD = Pattern.compile("(?i)\\b(?:last|recent|previous)\\s+(?:\\w+\\s+){0,2}"
+            + "(?:runs|executions|transactions|payments|transfers|entries|records|instructions|logins)\\b");
+
+    /** A field that shows records rather than one value: a table. */
+    static boolean isListField(RequirementSpec.Field field) {
+        String text = (field.label() != null ? field.label() : humanize(field.name())) + " " + (field.notes() == null ? "" : field.notes());
+        return "table".equalsIgnoreCase(field.type()) || "list".equalsIgnoreCase(field.type())
+                || LIST_FIELD.matcher(text.length() > 300 ? text.substring(0, 300) : text).find();
+    }
+
+    /** A field the customer fills in: mandatory, with validations, or a choice. */
+    static boolean takesInput(RequirementSpec.Field field) {
+        String type = ComponentCatalog.normalize(field.type());
+        return !isListField(field) && (Boolean.TRUE.equals(field.mandatory()) || !field.validations().isEmpty()
+                || Set.of("select", "radio", "checkbox").contains(type));
+    }
+
     /** A screen that lists records (a list, history, statement, search results): its fields are table columns. */
     static boolean isList(String name) {
         return (name == null ? "" : name.toLowerCase(Locale.ROOT)).matches(".*\\b(list|lists|history|book|statement|holdings?|search|results|transactions)\\b.*");
     }
 
+    /** "shown when", "shown and mandatory when", "visible only if": the start of a condition */
+    private static final String SHOWN = "(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:and\\s+(?:mandatory|required|editable|enabled)\\s+)?"
+            + "(?:only\\s+)?(?:when|if)\\s+";
+    /** "Shown and mandatory when ...": required under the same condition */
+    private static final Pattern MANDATORY_TOO = Pattern.compile("(?i)\\b(?:shown|visible|displayed)\\s+and\\s+(?:mandatory|required)\\b");
     /** "shown when Later is selected", "visible only if Monthly is chosen": a value alone, the field is the one offering it */
-    private static final Pattern SHOWN_WHEN_SELECTED = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?"
-            + "(?:when|if)\\s+(?:the\\s+)?[\"']?([\\w -]{1,60}?)[\"']?\\s+(?:is|are)\\s+(?:selected|chosen|picked|ticked|checked)\\b");
+    private static final Pattern SHOWN_WHEN_SELECTED = Pattern.compile(SHOWN + "(?:the\\s+)?[\"']?([\\w -]{1,60}?)[\"']?\\s+(?:is|are)\\s+(?:selected|chosen|picked|ticked|checked)\\b");
     /** "shown when Later", "visible only if Execution is Later", "displayed when Frequency = Monthly" */
-    private static final Pattern SHOWN_WHEN = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?(?:when|if)\\s+"
-            + "(?:the\\s+)?(?:([^=.;,]{1,80}?)\\s*(?:=|==|\\bis\\b|\\bequals\\b)\\s*)?[\"']?([\\w -]{1,60}?)[\"']?(?:\\s+is\\s+(?:selected|chosen|picked))?\\s*(?:[.;,)]|$)");
+    private static final Pattern SHOWN_WHEN = Pattern.compile(SHOWN + "(?:the\\s+)?(?:([^=.;,]{1,80}?)\\s*(?:=|==|\\bis\\b|\\bequals\\b)\\s*)?[\"']?([\\w -]{1,60}?)[\"']?(?:\\s+is\\s+(?:selected|chosen|picked))?\\s*(?:[.;,)]|$)");
 
     /**
      * Fields whose notes or validations say when they are shown ("shown when Later") get a visibleWhen condition on the
@@ -161,6 +196,7 @@ public final class ScreenModels {
             List<String> texts = new ArrayList<>(field.validations());
             texts.add(field.notes());
             ScreenModel.Condition condition = null;
+            ScreenModel.Condition required = null;
             for (String text : texts) {
                 if (text == null) {
                     continue;
@@ -188,12 +224,13 @@ public final class ScreenModels {
                 if (on != null) {
                     String option = on.options().stream().filter(v -> v.equalsIgnoreCase(value)).findFirst().orElse(value);
                     condition = new ScreenModel.Condition(on.name(), "equals", option);
+                    required = MANDATORY_TOO.matcher(text).find() ? condition : null;
                     break;
                 }
             }
             result.add(condition == null ? c : new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(), c.required(), c.helpText(),
                     c.placeholder(), c.maxLength(), c.defaultValue(), c.options(), c.validations(), c.readonly(), c.component(), c.params(),
-                    c.html(), c.css(), c.script(), c.dataSource(), condition, c.requiredWhen()));
+                    c.html(), c.css(), c.script(), c.dataSource(), condition, required != null ? required : c.requiredWhen()));
         }
         return result;
     }
@@ -250,7 +287,43 @@ public final class ScreenModels {
                 return values;
             }
         }
+        // "User selection (Own Account / Payee)": values in parentheses after the label or in a note
+        texts.add(0, field.label());
+        for (String text : texts) {
+            List<String> values = valuesInParentheses(text);
+            if (!values.isEmpty()) {
+                return values;
+            }
+        }
         return defaultOptions(type);
+    }
+
+    private static final Pattern PARENTHESES = Pattern.compile("\\(([^()]{3,200})\\)");
+
+    /** "(Own Account / Payee)" -> Own Account, Payee: 2 to 8 short items split by "/" or ","; else empty. */
+    static List<String> valuesInParentheses(String text) {
+        if (text == null) {
+            return List.of();
+        }
+        Matcher m = PARENTHESES.matcher(text.length() > 500 ? text.substring(0, 500) : text);
+        while (m.find()) {
+            if (!m.group(1).contains("/") && !m.group(1).contains(",")) {
+                continue;
+            }
+            List<String> values = new ArrayList<>();
+            for (String part : m.group(1).split("\\s*[/,]\\s*")) {
+                String value = part.strip();
+                if (!value.isEmpty()) {
+                    values.add(value);
+                }
+            }
+            // "(DD/MM/YYYY)" is a format, not values
+            boolean format = values.stream().allMatch(v -> v.matches("[A-Z]{1,4}"));
+            if (!format && values.size() >= 2 && values.size() <= 8 && values.stream().allMatch(v -> v.length() <= 30 && v.split("\\s+").length <= 4)) {
+                return values;
+            }
+        }
+        return List.of();
     }
 
     /** "One of: Daily, Weekly or Monthly." -> Daily, Weekly, Monthly; empty when the text names no values. */
@@ -477,27 +550,65 @@ public final class ScreenModels {
     public static List<String> channelsIn(String text) {
         // A sentence or clause that excludes a channel ("the desktop must see no change", "the tablet app is unchanged",
         // "only in the app, not on the web", "out of scope") does not name it as one
+        // Quoted text is a message or label ("Use desktop banking to ..."), not a statement of channels; a question
+        // answered no ("Is the tablet app in scope? No") excludes what it asks about
+        String plain = QUOTED.matcher(text == null ? "" : text).replaceAll(" ");
+        plain = ANSWERED_NO.matcher(plain).replaceAll(" ");
         StringBuilder kept = new StringBuilder();
-        for (String sentence : (text == null ? "" : text).toLowerCase(Locale.ROOT).split("[.!?;,\\n]|\\bbut\\b|\\bwhile\\b")) {
+        for (String sentence : plain.toLowerCase(Locale.ROOT).split("[.!?;,\\n]|\\bbut\\b|\\bwhile\\b")) {
             if (!NEGATIVE.matcher(sentence).find()) {
                 kept.append(sentence).append('\n');
             }
         }
         String lower = kept.toString();
         List<String> found = new ArrayList<>();
-        if (lower.matches("(?s).*((?<!mobile )\\b(web|browser)\\b|\\b(desktop|internet|online banking|net banking)\\b).*")) {
+        if (DESKTOP.matcher(lower).find()) {
             found.add("desktop");
         }
-        if (lower.matches("(?s).*\\b(tablet|ipad)s?\\b.*")) {
+        if (TABLET.matcher(lower).find()) {
             found.add("tablet");
         }
-        if (lower.matches("(?s).*\\bmobile (web|browser|site)\\b.*")) {
+        if (MOBILE_WEB.matcher(lower).find()) {
             found.add("mobile-web");
         }
-        if (lower.matches("(?s).*\\b(mobile app|mobile application|mobile banking|mobile channel|mobile devices?|android|ios|iphone|app store|play store)\\b.*")) {
+        if (MOBILE_APP.matcher(lower).find()) {
             found.add("mobile-app");
         }
         return found;
+    }
+
+    /** "..." and “...”, and '...' that is not an apostrophe, on one line */
+    private static final Pattern QUOTED = Pattern.compile("\"[^\"\\n]{0,300}\"|“[^”\\n]{0,300}”|(?<!\\w)'[^'\\n]{1,300}'(?!\\w)");
+    /** A question whose answer is no: "Should the tablet app show it? No." */
+    private static final Pattern ANSWERED_NO = Pattern.compile("(?i)[^.?!\\n]{0,300}\\?\\s*(?:answer\\s*:?\\s*)?(?:no\\b|not in scope|"
+            + "not applicable|n/a\\b|out of scope)");
+    /** "web" (not mobile web, a web service or API), desktop, internet or online banking; "browser" alone names no channel */
+    private static final Pattern DESKTOP = Pattern.compile("(?<!mobile )\\bweb\\b(?!\\s*(?:services?|api|hooks?|socket))"
+            + "|\\b(desktop|internet|online banking|net banking)\\b");
+    private static final Pattern TABLET = Pattern.compile("\\b(tablet|ipad)s?\\b");
+    private static final Pattern MOBILE_WEB = Pattern.compile("\\bmobile (web|browser|site)\\b");
+    private static final Pattern MOBILE_APP = Pattern.compile("\\b(mobile app|mobile application|mobile banking|mobile channel|mobile devices?"
+            + "|android|ios|iphone|app store|play store)\\b");
+
+    /**
+     * The sentences of a document that state its channels for this change: those under its scope, non-functional or
+     * channel headings (not out of scope), and any line of a non-functional requirement (NFR-003). Empty when none.
+     */
+    public static String channelStatements(String document) {
+        StringBuilder out = new StringBuilder();
+        boolean inside = false;
+        for (String line : (document == null ? "" : document).split("\n")) {
+            String lower = line.toLowerCase(Locale.ROOT);
+            if (line.startsWith("#")) {
+                inside = lower.matches(".*\\b(scope|non-functional|nonfunctional|nfr|channels?)\\b.*")
+                        && !lower.matches(".*\\b(out of scope|not in scope|exclusions?)\\b.*");
+                continue;
+            }
+            if (inside || lower.contains("nfr-")) {
+                out.append(line).append('\n');
+            }
+        }
+        return out.toString();
     }
 
     /** Whether the model has a component, section or action button with this id. */

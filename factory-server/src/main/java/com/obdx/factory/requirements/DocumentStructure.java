@@ -424,11 +424,14 @@ final class DocumentStructure {
     /** Words that ask about the same thing: where something is placed. */
     private static final Set<String> PLACEMENT = Set.of("positi", "placed", "placem", "place", "locati", "locate", "above", "below",
             "before", "after", "top", "bottom");
+    /** Words that ask about the same thing: how long something is kept. */
+    private static final Set<String> RETENTION = Set.of("long", "kept", "keep", "retain", "retent", "period", "durati", "purge", "purged");
 
     /**
      * The same question in other words: {@link #similar}, or, conservatively, all the words that carry the meaning of the
      * shorter one in the other, at least three or half of the longer one's, placement words counted as one ("above or
-     * below the account summary" and "Where should the widget be positioned").
+     * below the account summary" and "Where should the widget be positioned"), and so are retention words ("How long should
+     * audit rows be kept?" and "What is the required retention period for audit rows?").
      */
     static boolean sameQuestion(String a, String b) {
         if (similar(a, b)) {
@@ -448,6 +451,8 @@ final class DocumentStructure {
         for (String w : words(s)) {
             if (PLACEMENT.contains(w)) {
                 words.add("place");
+            } else if (RETENTION.contains(w)) {
+                words.add("retain");
             } else if (!QUESTION_WORDS.contains(w)) {
                 words.add(w);
             }

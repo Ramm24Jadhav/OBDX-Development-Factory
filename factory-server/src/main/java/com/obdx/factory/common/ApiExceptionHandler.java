@@ -69,6 +69,18 @@ public class ApiExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The file is too large (limit 150 MB; requirement documents 25 MB)");
     }
 
+    /** A request body that cannot be read: a text with a NUL character (JsonConfig), or JSON that is not valid. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ProblemDetail unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof JsonConfig.NulInTextException) {
+                return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, JsonConfig.NUL_MESSAGE);
+            }
+        }
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The request could not be read: "
+                + Messages.reason(e.getMostSpecificCause()).replaceAll("[.]+$", "") + ". Check the data sent.");
+    }
+
     /** A path with a character no file name can have (NUL, or ':' and '*' on Windows). */
     @ExceptionHandler(java.nio.file.InvalidPathException.class)
     public ProblemDetail invalidPath(java.nio.file.InvalidPathException e) {

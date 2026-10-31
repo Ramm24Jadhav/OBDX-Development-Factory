@@ -53,10 +53,10 @@ public final class SpecMerger {
                 unique(specs, RequirementSpec::screens, RequirementSpec.Screen::name, SpecMerger::mergeScreens),
                 numbered,
                 unique(specs, RequirementSpec::roles, RequirementSpec.Role::name, (a, b) -> a.access() != null ? a : b),
-                unique(specs, RequirementSpec::apis, RequirementSpec.Api::name, (a, b) -> a),
+                unique(specs, RequirementSpec::apis, SpecMerger::apiKey, (a, b) -> a),
                 unique(specs, RequirementSpec::hostInteractions, h -> h.system() + " " + h.description(), (a, b) -> a),
                 unique(specs, RequirementSpec::messages, m -> m.code() != null ? m.code() : m.text(), (a, b) -> a),
-                unique(specs, RequirementSpec::openQuestions, RequirementSpec.OpenQuestion::question, (a, b) -> a),
+                questions(specs.stream().flatMap(s -> s.openQuestions().stream()).toList()),
                 unique(specs, RequirementSpec::decisions, RequirementSpec.Decision::question, (a, b) -> b),
                 unique(specs, RequirementSpec::scope, s -> s, (a, b) -> a),
                 unique(specs, RequirementSpec::outOfScope, s -> s, (a, b) -> a),
@@ -68,6 +68,41 @@ public final class SpecMerger {
                         (a, b) -> new RequirementSpec.AcceptanceCriterion(a.id(), first(a.description(), b.description()),
                                 uniqueList(a.requirements(), b.requirements(), s -> s, (x, y) -> x))),
                 unique(specs, RequirementSpec::nonFunctional, n -> n.id() != null ? n.id() : n.description(), (a, b) -> a));
+    }
+
+    private static final java.util.regex.Pattern METHOD = java.util.regex.Pattern.compile("(?i)^\\s*(GET|POST|PUT|PATCH|DELETE)\\b\\s*");
+
+    /**
+     * An API is its method and path: GET and POST /payments/standingInstructions are two APIs. The method is taken from
+     * the API's method, else from the start of its name ("GET /x"), and is not counted twice.
+     */
+    static String apiKey(RequirementSpec.Api api) {
+        String name = api.name() == null ? "" : api.name();
+        java.util.regex.Matcher m = METHOD.matcher(name);
+        String method = api.method() != null && !api.method().isBlank() ? api.method() : m.find() ? m.group(1) : "";
+        return method.strip().toUpperCase(Locale.ROOT) + " " + METHOD.matcher(name).replaceFirst("");
+    }
+
+    /** The open questions of all sections, once each: the same question in other words is one (the first kept). */
+    static List<RequirementSpec.OpenQuestion> questions(List<RequirementSpec.OpenQuestion> all) {
+        List<RequirementSpec.OpenQuestion> kept = new ArrayList<>();
+        for (RequirementSpec.OpenQuestion q : all) {
+            boolean same = false;
+            for (int i = 0; i < kept.size() && !same; i++) {
+                RequirementSpec.OpenQuestion k = kept.get(i);
+                if (normalize(k.question()).equals(normalize(q.question())) || DocumentStructure.sameQuestion(k.question(), q.question())) {
+                    same = true;
+                    if (k.options().isEmpty() && !q.options().isEmpty()) {
+                        kept.set(i, new RequirementSpec.OpenQuestion(k.question(), first(k.reason(), q.reason()), first(k.reference(), q.reference()),
+                                q.options(), first(k.suggestedAnswer(), q.suggestedAnswer()), k.answer()));
+                    }
+                }
+            }
+            if (!same) {
+                kept.add(q);
+            }
+        }
+        return kept;
     }
 
     /** An ID the document gave (BR-001, BR-12): letters, a dash or none, and a number. */

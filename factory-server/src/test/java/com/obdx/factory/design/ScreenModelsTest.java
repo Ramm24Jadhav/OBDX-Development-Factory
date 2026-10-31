@@ -215,7 +215,7 @@ class ScreenModelsTest {
     @Test
     void fieldNamesBecomeIdentifiersAndInquiryScreensGetBack() {
         RequirementSpec.Screen history = new RequirementSpec.Screen("Transfer Details", "unknown", null, null,
-                List.of(new RequirementSpec.Field("Beneficiary Name", null, "text", true, List.of(), null, null, null)), List.of(), List.of());
+                List.of(new RequirementSpec.Field("Beneficiary Name", null, "text", null, List.of(), null, null, null)), List.of(), List.of());
 
         ScreenModel model = ScreenModels.fromSpec(history);
 

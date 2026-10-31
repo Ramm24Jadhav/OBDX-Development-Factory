@@ -80,8 +80,15 @@ public class ScreenDesignService {
         spec.requirements().forEach(r -> text.append('\n').append(r.title() == null ? "" : r.title() + ". ")
                 .append(r.description() == null ? "" : r.description()));
         spec.decisions().forEach(d -> text.append('\n').append(d.question()).append(' ').append(d.answer()));
-        List<String> channels = ScreenModels.channelsIn(text.toString());
-        return channels.isEmpty() ? ScreenModels.channelsIn(documentText) : channels;
+        // The document's own statements of channels (its scope and non-functional sections, "NFR-003: desktop and mobile
+        // web") count too; the whole document only when neither names one
+        java.util.Set<String> channels = new java.util.LinkedHashSet<>(ScreenModels.channelsIn(text.toString()));
+        channels.addAll(ScreenModels.channelsIn(ScreenModels.channelStatements(documentText)));
+        if (channels.isEmpty()) {
+            return ScreenModels.channelsIn(documentText);
+        }
+        // In the order the designer lists them
+        return ScreenModels.CHANNELS_ORDER.stream().filter(channels::contains).toList();
     }
 
     /**
@@ -103,6 +110,38 @@ public class ScreenDesignService {
                 : derived.description(), model.changeType(), derived.sections(), model.actions(), model.stage(), model.channels()));
     }
 
+    /**
+     * A list or details screen whose requirement lets the customer cancel ("cancel a standing instruction from the list")
+     * gets a Cancel button, and a Back button when it has none to leave by.
+     */
+    static ScreenModel withRequirementActions(ScreenModel model, RequirementSpec spec) {
+        if (!"inquiry".equals(model.stage())) {
+            return model;
+        }
+        String key = model.name().toLowerCase(java.util.Locale.ROOT);
+        boolean cancels = spec.requirements().stream()
+                .filter(r -> r.screens().stream().anyMatch(s -> s.equalsIgnoreCase(model.name())) || (r.description() != null
+                        && r.description().toLowerCase(java.util.Locale.ROOT).contains(key)))
+                .anyMatch(r -> ((r.title() == null ? "" : r.title()) + " " + (r.description() == null ? "" : r.description()))
+                        .toLowerCase(java.util.Locale.ROOT).matches("(?s).*\\bcancel\\w*\\b.*"));
+        if (!cancels || model.actions().stream().anyMatch(a -> a.label().equalsIgnoreCase("Cancel"))) {
+            return model;
+        }
+        List<ScreenModel.ActionButton> actions = new ArrayList<>(model.actions());
+        actions.add(new ScreenModel.ActionButton(null, "Cancel", "secondary"));
+        if (actions.stream().noneMatch(a -> a.label().equalsIgnoreCase("Back"))) {
+            actions.add(new ScreenModel.ActionButton(null, "Back", "link"));
+        }
+        return ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description(), model.changeType(), model.sections(),
+                actions, model.stage(), model.channels()));
+    }
+
+    /** Whether a screen has a field the customer fills in (not only read-only text and tables). */
+    static boolean capturesInput(ScreenModel model) {
+        return model.sections().stream().flatMap(s -> s.components().stream())
+                .anyMatch(c -> !"display".equals(c.type()) && !"table".equals(c.type()) && !Boolean.TRUE.equals(c.readonly()));
+    }
+
     /** One design per screen of an approved requirement spec. */
     @Transactional
     public List<DesignSummary> fromRequirement(UUID requirementId) {
@@ -117,8 +156,10 @@ public class ScreenDesignService {
         List<String> channels = channels(requirement.spec(), requirement.documentText());
         ScreenModel initiate = null;
         for (RequirementSpec.Screen screen : requirement.spec().screens()) {
-            ScreenModel model = stepAfter(ScreenModels.fromSpec(screen, channels, requirement.spec().businessRules()), initiate);
-            if ("initiate".equals(model.stage())) {
+            ScreenModel model = withRequirementActions(stepAfter(ScreenModels.fromSpec(screen, channels, requirement.spec().businessRules()),
+                    initiate), requirement.spec());
+            // The nearest screen before that captures input (an initiate screen, or a dashboard widget with inputs)
+            if (capturesInput(model)) {
                 initiate = model;
             }
             ScreenDesign design = new ScreenDesign(requirement.workspaceId(), requirementId, model.name());
