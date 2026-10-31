@@ -97,6 +97,7 @@ class ScreenModelsTest {
         assertThat(ScreenModels.channelsIn("Only in the mobile app, not on the web")).containsExactly("desktop", "mobile-app");
         assertThat(ScreenModels.channelsIn("For mobile web and tablets")).containsExactly("tablet", "mobile-web");
         assertThat(ScreenModels.channelsIn("Add a remarks field")).isEmpty();
+        assertThat(ScreenModels.channelsIn("OBDX Retail Mobile Banking – Beneficiary Management")).containsExactly("mobile-app");
 
         ScreenModel initiate = ScreenModels.parse("""
                 {"name": "Transfer", "title": "Transfer money", "channels": ["desktop"], "sections": [{"title": "Pay", "components": [
@@ -209,5 +210,19 @@ class ScreenModelsTest {
         assertThat(ScreenModels.humanize("debitAccountId")).isEqualTo("Debit account id");
         assertThat(ScreenModels.humanize("value_date")).isEqualTo("Value date");
         assertThat(ScreenModels.camel("Value date (DD/MM)")).isEqualTo("valueDateDdMm");
+    }
+
+    @Test
+    void fieldNamesBecomeIdentifiersAndInquiryScreensGetBack() {
+        RequirementSpec.Screen history = new RequirementSpec.Screen("Transfer History", "unknown", null, null,
+                List.of(new RequirementSpec.Field("Beneficiary Name", null, "text", true, List.of(), null, null, null)), List.of(), List.of());
+
+        ScreenModel model = ScreenModels.fromSpec(history);
+
+        assertThat(model.sections().getFirst().components()).extracting(ScreenModel.Component::id, ScreenModel.Component::name, ScreenModel.Component::label)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("c-beneficiaryName", "beneficiaryName", "Beneficiary name"));
+        assertThat(model.stage()).isEqualTo("inquiry");
+        assertThat(model.actions()).extracting(ScreenModel.ActionButton::label, ScreenModel.ActionButton::kind)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Back", "primary"));
     }
 }

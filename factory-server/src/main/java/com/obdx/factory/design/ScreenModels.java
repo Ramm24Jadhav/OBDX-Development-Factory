@@ -72,12 +72,16 @@ public final class ScreenModels {
         for (RequirementSpec.Action action : screen.actions()) {
             actions.add(new ScreenModel.ActionButton(null, action.name(), actions.isEmpty() ? "primary" : "secondary"));
         }
-        if (actions.isEmpty()) {
+        String stage = guessStage(screen.name());
+        if (actions.isEmpty() && "inquiry".equals(stage)) {
+            // A list, history or details screen shows; it has nothing to submit
+            actions.add(new ScreenModel.ActionButton(null, "Back", "primary"));
+        } else if (actions.isEmpty()) {
             actions.add(new ScreenModel.ActionButton(null, "Submit", "primary"));
             actions.add(new ScreenModel.ActionButton(null, "Cancel", "secondary"));
         }
         return normalize(new ScreenModel(screen.name(), screen.name(), screen.description(), screen.changeType(),
-                List.of(new ScreenModel.Section(null, "Details", 2, components)), actions, guessStage(screen.name()), channels));
+                List.of(new ScreenModel.Section(null, "Details", 2, components)), actions, stage, channels));
     }
 
     /**
@@ -173,6 +177,10 @@ public final class ScreenModels {
                     });
                 }
                 String name = c.name() != null && !c.name().isBlank() ? c.name().trim() : camel(c.label());
+                // A name is an identifier in the generated code and the test IDs: "Beneficiary Name" becomes beneficiaryName
+                if (!name.matches("[A-Za-z_$][A-Za-z0-9_$]*")) {
+                    name = camel(name);
+                }
                 if (name.isEmpty()) {
                     name = "field";
                 }
@@ -286,7 +294,7 @@ public final class ScreenModels {
         if (lower.matches("(?s).*\\bmobile (web|browser|site)\\b.*")) {
             found.add("mobile-web");
         }
-        if (lower.matches("(?s).*\\b(mobile app|mobile application|android|ios|iphone|app store|play store)\\b.*")) {
+        if (lower.matches("(?s).*\\b(mobile app|mobile application|mobile banking|mobile channel|mobile devices?|android|ios|iphone|app store|play store)\\b.*")) {
             found.add("mobile-app");
         }
         return found;
