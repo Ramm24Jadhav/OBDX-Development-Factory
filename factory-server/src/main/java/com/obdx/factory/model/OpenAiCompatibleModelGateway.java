@@ -94,6 +94,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     @EventListener
     public void settingsChanged(ModelSettings.Changed event) {
+        ollama.forget();
         this.connection = connect(event.settings());
     }
 
@@ -145,6 +146,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * {@link PromptTooLargeException}, and the limit is remembered so that the next prompt is built to fit (PromptFit).
      */
     private ChatResult limited(String systemPrompt, String userPrompt, java.util.function.Supplier<ChatResult> call) {
+        return limited(systemPrompt, userPrompt, call, () -> true);
+    }
+
+    /** canRetry: whether the call may be made again after a rate limit (a streamed call that handed on no piece yet). */
+    private ChatResult limited(String systemPrompt, String userPrompt, java.util.function.Supplier<ChatResult> call,
+                               java.util.function.BooleanSupplier canRetry) {
         Connection current = connection;
         for (int attempt = 1; ; attempt++) {
             try {
@@ -154,13 +161,14 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 int[] tooLarge = tooLarge(text);
                 if (tooLarge != null) {
                     int chars = (systemPrompt == null ? 0 : systemPrompt.length()) + userPrompt.length();
-                    current.limits().input = current.limits().input == 0 ? tooLarge[0] : Math.min(current.limits().input, tooLarge[0]);
+                    int input = inputLimit(text, tooLarge[0], maxOutput);
+                    current.limits().input = current.limits().input == 0 ? input : Math.min(current.limits().input, input);
                     current.limits().charsPerToken = Math.clamp((double) chars / tooLarge[1], 2.0, 6.0);
                     throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
                 }
                 Duration wait = rateLimitWait(text);
-                if (wait == null) {
+                if (wait == null || !canRetry.getAsBoolean()) {
                     throw e;
                 }
                 if (attempt >= RATE_LIMIT_ATTEMPTS) {
@@ -201,6 +209,19 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             }
         }
         return null;
+    }
+
+    /**
+     * The input a prompt may take, from a refusal's limit: a model's context length ("maximum context length is 8192
+     * tokens") holds the answer too, so the answer's room (maxOutput, or 1,024 tokens) is left out of it; a per-minute
+     * limit is all input.
+     */
+    static int inputLimit(String text, int limit, Integer maxOutput) {
+        if (!CONTEXT_LENGTH.matcher(text).find() || TOO_LARGE.matcher(text).find()) {
+            return limit;
+        }
+        int answer = maxOutput != null && maxOutput > 0 ? maxOutput : 1024;
+        return Math.max(limit / 4, limit - answer);
     }
 
     /** How long a rate-limited server asks to wait, plus a second to be safe; null when the call was not rate limited. */
@@ -288,13 +309,19 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     @Override
     public ChatResult chatStream(String systemPrompt, String userPrompt, Consumer<String> pieces) {
+        // A rate limit after pieces were handed on is not waited out: asking again would hand them on twice
+        java.util.concurrent.atomic.AtomicBoolean delivered = new java.util.concurrent.atomic.AtomicBoolean();
+        Consumer<String> counted = piece -> {
+            delivered.set(true);
+            pieces.accept(piece);
+        };
         return limited(systemPrompt, userPrompt, () -> {
             Connection current = connection;
             if (ollama.isOllama(current.baseUrl())) {
-                return ollamaChat(current, systemPrompt, userPrompt, false, pieces);
+                return ollamaChat(current, systemPrompt, userPrompt, false, counted);
             }
-            return streamed(current, systemPrompt, UserMessage.from(userPrompt), null, pieces);
-        });
+            return streamed(current, systemPrompt, UserMessage.from(userPrompt), null, counted);
+        }, () -> !delivered.get());
     }
 
     /**
@@ -305,7 +332,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         long start = System.nanoTime();
         AtomicLong lastPiece = new AtomicLong(start);
         java.util.concurrent.atomic.AtomicReference<java.io.InputStream> body = new java.util.concurrent.atomic.AtomicReference<>();
-        CompletableFuture<String> done = new CompletableFuture<>();
+        CompletableFuture<OllamaChat.Answer> done = new CompletableFuture<>();
         Thread worker = Thread.ofVirtual().name("ollama-chat").start(() -> {
             try {
                 done.complete(ollama.chat(current.baseUrl(), current.chatModelName(), systemPrompt, userPrompt, jsonFormat, pieces, lastPiece::set, body::set));
@@ -316,8 +343,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         try {
             while (true) {
                 try {
-                    String reply = done.get(1, TimeUnit.SECONDS);
-                    return new ChatResult(reply, current.chatModelName(), (System.nanoTime() - start) / 1_000_000);
+                    OllamaChat.Answer answer = done.get(1, TimeUnit.SECONDS);
+                    if (answer.cutOff()) {
+                        warnCutOff(current, answer.text());
+                    }
+                    return new ChatResult(answer.text(), current.chatModelName(), (System.nanoTime() - start) / 1_000_000, answer.cutOff());
                 } catch (TimeoutException e) {
                     if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
                         stop(worker, body.get());
@@ -440,10 +470,14 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private static boolean cutOff(Connection current, ChatResponse response, String reply) {
         boolean cut = response.metadata() != null && response.metadata().finishReason() == dev.langchain4j.model.output.FinishReason.LENGTH;
         if (cut) {
-            log.warn("Chat model '{}' stopped at its output limit after {} characters; the answer is incomplete",
-                    current.chatModelName(), reply == null ? 0 : reply.length());
+            warnCutOff(current, reply);
         }
         return cut;
+    }
+
+    private static void warnCutOff(Connection current, String reply) {
+        log.warn("Chat model '{}' stopped at its output limit after {} characters; the answer is incomplete",
+                current.chatModelName(), reply == null ? 0 : reply.length());
     }
 
     private ModelGatewayException chatFailure(Connection current, RuntimeException e) {

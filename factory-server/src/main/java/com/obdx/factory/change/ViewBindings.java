@@ -16,10 +16,18 @@ final class ViewBindings {
 
     private static final Pattern BINDING = Pattern.compile("(?:\\[\\[|\\{\\{)(.+?)(?:]]|}})", Pattern.DOTALL);
     private static final Pattern ROOT = Pattern.compile("^[\\s!(]*([A-Za-z_$][\\w$]*)");
-    private static final Pattern HYPHENATED = Pattern.compile("\\.[A-Za-z_]\\w*-[\\w-]+");
+    /** nls.fund-transfer.labels: a hyphen between letters in a property path; not items().length-1, a subtraction */
+    private static final Pattern HYPHENATED = Pattern.compile("\\.[A-Za-z_$][\\w$]*(?<=[A-Za-z])-[A-Za-z]");
     private static final Pattern ALIAS = Pattern.compile("\\bas\\s*=\\s*\"([A-Za-z_]\\w*)\"");
+    /**
+     * The names a view model defines: self.x = / this.x = (also in a class constructor), object properties (x:),
+     * functions, Name.prototype.x =, and a class's methods (x(event) {, get x() {) and fields (x = ko.observable()).
+     */
     private static final Pattern DEFINED = Pattern.compile("(?:\\b(?:self|this|vm|_this)\\.([A-Za-z_$][\\w$]*)\\s*=(?!=)"
-            + "|^\\s*([A-Za-z_$][\\w$]*)\\s*:|\\bfunction\\s+([A-Za-z_$][\\w$]*))", Pattern.MULTILINE);
+            + "|^\\s*([A-Za-z_$][\\w$]*)\\s*:|\\bfunction\\s+([A-Za-z_$][\\w$]*)"
+            + "|\\.prototype\\.([A-Za-z_$][\\w$]*)\\s*=(?!=)"
+            + "|^\\s*(?:(?:static|async|get|set)\\s+)*([A-Za-z_$][\\w$]*)\\s*\\([^()]*\\)\\s*\\{"
+            + "|^\\s*(?:static\\s+)?([A-Za-z_$][\\w$]*)\\s*=(?![=>]))", Pattern.MULTILINE);
     /** View models that copy names in from elsewhere (OBDX's rootModel, params) cannot be checked by name. */
     private static final Pattern COPIES_NAMES = Pattern.compile("\\b(?:ko\\.utils\\.extend|Object\\.assign|\\$\\.extend|extend)\\s*\\(");
     private static final Set<String> KNOWN = Set.of("true", "false", "null", "undefined", "oj", "Math", "JSON", "Number", "String",
@@ -43,7 +51,7 @@ final class ViewBindings {
         Set<String> bound = new LinkedHashSet<>();
         Matcher binding = BINDING.matcher(view);
         while (binding.find()) {
-            String expression = binding.group(1).strip();
+            String expression = binding.group(1).strip().replaceAll("\\s+", " ");
             String unquoted = expression.replaceAll("'[^']*'|\"[^\"]*\"", "''");
             Matcher hyphen = HYPHENATED.matcher(unquoted);
             if (hyphen.find()) {
@@ -63,7 +71,7 @@ final class ViewBindings {
             Set<String> defined = new LinkedHashSet<>();
             Matcher definition = DEFINED.matcher(viewModel);
             while (definition.find()) {
-                for (int group = 1; group <= 3; group++) {
+                for (int group = 1; group <= definition.groupCount(); group++) {
                     if (definition.group(group) != null) {
                         defined.add(definition.group(group));
                     }

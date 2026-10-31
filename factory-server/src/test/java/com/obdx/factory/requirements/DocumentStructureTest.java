@@ -112,10 +112,13 @@ class DocumentStructureTest {
 
         RequirementSpec spec = DocumentStructure.apply(drafted, DocumentStructure.read(BRD));
 
-        assertThat(spec.requirements()).extracting(RequirementSpec.FunctionalRequirement::id).containsExactly("FR-001", "FR-002", "FR-004");
+        // the document's rows in its order, then the model's requirement the document does not have
+        assertThat(spec.requirements()).extracting(RequirementSpec.FunctionalRequirement::id).containsExactly("FR-001", "FR-002", "FR-004", "FR-9");
         assertThat(spec.requirements().getFirst().description()).startsWith("The system shall display");
         assertThat(spec.requirements().getFirst().screens()).containsExactly("Beneficiary List");
+        // BR-1 is the document's BR-001: its screens are kept, the model's wording is not
         assertThat(spec.businessRules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("BR-001", "BR-003");
+        assertThat(spec.businessRules().getFirst().screens()).containsExactly("Beneficiary List");
         // the document's question once, then the model's other question
         assertThat(spec.openQuestions()).extracting(RequirementSpec.OpenQuestion::question).containsExactly(
                 "Which OBDX version and licensed modules are in the target environment?", "Which fields are mandatory when adding a beneficiary?");
@@ -125,6 +128,80 @@ class DocumentStructureTest {
         RequirementSpec answered = spec.withQuestions(List.of(), List.of(new RequirementSpec.Decision(
                 "Which OBDX version and licensed modules are in the target environment?", "25.2")));
         assertThat(DocumentStructure.apply(answered, DocumentStructure.read(BRD)).openQuestions()).isEmpty();
+    }
+
+    @Test
+    void rulesTheModelDraftedFromTheProseFollowTheDocumentsRows() {
+        RequirementSpec drafted = SpecParser.parse("""
+                {"title": "Beneficiaries",
+                 "businessRules": [{"id": "BR-7", "description": "The transfer amount must be greater than zero and within the configured minimum and maximum limits."},
+                   {"id": "BR-010", "description": "A new beneficiary can receive transfers only after a cooling period of 24 hours."}],
+                 "acceptanceCriteria": [{"id": "AC-009", "description": "Given a new beneficiary, when the cooling period has not passed, then a transfer is refused."}]}
+                """, "x");
+
+        RequirementSpec spec = DocumentStructure.apply(drafted, DocumentStructure.read(BRD));
+
+        // BR-7 says what BR-003 says, so only the document's row is kept; BR-010 is the model's own rule
+        assertThat(spec.businessRules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("BR-001", "BR-003", "BR-010");
+        assertThat(spec.acceptanceCriteria()).extracting(RequirementSpec.AcceptanceCriterion::id).containsExactly("AC-001", "AC-002", "AC-009");
+    }
+
+    @Test
+    void aRuleAddedFromAnAnswerSurvivesTheUpdate() {
+        // The spec as refined: the document's rows applied before, and a rule the model added from an analyst's answer
+        RequirementSpec refined = SpecParser.parse("""
+                {"title": "Beneficiaries",
+                 "businessRules": [{"id": "BR-001", "description": "Only authenticated customers may access their own beneficiary information.", "screens": ["Beneficiary List"]},
+                   {"id": "BR-003", "description": "Transfer amount must be greater than zero and comply with configured minimum and maximum limits."},
+                   {"id": "BR-004", "description": "Beneficiary nicknames are at most 35 characters long."}]}
+                """, "x");
+
+        RequirementSpec spec = DocumentStructure.apply(refined, DocumentStructure.read(BRD));
+
+        assertThat(spec.businessRules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("BR-001", "BR-003", "BR-004");
+        assertThat(spec.businessRules().getFirst().screens()).containsExactly("Beneficiary List");
+        // applying it again changes nothing
+        assertThat(DocumentStructure.apply(spec, DocumentStructure.read(BRD)).businessRules()).isEqualTo(spec.businessRules());
+    }
+
+    @Test
+    void aRiskRegisterIsNotReadAsBusinessRules() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 14. Risks
+
+                | ID | Description | Mitigation |
+                | --- | --- | --- |
+                | R-01 | The host may be slow at month end. | Load test before go-live. |
+                | R-02 | Users may not find the new menu. | Training. |
+
+                # 9. Rules
+
+                | ID | Rule |
+                | --- | --- |
+                | R-1 | Only the account holder may add a beneficiary. |
+                """);
+
+        assertThat(s.rules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("R-1");
+    }
+
+    @Test
+    void boldLabelsUnderTheScopeHeadingSeparateItsLists() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 4. Scope
+
+                **In scope**
+                - View beneficiaries.
+                - Add a beneficiary.
+
+                **Out of scope:**
+                - Bulk payments.
+
+                # 5. Requirements
+                Text.
+                """);
+
+        assertThat(s.scope()).containsExactly("View beneficiaries.", "Add a beneficiary.");
+        assertThat(s.outOfScope()).containsExactly("Bulk payments.");
     }
 
     @Test

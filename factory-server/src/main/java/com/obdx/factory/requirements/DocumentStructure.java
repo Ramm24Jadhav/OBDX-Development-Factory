@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +35,11 @@ final class DocumentStructure {
     private static final Pattern ID = Pattern.compile("^([A-Z]{1,5})[-_ ]?(\\d{1,4})$");
     private static final Pattern ANY_ID = Pattern.compile("\\b([A-Z]{1,5}-\\d{1,4})\\b");
     private static final Pattern HEADING = Pattern.compile("^#{1,6}\\s+(?:[\\d.]+\\s*)?(.+?)\\s*$");
+    /** "**Out of scope**", "__Assumptions:__", "**Out of scope:**" */
+    private static final Pattern LABEL = Pattern.compile("^(?:\\*\\*|__)\\s*(.+?)\\s*:?\\s*(?:\\*\\*|__)\\s*:?$");
+    /** The lists a BRD keeps under its scope; a bold label naming one of them starts that list. */
+    private static final Set<String> LISTS = Set.of("scope", "in scope", "out of scope", "exclusions", "assumptions", "dependencies",
+            "constraints", "risks", "not in scope");
 
     private DocumentStructure() {
     }
@@ -63,7 +70,7 @@ final class DocumentStructure {
                 j++;
             }
             i = j - 1;
-            String kind = kindOf(rows);
+            String kind = kindOf(header, heading, rows);
             if (kind == null) {
                 continue;
             }
@@ -121,32 +128,24 @@ final class DocumentStructure {
     /**
      * The spec with the document's own structure: its requirements, criteria, non-functional requirements and rules
      * as the document words them (keeping the screens the model linked them to), its scope lists, and its open
-     * questions added to the model's.
+     * questions added to the model's. The model's own requirements, criteria and rules that the document's tables do
+     * not have (a rule from an answer, or one stated in the prose) follow the document's rows.
      */
     static RequirementSpec apply(RequirementSpec spec, Structure doc) {
         if (doc.isEmpty()) {
             return spec;
         }
-        Map<String, RequirementSpec.FunctionalRequirement> drafted = new LinkedHashMap<>();
-        spec.requirements().forEach(r -> drafted.put(key(r.id()), r));
-        List<RequirementSpec.FunctionalRequirement> requirements = doc.requirements().isEmpty() ? spec.requirements()
-                : doc.requirements().stream().map(r -> {
-                    RequirementSpec.FunctionalRequirement d = drafted.get(key(r.id()));
-                    return new RequirementSpec.FunctionalRequirement(r.id(), r.title() != null ? r.title() : d == null ? null : d.title(),
-                            r.description() != null ? r.description() : d == null ? null : d.description(), r.priority() != null ? r.priority()
-                            : d == null ? null : d.priority(), d == null ? List.of() : d.screens());
-                }).toList();
-        Map<String, RequirementSpec.AcceptanceCriterion> draftedCriteria = new LinkedHashMap<>();
-        spec.acceptanceCriteria().forEach(c -> draftedCriteria.put(key(c.id()), c));
-        List<RequirementSpec.AcceptanceCriterion> criteria = doc.criteria().isEmpty() ? spec.acceptanceCriteria()
-                : doc.criteria().stream().map(c -> c.requirements().isEmpty() && draftedCriteria.containsKey(key(c.id()))
-                ? new RequirementSpec.AcceptanceCriterion(c.id(), c.description(), draftedCriteria.get(key(c.id())).requirements()) : c).toList();
-        Map<String, RequirementSpec.BusinessRule> draftedRules = new LinkedHashMap<>();
-        spec.businessRules().forEach(r -> draftedRules.put(key(r.id()), r));
-        List<RequirementSpec.BusinessRule> rules = doc.rules().isEmpty() ? spec.businessRules() : doc.rules().stream().map(r -> {
-            RequirementSpec.BusinessRule d = draftedRules.get(key(r.id()));
-            return new RequirementSpec.BusinessRule(r.id(), r.description(), d == null ? List.of() : d.screens(), r.reference());
-        }).toList();
+        List<RequirementSpec.FunctionalRequirement> requirements = merge(doc.requirements(), spec.requirements(),
+                RequirementSpec.FunctionalRequirement::id, r -> r.description() != null ? r.description() : r.title(), (r, d) ->
+                        new RequirementSpec.FunctionalRequirement(r.id(), r.title() != null ? r.title() : d == null ? null : d.title(),
+                                r.description() != null ? r.description() : d == null ? null : d.description(), r.priority() != null ? r.priority()
+                                : d == null ? null : d.priority(), d == null ? List.of() : d.screens()));
+        List<RequirementSpec.AcceptanceCriterion> criteria = merge(doc.criteria(), spec.acceptanceCriteria(),
+                RequirementSpec.AcceptanceCriterion::id, RequirementSpec.AcceptanceCriterion::description, (c, d) ->
+                        c.requirements().isEmpty() && d != null ? new RequirementSpec.AcceptanceCriterion(c.id(), c.description(), d.requirements()) : c);
+        List<RequirementSpec.BusinessRule> rules = merge(doc.rules(), spec.businessRules(), RequirementSpec.BusinessRule::id,
+                RequirementSpec.BusinessRule::description, (r, d) ->
+                        new RequirementSpec.BusinessRule(r.id(), r.description(), d == null ? List.of() : d.screens(), r.reference()));
         // The document's questions first (the analysts asked them), then the model's that are not the same question
         List<RequirementSpec.OpenQuestion> questions = new ArrayList<>(doc.questions().stream()
                 .filter(d -> spec.decisions().stream().noneMatch(x -> similar(x.question(), d.question()))).toList());
@@ -163,8 +162,39 @@ final class DocumentStructure {
                 requirements, criteria, doc.nonFunctional().isEmpty() ? spec.nonFunctional() : doc.nonFunctional());
     }
 
-    /** What a table holds, from the IDs in its first column (most rows FR-…: functional requirements). */
-    private static String kindOf(List<List<String>> rows) {
+    /**
+     * The document's rows in its order, each joined with the drafted item of the same ID or, failing that, the same
+     * text; then the drafted items that match none of them. Without document rows the draft stands as it is.
+     */
+    private static <T> List<T> merge(List<T> documented, List<T> drafted, Function<T, String> id, Function<T, String> text,
+                                     BiFunction<T, T, T> join) {
+        if (documented.isEmpty()) {
+            return drafted;
+        }
+        List<T> left = new ArrayList<>(drafted);
+        List<T> merged = new ArrayList<>();
+        for (T row : documented) {
+            T match = left.stream().filter(d -> id.apply(d) != null && key(id.apply(d)).equals(key(id.apply(row)))).findFirst()
+                    .orElseGet(() -> left.stream().filter(d -> similar(text.apply(d), text.apply(row))).findFirst().orElse(null));
+            left.remove(match);
+            merged.add(join.apply(row, match));
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        documented.forEach(row -> ids.add(key(id.apply(row))));
+        for (T d : left) {
+            // The model's copy of a documented row under its ID, or the same text again, is left out
+            if ((id.apply(d) == null || !ids.contains(key(id.apply(d)))) && documented.stream().noneMatch(row -> similar(text.apply(d), text.apply(row)))) {
+                merged.add(d);
+            }
+        }
+        return merged;
+    }
+
+    /**
+     * What a table holds, from the IDs in its first column (most rows FR-…: functional requirements). The one-letter
+     * prefixes R and F count only where the header or heading says rules or requirements (R-01 is as often a risk).
+     */
+    private static String kindOf(List<String> header, String heading, List<List<String>> rows) {
         Map<String, Integer> counts = new LinkedHashMap<>();
         for (List<String> row : rows) {
             Matcher m = ID.matcher(row.getFirst().strip());
@@ -176,11 +206,15 @@ final class DocumentStructure {
         if (prefix == null || counts.get(prefix) * 2 < rows.size()) {
             return null;
         }
+        String says = (String.join(" ", header) + " " + heading).toLowerCase(Locale.ROOT);
+        boolean risks = says.contains("risk");
         return switch (prefix) {
-            case "FR", "REQ", "F" -> "FR";
+            case "FR", "REQ" -> "FR";
+            case "F" -> !risks && says.contains("requirement") ? "FR" : null;
             case "AC", "ACC" -> "AC";
             case "NFR", "NF" -> "NFR";
-            case "BR", "R", "RULE" -> "BR";
+            case "BR", "RULE" -> "BR";
+            case "R" -> !risks && says.contains("rule") ? "BR" : null;
             case "OQ", "Q", "QU" -> "OQ";
             default -> null;
         };
@@ -226,11 +260,29 @@ final class DocumentStructure {
         return longest == null || longest.isBlank() ? null : longest;
     }
 
-    /** The lines under a heading whose title is one of the names, up to the next heading or table. */
+    /**
+     * The lines under a heading whose title is one of the names, up to the next heading or table. A bold label on its
+     * own line ("**Out of scope**") that names one of the document's lists counts as a heading.
+     */
     static List<String> listUnder(List<String> lines, String... names) {
         List<String> items = new ArrayList<>();
         boolean inside = false;
         for (String line : lines) {
+            Matcher b = LABEL.matcher(line.strip());
+            if (b.matches()) {
+                String label = b.group(1).toLowerCase(Locale.ROOT).strip();
+                if (List.of(names).contains(label)) {
+                    inside = true;
+                    continue;
+                }
+                if (LISTS.contains(label)) {
+                    if (inside && !items.isEmpty()) {
+                        break;
+                    }
+                    inside = false;
+                    continue;
+                }
+            }
             Matcher h = HEADING.matcher(line);
             if (h.matches()) {
                 if (inside && !items.isEmpty()) {
@@ -279,8 +331,9 @@ final class DocumentStructure {
         return cells;
     }
 
+    /** BR-001, BR-1 and br1 are the same ID. */
     private static String key(String id) {
-        return id == null ? "" : id.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+        return id == null ? "" : id.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").replaceAll("(?<=[A-Z])0+(?=\\d)", "");
     }
 
     /** The same question in other words: most of the words of the shorter one are in the other. */

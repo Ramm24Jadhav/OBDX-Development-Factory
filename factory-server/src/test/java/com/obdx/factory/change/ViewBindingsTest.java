@@ -40,6 +40,69 @@ class ViewBindingsTest {
     }
 
     @Test
+    void aSubtractionIsAValidExpression() {
+        String view = "<span>[[items().length-1]]</span><span>[[$current.index-1]]</span><span>[[nls.labels.step-two]]</span>";
+
+        var problems = ViewBindings.problems(view, "self.items = ko.observableArray([]); self.nls = {};");
+
+        assertThat(problems).singleElement().asString().contains("nls.labels.step-two").doesNotContain("length-1").doesNotContain("index-1");
+    }
+
+    @Test
+    void aClassViewModelDefinesItsMethodsFieldsAndPrototypeNames() {
+        String view = """
+                <h1>[[nls.title]]</h1>
+                <oj-select-single value="{{selectedId}}" data="[[dataProvider]]" on-value-changed="[[handleSelect]]"></oj-select-single>
+                <oj-bind-for-each data="[[rows]]"><template><span>[[$current.index-1]]: [[formatAmount($current.data.amount)]]</span></template></oj-bind-for-each>
+                <span>[[rows().length-1]]</span>
+                <oj-button on-oj-action="[[submit]]" disabled="[[!canSubmit]]"></oj-button>
+                <oj-button on-oj-action="[[cancel]]"></oj-button>
+                """;
+        String viewModel = """
+                define(['knockout', 'ojs/ojarraydataprovider'], function (ko, ArrayDataProvider) {
+                  class TransferViewModel {
+                    selectedId = ko.observable();
+                    static pageSize = 10;
+
+                    constructor(params) {
+                      this.nls = params.nls;
+                      this.rows = ko.observableArray([]);
+                      this.dataProvider = new ArrayDataProvider(this.rows, { keyAttributes: 'id' });
+                    }
+
+                    handleSelect = (event) => {
+                      this.selectedId(event.detail.value);
+                    };
+
+                    async submit(event) {
+                      await Promise.resolve();
+                    }
+
+                    get canSubmit() {
+                      return this.selectedId() != null;
+                    }
+
+                    cancel() {
+                    }
+
+                    connected() {
+                    }
+                  }
+
+                  TransferViewModel.prototype.formatAmount = function (amount) {
+                    return amount;
+                  };
+
+                  return TransferViewModel;
+                });
+                """;
+
+        assertThat(ViewBindings.problems(view, viewModel)).isEmpty();
+        // a name the class does not have is still found
+        assertThat(ViewBindings.problems(view + "<span>[[remarks]]</span>", viewModel)).singleElement().asString().contains("remarks");
+    }
+
+    @Test
     void agreesWhenTheNamesMatchAndSkipsViewModelsThatCopyNamesIn() {
         String view = "<oj-input-text value=\"{{remarks}}\"></oj-input-text><span>[[nls.labels['remarks']]]</span>";
 

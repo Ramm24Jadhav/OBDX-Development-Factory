@@ -19,6 +19,12 @@ class SpecDrafterTest {
         final Deque<String> replies = new ArrayDeque<>();
         final List<String> systemPrompts = new ArrayList<>();
         final List<String> userPrompts = new ArrayList<>();
+        int inputLimit;
+
+        @Override
+        public int inputLimit() {
+            return inputLimit;
+        }
 
         @Override
         public ChatResult chat(String systemPrompt, String userPrompt) {
@@ -92,6 +98,20 @@ class SpecDrafterTest {
     void splitsAtParagraphBoundaries() {
         assertThat(SpecDrafter.split("aaaa\n\nbbbb\n\ncccc", 10)).containsExactly("aaaa\n\nbbbb", "cccc");
         assertThat(SpecDrafter.split("x".repeat(25), 10)).containsExactly("x".repeat(10), "x".repeat(10), "x".repeat(5));
+        assertThatThrownBy(() -> SpecDrafter.split("text", 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> SpecDrafter.split("text", -5)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aServerThatTakesTooLittleInputSaysSoInsteadOfSplitting() {
+        // 1,000 tokens leave no room for a section next to the drafting instructions
+        model.inputLimit = 1000;
+
+        assertThatThrownBy(() -> drafter.draft("x", "A long document.", ""))
+                .isInstanceOf(com.obdx.factory.model.ModelGatewayException.class)
+                .hasMessageContaining("too little input for drafting")
+                .hasMessageContaining("larger limit");
+        assertThat(model.userPrompts).isEmpty();
     }
 
     @Test

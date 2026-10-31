@@ -45,7 +45,8 @@ public final class PromptFit {
                         Math.round(scale * 100), gateway.inputLimit());
             }
             try {
-                return json ? gateway.chatJson(system, user) : gateway.chat(system, user);
+                // Streamed, so a slow server writing a long answer (a file) is timed from its last piece, not from the start
+                return json ? gateway.chatJson(system, user) : gateway.chatStream(system, user, piece -> { });
             } catch (PromptTooLargeException e) {
                 if (refused >= 2 || scale <= MIN_SCALE) {
                     throw new ModelGatewayException("The request is larger than the " + e.limit() + " tokens the model's server takes "

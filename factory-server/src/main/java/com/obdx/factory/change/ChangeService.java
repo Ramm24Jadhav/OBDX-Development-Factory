@@ -311,15 +311,19 @@ public class ChangeService {
     }
 
     private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_]\\w*\\.[a-zA-Z_]\\w*)[\\w.]*\\s*;");
-    private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([a-z_][\\w.]*)\\.([A-Z]\\w*)\\s*;");
+    /** import com.bank.x.Name; (not static imports or wildcards) */
+    private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([a-z_][\\w.]*)\\s*;");
 
     /**
      * Classes a Java file imports from the bank's own packages (those starting like its own package, com.bank) that
      * are neither in the codebase nor in this change: the model used a class nobody writes, and the build will fail.
+     * A package the code has no file in comes from a library (OBDX's own com.ofss.digx jars, for extension code), so its
+     * imports are not checked.
      *
-     * @param exists whether a class file (com/bank/x/Name.java, as the end of a path) is in the code or the change
+     * @param classExists   whether a class file (com/bank/x/Name.java, as the end of a path) is in the code or the change
+     * @param packageExists whether a package folder (com/bank/x) holds a file in the code or the change
      */
-    static List<String> unresolvedImports(String content, Predicate<String> exists) {
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists) {
         if (content == null) {
             return List.of();
         }
@@ -331,8 +335,18 @@ public class ChangeService {
         List<String> missing = new ArrayList<>();
         Matcher imports = IMPORT.matcher(content);
         while (imports.find()) {
-            String name = imports.group(1) + "." + imports.group(2);
-            if (name.startsWith(own) && !exists.test(imports.group(1).replace('.', '/') + "/" + imports.group(2) + ".java")) {
+            // com.bank.x.Outer.Inner is in com/bank/x/Outer.java: the class file is the first name with a capital
+            String[] parts = imports.group(1).split("\\.");
+            int cls = 0;
+            while (cls < parts.length && (parts[cls].isEmpty() || !Character.isUpperCase(parts[cls].charAt(0)))) {
+                cls++;
+            }
+            if (cls == 0 || cls == parts.length) {
+                continue;
+            }
+            String folder = String.join("/", java.util.Arrays.copyOfRange(parts, 0, cls));
+            String name = folder.replace('/', '.') + "." + parts[cls];
+            if (name.startsWith(own) && !classExists.test(folder + "/" + parts[cls] + ".java") && packageExists.test(folder)) {
                 missing.add(name);
             }
         }
@@ -344,6 +358,20 @@ public class ChangeService {
         String like = "%/" + classFile.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path = ?))",
                 Boolean.class, workspaceId, like, classFile));
+    }
+
+    /** Whether the imported code has a file directly in a folder whose path ends with folder (com/bank/x). */
+    private boolean indexedFolder(UUID workspaceId, String folder) {
+        String regex = "(^|/)" + folder.replaceAll("[^\\w/]", "\\\\$0") + "/[^/]+$";
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND path ~ ?)",
+                Boolean.class, workspaceId, regex));
+    }
+
+    /** Whether path is a file directly in a folder whose path ends with folder. */
+    static boolean inFolder(String path, String folder) {
+        int slash = path.lastIndexOf('/');
+        String parent = slash < 0 ? "" : path.substring(0, slash);
+        return parent.equals(folder) || parent.endsWith("/" + folder);
     }
 
     /**
@@ -451,22 +479,38 @@ public class ChangeService {
             String lower = file.path().toLowerCase(java.util.Locale.ROOT);
             if (lower.endsWith(".java")) {
                 List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
-                        || indexed(workspaceId, classFile));
+                        || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
+                        || indexedFolder(workspaceId, folder));
                 if (!missing.isEmpty()) {
-                    problems.add("Imports classes that are neither in the codebase nor in this change: " + String.join(", ", missing)
+                    problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
                             + ". Add them to the plan, or change the imports to classes that exist.");
                 }
             } else if (lower.endsWith(".html")) {
                 problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
             }
-            if (problems.isEmpty() || (file.checkMessage() != null && file.checkMessage().contains(problems.getFirst()))) {
-                continue;
+            FileChecks.Result check = withCrossChecks(file.checkStatus(), file.checkMessage(), problems);
+            if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
+                files.saveCheck(changeId, file.path(), check);
             }
-            String added = String.join("\n", problems);
-            FileChecks.Status status = file.checkStatus() == FileChecks.Status.FAILED ? FileChecks.Status.FAILED : FileChecks.Status.WARNING;
-            files.saveCheck(changeId, file.path(), new FileChecks.Result(status,
-                    file.checkMessage() == null || file.checkMessage().isBlank() ? added : file.checkMessage() + "\n" + added));
         }
+    }
+
+    /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
+    static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds");
+
+    /**
+     * A file's check with this cross-check's findings in place of the previous ones: a warning while there are any,
+     * back to passed when they are gone and the file's own check found nothing.
+     */
+    static FileChecks.Result withCrossChecks(FileChecks.Status status, String message, List<String> problems) {
+        String own = message == null ? "" : message.lines().filter(line -> CROSS_CHECKS.stream().noneMatch(line::startsWith))
+                .collect(java.util.stream.Collectors.joining("\n")).strip();
+        String added = String.join("\n", problems);
+        String combined = own.isEmpty() ? added : added.isEmpty() ? own : own + "\n" + added;
+        FileChecks.Status result = status == FileChecks.Status.FAILED ? FileChecks.Status.FAILED
+                : !problems.isEmpty() ? FileChecks.Status.WARNING
+                : status == FileChecks.Status.WARNING && own.isEmpty() ? FileChecks.Status.PASSED : status;
+        return new FileChecks.Result(result, combined.isEmpty() ? null : combined);
     }
 
     /**
@@ -678,8 +722,8 @@ public class ChangeService {
             "businessRules", "messages", "roles", "apis", "hostInteractions", "nonFunctional", "scope", "outOfScope", "assumptions");
 
     /**
-     * The approved spec as the model reads it: most useful parts first and without empty values. The answered
-     * questions are left out, since the spec already reflects them.
+     * The approved spec as the model reads it: most useful parts first and without empty values. The questions are
+     * left out: the spec already reflects the answered ones, and the open ones are not needed to write code.
      */
     static String specForModel(ObjectMapper json, RequirementSpec spec) {
         tools.jackson.databind.node.ObjectNode all = compact(json.valueToTree(spec)) instanceof tools.jackson.databind.node.ObjectNode o

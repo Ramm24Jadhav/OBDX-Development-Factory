@@ -1,6 +1,7 @@
 package com.obdx.factory.requirements;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.ModelGatewayException;
 import com.obdx.factory.model.PromptTooLargeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,9 @@ import java.util.List;
 public class SpecDrafter {
 
     private static final Logger log = LoggerFactory.getLogger(SpecDrafter.class);
+
+    /** The smallest section worth drafting from, in characters. */
+    static final int MIN_SECTION = 2000;
 
     static final String SPEC_FORMAT = """
             {
@@ -120,12 +124,18 @@ public class SpecDrafter {
         String system = DRAFT_SYSTEM.formatted(context(systemContext), SPEC_FORMAT);
         int maxChars = properties.maxCharsPerCall();
         for (int round = 0; ; round++) {
-            maxChars = Math.min(maxChars, fitting(system));
+            int fits = fitting(system);
+            if (fits < MIN_SECTION) {
+                // Sections this small lose the context a spec needs (and none at all cannot be split)
+                throw new ModelGatewayException("The model's server takes at most " + modelGateway.inputLimit() + " tokens at once, "
+                        + "too little input for drafting a spec. Use a model or plan with a larger limit.", null);
+            }
+            maxChars = Math.min(maxChars, fits);
             try {
                 return draft(title, split(documentText, maxChars), system, progress);
             } catch (PromptTooLargeException e) {
                 // The server takes less than one section: start again with sections that fit its limit
-                if (round >= 2 || fitting(system) < 2000) {
+                if (round >= 2) {
                     throw e;
                 }
                 log.info("The model's server takes at most {} tokens at once; drafting again in smaller sections", e.limit());
@@ -206,6 +216,9 @@ public class SpecDrafter {
 
     /** Splits at paragraph boundaries into pieces of at most maxChars; a single longer paragraph is cut. */
     static List<String> split(String text, int maxChars) {
+        if (maxChars < 1) {
+            throw new IllegalArgumentException("maxChars must be at least 1, was " + maxChars);
+        }
         List<String> sections = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         for (String paragraph : text.split("\n\n")) {

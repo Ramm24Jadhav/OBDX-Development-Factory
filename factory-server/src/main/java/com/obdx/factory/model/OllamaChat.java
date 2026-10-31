@@ -38,12 +38,30 @@ final class OllamaChat {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final ObjectMapper json = JsonMapper.builder().build();
     private final int maxContext;
-    private final Map<String, Boolean> ollama = new ConcurrentHashMap<>();
+    private final Duration askAgain;
+    private final Map<String, Detection> ollama = new ConcurrentHashMap<>();
     private final Map<String, Integer> modelLimit = new ConcurrentHashMap<>();
     private final Map<String, Integer> contextInUse = new ConcurrentHashMap<>();
 
+    /** Whether a server answered as Ollama, and when it was asked (System.nanoTime). */
+    private record Detection(boolean ollama, long at) {
+    }
+
+    /** A complete answer; doneReason "length" when the model stopped at the end of the context. */
+    record Answer(String text, String doneReason) {
+
+        boolean cutOff() {
+            return "length".equals(doneReason);
+        }
+    }
+
     OllamaChat(int maxContext) {
+        this(maxContext, Duration.ofMinutes(1));
+    }
+
+    OllamaChat(int maxContext, Duration askAgain) {
         this.maxContext = Math.max(DEFAULT_CONTEXT, maxContext);
+        this.askAgain = askAgain;
     }
 
     /** http://localhost:11434/v1 → http://localhost:11434 */
@@ -52,20 +70,37 @@ final class OllamaChat {
         return root.endsWith("/v1") ? root.substring(0, root.length() - 3) : root;
     }
 
-    /** Whether the server is Ollama: it answers /api/version. Asked once per server. */
+    /**
+     * Whether the server is Ollama: it answers /api/version. A server found to be Ollama is not asked again; one that
+     * did not answer is asked again after {@code askAgain}, since Ollama may have been started after the factory.
+     */
     boolean isOllama(String baseUrl) {
-        return ollama.computeIfAbsent(root(baseUrl), root -> {
-            try {
-                HttpResponse<String> r = http.send(HttpRequest.newBuilder(URI.create(root + "/api/version")).timeout(Duration.ofSeconds(3)).GET().build(),
-                        HttpResponse.BodyHandlers.ofString());
-                return r.statusCode() == 200 && json.readTree(r.body()).has("version");
-            } catch (IOException | RuntimeException e) {
-                return false;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        });
+        String root = root(baseUrl);
+        Detection known = ollama.get(root);
+        if (known != null && (known.ollama() || System.nanoTime() - known.at() < askAgain.toNanos())) {
+            return known.ollama();
+        }
+        boolean found = askVersion(root);
+        ollama.put(root, new Detection(found, System.nanoTime()));
+        return found;
+    }
+
+    /** Forgets which servers are Ollama (the model settings changed). */
+    void forget() {
+        ollama.clear();
+    }
+
+    private boolean askVersion(String root) {
+        try {
+            HttpResponse<String> r = http.send(HttpRequest.newBuilder(URI.create(root + "/api/version")).timeout(Duration.ofSeconds(3)).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            return r.statusCode() == 200 && json.readTree(r.body()).has("version");
+        } catch (IOException | RuntimeException e) {
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     /**
@@ -111,7 +146,7 @@ final class OllamaChat {
      * Streams a chat answer from /api/chat. Each piece goes to {@code pieces}, and {@code alive} hears that the model
      * is still writing. Blocks until the answer is complete; the caller enforces its timeout by closing {@code body}.
      */
-    String chat(String baseUrl, String model, String system, String user, boolean jsonFormat, Consumer<String> pieces,
+    Answer chat(String baseUrl, String model, String system, String user, boolean jsonFormat, Consumer<String> pieces,
                 LongConsumer alive, Consumer<InputStream> body) throws IOException, InterruptedException {
         ObjectNode request = json.createObjectNode();
         request.put("model", model);
@@ -134,6 +169,7 @@ final class OllamaChat {
                 HttpResponse.BodyHandlers.ofInputStream());
         body.accept(response.body());
         StringBuilder reply = new StringBuilder();
+        String doneReason = null;
         try (BufferedReader lines = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
             if (response.statusCode() != 200) {
                 StringBuilder error = new StringBuilder();
@@ -162,10 +198,11 @@ final class OllamaChat {
                     pieces.accept(piece);
                 }
                 if (chunk.path("done").asBoolean(false)) {
+                    doneReason = chunk.path("done_reason").asString(null);
                     break;
                 }
             }
         }
-        return reply.toString();
+        return new Answer(reply.toString(), doneReason);
     }
 }

@@ -73,6 +73,31 @@ class OpenAiCompatibleModelGatewayTest {
                 out.write(bytes);
             }
         });
+        // Ollama answers that stop at the end of the context, and that hit a rate limit after the first piece
+        for (String path : List.of("/ollamacut", "/ollamalimited", "/ollamalate")) {
+            server.createContext(path + "/api/show", exchange -> respond(exchange, 200, "{\"model_info\": {}}"));
+        }
+        server.createContext("/ollamacut/api/version", exchange -> respond(exchange, 200, "{\"version\": \"0.12.0\"}"));
+        server.createContext("/ollamacut/api/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            ndjson(exchange, "{\"message\": {\"role\": \"assistant\", \"content\": \"{\\\"files\\\": [\"}, \"done\": false}\n"
+                    + "{\"message\": {\"role\": \"assistant\", \"content\": \"\"}, \"done\": true, \"done_reason\": \"length\"}\n");
+        });
+        server.createContext("/ollamalimited/api/version", exchange -> respond(exchange, 200, "{\"version\": \"0.12.0\"}"));
+        server.createContext("/ollamalimited/api/chat", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            limitedCalls.incrementAndGet();
+            ndjson(exchange, "{\"message\": {\"role\": \"assistant\", \"content\": \"The first piece\"}, \"done\": false}\n"
+                    + "{\"error\": \"Rate limit reached. Please try again in 300ms.\"}\n");
+        });
+        // Ollama started after the factory: /api/version fails at first
+        server.createContext("/ollamalate/api/version", exchange -> {
+            if (limitedCalls.incrementAndGet() == 1) {
+                respond(exchange, 404, "{}");
+            } else {
+                respond(exchange, 200, "{\"version\": \"0.12.0\"}");
+            }
+        });
         // A server that refuses JSON in a stream (as some cloud servers do) but answers it in one piece
         server.createContext("/nostream/v1/chat/completions", exchange -> {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -174,6 +199,58 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(chat.contextFor(base, "small", 100)).isEqualTo(6144);
         assertThat(chat.contextFor(base, "small", 20_000)).isEqualTo(12288);
         assertThat(chat.contextFor(base, "small", 200_000)).isEqualTo(16384);
+    }
+
+    @Test
+    void anOllamaAnswerThatStopsAtTheEndOfTheContextIsCutOff() {
+        ModelGateway gateway = gatewayFor("/ollamacut/v1");
+
+        ModelGateway.ChatResult result = gateway.chatJson("Answer in JSON.", "Write the file");
+
+        assertThat(result.reply()).isEqualTo("{\"files\": [");
+        assertThat(result.cutOff()).isTrue();
+        assertThat(gatewayFor("/ollama/v1").chatJson("Answer in JSON.", "short").cutOff()).isFalse();
+    }
+
+    @Test
+    void aRateLimitAfterPiecesWereStreamedIsNotAskedAgain() {
+        List<String> pieces = new ArrayList<>();
+
+        assertThatThrownBy(() -> gatewayFor("/ollamalimited/v1").chatStream(null, "hello", pieces::add))
+                .isInstanceOf(ModelGatewayException.class)
+                .hasMessageContaining("Rate limit");
+        // asking again would have streamed the first piece twice
+        assertThat(pieces).containsExactly("The first piece");
+        assertThat(limitedCalls.get()).isEqualTo(1);
+    }
+
+    @Test
+    void anOllamaServerStartedAfterTheFactoryIsFoundLater() {
+        OllamaChat chat = new OllamaChat(16384, Duration.ZERO);
+        String base = "http://127.0.0.1:" + server.getAddress().getPort() + "/ollamalate/v1";
+
+        assertThat(chat.isOllama(base)).isFalse();
+        assertThat(chat.isOllama(base)).isTrue();
+        // found once, it is not asked again
+        assertThat(chat.isOllama(base)).isTrue();
+        assertThat(limitedCalls.get()).isEqualTo(2);
+
+        OllamaChat cached = new OllamaChat(16384, Duration.ofMinutes(1));
+        limitedCalls.set(0);
+        assertThat(cached.isOllama(base)).isFalse();
+        assertThat(cached.isOllama(base)).isFalse();
+        cached.forget();
+        assertThat(cached.isOllama(base)).isTrue();
+    }
+
+    @Test
+    void aContextLengthRefusalLeavesRoomForTheAnswer() {
+        String context = "This model's maximum context length is 8192 tokens. However, your messages resulted in 9100 tokens.";
+        assertThat(OpenAiCompatibleModelGateway.inputLimit(context, 8192, null)).isEqualTo(7168);
+        assertThat(OpenAiCompatibleModelGateway.inputLimit(context, 8192, 2048)).isEqualTo(6144);
+        assertThat(OpenAiCompatibleModelGateway.inputLimit(context, 8192, 100_000)).isEqualTo(2048);
+        // a per-minute limit is all input
+        assertThat(OpenAiCompatibleModelGateway.inputLimit("Request too large: Limit 7000, Requested 7663", 7000, 2048)).isEqualTo(7000);
     }
 
     @Test
@@ -300,6 +377,15 @@ class OpenAiCompatibleModelGatewayTest {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
                 new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384, 0));
+    }
+
+    private static void ndjson(com.sun.net.httpserver.HttpExchange exchange, String lines) throws IOException {
+        byte[] bytes = lines.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/x-ndjson");
+        exchange.sendResponseHeaders(200, bytes.length);
+        try (OutputStream out = exchange.getResponseBody()) {
+            out.write(bytes);
+        }
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {
