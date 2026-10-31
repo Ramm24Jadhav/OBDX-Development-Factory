@@ -20,6 +20,19 @@ class ApprovalTest {
     }
 
     @Test
+    void screensWithoutFieldsAreNamedInTheSpecsMessage() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"title": "x", "screens": [{"name": "Standing Instruction", "fields": [{"name": "amount"}]},
+                  {"name": "Standing Instruction List"}, {"name": "Standing Instruction Confirmation"}]}
+                """, "x");
+
+        assertThat(RequirementService.noFieldsNote(spec)).isEqualTo(" Screens without fields: Standing Instruction List, "
+                + "Standing Instruction Confirmation. Add their fields by editing the spec, or draft it again with Retry.");
+        assertThat(RequirementService.noFieldsNote(SpecParser.parse("{\"title\": \"x\", \"screens\": [{\"name\": \"A\", \"fields\": [{\"name\": \"a\"}]}]}", "x")))
+                .isEmpty();
+    }
+
+    @Test
     void aFailureMessageEndsWithOnePeriod() {
         assertThat(RequirementService.sentence("Try again in about 2 minutes.")).isEqualTo("Try again in about 2 minutes.");
         assertThat(RequirementService.sentence("model not loaded")).isEqualTo("model not loaded.");

@@ -1118,6 +1118,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               'Create review and confirmation', () => this.makeFlowScreens());
           }
         }
+        if (components.length === 0) {
+          add('warn', 'This screen has no fields', null, 'Fix with AI',
+            () => fixWithAi('Add the fields this screen needs for an OBDX banking screen, as its requirement describes. Change nothing else.'));
+        }
+        if ((model.channels || []).length === 0) {
+          // No channel named: like the preview and code generation, the design is for every channel
+          add('info', 'No channel is named; the design applies to all channels');
+        }
         const phoneOnly = (model.channels || []).length > 0 && (model.channels || []).every((c) => c.startsWith('mobile'));
         model.sections.filter((s) => phoneOnly && (s.columns || 2) > 1).forEach((s) => {
           add('info', 'Section "' + (s.title || 'Section') + '" has ' + s.columns + ' columns, but the screen is for phones only', s.id,

@@ -120,4 +120,65 @@ class BrdDesignTest {
         assertThat(c.get(1).type()).isEqualTo("table");
         assertThat(c.get(0).type()).isEqualTo("text");
     }
+
+    @Test
+    void aTableTakesTheColumnsItsNotesNameAndIsReadOnly() {
+        RequirementSpec.Field history = field("executionHistory", "Execution history", "table", null, List.of(),
+                "Table with Date, Amount, Status, Failure Reason for last 5 entries");
+
+        for (String name : List.of("Standing Instruction", "Standing Instruction Details", "Review Standing Instruction")) {
+            ScreenModel.Component table = ScreenModels.fromSpec(screen(name, List.of(history), List.of())).sections().getFirst().components().getFirst();
+            assertThat(table.type()).as(name).isEqualTo("table");
+            assertThat(table.options()).as(name).containsExactly("Date", "Amount", "Status", "Failure Reason");
+            assertThat(table.readonly()).as(name).isTrue();
+        }
+        assertThat(ScreenModels.columnsIn("The list shows the beneficiary, amount, frequency and next execution date."))
+                .containsExactly("Beneficiary", "Amount", "Frequency", "Next execution date");
+        assertThat(ScreenModels.columnsIn("Shown with care")).isEmpty();
+    }
+
+    @Test
+    void aCancelOfItsOwnIsNotDoubled() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"title": "x", "requirements": [{"id": "FR-006", "title": "Cancel instruction",
+                  "description": "The customer can cancel a standing instruction from the list.", "screens": ["Standing Instruction List"]}]}
+                """, "x");
+        ScreenModel list = ScreenModels.fromSpec(screen("Standing Instruction List", List.of(field("beneficiary", null, "text", null, List.of(), null)),
+                List.of(new RequirementSpec.Action("View", null), new RequirementSpec.Action("Cancel Instruction", null))));
+
+        assertThat(ScreenDesignService.withRequirementActions(list, spec).actions()).extracting(ScreenModel.ActionButton::label)
+                .containsExactly("View", "Cancel Instruction");
+    }
+
+    @Test
+    void payeeChipsAreAChoiceNotAMandatoryText() {
+        RequirementSpec.Field chips = field("payeeChips", "Payee chips", "text", true, List.of("Max 5 chips"),
+                "Quick-pick of the customer's favourite payees");
+
+        ScreenModel.Component c = ScreenModels.fromSpec(screen("Quick Transfer", List.of(chips), List.of())).sections().getFirst().components().getFirst();
+
+        assertThat(c.type()).isEqualTo("checkbox");
+        assertThat(c.required()).isFalse();
+        assertThat(c.maxLength()).isNull();
+        assertThat(c.options()).isNotEmpty();
+    }
+
+    @Test
+    void aListWithoutFieldsTakesItsColumnsFromItsRequirement() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"title": "x", "requirements": [{"id": "FR-004", "title": "View instructions",
+                  "description": "The list shows the beneficiary, amount, frequency and next execution date.", "screens": ["Standing Instruction List"]}]}
+                """, "x");
+        ScreenModel bare = ScreenModels.fromSpec(screen("Standing Instruction List", List.of(), List.of()));
+
+        ScreenModel filled = ScreenDesignService.fillEmptyList(bare, spec);
+
+        assertThat(filled.sections().getFirst().components()).singleElement().satisfies(t -> {
+            assertThat(t.type()).isEqualTo("table");
+            assertThat(t.options()).containsExactly("Beneficiary", "Amount", "Frequency", "Next execution date");
+        });
+        // a confirmation without fields stays as it is (the designer's checks say it has no fields)
+        ScreenModel done = ScreenModels.fromSpec(screen("Transfer Confirmation", List.of(), List.of()));
+        assertThat(ScreenDesignService.fillEmptyList(done, spec)).isEqualTo(done);
+    }
 }

@@ -193,6 +193,16 @@ public class RequirementService {
         return detail(requirements.save(requirement));
     }
 
+    /**
+     * " Screens without fields: Transfer History, Confirmation. Add their fields by editing the spec, or Retry." for the
+     * spec's message; empty when every screen has fields. A model sometimes drafts a list or confirmation screen bare.
+     */
+    static String noFieldsNote(RequirementSpec spec) {
+        List<String> bare = spec.screens().stream().filter(s -> s.fields().isEmpty()).map(RequirementSpec.Screen::name).toList();
+        return bare.isEmpty() ? "" : " Screens without fields: " + String.join(", ", bare)
+                + ". Add their fields by editing the spec, or draft it again with Retry.";
+    }
+
     /** A message as one sentence ending with a single period: "limit." stays, "limit" gets one. */
     static String sentence(String message) {
         String m = message == null ? "unknown error" : message.strip();
@@ -266,7 +276,7 @@ public class RequirementService {
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
-                    + spec.openQuestions().size() + " open question(s).");
+                    + spec.openQuestions().size() + " open question(s)." + noFieldsNote(spec));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow): the requirement must not stay "processing"
             log.error("Drafting the spec for requirement {} failed", id, e);
@@ -292,7 +302,8 @@ public class RequirementService {
             result = DocumentStructure.apply(result, DocumentStructure.read(requirement.getDocumentText()));
             result = SpecGrounding.apply(result, requirement.getDocumentText());
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
-            requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left.");
+            requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left."
+                    + noFieldsNote(result));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow): the requirement must not stay "updating"
             log.error("Updating the spec for requirement {} failed", id, e);

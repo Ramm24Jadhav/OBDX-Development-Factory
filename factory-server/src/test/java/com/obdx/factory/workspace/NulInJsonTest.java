@@ -47,9 +47,18 @@ class NulInJsonTest {
     }
 
     @Test
-    void brokenJsonSaysSo() throws Exception {
+    void brokenJsonSaysSoWithoutTheParsersInternals() throws Exception {
         mvc.perform(post("/api/workspaces").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"name\": "))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.startsWith("The request could not be read")));
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.startsWith("The request could not be read")))
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.endsWith("Check the data sent.")))
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Feature"))))
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("$"))));
+        // a wrong type names the field, not the class it was read into
+        mvc.perform(post("/api/workspaces").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": {\"x\": 1}, \"bankName\": \"Bank A\", \"obdxVersion\": \"22.x\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.startsWith("The request could not be read (field \"name\"")))
+                .andExpect(jsonPath("$.detail", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("WorkspaceRequest"))));
     }
 }

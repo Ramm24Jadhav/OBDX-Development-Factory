@@ -124,7 +124,8 @@ public class ScreenDesignService {
                         && r.description().toLowerCase(java.util.Locale.ROOT).contains(key)))
                 .anyMatch(r -> ((r.title() == null ? "" : r.title()) + " " + (r.description() == null ? "" : r.description()))
                         .toLowerCase(java.util.Locale.ROOT).matches("(?s).*\\bcancel\\w*\\b.*"));
-        if (!cancels || model.actions().stream().anyMatch(a -> a.label().equalsIgnoreCase("Cancel"))) {
+        // "Cancel Instruction" is the cancel already: no second, generic one
+        if (!cancels || model.actions().stream().anyMatch(a -> a.label().toLowerCase(java.util.Locale.ROOT).contains("cancel"))) {
             return model;
         }
         List<ScreenModel.ActionButton> actions = new ArrayList<>(model.actions());
@@ -134,6 +135,33 @@ public class ScreenDesignService {
         }
         return ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description(), model.changeType(), model.sections(),
                 actions, model.stage(), model.channels()));
+    }
+
+    /**
+     * A list screen the spec drafted without fields gets a table whose columns are what its requirement says the list
+     * shows ("The list shows the beneficiary, amount, frequency and next execution date"); unchanged when it says none.
+     */
+    static ScreenModel fillEmptyList(ScreenModel model, RequirementSpec spec) {
+        boolean empty = model.sections().stream().allMatch(s -> s.components().isEmpty());
+        if (!empty || !ScreenModels.isList(model.name())) {
+            return model;
+        }
+        for (RequirementSpec.FunctionalRequirement r : spec.requirements()) {
+            if (r.screens().stream().noneMatch(s -> s.equalsIgnoreCase(model.name()))) {
+                continue;
+            }
+            List<String> columns = ScreenModels.columnsIn(r.description());
+            if (!columns.isEmpty()) {
+                ScreenModel.Component table = new ScreenModel.Component(null, "table", ScreenModels.camel(model.name()), model.name(), null,
+                        null, null, null, null, columns, List.of(), true);
+                List<ScreenModel.Section> sections = new ArrayList<>(model.sections());
+                ScreenModel.Section first = sections.getFirst();
+                sections.set(0, new ScreenModel.Section(first.id(), first.title(), first.columns(), List.of(table)));
+                return ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description(), model.changeType(),
+                        sections, model.actions(), model.stage(), model.channels()));
+            }
+        }
+        return model;
     }
 
     /** Whether a screen has a field the customer fills in (not only read-only text and tables). */
@@ -156,8 +184,8 @@ public class ScreenDesignService {
         List<String> channels = channels(requirement.spec(), requirement.documentText());
         ScreenModel initiate = null;
         for (RequirementSpec.Screen screen : requirement.spec().screens()) {
-            ScreenModel model = withRequirementActions(stepAfter(ScreenModels.fromSpec(screen, channels, requirement.spec().businessRules()),
-                    initiate), requirement.spec());
+            ScreenModel model = withRequirementActions(fillEmptyList(stepAfter(ScreenModels.fromSpec(screen, channels,
+                    requirement.spec().businessRules()), initiate), requirement.spec()), requirement.spec());
             // The nearest screen before that captures input (an initiate screen, or a dashboard widget with inputs)
             if (capturesInput(model)) {
                 initiate = model;

@@ -98,20 +98,28 @@ public final class ScreenModels {
                         maxLength = maxLengthIn(validation, maxLength);
                     }
                 }
-                boolean readOnly = shows || details;
-                String type = isListField(field) ? "table" : readOnly ? "display" : fieldType;
+                boolean chips = isChips(field);
+                boolean table = isListField(field);
+                // A table shows records, so it is read-only wherever it is
+                boolean readOnly = shows || details || table;
+                String type = table ? "table" : chips ? "checkbox" : readOnly ? "display" : fieldType;
                 String label = field.label() != null ? field.label() : humanize(field.name());
                 List<String> options = List.of();
-                if (ComponentCatalog.find(type).orElseThrow().hasOptions()) {
+                if (table) {
+                    List<String> columns = columnsIn(field);
+                    options = columns.isEmpty() ? defaultOptions("table") : columns;
+                } else if (ComponentCatalog.find(type).orElseThrow().hasOptions()) {
                     options = options(field, type);
                     List<String> fromRules = optionsInRules(label, field.name(), rules);
                     if (options.equals(defaultOptions(type)) && fromRules.size() >= 2) {
                         options = fromRules;
                     }
                 }
+                // Quick-pick chips are a choice the customer may make, not a mandatory input
+                Boolean required = readOnly ? null : chips ? Boolean.FALSE : field.mandatory();
                 components.add(new ScreenModel.Component(null, type, field.name(), label,
-                        readOnly ? null : field.mandatory(), field.notes(), null, readOnly ? null : maxLength, field.defaultValue(),
-                        options, readOnly ? List.of() : field.validations(), "display".equals(type) ? true : null));
+                        required, field.notes(), null, readOnly || chips ? null : maxLength, field.defaultValue(),
+                        options, readOnly ? List.of() : field.validations(), "display".equals(type) || table ? true : null));
             }
             components = withShownWhen(components, screen.fields());
         }
@@ -160,6 +168,59 @@ public final class ScreenModels {
         String text = (field.label() != null ? field.label() : humanize(field.name())) + " " + (field.notes() == null ? "" : field.notes());
         return "table".equalsIgnoreCase(field.type()) || "list".equalsIgnoreCase(field.type())
                 || LIST_FIELD.matcher(text.length() > 300 ? text.substring(0, 300) : text).find();
+    }
+
+    private static final Pattern CHIPS = Pattern.compile("(?i)\\bchips?\\b|\\bquick[- ]?picks?\\b");
+
+    /** "Payee chips", "Max 5 chips", "quick-pick of payees": a set of choices shown as chips (a checkbox set in the design). */
+    static boolean isChips(RequirementSpec.Field field) {
+        StringBuilder text = new StringBuilder(field.name() == null ? "" : humanize(field.name())).append(' ')
+                .append(field.label() == null ? "" : field.label()).append(' ').append(field.notes() == null ? "" : field.notes());
+        field.validations().forEach(v -> text.append(' ').append(v));
+        return CHIPS.matcher(text.length() > 500 ? text.substring(0, 500) : text).find();
+    }
+
+    /** "with Date, Amount, Status, Failure Reason for last 5 entries", "columns: A, B and C", "showing A, B, C" */
+    private static final Pattern COLUMNS = Pattern.compile("(?i)\\b(?:with|columns?|showing|shows|show|displays?|lists?)\\s*:?\\s*(?:the\\s+)?"
+            + "([^.;:()\\n]{2,300})");
+
+    /** The column names a table field's text gives, or empty. */
+    static List<String> columnsIn(RequirementSpec.Field field) {
+        for (String text : new String[] {field.notes(), field.label(), field.source(), String.join(". ", field.validations())}) {
+            List<String> columns = columnsIn(text);
+            if (!columns.isEmpty()) {
+                return columns;
+            }
+        }
+        return List.of();
+    }
+
+    /** "Table with Date, Amount, Status, Failure Reason for last 5 entries" -> Date, Amount, Status, Failure Reason. */
+    static List<String> columnsIn(String text) {
+        if (text == null) {
+            return List.of();
+        }
+        Matcher m = COLUMNS.matcher(text.length() > 500 ? text.substring(0, 500) : text);
+        while (m.find()) {
+            String list = m.group(1);
+            if (!list.contains(",") && !list.matches("(?i).*\\band\\b.*")) {
+                continue;
+            }
+            List<String> columns = new ArrayList<>();
+            for (String part : list.split("\\s*,\\s*|\\s+and\\s+")) {
+                // "Failure Reason for last 5 entries": the column ends where the sentence goes on
+                String column = part.replaceAll("(?i)\\s+(?:for|of|in|from|per|by|on|over|within)\\s+.*$", "")
+                        .replaceAll("(?i)^(?:shows?|showing|displays?|lists?|with|contains?)\\s+", "")
+                        .replaceAll("(?i)^(?:the|a|an|and|its|their)\\s+", "").strip();
+                if (!column.isEmpty()) {
+                    columns.add(Character.toUpperCase(column.charAt(0)) + column.substring(1));
+                }
+            }
+            if (columns.size() >= 2 && columns.size() <= 12 && columns.stream().allMatch(c -> c.length() <= 40 && c.split("\\s+").length <= 4)) {
+                return columns;
+            }
+        }
+        return List.of();
     }
 
     /** A field the customer fills in: mandatory, with validations, or a choice. */

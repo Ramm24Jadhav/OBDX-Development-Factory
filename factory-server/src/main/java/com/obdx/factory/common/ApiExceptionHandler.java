@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -77,9 +78,38 @@ public class ApiExceptionHandler {
                 return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, JsonConfig.NUL_MESSAGE);
             }
         }
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The request could not be read: "
-                + Messages.reason(e.getMostSpecificCause()).replaceAll("[.]+$", "") + ". Check the data sent.");
+        // The parser's own message names its classes and features: it goes to the log, the answer says where in plain words
+        log.info("Unreadable request body: {}", Messages.reason(e.getMostSpecificCause()));
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, unreadableMessage(e));
     }
+
+    /** "The request could not be read (field "name", line 1, column 9). Check the data sent." */
+    static String unreadableMessage(Throwable e) {
+        String field = null;
+        tools.jackson.core.TokenStreamLocation location = null;
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof tools.jackson.core.JacksonException j) {
+                for (tools.jackson.core.JacksonException.Reference r : j.getPath()) {
+                    if (r.getPropertyName() != null && r.getPropertyName().matches("[\\w.-]{1,60}")) {
+                        field = r.getPropertyName();
+                    }
+                }
+                if (location == null && j.getLocation() != null && j.getLocation().getLineNr() > 0) {
+                    location = j.getLocation();
+                }
+            }
+        }
+        List<String> where = new java.util.ArrayList<>();
+        if (field != null) {
+            where.add("field \"" + field + "\"");
+        }
+        if (location != null) {
+            where.add("line " + location.getLineNr() + ", column " + location.getColumnNr());
+        }
+        return "The request could not be read" + (where.isEmpty() ? "" : " (" + String.join(", ", where) + ")") + ". Check the data sent.";
+    }
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     /** A path with a character no file name can have (NUL, or ':' and '*' on Windows). */
     @ExceptionHandler(java.nio.file.InvalidPathException.class)
