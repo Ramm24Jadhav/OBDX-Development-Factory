@@ -51,6 +51,13 @@ public class ChangeController {
         return service.list(workspaceId);
     }
 
+    /** Every change of the workspace with its files and builds, in one request (the dashboard and notifications). */
+    @GetMapping("/api/workspaces/{workspaceId}/changes/details")
+    public List<ChangeService.ChangeDetail> details(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return service.details(workspaceId);
+    }
+
     @PostMapping("/api/requirements/{requirementId}/changes")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail create(@PathVariable UUID requirementId) {
@@ -132,8 +139,11 @@ public class ChangeController {
     public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
         ChangeService.ChangeDetail change = service.deliverToBranch(id, incomplete);
-        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision()
-                + (incomplete ? ", delivered without the planned files not written (confirmed)" : ""));
+        long written = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
+        long notWritten = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING
+                || f.status() == ChangeFileStore.Status.FAILED).count();
+        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision() + ", "
+                + written + " file(s) committed" + (incomplete ? ", " + notWritten + " planned file(s) not written left out (confirmed)" : ""));
         return change;
     }
 

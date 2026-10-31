@@ -1073,7 +1073,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (spec) {
           const missing = (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name)
             || (f.label && norm(c.label) === norm(f.label))));
-          if (missing.length === 0) {
+          if (missing.length === 0 && (spec.fields || []).length > 0) {
             add('ok', 'All ' + spec.fields.length + ' fields of the requirement are on the screen');
           }
           missing.forEach((f) => add('warn', '"' + (f.label || f.name) + '" from the requirement is not on the screen', null, 'Add',

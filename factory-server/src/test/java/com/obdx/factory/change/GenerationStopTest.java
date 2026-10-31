@@ -59,8 +59,23 @@ class GenerationStopTest {
     @Test
     void saysWhichLimitStoppedIt() {
         assertThat(ChangeService.limitReason(new ModelLimitReachedException("x", true, null))).isEqualTo("The model's daily limit is used up.");
-        assertThat(ChangeService.limitReason(new ModelLimitReachedException("asks to wait about 12 minutes", false, null)))
-                .contains("rate limit", "about 12 minutes");
+        assertThat(ChangeService.limitReason(new ModelLimitReachedException("asks to wait", false, null))).contains("rate limit");
+
+        // with the wait the server gave, the message says when and how to go on
+        ModelLimitReachedException daily = new ModelLimitReachedException("x", true, "about 15 minutes", null);
+        assertThat(ChangeService.stoppedMessage(daily, null, 3, 8)).isEqualTo("The model's daily limit is used up. Generation stopped after 3 "
+                + "of 8 file(s); the files already written are kept. Try again in about 15 minutes, then click Continue generation.");
+        assertThat(ChangeService.stoppedMessage(new ModelLimitReachedException("x", true, null), null, 3, 8))
+                .endsWith("Click Continue generation when the limit resets.");
+        assertThat(ChangeService.stoppedMessage(daily, "ui/a.js", 3, 8)).isEqualTo("Writing ui/a.js again stopped: The model's daily limit is "
+                + "used up. The previous version is kept; write it again in about 15 minutes.");
+    }
+
+    @Test
+    void anIncompleteDeliverySaysWhatWasLeftOut() {
+        assertThat(ChangeService.deliveredMessage("https://svn/b/cr-1", 4, 3, 5, List.of("ui/a.js", "ui/a.html")))
+                .isEqualTo("Committed 3 of 5 file(s) to https://svn/b/cr-1 in revision 4; not delivered: ui/a.js, ui/a.html.");
+        assertThat(ChangeService.deliveredMessage("https://svn/b/cr-1", 4, 5, 5, List.of())).isEqualTo("Committed to https://svn/b/cr-1 in revision 4.");
     }
 
     @Test

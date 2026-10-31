@@ -65,10 +65,11 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
       settled(api.get('workspaces/' + w.id + '/designs')),
       settled(api.get('workspaces/' + w.id + '/changes')),
       settled(api.get('workspaces/' + w.id + '/index')),
-      settled(api.get('workspaces/' + w.id + '/imports'))
-    ]).then(([requirements, designs, changes, index, imports]) =>
-      // The builds are in each change's detail; a workspace has few changes.
-      Promise.all((changes || []).map((c) => settled(api.get('changes/' + c.id)))).then((details) => ({
+      settled(api.get('workspaces/' + w.id + '/imports')),
+      // Every change's detail (its files and builds) in one request, not one per change
+      settled(api.get('workspaces/' + w.id + '/changes/details'))
+    ]).then(([requirements, designs, changes, index, imports, changeDetails]) =>
+      Promise.resolve(changeDetails || []).then((details) => ({
         workspace: w,
         requirements: requirements || [],
         designs: designs || [],

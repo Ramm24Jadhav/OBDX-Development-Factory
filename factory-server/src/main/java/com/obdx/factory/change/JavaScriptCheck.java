@@ -106,6 +106,14 @@ final class JavaScriptCheck {
 
     /** Where the structure breaks (an unbalanced bracket, an unclosed string or comment), or null. */
     static String structure(String content) {
+        return scan(content, null);
+    }
+
+    /**
+     * Scans the code once: where its structure breaks, or null; and, when literals is given, the ranges of its comments,
+     * strings, template literals and regular expression literals (names inside them are not code).
+     */
+    private static String scan(String content, List<SourceScan.Range> literals) {
         Deque<Character> open = new ArrayDeque<>();
         Deque<Integer> openLines = new ArrayDeque<>();
         int line = 1;
@@ -120,9 +128,11 @@ final class JavaScriptCheck {
                 continue;
             }
             if (c == '/' && i + 1 < content.length() && content.charAt(i + 1) == '/') {
+                int from = i;
                 while (i + 1 < content.length() && content.charAt(i + 1) != '\n') {
                     i++;
                 }
+                add(literals, from, i + 1);
                 continue;
             }
             if (c == '/' && i + 1 < content.length() && content.charAt(i + 1) == '*') {
@@ -131,6 +141,7 @@ final class JavaScriptCheck {
                     return "a comment starting on line " + line + " is not closed";
                 }
                 line += count(content, i, end);
+                add(literals, i, end + 2);
                 i = end + 1;
                 continue;
             }
@@ -151,6 +162,7 @@ final class JavaScriptCheck {
                 if (j >= content.length()) {
                     return "a string starting on line " + start + " is not closed";
                 }
+                add(literals, i, j + 1);
                 i = j;
                 previous = 'a';
                 continue;
@@ -174,6 +186,7 @@ final class JavaScriptCheck {
                 if (j >= content.length() || content.charAt(j) != '/') {
                     return "a regular expression on line " + line + " is not closed";
                 }
+                add(literals, i, j + 1);
                 i = j;
                 previous = 'a';
                 continue;
@@ -195,6 +208,12 @@ final class JavaScriptCheck {
             previous = c;
         }
         return open.isEmpty() ? null : "the '" + open.peek() + "' opened on line " + openLines.peek() + " is not closed";
+    }
+
+    private static void add(List<SourceScan.Range> literals, int start, int end) {
+        if (literals != null) {
+            literals.add(new SourceScan.Range(start, end));
+        }
     }
 
     private static boolean endsWithKeyword(String content, int i) {
@@ -219,6 +238,11 @@ final class JavaScriptCheck {
 
     /** The content with comments, strings and template literals blanked, so names inside them are not taken as code. */
     static String codeOnly(String content) {
+        List<SourceScan.Range> literals = new ArrayList<>();
+        if (scan(content, literals) == null) {
+            // Regular expression literals too: a pattern such as [\w\s.,] holds no name "s"
+            return SourceScan.blank(content, literals);
+        }
         SourceScan.Parts parts = SourceScan.scan(content, SourceScan.Syntax.CODE);
         List<SourceScan.Range> both = new ArrayList<>(parts.comments());
         both.addAll(parts.strings());

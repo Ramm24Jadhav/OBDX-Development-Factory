@@ -553,7 +553,7 @@ button.fx-chip:hover { border-color: var(--fx-primary-border); color: var(--fx-p
 .fx-dialog-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; background: var(--fx-primary-soft); color: var(--fx-primary-text); }
 .fx-dialog-icon--danger { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
 .fx-dialog-title { margin: 0; font-size: var(--fx-text-lg); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-.fx-dialog-body { margin: 12px 0 0 50px; font-size: var(--fx-text-base); line-height: 1.5; color: var(--fx-text-body); }
+.fx-dialog-body { margin: 12px 0 0 50px; font-size: var(--fx-text-base); line-height: 1.5; color: var(--fx-text-body); overflow-wrap: anywhere; }
 .fx-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 /* Tooltip: [data-fx-tip="text"] on any focusable element */
@@ -7405,6 +7405,7 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-ch-folder .factory-nav-icon { color: var(--fx-warning); }
 .factory-ch-badge-m { background: var(--fx-success-soft); color: var(--fx-success-text); }
 .factory-ch-badge-a { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
+.factory-ch-badge-x { background: var(--fx-warning-soft); color: var(--fx-warning-text); font-weight: 600; white-space: nowrap; }
 .factory-ch-none { margin: 6px 0; font-size: var(--fx-text-sm); }
 .factory-ch-tableempty { margin: 0; padding: 12px; font-size: var(--fx-text-sm); }
 .factory-ch-code .fx-empty { padding: 40px 16px; }

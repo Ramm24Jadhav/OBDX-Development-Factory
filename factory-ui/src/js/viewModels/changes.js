@@ -349,11 +349,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!d) {
           return [];
         }
-        const created = d.files.filter((f) => f.action === 'create').length;
+        // After generation only the files written count as modified or new; the others are named as not written
+        const generated = ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(d.status) >= 0;
+        const counted = generated ? d.files.filter((f) => f.status !== 'PENDING' && f.status !== 'FAILED') : d.files;
+        const missing = d.files.length - counted.length;
+        const created = counted.filter((f) => f.action === 'create').length;
         return [
           { label: 'Requirement', value: 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase() },
           { label: 'Created', value: new Date(d.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), title: ui.when(d.createdAt) },
-          { label: 'Files', value: (d.files.length - created) + ' modified, ' + created + ' new' },
+          { label: 'Files', value: (counted.length - created) + ' modified, ' + created + ' new' + (missing ? ', ' + missing + ' not written' : '') },
           { label: 'Branch', value: d.branchUrl ? d.branchUrl.split('/').slice(-2).join('/') : 'Not delivered' },
           { label: 'Code at', value: d.baseRevision ? 'r' + d.baseRevision : '–' },
           { label: 'Requested by', value: d.createdBy || '–' }
@@ -381,6 +385,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.fileFilter = ko.observable('');
       this.fileFilterInput = ui.value(this.fileFilter);
       const ACTION = { create: 'A', modify: 'M' };
+      // After generation a planned file the model did not write is marked as such, not as added or modified
+      const AFTER_GENERATION = ['GENERATED', 'DELIVERED', 'CLOSED'];
+      const notWritten = (f) => !!f && !!this.detail() && AFTER_GENERATION.indexOf(this.detail().status) >= 0
+        && (f.status === 'PENDING' || f.status === 'FAILED');
+      const badgeOf = (f, action) => (notWritten(f)
+        ? { badge: 'not written', badgeCss: 'factory-ch-badge factory-ch-badge-x' }
+        : { badge: ACTION[action] || 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (action === 'create' ? 'a' : 'm') });
       this.treeFilter = ko.observable('all');
       this.collapsed = ko.observable({});
       const workspaceName = () => {
@@ -445,7 +456,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           });
           node.files.slice().sort((a, b) => a.path.localeCompare(b.path)).forEach((f) => rows.push({
             folder: false, name: f.path.split('/').pop(), style: { paddingLeft: (depth * 12 + 2) + 'px' }, path: f.path,
-            badge: ACTION[f.action] || 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (f.action === 'create' ? 'a' : 'm'),
+            badge: badgeOf(f, f.action).badge, badgeCss: badgeOf(f, f.action).badgeCss,
             css: ko.pureComputed(() => 'factory-ch-node factory-ch-file' + (this.file() && this.file().path === f.path ? ' factory-ch-file-on' : '')),
             open: () => this.openFile(f.path)
           }));
@@ -569,10 +580,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.fileTabs = ko.pureComputed(() => this.openTabs().map((path) => {
         const f = fileOf(path);
-        const created = f && f.action === 'create';
+        const badge = badgeOf(f, f ? f.action : 'modify');
         return {
-          name: path.split('/').pop(), path: path, badge: created ? 'A' : 'M',
-          badgeCss: 'factory-ch-badge factory-ch-badge-' + (created ? 'a' : 'm'),
+          name: path.split('/').pop(), path: path, badge: badge.badge, badgeCss: badge.badgeCss,
           css: 'factory-ch-filetab' + (this.file() && this.file().path === path ? ' factory-ch-filetab-on' : ''),
           open: () => { if (!this.file() || this.file().path !== path) { this.openFile(path); } },
           close: () => this.closeTab(path)

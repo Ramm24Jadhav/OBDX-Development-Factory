@@ -177,17 +177,18 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 if (daily && (!waitGiven(text) || wait.compareTo(MAX_WAIT) > 0)) {
                     throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
                             + " has used up its daily limit (" + serverMessage(text) + "). Try again "
-                            + (waitGiven(text) ? "in " + roughly(wait) : "later") + ", or use a plan or model with a larger limit.", true, e);
+                            + (waitGiven(text) ? "in " + roughly(wait) : "later") + ", or use a plan or model with a larger limit.", true,
+                            waitGiven(text) ? roughly(wait) : null, e);
                 }
                 if (attempt >= RATE_LIMIT_ATTEMPTS) {
                     throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
                             + " stayed at its rate limit after " + attempt + " tries (" + serverMessage(text) + "). Try again in a few "
-                            + "minutes, or use a plan or model with larger limits.", daily, e);
+                            + "minutes, or use a plan or model with larger limits.", daily, "a few minutes", e);
                 }
                 if (wait.compareTo(MAX_WAIT) > 0) {
                     throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
                             + " reached its rate limit and asks to wait " + roughly(wait) + ". Try again then, or use a plan or model "
-                            + "with a larger limit.", false, e);
+                            + "with a larger limit.", false, roughly(wait), e);
                 }
                 try {
                     Thread.sleep(wait);

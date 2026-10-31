@@ -307,10 +307,7 @@ public class ChangeService {
             List<ChangeFileStore.ChangeFile> result = files.files(id);
             long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
                     || f.status() == ChangeFileStore.Status.UNCHANGED).count();
-            change.status(ChangeRequest.Status.GENERATED, onlyPath != null
-                    ? "Writing " + onlyPath + " again stopped: " + limitReason(e) + " The previous version is kept; write it again later."
-                    : limitReason(e) + " Generation stopped after " + written + " of " + result.size() + " file(s). Click Continue "
-                    + "generation when the limit resets; the files already written are kept.");
+            change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size()));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the change must not stay "generating"
             log.error("Code generation for change {} failed", id, e);
@@ -359,8 +356,23 @@ public class ChangeService {
                 + (pending > 0 ? ", " + pending + " not written yet (Continue generation)" : "") + ". Review the changes before delivering them.";
     }
 
+    /**
+     * What the change says when the model's limit stopped it: why, how far it got, and when and how to go on ("Try again
+     * in about 15 minutes, then click Continue generation.").
+     */
+    static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned) {
+        String when = e.retryIn() != null ? "in " + e.retryIn() : null;
+        if (onlyPath != null) {
+            return "Writing " + onlyPath + " again stopped: " + limitReason(e) + " The previous version is kept; write it again "
+                    + (when != null ? when + "." : "later.");
+        }
+        return limitReason(e) + " Generation stopped after " + written + " of " + planned + " file(s); the files already written are "
+                + "kept." + (when != null ? " Try again " + when + ", then click Continue generation."
+                : " Click Continue generation when the limit resets.");
+    }
+
     static String limitReason(ModelLimitReachedException e) {
-        return e.daily() ? "The model's daily limit is used up." : "The model is at its rate limit (" + Messages.reason(e) + ").";
+        return e.daily() ? "The model's daily limit is used up." : "The model's server is at its rate limit.";
     }
 
     /**
@@ -653,6 +665,8 @@ public class ChangeService {
                 problems.addAll(CrossFileJava.missingMethods(file.generated(), classes));
             } else if (lower.endsWith(".html")) {
                 problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
+            } else if (lower.endsWith(".js")) {
+                problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
             }
             FileChecks.Result check = withCrossChecks(file.checkStatus(), file.checkMessage(), problems);
             if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
@@ -663,7 +677,32 @@ public class ChangeService {
 
     /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
     static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds",
-            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS);
+            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, JsModuleChecks.CALLED_BEFORE_SET, JsModuleChecks.NEVER_SET,
+            JsModuleChecks.UNKNOWN_MODULES);
+
+    /**
+     * Whether the code base knows an AMD module: another file (indexed, or written in this change) names it in quotes,
+     * as a define list or the RequireJS configuration does, or an indexed file's path has its name. Null when no
+     * JavaScript is indexed, so it cannot be told.
+     */
+    private Predicate<String> moduleKnown(UUID workspaceId, String path, Map<String, String> written) {
+        Boolean anyJs = jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND language = 'javascript')",
+                Boolean.class, workspaceId);
+        if (!Boolean.TRUE.equals(anyJs)) {
+            return null;
+        }
+        return module -> {
+            String quoted1 = "'" + module + "'";
+            String quoted2 = "\"" + module + "\"";
+            if (written.entrySet().stream().anyMatch(e -> !e.getKey().equals(path) && (e.getValue().contains(quoted1) || e.getValue().contains(quoted2)))) {
+                return true;
+            }
+            String name = module.substring(module.lastIndexOf('/') + 1);
+            return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_chunk WHERE workspace_id = ? AND path <> ? "
+                            + "AND (strpos(content, ?) > 0 OR strpos(content, ?) > 0)) OR EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? "
+                            + "AND strpos(lower(path), lower(?)) > 0)", Boolean.class, workspaceId, path, quoted1, quoted2, workspaceId, name));
+        };
+    }
 
     /**
      * The cross-file findings of a file's check, for the model when the file is written again: they are certain (the
@@ -813,6 +852,9 @@ public class ChangeService {
                     + ", plan approved by " + change.getPlanApprovedBy() + ")";
             long revision = svn.multiCommit(root, message, operations, credentials);
             change.delivered(root + "/" + branch, revision);
+            List<ChangeFileStore.ChangeFile> all = files.files(id);
+            change.status(ChangeRequest.Status.DELIVERED, deliveredMessage(root + "/" + branch, revision, deliverable.size(),
+                    all.stream().filter(f -> f.status() != ChangeFileStore.Status.UNCHANGED).count(), unwritten(all)));
             ChangeDetail delivered = detail(changes.save(change));
             // What this change touched becomes a suggested knowledge note, for the next similar change
             ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
@@ -835,6 +877,12 @@ public class ChangeService {
     @Transactional(readOnly = true)
     public ChangeDetail get(UUID id) {
         return detail(find(id));
+    }
+
+    /** The details of every change of a workspace, newest first. */
+    @Transactional(readOnly = true)
+    public List<ChangeDetail> details(UUID workspaceId) {
+        return changes.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId).stream().map(this::detail).toList();
     }
 
     @Transactional(readOnly = true)
@@ -1011,6 +1059,18 @@ public class ChangeService {
     private Predicate<String> existsIn(UUID workspaceId) {
         Path workingCopy = storage.workingCopy(workspaceId);
         return path -> Files.isRegularFile(workingCopy.resolve(path));
+    }
+
+    /**
+     * "Committed 3 of 5 file(s) to .../cr-1a2b3c4d in revision 4; not delivered: a.js, b.html." for a delivery made
+     * without the files not written; the usual message when every planned file went.
+     */
+    static String deliveredMessage(String branchUrl, long revision, int committed, long planned, List<String> notDelivered) {
+        if (notDelivered.isEmpty()) {
+            return "Committed to " + branchUrl + " in revision " + revision + ".";
+        }
+        return "Committed " + committed + " of " + planned + " file(s) to " + branchUrl + " in revision " + revision + "; not delivered: "
+                + String.join(", ", notDelivered) + ".";
     }
 
     /** Planned files that are not written (not yet, or the model could not write them). */
