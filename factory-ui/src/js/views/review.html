@@ -1,16 +1,18 @@
-<div class="oj-hybrid-padding factory-review-page">
+<div class="oj-hybrid-padding factory-review-page factory-rw-page">
   <oj-bind-if test="[[errorMessage()]]">
-    <p id="reviewError" class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+    <div id="reviewError" class="fx-alert fx-alert--danger" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
   </oj-bind-if>
 
   <oj-bind-if test="[[review()]]">
-    <p class="oj-text-color-secondary oj-typography-body-sm">Screen design for review</p>
-    <h1><oj-bind-text value="[[review().name]]"></oj-bind-text></h1>
+    <p class="factory-rw-overline">Screen design for review</p>
+    <h1 class="factory-rw-title"><oj-bind-text value="[[review().name]]"></oj-bind-text></h1>
     <oj-bind-if test="[[review().status === 'APPROVED']]">
-      <p id="reviewApproved" class="factory-approved">Approved by <oj-bind-text value="[[review().approvedBy]]"></oj-bind-text>. Thank you!</p>
+      <div id="reviewApproved" class="fx-alert fx-alert--success" role="status"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>
+        <span class="fx-alert-text">Approved by <oj-bind-text value="[[review().approvedBy]]"></oj-bind-text>. Thank you!</span></div>
     </oj-bind-if>
     <oj-bind-if test="[[review().status !== 'APPROVED']]">
-      <p>
+      <p class="factory-rw-intro">
         Please try the screen below: it uses sample data. Leave comments on anything that should change, or approve it
         when it is right. This link works until <oj-bind-text value="[[expires]]"></oj-bind-text>.
       </p>
@@ -18,45 +20,46 @@
   </oj-bind-if>
 
   <div :style.display="[[review() ? 'block' : 'none']]">
-    <oj-toolbar aria-label="Preview size">
+    <div class="fx-toggle-group factory-rw-sizes" role="group" aria-label="Preview size">
       <oj-bind-for-each data="[[viewports]]" as="vp">
         <template>
-          <oj-button chroming="[[vp.data.active ? 'callToAction' : 'outlined']]" on-oj-action="[[vp.data.selectAction]]">
-            <oj-bind-text value="[[vp.data.label]]"></oj-bind-text>
-          </oj-button>
+          <button type="button" :aria-pressed="[[vp.data.active ? 'true' : 'false']]" on-click="[[vp.data.selectAction]]"><oj-bind-text value="[[vp.data.label]]"></oj-bind-text></button>
         </template>
       </oj-bind-for-each>
-    </oj-toolbar>
+    </div>
     <div class="factory-frame-box">
       <iframe id="reviewPreview" title="Screen preview" :src="[[previewSrc]]" :style.width="[[frameWidth]]" class="factory-frame"></iframe>
     </div>
   </div>
 
   <oj-bind-if test="[[review()]]">
-    <h2>Comments</h2>
-    <oj-bind-for-each data="[[comments]]" as="cm">
-      <template>
-        <div class="factory-comment">
-          <strong><oj-bind-text value="[[cm.data.author]]"></oj-bind-text></strong>
-          <span class="oj-typography-body-xs oj-text-color-secondary"><oj-bind-text value="[[cm.data.meta]]"></oj-bind-text></span>
-          <div><oj-bind-text value="[[cm.data.text]]"></oj-bind-text></div>
-        </div>
-      </template>
-    </oj-bind-for-each>
-    <oj-bind-if test="[[comments().length === 0]]">
-      <p class="oj-text-color-secondary">No comments yet.</p>
-    </oj-bind-if>
+    <section class="fx-card factory-rw-comments" aria-labelledby="reviewCommentsTitle">
+      <h2 class="fx-card-title" id="reviewCommentsTitle">Comments</h2>
+      <oj-bind-for-each data="[[comments]]" as="cm">
+        <template>
+          <div class="factory-comment factory-rw-comment">
+            <span :class="[[cm.data.avatar]]" aria-hidden="true"><oj-bind-text value="[[cm.data.initials]]"></oj-bind-text></span>
+            <div><strong><oj-bind-text value="[[cm.data.author]]"></oj-bind-text></strong>
+              <span class="factory-rw-meta"><oj-bind-text value="[[cm.data.meta]]"></oj-bind-text></span>
+              <div class="factory-rw-text"><oj-bind-text value="[[cm.data.text]]"></oj-bind-text></div></div>
+          </div>
+        </template>
+      </oj-bind-for-each>
+      <oj-bind-if test="[[comments().length === 0]]">
+        <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><strong>No comments yet</strong>Click a field in the screen above to comment on it.</div>
+      </oj-bind-if>
 
-    <oj-bind-if test="[[review().status !== 'APPROVED']]">
-      <oj-form-layout max-columns="1">
-        <oj-input-text id="reviewerName" label-hint="Your name" value="{{author}}"></oj-input-text>
-        <oj-text-area id="reviewComment" rows="3" value="{{text}}"
-                      label-hint="[[selectedLabel() ? 'Comment on ' + selectedLabel() : 'Comment (click a field in the screen to comment on it)']]"></oj-text-area>
-      </oj-form-layout>
-      <oj-toolbar>
-        <oj-button id="sendCommentButton" on-oj-action="[[sendComment]]" disabled="[[!author() || !text()]]">Send comment</oj-button>
-        <oj-button id="reviewApproveButton" chroming="callToAction" on-oj-action="[[approve]]" disabled="[[!author()]]">Approve this design</oj-button>
-      </oj-toolbar>
-    </oj-bind-if>
+      <oj-bind-if test="[[review().status !== 'APPROVED']]">
+        <div class="fx-form factory-rw-form">
+          <fx-input id="reviewerName" label="Your name" value="{{author}}" autocomplete="name"></fx-input>
+          <fx-textarea id="reviewComment" rows="3" value="{{text}}"
+                       label="[[selectedLabel() ? 'Comment on ' + selectedLabel() : 'Comment (click a field in the screen to comment on it)']]"></fx-textarea>
+        </div>
+        <div class="fx-row factory-rw-actions">
+          <span :data-fx-tip="[[author() && text() ? null : 'Type your name and a comment first']]"><button type="button" id="sendCommentButton" :class="[[sending() ? 'fx-btn fx-btn--secondary is-loading' : 'fx-btn fx-btn--secondary']]" on-click="[[sendComment]]" :disabled="[[!author() || !text()]]">Send comment</button></span>
+          <span :data-fx-tip="[[author() ? null : 'Type your name first']]"><button type="button" id="reviewApproveButton" class="fx-btn fx-btn--primary" on-click="[[approve]]" :disabled="[[!author()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve this design</button></span>
+        </div>
+      </oj-bind-if>
+    </section>
   </oj-bind-if>
 </div>

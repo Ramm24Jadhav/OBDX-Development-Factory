@@ -147,6 +147,8 @@ public class SvnClient {
     /** @param clientOptions add the options of svn and svnmucc (svnadmin has none of them) */
     private String run(String executable, List<String> args, SvnCredentials credentials, Path workingDirectory, Duration timeout,
                        boolean clientOptions) {
+        // A host such as -oProxyCommand=... would reach ssh as an option
+        args.forEach(SvnUrls::requireSafe);
         List<String> command = new ArrayList<>();
         command.add(executable);
         command.addAll(args);

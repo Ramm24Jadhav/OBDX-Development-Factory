@@ -10,8 +10,14 @@ define([], function () {
     react: 'preview-react.html'
   };
 
-  /** Creates a connection; call attach() when the iframe is in the page and detach() when leaving it. */
-  function PreviewFrame(onSelect) {
+  /**
+   * Creates a connection; call attach() when the iframe is in the page and detach() when leaving it.
+   *
+   * @param onSelect called with the id of a component, action or section clicked in the preview
+   * @param onDrop   called when something is dropped on the preview: the component it was dropped on (to insert
+   *                 before) and the section, either may be null
+   */
+  function PreviewFrame(onSelect, onDrop) {
     let frame = null;
     let ready = false;
     let pending = null;
@@ -31,6 +37,8 @@ define([], function () {
         send();
       } else if (event.data.type === 'factory-preview-select' && onSelect) {
         onSelect(event.data.id);
+      } else if (event.data.type === 'factory-preview-drop' && onDrop) {
+        onDrop(event.data.targetId || null, event.data.sectionId || null);
       }
     };
 
@@ -53,9 +61,16 @@ define([], function () {
       ready = false;
     };
 
-    /** Shows the model in the preview; highlight is the id of a component or action to mark. */
-    this.show = (model, highlight) => {
-      pending = { model: model ? JSON.parse(JSON.stringify(model)) : null, highlight: highlight || null };
+    /**
+     * Shows the model in the preview; highlight is the id of a component or action to mark. context (optional) frames
+     * it as an OBDX page: bank, breadcrumb, steps and step of the journey, warnings by id, editing.
+     */
+    this.show = (model, highlight, context) => {
+      pending = {
+        model: model ? JSON.parse(JSON.stringify(model)) : null,
+        highlight: highlight || null,
+        context: context ? JSON.parse(JSON.stringify(context)) : null
+      };
       send();
     };
   }

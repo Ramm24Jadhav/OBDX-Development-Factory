@@ -1,6 +1,7 @@
 package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.PromptFit;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.Recipe;
 import com.obdx.factory.target.ScreenScaffolder;
@@ -29,12 +30,29 @@ public class CodeGenerator {
             - When modifying a file, keep everything that the change does not need to touch exactly as it is.
             - Implement what the plan item says, consistent with the other files of the change (same class, field,
               service and label names).
-            - Use only APIs and classes that exist in the code shown, or that this change creates.
+            - Use only APIs and classes that exist in the code shown, or that this change creates. Import every class
+              and annotation you use; a REST method whose @Path has {id} takes it with @PathParam("id").
+            - Security, as a bank's review expects:
+              - Take the customer or user from the session (as the codebase does), never from the request.
+              - Check that the customer owns what every lookup by ID returns.
+              - Validate amounts and inputs on the server, not only in the UI.
+              - Return error codes or messages from the resource bundle, never exception text.
+              - Log with placeholders, not +, and never log personal data.
+              - Payment initiation goes through OBDX's authorization (2FA) step, as the codebase does it.
+              - Encode IDs put in UI URLs (encodeURIComponent), and call the exact service paths the server code defines.
+            - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
+              say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
+              test per criterion, named or commented with the criterion's ID.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
 
     public record Result(String content, FileChecks.Result check, int attempts) {
     }
+
+    /** A design element with the designer's own markup, styles or script. */
+    private static final Pattern CUSTOM_CODE = Pattern.compile("\"(html|css|script)\":\"");
+    /** A design that is part of an OBDX transaction flow. */
+    private static final Pattern STAGES = Pattern.compile("\"stage\":\"(initiate|review|confirm)\"");
 
     private final ModelGateway modelGateway;
     private final ChangeProperties properties;
@@ -74,19 +92,35 @@ public class CodeGenerator {
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold) {
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
-        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()), recipe,
-                checks.targetGuidance(context.checks(), item.path()), scaffold);
-        String content = clean(modelGateway.chat(SYSTEM, prompt).reply());
-        FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+        String rules = checks.describeRules(context.checks(), item.path());
+        String guidance = checks.targetGuidance(context.checks(), item.path());
+        java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
+                guidance, scaffold, scale);
+        ModelGateway.ChatResult reply = PromptFit.chat(modelGateway, SYSTEM, prompt);
+        String content = clean(reply.reply());
+        FileChecks.Result check = checked(context, item, original, content, scaffold, reply.cutOff());
         int attempts = 1;
-        while (check.status() == FileChecks.Status.FAILED && attempts <= properties.fixAttempts()) {
-            String fix = prompt + "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
+        // A file cut off at the output limit is not fixed by asking with it again, which is longer still
+        while (check.status() == FileChecks.Status.FAILED && !reply.cutOff() && attempts <= properties.fixAttempts()) {
+            String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
-            content = clean(modelGateway.chat(SYSTEM, fix).reply());
-            check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+            reply = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + fix);
+            content = clean(reply.reply());
+            check = checked(context, item, original, content, scaffold, reply.cutOff());
             attempts++;
         }
         return new Result(content, check, attempts);
+    }
+
+    private FileChecks.Result checked(ChangeContext context, ChangePlan.Item item, String original, String content,
+                                      ScreenScaffolder.Scaffold scaffold, boolean cutOff) {
+        FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+        if (!cutOff) {
+            return check;
+        }
+        String cut = "The model stopped at its output limit, so the file is incomplete. Write it again with a model that writes "
+                + "longer answers, or finish it by hand.";
+        return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
 
     /** A screen of a React Native or React app must keep every field and action of the approved Screen Model. */
@@ -113,7 +147,7 @@ public class CodeGenerator {
 
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
                                  Map<String, String> examples, Map<String, String> earlier, String note, String rules,
-                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold) {
+                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold, double scale) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -124,9 +158,42 @@ public class CodeGenerator {
         user.append("\nThe whole change (").append(nullToDash(plan.summary())).append("):\n");
         user.append(plan.items().stream().map(i -> "- " + i.action() + " " + i.path() + ": " + nullToDash(i.purpose()))
                 .collect(Collectors.joining("\n"))).append("\n\n");
-        user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
+        user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), PromptFit.size(8000, scale))).append("\n\n");
+        if (!context.knowledge().isBlank()) {
+            user.append("OBDX knowledge (Oracle manuals and approved notes for this OBDX version; follow it where it applies):\n")
+                    .append(ChangeContext.cap(context.knowledge(), PromptFit.size(4000, scale))).append("\n\n");
+        }
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
-            user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
+            user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), PromptFit.size(6000, scale))).append("\n\n");
+            String designs = context.designsJson();
+            if (designs.contains("\"dataSource\":{")) {
+                user.append("Elements with a \"dataSource\" load their values from that API (in the screen's model, as the existing")
+                        .append(" components call services), take the list at \"path\" of the response, and use \"valueField\" and")
+                        .append(" \"labelField\" for each option; they are not fixed lists.\n\n");
+            }
+            if (designs.contains("\"visibleWhen\":{") || designs.contains("\"requiredWhen\":{")) {
+                user.append("\"visibleWhen\" shows an element only while the other element (by id) meets the condition, and")
+                        .append(" \"requiredWhen\" makes it mandatory only then: implement both with the view model's observables and")
+                        .append(" the template's conditional rendering and validators, as the existing code does.\n\n");
+            }
+            if (STAGES.matcher(designs).find()) {
+                user.append("Screens with \"stage\" initiate, review and confirm are one OBDX transaction flow: implement them the way")
+                        .append(" this codebase builds its flows (for example one component with initiate, review and confirm states,")
+                        .append(" or a train), with the initiate screen's data carried to review and the transaction call on confirm.\n\n");
+            }
+            if (designs.contains("\"channels\":[\"")) {
+                user.append("Build each screen only for the \"channels\" it lists (desktop, tablet, mobile-web, mobile-app) and make it")
+                        .append(" responsive across them.\n\n");
+            }
+            if (CUSTOM_CODE.matcher(designs).find()) {
+                user.append("Components with \"html\", \"css\" or \"script\" carry the designer's own code: use the html as that element's")
+                        .append(" markup in the template (with the code's bindings and resource bundle labels), the css (\"&\" is the element)")
+                        .append(" in the component's styles, and the script's behaviour in the view model, following the existing code.\n\n");
+            }
+            if (context.designsJson().contains("\"type\":\"component\"")) {
+                user.append("Components of type \"component\" are existing components of the bank's code: use the component named in")
+                        .append(" \"component\" exactly as the code uses it elsewhere, with the \"params\" given, instead of building it again.\n\n");
+            }
         }
         user.append("Project profile:\n").append(context.profile().isBlank() ? "(not available)" : context.profile()).append("\n\n");
         if (!targetGuidance.isEmpty()) {
@@ -145,12 +212,12 @@ public class CodeGenerator {
         }
         for (Map.Entry<String, String> example : examples.entrySet()) {
             user.append("Example file to follow, ").append(example.getKey()).append(":\n")
-                    .append(ChangeContext.cap(example.getValue(), 12000)).append("\n\n");
+                    .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
         if (!earlier.isEmpty()) {
             user.append("Files already written in this change (beginnings):\n");
             for (Map.Entry<String, String> file : earlier.entrySet()) {
-                user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), 40)).append('\n');
+                user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), Math.max(8, (int) (40 * scale)))).append('\n');
             }
         }
         if (scaffold != null) {

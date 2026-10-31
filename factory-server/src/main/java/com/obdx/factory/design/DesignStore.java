@@ -19,7 +19,7 @@ import java.util.UUID;
 public class DesignStore {
 
     /** How a version was made. */
-    public enum Origin { GENERATED, EDITED, AI, BLANK }
+    public enum Origin { GENERATED, EDITED, AI, BLANK, IMPORTED, RESTORED }
 
     public record VersionInfo(int version, Origin origin, String note, OffsetDateTime createdAt) {
     }

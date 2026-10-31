@@ -20,7 +20,14 @@ changes; React Native and React target packs; modernization inventory; publishin
 Compose stack; the download zip with a built-in trial database; demo SVN repositories added automatically; new
 workspace from an SVN URL or a local folder with bank and OBDX version detected from the code (OBDX's
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
-that finds model servers on this computer or another server and switches models without a restart.
+that finds model servers on this computer or another server and switches models without a restart. The UI was
+redesigned to the 23 screens in `design/design and implementation plan.docx` (sidebar shell, Home, every work and setup
+page, plus Knowledge Explorer, Impact Analysis, Agent Runs, External Review, Integrations, Version Packs, Prompt Library,
+Notifications, Account and About); pages use real data only and leave out what the factory does not record.
+The OBDX Library (knowledge base, `knowledge` package, V17): Oracle's 22.2 and 25.2 manuals imported per version (the
+key PDFs are downloaded to `oracle-docs/` in the main checkout, not in Git), the bank's own documents per workspace,
+cited answers in the Library and the AI Assistant panels, notes that users and agents suggest and approvers trust, and
+the manuals and approved notes in impact analysis, code generation and requirement drafting. See DEVELOPMENT.md.
 
 ## The user's installation
 

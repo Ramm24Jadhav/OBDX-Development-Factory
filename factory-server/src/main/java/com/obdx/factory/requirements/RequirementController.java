@@ -24,6 +24,9 @@ import java.util.UUID;
 @RestController
 public class RequirementController {
 
+    /** The largest requirement document taken (design and code imports keep the larger multipart limit). */
+    static final long MAX_DOCUMENT_BYTES = 25L * 1024 * 1024;
+
     private final RequirementService service;
     private final AccessGuard guard;
     private final AuditLog audit;
@@ -48,6 +51,11 @@ public class RequirementController {
         guard.require(workspaceId, Permission.EDIT_REQUIREMENTS);
         if (file.isEmpty() || file.getOriginalFilename() == null) {
             throw new BadRequestException("Choose a file to upload");
+        }
+        if (file.getSize() > MAX_DOCUMENT_BYTES) {
+            // Read into memory and unpacked: a BRD is a few MB; larger files are mostly images
+            throw new BadRequestException("The document is larger than " + MAX_DOCUMENT_BYTES / (1024 * 1024) + " MB. Remove large images "
+                    + "or split it, then upload it again.");
         }
         RequirementService.RequirementDetail created = service.upload(workspaceId, title, file.getOriginalFilename(), file.getBytes());
         audit.record("REQUIREMENT_UPLOADED", workspaceId, created.title(), file.getOriginalFilename());

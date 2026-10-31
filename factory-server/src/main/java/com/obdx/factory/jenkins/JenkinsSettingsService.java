@@ -2,6 +2,7 @@ package com.obdx.factory.jenkins;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
+import com.obdx.factory.common.Urls;
 import com.obdx.factory.security.SecretCipher;
 import com.obdx.factory.workspace.WorkspaceRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,7 +32,7 @@ public class JenkinsSettingsService {
         this.properties = properties;
     }
 
-    /** token: null keeps the stored one, empty removes it. */
+    /** token: null keeps the stored one (while the URL points to the same server), empty removes it. */
     public record SettingsRequest(String url, String jobs, JenkinsSettings.Mode mode, String branchParameter,
                                   JenkinsSettings.BranchValue branchValue, String patchParameter, String username, String token) {
     }
@@ -57,8 +58,10 @@ public class JenkinsSettingsService {
         if (request.jobs() == null || request.jobs().isBlank()) {
             throw new BadRequestException("Enter at least one job name");
         }
-        String tokenEncrypted = jdbc.query("SELECT token_encrypted FROM jenkins_settings WHERE workspace_id = ?",
-                (rs, row) -> rs.getString(1), workspaceId).stream().findFirst().orElse(null);
+        String[] stored = jdbc.query("SELECT url, token_encrypted FROM jenkins_settings WHERE workspace_id = ?",
+                (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, workspaceId).stream().findFirst().orElse(new String[2]);
+        // The stored token goes only to the server it was entered for: a URL to another server needs it entered again
+        String tokenEncrypted = keepsToken(stored[0], request.url()) ? stored[1] : null;
         if (request.token() != null) {
             tokenEncrypted = request.token().isEmpty() ? null : cipher.encrypt(request.token());
         }
@@ -96,8 +99,13 @@ public class JenkinsSettingsService {
     public JenkinsClient client(UUID workspaceId) {
         JenkinsSettings settings = require(workspaceId);
         String encrypted = jdbc.query("SELECT token_encrypted FROM jenkins_settings WHERE workspace_id = ?",
-                (rs, row) -> rs.getString(1), workspaceId).stream().findFirst().orElse(null);
+                (rs, row) -> rs.getString(1), workspaceId).stream().filter(java.util.Objects::nonNull).findFirst().orElse(null);
         return new JenkinsClient(settings.url(), settings.username(), encrypted == null ? null : cipher.decrypt(encrypted), properties);
+    }
+
+    /** Whether a stored token may stay with a new URL: the same scheme, host and port as the stored URL. */
+    static boolean keepsToken(String storedUrl, String newUrl) {
+        return Urls.sameServer(storedUrl, newUrl == null ? null : newUrl.trim());
     }
 
     private static String blankTo(String value, String fallback) {

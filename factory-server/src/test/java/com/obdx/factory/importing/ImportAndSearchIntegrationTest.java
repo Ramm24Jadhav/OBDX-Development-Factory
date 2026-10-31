@@ -1,5 +1,6 @@
 package com.obdx.factory.importing;
 
+import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.search.CodeSearchService;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -102,6 +104,9 @@ class ImportAndSearchIntegrationTest {
 
     @Autowired
     private ProjectProfileService profiles;
+
+    @Autowired
+    private CodeFiles codeFiles;
 
     private UUID workspaceId;
 
@@ -193,6 +198,15 @@ class ImportAndSearchIntegrationTest {
         assertThat(status.filesByLanguage()).containsEntry("java", 1L).containsEntry("javascript", 1L);
         assertThat(search.search(workspaceId, "AccountSummaryViewModel", 5).results())
                 .noneMatch(result -> result.path().contains("account-summary"));
+
+        List<CodeFiles.FileEntry> listed = codeFiles.list(workspaceId, "", 100);
+        assertThat(listed).hasSize(2).extracting(CodeFiles.FileEntry::path).contains("backend/src/com/bank/payments/FundTransferService.java");
+        assertThat(codeFiles.list(workspaceId, "fundtransfer", 100)).hasSize(1);
+        CodeFiles.FileContent content = codeFiles.content(workspaceId, "backend/src/com/bank/payments/FundTransferService.java");
+        assertThat(content.content()).contains("public class FundTransferService");
+        assertThat(content.lines()).isGreaterThan(3);
+        assertThat(content.truncated()).isFalse();
+        assertThatThrownBy(() -> codeFiles.content(workspaceId, "../../secret.key")).isInstanceOf(NotFoundException.class);
 
         ProjectProfileService.ProfileResponse updated = profiles.get(workspaceId);
         assertThat(updated.revision()).isEqualTo(2);

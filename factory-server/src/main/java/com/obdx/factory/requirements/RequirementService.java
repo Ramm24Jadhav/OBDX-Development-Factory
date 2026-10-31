@@ -5,6 +5,7 @@ import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.profile.ProjectProfileService;
+import com.obdx.factory.knowledge.KnowledgeService;
 import com.obdx.factory.search.CodeSearchService;
 import com.obdx.factory.workspace.WorkspaceRepository;
 import org.slf4j.Logger;
@@ -52,11 +53,12 @@ public class RequirementService {
     private final CodeSearchService codeSearch;
     private final StorageProperties storage;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
 
     public RequirementService(RequirementRepository requirements, RequirementSpecRepository specs,
                               WorkspaceRepository workspaces, DocumentTextExtractor textExtractor, SpecDrafter drafter,
                               ProjectProfileService profiles, CodeSearchService codeSearch, StorageProperties storage,
-                              @Qualifier("requirementExecutor") TaskExecutor executor) {
+                              @Qualifier("requirementExecutor") TaskExecutor executor, KnowledgeService knowledge) {
         this.requirements = requirements;
         this.specs = specs;
         this.workspaces = workspaces;
@@ -66,6 +68,7 @@ public class RequirementService {
         this.codeSearch = codeSearch;
         this.storage = storage;
         this.executor = executor;
+        this.knowledge = knowledge;
     }
 
     public record RequirementSummary(UUID id, String title, String fileName, Requirement.Status status, String message,
@@ -137,7 +140,7 @@ public class RequirementService {
             }
             RequirementSpec.OpenQuestion q = questions.get(answer.index());
             String text = answer.answer() == null || answer.answer().isBlank() ? null : answer.answer().trim();
-            questions.set(answer.index(), new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), text));
+            questions.set(answer.index(), q.withAnswer(text));
         }
         return addVersion(requirement, RequirementSpecRepository.Origin.ANSWERED, withQuestions(spec, questions, spec.decisions()),
                 "Answers saved. Click \"Update spec with answers\" to apply them.");
@@ -212,6 +215,12 @@ public class RequirementService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void failInterrupted() {
+        // Updating a spec with answers: the spec and the answers are kept, so it is not drafted again from the start
+        int updating = requirements.readyAgain("Updating the spec with the answers was interrupted because the server restarted. "
+                + "The answers are kept: click Update spec with answers again.", OffsetDateTime.now());
+        if (updating > 0) {
+            log.warn("{} requirement(s) were being updated with answers when the server stopped; their specs are kept", updating);
+        }
         int count = requirements.failProcessing("Interrupted because the server restarted. Click Retry.", OffsetDateTime.now());
         if (count > 0) {
             log.warn("Marked {} requirement(s) as failed after restart", count);
@@ -230,7 +239,15 @@ public class RequirementService {
     void runDraft(UUID id) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId()));
+            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId(),
+                    requirement.getTitle() + "\n" + head(requirement.getDocumentText(), 1500)), progress -> {
+                        // A long document on a local model takes a while: the page shows how far it is
+                        requirement.processing(progress);
+                        requirements.save(requirement);
+                    });
+            // The document's own tables and lists (requirements, rules, criteria, questions) exactly as written
+            spec = DocumentStructure.apply(spec, DocumentStructure.read(requirement.getDocumentText()));
+            spec = SpecGrounding.apply(spec, requirement.getDocumentText());
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
@@ -245,19 +262,21 @@ public class RequirementService {
     void runRefine(UUID id, RequirementSpec withDecisions) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId()));
+            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId(), requirement.getTitle()));
             // Decisions are kept exactly as the analyst gave them, and answered questions must not come back.
             Set<String> decided = withDecisions.decisions().stream().map(d -> SpecMerger.normalize(d.question())).collect(Collectors.toSet());
             List<RequirementSpec.OpenQuestion> stillOpen = refined.openQuestions().stream()
                     .filter(q -> !decided.contains(SpecMerger.normalize(q.question())))
-                    .map(q -> new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), null))
+                    .map(q -> q.withAnswer(null))
                     .toList();
             Map<String, List<String>> previousCode = withDecisions.screens().stream()
                     .collect(Collectors.toMap(s -> SpecMerger.normalize(s.name()), RequirementSpec.Screen::relatedCode, (a, b) -> a));
             RequirementSpec result = linkRelatedCode(requirement.getWorkspaceId(),
                     withQuestions(refined, stillOpen, withDecisions.decisions()), previousCode);
+            result = DocumentStructure.apply(result, DocumentStructure.read(requirement.getDocumentText()));
+            result = SpecGrounding.apply(result, requirement.getDocumentText());
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
-            requirement.ready(version, "Spec updated with the answers; " + stillOpen.size() + " open question(s) left.");
+            requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left.");
         } catch (RuntimeException e) {
             log.error("Updating the spec for requirement {} failed", id, e);
             requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + e.getMessage()
@@ -268,16 +287,27 @@ public class RequirementService {
 
     // --- helpers ---
 
-    /** Facts from the confirmed Project Profile, so the model knows what the bank runs. Empty if there is no profile. */
-    private String systemContext(UUID workspaceId) {
+    private static String head(String text, int max) {
+        return text == null ? "" : text.length() <= max ? text : text.substring(0, max);
+    }
+
+    /**
+     * Facts from the confirmed Project Profile, so the model knows what the bank runs, and what the OBDX knowledge base
+     * (manuals and approved notes for the workspace's version) says about the requirement. Empty if there is neither.
+     */
+    private String systemContext(UUID workspaceId, String about) {
+        String facts;
         try {
-            return profiles.get(workspaceId).facts().stream()
+            facts = profiles.get(workspaceId).facts().stream()
                     .filter(f -> CONTEXT_FACTS.contains(f.key()) && f.value() != null)
                     .map(f -> "- " + f.label() + ": " + f.value())
                     .collect(Collectors.joining("\n"));
         } catch (NotFoundException e) {
-            return "";
+            facts = "";
         }
+        String known = knowledge.contextFor(workspaceId, about, 4000);
+        return known.isBlank() ? facts : facts + (facts.isEmpty() ? "" : "\n\n")
+                + "OBDX knowledge (Oracle manuals and approved notes; use it for how OBDX does this):\n" + known;
     }
 
     /** Adds up to three existing files that look related to each screen, found by code search. */
@@ -292,12 +322,14 @@ public class RequirementService {
             screens.add(new RequirementSpec.Screen(screen.name(), screen.changeType(), screen.description(),
                     screen.reference(), screen.fields(), screen.actions(), related));
         }
-        return new RequirementSpec(spec.title(), spec.summary(), screens, spec.businessRules(), spec.roles(), spec.apis(),
-                spec.hostInteractions(), spec.messages(), spec.openQuestions(), spec.decisions());
+        return spec.withScreens(screens);
     }
 
     private List<String> searchRelated(UUID workspaceId, RequirementSpec.Screen screen) {
-        String query = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        String asWritten = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+        String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+        String query = inCode == null ? asWritten : asWritten + " " + inCode;
         try {
             Set<String> paths = new LinkedHashSet<>();
             for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 10).results()) {
@@ -321,8 +353,7 @@ public class RequirementService {
 
     private static RequirementSpec withQuestions(RequirementSpec spec, List<RequirementSpec.OpenQuestion> questions,
                                                  List<RequirementSpec.Decision> decisions) {
-        return new RequirementSpec(spec.title(), spec.summary(), spec.screens(), spec.businessRules(), spec.roles(),
-                spec.apis(), spec.hostInteractions(), spec.messages(), questions, decisions);
+        return spec.withQuestions(questions, decisions);
     }
 
     private RequirementDetail detail(Requirement r) {

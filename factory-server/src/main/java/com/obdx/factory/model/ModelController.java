@@ -43,9 +43,13 @@ public class ModelController {
     @GetMapping("/status")
     public StatusResponse status() {
         ModelSettings.Current current = settings.current();
-        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.saved(),
-                current.apiKey() != null && !current.apiKey().isBlank() && !current.apiKey().equals("not-needed"),
+        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.embeddingBaseUrl(),
+                current.saved(), isSet(current.apiKey()), current.embeddingBaseUrl() != null && isSet(current.embeddingApiKey()),
                 current.updatedAt(), current.updatedBy());
+    }
+
+    private static boolean isSet(String apiKey) {
+        return apiKey != null && !apiKey.isBlank() && !apiKey.equals("not-needed");
     }
 
     /** Model servers running on the computer the factory runs on. */
@@ -68,32 +72,68 @@ public class ModelController {
         String username = guard.requireAdmin().getUsername();
         boolean embeddingsRemoved = settings.save(request, username);
         ModelSettings.Current current = settings.current();
-        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel());
-        return new SaveResponse(status(), embeddingsRemoved);
+        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel()
+                + (current.embeddingBaseUrl() != null ? " at " + current.embeddingBaseUrl() : ""));
+        return new SaveResponse(status(), embeddingsRemoved, embeddingProblem(current));
     }
 
+    /**
+     * Whether the embedding model embeds: a short fixed phrase (nothing of the bank's) is sent to it. Code search and
+     * the OBDX Library search by meaning with it, and a chat model in its place fails there (or, on a server that
+     * embeds with any model, matches poorly). Null when it embeds and looks like an embedding model.
+     */
+    String embeddingProblem(ModelSettings.Current current) {
+        String model = current.embeddingModel();
+        try {
+            if (gateway.embed("OBDX Development Factory embedding check").length == 0) {
+                return "The embedding model '" + model + "' returned no vector. Choose an embedding model, for example nomic-embed-text on Ollama.";
+            }
+        } catch (ModelGatewayException e) {
+            return "The embedding model '" + model + "' at " + current.embeddingUrl() + " cannot embed (" + e.getMessage() + "). Choose an "
+                    + "embedding model, for example nomic-embed-text on Ollama: chat models do not embed, and some servers (Groq) have "
+                    + "no embedding models, so set a code search server (an Ollama on this computer) for embeddings.";
+        }
+        return looksLikeEmbeddingModel(model) ? null : "'" + model + "' embeds, but it does not look like an embedding model: a chat "
+                + "model used for embeddings finds far less. Prefer an embedding model, for example nomic-embed-text, mxbai-embed-large "
+                + "or bge-m3.";
+    }
+
+    /** The names of the common embedding models: nomic-embed-text, mxbai-embed-large, bge-m3, e5, gte, all-minilm ... */
+    static boolean looksLikeEmbeddingModel(String model) {
+        String m = model == null ? "" : model.toLowerCase(java.util.Locale.ROOT);
+        return m.contains("embed") || m.contains("bge") || m.matches(".*(^|[/_-])e5([/_-]|$).*") || m.contains("gte-") || m.contains("minilm")
+                || m.contains("mpnet") || m.contains("arctic") || m.contains("granite-embedding") || m.contains("jina");
+    }
+
+    /** The Models page's test prompt: administrators, who choose the models (it costs model time and, on a cloud plan, money). */
     @PostMapping("/chat")
     public ModelGateway.ChatResult chat(@Valid @RequestBody ChatRequest request) {
+        guard.requireAdmin();
         return gateway.chat(SYSTEM_PROMPT, request.prompt());
     }
 
     @PostMapping("/embed")
     public EmbedResponse embed(@Valid @RequestBody EmbedRequest request) {
+        guard.requireAdmin();
         return new EmbedResponse(settings.current().embeddingModel(), gateway.embed(request.text()).length);
     }
 
     /**
-     * @param saved false while the FACTORY_MODEL_* settings apply (nothing chosen on the Models page yet)
+     * @param embeddingBaseUrl server of the embedding model when it is not baseUrl, else null
+     * @param saved            false while the FACTORY_MODEL_* settings apply (nothing chosen on the Models page yet)
      */
-    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, boolean saved, boolean apiKeySet,
-                                 OffsetDateTime updatedAt, String updatedBy) {
+    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, String embeddingBaseUrl, boolean saved,
+                                 boolean apiKeySet, boolean embeddingApiKeySet, OffsetDateTime updatedAt, String updatedBy) {
     }
 
     public record ServerRequest(String baseUrl, String apiKey) {
     }
 
-    /** @param embeddingsRemoved the embedding model changed: imports create the search embeddings again */
-    public record SaveResponse(StatusResponse status, boolean embeddingsRemoved) {
+    /**
+     * @param embeddingsRemoved the embedding model changed: imports create the search embeddings again
+     * @param embeddingProblem  why the embedding model cannot embed (or does not look like an embedding model); null: fine
+     */
+    public record SaveResponse(StatusResponse status, boolean embeddingsRemoved, String embeddingProblem) {
     }
 
     public record ChatRequest(@NotBlank @Size(max = 20_000) String prompt) {

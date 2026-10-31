@@ -52,12 +52,17 @@ public class LocalChecks {
             return syntax;
         }
         List<PackRule> rules = rulesFor(scope, path);
-        List<Finding> findings = findings(rules, path, original, content);
+        List<Finding> findings = new ArrayList<>(findings(rules, path, original, content));
+        if (path.toLowerCase(java.util.Locale.ROOT).endsWith(".java") && !scope.inApp(path)) {
+            // Deployment and security checks of Java that a pattern rule cannot express
+            JavaChecks.findings(path, original, content).stream().filter(f -> !scope.disabled().contains(f.ruleId())).forEach(findings::add);
+        }
         boolean error = syntax.status() == FileChecks.Status.FAILED
                 || findings.stream().anyMatch(f -> f.severity() == PackRule.Severity.ERROR);
         boolean warning = syntax.status() == FileChecks.Status.WARNING || !findings.isEmpty();
         FileChecks.Status status = error ? FileChecks.Status.FAILED : warning ? FileChecks.Status.WARNING
-                : syntax.status() == FileChecks.Status.NOT_CHECKED && rules.isEmpty() ? FileChecks.Status.NOT_CHECKED : FileChecks.Status.PASSED;
+                : syntax.status() == FileChecks.Status.NOT_CHECKED && rules.isEmpty() && findings.isEmpty()
+                ? FileChecks.Status.NOT_CHECKED : FileChecks.Status.PASSED;
         List<String> messages = new ArrayList<>();
         if (syntax.message() != null) {
             messages.add(syntax.message());

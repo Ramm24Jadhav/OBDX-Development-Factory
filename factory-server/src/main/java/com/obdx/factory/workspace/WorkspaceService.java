@@ -3,6 +3,8 @@ package com.obdx.factory.workspace;
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.ConflictException;
 import com.obdx.factory.common.NotFoundException;
+import com.obdx.factory.common.Urls;
+import com.obdx.factory.svn.SvnUrls;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.security.SecretCipher;
 import com.obdx.factory.svn.SvnClient;
@@ -52,14 +54,27 @@ public class WorkspaceService {
         if (repository.existsByName(name)) {
             throw new ConflictException("A workspace named '" + name + "' already exists");
         }
+        if (blankToNull(request.svnUrl()) != null) {
+            SvnUrls.check(request.svnUrl(), true);
+        }
         Workspace workspace = new Workspace(name, request.bankName().trim(), request.obdxVersion(), blankToNull(request.svnUrl()));
         return WorkspaceResponse.from(repository.save(workspace));
     }
 
+    /**
+     * Saves the SVN settings. The stored password is kept (a null password in the request) only while the URL points
+     * to the same server: otherwise it would be sent to whatever server the new URL names, so it is removed and has
+     * to be entered again.
+     */
     @Transactional
     public WorkspaceResponse updateSvnSettings(UUID id, SvnSettingsRequest request) {
         Workspace workspace = find(id);
-        workspace.setSvnUrl(request.svnUrl().trim());
+        String url = request.svnUrl().trim();
+        SvnUrls.check(url, true);
+        if (request.svnPassword() == null && !Urls.sameServer(workspace.getSvnUrl(), url)) {
+            workspace.setSvnPasswordEncrypted(null);
+        }
+        workspace.setSvnUrl(url);
         workspace.setSvnUsername(blankToNull(request.svnUsername()));
         if (request.svnPassword() != null) {
             workspace.setSvnPasswordEncrypted(request.svnPassword().isEmpty() ? null : secretCipher.encrypt(request.svnPassword()));

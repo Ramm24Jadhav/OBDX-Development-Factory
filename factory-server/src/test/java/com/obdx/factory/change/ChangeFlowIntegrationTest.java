@@ -395,8 +395,9 @@ class ChangeFlowIntegrationTest {
             stub.parameters.add("PATCH");
             stub.script("obdx/backend build", new StubJenkins.Outcome("FAILURE",
                     "[ERROR] /var/jenkins/workspace/obdx/backend/src/com/bank/Legacy.java:[1,1] class, interface, or enum expected", List.of()));
+            // A new server (another port): the stored token does not go to it, so it is entered again
             jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
-                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", "api-token"));
 
             changeBuilds.start(changeId);
             waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "patch build");
@@ -421,7 +422,7 @@ class ChangeFlowIntegrationTest {
             stub.parameters.add("PATCH");
             stub.script("obdx/backend build", StubJenkins.Outcome.success());
             jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
-                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", "api-token"));
 
             changeBuilds.start(changeId);
             waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "build after quick checks");

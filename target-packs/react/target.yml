@@ -27,6 +27,9 @@ components:
   checkbox: {component: CheckboxGroup, value: list, options: true}
   switch: {component: SwitchField, value: boolean}
   display: {component: ReadOnlyField, value: string}
+  # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
+  table: {component: ReadOnlyField, value: string}
+  component: {component: ReadOnlyField, value: string}
 
 templates:
   screen: templates/screen.tsx

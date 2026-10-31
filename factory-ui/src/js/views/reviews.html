@@ -1,0 +1,250 @@
+<div class="factory-pg factory-rv">
+  <div class="factory-pg-head">
+    <div>
+      <h1>External Review &amp; Approval</h1>
+      <p>Share screens and changes with business stakeholders, collect feedback and track approvals</p>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-rv-alert" id="reviewsError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+    <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
+
+  <div class="factory-kpis">
+    <oj-bind-for-each data="[[kpis]]" as="k">
+      <template>
+        <oj-bind-if test="[[k.data.open]]">
+          <button type="button" class="fx-card fx-card--interactive fx-kpi factory-rv-kpi" on-click="[[k.data.open]]"><span :class="[[k.data.iconCss]]"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+            <span><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span>
+              <span :class="[[k.data.css]]"><oj-bind-text value="[[k.data.sub]]"></oj-bind-text></span></span></button>
+        </oj-bind-if>
+        <oj-bind-if test="[[!k.data.open]]">
+          <div class="fx-card fx-kpi factory-rv-kpi"><span :class="[[k.data.iconCss]]"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+            <span><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span>
+              <span :class="[[k.data.css]]"><oj-bind-text value="[[k.data.sub]]"></oj-bind-text></span></span></div>
+        </oj-bind-if>
+      </template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="fx-card factory-rv-shell">
+    <div class="fx-tabs factory-rv-tabs" role="tablist" aria-label="Review views">
+      <oj-bind-for-each data="[[tabs]]" as="t">
+        <template><button type="button" role="tab" :id="[['rv-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" on-click="[[t.data.pick]]">
+          <span :class="[[t.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+
+    <div class="factory-rv-main" :style.display="[[tab() === 'links' || tab() === 'screens' ? '' : 'none']]">
+      <div class="factory-rv-col">
+        <section class="fx-card factory-rv-linkcard">
+          <div class="factory-rv-cardhead">
+            <div><h2 class="fx-card-title"><oj-bind-text value="[[tab() === 'links' ? 'Review Links' : 'Screens']]"></oj-bind-text></h2>
+              <p class="fx-card-sub"><oj-bind-text value="[[tab() === 'links' ? 'Manage and share review links with stakeholders' : 'Every screen design of the workspace']]"></oj-bind-text></p></div>
+            <div class="fx-menu-wrap" :data-fx-tip="[[createTip]]">
+              <button type="button" id="newReviewLink" class="fx-btn fx-btn--primary fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[newMenu2.open() ? 'true' : 'false']]"
+                      on-click="[[newMenu2.toggle]]" :disabled="[[!canEdit()]]">
+                <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Review Link</button>
+              <oj-bind-if test="[[newMenu2.open()]]">
+                <div class="fx-menu" role="menu" aria-label="Screens without an active link" on-keydown="[[newMenu2.key]]">
+                  <oj-bind-for-each data="[[withoutLink]]" as="w">
+                    <template><button type="button" role="menuitem" on-click="[[w.data.createFor]]"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span><oj-bind-text value="[[w.data.name + ' ' + w.data.version]]"></oj-bind-text></button></template>
+                  </oj-bind-for-each>
+                  <oj-bind-if test="[[withoutLink().length === 0]]"><button type="button" role="menuitem" disabled>Every screen has an active link or is approved</button></oj-bind-if>
+                </div>
+              </oj-bind-if>
+            </div>
+          </div>
+          <span class="fx-control factory-rv-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+            <input type="search" class="fx-input" placeholder="Search by name or version..." aria-label="Search review links" on-input="[[linkSearchInput]]"></span>
+          <div class="factory-rv-links">
+            <oj-bind-for-each data="[[visibleLinks]]" as="l">
+              <template>
+                <div :class="[[l.data.css]]" role="button" tabindex="0" :aria-pressed="[[l.data.pressed]]" :aria-label="[[l.data.name + ' ' + l.data.version + ', ' + l.data.pill.text]]" on-click="[[l.data.pick]]" on-keydown="[[l.data.keyPick]]">
+                  <span class="fx-kpi-icon factory-rv-linkicon"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></span>
+                  <span class="factory-rq-item-main"><strong :title="[[l.data.name]]"><oj-bind-text value="[[l.data.name]]"></oj-bind-text></strong>
+                    <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.version]]"></oj-bind-text></span>
+                    <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.reviewers]]"></oj-bind-text></span></span>
+                  <span class="factory-rq-item-side"><span :class="[[l.data.pill.css]]"><span :class="[[l.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[l.data.pill.text]]"></oj-bind-text></span>
+                    <span class="factory-ov-subtle"><oj-bind-text value="[[l.data.expires]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[l.data.comments]]"></oj-bind-text></span></span>
+                  <div class="fx-menu-wrap" on-click="[[l.data.stop]]" on-keydown="[[l.data.stopKey]]">
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[l.data.menu.open() ? 'true' : 'false']]"
+                            :aria-label="[['Actions for ' + l.data.name]]" on-click="[[l.data.menu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+                    <oj-bind-if test="[[l.data.menu.open()]]">
+                      <div class="fx-menu" role="menu" on-keydown="[[l.data.menu.key]]">
+                        <button type="button" role="menuitem" :disabled="[[!l.data.hasLink]]" on-click="[[l.data.doCopy]]"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy link</button>
+                        <button type="button" role="menuitem" :disabled="[[!l.data.hasLink]]" on-click="[[l.data.doOpen]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Open as a reviewer</button>
+                        <button type="button" role="menuitem" on-click="[[l.data.doDesigner]]"><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span>Open in the designer</button>
+                        <div class="fx-menu-sep" role="separator"></div>
+                        <button type="button" role="menuitem" :disabled="[[!l.data.canCreate]]" on-click="[[l.data.doCreate]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create a new link</button>
+                        <div class="fx-menu-sep" role="separator"></div>
+                        <button type="button" role="menuitem" class="fx-menu-danger" :disabled="[[!l.data.canRevoke]]" on-click="[[l.data.doRevoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
+                      </div>
+                    </oj-bind-if>
+                  </div>
+                </div>
+              </template>
+            </oj-bind-for-each>
+            <oj-bind-if test="[[!loading() && visibleLinks().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></span>
+              <strong>No review links yet</strong>Use New Review Link, or the Share button in the designer.</div></oj-bind-if>
+          </div>
+        </section>
+        <section class="fx-card factory-rv-settings">
+          <h2 class="fx-card-title">Link Settings</h2>
+          <p class="fx-card-sub">Control access and validity for the current review link</p>
+          <oj-bind-if test="[[!selected()]]"><p class="factory-empty">Choose a screen to see its link settings.</p></oj-bind-if>
+          <oj-bind-if test="[[selected()]]">
+            <div class="factory-rv-fields">
+              <div class="fx-field"><label class="fx-label" for="linkName">Link Name</label>
+                <input type="text" id="linkName" class="fx-input" :value="[[selected().name]]" disabled aria-describedby="linkNameHelp">
+                <span class="fx-visually-hidden" id="linkNameHelp">The link uses the screen's name. Rename the screen in the designer.</span></div>
+              <div class="fx-field"><label class="fx-label" for="linkExpiry">Expiry Date</label>
+                <input type="date" id="linkExpiry" class="fx-input" :value="[[expiryValue]]" :min="[[minExpiry]]" :max="[[maxExpiry]]" :disabled="[[!canEdit()]]" on-change="[[expiryChange]]"
+                       title="A link is valid for 1 to 90 days. Changing the date of an active link creates a new link address."></div>
+            </div>
+            <oj-bind-if test="[[expiryChanged()]]">
+              <p class="factory-rv-renew"><oj-bind-text value="[[reviewUrl() ? 'Saving a new date creates a new link address; the old one stops working.' : 'The new link will be valid until this date.']]"></oj-bind-text>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="saveExpiry" on-click="[[createLink]]"><oj-bind-text value="[[reviewUrl() ? 'Save and create new link' : 'Create link']]"></oj-bind-text></button></p>
+            </oj-bind-if>
+            <ul class="factory-rv-toggles">
+              <oj-bind-for-each data="[[toggles]]" as="g">
+                <template><li :data-fx-tip="[[g.data.why]]" tabindex="0"><button type="button" class="fx-switch" role="switch" :aria-checked="[[g.data.on ? 'true' : 'false']]" disabled :aria-label="[[g.data.label]]"></button>
+                  <span><oj-bind-text value="[[g.data.label]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <div class="factory-rv-linkfoot">
+              <button type="button" id="copyLinkButton" class="fx-btn fx-btn--secondary factory-rv-copy" on-click="[[copyLink]]" :disabled="[[!reviewUrl()]]" :title="[[reviewUrl() ? reviewUrl() : 'This screen has no active review link']]">
+                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Copy Link</button>
+              <div class="fx-menu-wrap">
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--icon fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[linkMenu.open() ? 'true' : 'false']]" aria-label="More link actions"
+                        on-click="[[linkMenu.toggle]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+                <oj-bind-if test="[[linkMenu.open()]]">
+                  <div class="fx-menu factory-rv-upmenu" role="menu" on-keydown="[[linkMenu.key]]">
+                    <button type="button" role="menuitem" :disabled="[[!reviewUrl()]]" on-click="[[linkDo.open]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Open as a reviewer</button>
+                    <button type="button" role="menuitem" :disabled="[[!canEdit()]]" on-click="[[linkDo.create]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span><oj-bind-text value="[[reviewUrl() ? 'Create a new link' : 'Create link']]"></oj-bind-text></button>
+                    <div class="fx-menu-sep" role="separator"></div>
+                    <button type="button" role="menuitem" class="fx-menu-danger" :disabled="[[!reviewUrl() || !canEdit()]]" on-click="[[linkDo.revoke]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Revoke link</button>
+                  </div>
+                </oj-bind-if>
+              </div>
+            </div>
+          </oj-bind-if>
+        </section>
+      </div>
+
+      <section class="fx-card factory-rv-preview">
+        <div class="factory-rv-prevhead"><h2 class="fx-card-title">Preview</h2>
+          <div class="fx-toggle-group factory-rv-devices" role="group" aria-label="Device">
+            <oj-bind-for-each data="[[devices]]" as="v">
+              <template><button type="button" :aria-pressed="[[v.data.selected() ? 'true' : 'false']]" on-click="[[v.data.pick]]">
+                <oj-bind-if test="[[v.data.value === 'mobile']]"><svg class="factory-rv-devico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"></rect><path d="M10.5 18.5h3"></path></svg></oj-bind-if>
+                <oj-bind-if test="[[v.data.value === 'tablet']]"><svg class="factory-rv-devico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.2"></rect><path d="M11 18h2"></path></svg></oj-bind-if>
+                <oj-bind-if test="[[v.data.value === 'desktop']]"><span :class="[[v.data.iconClass]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[v.data.label]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div></div>
+        <div class="factory-rv-stage">
+          <div :class="[[frameCss]]" :style.display="[[selected() ? '' : 'none']]">
+            <oj-bind-if test="[[device() === 'mobile']]"><div class="factory-rv-statusbar"><span>9:41</span><span class="factory-rv-notch"></span>
+              <span class="factory-rv-sysicons" aria-hidden="true">
+                <svg viewBox="0 0 18 12" width="17" height="11"><rect x="0" y="8" width="3" height="4" rx="0.8" fill="#0f172a"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="0.8" fill="#0f172a"></rect><rect x="10" y="3" width="3" height="9" rx="0.8" fill="#0f172a"></rect><rect x="15" y="0" width="3" height="12" rx="0.8" fill="#0f172a"></rect></svg>
+                <svg viewBox="0 0 16 12" width="15" height="11" fill="none" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0"></path><path d="M4 7.2a5.8 5.8 0 0 1 8 0"></path><circle cx="8" cy="10" r="1.2" fill="#0f172a" stroke="none"></circle></svg>
+                <svg viewBox="0 0 26 12" width="24" height="11"><rect x="0.75" y="0.75" width="21.5" height="10.5" rx="3" fill="none" stroke="#0f172a" stroke-width="1.3" opacity="0.5"></rect><rect x="2.5" y="2.5" width="16" height="7" rx="1.6" fill="#0f172a"></rect><path d="M24 4v4" stroke="#0f172a" stroke-width="1.6" stroke-linecap="round" opacity="0.5"></path></svg></span></div></oj-bind-if>
+            <div class="factory-rv-screen"><iframe id="reviewFrame" :src="[[previewSrc]]" title="What the reviewer sees"></iframe></div>
+          </div>
+          <oj-bind-if test="[[!selected()]]">
+            <div class="fx-empty factory-rv-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+              <strong>Choose a screen</strong>
+              <span>Pick a review link to see the screen as reviewers do.</span>
+              <button type="button" class="fx-btn fx-btn--secondary" on-click="[[openDesigner]]">Open in the designer</button></div>
+          </oj-bind-if>
+        </div>
+        <p class="fx-card-sub factory-rv-previewnote">The screen with sample data, as reviewers see it. Click a field to comment on it in the review page.</p>
+      </section>
+
+      <section class="fx-card factory-rv-comments">
+        <div class="factory-rv-chead">
+          <div class="fx-tabs factory-rv-ctabs" role="tablist" aria-label="Comments and details">
+            <oj-bind-for-each data="[[sideTabs]]" as="s">
+              <template><button type="button" role="tab" :aria-selected="[[s.data.selected() ? 'true' : 'false']]" on-click="[[s.data.pick]]"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+          <oj-bind-if test="[[sideTab() === 'comments']]">
+            <select class="fx-select factory-rv-cfilter" aria-label="Show comments" on-change="[[commentFilterChange]]"><option value="all">All Comments</option><option value="review">From reviewers</option><option value="team">From the team</option></select>
+          </oj-bind-if>
+        </div>
+        <oj-bind-if test="[[sideTab() === 'comments']]">
+          <ul class="factory-rv-thread">
+            <oj-bind-for-each data="[[comments]]" as="c">
+              <template><li><span :class="[[c.data.avatarCss]]" aria-hidden="true"><oj-bind-text value="[[c.data.initials]]"></oj-bind-text></span>
+                <div><div class="factory-rv-who"><strong><oj-bind-text value="[[c.data.author]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></span>
+                  <span class="fx-badge fx-badge--danger factory-rv-open" tabindex="0" data-fx-tip="The factory does not store whether a comment is resolved yet, so every comment shows as open.">Open</span></div>
+                  <span class="factory-ov-subtle factory-rv-role"><oj-bind-text value="[[c.data.role + ' · ' + c.data.version + (c.data.component ? ' · on ' + c.data.component : '')]]"></oj-bind-text></span>
+                  <p><oj-bind-text value="[[c.data.text]]"></oj-bind-text></p>
+                  <div class="factory-rv-cactions">
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-rv-reply" on-click="[[c.data.reply]]" :disabled="[[!canComment()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Reply</button>
+                    <span tabindex="0" data-fx-tip="Not available yet: the factory cannot store a resolved state for comments."><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" disabled><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Mark Resolved</button></span>
+                  </div></div></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-bind-if test="[[comments().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><strong>No comments yet</strong>Comments from reviewers and the team show here.</div></oj-bind-if>
+          <oj-bind-if test="[[selected() && canComment()]]">
+            <div class="factory-rv-composer">
+              <span :class="[[myAvatarCss]]" aria-hidden="true"><oj-bind-text value="[[myInitials]]"></oj-bind-text></span>
+              <span class="fx-control factory-rv-cinput">
+                <input type="text" class="fx-input" id="newComment" placeholder="Add a comment..." aria-label="Add a comment" autocomplete="off" :value="[[newComment]]" on-input="[[commentInput]]" on-keydown="[[commentKey]]">
+                <span class="fx-control-end">
+                  <span data-fx-tip="Attachments are not supported in comments yet"><button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" disabled aria-label="Attach a file"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span></button></span>
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" data-fx-tip="Mention someone" aria-label="Mention someone" on-click="[[mention]]">@</button>
+                </span>
+              </span>
+              <button type="button" id="postCommentButton" class="fx-btn fx-btn--primary" on-click="[[postComment]]" :disabled="[[!newComment().trim()]]">Post</button>
+            </div>
+          </oj-bind-if>
+        </oj-bind-if>
+        <oj-bind-if test="[[sideTab() === 'details']]">
+          <oj-bind-if test="[[!selected()]]"><p class="factory-empty">Choose a screen.</p></oj-bind-if>
+          <oj-bind-if test="[[selected()]]">
+            <dl class="factory-kv factory-rv-details">
+              <dt>Screen</dt><dd><oj-bind-text value="[[selected().name]]"></oj-bind-text></dd>
+              <dt>Version</dt><dd><oj-bind-text value="[['v' + selected().currentVersion + ' (' + selected().versions.length + ' saved)']]"></oj-bind-text></dd>
+              <dt>Design</dt><dd><span :class="[[details().designPill.css]]"><span :class="[[details().designPill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[details().designPill.text]]"></oj-bind-text></span></dd>
+              <dt>Review link</dt><dd><span :class="[[details().pill.css]]"><span :class="[[details().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[details().pill.text]]"></oj-bind-text></span></dd>
+              <dt>Requirement</dt><dd><oj-bind-text value="[[details().requirement]]"></oj-bind-text></dd>
+              <dt>Sections</dt><dd><oj-bind-text value="[[details().sections]]"></oj-bind-text></dd>
+              <dt>Link expires</dt><dd><oj-bind-text value="[[expiryText]]"></oj-bind-text></dd>
+              <dt>Reviewers</dt><dd><oj-bind-text value="[[details().reviewers]]"></oj-bind-text></dd>
+              <dt>Comments</dt><dd><oj-bind-text value="[[details().comments]]"></oj-bind-text></dd>
+              <dt>Approved</dt><dd><oj-bind-text value="[[details().approved]]"></oj-bind-text></dd>
+            </dl>
+            <p class="fx-card-sub">Approving a screen does not approve or apply any code.</p>
+          </oj-bind-if>
+        </oj-bind-if>
+      </section>
+    </div>
+
+    <oj-bind-if test="[[tab() === 'comments']]">
+      <div class="factory-rv-pane">
+        <h2 class="fx-card-title">All Comments</h2>
+        <div class="fx-table-wrap">
+          <table class="fx-table"><thead><tr><th scope="col">Screen</th><th scope="col">From</th><th scope="col">Who</th><th scope="col">Comment</th><th scope="col">When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[allComments]]" as="c"><template><tr><td><oj-bind-text value="[[c.data.screen]]"></oj-bind-text></td>
+              <td><span :class="[[c.data.pill.css]]"><oj-bind-text value="[[c.data.pill.text]]"></oj-bind-text></span></td><td><oj-bind-text value="[[c.data.author]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[c.data.text]]"></oj-bind-text></td><td class="factory-cp-nowrap"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          <oj-bind-if test="[[allComments().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><strong>No comments yet</strong>Share a review link to collect feedback.</div></oj-bind-if>
+        </div>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'history']]">
+      <div class="factory-rv-pane">
+        <h2 class="fx-card-title">Approval History</h2>
+        <div class="fx-table-wrap">
+          <table class="fx-table"><thead><tr><th scope="col">Screen</th><th scope="col">Version</th><th scope="col">Approved by</th><th scope="col">How</th><th scope="col">When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[history]]" as="h"><template><tr><td><oj-bind-text value="[[h.data.screen]]"></oj-bind-text></td><td><oj-bind-text value="[[h.data.version]]"></oj-bind-text></td>
+              <td><oj-bind-text value="[[h.data.by]]"></oj-bind-text></td><td><oj-bind-text value="[[h.data.how]]"></oj-bind-text></td><td><oj-bind-text value="[[h.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          <oj-bind-if test="[[history().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>No approved screens yet</strong>Screens approved in the designer or through a review link show here.</div></oj-bind-if>
+        </div>
+        <p class="fx-card-sub">Design approval, the change plan's approval and delivering code are separate steps.</p>
+      </div>
+    </oj-bind-if>
+  </div>
+</div>

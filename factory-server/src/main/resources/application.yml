@@ -31,8 +31,9 @@ spring:
     password: ${FACTORY_DB_PASSWORD:factory}
   servlet:
     multipart:
-      max-file-size: 25MB
-      max-request-size: 26MB
+      # Large enough for OBDX manuals uploaded to the knowledge base (requirement documents are much smaller)
+      max-file-size: 150MB
+      max-request-size: 151MB
   jpa:
     open-in-view: false
     hibernate:
@@ -68,6 +69,33 @@ factory:
     secret-key: ${FACTORY_SECRET_KEY:}
   storage:
     root: ${FACTORY_DATA_DIR:data}
+  knowledge:
+    # The knowledge base (manual excerpts, the bank's documents, notes) is sent only to model servers on the bank's
+    # network: this computer, private addresses, or the hosts below. true also allows servers outside it.
+    external-models: ${FACTORY_KNOWLEDGE_EXTERNAL_MODELS:false}
+    # Comma-separated model server hosts that belong to the bank but resolve to public addresses (llm.bank.com, .bank.com)
+    internal-hosts: ${FACTORY_KNOWLEDGE_INTERNAL_HOSTS:}
+    # What goes with a question. Sized for a model with a 4k-token context; raise them for larger models.
+    answer-sources: ${FACTORY_KNOWLEDGE_ANSWER_SOURCES:5}
+    source-chars: ${FACTORY_KNOWLEDGE_SOURCE_CHARS:1800}
+    page-context-chars: ${FACTORY_KNOWLEDGE_PAGE_CONTEXT_CHARS:3000}
+    # Manual text sent with a question in all; what the sections leave goes to their parts before and after
+    context-chars: ${FACTORY_KNOWLEDGE_CONTEXT_CHARS:8000}
+    # The chat model picks, from a short list the search finds, the sections that answer the question (one short call)
+    choose-sources: ${FACTORY_KNOWLEDGE_CHOOSE_SOURCES:true}
+    # When the check of an answer against its sources finds what the model can fix, it writes it once more
+    correct-answers: ${FACTORY_KNOWLEDGE_CORRECT_ANSWERS:true}
+    # How often the folders documents were imported from are checked for new and changed files (ISO-8601 duration)
+    folder-check-interval: ${FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL:PT6H}
+    # Oracle's manuals from Oracle's documentation site for the OBDX versions an administrator follows (OBDX Library).
+    # Only HTTPS GET requests to these hosts; only new and changed files are downloaded, one at a time. false: never contact Oracle.
+    oracle:
+      enabled: ${FACTORY_KNOWLEDGE_ORACLE:true}
+      index-url: ${FACTORY_KNOWLEDGE_ORACLE_INDEX_URL:https://www.oracle.com/technical-resources/documentation/fsgbu.html}
+      hosts: ${FACTORY_KNOWLEDGE_ORACLE_HOSTS:docs.oracle.com,www.oracle.com}
+      check-interval: ${FACTORY_KNOWLEDGE_ORACLE_CHECK_INTERVAL:P7D}
+      max-file-size: ${FACTORY_KNOWLEDGE_ORACLE_MAX_FILE_SIZE:150MB}
+      pause: ${FACTORY_KNOWLEDGE_ORACLE_PAUSE:PT2S}
   trial-database:
     # true: the factory starts its own PostgreSQL (data in FACTORY_DATA_DIR/trial-database) and ignores FACTORY_DB_*.
     # For trying the factory on a laptop or test server; for shared use, use a PostgreSQL server with pgvector.
@@ -114,6 +142,15 @@ factory:
     chat-model: ${FACTORY_MODEL_CHAT:qwen2.5-coder:7b}
     embedding-model: ${FACTORY_MODEL_EMBEDDING:nomic-embed-text}
     timeout: ${FACTORY_MODEL_TIMEOUT:120s}
+    # Empty: the embedding model is on base-url. Set to use another server for code search.
+    embedding-base-url: ${FACTORY_MODEL_EMBEDDING_BASE_URL:}
+    embedding-api-key: ${FACTORY_MODEL_EMBEDDING_API_KEY:}
+    # The most context (tokens) asked of an Ollama server, which runs models with 4,096 unless asked: each call gets
+    # what its prompt and answer need up to this and the model's own limit. Larger needs more memory there.
+    max-context: ${FACTORY_MODEL_MAX_CONTEXT:16384}
+    # The most tokens a model may write in one answer (max_tokens), for OpenAI-compatible servers; 0 leaves it to the
+    # server. Some cloud servers stop at 2,048 unless asked for more, which cuts off long plans and code files.
+    max-output: ${FACTORY_MODEL_MAX_OUTPUT_TOKENS:0}
 
 management:
   endpoints:

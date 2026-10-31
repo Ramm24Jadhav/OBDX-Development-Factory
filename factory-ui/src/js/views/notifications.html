@@ -1,0 +1,119 @@
+<div class="factory-pg factory-no-page">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Notification Center</h1>
+      <p>Stay updated on important events, approvals, build results, agent runs and system activities</p>
+    </div>
+    <div class="factory-pg-actions">
+      <span :data-fx-tip="[[unreadVisible() ? null : 'Every notification shown is already read']]"><button type="button" id="markAllReadButton" class="fx-btn fx-btn--secondary" on-click="[[markAllRead]]" :disabled="[[!unreadVisible()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Mark All as Read</button></span>
+      <button type="button" id="notificationSettingsButton" class="fx-btn fx-btn--secondary" on-click="[[settings]]"><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Notification Settings</button>
+    </div>
+  </div>
+
+  <div class="factory-kpis factory-kpis-6">
+    <oj-bind-for-each data="[[kpis]]">
+      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+        <span class="factory-no-kpitext"><span class="factory-kpi-label" :title="[[$current.data.label]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+          <span :class="[[$current.data.css]]" :title="[[$current.data.sub]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="factory-row factory-ag-main factory-no-main">
+    <section class="factory-card factory-ag-list">
+      <div class="factory-tabbar factory-ad-tabs factory-no-tabs" role="tablist" aria-label="Notification categories">
+        <oj-bind-for-each data="[[tabs]]">
+          <template><button type="button" role="tab" :id="[['no-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
+            <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+        </oj-bind-for-each>
+      </div>
+      <div class="factory-filters factory-no-filters">
+        <div class="fx-control factory-no-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" placeholder="Search notifications..." aria-label="Search notifications" :value="[[search]]" on-input="[[searchInput]]"></div>
+        <select class="fx-select" aria-label="Type" on-change="[[typeChange]]"><option value="" :selected="[[typeFilter() === '']]">All Types</option>
+          <oj-bind-for-each data="[[types]]"><template><option :value="[[$current.data]]" :selected="[[$current.data === typeFilter()]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+        <select class="fx-select" aria-label="Status" on-change="[[statusChange]]"><option value="" :selected="[[statusFilter() === '']]">All Status</option><option value="unread">Unread</option><option value="read">Read</option></select>
+        <select class="fx-select" aria-label="Priority" on-change="[[priorityChange]]"><option value="" :selected="[[priorityFilter() === '']]">All Priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+        <select class="fx-select" aria-label="Time" on-change="[[timeChange]]"><option value="" :selected="[[timeFilter() === '']]">All Time</option><option value="1">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+        <span class="factory-no-filterwrap" :data-fx-tip="[[filtersOn() ? 'Clear the filters' : 'No filters to clear']]"><button type="button" :class="[[filtersOn() ? 'fx-btn fx-btn--tertiary fx-btn--icon factory-no-filterbtn is-on' : 'fx-btn fx-btn--tertiary fx-btn--icon factory-no-filterbtn']]" on-click="[[clearFilters]]" :disabled="[[!filtersOn()]]" aria-label="Clear the filters">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg></button></span>
+      </div>
+      <oj-bind-if test="[[hasChecked()]]">
+        <div class="fx-bulkbar factory-no-bulk" role="region" aria-label="Selected rows"><span><oj-bind-text value="[[checkedCount() + ' selected']]"></oj-bind-text></span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[markSelectedRead]]">Mark selected as read</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[markSelectedUnread]]">Mark as unread</button><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearChecked]]">Clear selection</button></div>
+      </oj-bind-if>
+      <div class="fx-table-wrap factory-no-tablewrap">
+        <table class="fx-table factory-no-table" id="notificationTable">
+          <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[allChecked]]" on-click="[[checkAll]]" aria-label="Select all notifications on this page"></label></th><th scope="col">Type</th><th scope="col">Notification</th><th scope="col">Related To</th><th scope="col">Time</th><th scope="col">Priority</th><th scope="col">Status</th><th class="fx-table-actions"><span class="factory-sr">Actions</span></th></tr></thead>
+          <tbody on-keydown="[[keys.key]]"><oj-bind-for-each data="[[rows]]" as="row"><template><tr :class="[[row.data.rowCss]]" tabindex="0" on-click="[[row.data.pick]]" on-focus="[[row.data.focus]]">
+            <td class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[row.data.isChecked]]" on-click="[[row.data.check]]" :aria-label="[['Select ' + row.data.title]]"></label></td>
+            <td><span :class="[[row.data.iconCss]]" :title="[[row.data.categoryText]]"><span :class="[[row.data.iconClass]]" aria-hidden="true"></span></span></td>
+            <td><strong class="factory-no-title"><oj-bind-text value="[[row.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[row.data.text]]"></oj-bind-text></span></td>
+            <td><span class="factory-cp-link factory-no-rel" :title="[[row.data.related]]"><oj-bind-text value="[[row.data.related]]"></oj-bind-text></span><span class="factory-ov-subtle factory-no-text"><oj-bind-text value="[[row.data.relatedSub]]"></oj-bind-text></span>
+              <oj-bind-if test="[[row.data.subject]]"><span :class="[[row.data.subject.css + ' factory-no-subject']]"><span :class="[[row.data.subject.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[row.data.subject.text]]"></oj-bind-text></span></oj-bind-if></td>
+            <td class="factory-no-when" :title="[[row.data.when]]"><span><oj-bind-text value="[[row.data.whenDate]]"></oj-bind-text></span><span><oj-bind-text value="[[row.data.whenTime]]"></oj-bind-text></span></td>
+            <td><span :class="[[row.data.priorityBadge.css]]"><oj-bind-text value="[[row.data.priorityBadge.text]]"></oj-bind-text></span></td>
+            <td><span :class="[[row.data.statusBadge.css]]"><oj-bind-text value="[[row.data.statusBadge.text]]"></oj-bind-text></span></td>
+            <td class="fx-table-actions"><span class="fx-menu-wrap">
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm fx-menu-toggle" aria-haspopup="menu" :aria-expanded="[[row.data.menuOpen() ? 'true' : 'false']]" on-click="[[row.data.menu]]" :aria-label="[['Actions for ' + row.data.title]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
+              <oj-bind-if test="[[row.data.menuOpen()]]">
+                <div class="fx-menu factory-no-menu" role="menu" :style="[[menuStyle]]" on-keydown="[[menuKey]]" on-click="[[stop]]">
+                  <button type="button" role="menuitem" on-click="[[menuToggleRead]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[row.data.unread() ? 'Mark as read' : 'Mark as unread']]"></oj-bind-text></button>
+                  <button type="button" role="menuitem" on-click="[[menuOpen]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Open</button>
+                  <button type="button" role="menuitem" on-click="[[menuDetails]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Show details</button>
+                </div>
+              </oj-bind-if></span></td></tr></template></oj-bind-for-each></tbody>
+        </table>
+        <oj-bind-if test="[[rows().length === 0]]">
+          <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span></span>
+            <strong><oj-bind-text value="[[filtersOn() || tab() !== 'all' ? 'No notifications match' : 'No notifications yet']]"></oj-bind-text></strong>
+            <oj-bind-text value="[[filtersOn() || tab() !== 'all' ? 'Clear the filters or pick another category.' : 'Builds, agent runs, reviews and system events show here.']]"></oj-bind-text></div>
+        </oj-bind-if>
+      </div>
+      <div class="fx-pager factory-no-pager">
+        <span class="fx-pager-text"><oj-bind-text value="[[pager.text() + ' notifications']]"></oj-bind-text></span>
+        <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
+        <oj-bind-for-each data="[[pager.numbers]]" as="pg"><template>
+          <oj-bind-if test="[[pg.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+          <oj-bind-if test="[[!pg.data.gap]]"><button type="button" :class="[[pg.data.css]]" :aria-current="[[pg.data.current ? 'page' : null]]" :aria-label="[['Page ' + pg.data.label]]" on-click="[[pg.data.go]]"><oj-bind-text value="[[pg.data.label]]"></oj-bind-text></button></oj-bind-if>
+        </template></oj-bind-for-each>
+        <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button>
+        <select class="fx-select" aria-label="Notifications per page" on-change="[[pager.sizeChange]]">
+          <oj-bind-for-each data="[[pager.sizes]]" as="sz"><template><option :value="[[sz.data]]" :selected="[[sz.data === pager.size()]]"><oj-bind-text value="[[sz.data + ' / page']]"></oj-bind-text></option></template></oj-bind-for-each></select>
+      </div>
+    </section>
+
+    <section class="factory-card factory-ag-detail factory-no-detail">
+      <h2>Notification Details <oj-bind-if test="[[selectedView()]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" on-click="[[closeDetails]]" aria-label="Close the details"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></oj-bind-if></h2>
+      <oj-bind-if test="[[!selectedView()]]">
+        <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span></span><strong>No notification chosen</strong>Choose one in the list to see its details.</div>
+      </oj-bind-if>
+      <oj-bind-if test="[[selectedView()]]">
+        <div class="factory-no-dhead"><span :class="[[selectedView().iconCss]]"><span :class="[[selectedView().iconClass]]" aria-hidden="true"></span></span>
+          <div><strong id="notificationTitle"><oj-bind-text value="[[selectedView().title]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[selectedView().when]]"></oj-bind-text></span></div>
+          <span :class="[[selectedView().priorityBadge.css]]"><oj-bind-text value="[[selectedView().priorityBadge.text]]"></oj-bind-text></span></div>
+        <p class="factory-no-dtext"><oj-bind-text value="[[selectedView().text]]"></oj-bind-text></p>
+        <dl class="factory-kv factory-no-kv">
+          <dt>Category</dt><dd><oj-bind-text value="[[selectedView().category]]"></oj-bind-text></dd>
+          <oj-bind-if test="[[selectedView().subject]]"><dt>Status</dt><dd><span :class="[[selectedView().subject.css]]"><span :class="[[selectedView().subject.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selectedView().subject.text]]"></oj-bind-text></span></dd></oj-bind-if>
+          <oj-bind-for-each data="[[selectedView().details]]"><template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd :title="[[$current.data.value]]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template></oj-bind-for-each>
+        </dl>
+        <oj-bind-if test="[[selectedView().errors.length > 0]]">
+          <div :class="[[selectedView().errorsCss]]" role="note" id="errorSummary"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+            <div class="fx-alert-text"><strong><oj-bind-text value="[[selectedView().tone === 'red' ? 'Error Summary' : 'Risks']]"></oj-bind-text></strong>
+              <oj-bind-for-each data="[[selectedView().errors]]"><template><div><oj-bind-text value="[[$current.data]]"></oj-bind-text></div></template></oj-bind-for-each></div></div>
+        </oj-bind-if>
+        <div class="factory-no-actions">
+          <button type="button" id="primaryActionButton" class="fx-btn fx-btn--primary" on-click="[[selectedView().primary.run]]"><oj-bind-text value="[[selectedView().primary.label]]"></oj-bind-text>
+            <oj-bind-if test="[[selectedView().primary.external]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></oj-bind-if></button>
+          <button type="button" id="secondaryActionButton" class="fx-btn fx-btn--secondary" on-click="[[selectedView().secondary.run]]"><oj-bind-text value="[[selectedView().secondary.label]]"></oj-bind-text>
+            <oj-bind-if test="[[selectedView().secondary.external]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></oj-bind-if></button>
+        </div>
+        <h3 class="factory-no-relhead">Related Items</h3>
+        <ul class="factory-no-related" id="relatedItems">
+          <oj-bind-for-each data="[[selectedView().relatedItems]]" as="item"><template><li><button type="button" on-click="[[item.data.run]]">
+            <span :class="[[item.data.iconClass]]" aria-hidden="true"></span><span class="factory-no-rlabel"><oj-bind-text value="[[item.data.label]]"></oj-bind-text></span>
+            <span class="factory-no-rvalue" :title="[[item.data.value]]"><oj-bind-text value="[[item.data.value]]"></oj-bind-text></span><span class="factory-no-chev" aria-hidden="true">›</span></button></li></template></oj-bind-for-each>
+        </ul>
+      </oj-bind-if>
+    </section>
+  </div>
+</div>

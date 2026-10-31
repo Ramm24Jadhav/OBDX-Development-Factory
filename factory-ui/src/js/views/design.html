@@ -1,0 +1,357 @@
+<div class="factory-pg factory-ds">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Design System</h1>
+      <p>Modern, consistent and scalable UI components for all screens (1 – 23)</p>
+    </div>
+    <button type="button" class="fx-btn fx-btn--secondary" id="dsThemeButton" on-click="[[toggleTheme]]">
+      <span class="factory-nav-icon factory-ico-moon" aria-hidden="true"></span><oj-bind-text value="[[themeButtonText]]"></oj-bind-text></button>
+  </div>
+
+  <!-- Row 1: colours, type, icons, brand -->
+  <div class="factory-ds-row factory-ds-row-1">
+    <section class="fx-card" aria-labelledby="dsColors">
+      <h2 class="fx-card-title" id="dsColors">Colors &amp; Theme</h2>
+      <div class="fx-tabs factory-ds-subtabs" role="tablist">
+        <oj-bind-for-each data="[[tabs]]" as="t"><template>
+          <button type="button" role="tab" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button>
+        </template></oj-bind-for-each>
+      </div>
+      <h3 class="factory-ds-h"><oj-bind-text value="[[swatchTitle]]"></oj-bind-text></h3>
+      <ul class="factory-ds-swatches">
+        <oj-bind-for-each data="[[swatches]]" as="s"><template>
+          <li><button type="button" class="factory-ds-swatch" :style="[[s.data.style]]" on-click="[[s.data.copy]]" :aria-label="[['Copy ' + s.data.token]]" :data-fx-tip="[['var(' + s.data.token + ')']]"></button>
+            <span class="factory-ds-swatch-name"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span>
+            <span class="factory-ds-swatch-value"><oj-bind-text value="[[s.data.value]]"></oj-bind-text></span></li>
+        </template></oj-bind-for-each>
+      </ul>
+      <oj-bind-if test="[[tab() === 'dark']]"><p class="fx-help">These are the values for the theme in use. <button type="button" class="factory-link-sm" on-click="[[toggleTheme]]">Switch theme</button> to compare.</p></oj-bind-if>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsType">
+      <h2 class="fx-card-title" id="dsType">Typography</h2>
+      <div class="factory-ds-typehead"><span class="factory-ds-aa">Aa</span><div><strong>Inter</strong><span class="fx-muted">Modern, clean and readable (system font when Inter is not installed)</span></div></div>
+      <ul class="factory-ds-type">
+        <oj-bind-for-each data="[[type]]" as="ty"><template>
+          <li><span class="factory-ds-tag"><oj-bind-text value="[[ty.data.tag]]"></oj-bind-text></span><span class="factory-ds-spec"><oj-bind-text value="[[ty.data.spec]]"></oj-bind-text></span>
+            <span :class="[[ty.data.css]]">The quick brown fox</span></li>
+        </template></oj-bind-for-each>
+      </ul>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsIcons">
+      <h2 class="fx-card-title" id="dsIcons">Icons</h2>
+      <p class="fx-card-sub">Outline icons, 20 px, colour from the text</p>
+      <ul class="factory-ds-icons">
+        <oj-bind-for-each data="[[icons]]" as="i"><template>
+          <li :title="[[i.data.name]]"><span :class="[[i.data.css]]" aria-hidden="true"></span><span class="fx-visually-hidden"><oj-bind-text value="[[i.data.name]]"></oj-bind-text></span></li>
+        </template></oj-bind-for-each>
+      </ul>
+    </section>
+
+    <section class="factory-ds-brand" aria-label="Brand">
+      <span class="factory-brand-mark factory-ds-logo" aria-hidden="true"></span>
+      <div><strong>OBDX</strong><span>Development Factory</span><em class="factory-brand-ai">Powered by AI</em></div>
+      <p>Design · Build · Test · Deploy<br>Smarter banking experiences</p>
+      <div class="factory-ds-brand-sizes" aria-hidden="true"><span class="factory-brand-mark"></span><span class="factory-brand-mark"></span><span class="factory-brand-mark"></span></div>
+    </section>
+  </div>
+
+  <!-- Row 2: buttons, split buttons, fields, select -->
+  <div class="factory-ds-row factory-ds-row-2">
+    <section class="fx-card" aria-labelledby="dsButtons">
+      <h2 class="fx-card-title" id="dsButtons">Buttons</h2>
+      <table class="factory-ds-matrix">
+        <thead><tr><th></th><oj-bind-for-each data="[[variants]]" as="v"><template><th><oj-bind-text value="[[v.data.name]]"></oj-bind-text></th></template></oj-bind-for-each></tr></thead>
+        <tbody>
+          <oj-bind-for-each data="[[states]]" as="st"><template>
+            <tr><th><oj-bind-text value="[[st.data.label]]"></oj-bind-text></th>
+              <oj-bind-for-each data="[[variants]]" as="v"><template>
+                <td><button type="button" :class="[[v.data.css + ' fx-btn--sm' + st.data.extra]]" on-click="[[clicked(v.data.name)]]">Button</button></td>
+              </template></oj-bind-for-each></tr>
+          </template></oj-bind-for-each>
+          <tr><th>Disabled</th><oj-bind-for-each data="[[variants]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" disabled>Button</button></td></template></oj-bind-for-each></tr>
+          <tr><th>With Icon</th><oj-bind-for-each data="[[variants]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" on-click="[[clicked(v.data.name)]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Button</button></td></template></oj-bind-for-each></tr>
+          <tr><th>Loading</th><oj-bind-for-each data="[[loadingButtons]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" on-click="[[runLoading]]">Loading</button></td></template></oj-bind-for-each></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsSplit">
+      <h2 class="fx-card-title" id="dsSplit">Split Buttons</h2>
+      <div class="fx-stack">
+        <span class="factory-ds-label">Default</span>
+        <div class="fx-split">
+          <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createNew]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create New</button>
+          <button type="button" class="fx-btn fx-btn--primary fx-btn--sm fx-split-toggle" aria-haspopup="menu" :aria-expanded="[[split.open() ? 'true' : 'false']]"
+                  aria-label="More ways to create" on-click="[[split.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
+          <oj-bind-if test="[[split.open()]]">
+            <div class="fx-menu fx-menu--left" role="menu" on-keydown="[[split.key]]">
+              <button type="button" role="menuitem" on-click="[[splitDo('New Requirement')]]"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>New Requirement</button>
+              <button type="button" role="menuitem" on-click="[[splitDo('New Design')]]"><span class="factory-nav-icon factory-ico-design" aria-hidden="true"></span>New Design</button>
+              <button type="button" role="menuitem" on-click="[[splitDo('New Component')]]"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span>New Component</button>
+              <div class="fx-menu-sep" role="separator"></div>
+              <button type="button" role="menuitem" on-click="[[splitDo('Import from Repository')]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Import from Repository</button>
+            </div>
+          </oj-bind-if>
+        </div>
+        <span class="factory-ds-label">Secondary</span>
+        <div class="fx-split">
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clicked('Export')]]">Export</button>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-split-toggle" aria-label="Export options" on-click="[[clicked('Export options')]]"><span class="fx-caret" aria-hidden="true"></span></button>
+        </div>
+        <span class="factory-ds-label">Disabled</span>
+        <div class="fx-split">
+          <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" disabled>Create New</button>
+          <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-split-toggle" disabled aria-label="More"><span class="fx-caret" aria-hidden="true"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsInputs">
+      <h2 class="fx-card-title" id="dsInputs">Input Fields</h2>
+      <div class="fx-stack">
+        <div class="fx-field"><label class="fx-label" for="dsDefault">Default</label><input id="dsDefault" class="fx-input" placeholder="Enter text..."></div>
+        <div class="fx-field"><label class="fx-label" for="dsEmail">With icon and validation <span class="fx-req">*</span></label>
+          <div :class="[[emailCss]]"><div class="fx-control"><span class="factory-nav-icon factory-ico-user fx-control-icon" aria-hidden="true"></span>
+            <input id="dsEmail" class="fx-input" type="email" placeholder="Enter email address..." on-input="[[emailInput]]" :aria-invalid="[[emailState() === 'error' ? 'true' : 'false']]" aria-describedby="dsEmailMsg"></div></div>
+          <span id="dsEmailMsg" aria-live="polite">
+            <oj-bind-if test="[[emailState() === 'error']]"><span class="fx-error"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>Enter an email like name@bank.com.</span></oj-bind-if>
+            <oj-bind-if test="[[emailState() === 'success']]"><span class="fx-success-text"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Looks good!</span></oj-bind-if>
+          </span>
+        </div>
+        <div class="fx-field"><div class="fx-row"><label class="fx-label" for="dsNote">Notes</label><span class="fx-counter"><oj-bind-text value="[[noteCount]]"></oj-bind-text></span></div>
+          <textarea id="dsNote" class="fx-textarea" maxlength="200" placeholder="Describe the change..." on-input="[[noteInput]]"></textarea><span class="fx-help">Shown to reviewers with the change.</span></div>
+        <div class="fx-field"><label class="fx-label" for="dsDisabled">Disabled</label><input id="dsDisabled" class="fx-input" placeholder="Enter text..." disabled></div>
+      </div>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsSelect">
+      <h2 class="fx-card-title" id="dsSelect">Dropdown / Select</h2>
+      <div class="factory-ds-two">
+        <div class="fx-field"><label class="fx-label" for="dsSel">Default</label>
+          <select id="dsSel" class="fx-select"><option>Select option</option><option>Retail Banking</option><option>Payments</option><option>Lending</option></select></div>
+        <div class="fx-field"><label class="fx-label" for="dsSearch">Searchable</label>
+          <div class="fx-control"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input id="dsSearch" class="fx-input" placeholder="Search workspaces..." on-input="[[wsQueryInput]]" aria-controls="dsOptions"></div></div>
+      </div>
+      <ul class="factory-ds-options" id="dsOptions" role="listbox" aria-label="Workspaces">
+        <oj-bind-for-each data="[[wsFiltered]]" as="w"><template>
+          <li role="option" :aria-selected="[[w.data.css.indexOf('is-on') >= 0 ? 'true' : 'false']]"><button type="button" :class="[[w.data.css]]" on-click="[[w.data.pick]]">
+            <span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[w.data.name]]"></oj-bind-text><span class="fx-muted"><oj-bind-text value="[[w.data.bankName]]"></oj-bind-text></span></button></li>
+        </template></oj-bind-for-each>
+        <oj-bind-if test="[[wsFiltered().length === 0]]"><li class="fx-muted factory-ds-none">No workspace matches.</li></oj-bind-if>
+      </ul>
+      <div class="fx-form factory-ds-own">
+        <fx-select id="dsFxSelect" label="Workspace (fx-select)" placeholder="Choose a workspace" options="[[wsOptions]]" value="{{wsPicked}}" searchable help="Type to search; arrow keys and Enter work."></fx-select>
+        <fx-input id="dsFxInput" label="Name (fx-input)" icon="user" placeholder="Your name" value="{{fxName}}" clearable required help="Required"></fx-input>
+        <fx-input id="dsFxPassword" label="Password (fx-input)" type="password" value="{{fxPassword}}"></fx-input>
+        <div class="fx-row"><fx-switch id="dsFxSwitch" label="Notify me (fx-switch)" value="{{switchOn}}"></fx-switch>
+          <fx-menu-button id="dsFxMenu" label="More actions" icon="more" items="[[menuItems]]" on-fx-action="[[menuAction]]"></fx-menu-button></div>
+        <p class="fx-help">Selected: <oj-bind-text value="[[wsPicked() || 'nothing']]"></oj-bind-text> · name: <oj-bind-text value="[[fxName]]"></oj-bind-text> · switch: <oj-bind-text value="[[switchOn() ? 'on' : 'off']]"></oj-bind-text></p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Row 3: selection, date and time, chips -->
+  <div class="factory-ds-row factory-ds-row-3">
+    <section class="fx-card" aria-labelledby="dsChecks">
+      <h2 class="fx-card-title" id="dsChecks">Checkbox, Radio, Switch, Toggle</h2>
+      <div class="factory-ds-four">
+        <fieldset class="fx-stack"><legend class="factory-ds-label">Checkbox</legend>
+          <label class="fx-check"><input type="checkbox"><span>Unchecked</span></label>
+          <label class="fx-check"><input type="checkbox" :checked="[[agree]]" on-change="[[agreeChange]]"><span>Checked</span></label>
+          <label class="fx-check"><input type="checkbox" disabled><span>Disabled</span></label>
+        </fieldset>
+        <fieldset class="fx-stack"><legend class="factory-ds-label">Radio Button</legend>
+          <label class="fx-check"><input type="radio" name="dsRadio" value="unselected" on-change="[[radioChange]]"><span>Unselected</span></label>
+          <label class="fx-check"><input type="radio" name="dsRadio" value="selected" checked on-change="[[radioChange]]"><span>Selected</span></label>
+          <label class="fx-check"><input type="radio" name="dsRadio" disabled><span>Disabled</span></label>
+        </fieldset>
+        <div class="fx-stack"><span class="factory-ds-label">Switch</span>
+          <div class="fx-row"><button type="button" class="fx-switch" role="switch" :aria-checked="[[switchText]]" aria-labelledby="dsSwLabel" on-click="[[flip]]"></button><span id="dsSwLabel"><oj-bind-text value="[[switchOn() ? 'On' : 'Off']]"></oj-bind-text></span></div>
+          <div class="fx-row"><button type="button" class="fx-switch" role="switch" aria-checked="false" disabled aria-label="Disabled switch"></button><span class="fx-muted">Disabled</span></div>
+        </div>
+        <div class="fx-stack"><span class="factory-ds-label">Toggle Button</span>
+          <div class="fx-toggle-group" role="group" aria-label="Alignment">
+            <oj-bind-for-each data="[[alignButtons]]" as="b"><template>
+              <button type="button" :aria-pressed="[[b.data.pressed]]" on-click="[[b.data.pick]]"><oj-bind-text value="[[b.data.label]]"></oj-bind-text></button>
+            </template></oj-bind-for-each>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsDates">
+      <h2 class="fx-card-title" id="dsDates">Date &amp; Time Picker</h2>
+      <div class="fx-form fx-form--2">
+        <fx-date id="dsDate" label="Date Picker" value="{{date}}"></fx-date>
+        <fx-time id="dsTime" label="Time Picker" value="{{time}}"></fx-time>
+        <fx-date id="dsFrom" label="Date Range: from" value="{{from}}" max="[[to]]"></fx-date>
+        <fx-date id="dsTo" label="to" value="{{to}}" min="[[from]]"></fx-date>
+      </div>
+      <p class="fx-help">Picked: <oj-bind-text value="[[date() + ' ' + time() + ' · range ' + from() + ' to ' + to()]]"></oj-bind-text></p>
+      <p class="fx-help">Dates follow this browser's locale. The range cannot end before it starts.</p>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsTags">
+      <h2 class="fx-card-title" id="dsTags">Tags / Chips</h2>
+      <div class="fx-row">
+        <oj-bind-for-each data="[[tags]]" as="tg"><template>
+          <span class="fx-chip"><oj-bind-text value="[[tg.data]]"></oj-bind-text><button type="button" class="fx-chip-remove" :aria-label="[['Remove ' + tg.data]]" on-click="[[removeTag(tg.data)]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></span>
+        </template></oj-bind-for-each>
+        <button type="button" class="fx-chip" on-click="[[addTag]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Tag</button>
+      </div>
+      <h3 class="factory-ds-h">Status Chips</h3>
+      <div class="fx-row">
+        <oj-bind-for-each data="[[filterList]]" as="f"><template><span :class="[[f.data.css]]"><oj-bind-text value="[[f.data.label]]"></oj-bind-text></span></template></oj-bind-for-each>
+      </div>
+    </section>
+  </div>
+
+  <!-- Row 4: carousel, card, table, pagination, progress -->
+  <div class="factory-ds-row factory-ds-row-4">
+    <section class="fx-card factory-ds-carousel-card" aria-labelledby="dsCarousel">
+      <h2 class="fx-card-title" id="dsCarousel">Horizontal Carousel</h2>
+      <div class="fx-carousel">
+        <button type="button" class="fx-carousel-btn fx-carousel-btn--prev" aria-label="Previous workspaces" on-click="[[carousel.prev]]" :disabled="[[!carousel.canPrev()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
+        <div class="fx-carousel-track factory-ds-track" id="dsCarouselTrack" tabindex="0" role="region" aria-label="Workspaces, use the arrow keys to scroll">
+          <oj-bind-for-each data="[[cards]]" as="c"><template>
+            <button type="button" class="fx-card fx-card--interactive factory-ds-slide" on-click="[[c.data.open]]">
+              <span class="factory-ds-slide-art" aria-hidden="true"></span>
+              <strong><oj-bind-text value="[[c.data.name]]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[[c.data.sub]]"></oj-bind-text></span></button>
+          </template></oj-bind-for-each>
+        </div>
+        <button type="button" class="fx-carousel-btn fx-carousel-btn--next" aria-label="Next workspaces" on-click="[[carousel.next]]" :disabled="[[!carousel.canNext()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
+        <div class="fx-carousel-dots" aria-hidden="true"><oj-bind-for-each data="[[carousel.dots]]" as="d"><template><button type="button" tabindex="-1" :class="[[d.data.css]]" :aria-label="[[d.data.label]]" :aria-current="[[d.data.current]]" on-click="[[d.data.go]]"></button></template></oj-bind-for-each></div>
+      </div>
+      <oj-bind-if test="[[cards().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No workspaces yet</strong>Create one on the Workspaces page.</div></oj-bind-if>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsCard">
+      <h2 class="fx-card-title" id="dsCard">Card</h2>
+      <div class="fx-kpi"><span class="fx-kpi-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>
+        <div><span class="fx-kpi-label">Workspaces</span><span class="fx-kpi-value"><oj-bind-text value="[[workspaces().length]]"></oj-bind-text></span><span class="fx-trend fx-trend--up">↑ in this factory</span></div></div>
+    </section>
+
+    <section class="fx-card factory-ds-table-card" aria-labelledby="dsTable">
+      <h2 class="fx-card-title" id="dsTable">Table</h2>
+      <div class="fx-table-wrap">
+        <table class="fx-table">
+          <thead><tr><th class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[allSelected]]" on-change="[[toggleAll]]" aria-label="Select all"></label></th><th>Name</th><th>Bank</th><th>Version</th><th>Status</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[wsRows]]" as="r"><template>
+              <tr :class="[[r.data.css]]"><td class="fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[r.data.checked]]" on-change="[[r.data.toggle]]" :aria-label="[['Select ' + r.data.name]]"></label></td>
+                <td><span class="fx-row"><span :class="[[r.data.avatar + ' fx-avatar--sm']]" aria-hidden="true"><oj-bind-text value="[[r.data.initials]]"></oj-bind-text></span><oj-bind-text value="[[r.data.name]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[r.data.bankName]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.obdxVersion]]"></oj-bind-text></td>
+                <td><span class="fx-badge fx-badge--success">Ready</span></td></tr>
+            </template></oj-bind-for-each>
+          </tbody>
+        </table>
+      </div>
+      <div class="fx-pager factory-ds-pager">
+        <span class="fx-pager-text"><oj-bind-text value="[[wsPages.text]]"></oj-bind-text><oj-bind-if test="[[selected().length]]"> · <oj-bind-text value="[[selected().length + ' selected']]"></oj-bind-text></oj-bind-if></span>
+        <button type="button" aria-label="Previous page" on-click="[[wsPages.prev]]" :disabled="[[!wsPages.canPrev()]]">‹</button>
+        <oj-bind-for-each data="[[wsPages.numbers]]" as="n"><template>
+          <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+          <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+        </template></oj-bind-for-each>
+        <button type="button" aria-label="Next page" on-click="[[wsPages.next]]" :disabled="[[!wsPages.canNext()]]">›</button>
+        <select class="fx-select" aria-label="Rows per page" on-change="[[wsPages.sizeChange]]"><option value="5">5 / page</option><option value="10">10 / page</option><option value="25">25 / page</option></select>
+      </div>
+    </section>
+
+    <section class="fx-card" aria-labelledby="dsProgress">
+      <h2 class="fx-card-title" id="dsProgress">Progress Indicators</h2>
+      <div class="fx-row factory-ds-progress"><div class="fx-progress" role="progressbar" :aria-valuenow="[[progress]]" aria-valuemin="0" aria-valuemax="100" aria-label="Example progress"><span :style="[[progressStyle]]"></span></div><strong><oj-bind-text value="[[progress() + '%']]"></oj-bind-text></strong>
+        <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[bump]]">+10%</button></div>
+      <ol class="fx-steps">
+        <oj-bind-for-each data="[[steps]]" as="p"><template>
+          <li :class="[[p.data.css]]" :aria-current="[[p.data.css === 'is-current' ? 'step' : null]]"><span class="fx-step-dot"><oj-bind-text value="[[p.data.n]]"></oj-bind-text></span><oj-bind-text value="[[p.data.label]]"></oj-bind-text></li>
+        </template></oj-bind-for-each>
+      </ol>
+    </section>
+  </div>
+
+  <!-- Row 5: feedback -->
+  <div class="factory-ds-row factory-ds-row-5">
+    <section class="fx-card" aria-labelledby="dsAlerts">
+      <h2 class="fx-card-title" id="dsAlerts">Alerts / Messages</h2>
+      <div class="fx-stack">
+        <div class="fx-alert fx-alert--success" role="status"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><span class="fx-alert-text">Changes have been saved successfully.</span></div>
+        <div class="fx-alert fx-alert--info" role="status"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text">Indexing completed for the Retail Banking workspace.</span></div>
+        <div class="fx-alert fx-alert--warning" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">Some files could not be indexed. Please check logs.</span></div>
+        <div class="fx-alert fx-alert--danger" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">Build failed due to compilation errors.</span></div>
+      </div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsModal">
+      <h2 class="fx-card-title" id="dsModal">Modal / Dialog</h2>
+      <p class="fx-card-sub">Confirms destructive actions. Escape or Cancel closes it.</p>
+      <button type="button" class="fx-btn fx-btn--danger" on-click="[[openDialog]]"><span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span>Delete template…</button>
+    </section>
+    <section class="fx-card" aria-labelledby="dsTip">
+      <h2 class="fx-card-title" id="dsTip">Tooltip</h2>
+      <button type="button" class="fx-btn fx-btn--tertiary fx-btn--icon" data-fx-tip="This action will create a new requirement in the selected workspace." aria-label="Create a requirement" on-click="[[createNew]]">
+        <span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span></button>
+      <p class="fx-help">Hover or focus the button.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsCrumb">
+      <h2 class="fx-card-title" id="dsCrumb">Breadcrumb</h2>
+      <ol class="fx-breadcrumb"><li><a href="?ojr=overview">Home</a></li><li><a href="?ojr=workspaces">Workspace</a></li><li><a href="?ojr=packs">Version Packs</a></li><li aria-current="page">UI Components</li></ol>
+    </section>
+    <section class="fx-card" aria-labelledby="dsToast">
+      <h2 class="fx-card-title" id="dsToast">Toast Notification</h2>
+      <div class="fx-row">
+        <button type="button" class="fx-btn fx-btn--success fx-btn--sm" on-click="[[toastSuccess]]">Show success</button>
+        <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[toastError]]">Show error</button>
+      </div>
+    </section>
+  </div>
+  <!-- Row 6: workflow components -->
+  <div class="factory-ds-row factory-ds-row-6">
+    <section class="fx-card" aria-labelledby="dsMore">
+      <h2 class="fx-card-title" id="dsMore">Multi-select, radio group, segmented</h2>
+      <div class="fx-stack">
+        <fx-multiselect id="dsMulti" label="Modules (fx-multiselect)" placeholder="Choose modules" options="[[moduleOptions]]" value="{{modules}}" help="Backspace removes the last one."></fx-multiselect>
+        <fx-radio-group id="dsRadioGroup" label="Delivery (fx-radio-group)" options="[[deliveryOptions]]" value="{{delivery}}" inline></fx-radio-group>
+        <div class="fx-row"><span class="factory-ds-label">Density (fx-segmented)</span><fx-segmented id="dsDensity" label="Density" options="[[densityOptions]]" value="{{density}}"></fx-segmented></div>
+        <p class="fx-help">Modules: <oj-bind-text value="[[modulesText]]"></oj-bind-text> · delivery: <oj-bind-text value="[[delivery]]"></oj-bind-text></p>
+      </div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsRange">
+      <h2 class="fx-card-title" id="dsRange">Date range, popover, sheet</h2>
+      <div class="fx-stack">
+        <fx-date-range id="dsDateRange" label="Runs between (fx-date-range)" from="{{rangeFrom}}" to="{{rangeTo}}"></fx-date-range>
+        <div class="fx-row">
+          <fx-popover id="dsPopover" label="What is a change?" icon="info" title="Changes">
+            <p class="fx-help">A change is the plan, the generated files and their checks for one approved requirement.</p>
+          </fx-popover>
+          <button type="button" class="fx-btn fx-btn--secondary" id="dsOpenSheet" on-click="[[openSheet]]"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span>Open a sheet</button>
+        </div>
+      </div>
+      <fx-sheet id="dsSheet" open="{{sheetOpen}}" heading="Run details (fx-sheet)" subtitle="Escape or the backdrop closes it">
+        <ol class="fx-timeline">
+          <li><span class="fx-timeline-dot fx-timeline-dot--success"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><span>Plan the change</span><span class="fx-timeline-time">2 min</span></li>
+          <li><span class="fx-timeline-dot fx-timeline-dot--running"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></span><span>Write the files <span class="fx-live">Live</span></span><span class="fx-timeline-time">running</span></li>
+          <li><span class="fx-timeline-dot"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span><span>Quick checks</span><span class="fx-timeline-time">waiting</span></li>
+        </ol>
+        <pre class="fx-log">[12:04:01] Planning the change (example log)
+[12:05:13] Writing ui/js/viewModels/fund-transfer.js</pre>
+      </fx-sheet>
+    </section>
+    <section class="fx-card" aria-labelledby="dsStatus">
+      <h2 class="fx-card-title" id="dsStatus">Status categories (ui.status)</h2>
+      <div class="fx-row"><oj-bind-for-each data="[[statuses]]" as="s"><template><span :class="[[s.data.css]]"><span :class="[[s.data.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[s.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+      <p class="fx-help">Pages map their server states to these seven categories, so a state always looks the same.</p>
+      <details class="fx-disclosure"><summary>Advanced settings <span class="fx-disclosure-hint">progressive disclosure</span></summary><div class="fx-disclosure-body"><p class="fx-help">Rarely used settings stay folded until needed.</p></div></details>
+      <div class="fx-row factory-ds-approval"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clicked('Validate')]]">Validate</button><span class="fx-approval"><span class="fx-approval-label">Approval</span><button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[clicked('Approve')]]">Approve plan</button></span></div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsPanes">
+      <h2 class="fx-card-title" id="dsPanes">Resizable panels (fx-resizer)</h2>
+      <div class="factory-ds-panes" data-fx-panes>
+        <div class="factory-ds-pane">Files</div>
+        <fx-resizer storage-key="design-demo" min="120" max="420" label="Resize the file list"></fx-resizer>
+        <div class="factory-ds-pane">Code: drag the handle, or focus it and use the arrow keys; double-click resets.</div>
+      </div>
+    </section>
+  </div>
+</div>

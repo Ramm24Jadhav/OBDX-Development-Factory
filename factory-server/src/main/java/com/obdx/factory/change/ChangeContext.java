@@ -9,17 +9,19 @@ import java.util.List;
  * What the model needs to know about a change, prepared as text: the approved spec and designs, the bank's
  * Project Profile and the shape of its codebase; plus what the quick checks of its files run with, the version
  * pack's recipes for the planner (with reference examples from the codebase), the UI target (React Native or React
- * app, empty for the OBDX JET UI) and the approved Screen Models themselves.
+ * app, empty for the OBDX JET UI), the approved Screen Models themselves, and what the OBDX knowledge base (manuals
+ * and approved notes for the workspace's OBDX version) says about the change.
  */
 public record ChangeContext(String title, String specJson, String designsJson, String profile, String structure,
-                            CheckScope checks, String recipes, String target, List<ScreenModel> models) {
+                            CheckScope checks, String recipes, String target, List<ScreenModel> models, String knowledge) {
 
     public ChangeContext {
         models = models == null ? List.of() : List.copyOf(models);
+        knowledge = knowledge == null ? "" : knowledge;
     }
 
     public ChangeContext(String title, String specJson, String designsJson, String profile, String structure) {
-        this(title, specJson, designsJson, profile, structure, CheckScope.none(), "", "", List.of());
+        this(title, specJson, designsJson, profile, structure, CheckScope.none(), "", "", List.of(), "");
     }
 
     /** Keeps prompt sections within a size the model can take. */

@@ -248,6 +248,39 @@ Version packs (5.3) describe OBDX release differences; target packs describe UI 
 
 *Implemented:* JET, React Native (Expo, TypeScript) and React (Vite, TypeScript) target packs in `target-packs/`, each with component mapping, file structure, guidance, quick-check rules, recipes, templates and a starter project whose form components are also what the designer's preview renders (React Native Web for React Native). A workspace chooses its target and the app folder; generated screens start from a deterministic scaffold of the approved Screen Model, and parity (every field and action as a testID) is checked and tested. Not yet: device previews with Expo inside the factory, and the modernization steps of section 6 beyond building screens (inventory, reverse-engineering, waves).
 
+### 5.9 Knowledge Base (OBDX Library)
+
+The factory's own knowledge of OBDX, separate from the bank's code: Oracle's manuals per OBDX version, the bank's own
+documents (scoped to its workspace), and **notes**. It is retrieval-augmented: documents are split into sections with
+their pages and embedded once; each question or generation step retrieves the few most relevant sections (keywords and
+meaning, merged by reciprocal rank fusion, limited to the workspace's OBDX version) and sends only those to the model,
+which cites them. Notes are how the knowledge matures: users write them, the model drafts them from the manuals, and
+the factory suggests one after each delivered change; an approver makes them trusted. Code generation and analysis use
+the manuals and trusted notes only; the AI chat may also use suggested notes and says so. Feedback on answers is kept.
+The knowledge is internal to the bank: it is sent only to model servers on the bank's network (this computer, private
+addresses, or hosts the administrator lists), whatever models are configured; with models outside it, the factory
+works without the knowledge and says why. It keeps itself current: Oracle's manuals of the versions an administrator
+follows come straight from Oracle's documentation site, checked weekly with conditional requests and a safety check
+on every file, imported folders are watched, a changed file
+becomes a newer revision of its document (the older one is kept as history), and notes whose cited sections changed go
+back to review. The bank's own and patchset-specific documents (PDF, Word, text, Markdown, HTML) belong to its
+workspace, rank above Oracle's generic manuals, and win where they differ.
+
+Follow-up questions are understood from the conversation, and an evaluation set of 119 questions measures the
+retrieval and the answers (docs/KNOWLEDGE-AUDIT.md: findings, root causes, results, limitations).
+
+Every question is read before it is searched, without a model (typos corrected from the manuals' own words,
+abbreviations written out, technical identifiers searched exactly and never changed, a question with several parts
+searched part by part), and **Improve My Question** rewrites a short or loose question precisely, or asks what to
+clarify, for the user to edit and approve. Answers come in three levels of detail, laid out for the kind of question,
+and every answer is checked against its sources before it is shown: citations to sources that do not exist are
+removed, identifiers, menu paths and code the sources do not have are marked, other vendors' products and other OBDX
+versions are caught, and the answer is labelled *Verified*, *Partly verified* or *Not enough in the manuals*; when the
+check finds what the model can fix, it writes the answer once more. The checks are deterministic: they catch
+unsupported details, they do not prove an answer right.
+
+*Not yet:* a 22.x/25.x difference view.
+
 ---
 
 ## 6. Modernization mode

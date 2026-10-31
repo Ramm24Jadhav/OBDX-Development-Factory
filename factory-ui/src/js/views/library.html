@@ -1,0 +1,341 @@
+<div class="factory-pg factory-lb">
+  <div class="factory-pg-head">
+    <div>
+      <h1>OBDX Library</h1>
+      <p>Oracle's OBDX manuals and the knowledge your team adds. The AI chat answers from it with citations, and code generation follows it.</p>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[privacy()]]"><div class="fx-alert fx-alert--warning" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[privacy]]"></oj-bind-text></span></div></oj-bind-if>
+
+  <div class="factory-kpis factory-lb-kpis">
+    <oj-bind-for-each data="[[kpis]]" as="k">
+      <template><div class="factory-kpi"><span :class="[[k.data.iconCss]]"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+        <span class="factory-lb-kpitext"><span class="factory-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span>
+          <span class="factory-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span>
+          <span class="factory-lb-kpisub"><oj-bind-text value="[[k.data.sub]]"></oj-bind-text></span></span></div></template>
+    </oj-bind-for-each>
+  </div>
+
+  <div class="fx-tabs factory-lb-tabs" role="tablist" aria-label="OBDX Library">
+    <oj-bind-for-each data="[[tabs]]" as="t">
+      <template><button type="button" role="tab" :id="[['lb-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" on-click="[[t.data.pick]]">
+        <span :class="[[t.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <!-- Ask -->
+  <oj-bind-if test="[[tab() === 'ask']]">
+    <section class="fx-card factory-lb-ask" aria-labelledby="lbAskTitle">
+      <h2 class="fx-card-title" id="lbAskTitle">Ask the OBDX knowledge base</h2>
+      <p class="fx-card-sub">Answers come from the manuals for <strong><oj-bind-text value="[[workspaceName]]"></oj-bind-text></strong>'s OBDX version and from the notes, with the sources cited.</p>
+      <div class="factory-lb-askrow">
+        <fx-textarea id="libraryQuestion" class="factory-grow" label="Question" hide-label rows="2" placeholder="For example: how do I add a field to the fund transfer screen?" value="{{question}}"></fx-textarea>
+        <oj-bind-if test="[[!asking()]]">
+          <button type="button" class="fx-btn fx-btn--primary" id="libraryAsk" on-click="[[ask]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Ask</button>
+        </oj-bind-if>
+        <oj-bind-if test="[[asking()]]">
+          <button type="button" class="fx-btn fx-btn--primary is-busy" disabled aria-busy="true"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Ask</button>
+        </oj-bind-if>
+      </div>
+      <div class="factory-lb-asktools">
+        <button type="button" :class="[[improving() ? 'fx-btn fx-btn--tertiary fx-btn--sm is-busy' : 'fx-btn fx-btn--tertiary fx-btn--sm']]" id="libraryImprove" on-click="[[improve]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>Improve My Question</button>
+        <fx-segmented id="libraryStyle" class="factory-lb-style" label="Answer detail" hide-label options="[[styleOptions]]" value="{{style}}"></fx-segmented>
+      </div>
+      <oj-bind-if test="[[improvement()]]">
+        <section class="factory-lb-improve" aria-labelledby="lbImproveTitle">
+          <div class="factory-lb-improvehead">
+            <h3 class="factory-lb-h3" id="lbImproveTitle"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span><oj-bind-text value="[[improvement().title]]"></oj-bind-text></h3>
+            <span class="fx-muted"><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></span>
+          </div>
+          <oj-bind-if test="[[improvement().clarificationQuestions.length > 0]]">
+            <ul class="factory-lb-clarify"><oj-bind-for-each data="[[improvement().clarificationQuestions]]" as="c"><template><li><oj-bind-text value="[[c.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <fx-textarea id="libraryImproved" label="Improved question" hide-label rows="3" value="{{improvedText}}"></fx-textarea>
+          <oj-bind-if test="[[improvement().facts.length > 0 || improvement().assumptions.length > 0]]">
+            <div class="factory-lb-improvefacts">
+              <oj-bind-for-each data="[[improvement().facts]]" as="f"><template><span class="fx-chip is-static"><span class="fx-muted"><oj-bind-text value="[[f.data.k + ':']]"></oj-bind-text></span> <oj-bind-text value="[[f.data.v]]"></oj-bind-text></span></template></oj-bind-for-each>
+              <oj-bind-for-each data="[[improvement().assumptions]]" as="a"><template><span class="fx-muted factory-lb-assume"><oj-bind-text value="[['Assumes: ' + a.data]]"></oj-bind-text></span></template></oj-bind-for-each>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[improvement().made]]"><p class="fx-help"><oj-bind-text value="[[improvement().made]]"></oj-bind-text></p></oj-bind-if>
+          <div class="factory-lb-improvebar">
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="libraryUseImproved" on-click="[[useImproved]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Use improved question</button>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="libraryRegenerateImproved" on-click="[[improve]]" :disabled="[[improving()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCopyImproved" on-click="[[copyImproved]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCancelImprove" on-click="[[cancelImprove]]">Cancel</button>
+          </div>
+        </section>
+      </oj-bind-if>
+      <oj-bind-if test="[[followingUp()]]">
+        <p class="fx-muted factory-lb-followup">Follow-up questions continue from: <strong><oj-bind-text value="[[lastQuestion]]"></oj-bind-text></strong>
+          <button type="button" class="factory-link-sm" id="libraryNewConversation" on-click="[[newConversation]]">New conversation</button></p>
+      </oj-bind-if>
+      <oj-bind-if test="[[!answer() && !asking()]]">
+        <div class="factory-lb-examples"><span class="fx-muted">Try:</span>
+          <oj-bind-for-each data="[[exampleRows]]" as="e"><template><button type="button" class="fx-chip" on-click="[[e.data.ask]]"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+        </div>
+      </oj-bind-if>
+      <oj-bind-if test="[[asking() && !answerText()]]">
+        <div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[thinking]]"></oj-bind-text></div>
+      </oj-bind-if>
+      <oj-bind-if test="[[answer()]]">
+        <div class="factory-lb-answer" role="region" aria-label="Answer">
+          <oj-bind-if test="[[!answer().grounded]]">
+            <div class="fx-alert fx-alert--warning"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">The knowledge base has nothing on this yet, so the answer below is general and not from the manuals.</span></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[answer().improved]]"><p class="fx-muted factory-lb-askedas">Asked as: <oj-bind-text value="[[answer().improved]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-if test="[[answer().quality]]">
+            <div class="factory-lb-quality">
+              <span :class="[[answer().quality.css]]"><oj-bind-text value="[[answer().quality.label]]"></oj-bind-text></span>
+              <span class="fx-muted"><oj-bind-text value="[[answer().quality.reason]]"></oj-bind-text><oj-bind-if test="[[answer().quality.corrected]]"> The model rewrote it once after the check.</oj-bind-if></span>
+              <oj-bind-if test="[[answer().quality.details]]">
+                <details class="factory-lb-findings"><summary>What the check found</summary>
+                  <ul><oj-bind-for-each data="[[answer().quality.findings]]" as="f"><template><li><oj-bind-text value="[[f.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                </details>
+              </oj-bind-if>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[asking() && answer().checking]]"><div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[answer().checking]]"></oj-bind-text></div></oj-bind-if>
+          <div :class="[[asking() ? 'factory-lb-answertext is-writing' : 'factory-lb-answertext']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sources || []]]" cite-prefix="lbSrc-"></fx-markdown></div>
+          <oj-bind-if test="[[answer().quality && answer().quality.limitations.length > 0]]">
+            <ul class="factory-lb-limits"><oj-bind-for-each data="[[answer().quality.limitations]]" as="l"><template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[l.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <p class="fx-muted factory-lb-meta"><oj-bind-text value="[[answer().meta]]"></oj-bind-text><oj-bind-if test="[[answer().note]]"> · <oj-bind-text value="[[answer().note]]"></oj-bind-text></oj-bind-if></p>
+          <oj-bind-if test="[[answer().sourceRows.length > 0]]">
+            <details class="factory-lb-allsources"><summary><oj-bind-text value="[['All sources searched (' + answer().sourceRows.length + ')']]"></oj-bind-text></summary>
+            <ol class="factory-lb-sources">
+              <oj-bind-for-each data="[[answer().sourceRows]]" as="s">
+                <template><li :class="[[s.data.css]]" :id="[['lbSrc-' + s.data.n]]"><span class="factory-lb-n"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span>
+                  <span class="factory-lb-sourcebody">
+                    <oj-bind-if test="[[s.data.url]]"><a :href="[[s.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></a></oj-bind-if>
+                    <oj-bind-if test="[[!s.data.url]]"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></oj-bind-if>
+                    <span class="fx-muted"><oj-bind-text value="[[s.data.where]]"></oj-bind-text><oj-bind-if test="[[s.data.oracleUrl]]"> · <a :href="[[s.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
+                    <oj-bind-if test="[[s.data.excerpt]]"><details class="factory-lb-excerpt"><summary>What it says</summary><p><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></p></details></oj-bind-if></span></li></template>
+              </oj-bind-for-each>
+            </ol>
+            </details>
+          </oj-bind-if>
+          <oj-bind-if test="[[answer().shortList.length > 0]]">
+            <details class="factory-lb-diagnostics"><summary>How the sources were found (administrators)</summary>
+              <dl><oj-bind-for-each data="[[answer().diagnosticRows]]" as="d"><template><dt><oj-bind-text value="[[d.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[d.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+              <p class="fx-muted">The short list, by score; the model kept those marked kept:</p>
+              <ol class="factory-lb-shortlist"><oj-bind-for-each data="[[answer().shortList]]" as="r"><template><li><oj-bind-text value="[[r.data.text]]"></oj-bind-text> <strong><oj-bind-text value="[[r.data.kept]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ol>
+            </details>
+          </oj-bind-if>
+          <oj-bind-if test="[[!asking()]]"><div class="factory-lb-answerbar">
+            <span class="fx-muted">Was this helpful?</span>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerHelpful" on-click="[[rate(true)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Yes</button>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="answerNotHelpful" on-click="[[rate(false)]]" :disabled="[[rated() !== null]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>No</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="copyAnswer" on-click="[[copyAnswer]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy answer</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="regenerateAnswer" on-click="[[regenerate]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
+            <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm factory-lb-save" id="saveAnswer" on-click="[[saveAnswer]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Save as knowledge</button>
+          </div></oj-bind-if>
+        </div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+
+  <!-- Documents -->
+  <oj-bind-if test="[[tab() === 'documents']]">
+    <oj-bind-if test="[[showOracle()]]">
+      <section class="fx-card factory-lb-oracle" aria-labelledby="lbOracleTitle">
+        <h2 class="fx-card-title" id="lbOracleTitle">Oracle's manuals from Oracle's site</h2>
+        <p class="fx-card-sub">The factory gets the OBDX manuals from docs.oracle.com and keeps them current: every week it asks Oracle which manuals changed (a new patchset or a fix) and downloads only those, one at a time. Each file must be a genuine PDF from Oracle's site with no scripts or embedded files before it is read. Nothing of the bank's is sent to Oracle.</p>
+        <oj-bind-if test="[[oracleFollows().length > 0]]">
+          <ul class="factory-lb-folders">
+            <oj-bind-for-each data="[[oracleFollows]]" as="o">
+              <template>
+                <li class="factory-lb-folder">
+                  <span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span>
+                  <span class="factory-lb-folderbody"><strong class="factory-lb-folderpath"><oj-bind-text value="[['OBDX ' + o.data.version]]"></oj-bind-text></strong>
+                    <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[o.data.about + ' · ' + o.data.last]]"></oj-bind-text></span></span>
+                  <oj-bind-if test="[[isAdmin()]]">
+                    <span class="factory-lb-actions">
+                      <button type="button" :class="[[o.data.checkCss]]" :disabled="[[o.data.running]]" :aria-busy="[[o.data.running ? 'true' : 'false']]" on-click="[[o.data.check]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Check now</button>
+                      <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Stop following OBDX ' + o.data.version]]" on-click="[[o.data.stop]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
+                    </span>
+                  </oj-bind-if>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+        </oj-bind-if>
+        <oj-bind-if test="[[isAdmin()]]">
+          <div class="factory-lb-importrow">
+            <fx-select id="oracleVersion" class="factory-lb-version" label="OBDX version" placeholder="Reading Oracle's site…" options="[[oracleVersions]]" value="{{oracleVersion}}"></fx-select>
+            <fx-select id="oracleScope" class="factory-grow" label="Manuals" options="[[oracleScopes]]" value="{{oracleScope}}"></fx-select>
+            <button type="button" class="fx-btn fx-btn--primary" id="oracleFollow" on-click="[[followOracle]]" :disabled="[[oracleBusy() || !oracleVersion()]]"><span class="factory-nav-icon factory-ico-download" aria-hidden="true"></span>Get and keep current</button>
+          </div>
+          <oj-bind-if test="[[oracleNote()]]">
+            <div class="fx-alert fx-alert--warning factory-lb-oraclenote"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[oracleNote]]"></oj-bind-text></span></div>
+          </oj-bind-if>
+        </oj-bind-if>
+      </section>
+    </oj-bind-if>
+    <oj-bind-if test="[[canImport()]]">
+      <section class="fx-card factory-lb-import" aria-labelledby="lbImportTitle">
+        <h2 class="fx-card-title" id="lbImportTitle">Add documents</h2>
+        <p class="fx-card-sub">Oracle's manuals, or the bank's own and patchset documents (PDF, Word, text, Markdown, HTML), for one OBDX version. A folder is watched: new and changed files there are picked up. A changed file replaces its older revision, and notes on changed sections come back for review.</p>
+        <div class="factory-lb-importrow">
+          <fx-input id="importVersion" class="factory-lb-version" label="OBDX version" value="{{importVersion}}" placeholder="25.2"></fx-input>
+          <fx-input id="importPatchset" class="factory-lb-version" label="Patchset (optional)" value="{{importPatchset}}" placeholder="25.2.0.1"></fx-input>
+          <oj-bind-if test="[[folderImport()]]">
+            <fx-input id="importFolder" class="factory-grow" label="Folder with the documents" value="{{importFolder}}" placeholder="C:\work\OBDX-Development-Factory\oracle-docs\25.2"></fx-input>
+            <button type="button" class="fx-btn fx-btn--primary" id="importFolderButton" on-click="[[runFolderImport]]" :disabled="[[importBusy]]"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>Import folder</button>
+          </oj-bind-if>
+          <button type="button" class="fx-btn fx-btn--secondary" id="uploadButton" on-click="[[chooseFiles]]" :disabled="[[importBusy]]"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>Upload files</button>
+          <input type="file" id="libraryUpload" accept=".pdf,.docx,.doc,.txt,.md,.html,.htm" multiple class="fx-visually-hidden" tabindex="-1" aria-hidden="true" on-change="[[upload]]">
+        </div>
+        <oj-bind-if test="[[isAdmin()]]">
+          <label class="fx-check factory-lb-bank"><input type="checkbox" :checked="[[importForBank]]" on-change="[[setImportForBank]]"><span>The bank's own documents, for <oj-bind-text value="[[workspaceName]]"></oj-bind-text> only</span></label>
+        </oj-bind-if>
+        <oj-bind-if test="[[!isAdmin()]]">
+          <p class="fx-muted factory-lb-bank">These become the bank's own documents for <oj-bind-text value="[[workspaceName]]"></oj-bind-text>.</p>
+        </oj-bind-if>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[folders().length > 0]]">
+      <section class="fx-card" aria-labelledby="lbFoldersTitle">
+        <h2 class="fx-card-title" id="lbFoldersTitle">Watched folders</h2>
+        <p class="fx-card-sub">Checked again every few hours. Put Oracle's updated manuals or the bank's updated documents here, or check now.</p>
+        <ul class="factory-lb-folders">
+          <oj-bind-for-each data="[[folders]]" as="f">
+            <template>
+              <li class="factory-lb-folder">
+                <span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span>
+                <span class="factory-lb-folderbody"><strong class="factory-lb-folderpath"><oj-bind-text value="[[f.data.folder]]"></oj-bind-text></strong>
+                  <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[f.data.about + ' · ' + f.data.last]]"></oj-bind-text></span></span>
+                <oj-bind-if test="[[f.data.canManage]]">
+                  <span class="factory-lb-actions">
+                    <button type="button" :class="[[f.data.busy() ? 'fx-btn fx-btn--secondary fx-btn--sm is-busy' : 'fx-btn fx-btn--secondary fx-btn--sm']]" :disabled="[[f.data.busy]]" :aria-busy="[[f.data.busy() ? 'true' : 'false']]" on-click="[[f.data.check]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Check now</button>
+                    <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Stop watching ' + f.data.folder]]" on-click="[[f.data.stop]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button>
+                  </span>
+                </oj-bind-if>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[embedding().show]]">
+      <section class="fx-card factory-lb-embedding" aria-labelledby="lbEmbeddingTitle">
+        <div class="factory-lb-embedtext">
+          <h2 class="fx-card-title" id="lbEmbeddingTitle"><oj-bind-text value="[[embedding().text]]"></oj-bind-text></h2>
+          <p class="fx-muted"><oj-bind-text value="[[embedding().sub]]"></oj-bind-text></p>
+        </div>
+        <div :class="[[embedding().running ? 'factory-lb-embedbar is-running' : 'factory-lb-embedbar']]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[embedding().percent]]" aria-label="Sections embedded">
+          <span :style="[[embedding().barStyle]]"></span>
+        </div>
+        <strong class="factory-lb-embedpct"><oj-bind-text value="[[embedding().percent + '%']]"></oj-bind-text></strong>
+        <oj-bind-if test="[[isAdmin() && embedding().waiting > 0]]">
+          <button type="button" class="fx-btn fx-btn--primary" id="embedAllButton" on-click="[[embedAll]]" :disabled="[[embedAllBusy() || embedding().running]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Embed all</button>
+        </oj-bind-if>
+      </section>
+    </oj-bind-if>
+    <oj-bind-if test="[[olderCount() > 0]]">
+      <label class="fx-check factory-lb-older"><input type="checkbox" :checked="[[showOlder]]" on-change="[[setShowOlder]]"><span>Show older revisions (<oj-bind-text value="[[olderCount]]"></oj-bind-text>)</span></label>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[versions().length === 0]]">
+      <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
+        <strong>No documents yet</strong><span>An administrator adds the OBDX manuals for each version here.</span></div>
+    </oj-bind-if>
+    <oj-bind-for-each data="[[versions]]" as="v">
+      <template>
+        <section class="fx-card factory-lb-version-card">
+          <h2 class="fx-card-title">OBDX <oj-bind-text value="[[v.data.version]]"></oj-bind-text>
+            <span class="fx-muted factory-lb-count"><oj-bind-text value="[[v.data.summary]]"></oj-bind-text></span></h2>
+          <div class="fx-table-wrap">
+            <table class="fx-table factory-lb-table">
+              <thead><tr><th scope="col">Document</th><th scope="col">Status</th><th scope="col">Pages</th><th scope="col">Sections</th><th scope="col">By meaning</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+              <tbody>
+                <oj-bind-for-each data="[[v.data.documents]]" as="d">
+                  <template><tr :class="[[d.data.rowCss]]">
+                    <td><a :href="[[d.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[d.data.title]]"></oj-bind-text></a>
+                      <span class="fx-muted factory-lb-sub"><oj-bind-text value="[[d.data.scope]]"></oj-bind-text><oj-bind-if test="[[d.data.message]]"> · <oj-bind-text value="[[d.data.message]]"></oj-bind-text></oj-bind-if></span></td>
+                    <td><span :class="[[d.data.statusCss]]"><span :class="[[d.data.statusIcon]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.statusText]]"></oj-bind-text></span></td>
+                    <td><oj-bind-text value="[[d.data.pages || '–']]"></oj-bind-text></td>
+                    <td><oj-bind-text value="[[d.data.sections || '–']]"></oj-bind-text></td>
+                    <td><oj-bind-if test="[[!d.data.older]]"><span :class="[[d.data.progressCss]]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[d.data.progress]]" :aria-label="[['Embedded ' + d.data.progress + '%']]"><span :style="[[d.data.progressStyle]]"></span></span>
+                      <span class="fx-muted factory-lb-pct"><oj-bind-text value="[[d.data.progress + '%']]"></oj-bind-text></span></oj-bind-if><oj-bind-if test="[[d.data.older]]">–</oj-bind-if></td>
+                    <td class="factory-lb-actions">
+                      <oj-bind-if test="[[d.data.canEmbed && d.data.admin]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[d.data.embed]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Embed again</button></oj-bind-if>
+                      <oj-bind-if test="[[d.data.admin]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + d.data.title]]" on-click="[[d.data.remove]]"><span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span></button></oj-bind-if>
+                    </td>
+                  </tr></template>
+                </oj-bind-for-each>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </template>
+    </oj-bind-for-each>
+  </oj-bind-if>
+
+  <!-- Notes -->
+  <oj-bind-if test="[[tab() === 'notes']]">
+    <section class="fx-card factory-lb-notestools" aria-label="Add knowledge">
+      <div class="factory-lb-summary">
+        <fx-input id="summaryTopic" class="factory-grow" label="Summarise a transaction from the manuals" value="{{summaryTopic}}" placeholder="For example: Fund Transfer, Bill Payment, Term Deposit opening"></fx-input>
+        <oj-bind-if test="[[!summarising()]]"><button type="button" class="fx-btn fx-btn--secondary" id="summariseButton" on-click="[[summarise]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Draft a note</button></oj-bind-if>
+        <oj-bind-if test="[[summarising()]]"><button type="button" class="fx-btn fx-btn--secondary is-busy" disabled aria-busy="true"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Draft a note</button></oj-bind-if>
+        <button type="button" class="fx-btn fx-btn--primary" id="newNoteButton" on-click="[[toggleNew]]" :aria-expanded="[[newOpen() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Write a note</button>
+      </div>
+      <oj-bind-if test="[[newOpen()]]">
+        <div class="factory-lb-newnote">
+          <fx-input id="newNoteTitle" label="Title" value="{{newTitle}}" required placeholder="What the note is about"></fx-input>
+          <fx-input id="newNoteTopic" label="Transaction or area (optional)" value="{{newTopic}}" placeholder="Fund Transfer"></fx-input>
+          <fx-textarea id="newNoteBody" label="Knowledge" rows="6" value="{{newBody}}" placeholder="What a developer should know: where it is implemented, how it is configured, what to watch out for."></fx-textarea>
+          <label class="fx-check"><input type="checkbox" :checked="[[newForBank]]" on-change="[[setNewForBank]]"><span>Only for <oj-bind-text value="[[workspaceName]]"></oj-bind-text> (the bank's own way of doing it)</span></label>
+          <div class="fx-row"><button type="button" class="fx-btn fx-btn--primary" id="saveNoteButton" on-click="[[saveNew]]">Save as suggested</button>
+            <button type="button" class="fx-btn fx-btn--tertiary" on-click="[[toggleNew]]">Cancel</button></div>
+        </div>
+      </oj-bind-if>
+    </section>
+
+    <div class="factory-lb-filter" role="group" aria-label="Show notes">
+      <oj-bind-for-each data="[[noteFilters]]" as="f">
+        <template><button type="button" :class="[[f.data.css]]" :aria-pressed="[[f.data.pressed]]" on-click="[[f.data.pick]]"><oj-bind-text value="[[f.data.label]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+    <oj-bind-if test="[[notes().length === 0]]">
+      <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span></span>
+        <strong>No notes here yet</strong><span>Save a good answer, write what you know, draft one from the manuals, or deliver a change: each becomes a suggested note.</span></div>
+    </oj-bind-if>
+    <div class="factory-lb-notes">
+      <oj-bind-for-each data="[[notes]]" as="n">
+        <template>
+          <article class="fx-card factory-lb-note">
+            <header class="factory-lb-notehead">
+              <h3 class="factory-lb-notetitle"><oj-bind-text value="[[n.data.title]]"></oj-bind-text></h3>
+              <span :class="[[n.data.statusCss]]"><span :class="[[n.data.statusIcon]]" aria-hidden="true"></span><oj-bind-text value="[[n.data.statusText]]"></oj-bind-text></span>
+            </header>
+            <p class="fx-muted factory-lb-sub"><oj-bind-text value="[[n.data.origin + ' · ' + n.data.scope + ' · ' + (n.data.by || '') + ' · ' + n.data.when]]"></oj-bind-text></p>
+            <oj-bind-if test="[[n.data.needsReview && n.data.status !== 'REJECTED']]">
+              <div class="fx-alert fx-alert--warning factory-lb-notecheck" role="note"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[n.data.needsReview]]"></oj-bind-text></span></div>
+            </oj-bind-if>
+            <div class="factory-lb-notebody"><oj-bind-text value="[[n.data.body]]"></oj-bind-text></div>
+            <oj-bind-if test="[[n.data.sourceRows.length > 0]]">
+              <ul class="factory-lb-notesources">
+                <oj-bind-for-each data="[[n.data.sourceRows]]" as="s"><template><li><oj-bind-if test="[[s.data.url]]"><a :href="[[s.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></a></oj-bind-if><oj-bind-if test="[[!s.data.url]]"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></oj-bind-if></li></template></oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[n.data.canReview]]">
+              <div class="fx-row factory-lb-review">
+                <oj-bind-if test="[[!n.data.isTrusted]]"><button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[n.data.approve]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve</button></oj-bind-if>
+                <oj-bind-if test="[[n.data.status !== 'REJECTED']]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[n.data.reject]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Reject</button></oj-bind-if>
+                <oj-bind-if test="[[!n.data.isSuggested]]"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm" on-click="[[n.data.unreview]]">Back to suggested</button></oj-bind-if>
+                <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" :aria-label="[['Delete ' + n.data.title]]" on-click="[[n.data.remove]]"><span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span></button>
+              </div>
+            </oj-bind-if>
+          </article>
+        </template>
+      </oj-bind-for-each>
+    </div>
+  </oj-bind-if>
+</div>

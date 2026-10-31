@@ -8,6 +8,7 @@ import com.obdx.factory.design.ScreenDesign;
 import com.obdx.factory.design.ScreenDesignRepository;
 import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.importing.StorageProperties;
+import com.obdx.factory.knowledge.KnowledgeService;
 import com.obdx.factory.pack.CheckScope;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.PackService;
@@ -52,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,6 +90,7 @@ public class ChangeService {
     private final TargetService targets;
     private final TargetPacks targetPacks;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
@@ -94,7 +98,7 @@ public class ChangeService {
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
-                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor) {
+                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -118,6 +122,7 @@ public class ChangeService {
         this.targets = targets;
         this.targetPacks = targetPacks;
         this.executor = executor;
+        this.knowledge = knowledge;
     }
 
     public record FileView(String path, String action, String layer, String purpose, ChangeFileStore.Status status,
@@ -248,13 +253,19 @@ public class ChangeService {
                     earlier.put(existing.path(), existing.generated());
                 }
             }
-            for (ChangePlan.Item item : plan.items()) {
+            for (int i = 0; i < plan.items().size(); i++) {
+                ChangePlan.Item item = plan.items().get(i);
                 if (onlyPath != null && !item.path().equals(onlyPath)) {
                     continue;
+                }
+                if (onlyPath == null) {
+                    change.status(ChangeRequest.Status.GENERATING, "Writing file " + (i + 1) + " of " + plan.items().size() + ": " + item.path());
+                    change = changes.save(change);
                 }
                 generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, note);
             }
 
+            crossCheck(id, workspace.getId());
             List<ChangeFileStore.ChangeFile> result = files.files(id);
             long failed = result.stream().filter(f -> f.status() == ChangeFileStore.Status.FAILED
                     || f.checkStatus() == FileChecks.Status.FAILED).count();
@@ -278,6 +289,9 @@ public class ChangeService {
         try {
             if (modify) {
                 Path file = workingCopy.resolve(item.path());
+                if (!within(workingCopy, file)) {
+                    throw new IOException("it is a link to a file outside the working copy; change it by hand");
+                }
                 if (Files.size(file) > properties.maxFileSize().toBytes()) {
                     files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, read(file), null, false,
                             new FileChecks.Result(FileChecks.Status.FAILED, "The file is too large to rewrite safely; change it by hand."), 0);
@@ -299,6 +313,70 @@ public class ChangeService {
         }
     }
 
+    private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_]\\w*\\.[a-zA-Z_]\\w*)[\\w.]*\\s*;");
+    /** import com.bank.x.Name; (not static imports or wildcards) */
+    private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([a-z_][\\w.]*)\\s*;");
+
+    /**
+     * Classes a Java file imports from the bank's own packages (those starting like its own package, com.bank) that
+     * are neither in the codebase nor in this change: the model used a class nobody writes, and the build will fail.
+     * A package the code has no file in comes from a library (OBDX's own com.ofss.digx jars, for extension code), so its
+     * imports are not checked.
+     *
+     * @param classExists   whether a class file (com/bank/x/Name.java, as the end of a path) is in the code or the change
+     * @param packageExists whether a package folder (com/bank/x) holds a file in the code or the change
+     */
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists) {
+        if (content == null) {
+            return List.of();
+        }
+        Matcher pkg = PACKAGE.matcher(content);
+        if (!pkg.find()) {
+            return List.of();
+        }
+        String own = pkg.group(1) + ".";
+        List<String> missing = new ArrayList<>();
+        Matcher imports = IMPORT.matcher(content);
+        while (imports.find()) {
+            // com.bank.x.Outer.Inner is in com/bank/x/Outer.java: the class file is the first name with a capital
+            String[] parts = imports.group(1).split("\\.");
+            int cls = 0;
+            while (cls < parts.length && (parts[cls].isEmpty() || !Character.isUpperCase(parts[cls].charAt(0)))) {
+                cls++;
+            }
+            if (cls == 0 || cls == parts.length) {
+                continue;
+            }
+            String folder = String.join("/", java.util.Arrays.copyOfRange(parts, 0, cls));
+            String name = folder.replace('/', '.') + "." + parts[cls];
+            if (name.startsWith(own) && !classExists.test(folder + "/" + parts[cls] + ".java") && packageExists.test(folder)) {
+                missing.add(name);
+            }
+        }
+        return missing;
+    }
+
+    /** Whether the imported code has a file whose path ends with classFile. */
+    private boolean indexed(UUID workspaceId, String classFile) {
+        String like = "%/" + classFile.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path = ?))",
+                Boolean.class, workspaceId, like, classFile));
+    }
+
+    /** Whether the imported code has a file directly in a folder whose path ends with folder (com/bank/x). */
+    private boolean indexedFolder(UUID workspaceId, String folder) {
+        String regex = "(^|/)" + folder.replaceAll("[^\\w/]", "\\\\$0") + "/[^/]+$";
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND path ~ ?)",
+                Boolean.class, workspaceId, regex));
+    }
+
+    /** Whether path is a file directly in a folder whose path ends with folder. */
+    static boolean inFolder(String path, String folder) {
+        int slash = path.lastIndexOf('/');
+        String parent = slash < 0 ? "" : path.substring(0, slash);
+        return parent.equals(folder) || parent.endsWith("/" + folder);
+    }
+
     /**
      * Files to imitate: the plan's basedOn files, then the reference examples of the version pack recipe for this
      * kind of file (pinned by developers or found in the codebase), else a file of the same type in the same folder.
@@ -309,7 +387,7 @@ public class ChangeService {
         paths.addAll(recipes.examplesFor(workspaceId, item.path(), item.action(), item.layer()));
         for (String path : paths) {
             Path file = workingCopy.resolve(path);
-            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file)
+            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file) && within(workingCopy, file)
                     && Files.size(file) <= properties.maxFileSize().toBytes()) {
                 examples.put(path, read(file));
             }
@@ -319,7 +397,7 @@ public class ChangeService {
             String extension = item.path().contains(".") ? item.path().substring(item.path().lastIndexOf('.')) : "";
             if (folder != null && Files.isDirectory(folder)) {
                 try (Stream<Path> siblings = Files.list(folder)) {
-                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p))
+                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p) && within(workingCopy, p))
                             .sorted().findFirst().orElse(null);
                     if (sibling != null && Files.size(sibling) <= properties.maxFileSize().toBytes()) {
                         examples.put(workingCopy.relativize(sibling).toString().replace('\\', '/'), read(sibling));
@@ -384,7 +462,82 @@ public class ChangeService {
                 }
             }
         }
+        crossCheck(change.getId(), change.getWorkspaceId());
         return failing;
+    }
+
+    /**
+     * Checks that need more than one file, added to each written file's check as warnings: Java imports of the bank's
+     * classes that neither the code nor the change has, and JET views that bind names their view model lacks.
+     */
+    private void crossCheck(UUID changeId, UUID workspaceId) {
+        List<ChangeFileStore.ChangeFile> written = files.files(changeId).stream()
+                .filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
+        Map<String, String> contents = new LinkedHashMap<>();
+        written.forEach(f -> contents.put(f.path(), f.generated()));
+        List<String> paths = files.files(changeId).stream().map(ChangeFileStore.ChangeFile::path).toList();
+        Path workingCopy = storage.workingCopy(workspaceId);
+        for (ChangeFileStore.ChangeFile file : written) {
+            List<String> problems = new ArrayList<>();
+            String lower = file.path().toLowerCase(java.util.Locale.ROOT);
+            if (lower.endsWith(".java")) {
+                List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
+                        || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
+                        || indexedFolder(workspaceId, folder));
+                if (!missing.isEmpty()) {
+                    problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
+                            + ". Add them to the plan, or change the imports to classes that exist.");
+                }
+            } else if (lower.endsWith(".html")) {
+                problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
+            }
+            FileChecks.Result check = withCrossChecks(file.checkStatus(), file.checkMessage(), problems);
+            if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
+                files.saveCheck(changeId, file.path(), check);
+            }
+        }
+    }
+
+    /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
+    static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds");
+
+    /**
+     * A file's check with this cross-check's findings in place of the previous ones: a warning while there are any,
+     * back to passed when they are gone and the file's own check found nothing.
+     */
+    static FileChecks.Result withCrossChecks(FileChecks.Status status, String message, List<String> problems) {
+        String own = message == null ? "" : message.lines().filter(line -> CROSS_CHECKS.stream().noneMatch(line::startsWith))
+                .collect(java.util.stream.Collectors.joining("\n")).strip();
+        String added = String.join("\n", problems);
+        String combined = own.isEmpty() ? added : added.isEmpty() ? own : own + "\n" + added;
+        FileChecks.Status result = status == FileChecks.Status.FAILED ? FileChecks.Status.FAILED
+                : !problems.isEmpty() ? FileChecks.Status.WARNING
+                : status == FileChecks.Status.WARNING && own.isEmpty() ? FileChecks.Status.PASSED : status;
+        return new FileChecks.Result(result, combined.isEmpty() ? null : combined);
+    }
+
+    /**
+     * The view model of a JET view: the .js file of the same name next to it (written in this change or existing),
+     * else a model.js beside it that holds observables; null when there is none.
+     */
+    private static String viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
+        String base = viewPath.substring(0, viewPath.length() - ".html".length());
+        String folder = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/') + 1) : "";
+        for (String candidate : List.of(base + ".js", folder + "model.js")) {
+            String content = written.get(candidate);
+            if (content == null) {
+                try {
+                    Path file = workingCopy.resolve(candidate);
+                    content = Files.isRegularFile(file) && within(workingCopy, file) ? read(file) : null;
+                } catch (IOException e) {
+                    content = null;
+                }
+            }
+            if (content != null && (candidate.endsWith(base + ".js") || content.contains("ko.observable"))) {
+                return content;
+            }
+        }
+        return null;
     }
 
     // --- review and delivery ---
@@ -466,7 +619,12 @@ public class ChangeService {
                     + ", plan approved by " + change.getPlanApprovedBy() + ")";
             long revision = svn.multiCommit(root, message, operations, credentials);
             change.delivered(root + "/" + branch, revision);
-            return detail(changes.save(change));
+            ChangeDetail delivered = detail(changes.save(change));
+            // What this change touched becomes a suggested knowledge note, for the next similar change
+            ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
+            knowledge.learnFromChange(change.getWorkspaceId(), change.getTitle(), plan == null ? null : plan.summary(),
+                    deliverable.stream().map(ChangeFileStore.ChangeFile::path).toList());
+            return delivered;
         } catch (IOException e) {
             throw new UncheckedIOException("Could not prepare the files for delivery", e);
         } finally {
@@ -546,8 +704,9 @@ public class ChangeService {
         String designsJson = null;
         List<ScreenModel> models = designModels(change);
         if (!models.isEmpty()) {
-            designsJson = json.writeValueAsString(models);
+            designsJson = json.writeValueAsString(compact(json.valueToTree(models)));
         }
+        String specJson = specForModel(json, requirement.spec());
         String profile;
         try {
             profile = profiles.get(change.getWorkspaceId()).facts().stream().filter(f -> f.value() != null)
@@ -555,9 +714,54 @@ public class ChangeService {
         } catch (NotFoundException e) {
             profile = "";
         }
-        return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
+        return new ChangeContext(change.getTitle(), specJson, designsJson, profile,
                 structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
-                targets.planGuide(change.getWorkspaceId()), models);
+                targets.planGuide(change.getWorkspaceId()), models,
+                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(specJson, 1500), 5000));
+    }
+
+    /** The spec's parts in the order the model needs them most: a prompt that shortens the spec cuts the background lists. */
+    private static final List<String> SPEC_ORDER = List.of("title", "summary", "requirements", "acceptanceCriteria", "screens",
+            "businessRules", "messages", "roles", "apis", "hostInteractions", "nonFunctional", "scope", "outOfScope", "assumptions");
+
+    /**
+     * The approved spec as the model reads it: most useful parts first and without empty values. The questions are
+     * left out: the spec already reflects the answered ones, and the open ones are not needed to write code.
+     */
+    static String specForModel(ObjectMapper json, RequirementSpec spec) {
+        tools.jackson.databind.node.ObjectNode all = compact(json.valueToTree(spec)) instanceof tools.jackson.databind.node.ObjectNode o
+                ? o : json.createObjectNode();
+        tools.jackson.databind.node.ObjectNode ordered = json.createObjectNode();
+        for (String part : SPEC_ORDER) {
+            if (all.has(part)) {
+                ordered.set(part, all.get(part));
+            }
+        }
+        return json.writeValueAsString(ordered);
+    }
+
+    /** Removes nulls, empty texts, lists and objects, which only make a prompt longer. */
+    static tools.jackson.databind.JsonNode compact(tools.jackson.databind.JsonNode node) {
+        if (node instanceof tools.jackson.databind.node.ObjectNode object) {
+            for (String name : object.properties().stream().map(Map.Entry::getKey).toList()) {
+                tools.jackson.databind.JsonNode value = compact(object.get(name));
+                if (empty(value)) {
+                    object.remove(name);
+                }
+            }
+        } else if (node instanceof tools.jackson.databind.node.ArrayNode array) {
+            for (int i = array.size() - 1; i >= 0; i--) {
+                if (empty(compact(array.get(i)))) {
+                    array.remove(i);
+                }
+            }
+        }
+        return node;
+    }
+
+    private static boolean empty(tools.jackson.databind.JsonNode value) {
+        return value == null || value.isNull() || (value.isTextual() && value.asText().isBlank())
+                || ((value.isArray() || value.isObject()) && value.size() == 0);
     }
 
     /**
@@ -591,7 +795,10 @@ public class ChangeService {
         spec.hostInteractions().forEach(host -> queries.add((host.system() == null ? "" : host.system()) + " " + host.description()));
 
         Map<String, ImpactAnalyzer.Candidate> found = new LinkedHashMap<>();
-        for (String query : queries) {
+        for (String asWritten : queries) {
+            // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+            String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+            String query = inCode == null ? asWritten : asWritten + " " + inCode;
             try {
                 for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 6).results()) {
                     found.putIfAbsent(result.path() + ":" + result.startLine(), new ImpactAnalyzer.Candidate(
@@ -666,6 +873,18 @@ public class ChangeService {
 
     private Workspace workspace(UUID id) {
         return workspaces.findById(id).orElseThrow(() -> new NotFoundException("Workspace not found: " + id));
+    }
+
+    /**
+     * Whether a file of the working copy really is in it: a link (symlink) in the bank's code could lead to any file on
+     * the server, which would then go to the model and into the change.
+     */
+    static boolean within(Path workingCopy, Path file) {
+        try {
+            return file.toRealPath().startsWith(workingCopy.toRealPath());
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private static String read(Path file) throws IOException {

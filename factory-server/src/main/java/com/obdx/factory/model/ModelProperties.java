@@ -12,7 +12,15 @@ import java.time.Duration;
  * @param apiKey         API key; local servers usually accept any value
  * @param chatModel      model used for chat and code generation
  * @param embeddingModel model used for search embeddings
- * @param timeout        maximum time to wait for one model call
+ * @param timeout          maximum time to wait for one model call
+ * @param embeddingBaseUrl server of the embedding model when it is not baseUrl, for example chat from a cloud API and
+ *                         embeddings from Ollama on this computer; empty: baseUrl
+ * @param embeddingApiKey  API key of that server
+ * @param maxContext       the most context (tokens) the factory asks an Ollama server for: Ollama runs a model with
+ *                         4,096 unless asked, and the factory asks for what a prompt needs up to this and the model's
+ *                         own limit. Larger needs more memory on the model server
+ * @param maxOutput        the most tokens a model may write in one answer on an OpenAI-compatible server (max_tokens);
+ *                         0 leaves it to the server, which may stop long answers early (Groq at 2,048)
  */
 @ConfigurationProperties(prefix = "factory.model")
 public record ModelProperties(
@@ -20,5 +28,9 @@ public record ModelProperties(
         @DefaultValue("not-needed") String apiKey,
         @DefaultValue("qwen2.5-coder:7b") String chatModel,
         @DefaultValue("nomic-embed-text") String embeddingModel,
-        @DefaultValue("120s") Duration timeout) {
+        @DefaultValue("120s") Duration timeout,
+        String embeddingBaseUrl,
+        String embeddingApiKey,
+        @DefaultValue("16384") int maxContext,
+        @DefaultValue("0") int maxOutput) {
 }

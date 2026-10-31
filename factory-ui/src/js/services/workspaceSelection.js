@@ -1,7 +1,7 @@
 /*
  * The workspace selected on the Code and Profile pages, shared so it stays selected when switching pages.
  */
-define(['knockout', './api'], function (ko, api) {
+define(['knockout', './api', './preferences'], function (ko, api, preferences) {
   const selectedId = ko.observable(null);
   const options = ko.observableArray([]);
 
@@ -13,7 +13,8 @@ define(['knockout', './api'], function (ko, api) {
       }));
       const stillExists = list.some(function (workspace) { return workspace.id === selectedId(); });
       if (!stillExists) {
-        selectedId(list.length > 0 ? list[0].id : null);
+        const preferred = list.find(function (workspace) { return workspace.id === preferences.workspace(); });
+        selectedId(preferred ? preferred.id : (list.length > 0 ? list[0].id : null));
       }
       return list;
     });

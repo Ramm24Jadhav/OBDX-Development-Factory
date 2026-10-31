@@ -83,6 +83,10 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_MODEL_CHAT` | `qwen2.5-coder:7b` |
 | `FACTORY_MODEL_EMBEDDING` | `nomic-embed-text` |
 | `FACTORY_MODEL_TIMEOUT` | `120s` |
+| `FACTORY_MODEL_EMBEDDING_BASE_URL` | empty (the embedding model is on `FACTORY_MODEL_BASE_URL`) |
+| `FACTORY_MODEL_EMBEDDING_API_KEY` | empty |
+| `FACTORY_MODEL_MAX_CONTEXT` | `16384`: the most context (tokens) asked of an Ollama server |
+| `FACTORY_MODEL_MAX_OUTPUT_TOKENS` | `0`: the most tokens a model may write in one answer on an OpenAI-compatible server (0: the server decides). Groq stops at 2,048 unless asked; set 8192 there so long plans and code files are not cut off |
 
 To try the model gateway with Ollama:
 
@@ -100,8 +104,15 @@ or a private cloud endpoint) and an API key, and lists that server's models thro
 (code models are listed first) and the embedding model, and **Use these models**: the factory switches at once, without a
 restart. The choice is kept in the database (`model_settings`; the API key encrypted with `FACTORY_SECRET_KEY`) and
 replaces the `FACTORY_MODEL_*` settings, which apply until something is chosen. Changing the embedding model removes the
-stored embeddings, because embeddings of different models cannot be compared; import each workspace again to search by
-meaning.
+stored embeddings, because embeddings of different models cannot be compared; import each workspace
+again to search by meaning.
+
+**Code search on another server.** Under **Code search**, **On another server** takes a second URL and API key for the
+embedding model, for example chat from a cloud API without embedding models (Groq:
+`https://api.groq.com/openai/v1`) and code search from Ollama on this computer (`http://localhost:11434/v1`,
+`nomic-embed-text`, which needs little memory). It is filled in with a server on this computer that has an embedding
+model, if one is found. With **On the same server** (the default) both come from the chat model server, as with a single
+local Ollama.
 
 ## Creating a workspace
 
@@ -115,6 +126,15 @@ created:
   **Browse...** opens the computer's folders; repositories in `demo-svn` and `local-repositories` are listed to pick.
   This option exists when `FACTORY_LOCAL_FOLDERS` is true, which is the default with the trial database; on a shared
   server it is off, because administrators would browse the server's folders, not their own.
+
+SVN URLs are checked wherever they are entered (`SvnUrls`): a server name that starts with `-` is refused (with
+`svn+ssh://` it would reach ssh as an option), and a `file://` URL, which reads a repository on the factory's own
+computer, only from an administrator and only when `FACTORY_LOCAL_FOLDERS` is true. The demo and trial repositories
+the factory adds itself are not affected.
+
+A stored SVN password or Jenkins API token is sent only to the server it was entered for. When the URL is changed to
+another server (scheme, host or port), the stored secret is removed and has to be entered again; the audit entry
+says so.
 
 The check fills in the workspace name, bank and OBDX version from the code and says why, strongest evidence first:
 OBDX's `about.json` (`channel/framework/json/about.json` in 22.2), Oracle's OBDX libraries (`com.ofss.digx`) or an
@@ -149,18 +169,42 @@ On the **Profile** page a developer can **Confirm** a detected value, **Correct*
 
 ## Requirements (document ingestion)
 
-1. On the **Requirements** page, upload a BRD/FSD (`.docx`, `.doc`, `.pdf`, `.txt`, `.md`, up to 25 MB) or describe the change in text. The uploaded file is kept under `FACTORY_DATA_DIR/workspaces/<id>/requirements/`.
+1. On the **Requirements** page, upload a BRD/FSD (`.docx`, `.doc`, `.pdf`, `.txt`, `.md`, up to 25 MB); a larger file is refused before it is read, a Word file whose parts unpack to more than 100 MB or 100 times their size is refused, and PDF parsing keeps its objects in a temporary file rather than memory. Design and knowledge uploads keep the 150 MB limit or describe the change in text. The uploaded file is kept under `FACTORY_DATA_DIR/workspaces/<id>/requirements/`.
 2. The text is extracted (Word headings become `#` lines and tables become `|` rows) and sent to the chat model in sections of up to 12,000 characters (`FACTORY_REQUIREMENTS_MAX_CHARS`). Confirmed Project Profile facts (OBDX and JET version, database, host systems, error codes) are given as context.
-3. The model answers in JSON mode with a spec: screens (new or enhance) with fields, actions, business rules, roles, APIs, host interactions, messages and **open questions**. An unusable answer is retried once. Sections are merged and each screen gets up to three possibly related files from code search.
-4. Analysts answer open questions and click **Update spec with answers**: answered questions become decisions, and the model updates the spec with them. The spec can also be edited as JSON. Every change is stored as a new spec version.
+3. Before the model drafts, nothing in the document's own tables is left to it: tables whose rows carry IDs (FR-001 functional requirements, BR-001 business rules, AC-001 acceptance criteria, NFR-001 non-functional requirements, OQ-001 open questions), the traceability matrix that links requirements to criteria, and the lists under the scope, out-of-scope and assumption headings are read exactly as written and replace what the model wrote for them (keeping the screens it linked requirements to). Requirements, criteria and rules the model found elsewhere (in the prose, or from an answer) that the tables do not have follow the document's rows; the model's copies of a row, under its ID or in similar words, are left out. A table of R-01 or F-01 rows counts as rules or requirements only when its header or heading says so (R-01 is as often a risk), and a bold label on its own line ("**Out of scope**") under the scope heading starts that list. The spec is then kept to the document: APIs the document never names are dropped, screens with the same words are merged, and a screen a requirement needs that the document names is added. The model answers in JSON mode with a spec: screens (new or enhance) with fields, actions, business rules, roles, APIs, host interactions, messages and **open questions**. An unusable answer is retried once. Sections are merged and each screen gets up to three possibly related files from code search.
+4. Each open question asks about one thing in plain words and comes with 2 to 4 short options and the usual choice
+   (`options`, `suggestedAnswer`). Analysts pick options (several picks are combined), type their own answer or use
+   **Use suggested answers** for every empty one, and click **Update spec with answers**: answered questions become decisions, and the model updates the spec with them. The spec can also be edited as JSON. Every change is stored as a new spec version. Updating with answers sends the model the screens, fields, rules and questions only; the document's own lists (scope, requirements, criteria, non-functional) are kept as they are, and its tables are read again, so its open questions that are still unanswered stay open. A requirement being drafted when the server restarts must be drafted again (Retry); one being updated with answers keeps its spec and answers and is ready to update again.
 5. **Approve** locks the spec. It needs at least one screen and no open questions.
 
-Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes; raise `FACTORY_MODEL_TIMEOUT` if calls time out, and lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
+The spec keeps the document's own structure for traceability: its scope, out of scope and assumptions, its functional requirements (ID, priority, the screens each needs), its acceptance criteria (ID, the requirements each verifies), its non-functional requirements and its business rules, all with the document's own IDs (FR-001, AC-001, NFR-001, BR-001; items without one are numbered after them). The document's own open questions become the spec's. The Requirements page shows them, with a traceability table (requirement, priority, screens, the criteria that verify it), and impact analysis and code generation receive them with the rest of the spec.
+
+Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes. Drafting, impact analysis and code generation are streamed where the server allows it, so `FACTORY_MODEL_TIMEOUT` counts from the last piece the model wrote, not from the start; a server that refuses JSON in a stream (some cloud APIs) answers JSON calls in one piece. On an Ollama server the factory chats through Ollama's own API and asks for a context large enough for each prompt and its answer (Ollama otherwise runs a model with 4,096 tokens and cuts longer prompts without a word), up to the model's own limit and `FACTORY_MODEL_MAX_CONTEXT` (16,384; a larger context needs more memory on the model server). If Ollama is started after the factory, the factory notices within a minute (or at once when the model settings are saved). Lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window. A server that takes too little input to draft from sections of at least 2,000 characters fails the draft with a message to use a model or plan with a larger limit.
+
+Cloud servers on a free plan limit tokens per minute (Groq: 7,000 input tokens a minute for some models). The factory works within them:
+- When the server answers "rate limit reached, try again in 7.66s", the call waits that long and is made again (up to 90 seconds a wait). A longer wait, such as a daily limit, fails with that message. A streamed answer that hits the limit after part of it was shown is not asked for again, so no part shows twice.
+- When a request is larger than the server takes at once ("Request too large ... Limit 7000, Requested 7663", or a model's maximum context length), the factory remembers the limit and builds the prompt again with less context. A maximum context length holds the answer too, so `FACTORY_MODEL_MAX_OUTPUT_TOKENS` (or 1,024 tokens when it is not set) is kept free of it for the answer. The spec, designs, code excerpts and examples shrink, and drafting uses smaller sections of the document. The log says how far a prompt was shortened.
+- When a model stops at its output limit (on Ollama, at the end of its context), the answer is incomplete. A change plan or spec is asked for again, shorter. If the plan is still cut off, it is kept with a risk saying files may be missing. A cut-off code file fails its checks with that reason rather than passing silently.
+
+The spec goes to impact analysis and code generation without empty values or the answered questions, with requirements and acceptance criteria first, so a prompt that has to shorten it drops the background lists (scope, assumptions) rather than the requirements. While code is generated the change shows which file is being written ("Writing file 3 of 16: ...").
+
+After generation, and on **Check again**, checks that need more than one file add warnings:
+- **Unresolved imports:** a Java file imports a class from the bank's own packages (those starting like the file's package, such as `com.bank`) that is neither in the imported code nor in the change. Only packages that the code or the change has files in are checked: the others come from libraries, such as OBDX's own `com.ofss.digx` jars for extension code. A nested class (`com.bank.x.Outer.Inner`) is looked for in `Outer.java`.
+- **View bindings:** a JET view binds names its view model does not define. The view model is the `.js` file of the same name, or a `model.js` with observables beside the view. Both function view models (`self.x =`) and class view models (fields, methods, getters, `this.x =` in the constructor, `Name.prototype.x =`) are read.
+- **Invalid bindings:** a binding is not a valid expression, such as `nls.fund-transfer.title` (a subtraction such as `items().length-1` is fine).
+
+These are warnings because a class can come from a library jar, and a view model can take names from elsewhere. Each cross-check replaces the warnings of the previous one, so a file written again shows only its current findings, and goes back to passed when none are left.
 
 ## Screen designer
 
 1. On the **Designer** page, pick an **approved** requirement and click **Create designs**: one design per screen of its spec, with every field mapped to a component (dropdown fields become selects, "max length 35" becomes a 35-character limit, and so on). A blank screen can also be started.
-2. Edit the structure: sections (title, 1–3 columns), components (drag and drop, or the arrow buttons), and the selected component's properties (label, type, field name, mandatory, length, default, placeholder, help, read-only, options, validations). Action buttons have a label and a style.
+2. The designer is one workspace: a **top bar** (workspace and screen, status, unsaved changes, preview size, Import, Share, Approve, Discard, Save; **+ New screen** opens a drawer to create screens from an approved requirement or a blank one), on the left **Components** (the palette) and **Layers** (sections, components and buttons as a tree; drag to reorder), the **canvas** in the middle (the live preview: click a component, section or button to select it, drop palette components on it; **Ask AI** below it), and on the right the **inspector**: **Properties** of the selection (a component's basics, data, rules and help; a section's title and columns; a button's label and style; the screen's title and name when nothing is selected), **Comments**, **History** (versions, with loading an earlier one), and **Code** for React Native or React workspaces.
+   Without a screen open, the page lists each approved requirement with its screens, their status and how many are approved. A screen made from a requirement shows the **journey** above the canvas: all screens of the requirement in the order of its spec, each with its status, with "plan the change" once all are approved. The canvas shows the screen inside an OBDX page (the workspace's bank in the header, a breadcrumb, sections as cards) filled with realistic sample data chosen from field names (accounts with balances, share symbols, order references, amounts, dates). **Checks** (in the inspector with nothing selected, and as a chip in the top bar; problems are also marked on the canvas): every field of the requirement's screen is placed (**Add** places a missing one), no placeholder choices or columns are left (**Fix with AI** passes what the requirement says about the field), mandatory is set, the bank's components have their parameters, no section is empty, and there is exactly one main button. The requirement's business rules for the screen are listed below the checks.
+   The side panels float over the canvas; « and » collapse them to rails at the sides (the canvas then uses the full width), and the rails open them again; this browser remembers which are open. A component's **Code** group (HTML, CSS, JS) holds the designer's own code for that element (`html`, `css`, `script`, up to 20,000 characters each): CSS styles the element where it is (declarations, or rules where `&` is the element); HTML replaces how the element is drawn, and JS runs with it, in a sandboxed frame without the factory's origin (`sandbox="allow-scripts"`), so a script cannot reach the factory or a reviewer's session; **Start from the generated markup** fills in plain markup for the element. Code generation uses the html as the element's template, the css in its styles and the script's behaviour in the view model.
+   **Undo** and **Redo** (Ctrl+Z, Ctrl+Y) step through every edit since the screen was opened; **↺ Previous** and **Restore this version** in History save an earlier version again as the newest one (origin `RESTORED`), so no version is lost; **Show on canvas** puts an earlier version on the canvas to look at or save. **Ask AI** changes only the selected component, section or button (the bar shows which; ✕ or selecting nothing makes it the whole screen): the model is told the element, and the factory keeps only that element from its answer, plus components it adds right after a selected component. The **screen size** picker shows the canvas at desktop 1440, laptop 1280, tablet landscape 1024, tablet 768, phone 390, small phone 360 or a custom width, scaled down to fit when wider than the canvas; the OBDX page in the preview is responsive (the menu collapses below 900 px; on phones the margins shrink and buttons stack). **+ Create component** has the model write a reusable component as HTML, CSS and JS from a description, an image (with a model that reads images) or PDF, or a Figma frame; it is stored for the workspace (`custom_component`) and listed under **Custom components** in the palette, and placing it copies its code into the element, where it can still be changed.
+   **Values from an API**: a dropdown, account selector, radio, checkbox or table can load its values from an API (`dataSource`: `api`, `path` of the list in the response, `valueField`, `labelField`; the requirement's APIs are offered), shown on the canvas as "⇄ GET …"; code generation calls it through the screen's model. **Conditions**: "Show only when" and "Mandatory only when" another element has a value, is empty, is or is not a value (`visibleWhen`, `requiredWhen`); the canvas follows what is typed in the other element (while designing a hidden element stays, faded; on the review link it is hidden). **Stage**: each screen is initiate, review, confirm or inquiry (guessed from its name when made from a requirement); **Create review and confirmation screens** makes both from an initiate screen (every field read-only with Confirm, Back and Cancel; the outcome with a reference and Go to dashboard), and a check flags an initiate screen without them; code generation builds them as one OBDX flow, the way the bank's code does. **Channels**: desktop web, tablet, mobile web and mobile app (none: all), detected from the requirement's text when the screens are made; the canvas opens at a phone or tablet size for mobile- or tablet-only screens, and code generation builds for those channels.
+   The **Components** palette on the left lists what can be dragged onto a section (or before a component), or clicked to add after the selected one, grouped as in the OBDX UX Extensibility Toolkit: **Forms** (the standard types, including a table whose options are its columns), **Controls** (a button), and what the workspace's code contains: **OBDX framework components** (folders under `framework/`, and account-input, amount-input, page-section, row and others when screens use them), **Business components** (a folder `name/` with `name.html` and `name.js`, or a `loader.js`, under the module folder), **JET composite components** (`component.json`), **Partials** (HTML under `partials/`), the **JET components** the code uses, and other custom elements and Knockout components it uses. Parameters come from the definition (`params.x` in the component's script, `properties` of `component.json`) and from how screens pass them (`params="..."`, `component: {name, params}`). A component from the code is stored with type `component`, its name (`component`) and parameter values (`params`); the preview shows account-input, amount-input and page-section like OBDX and others as a labelled placeholder, "Ask AI to change the screen" may use them, and code generation uses them as the code does. The palette is read from the working copy and rebuilt after each import.
+   **Import a design** turns a design made elsewhere into the screen's next version (origin `IMPORTED`): a **Figma** frame (its link from "Copy link to selection" and a personal access token, which is used for that request only and not stored; the factory reads the frame through the Figma REST API as an outline of frames, texts and component instances in reading order, without hidden layers and decorative shapes), a **PDF** exported from any design tool (Adobe XD, Sketch, Figma; its text in reading order, so it works with any model), or an **image** (PNG, JPG, WebP up to 10 MB; sent to the chat model, which must read images). The model follows the design's sections, order, labels and buttons, picks component types (and the bank's components from the palette), keeps the id, name and validations of fields that match the current screen, and keeps fields from the requirement that the design leaves out at the end. Load an earlier version to undo.
 3. The preview on the right renders the design with real Oracle JET components and sample data, at desktop, tablet or phone width. It runs in an iframe (`?ojr=preview&embed=1`) and receives the model with `postMessage`. Clicking a component in the preview selects it.
 4. **Ask AI** applies a change described in words ("move remarks to the end and make it optional") and saves it as a new version. Every save is a version; older versions can be loaded back into the editor.
 5. **Share for review** creates a review link (valid 14 days, replaced by **New review link**, ended by **Close link**). The customer sees the preview without the factory's navigation, can click a field to comment on it, and can approve. **Approve** in the designer does the same for the team. Approved designs are locked until reopened.
@@ -171,10 +215,144 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 
 1. On the **Changes** page pick an approved requirement and click **Analyze impact** (Developer or Lead). All screen designs created for the requirement must be approved, and the workspace's code must be imported.
 2. **Impact analysis** searches the code for each screen, field, business rule, API and host interaction, and sends the model the approved spec and designs, the Project Profile, the folder structure and up to 25 relevant code excerpts. The model answers with a plan: each file to create or modify, its layer (data, integration, service, ui, test, config), its purpose, the files whose patterns it follows, and risks. The plan is checked: paths must stay inside the repository, "modify" is only kept for files that exist, and files are ordered data → integration → service → config → ui → test.
-3. A **Lead approves** the plan (it can be edited as JSON first, or analyzed again). Only then is code written.
+3. A **Lead approves** the plan (it can be edited as JSON first, or analyzed again). Only then is code written. A plan item that is a build or CI file (`Jenkinsfile`, `pom.xml`, `build.gradle`, `package.json`, `Dockerfile`, `*.sh`, `*.bat`, `.github/`) starts its purpose with "[Build or CI file]", and the plan gets a risk naming those files: the build runs them on the build agent, so a requirement document must not slip a step in there. Plan paths and example files are read only when they really are in the working copy: a symbolic link to a file outside it is not followed.
 4. **Generation** writes each file completely, in plan order, with the current content (for modified files), example files to follow, the start of files already written in this change, and the spec, designs and profile. Java, JSON and XML must parse; if not, the model gets the error and tries again (twice at most). JavaScript and HTML get a basic bracket and tag check that only warns. Existing files over 80 KB are not rewritten; change those by hand.
 5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
 6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
+
+## OBDX Library (knowledge base)
+
+The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per version, a bank's own documents for one
+workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
+
+- **Import**: an administrator imports Oracle's manuals of a version from a folder on the factory's computer (needs
+  `factory.local-folders.enabled`; folder import and **Check now** are for administrators only, and the factory's own
+  data folder `FACTORY_DATA_DIR` cannot be imported) or by uploading files (up to 150 MB each). With "bank's own documents" ticked, the
+  files belong to the selected workspace only; a workspace's Managers import those too. The bank's own and
+  patchset-specific documents can be PDF, Word (.docx, .doc), text, Markdown or HTML (an exported wiki page), and any
+  import can carry a **patchset** (25.2.0.1, a patch number), shown with every citation. Each file is copied to
+  `<storage>/knowledge/<id>.<type>`, read (PDF page by page with PDFBox; Word headings become sections), split into
+  sections of at most about 1,800 characters with their own pages (headers, footers and contents pages dropped), and
+  embedded in the background, one document at a time. The headings are the PDF's bookmarks when it has them (Oracle's
+  manuals do: "2.2 User Management - Search and View"), so a procedure stays under its real section; otherwise numbered
+  headings ("4.3 Transfer Limits", not the numbered steps of a procedure) and Word/Markdown headings. Without the
+  embedding model a document is searched by keywords; **Embed again** finishes it later. Imports the factory stopped
+  carry on at the next start. When the reading improves (`KnowledgeImporter.READER_VERSION`), the documents read before
+  are read and embedded again at startup, in the background, one at a time.
+  Each document remembers which embedding server and model embedded it. When the models change on the Models page,
+  documents embedded by another model are embedded again and those whose embedding stopped (the model was
+  unavailable, or outside the bank) are finished, in the background; the same happens at startup. Whether the
+  embedding model is inside the bank is checked before every batch, so a model changed while a document is embedded
+  never receives the rest of it.
+- **Keeping it current**: Oracle republishes manuals for patchsets and fixes, and banks update their own documents. A
+  file already imported (same content) is skipped. A changed file with the name of one already imported for that
+  version and owner is a **newer revision**: the older one answers until the newer one is ready, then it is kept as
+  history (Show older revisions) without its sections. Notes citing it move to the newer revision; a note whose cited
+  section changed or is gone gets a "to check after updates" reason, and an approved one goes back to suggested, so code
+  generation does not follow outdated guidance until someone approves it again. Every imported folder is **watched**:
+  checked again every `factory.knowledge.folder-check-interval` (default 6 hours, `FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL`)
+  and on **Check now**. Put Oracle's updated PDFs (or the bank's) in the folder, a shared drive works, and the factory does
+  the rest.
+- **Oracle's manuals from Oracle's site**: an administrator picks an OBDX version and **Get and keep current**
+  (technical guides, or all manuals with the user manuals). The factory reads Oracle's documentation index
+  (`factory.knowledge.oracle.index-url`) for the version's releases, each release's library page for its manuals, and
+  takes the newest patchset's file of each (22.2 has a folder per patchset, 22.2.1 to 22.2.6). Then, and every
+  `check-interval` after (default 7 days, looked at hourly; **Check now** too), it asks Oracle for each file only if it
+  changed since the last check (ETag, Last-Modified): an unchanged manual is one small request, so a weekly check of 40
+  manuals is about 45 requests and no downloads. Requests go one after another with a pause (`pause`, 2 s), one check at
+  a time; downloads go through the same queue as uploads, one document read and embedded at a time. Every file must pass
+  a safety check before it is kept: HTTPS to Oracle's documentation hosts only (`hosts`; every redirect is checked
+  too, links to Oracle's staging copy go to the published site), at most `max-file-size` (150 MB), a real PDF that
+  opens without a password, with no scripts, automatic or launch actions and no embedded files. Only GET requests
+  without cookies: nothing of the bank's is sent to Oracle. A manual already in the library (the same file) is linked,
+  not imported twice; a changed one is a newer revision, as above. Nothing contacts Oracle until a version is followed;
+  `FACTORY_KNOWLEDGE_ORACLE=false` turns it off for factories without internet access, which import from folders.
+  The factory uses the computer's proxy settings (`-Djava.net.useSystemProxies=true`, in the start scripts).
+- **Search** is hybrid, as in code search: PostgreSQL full text and embeddings merged by reciprocal rank fusion, limited
+  to one OBDX version line (22 or 25, from the workspace) and to the shared manuals plus that workspace's own documents;
+  at most two sections of one document, so a long user manual does not crowd out the guide that answers. In the full-text
+  part each word counts by how rare it is in the sections searched (inverse document frequency, counted with the
+  index): in "how do I unlock a retail user" the sections about unlocking rank above those that repeat "user". A word in
+  a section's heading counts twice, and the words around a question ("give me the steps for") count for nothing. Questions
+  and sections are embedded the way the embedding model expects: `nomic-embed-text` with "search_query: " and
+  "search_document: ", the e5 models with "query: " and "passage: ", Qwen3-Embedding with a task instruction before
+  questions, the English bge models and mxbai with their query instruction; bge-m3 takes text as it is. The bank's own
+  documents and notes rank a little higher, and the model is told they describe the bank's customised system and
+  patchset and win where they differ from Oracle's manuals. On the trial
+  database, which has no pgvector, the sections' embeddings are kept in memory (about 24 MB for the 22.2 and 25.2
+  manuals) and compared there: a search takes well under a second instead of many seconds.
+- **Ask** (Library page and every AI Assistant panel): the question is searched as asked and in the manuals' own names
+  for things (a built-in OBDX glossary: a customer is a party or user, onboarding a user is User Management - Create or
+  Self Registration, a beneficiary is a payee, a developer adding a field to a screen extends a UI component), which
+  gives a short list of 15 sections: the best section of each manual first, so a developer's guide is on it next to the
+  user manual that matches the words best, then the best of the rest. The chat model then picks from
+  their headings and first words the ones that answer the question, best first: words alone cannot tell "onboard a
+  retail customer" from Corporate or Biller Onboarding. It is one short extra model call (a few seconds; the better the
+  model, the better the choice); `FACTORY_KNOWLEDGE_CHOOSE_SOURCES=false` keeps the search's own order. Then the
+  question, the page the user is looking at (up to 3,000
+  characters), the conversation's last three turns and the best five sources go to the chat model, which answers with
+  [n] citations. Each source is a whole section (`source-chars`, 1,800) labelled with its manual, version, patchset,
+  section path ("3 Extensible Points in Service Tier › 3.5 Domain Extensions") and page; what the
+  `context-chars` budget (8,000) leaves goes to the parts of the same sections before and after the best sources, so a
+  procedure cut in two arrives whole. Each source links to the factory's copy of the PDF at its page and, for manuals
+  fetched from Oracle's site, to Oracle's PDF at the page. A follow-up ("and how do I clone one?") is rewritten by the
+  chat model into a standalone question before the search, from the conversation; a question that does not lean on it is
+  searched as asked. The Library shows what a follow-up continues from and offers **New conversation**; the AI Assistant
+  panels send their own conversation. Administrators see under each answer how the sources were found: the question as
+  searched, the short list with its scores, the sections the model kept, the search time and the size of the text sent.
+  Answers can be rated (Helpful / Not helpful, kept for review) or saved as a suggested note. The prompt is sized for
+  small local models with a 4k context; for larger models raise `factory.knowledge.answer-sources`, `source-chars`,
+  `context-chars` and `page-context-chars` (`FACTORY_KNOWLEDGE_*`). On a laptop with 8 GB of
+  memory a local 3B model needs one to two minutes per answer; a model server with a GPU or a cloud model answers in
+  seconds. The answer streams in as the model writes it (`POST /api/knowledge/ask/stream`): the sources show as soon as
+  the search finds them, then the words as they come, so a slow local model is read while it writes. The model timeout
+  (`FACTORY_MODEL_TIMEOUT`) then counts from the last word written, so a long answer is not cut off.
+- **Question understanding and answer quality** (`QueryUnderstanding`, `QueryEnhancementService`,
+  `AnswerGeneration`, `AnswerPostProcessor`). Before the search, without a model: words no manual has are corrected
+  to the nearest word the manuals use ("benficiary" → "beneficiary"; the vocabulary is counted in the background at
+  startup and when the library changes), abbreviations are written out (txn, acct, config, SSO, TD), technical
+  identifiers (`TransferService`, `digx.payment.timeout`, `DIGX-PY-0042`, file paths, quoted text) are searched exactly
+  and never corrected, and a question with several parts ("explain the payment flow and how errors are handled") is
+  searched part by part as well as whole. **Improve My Question** (`POST /api/knowledge/improve-question`) sends the
+  question, the conversation, the workspace's version and the headings of the sections a search finds to the chat
+  model, which rewrites it precisely or answers NEEDS_CLARIFICATION / AMBIGUOUS with questions; nothing is answered.
+  Its reply is used only when it is JSON, keeps every identifier of the question exactly, brings in no name the
+  question and those headings do not have, and says more than the question; otherwise the factory improves it
+  without the model. A one- or two-word question whose sections fall in three or more chapters asks which is meant.
+  The user edits the improved question and asks it (`improved` on the ask request), or cancels; their own question
+  stays. Answers come **Concise**, **Detailed** (default) or **Technical deep dive** (`style`), laid out for the kind of
+  question (procedure, configuration, troubleshooting, comparison, API, architecture ...), in Markdown, which the page
+  renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, and each citation as
+  a link named after the section it cites ("User Management - Search and View, p. 79"; the whole reference on hover)
+  that opens the manual at the page, the factory's copy or Oracle's; a note opens in the list of all sources, folded
+  under the answer. Copy answer writes each citation out in full. Before it is shown, every answer is checked against its sources without a model: citations
+  to sources that do not exist are removed ("[1, 3]" becomes [1][3]), identifiers, menu paths and code examples the
+  sources do not have are marked, sentences about other vendors' products go, OBDX versions other than the
+  workspace's are noted, each statement is compared with the words of the source it cites, statements and steps
+  without citations are counted, invalid JSON is flagged, and the Markdown is tidied (one heading level, no empty or
+  repeated sections, no repeated paragraphs, unclosed code closed, filler at the start and end removed). The answer
+  is labelled VERIFIED, PARTIALLY_VERIFIED (with what the check found) or INSUFFICIENT_EVIDENCE. When the check finds
+  what the model can fix (citations to sources that do not exist, unsupported identifiers, other vendors, most
+  statements without a citation), the model writes the answer once more with the problems listed and the better of
+  the two is kept; one attempt, never a loop (`FACTORY_KNOWLEDGE_CORRECT_ANSWERS=false` turns it off). The answer's
+  `report` carries its kind, detail, summary, sections, code, tables, cited sources, limitations and the check. The
+  checks find unsupported details; they cannot prove an answer right, and a statement that uses the sources' words
+  for a wrong conclusion passes them.
+- **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
+  topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
+  *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
+  A note's source links are kept only when they go to a web page (http, https) or one of the factory's documents
+  (`api/knowledge/documents/...`), and the page shows only such links, so a stored `javascript:` link cannot run.
+  The AI chat may use suggested notes and says so; code generation and analysis use only approved notes and the manuals.
+- **It stays inside the bank**: the knowledge (manual excerpts, the bank's documents, notes) and the questions to embed
+  go only to model servers on the bank's network: this computer, private addresses (the host name is resolved and every
+  address must be private), or hosts listed in `factory.knowledge.internal-hosts` (`FACTORY_KNOWLEDGE_INTERNAL_HOSTS`,
+  for example `llm.bank.com,.ai.bank.com`). With a chat model outside, questions are refused with that reason and
+  generation runs without the knowledge; with an embedding model outside, documents are searched by keywords only. The
+  Library page shows why. `factory.knowledge.external-models=true` lifts this. It works with whichever OpenAI-compatible
+  models are chosen on the Models page.
+- **In generation**: impact analysis, code generation and requirement drafting get up to 4,000 to 5,000 characters of
+  the most relevant manual sections and approved notes for the workspace's OBDX version.
 
 ## Quick checks and version packs
 
@@ -182,6 +360,7 @@ Every generated file is checked on the factory server in milliseconds, before re
 
 - **Syntax:** Java is parsed at the bank's Java level (from the Project Profile's Java version, else the pack's default: 8 for 22.x, 11 for 25.x), so newer syntax such as records or text blocks fails for a Java 8 bank. If an existing file already uses newer Java, it is parsed at the newest level instead. JSON and XML must parse; JavaScript, HTML and SQL get a basic bracket, tag and quote check (warning only).
 - **Version pack rules:** YAML files in `factory-server/src/main/resources/packs/` (`common.yml` for all versions, `22.x.yml`, `25.x.yml`). A rule forbids or requires a regular expression in files matching path globs, for example no `System.out`, no SQL built by concatenation, no deprecated JET `ArrayTableDataSource`, javax vs. jakarta imports to match the codebase, labels from resource bundles, `DELETE`/`UPDATE` with `WHERE`. The format is explained at the top of `common.yml`.
+- **Java checks** (`JavaChecks`, built in, with rule ids like the pack rules so a workspace can turn one off): errors for a JAX-RS method whose `@Path` has `{name}` but no parameter with `@PathParam("name")`, and for `@Context`, `@PathParam`, `@QueryParam`, `@GET`, `@POST`, `@PUT`, `@DELETE`, `@Produces`, `@Consumes` or `@Path` without its import (a wildcard of `javax.ws.rs.*` does not cover `javax.ws.rs.core.Context`); both fail the deployment (`java-path-param`, `java-jaxrs-import`). Warnings for exception text sent to the client (`e.getMessage()` in `.entity(` or in a returned string, `java-exception-text`), log messages built with `+` (`java-log-concat`), and a resource that takes `customerId`, `userId` or `partyId` from the request rather than the session (`java-user-from-request`).
 - **Errors** go back to the model with the findings (like a parse error); **warnings** are shown to reviewers. Comments are ignored, and in modified files only lines the change added are reported, so the bank's existing code is never blamed.
 - The model is told the rules for each file before it writes it.
 - Rules can depend on the Project Profile (`minJet`, `ifProfile`). The **Code** page lists the workspace's rules; Manage code can turn a rule off for that workspace (audited) when the bank's codebase deliberately does it differently.
@@ -254,6 +433,7 @@ Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **J
 - **Mode**:
   - *Branch* (default): the job gets the branch the change was committed to. Set the **branch parameter** name (for example `BRANCH`) and whether it receives the path relative to the repository root (`branches/factory/cr-<id>`) or the full URL. The job's Subversion checkout must use that parameter in its repository URL, for example `https://svn.bank.local/obdx/${BRANCH}`.
   - *Patch*: for banks that do not allow the factory to commit. The job gets the patch as a file parameter (set its name, for example `PATCH`), checks out trunk, applies it (`svn patch`) and builds. Nothing is committed.
+- The stored token is kept only while the URL points to the same server; a URL to another server removes it (enter the token again).
 - **Test connection** checks the login and that each job exists, and warns when a job lacks the configured parameter.
 
 On the **Changes** page, **Build with Jenkins** (Developer or Lead) is available once the change is delivered to a branch (branch mode) or generated (patch mode). The factory then:
@@ -305,7 +485,7 @@ Signing the factory's own requests, encrypted assertions and single logout are n
 
 Every API checks these permissions (`AccessGuard`); the UI hides actions a user cannot take. Customer review links stay public and work by their token only.
 
-**Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row lock a username for 15 minutes. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
+**Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row from one address lock that username for that address for 15 minutes, so no one elsewhere can lock an administrator out. An address with 20 failed sign-ins (any usernames) waits 1 second before the next try, doubling with each further failure up to 15 minutes (`factory.auth.max-failed-logins`, `max-failed-logins-per-address`, `lock-duration`). Behind Oracle HTTP Server set `FACTORY_FORWARD_HEADERS=native` so the address is the user's, not the proxy's. A wrong password for a disabled account gets the same answer as any wrong password. Responses carry `Content-Security-Policy: frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'` (plus the SAML identity provider in SAML mode), `Referrer-Policy: same-origin` and, on HTTPS requests, `Strict-Transport-Security`. A query with a NUL character, or a path a file cannot have, is a 400. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
 
 **Audit log** (Admin page, `GET /api/admin/audit`): sign-ins and failed sign-ins, workspace creation and deletion, SVN setting changes, imports, Project Profile corrections, requirements created, approved and deleted, review links, design approvals (including by customers), and user and role changes. Passwords are never recorded.
 
@@ -318,15 +498,64 @@ npm install
 npx ojet serve
 ```
 
+To check every page at phone, tablet, laptop and desktop sizes (and at 200% browser zoom) against a running factory,
+with the local Edge or Chrome and no extra packages:
+
+```bash
+FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... npm run check:responsive -- --url http://localhost:8080 --out responsive-report
+```
+
+It signs in, opens each page at each size, and fails when a page scrolls sideways, an element runs past the window, a
+table spills out of its card, controls overlap, a label is cut off, a popup leaves the window or the console shows an
+error. It writes `report.json` and a screenshot per page and size. It only reads: nothing is saved or deleted.
+`--pages`, `--sizes` (for example `375x667,1440x900`, or `640x400@2` for 200% zoom), `--workspace` and `--theme dark`
+narrow or vary the run.
+
+`npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
+drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
+- the page transition runs (or is off with reduced motion);
+- nothing stays busy after loading;
+- Tab reaches visible controls, each with a visible focus change.
+
+Once for the shell, it checks:
+- the collapse notch, by keyboard;
+- the phone drawer: Escape and a swipe close it;
+- the command palette, the user menu, the notification panel and dialogs open and close by keyboard, with focus returning;
+- switching workspace by keyboard;
+- carousel keys;
+- Workspaces refresh, Code search and Knowledge search, on a slow network and offline, end with nothing left busy and,
+  on failure, a message.
+
+It ends by signing out to check the sign-in page. It only reads. Both checks share `scripts/qa-browser.js`.
+
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
-Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js`. `src/js/services/api.js` wraps calls to the backend.
+Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (`work` or `setup`). `index.html` holds the shell: the dark sidebar with the product name (collapsible; it slides in on phones), the top bar, and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`), search of the workspace code (Ctrl K, opens the Code page Search tab), a bell listing what needs attention (with a link to the Notification Center), Help (the About page) and the user menu. Signing in opens the **Overview** page: totals, recent workspaces, setting up a workspace, recent requirements, development progress, recent Jenkins builds and activity. `services/dashboard.js` loads that data for the Overview, the Workspaces page and the bell from the same endpoints the other pages use. `src/js/services/api.js` wraps calls to the backend.
+
+The pages follow the screen designs in `design/design and implementation plan.docx`: Home (Overview), Workspaces (with
+the workspace details), Code (and the Knowledge Explorer behind it), Project Profile, Requirements, Visual Designer,
+Changes (and Impact Analysis behind it), Build, Test & Review, Modernization, Models & AI Providers, Agent Runs,
+Administration, External Review, Integrations, Version Packs, AI Prompt Library, Notifications, Account & Preferences and
+About. Pages show only the factory's real data; where a design shows something the factory does not record (test
+counts, coverage, costs, environments), the page keeps the section in its place with a short note saying what is not recorded, controls that need server work are disabled with a tooltip, and estimates are labelled as estimates.
+Agent Runs, Notifications and the Prompt Library are built from the requirements, designs, changes, builds, imports and
+version-pack recipes the factory already keeps. Shared pieces:
+
+- `services/ui.js`: tabs, status pills, initials, select and switch helpers, pagers and dates.
+- `services/assistant.js`: the AI assistant panels (they call `POST /api/knowledge/ask/stream` with the page's context).
+- `services/pageRequests.js`: hands a search or a new workspace from one page to another.
+- `services/preferences.js` and `services/notifications.js`: preferences and read notifications, kept in the browser.
+- `app.css`: the page kit (`factory-pg`, `factory-kpis`, `factory-card`, `factory-row-*`, `factory-tabbar`,
+  `factory-stepper`, `factory-kv`, `factory-ring`) and one prefix per page.
+
+JET bindings cannot use `new`, function literals or `$parent` inside `oj-bind-for-each` templates, and `:style` takes an
+object: compute those in the view model.
 
 ## REST API (so far)
 
 | Method and path | Purpose |
 |---|---|
-| `GET /api/auth/config` | Sign-in mode (public) |
+| `GET /api/auth/config` | Sign-in mode, single sign-on link and factory version (public) |
 | `POST /api/auth/login` | Sign in with username and password (`local` and `ldap`) |
 | `POST /api/auth/logout` | Sign out |
 | `GET /api/auth/me` | The signed-in user with workspace roles and permissions |
@@ -351,6 +580,8 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/workspaces/{id}/imports` | Recent import jobs with progress |
 | `GET /api/workspaces/{id}/index` | Indexed revision and file/piece counts |
 | `GET /api/workspaces/{id}/search?q=...` | Search the workspace's code |
+| `GET /api/workspaces/{id}/files?q=&limit=` | The indexed files (path, language, size, revision), filtered by path |
+| `GET /api/workspaces/{id}/files/content?path=` | One indexed file from the working copy (cut at 512 KB) |
 | `GET /api/workspaces/{id}/requirements` | List requirements |
 | `POST /api/workspaces/{id}/requirements` | Upload a document (multipart `file`, optional `title`); drafting starts in the background |
 | `POST /api/workspaces/{id}/requirements/text` | Create from text (`title`, `text`) |
@@ -362,13 +593,23 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `POST /api/requirements/{id}/retry` | Draft again from the document |
 | `DELETE /api/requirements/{id}` | Delete the requirement and its versions |
 | `GET /api/design/catalog` | Component types available in the designer |
+| `POST /api/designs/{id}/flow-screens` | Make the review and confirmation screens of the flow this initiate screen starts |
+| `POST /api/designs/{id}/restore` | Save an earlier version again as the newest one (`version`) |
+| `GET /api/workspaces/{id}/custom-components` | The workspace's own components for the palette |
+| `POST /api/workspaces/{id}/custom-components` | Have the model write a component from a description (`name`, `prompt`) |
+| `POST /api/workspaces/{id}/custom-components/file` | ...from an image or PDF (multipart `file`, `name`, `prompt`) |
+| `POST /api/workspaces/{id}/custom-components/figma` | ...from a Figma frame (`name`, `prompt`, `link`, `token`; the token is not stored) |
+| `DELETE /api/workspaces/{id}/custom-components/{componentId}` | Delete a custom component (screens keep their copy) |
+| `POST /api/designs/{id}/import` | Import a design file as the next version (multipart `file`: PNG, JPG, WebP or PDF) |
+| `POST /api/designs/{id}/import-figma` | Import a Figma frame as the next version (`link`, `token`; the token is not stored) |
+| `GET /api/workspaces/{id}/design-palette` | The designer's palette: standard components and those found in the workspace's code (`items`: `group`, `label`, `type`, `tag`, `params`, `uses`, `source`) |
 | `GET /api/workspaces/{id}/designs` | List screen designs |
 | `POST /api/workspaces/{id}/designs` | Create a blank design (`name`) |
 | `POST /api/requirements/{id}/designs` | Create designs from an approved requirement |
 | `GET /api/designs/{id}` | Design with current model, versions and comments |
 | `GET /api/designs/{id}/versions/{version}` | An earlier version's model |
 | `PUT /api/designs/{id}/model` | Save the model as a new version (`model`, optional `note`) |
-| `POST /api/designs/{id}/ai-change` | Apply a change described in words (`instruction`) |
+| `POST /api/designs/{id}/ai-change` | Apply a change described in words (`instruction`; `targetId` limits it to one component, section or button) |
 | `POST /api/designs/{id}/comments` | Add a team comment (`author`, `text`, optional `componentId`) |
 | `POST` / `DELETE /api/designs/{id}/review-link` | Create (optional `days`) or close the customer review link |
 | `POST /api/designs/{id}/approve` / `reopen` | Approve (`by`) or reopen for changes |
@@ -411,9 +652,33 @@ Pages follow the JET navbar pattern: each page is a view (`src/js/views/<page>.h
 | `GET /api/model/status` | The model server and models in use, and whether they were chosen on the Models page |
 | `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
 | `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
-| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`) (administrators) |
-| `POST /api/model/chat` | Send a test prompt (`prompt`) |
-| `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
+| `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server); the reply's `embeddingProblem` says when the embedding model cannot embed (a fixed test phrase is sent to it) or does not look like an embedding model, and the Models page shows it with the OBDX Library's privacy notice (administrators) |
+| `POST /api/model/chat` | Send a test prompt (`prompt`); administrators |
+| `POST /api/model/embed` | Embed a test text (`text`); returns the vector size; administrators |
+| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, and `privacy` when the models are outside the bank |
+| `POST /api/knowledge/import` | Import and watch a folder (`folder`, `obdxVersion`, `patchset`, `workspaceId`: null for Oracle's manuals); administrators |
+| `POST /api/knowledge/documents` | Upload one file: PDF, Word, text, Markdown or HTML (multipart `file`, `obdxVersion`, `patchset`, `workspaceId`) |
+| `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
+| `POST /api/knowledge/folders/{id}/check` | Check a watched folder for new and changed documents now; administrators |
+| `DELETE /api/knowledge/folders/{id}` | Stop watching a folder (its documents stay) |
+| `GET /api/knowledge/oracle` | Whether the factory may fetch from Oracle's site, and the followed versions with their last check |
+| `GET /api/knowledge/oracle/versions` | The OBDX versions on Oracle's documentation index (administrators) |
+| `POST /api/knowledge/oracle/follow` | Get a version's manuals from Oracle's site and keep them current (`obdxVersion`, `scope`: `TECHNICAL` or `ALL`) |
+| `POST /api/knowledge/oracle/{version}/check` | Check a followed version for changed manuals now |
+| `DELETE /api/knowledge/oracle/{version}` | Stop following a version (its manuals stay) |
+| `POST /api/knowledge/embed-all` | Embed every document not embedded by the embedding model in use (Embed all on the Documents tab; administrators) |
+| `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
+| `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
+| `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
+| `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
+| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `status` while it is checked, then `done` (the checked answer with its `report`) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first; `style`: `CONCISE`, `DETAILED` (default) or `DEEP_DIVE`; `improved`: the wording the user approved after Improve My Question |
+| `POST /api/knowledge/improve-question` | Improve My Question (`question`, `workspaceId`, `history`): `status` (`READY`, `NEEDS_CLARIFICATION`, `AMBIGUOUS`), `enhancedQuery`, `detectedIntent`, `detectedModule`, `detectedVersion`, `technicalEntities`, `assumptions`, `clarificationQuestions`, `suggestedScope`, `byModel`; nothing is answered |
+| `POST /api/knowledge/evaluation` | Run the evaluation questions through the Library (`mode`: `SEARCH`, `CHOOSE` or `ANSWER`; administrators; see docs/KNOWLEDGE-AUDIT.md) |
+| `GET /api/knowledge/evaluation` | The running or last evaluation: Recall@5, Recall@15, MRR, answers passed, unanswerable questions refused, each question's row |
+| `GET` / `POST /api/knowledge/notes`, `PUT` / `DELETE /api/knowledge/notes/{id}` | Knowledge notes (`status` filter) |
+| `POST /api/knowledge/notes/{id}/review` | Approve or reject a note (`status`: TRUSTED, REJECTED, SUGGESTED) |
+| `POST /api/knowledge/summaries` | Draft a suggested note on a topic from the manuals (`topic`, `workspaceId`) |
+| `POST /api/knowledge/feedback` | Rate an answer (`question`, `answer`, `helpful`, `comment`, `sources`) |
 | `GET /actuator/health` | Health check |
 
 Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.
@@ -461,6 +726,9 @@ SHA-256, and both zips). With `FACTORY_UPDATES=true` (set in the download's `set
 its build number with `version.json` every 30 minutes; administrators see a banner and **Update now** (also on the
 About page) downloads the jar into `update/`, checks its SHA-256 and stops the factory with exit code 75. The start
 script then moves the new jar in place and starts it again; data and settings stay. Sign-ins end with the restart.
+When Java cannot connect (some networks answer on only some of GitHub's download addresses, and Java's client gives up
+on the first one), the check and the download fall back to `curl` (part of Windows 10 and later and of most Linux
+systems), which tries the next address; the SHA-256 is checked the same way.
 Development builds (`dev`) are never replaced. `FACTORY_UPDATE_URL` points elsewhere, for example to a bank's own copy
 of the release. Updates replace the jar only; when the start scripts change, download the zip once more.
 
@@ -554,5 +822,8 @@ With a context path, every factory URL starts with it: the health check is `/fac
 Several factory servers can sit behind one OHS for availability: list them in a `<Proxy balancer://factory>` block with sticky sessions (`stickysession=JSESSIONID`), since the signed-in session lives on the server that created it.
 
 ## Not built yet
+
+For the OBDX Library: a view of what differs between the 22.x and 25.x manuals; a set of test questions with expected
+sources to measure answers.
 
 The rest of modernization (section 6 of the architecture): reverse-engineering existing JET screens into Screen Models, wave planning on top of the inventory, and Jenkins jobs for Android and iOS app builds. See the roadmap in [ARCHITECTURE.md](ARCHITECTURE.md).

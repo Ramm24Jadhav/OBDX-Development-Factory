@@ -1,0 +1,274 @@
+<div class="factory-pg factory-im">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Impact Analysis &amp; Change Planning</h1>
+      <p>Analyze the impact of changes, understand dependencies and create an implementation plan before code generation</p>
+    </div>
+    <div class="factory-im-headright">
+      <div class="factory-pg-actions">
+        <span class="fx-tip-wrap" :data-fx-tip="[[savePlanTitle]]"><button type="button" id="savePlanButton" class="fx-btn fx-btn--secondary" on-click="[[savePlan]]" :disabled="[[!canSavePlan()]]">Save Plan</button></span>
+        <button type="button" id="createPlanButton" class="fx-btn fx-btn--primary" on-click="[[createPlan]]" title="Plan a new change from an approved requirement on the Changes page">
+          <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Change Plan</button>
+      </div>
+      <div class="factory-pg-actions">
+        <label class="factory-im-pick" for="impactChange"><span class="fx-label">Change</span>
+          <select class="fx-select" id="impactChange" on-change="[[changeChange]]" :disabled="[[changes().length === 0]]">
+            <oj-bind-for-each data="[[changes]]">
+              <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
+            </oj-bind-for-each>
+          </select></label>
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="analyzeAgainButton" on-click="[[analyzeAgain]]" :disabled="[[!canAnalyze()]]" :data-fx-tip="[[analyzeTip]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Analyze Again</button>
+        <span class="fx-approval factory-im-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
+          <span class="fx-tip-wrap" :tabindex="[[canApprovePlan() ? null : '0']]" :data-fx-tip="[[approveTip]]">
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="approvePlanButton" on-click="[[approvePlan]]" :disabled="[[!canApprovePlan()]]">
+              <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve Change Plan</button></span></span>
+      </div>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-im-alert" role="alert" id="impactError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
+  <oj-bind-if test="[[changes().length === 0]]">
+    <section class="fx-card"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span></span><strong>No changes in this workspace yet</strong>A change's impact analysis starts when you plan it from an approved requirement on the Changes page.</div></section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[detail()]]">
+    <div class="factory-kpis">
+      <oj-bind-for-each data="[[kpis]]">
+        <template><div class="fx-card fx-kpi factory-im-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
+          <span><span class="fx-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
+            <span class="fx-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
+            <span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
+      </oj-bind-for-each>
+    </div>
+
+    <div class="fx-tabs factory-im-tabs" role="tablist" aria-label="Impact views">
+      <oj-bind-for-each data="[[tabs]]">
+        <template><button type="button" role="tab" :id="[['im-' + $current.data.value]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
+          <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+
+    <oj-bind-if test="[[tab() === 'impact' || tab() === 'graph']]">
+      <div class="factory-row factory-row-3w">
+        <div class="factory-stack">
+          <section class="factory-card">
+            <h2>Proposed Change <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="editPlanButton" on-click="[[toggleEdit]]" :disabled="[[!canEditPlan()]]" :data-fx-tip="[[editTitle]]">
+              <span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span><oj-bind-text value="[[editing() ? 'Cancel' : 'Edit']]"></oj-bind-text></button></h2>
+            <dl class="factory-im-proposed">
+              <dt>Title</dt><dd><oj-bind-text value="[[proposed().title]]"></oj-bind-text></dd>
+              <dt>Description</dt>
+              <oj-bind-if test="[[!editing()]]"><dd><oj-bind-text value="[[proposed().description]]"></oj-bind-text></dd></oj-bind-if>
+              <oj-bind-if test="[[editing()]]"><dd><fx-textarea class="factory-im-edit" id="planSummaryEdit" label="Description" hide-label rows="4" value="{{summaryDraft}}"></fx-textarea>
+                <span class="factory-ov-subtle">Save Plan stores the new description.</span></dd></oj-bind-if>
+            </dl>
+            <dl class="factory-kv">
+              <dt>Type</dt><dd><span :class="[[proposed().type.css]]"><oj-bind-text value="[[proposed().type.text]]"></oj-bind-text></span></dd>
+              <dt>Module</dt><dd><oj-bind-text value="[[proposed().module]]"></oj-bind-text></dd>
+              <dt>Target Version</dt><dd><oj-bind-text value="[[proposed().version]]"></oj-bind-text></dd>
+              <dt>Priority</dt><dd><span :class="[[proposed().priority.css]]" :title="[[proposed().priority.title]]"><oj-bind-text value="[[proposed().priority.text]]"></oj-bind-text></span></dd>
+              <dt>Status</dt><dd><span :class="[[proposed().status.css]]" id="impactStatus"><span :class="[[proposed().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[proposed().status.text]]"></oj-bind-text></span></dd>
+            </dl>
+          </section>
+          <section class="factory-card">
+            <h2>Change Scope</h2>
+            <ul class="factory-im-scope">
+              <oj-bind-for-each data="[[scope]]">
+                <template><li :title="[[$current.data.why]]"><span :class="[[$current.data.on ? 'factory-im-box factory-im-box-on' : 'factory-im-box']]" role="img" :aria-label="[[$current.data.on ? 'In scope' : 'Not in scope']]"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <p class="factory-card-sub factory-im-scopenote">From the layers and paths of the files in the plan.</p>
+          </section>
+        </div>
+
+        <!-- The graph and files column and the side column, with a resizer between them -->
+        <div class="factory-im-panes" data-fx-panes id="impactPanes">
+        <div class="factory-stack factory-im-maincol">
+          <section class="factory-card factory-im-graphcard" id="dependencyGraphCard">
+            <h2><span>Dependency Graph</span>
+              <span class="factory-im-graphtools">
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--icon" on-click="[[zoomOut]]" :disabled="[[zoom() <= 0.6]]" aria-label="Zoom out">−</button>
+                <span class="factory-im-zoom"><oj-bind-text value="[[zoomText]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--icon" on-click="[[zoomIn]]" :disabled="[[zoom() >= 2]]" aria-label="Zoom in">+</button>
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--icon" on-click="[[fullscreen]]" data-fx-tip="Full screen" aria-label="Full screen"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></button>
+              </span></h2>
+            <div class="factory-im-legend"><oj-bind-for-each data="[[legend]]"><template><span><i :style="[[$current.data.style]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+            <div class="factory-im-graphwrap" id="dependencyGraphWrap">
+              <div class="factory-im-graphsize" :style="[[graph().outer]]">
+                <div class="factory-im-graph" :style="[[graph().style]]" id="dependencyGraph">
+                  <img class="factory-im-lines" :src="[[graph().lines]]" alt="">
+                  <oj-bind-for-each data="[[graph().nodes]]">
+                    <template><div class="factory-im-node" :style="[[$current.data.style]]" :title="[[$current.data.path]]">
+                      <span class="factory-im-nodeicon" :style="[[$current.data.iconStyle]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span>
+                      <span class="factory-im-nodetext"><strong><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></strong><span><oj-bind-text value="[[$current.data.kind + ' · ' + $current.data.action]]"></oj-bind-text></span></span></div></template>
+                  </oj-bind-for-each>
+                </div>
+              </div>
+            </div>
+            <p class="factory-card-sub factory-im-graphnote">The plan's files by layer. Arrows follow the layer order (UI to service to data); they are inferred, not read from the code.</p>
+          </section>
+          <section class="factory-card">
+            <h2><oj-bind-text value="[['Affected Files (' + files().length + ')']]"></oj-bind-text></h2>
+            <div class="factory-filters factory-im-filters">
+              <span class="fx-control factory-im-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+                <input type="search" class="fx-input" placeholder="Search files..." aria-label="Search files" id="impactFileSearch" on-input="[[fileSearchInput]]"></span>
+              <select class="fx-select" aria-label="Layer" id="impactLayer" on-change="[[layerChange]]">
+                <option value="">All Types</option><option value="ui">UI</option><option value="service">Service</option><option value="integration">Integration</option>
+                <option value="data">Data</option><option value="config">Config</option><option value="test">Test</option></select>
+              <select class="fx-select" aria-label="Module" id="impactModule" on-change="[[moduleChange]]">
+                <option value="">All Modules</option>
+                <oj-bind-for-each data="[[moduleOptions]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+              <select class="fx-select" aria-label="Impact" id="impactLevel" on-change="[[impactChange]]">
+                <option value="">All Impact</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+              <button type="button" class="fx-btn fx-btn--secondary fx-btn--icon factory-im-filterbtn" id="clearFiltersButton" on-click="[[clearFilters]]" data-fx-tip="Clear the filters" aria-label="Clear the filters">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg></button>
+            </div>
+            <div class="fx-table-wrap">
+              <table class="fx-table factory-im-ftable" id="affectedFiles">
+                <thead><tr><th>File Path</th><th class="factory-im-c2">Type</th><th class="factory-im-c3">Module</th><th class="factory-im-c4" title="Estimated from the change type and whether the file is shared">Impact</th><th class="factory-im-c5">Change Type</th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[filePager.rows]]">
+                    <template><tr :title="[[$current.data.purpose]]"><td class="factory-mono factory-im-path" :title="[[$current.data.path]]"><oj-bind-text value="[[$current.data.pathWrap]]"></oj-bind-text></td>
+                      <td><oj-bind-text value="[[$current.data.type]]"></oj-bind-text></td><td class="factory-im-mod" :title="[[$current.data.module]]"><oj-bind-text value="[[$current.data.module]]"></oj-bind-text></td>
+                      <td><span :class="[[$current.data.impact.css]]"><oj-bind-text value="[[$current.data.impact.text]]"></oj-bind-text></span></td>
+                      <td><span :class="[[$current.data.change.css]]"><oj-bind-text value="[[$current.data.change.text]]"></oj-bind-text></span></td></tr></template>
+                  </oj-bind-for-each>
+                </tbody>
+              </table>
+            </div>
+            <div class="fx-pager factory-im-pager">
+              <span class="fx-pager-text"><oj-bind-text value="[[filePager.text]]"></oj-bind-text></span>
+              <button type="button" aria-label="Previous page" on-click="[[filePager.prev]]" :disabled="[[!filePager.canPrev()]]">‹</button>
+              <oj-bind-for-each data="[[filePager.numbers]]" as="n"><template>
+                <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+                <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+              </template></oj-bind-for-each>
+              <button type="button" aria-label="Next page" on-click="[[filePager.next]]" :disabled="[[!filePager.canNext()]]">›</button>
+              <select class="fx-select" aria-label="Rows per page" on-change="[[filePager.sizeChange]]"><option value="8">8 / page</option><option value="25">25 / page</option><option value="50">50 / page</option></select>
+            </div>
+          </section>
+        </div>
+
+        <fx-resizer storage-key="impact-graph" next-min="290" min="420" max="1400" label="Resize the dependency graph and the side column"></fx-resizer>
+
+        <div class="factory-stack factory-im-sidecol">
+          <section class="factory-card">
+            <h2>Impact Summary</h2>
+            <div class="factory-im-donutrow">
+              <span class="factory-ring factory-im-donut" :style="[[byLayer().style]]"><span><oj-bind-text value="[[files().length]]"></oj-bind-text><small>Files</small></span></span>
+              <ul class="factory-im-legendlist">
+                <oj-bind-for-each data="[[byLayer().parts]]">
+                  <template><li><i :style="[[$current.data.dot]]"></i><oj-bind-text value="[[$current.data.label]]"></oj-bind-text><b><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></b></li></template>
+                </oj-bind-for-each>
+              </ul>
+            </div>
+          </section>
+          <section class="factory-card">
+            <h2>Module Impact</h2>
+            <ul class="factory-bars">
+              <oj-bind-for-each data="[[byModule]]">
+                <template><li><span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="fx-progress factory-im-bar" aria-hidden="true"><span :style="[[$current.data.style]]"></span></span><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </section>
+          <section class="factory-card">
+            <h2>Risk Assessment <span :class="[[riskLevel().css]]"><oj-bind-text value="[[riskLevel().text]]"></oj-bind-text></span></h2>
+            <ul class="factory-im-risks">
+              <oj-bind-for-each data="[[risks]]">
+                <template><li><span class="factory-nav-icon factory-ico-alert" role="img" aria-label="Risk"></span><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+            <oj-bind-if test="[[risks().length === 0]]"><p class="fx-muted factory-im-none">The analysis found no risks.</p></oj-bind-if>
+          </section>
+          <section class="factory-card">
+            <h2>Next Steps</h2>
+            <ol class="factory-im-next">
+              <oj-bind-for-each data="[[nextSteps]]">
+                <template><li><span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ol>
+          </section>
+        </div>
+        </div>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'plan']]">
+      <section class="factory-card">
+        <h2>Change Plan</h2>
+        <p class="factory-card-sub"><oj-bind-text value="[[proposed().description]]"></oj-bind-text></p>
+        <div class="fx-table-wrap">
+          <table class="fx-table" id="changePlan">
+            <thead><tr><th class="fx-num">#</th><th>Task</th><th>File</th><th>Layer</th><th>Follows</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[planRows]]">
+                <template><tr><td class="fx-num"><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></td>
+                  <td><strong><oj-bind-text value="[[$current.data.action === 'create' ? 'Create' : 'Modify']]"></oj-bind-text></strong> <oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text>
+                    <div class="factory-ov-subtle"><oj-bind-text value="[[$current.data.details]]"></oj-bind-text></div></td>
+                  <td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.layer]]"></oj-bind-text></td>
+                  <td class="factory-mono fx-muted"><oj-bind-text value="[[$current.data.basedOn]]"></oj-bind-text></td></tr></template>
+              </oj-bind-for-each>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'requirements']]">
+      <section class="factory-card">
+        <h2><oj-bind-text value="[[reqCode() + ' · ' + (requirement() ? requirement().title : '')]]"></oj-bind-text></h2>
+        <p class="factory-card-sub"><oj-bind-text value="[[requirement() && requirement().spec ? (requirement().spec.summary || '') : 'Loading the requirement...']]"></oj-bind-text></p>
+        <h3>Screens</h3>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[specScreens]]">
+            <template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+              <span><span class="factory-list-title"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></span>
+              <span class="fx-chip factory-im-chip"><oj-bind-text value="[[$current.data.changeType]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+        <h3>APIs</h3>
+        <ul class="factory-list">
+          <oj-bind-for-each data="[[specApis]]">
+            <template><li><span class="fx-chip factory-im-chip"><oj-bind-text value="[[$current.data.method]]"></oj-bind-text></span><span class="factory-list-title factory-mono"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span>
+              <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'tests']]">
+      <div class="factory-row factory-row-2">
+        <section class="factory-card">
+          <h2>Tests in the plan</h2>
+          <ul class="factory-list">
+            <oj-bind-for-each data="[[tests]]">
+              <template><li><span class="factory-step-dot factory-dot-green"><span class="factory-nav-icon factory-ico-flask" aria-hidden="true"></span></span>
+                <span><span class="factory-list-title factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></span><span class="factory-list-sub"><oj-bind-text value="[[$current.data.purpose]]"></oj-bind-text></span></span>
+                <span class="fx-chip factory-im-chip"><oj-bind-text value="[[$current.data.action]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <oj-bind-if test="[[tests().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-flask" aria-hidden="true"></span></span><strong>The plan has no tests</strong>Ask for tests in the requirement and analyze again.</div></oj-bind-if>
+        </section>
+        <section class="factory-card">
+          <h2>Files without a matching test</h2>
+          <p class="factory-card-sub">Changed files whose name no test in the plan mentions: candidates for regression coverage.</p>
+          <ul class="factory-pf-evlist"><oj-bind-for-each data="[[untested]]"><template><li class="factory-mono"><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        </section>
+      </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[tab() === 'approvals']]">
+      <section class="factory-card">
+        <h2>Review &amp; Approvals</h2>
+        <div class="fx-table-wrap">
+          <table class="fx-table">
+            <thead><tr><th>Step</th><th>State</th><th>By</th><th>When</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[approvals]]"><template><tr><td><oj-bind-text value="[[$current.data.step]]"></oj-bind-text></td>
+              <td><span :class="[[$current.data.state.css]]"><span :class="[[$current.data.state.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.state.text]]"></oj-bind-text></span></td>
+              <td><oj-bind-text value="[[$current.data.who]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+          </table>
+        </div>
+        <p class="factory-card-sub">Code is generated only after the plan is approved by someone with the Lead role.</p>
+      </section>
+    </oj-bind-if>
+  </oj-bind-if>
+</div>
