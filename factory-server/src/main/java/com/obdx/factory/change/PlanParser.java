@@ -67,7 +67,11 @@ public final class PlanParser {
                     basedOn.add(clean);
                 }
             }
-            items.put(path, new ChangePlan.Item(path, action, layer, blankToNull(item.purpose()), basedOn, blankToNull(item.details())));
+            String purpose = blankToNull(item.purpose());
+            if (isBuildFile(path) && (purpose == null || !purpose.startsWith(BUILD_FILE_MARK))) {
+                purpose = BUILD_FILE_MARK + (purpose == null ? "" : " " + purpose);
+            }
+            items.put(path, new ChangePlan.Item(path, action, layer, purpose, basedOn, blankToNull(item.details())));
         }
         if (items.isEmpty()) {
             throw new BadRequestException("The plan has no files to change");
@@ -77,8 +81,29 @@ public final class PlanParser {
         }
         List<ChangePlan.Item> ordered = new ArrayList<>(items.values());
         ordered.sort((a, b) -> Integer.compare(LAYER_ORDER.indexOf(a.layer()), LAYER_ORDER.indexOf(b.layer())));
-        List<String> risks = plan.risks() == null ? List.of() : plan.risks().stream().filter(r -> r != null && !r.isBlank()).toList();
+        List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream().filter(r -> r != null && !r.isBlank()).toList());
+        List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
+        risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
+        if (!buildFiles.isEmpty()) {
+            // A requirement document could steer the model into a build step that runs code on the build agent
+            risks.add(BUILD_FILE_RISK + String.join(", ", buildFiles) + ". The build runs them on the build agent: check every "
+                    + "line before approving, or remove them from the plan.");
+        }
         return new ChangePlan(blankToNull(plan.summary()), ordered, risks);
+    }
+
+    static final String BUILD_FILE_MARK = "[Build or CI file]";
+    static final String BUILD_FILE_RISK = "The plan changes build or CI files: ";
+    private static final java.util.Set<String> BUILD_FILES = java.util.Set.of("jenkinsfile", "pom.xml", "build.gradle", "build.gradle.kts",
+            "settings.gradle", "settings.gradle.kts", "gradlew", "build.xml", "makefile", "dockerfile", "docker-compose.yml",
+            "package.json", "package-lock.json", "gulpfile.js", "gruntfile.js", ".gitlab-ci.yml", "azure-pipelines.yml");
+
+    /** Files the build or CI runs: build scripts, pipelines, shell scripts, container files, npm manifests. */
+    static boolean isBuildFile(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        String name = lower.substring(lower.lastIndexOf('/') + 1);
+        return BUILD_FILES.contains(name) || name.startsWith("dockerfile") || name.startsWith("jenkinsfile")
+                || name.matches(".*\\.(sh|bat|cmd|ps1|bash)") || lower.startsWith(".github/") || lower.contains("/.github/");
     }
 
     /** A relative path with forward slashes that cannot leave the repository; null if unusable. */

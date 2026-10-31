@@ -127,6 +127,15 @@ created:
   This option exists when `FACTORY_LOCAL_FOLDERS` is true, which is the default with the trial database; on a shared
   server it is off, because administrators would browse the server's folders, not their own.
 
+SVN URLs are checked wherever they are entered (`SvnUrls`): a server name that starts with `-` is refused (with
+`svn+ssh://` it would reach ssh as an option), and a `file://` URL, which reads a repository on the factory's own
+computer, only from an administrator and only when `FACTORY_LOCAL_FOLDERS` is true. The demo and trial repositories
+the factory adds itself are not affected.
+
+A stored SVN password or Jenkins API token is sent only to the server it was entered for. When the URL is changed to
+another server (scheme, host or port), the stored secret is removed and has to be entered again; the audit entry
+says so.
+
 The check fills in the workspace name, bank and OBDX version from the code and says why, strongest evidence first:
 OBDX's `about.json` (`channel/framework/json/about.json` in 22.2), Oracle's OBDX libraries (`com.ofss.digx`) or an
 `obdx.version` in the build files, the Oracle JET version, the Java level (8 for 22.x, 11 for 25.x) and a version in
@@ -160,7 +169,7 @@ On the **Profile** page a developer can **Confirm** a detected value, **Correct*
 
 ## Requirements (document ingestion)
 
-1. On the **Requirements** page, upload a BRD/FSD (`.docx`, `.doc`, `.pdf`, `.txt`, `.md`, up to 25 MB) or describe the change in text. The uploaded file is kept under `FACTORY_DATA_DIR/workspaces/<id>/requirements/`.
+1. On the **Requirements** page, upload a BRD/FSD (`.docx`, `.doc`, `.pdf`, `.txt`, `.md`, up to 25 MB); a larger file is refused before it is read, a Word file whose parts unpack to more than 100 MB or 100 times their size is refused, and PDF parsing keeps its objects in a temporary file rather than memory. Design and knowledge uploads keep the 150 MB limit or describe the change in text. The uploaded file is kept under `FACTORY_DATA_DIR/workspaces/<id>/requirements/`.
 2. The text is extracted (Word headings become `#` lines and tables become `|` rows) and sent to the chat model in sections of up to 12,000 characters (`FACTORY_REQUIREMENTS_MAX_CHARS`). Confirmed Project Profile facts (OBDX and JET version, database, host systems, error codes) are given as context.
 3. Before the model drafts, nothing in the document's own tables is left to it: tables whose rows carry IDs (FR-001 functional requirements, BR-001 business rules, AC-001 acceptance criteria, NFR-001 non-functional requirements, OQ-001 open questions), the traceability matrix that links requirements to criteria, and the lists under the scope, out-of-scope and assumption headings are read exactly as written and replace what the model wrote for them (keeping the screens it linked requirements to). Requirements, criteria and rules the model found elsewhere (in the prose, or from an answer) that the tables do not have follow the document's rows; the model's copies of a row, under its ID or in similar words, are left out. A table of R-01 or F-01 rows counts as rules or requirements only when its header or heading says so (R-01 is as often a risk), and a bold label on its own line ("**Out of scope**") under the scope heading starts that list. The spec is then kept to the document: APIs the document never names are dropped, screens with the same words are merged, and a screen a requirement needs that the document names is added. The model answers in JSON mode with a spec: screens (new or enhance) with fields, actions, business rules, roles, APIs, host interactions, messages and **open questions**. An unusable answer is retried once. Sections are merged and each screen gets up to three possibly related files from code search.
 4. Each open question asks about one thing in plain words and comes with 2 to 4 short options and the usual choice
@@ -206,7 +215,7 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 
 1. On the **Changes** page pick an approved requirement and click **Analyze impact** (Developer or Lead). All screen designs created for the requirement must be approved, and the workspace's code must be imported.
 2. **Impact analysis** searches the code for each screen, field, business rule, API and host interaction, and sends the model the approved spec and designs, the Project Profile, the folder structure and up to 25 relevant code excerpts. The model answers with a plan: each file to create or modify, its layer (data, integration, service, ui, test, config), its purpose, the files whose patterns it follows, and risks. The plan is checked: paths must stay inside the repository, "modify" is only kept for files that exist, and files are ordered data → integration → service → config → ui → test.
-3. A **Lead approves** the plan (it can be edited as JSON first, or analyzed again). Only then is code written.
+3. A **Lead approves** the plan (it can be edited as JSON first, or analyzed again). Only then is code written. A plan item that is a build or CI file (`Jenkinsfile`, `pom.xml`, `build.gradle`, `package.json`, `Dockerfile`, `*.sh`, `*.bat`, `.github/`) starts its purpose with "[Build or CI file]", and the plan gets a risk naming those files: the build runs them on the build agent, so a requirement document must not slip a step in there. Plan paths and example files are read only when they really are in the working copy: a symbolic link to a file outside it is not followed.
 4. **Generation** writes each file completely, in plan order, with the current content (for modified files), example files to follow, the start of files already written in this change, and the spec, designs and profile. Java, JSON and XML must parse; if not, the model gets the error and tries again (twice at most). JavaScript and HTML get a basic bracket and tag check that only warns. Existing files over 80 KB are not rewritten; change those by hand.
 5. **Review**: each file shows its diff and full new content. Reviewers can edit a file or have it written again with an instruction.
 6. **Deliver**: **Download patch** gives a Subversion-style unified diff that applies with TortoiseSVN "Apply Patch" or `svn patch` on a working copy at the base revision. **Commit to SVN branch** creates `branches/factory/cr-<id>` from the base revision and puts the files into it in one commit (`svnmucc`); trunk is not changed. The SVN service account then needs write access to `branches/factory/`.
@@ -217,7 +226,8 @@ The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per versio
 workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
 
 - **Import**: an administrator imports Oracle's manuals of a version from a folder on the factory's computer (needs
-  `factory.local-folders.enabled`) or by uploading files (up to 150 MB each). With "bank's own documents" ticked, the
+  `factory.local-folders.enabled`; folder import and **Check now** are for administrators only, and the factory's own
+  data folder `FACTORY_DATA_DIR` cannot be imported) or by uploading files (up to 150 MB each). With "bank's own documents" ticked, the
   files belong to the selected workspace only; a workspace's Managers import those too. The bank's own and
   patchset-specific documents can be PDF, Word (.docx, .doc), text, Markdown or HTML (an exported wiki page), and any
   import can carry a **patchset** (25.2.0.1, a patch number), shown with every citation. Each file is copied to
@@ -331,6 +341,8 @@ workspace, and knowledge notes. Code generation, impact analysis, requirement dr
 - **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
   topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
   *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
+  A note's source links are kept only when they go to a web page (http, https) or one of the factory's documents
+  (`api/knowledge/documents/...`), and the page shows only such links, so a stored `javascript:` link cannot run.
   The AI chat may use suggested notes and says so; code generation and analysis use only approved notes and the manuals.
 - **It stays inside the bank**: the knowledge (manual excerpts, the bank's documents, notes) and the questions to embed
   go only to model servers on the bank's network: this computer, private addresses (the host name is resolved and every
@@ -348,6 +360,7 @@ Every generated file is checked on the factory server in milliseconds, before re
 
 - **Syntax:** Java is parsed at the bank's Java level (from the Project Profile's Java version, else the pack's default: 8 for 22.x, 11 for 25.x), so newer syntax such as records or text blocks fails for a Java 8 bank. If an existing file already uses newer Java, it is parsed at the newest level instead. JSON and XML must parse; JavaScript, HTML and SQL get a basic bracket, tag and quote check (warning only).
 - **Version pack rules:** YAML files in `factory-server/src/main/resources/packs/` (`common.yml` for all versions, `22.x.yml`, `25.x.yml`). A rule forbids or requires a regular expression in files matching path globs, for example no `System.out`, no SQL built by concatenation, no deprecated JET `ArrayTableDataSource`, javax vs. jakarta imports to match the codebase, labels from resource bundles, `DELETE`/`UPDATE` with `WHERE`. The format is explained at the top of `common.yml`.
+- **Java checks** (`JavaChecks`, built in, with rule ids like the pack rules so a workspace can turn one off): errors for a JAX-RS method whose `@Path` has `{name}` but no parameter with `@PathParam("name")`, and for `@Context`, `@PathParam`, `@QueryParam`, `@GET`, `@POST`, `@PUT`, `@DELETE`, `@Produces`, `@Consumes` or `@Path` without its import (a wildcard of `javax.ws.rs.*` does not cover `javax.ws.rs.core.Context`); both fail the deployment (`java-path-param`, `java-jaxrs-import`). Warnings for exception text sent to the client (`e.getMessage()` in `.entity(` or in a returned string, `java-exception-text`), log messages built with `+` (`java-log-concat`), and a resource that takes `customerId`, `userId` or `partyId` from the request rather than the session (`java-user-from-request`).
 - **Errors** go back to the model with the findings (like a parse error); **warnings** are shown to reviewers. Comments are ignored, and in modified files only lines the change added are reported, so the bank's existing code is never blamed.
 - The model is told the rules for each file before it writes it.
 - Rules can depend on the Project Profile (`minJet`, `ifProfile`). The **Code** page lists the workspace's rules; Manage code can turn a rule off for that workspace (audited) when the bank's codebase deliberately does it differently.
@@ -420,6 +433,7 @@ Each workspace can point at the bank's existing Jenkins jobs (**Code** page, **J
 - **Mode**:
   - *Branch* (default): the job gets the branch the change was committed to. Set the **branch parameter** name (for example `BRANCH`) and whether it receives the path relative to the repository root (`branches/factory/cr-<id>`) or the full URL. The job's Subversion checkout must use that parameter in its repository URL, for example `https://svn.bank.local/obdx/${BRANCH}`.
   - *Patch*: for banks that do not allow the factory to commit. The job gets the patch as a file parameter (set its name, for example `PATCH`), checks out trunk, applies it (`svn patch`) and builds. Nothing is committed.
+- The stored token is kept only while the URL points to the same server; a URL to another server removes it (enter the token again).
 - **Test connection** checks the login and that each job exists, and warns when a job lacks the configured parameter.
 
 On the **Changes** page, **Build with Jenkins** (Developer or Lead) is available once the change is delivered to a branch (branch mode) or generated (patch mode). The factory then:
@@ -471,7 +485,7 @@ Signing the factory's own requests, encrypted assertions and single logout are n
 
 Every API checks these permissions (`AccessGuard`); the UI hides actions a user cannot take. Customer review links stay public and work by their token only.
 
-**Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row lock a username for 15 minutes. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
+**Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row from one address lock that username for that address for 15 minutes, so no one elsewhere can lock an administrator out. An address with 20 failed sign-ins (any usernames) waits 1 second before the next try, doubling with each further failure up to 15 minutes (`factory.auth.max-failed-logins`, `max-failed-logins-per-address`, `lock-duration`). Behind Oracle HTTP Server set `FACTORY_FORWARD_HEADERS=native` so the address is the user's, not the proxy's. A wrong password for a disabled account gets the same answer as any wrong password. Responses carry `Content-Security-Policy: frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'` (plus the SAML identity provider in SAML mode), `Referrer-Policy: same-origin` and, on HTTPS requests, `Strict-Transport-Security`. A query with a NUL character, or a path a file cannot have, is a 400. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
 
 **Audit log** (Admin page, `GET /api/admin/audit`): sign-ins and failed sign-ins, workspace creation and deletion, SVN setting changes, imports, Project Profile corrections, requirements created, approved and deleted, review links, design approvals (including by customers), and user and role changes. Passwords are never recorded.
 
@@ -528,7 +542,7 @@ Agent Runs, Notifications and the Prompt Library are built from the requirements
 version-pack recipes the factory already keeps. Shared pieces:
 
 - `services/ui.js`: tabs, status pills, initials, select and switch helpers, pagers and dates.
-- `services/assistant.js`: the AI assistant panels (they call `POST /api/model/chat` with the page's context).
+- `services/assistant.js`: the AI assistant panels (they call `POST /api/knowledge/ask/stream` with the page's context).
 - `services/pageRequests.js`: hands a search or a new workspace from one page to another.
 - `services/preferences.js` and `services/notifications.js`: preferences and read notifications, kept in the browser.
 - `app.css`: the page kit (`factory-pg`, `factory-kpis`, `factory-card`, `factory-row-*`, `factory-tabbar`,
@@ -639,13 +653,13 @@ object: compute those in the view model.
 | `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
 | `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
 | `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server); the reply's `embeddingProblem` says when the embedding model cannot embed (a fixed test phrase is sent to it) or does not look like an embedding model, and the Models page shows it with the OBDX Library's privacy notice (administrators) |
-| `POST /api/model/chat` | Send a test prompt (`prompt`) |
-| `POST /api/model/embed` | Embed a test text (`text`); returns the vector size |
+| `POST /api/model/chat` | Send a test prompt (`prompt`); administrators |
+| `POST /api/model/embed` | Embed a test text (`text`); returns the vector size; administrators |
 | `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, and `privacy` when the models are outside the bank |
-| `POST /api/knowledge/import` | Import and watch a folder (`folder`, `obdxVersion`, `patchset`, `workspaceId`: null for Oracle's manuals) |
+| `POST /api/knowledge/import` | Import and watch a folder (`folder`, `obdxVersion`, `patchset`, `workspaceId`: null for Oracle's manuals); administrators |
 | `POST /api/knowledge/documents` | Upload one file: PDF, Word, text, Markdown or HTML (multipart `file`, `obdxVersion`, `patchset`, `workspaceId`) |
 | `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
-| `POST /api/knowledge/folders/{id}/check` | Check a watched folder for new and changed documents now |
+| `POST /api/knowledge/folders/{id}/check` | Check a watched folder for new and changed documents now; administrators |
 | `DELETE /api/knowledge/folders/{id}` | Stop watching a folder (its documents stay) |
 | `GET /api/knowledge/oracle` | Whether the factory may fetch from Oracle's site, and the followed versions with their last check |
 | `GET /api/knowledge/oracle/versions` | The OBDX versions on Oracle's documentation index (administrators) |

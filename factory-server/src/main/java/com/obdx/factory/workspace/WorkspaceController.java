@@ -4,6 +4,9 @@ import java.util.Map;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.AccessGuard;
+import com.obdx.factory.auth.AppUser;
+import com.obdx.factory.svn.SvnUrls;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,11 +29,14 @@ public class WorkspaceController {
     private final WorkspaceService service;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final boolean localFolders;
 
-    public WorkspaceController(WorkspaceService service, AccessGuard guard, AuditLog audit) {
+    public WorkspaceController(WorkspaceService service, AccessGuard guard, AuditLog audit,
+                               @Value("${factory.local-folders.enabled:false}") boolean localFolders) {
         this.service = service;
         this.guard = guard;
         this.audit = audit;
+        this.localFolders = localFolders;
     }
 
     /** Administrators see every workspace; others see the workspaces they are members of. */
@@ -50,6 +56,9 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.CREATED)
     public WorkspaceResponse create(@Valid @RequestBody WorkspaceRequest request) {
         guard.requireAdmin();
+        if (request.svnUrl() != null && !request.svnUrl().isBlank()) {
+            SvnUrls.check(request.svnUrl(), localFolders);
+        }
         WorkspaceResponse created = service.create(request);
         audit.record("WORKSPACE_CREATED", created.id(), created.name(), created.bankName() + ", OBDX " + created.obdxVersion());
         return created;
@@ -57,10 +66,15 @@ public class WorkspaceController {
 
     @PutMapping("/{id}/svn")
     public WorkspaceResponse updateSvnSettings(@PathVariable UUID id, @Valid @RequestBody SvnSettingsRequest request) {
-        guard.require(id, Permission.MANAGE_CODE);
+        AppUser user = guard.require(id, Permission.MANAGE_CODE);
+        // file:// reads the server's own folders: administrators only, where local folders are offered
+        SvnUrls.check(request.svnUrl(), user != null && user.isAdmin() && localFolders);
+        WorkspaceResponse before = service.get(id);
         WorkspaceResponse updated = service.updateSvnSettings(id, request);
+        boolean dropped = before != null && updated != null && before.svnPasswordSet() && request.svnPassword() == null && !updated.svnPasswordSet();
         audit.record("SVN_SETTINGS_CHANGED", id, request.svnUrl(),
-                "user " + request.svnUsername() + (request.svnPassword() != null ? ", password changed" : ""));
+                "user " + request.svnUsername() + (request.svnPassword() != null ? ", password changed" : "")
+                        + (dropped ? ", stored password removed because the URL points to another server" : ""));
         return updated;
     }
 

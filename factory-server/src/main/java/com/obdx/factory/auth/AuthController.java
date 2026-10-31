@@ -85,7 +85,8 @@ public class AuthController {
         if (username.isEmpty() || login.password() == null || login.password().isEmpty()) {
             return problem(HttpStatus.BAD_REQUEST, "Enter your username and password");
         }
-        var locked = attempts.lockedFor(username);
+        String address = request.getRemoteAddr();
+        var locked = attempts.lockedFor(username, address);
         if (locked.isPresent()) {
             return problem(HttpStatus.TOO_MANY_REQUESTS, "Too many failed sign-ins. Try again in "
                     + Math.max(1, locked.get().toMinutes() + 1) + " minute(s).");
@@ -94,14 +95,16 @@ public class AuthController {
         try {
             result = authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(username, login.password()));
         } catch (DisabledException e) {
+            // Only after the password was verified (see SecurityConfig): a wrong password gets the same 401 as anyone else
+            attempts.succeeded(username, address);
             audit.recordAs(username, "LOGIN_FAILED", null, null, "account disabled");
             return problem(HttpStatus.FORBIDDEN, "Your account is disabled");
         } catch (AuthenticationException e) {
-            attempts.failed(username);
+            attempts.failed(username, address);
             audit.recordAs(username, "LOGIN_FAILED", null, null, null);
             return problem(HttpStatus.UNAUTHORIZED, "Wrong username or password");
         }
-        attempts.succeeded(username);
+        attempts.succeeded(username, address);
 
         String displayName = null;
         String email = null;

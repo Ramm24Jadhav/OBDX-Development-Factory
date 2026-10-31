@@ -668,7 +668,20 @@ public class KnowledgeService {
     private String sourcesJson(List<Source> sources) {
         return sources == null ? "[]" : json.writeValueAsString(sources.stream().map(s -> Map.of(
                 "title", nz(s.title()), "heading", nz(s.heading()), "obdxVersion", nz(s.obdxVersion()), "pageFrom", s.pageFrom(),
-                "pageTo", s.pageTo(), "url", nz(s.url()), "documentId", s.documentId() == null ? "" : s.documentId().toString())).toList());
+                "pageTo", s.pageTo(), "url", nz(safeUrl(s.url())), "documentId", s.documentId() == null ? "" : s.documentId().toString())).toList());
+    }
+
+    /**
+     * A source link everyone who reads the note can follow safely: a web page (http, https) or one of the factory's
+     * own documents; anything else (javascript:, data:) is dropped and the source kept without a link.
+     */
+    static String safeUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String u = url.strip();
+        return u.matches("(?i)https?://[^\\s\"'<>]+") || (u.matches("/?api/knowledge/documents/[\\w./#=?&-]+") && !u.contains(".."))
+                ? u : null;
     }
 
     private static String lineOrNull(String versionLine) {

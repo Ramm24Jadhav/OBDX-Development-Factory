@@ -30,6 +30,17 @@ import java.util.regex.Pattern;
 @Component
 public class DocumentTextExtractor {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DocumentTextExtractor.class);
+
+    static {
+        // A small Word file can unpack to gigabytes (a zip bomb): refuse entries that unpack more than 100 times their
+        // size or past 100 MB, text past 10 million characters, and records past 100 MB in older Word files
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMinInflateRatio(0.01);
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMaxEntrySize(100L * 1024 * 1024);
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMaxTextSize(10L * 1024 * 1024);
+        org.apache.poi.util.IOUtils.setByteArrayMaxOverride(100 * 1024 * 1024);
+    }
+
     private static final Pattern HEADING_STYLE = Pattern.compile("(?i)heading\\s*(\\d)|^(\\d)$|title");
 
     public String extract(String fileName, byte[] bytes) {
@@ -59,7 +70,10 @@ public class DocumentTextExtractor {
             if (e instanceof BadRequestException badRequest) {
                 throw badRequest;
             }
-            throw new BadRequestException("Could not read " + fileName + ": " + e.getMessage());
+            // The library's message names internals, not what to do: it goes to the log
+            log.warn("Could not read {}", fileName, e);
+            throw new BadRequestException("Could not read " + fileName + ". Check that it opens in Word or a PDF reader and is not "
+                    + "password-protected, or save it again (as .docx or PDF) and upload that.");
         }
     }
 
@@ -149,7 +163,8 @@ public class DocumentTextExtractor {
     }
 
     private static String pdf(byte[] bytes) throws IOException {
-        try (PDDocument document = Loader.loadPDF(bytes)) {
+        // Objects the parser keeps go to a temporary file, not memory
+        try (PDDocument document = Loader.loadPDF(bytes, "", null, null, org.apache.pdfbox.io.IOUtils.createTempFileOnlyStreamCache())) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             return stripper.getText(document);

@@ -66,7 +66,14 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail tooLarge(MaxUploadSizeExceededException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The file is too large (limit 25 MB)");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The file is too large (limit 150 MB; requirement documents 25 MB)");
+    }
+
+    /** A path with a character no file name can have (NUL, or ':' and '*' on Windows). */
+    @ExceptionHandler(java.nio.file.InvalidPathException.class)
+    public ProblemDetail invalidPath(java.nio.file.InvalidPathException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "The path is not valid: it has a character that file names "
+                + "cannot have. Check the path and try again.");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

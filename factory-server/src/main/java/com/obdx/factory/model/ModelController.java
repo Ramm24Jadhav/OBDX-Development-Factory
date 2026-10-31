@@ -105,13 +105,16 @@ public class ModelController {
                 || m.contains("mpnet") || m.contains("arctic") || m.contains("granite-embedding") || m.contains("jina");
     }
 
+    /** The Models page's test prompt: administrators, who choose the models (it costs model time and, on a cloud plan, money). */
     @PostMapping("/chat")
     public ModelGateway.ChatResult chat(@Valid @RequestBody ChatRequest request) {
+        guard.requireAdmin();
         return gateway.chat(SYSTEM_PROMPT, request.prompt());
     }
 
     @PostMapping("/embed")
     public EmbedResponse embed(@Valid @RequestBody EmbedRequest request) {
+        guard.requireAdmin();
         return new EmbedResponse(settings.current().embeddingModel(), gateway.embed(request.text()).length);
     }
 

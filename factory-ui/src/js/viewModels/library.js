@@ -15,6 +15,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     const ORIGIN = { USER: 'Written by a user', AGENT: 'Learned from a change', SUMMARY: 'Summarised from the manuals' };
     const when = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
     const pages = (s) => (s.pageFrom ? (s.pageFrom === s.pageTo ? 'p. ' + s.pageFrom : 'pp. ' + s.pageFrom + '–' + s.pageTo) : '');
+    // A link only to web pages or the factory's own files: a stored source URL could be javascript:
+    const safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/?api\/)/i.test(u.trim()) ? u.trim() : null);
     // How well the sources support an answer (the check after the model has written it)
     const QUALITY = {
       VERIFIED: ['fx-badge fx-badge--success', 'Verified against the sources'],
@@ -331,6 +333,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           } : null,
           meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : '') : '',
           sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
+            url: safeUrl(s.url), oracleUrl: safeUrl(s.oracleUrl),
             label: '[' + s.n + ']',
             where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
               : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
@@ -405,7 +408,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return Object.assign({}, n, {
           statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, origin: ORIGIN[n.origin] || n.origin,
           scope: (n.workspaceId ? 'This bank' : 'All banks') + (n.versionLine ? ' · OBDX ' + n.versionLine + '.x' : ' · every version'),
-          when: when(n.updatedAt), by: n.createdBy, sourceRows: sources.map((x, i) => ({ text: '[' + (i + 1) + '] ' + x.title + (x.heading ? ' · ' + x.heading : '') + (x.pageFrom ? ' · ' + pages(x) : ''), url: x.url })),
+          when: when(n.updatedAt), by: n.createdBy, sourceRows: sources.map((x, i) => ({ text: '[' + (i + 1) + '] ' + x.title + (x.heading ? ' · ' + x.heading : '') + (x.pageFrom ? ' · ' + pages(x) : ''), url: safeUrl(x.url) })),
           canReview: n.workspaceId ? session.can(n.workspaceId, 'APPROVE') : session.isAdmin(),
           isSuggested: n.status === 'SUGGESTED', isTrusted: n.status === 'TRUSTED',
           approve: this.review(n, 'TRUSTED'), reject: this.review(n, 'REJECTED'), unreview: this.review(n, 'SUGGESTED'), remove: this.removeNote(n)

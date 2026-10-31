@@ -289,6 +289,9 @@ public class ChangeService {
         try {
             if (modify) {
                 Path file = workingCopy.resolve(item.path());
+                if (!within(workingCopy, file)) {
+                    throw new IOException("it is a link to a file outside the working copy; change it by hand");
+                }
                 if (Files.size(file) > properties.maxFileSize().toBytes()) {
                     files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, read(file), null, false,
                             new FileChecks.Result(FileChecks.Status.FAILED, "The file is too large to rewrite safely; change it by hand."), 0);
@@ -384,7 +387,7 @@ public class ChangeService {
         paths.addAll(recipes.examplesFor(workspaceId, item.path(), item.action(), item.layer()));
         for (String path : paths) {
             Path file = workingCopy.resolve(path);
-            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file)
+            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file) && within(workingCopy, file)
                     && Files.size(file) <= properties.maxFileSize().toBytes()) {
                 examples.put(path, read(file));
             }
@@ -394,7 +397,7 @@ public class ChangeService {
             String extension = item.path().contains(".") ? item.path().substring(item.path().lastIndexOf('.')) : "";
             if (folder != null && Files.isDirectory(folder)) {
                 try (Stream<Path> siblings = Files.list(folder)) {
-                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p))
+                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p) && within(workingCopy, p))
                             .sorted().findFirst().orElse(null);
                     if (sibling != null && Files.size(sibling) <= properties.maxFileSize().toBytes()) {
                         examples.put(workingCopy.relativize(sibling).toString().replace('\\', '/'), read(sibling));
@@ -525,7 +528,7 @@ public class ChangeService {
             if (content == null) {
                 try {
                     Path file = workingCopy.resolve(candidate);
-                    content = Files.isRegularFile(file) ? read(file) : null;
+                    content = Files.isRegularFile(file) && within(workingCopy, file) ? read(file) : null;
                 } catch (IOException e) {
                     content = null;
                 }
@@ -870,6 +873,18 @@ public class ChangeService {
 
     private Workspace workspace(UUID id) {
         return workspaces.findById(id).orElseThrow(() -> new NotFoundException("Workspace not found: " + id));
+    }
+
+    /**
+     * Whether a file of the working copy really is in it: a link (symlink) in the bank's code could lead to any file on
+     * the server, which would then go to the model and into the change.
+     */
+    static boolean within(Path workingCopy, Path file) {
+        try {
+            return file.toRealPath().startsWith(workingCopy.toRealPath());
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private static String read(Path file) throws IOException {

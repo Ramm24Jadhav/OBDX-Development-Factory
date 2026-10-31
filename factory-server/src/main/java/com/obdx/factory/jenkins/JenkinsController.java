@@ -35,9 +35,12 @@ public class JenkinsController {
     @PutMapping("/api/workspaces/{workspaceId}/jenkins")
     public JenkinsSettings save(@PathVariable UUID workspaceId, @RequestBody JenkinsSettingsService.SettingsRequest request) {
         guard.require(workspaceId, Permission.MANAGE_CODE);
+        boolean hadToken = service.find(workspaceId).map(JenkinsSettings::tokenSet).orElse(false);
         JenkinsSettings settings = service.save(workspaceId, request);
+        boolean dropped = hadToken && request.token() == null && !settings.tokenSet();
         audit.record("JENKINS_SETTINGS_CHANGED", workspaceId, settings.url(), "jobs " + settings.jobs() + ", mode " + settings.mode()
-                + (request.token() != null ? ", token changed" : ""));
+                + (request.token() != null ? ", token changed" : "")
+                + (dropped ? ", stored token removed because the URL points to another server" : ""));
         return settings;
     }
 

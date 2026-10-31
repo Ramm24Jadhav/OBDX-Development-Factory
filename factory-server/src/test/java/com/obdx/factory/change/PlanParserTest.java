@@ -42,6 +42,35 @@ class PlanParserTest {
     }
 
     @Test
+    void buildAndCiFilesAreMarkedAndNamedAsARisk() {
+        String json = """
+                {"items": [
+                   {"path": "backend/pom.xml", "purpose": "add a plugin"},
+                   {"path": "Jenkinsfile"},
+                   {"path": "scripts/deploy.sh"},
+                   {"path": ".github/workflows/build.yml"},
+                   {"path": "ui/package.json"},
+                   {"path": "backend/src/com/bank/payments/RemarksValidator.java"}],
+                 "risks": ["Remarks length unknown"]}
+                """;
+        ChangePlan plan = PlanParser.parse(json, existing::contains, 10);
+
+        assertThat(plan.items()).filteredOn(i -> i.purpose() != null && i.purpose().startsWith("[Build or CI file]")).hasSize(5);
+        assertThat(plan.items()).filteredOn(i -> i.path().endsWith("pom.xml")).singleElement()
+                .satisfies(i -> assertThat(i.purpose()).isEqualTo("[Build or CI file] add a plugin"));
+        assertThat(plan.risks()).hasSize(2);
+        assertThat(plan.risks().get(1)).startsWith("The plan changes build or CI files: ").contains("Jenkinsfile", "scripts/deploy.sh", "ui/package.json")
+                .doesNotContain("RemarksValidator");
+
+        // normalising the approved plan again changes nothing
+        ChangePlan again = PlanParser.normalize(plan, existing::contains, 10);
+        assertThat(again.items()).isEqualTo(plan.items());
+        assertThat(again.risks()).isEqualTo(plan.risks());
+        assertThat(PlanParser.isBuildFile("ui/js/viewModels/fund-transfer.js")).isFalse();
+        assertThat(PlanParser.isBuildFile("docker/Dockerfile.prod")).isTrue();
+    }
+
+    @Test
     void rejectsEmptyOrOversizedPlans() {
         assertThatThrownBy(() -> PlanParser.parse("{\"items\": []}", existing::contains, 10))
                 .isInstanceOf(BadRequestException.class).hasMessageContaining("no files");

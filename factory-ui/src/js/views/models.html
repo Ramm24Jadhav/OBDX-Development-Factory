@@ -297,8 +297,11 @@
     <section class="factory-card">
       <h2>Model Evaluation</h2>
       <p class="factory-card-sub">Send a prompt to the model in use and see its reply and how long it took.</p>
-      <fx-textarea id="prompt" label="Prompt" value="{{prompt}}" rows="4"></fx-textarea>
-      <div class="factory-btn-row"><button type="button" id="sendButton" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[busy]]">Send</button></div>
+      <oj-bind-if test="[[!isAdmin()]]"><p class="factory-ov-subtle">Administrators only.</p></oj-bind-if>
+      <oj-bind-if test="[[isAdmin()]]">
+        <fx-textarea id="prompt" label="Prompt" value="{{prompt}}" rows="4"></fx-textarea>
+        <div class="factory-btn-row"><button type="button" id="sendButton" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[busy]]">Send</button></div>
+      </oj-bind-if>
       <oj-bind-if test="[[reply()]]">
         <h3>Reply <span class="factory-ov-subtle">(<oj-bind-text value="[[reply().model]]"></oj-bind-text>, <oj-bind-text value="[[reply().latencyMs]]"></oj-bind-text> ms)</span></h3>
         <pre class="factory-code factory-code-light" id="modelReply"><oj-bind-text value="[[reply().reply]]"></oj-bind-text></pre>

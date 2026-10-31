@@ -78,8 +78,13 @@ public class SecurityConfig {
                                 problem(response, HttpStatus.UNAUTHORIZED, "Sign in to continue"))
                         .accessDeniedHandler((request, response, e) ->
                                 problem(response, HttpStatus.FORBIDDEN, e.getMessage())))
-                // The designer shows its preview in an iframe from the same origin.
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                // The designer shows its preview in an iframe from the same origin. The policy leaves scripts and styles
+                // alone (JET sets inline styles); HSTS is sent on HTTPS requests only (Spring Security's default).
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(contentSecurityPolicy(samlSignOnUrl(properties, samlRegistrations))))
+                        .referrerPolicy(referrer -> referrer.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, auth) -> response.setStatus(HttpServletResponse.SC_NO_CONTENT)))
@@ -113,6 +118,34 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * A policy that cannot break the UI: no framing by other sites, no plugins, no changed base URL, and forms posting
+     * only to the factory, or to the SAML identity provider (the sign-in step posts a form there).
+     */
+    static String contentSecurityPolicy(String samlSignOnUrl) {
+        String formAction = "'self'";
+        if (samlSignOnUrl != null) {
+            try {
+                java.net.URI uri = java.net.URI.create(samlSignOnUrl);
+                if (uri.getScheme() != null && uri.getAuthority() != null) {
+                    formAction += " " + uri.getScheme() + "://" + uri.getAuthority();
+                }
+            } catch (IllegalArgumentException e) {
+                // the factory's own forms only
+            }
+        }
+        return "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action " + formAction;
+    }
+
+    private static String samlSignOnUrl(AuthProperties properties, ObjectProvider<RelyingPartyRegistrationRepository> samlRegistrations) {
+        if (!properties.isSaml()) {
+            return null;
+        }
+        RelyingPartyRegistrationRepository registrations = samlRegistrations.getIfAvailable();
+        var registration = registrations == null ? null : registrations.findByRegistrationId(properties.saml().registrationId());
+        return registration == null ? null : registration.getAssertingPartyMetadata().getSingleSignOnServiceLocation();
+    }
+
     /** Checks username and password for the sign-in form: local accounts or the bank's LDAP directory. */
     @Bean
     public AuthenticationManager authenticationManager(AuthProperties properties, AppUserRepository users, PasswordEncoder encoder) {
@@ -135,9 +168,19 @@ public class SecurityConfig {
                 .map(user -> User.withUsername(user.getUsername()).password(user.getPasswordHash())
                         .disabled(!user.isEnabled()).authorities(List.of()).build())
                 .orElseThrow(() -> new UsernameNotFoundException("Unknown user"));
+        return new ProviderManager(localProvider(localUsers, encoder));
+    }
+
+    /**
+     * Checks the password before the account's state: by default a disabled account is reported whatever the password,
+     * which tells anyone that the username exists.
+     */
+    static DaoAuthenticationProvider localProvider(UserDetailsService localUsers, PasswordEncoder encoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(localUsers);
         provider.setPasswordEncoder(encoder);
-        return new ProviderManager(provider);
+        provider.setPreAuthenticationChecks(user -> { });
+        provider.setPostAuthenticationChecks(new org.springframework.security.authentication.AccountStatusUserDetailsChecker());
+        return provider;
     }
 
     /** Keeps the display name and email from the directory entry, to show and record them in the factory. */

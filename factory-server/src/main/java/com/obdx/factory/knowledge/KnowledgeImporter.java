@@ -147,6 +147,17 @@ public class KnowledgeImporter {
         }
     }
 
+    /** Whether folder is root or inside it, following links (both as they really are on disk). */
+    static boolean inside(Path folder, Path root) {
+        try {
+            Path real = folder.toRealPath();
+            Path base = Files.exists(root) ? root.toRealPath() : root.toAbsolutePath().normalize();
+            return real.startsWith(base);
+        } catch (IOException e) {
+            return folder.toAbsolutePath().normalize().startsWith(root.toAbsolutePath().normalize());
+        }
+    }
+
     public void deleteSource(UUID sourceId) {
         repository.findSource(sourceId).orElseThrow(() -> new NotFoundException("Folder not found"));
         repository.deleteSource(sourceId);
@@ -155,6 +166,10 @@ public class KnowledgeImporter {
     private Imported scan(Path folder, String version, UUID workspaceId, String patchset, UUID sourceId, String user) {
         if (!Files.isDirectory(folder)) {
             throw new BadRequestException("No folder at " + folder + ". Enter the full path of the folder with the documents.");
+        }
+        if (inside(folder, storage.root())) {
+            // The factory's own data: every workspace's uploaded requirement documents and code
+            throw new BadRequestException("The factory's data folder cannot be imported. Copy the documents to another folder first.");
         }
         List<Path> files;
         try (Stream<Path> list = Files.list(folder)) {

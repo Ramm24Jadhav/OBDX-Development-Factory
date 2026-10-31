@@ -30,7 +30,16 @@ public class CodeGenerator {
             - When modifying a file, keep everything that the change does not need to touch exactly as it is.
             - Implement what the plan item says, consistent with the other files of the change (same class, field,
               service and label names).
-            - Use only APIs and classes that exist in the code shown, or that this change creates.
+            - Use only APIs and classes that exist in the code shown, or that this change creates. Import every class
+              and annotation you use; a REST method whose @Path has {id} takes it with @PathParam("id").
+            - Security, as a bank's review expects:
+              - Take the customer or user from the session (as the codebase does), never from the request.
+              - Check that the customer owns what every lookup by ID returns.
+              - Validate amounts and inputs on the server, not only in the UI.
+              - Return error codes or messages from the resource bundle, never exception text.
+              - Log with placeholders, not +, and never log personal data.
+              - Payment initiation goes through OBDX's authorization (2FA) step, as the codebase does it.
+              - Encode IDs put in UI URLs (encodeURIComponent), and call the exact service paths the server code defines.
             - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
               say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
               test per criterion, named or commented with the criterion's ID.

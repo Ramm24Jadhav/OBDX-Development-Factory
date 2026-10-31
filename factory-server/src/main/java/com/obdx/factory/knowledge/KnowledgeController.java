@@ -88,10 +88,11 @@ public class KnowledgeController {
 
     @GetMapping("/api/knowledge")
     public Overview overview() {
-        guard.current();
+        AppUser user = guard.current();
         List<UUID> visible = knowledge.visibleWorkspaceIds();
         String privacy = policy.chatProblem() != null ? policy.chatProblem() : policy.embeddingProblem();
-        return new Overview(repository.stats(visible), localFolders, repository.documents(visible), privacy, repository.sources(visible));
+        // Folder import reads the server's folders: administrators only
+        return new Overview(repository.stats(visible), localFolders && user != null && user.isAdmin(), repository.documents(visible), privacy, repository.sources(visible));
     }
 
     // --- documents ---
@@ -99,9 +100,10 @@ public class KnowledgeController {
     public record FolderImport(String folder, String obdxVersion, UUID workspaceId, String patchset) {
     }
 
+    /** Reads a folder on the factory's server, so administrators only (like the local folders of the Workspaces page). */
     @PostMapping("/api/knowledge/import")
     public KnowledgeImporter.Imported importFolder(@RequestBody FolderImport request) {
-        AppUser user = requireImporter(request.workspaceId());
+        AppUser user = guard.requireAdmin();
         if (!localFolders) {
             throw new BadRequestException("Importing from a folder is off on this factory. Upload the PDF files instead.");
         }
@@ -223,7 +225,8 @@ public class KnowledgeController {
     @PostMapping("/api/knowledge/folders/{id}/check")
     public KnowledgeImporter.Imported checkFolder(@PathVariable UUID id) {
         var source = repository.findSource(id).orElseThrow(() -> new NotFoundException("Folder not found"));
-        requireImporter(source.workspaceId());
+        // Reads the server's folder again: administrators only
+        guard.requireAdmin();
         KnowledgeImporter.Imported imported = importer.rescan(id);
         if (!imported.queued().isEmpty()) {
             audit.record("KNOWLEDGE_IMPORTED", source.workspaceId(), source.folder(), imported.queued().size() + " new or changed document(s)");

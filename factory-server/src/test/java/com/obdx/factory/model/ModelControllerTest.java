@@ -52,6 +52,42 @@ class ModelControllerTest {
     }
 
     @Test
+    void onlyAdministratorsSendTestPrompts() {
+        com.obdx.factory.auth.AccessGuard guard = org.mockito.Mockito.mock(com.obdx.factory.auth.AccessGuard.class);
+        org.mockito.Mockito.when(guard.requireAdmin()).thenThrow(new org.springframework.security.access.AccessDeniedException("Only administrators can do this"));
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+        ModelController controller = new ModelController(new ModelGateway() {
+            @Override
+            public ChatResult chat(String systemPrompt, String userPrompt) {
+                calls.incrementAndGet();
+                return new ChatResult("", "test", 1);
+            }
+
+            @Override
+            public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                return chat(systemPrompt, userPrompt);
+            }
+
+            @Override
+            public float[] embed(String text) {
+                calls.incrementAndGet();
+                return new float[0];
+            }
+
+            @Override
+            public List<float[]> embedAll(List<String> texts) {
+                return List.of();
+            }
+        }, null, null, guard, null);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.chat(new ModelController.ChatRequest("hello")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.embed(new ModelController.EmbedRequest("hello")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThat(calls.get()).isZero();
+    }
+
+    @Test
     void warnsAboutAChatModelUsedForEmbeddings() {
         ModelController controller = controller(text -> new float[] {0.1f, 0.2f});
 
