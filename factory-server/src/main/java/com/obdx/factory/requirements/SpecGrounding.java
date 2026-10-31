@@ -27,15 +27,20 @@ final class SpecGrounding {
         StringBuilder decided = new StringBuilder(doc);
         spec.decisions().forEach(d -> decided.append(' ').append(words(d.answer())));
         String known = decided.toString();
-        List<RequirementSpec.Api> apis = spec.apis().stream().filter(a -> known.contains(words(a.name()))).toList();
+        List<RequirementSpec.Api> apis = spec.apis().stream().filter(a -> known.contains(words(a.name())) || pathNamed(a, known)).toList();
 
         // Screens: one per set of words, the first name kept, their fields and actions together
         Map<String, RequirementSpec.Screen> screens = new LinkedHashMap<>();
         for (RequirementSpec.Screen s : spec.screens()) {
             screens.merge(screenKey(s.name()), s, SpecMerger::mergeScreens);
         }
-        // A screen a requirement needs and the document names, which the draft left out
+        // A screen a requirement needs and the document names, which the draft left out. Only for a requirement the draft
+        // gave no screen at all: one that has its screen merely mentions others it passes through (an existing "Review
+        // Transfer" in a change to the initiate screen), which are not designed again
         for (RequirementSpec.FunctionalRequirement r : spec.requirements()) {
+            if (r.screens().stream().anyMatch(n -> screens.containsKey(screenKey(n)))) {
+                continue;
+            }
             for (String name : r.screens()) {
                 String key = screenKey(name);
                 if (!key.isEmpty() && !screens.containsKey(key) && doc.contains(words(name))) {
@@ -57,6 +62,33 @@ final class SpecGrounding {
         return new RequirementSpec(spec.title(), spec.summary(), new ArrayList<>(screens.values()), spec.businessRules(), spec.roles(), apis,
                 spec.hostInteractions(), spec.messages(), spec.openQuestions(), spec.decisions(), spec.scope(), spec.outOfScope(),
                 spec.assumptions(), requirements, spec.acceptanceCriteria(), spec.nonFunctional());
+    }
+
+    private static final java.util.regex.Pattern PATH = java.util.regex.Pattern.compile("(?<![\\w/])/[\\w{}.-]+(?:/[\\w{}.-]+)*");
+    private static final java.util.regex.Pattern METHOD = java.util.regex.Pattern.compile("(?i)\\b(GET|POST|PUT|PATCH|DELETE)\\b");
+
+    /**
+     * Whether the document names an API by its method and path, though not as one piece of text: "POST, GET, GET
+     * /{instructionId}, DELETE on /payments/standingInstructions" names GET /payments/standingInstructions/{instructionId}.
+     * Every fixed segment of the path, and the method, must be words of the document.
+     */
+    static boolean pathNamed(RequirementSpec.Api api, String known) {
+        String text = (api.name() == null ? "" : api.name()) + " " + (api.description() == null ? "" : api.description());
+        java.util.regex.Matcher path = PATH.matcher(text);
+        if (!path.find()) {
+            return false;
+        }
+        List<String> fixed = new ArrayList<>();
+        for (String segment : path.group().split("/")) {
+            if (!segment.isEmpty() && !segment.startsWith("{") && !segment.matches("v\\d+")) {
+                fixed.add(words(segment));
+            }
+        }
+        if (fixed.isEmpty() || !fixed.stream().allMatch(known::contains)) {
+            return false;
+        }
+        java.util.regex.Matcher method = METHOD.matcher(api.method() == null ? text : api.method());
+        return !method.find() || known.contains(" " + method.group(1).toLowerCase(Locale.ROOT) + " ");
     }
 
     /** "Transfer Review screen" and "Review Transfer" are the same screen. */

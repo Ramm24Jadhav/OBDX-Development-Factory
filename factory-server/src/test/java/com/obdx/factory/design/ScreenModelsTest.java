@@ -94,7 +94,7 @@ class ScreenModelsTest {
         assertThat(ScreenModels.guessStage("Order Review and Confirmation")).isEqualTo("review");
         assertThat(ScreenModels.guessStage("Transfer acknowledgement")).isEqualTo("confirm");
         assertThat(ScreenModels.guessStage("Order Book")).isEqualTo("inquiry");
-        assertThat(ScreenModels.channelsIn("Only in the mobile app, not on the web")).containsExactly("desktop", "mobile-app");
+        assertThat(ScreenModels.channelsIn("Only in the mobile app, not on the web")).containsExactly("mobile-app");
         assertThat(ScreenModels.channelsIn("For mobile web and tablets")).containsExactly("tablet", "mobile-web");
         assertThat(ScreenModels.channelsIn("Add a remarks field")).isEmpty();
         assertThat(ScreenModels.channelsIn("OBDX Retail Mobile Banking – Beneficiary Management")).containsExactly("mobile-app");
@@ -214,7 +214,7 @@ class ScreenModelsTest {
 
     @Test
     void fieldNamesBecomeIdentifiersAndInquiryScreensGetBack() {
-        RequirementSpec.Screen history = new RequirementSpec.Screen("Transfer History", "unknown", null, null,
+        RequirementSpec.Screen history = new RequirementSpec.Screen("Transfer Details", "unknown", null, null,
                 List.of(new RequirementSpec.Field("Beneficiary Name", null, "text", true, List.of(), null, null, null)), List.of(), List.of());
 
         ScreenModel model = ScreenModels.fromSpec(history);

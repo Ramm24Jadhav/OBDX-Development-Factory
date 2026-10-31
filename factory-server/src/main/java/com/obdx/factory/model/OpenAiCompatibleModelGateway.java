@@ -65,8 +65,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     /** "Please try again in 7.66s", "in 1m30.5s", "in 330ms" */
     private static final Pattern TRY_AGAIN = Pattern.compile("(?i)try again in ([\\d.]+ms|(?:\\d+h)?(?:\\d+m)?(?:[\\d.]+s)?)");
     private static final Pattern TIME_PART = Pattern.compile("([\\d.]+)([hms])");
-    /** Longest rate-limit wait before giving up; a per-minute limit frees up within it. */
-    static final Duration MAX_WAIT = Duration.ofSeconds(90);
+    /** Longest rate-limit wait before giving up; a per-minute limit frees up within it (some servers ask for over 90 s). */
+    static final Duration MAX_WAIT = Duration.ofMinutes(3);
     private static final int RATE_LIMIT_ATTEMPTS = 8;
 
     private final Duration timeout;
@@ -171,15 +171,23 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 if (wait == null || !canRetry.getAsBoolean()) {
                     throw e;
                 }
+                boolean daily = daily(text);
+                // A daily limit is rolling: a short wait it asks for is waited out like a per-minute one; without a time,
+                // or with a long one, every call fails until the allowance frees up
+                if (daily && (!waitGiven(text) || wait.compareTo(MAX_WAIT) > 0)) {
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                            + " has used up its daily limit (" + serverMessage(text) + "). Try again "
+                            + (waitGiven(text) ? "in " + roughly(wait) : "later") + ", or use a plan or model with a larger limit.", true, e);
+                }
                 if (attempt >= RATE_LIMIT_ATTEMPTS) {
-                    throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
                             + " stayed at its rate limit after " + attempt + " tries (" + serverMessage(text) + "). Try again in a few "
-                            + "minutes, or use a plan or model with larger limits.", e);
+                            + "minutes, or use a plan or model with larger limits.", daily, e);
                 }
                 if (wait.compareTo(MAX_WAIT) > 0) {
-                    throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
-                            + " reached its rate limit and asks to wait " + readable(wait) + " (often the daily limit of a free plan). "
-                            + "Try again then, or use a plan or model with a larger limit.", e);
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                            + " reached its rate limit and asks to wait " + roughly(wait) + ". Try again then, or use a plan or model "
+                            + "with a larger limit.", false, e);
                 }
                 try {
                     Thread.sleep(wait);
@@ -582,6 +590,30 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             }
         }
         return false;
+    }
+
+    /** Whether the server said how long to wait ("try again in 7.66s"). */
+    static boolean waitGiven(String text) {
+        Matcher m = TRY_AGAIN.matcher(text);
+        return m.find() && !m.group(1).isEmpty();
+    }
+
+    /** A daily limit: "tokens per day (TPD)", "requests per day", "daily limit". */
+    static boolean daily(String text) {
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("per day") || lower.contains("(tpd)") || lower.contains("(rpd)") || lower.contains("daily");
+    }
+
+    /** A wait as people say it: "45 seconds", "about 2 minutes", "about 3 hours". */
+    static String roughly(Duration d) {
+        long s = d.toSeconds();
+        if (s < 90) {
+            return Math.max(1, s) + " seconds";
+        }
+        if (s < 2 * 3600) {
+            return "about " + Math.round(s / 60.0) + " minutes";
+        }
+        return "about " + Math.round(s / 3600.0) + " hours";
     }
 
     static String readable(Duration d) {

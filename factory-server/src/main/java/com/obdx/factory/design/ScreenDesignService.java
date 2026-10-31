@@ -69,6 +69,40 @@ public class ScreenDesignService {
 
     // --- create ---
 
+    /**
+     * The channels the requirement names ("mobile app only", "internet or mobile banking"): from the spec (summary,
+     * scope, requirements, answers) first, where they are stated for this change; from the whole document only when the
+     * spec names none; all channels (empty) when neither does.
+     */
+    static List<String> channels(RequirementSpec spec, String documentText) {
+        StringBuilder text = new StringBuilder(spec.summary() == null ? "" : spec.summary());
+        spec.scope().forEach(s -> text.append('\n').append(s));
+        spec.requirements().forEach(r -> text.append('\n').append(r.title() == null ? "" : r.title() + ". ")
+                .append(r.description() == null ? "" : r.description()));
+        spec.decisions().forEach(d -> text.append('\n').append(d.question()).append(' ').append(d.answer()));
+        List<String> channels = ScreenModels.channelsIn(text.toString());
+        return channels.isEmpty() ? ScreenModels.channelsIn(documentText) : channels;
+    }
+
+    /**
+     * A review or confirmation screen the spec drafted with hardly any fields (a single "details" text) after an initiate
+     * screen: it shows that screen's captured fields read-only instead, keeping the spec's name, title and actions.
+     */
+    static ScreenModel stepAfter(ScreenModel model, ScreenModel initiate) {
+        boolean step = "review".equals(model.stage()) || "confirm".equals(model.stage());
+        List<ScreenModel.Component> fields = model.sections().stream().flatMap(s -> s.components().stream()).toList();
+        // Only a placeholder is replaced (no field, or one "details" text); a field of its own is never thrown away
+        boolean placeholder = fields.isEmpty() || (fields.size() == 1
+                && (fields.getFirst().name() + " " + fields.getFirst().label()).toLowerCase(java.util.Locale.ROOT)
+                .matches(".*\\b(details|summary|review|information|info|data)\\b.*"));
+        if (!step || initiate == null || !placeholder) {
+            return model;
+        }
+        ScreenModel derived = ScreenModels.reviewAndConfirm(initiate).get("review".equals(model.stage()) ? 0 : 1);
+        return ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description() != null ? model.description()
+                : derived.description(), model.changeType(), derived.sections(), model.actions(), model.stage(), model.channels()));
+    }
+
     /** One design per screen of an approved requirement spec. */
     @Transactional
     public List<DesignSummary> fromRequirement(UUID requirementId) {
@@ -80,13 +114,13 @@ public class ScreenDesignService {
             throw new ConflictException("Designs for this requirement already exist");
         }
         List<DesignSummary> created = new ArrayList<>();
-        // The channels the requirement names ("mobile app only", "web and tablet"), from its text and answers
-        StringBuilder text = new StringBuilder(requirement.documentText() == null ? "" : requirement.documentText());
-        text.append('\n').append(requirement.spec().summary() == null ? "" : requirement.spec().summary());
-        requirement.spec().decisions().forEach(d -> text.append('\n').append(d.question()).append(' ').append(d.answer()));
-        List<String> channels = ScreenModels.channelsIn(text.toString());
+        List<String> channels = channels(requirement.spec(), requirement.documentText());
+        ScreenModel initiate = null;
         for (RequirementSpec.Screen screen : requirement.spec().screens()) {
-            ScreenModel model = ScreenModels.fromSpec(screen, channels);
+            ScreenModel model = stepAfter(ScreenModels.fromSpec(screen, channels, requirement.spec().businessRules()), initiate);
+            if ("initiate".equals(model.stage())) {
+                initiate = model;
+            }
             ScreenDesign design = new ScreenDesign(requirement.workspaceId(), requirementId, model.name());
             designs.saveAndFlush(design);
             int version = store.addVersion(design.getId(), DesignStore.Origin.GENERATED,

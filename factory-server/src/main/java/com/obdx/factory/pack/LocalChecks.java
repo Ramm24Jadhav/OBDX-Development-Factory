@@ -53,6 +53,8 @@ public class LocalChecks {
         }
         List<PackRule> rules = rulesFor(scope, path);
         List<Finding> findings = new ArrayList<>(findings(rules, path, original, content));
+        // The model's own reasoning written into the file: it is written again
+        ModelReasoning.findings(path, original, content).stream().filter(f -> !scope.disabled().contains(f.ruleId())).forEach(findings::add);
         if (path.toLowerCase(java.util.Locale.ROOT).endsWith(".java") && !scope.inApp(path)) {
             // Deployment and security checks of Java that a pattern rule cannot express
             JavaChecks.findings(path, original, content).stream().filter(f -> !scope.disabled().contains(f.ruleId())).forEach(findings::add);
@@ -129,6 +131,11 @@ public class LocalChecks {
                 && path.toLowerCase().endsWith(".java") && FileChecks.check(path, original, level).status() == FileChecks.Status.FAILED) {
             // The existing file already uses newer Java than the detected level, so the level is not reliable for it.
             return FileChecks.check(path, content, FileChecks.LATEST_JAVA);
+        }
+        if (result.status() == FileChecks.Status.FAILED && original != null && path.toLowerCase().endsWith(".js")
+                && FileChecks.check(path, original, level).status() == FileChecks.Status.FAILED) {
+            // The light JavaScript check does not understand the existing file either: not the change's fault
+            return new FileChecks.Result(FileChecks.Status.WARNING, result.message() + " (the file was like this before the change)");
         }
         return result;
     }

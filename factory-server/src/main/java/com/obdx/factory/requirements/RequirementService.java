@@ -185,11 +185,25 @@ public class RequirementService {
             throw new BadRequestException("Resolve the " + open + " open question(s) first: answer them and update the spec, "
                     + "or remove them by editing the spec.");
         }
-        if (spec.screens().isEmpty()) {
-            throw new BadRequestException("The spec has no screens to build yet");
+        if (!buildable(spec)) {
+            throw new BadRequestException("The spec has nothing to build yet: no screens, requirements or APIs");
         }
         requirement.approve(by);
         return detail(requirements.save(requirement));
+    }
+
+    /** A message as one sentence ending with a single period: "limit." stays, "limit" gets one. */
+    static String sentence(String message) {
+        String m = message == null ? "unknown error" : message.strip();
+        return m.endsWith(".") || m.endsWith("!") || m.endsWith("?") ? m : m + ".";
+    }
+
+    /**
+     * Whether a spec can be approved for building: screens, or for a backend-only change (a REST API without UI) its
+     * functional requirements or APIs. Such a change needs no screen designs.
+     */
+    static boolean buildable(RequirementSpec spec) {
+        return !spec.screens().isEmpty() || !spec.requirements().isEmpty() || !spec.apis().isEmpty();
     }
 
     /** Drafts the spec again from the document, for example after a failure. */
@@ -279,8 +293,8 @@ public class RequirementService {
             requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left.");
         } catch (RuntimeException e) {
             log.error("Updating the spec for requirement {} failed", id, e);
-            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + e.getMessage()
-                    + ". The answers are kept; try again.");
+            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + sentence(e.getMessage())
+                    + " The answers are kept; try again.");
         }
         requirements.save(requirement);
     }

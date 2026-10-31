@@ -127,6 +127,30 @@ class OpenAiCompatibleModelGatewayTest {
                      "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{\\"ok\\": true}"}}]}
                     """);
         });
+        // A free plan's daily allowance used up: every call fails until it resets
+        server.createContext("/daily/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            limitedCalls.incrementAndGet();
+            respond(exchange, 429, """
+                    {"error": {"message": "Rate limit reached for model `qwen` on tokens per day (TPD): Limit 100000, Used 99500, \
+                    Requested 900. Please try again in 14m30s.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                    """);
+        });
+        // A rolling daily limit that frees up in a moment: waited out like a per-minute one
+        server.createContext("/dailyshort/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            if (limitedCalls.incrementAndGet() == 1) {
+                respond(exchange, 429, """
+                        {"error": {"message": "Rate limit reached for model `qwen` on tokens per day (TPD): Limit 100000, Used 99500, \
+                        Requested 900. Please try again in 300ms.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                        """);
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-4", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{\\"ok\\": true}"}}]}
+                    """);
+        });
         // A request larger than the server takes in a minute: asking again cannot help
         server.createContext("/toolarge/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -360,6 +384,37 @@ class OpenAiCompatibleModelGatewayTest {
         // bge-m3 takes questions as they are; the English bge models want their instruction
         assertThat(OpenAiCompatibleModelGateway.queryPrefix("bge-m3:latest")).isEmpty();
         assertThat(OpenAiCompatibleModelGateway.queryPrefix("BAAI/bge-large-en-v1.5")).startsWith("Represent this sentence");
+    }
+
+    @Test
+    void aDailyLimitWithALongWaitStopsAtOnce() {
+        long start = System.nanoTime();
+
+        assertThatThrownBy(() -> gatewayFor("/daily/v1").chatJson("Answer in JSON.", "Write the file"))
+                .isInstanceOfSatisfying(ModelLimitReachedException.class, e -> assertThat(e.daily()).isTrue())
+                .hasMessageContaining("daily limit").hasMessageContaining("about 15 minutes");
+        assertThat(limitedCalls.get()).isEqualTo(1);
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(10));
+        assertThat(OpenAiCompatibleModelGateway.daily("Rate limit reached on requests per day (RPD)")).isTrue();
+        assertThat(OpenAiCompatibleModelGateway.daily("Rate limit reached on tokens per minute (TPM)")).isFalse();
+        // a per-minute limit asking for 106 seconds is waited out
+        assertThat(OpenAiCompatibleModelGateway.MAX_WAIT).isGreaterThan(Duration.ofSeconds(106));
+    }
+
+    @Test
+    void aDailyLimitThatFreesUpSoonIsWaitedOut() {
+        assertThat(gatewayFor("/dailyshort/v1").chat("Answer in JSON.", "Write the file").reply()).isEqualTo("{\"ok\": true}");
+        assertThat(limitedCalls.get()).isEqualTo(2);
+        assertThat(OpenAiCompatibleModelGateway.waitGiven("tokens per day (TPD). Please try again in 7.66s")).isTrue();
+        assertThat(OpenAiCompatibleModelGateway.waitGiven("daily limit reached")).isFalse();
+    }
+
+    @Test
+    void saysWaitsAsPeopleDo() {
+        assertThat(OpenAiCompatibleModelGateway.roughly(Duration.ofSeconds(45))).isEqualTo("45 seconds");
+        assertThat(OpenAiCompatibleModelGateway.roughly(Duration.ofSeconds(106))).isEqualTo("about 2 minutes");
+        assertThat(OpenAiCompatibleModelGateway.roughly(Duration.ofMinutes(14).plusSeconds(30))).isEqualTo("about 15 minutes");
+        assertThat(OpenAiCompatibleModelGateway.roughly(Duration.ofHours(5))).isEqualTo("about 5 hours");
     }
 
     @Test

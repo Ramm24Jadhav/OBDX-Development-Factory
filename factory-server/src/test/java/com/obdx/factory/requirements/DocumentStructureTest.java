@@ -205,6 +205,90 @@ class DocumentStructureTest {
     }
 
     @Test
+    void aMatrixOfIdListsLinksRequirementsToCriteriaWithoutDuplicatingThem() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 8. Functional Requirements
+
+                | ID | Requirement | Description |
+                | --- | --- | --- |
+                | FR-001 | List instructions | The system shall list the customer's standing instructions. |
+                | FR-002 | Delete instruction | The system shall delete a standing instruction. |
+
+                # 10. Acceptance Criteria
+
+                | AC ID | Criterion |
+                | --- | --- |
+                | AC-001 | Given instructions, when the customer opens the list, then they are shown. |
+                | AC-002 | Given an instruction, when the customer deletes it, then it is gone. |
+                | AC-003 | Given no instructions, when the list opens, then a message says so. |
+
+                # 11. Traceability
+
+                | Requirement ID | Acceptance criteria |
+                | --- | --- |
+                | FR-001 | AC-001, AC-003 |
+                | FR-002 | AC-002 |
+                """);
+
+        assertThat(s.requirements()).extracting(RequirementSpec.FunctionalRequirement::id).containsExactly("FR-001", "FR-002");
+        assertThat(s.requirements().getFirst().description()).startsWith("The system shall list");
+        assertThat(s.criteria()).extracting(RequirementSpec.AcceptanceCriterion::id, RequirementSpec.AcceptanceCriterion::requirements)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("AC-001", List.of("FR-001")),
+                        org.assertj.core.groups.Tuple.tuple("AC-002", List.of("FR-002")),
+                        org.assertj.core.groups.Tuple.tuple("AC-003", List.of("FR-001")));
+    }
+
+    @Test
+    void aRequirementTableWithACriteriaColumnLinksThemAndARepeatedIdIsNotDuplicated() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # Requirements
+
+                | ID | Requirement | Criteria |
+                | --- | --- | --- |
+                | FR-001 | The system shall show the widget on the dashboard. | AC-001 |
+                | FR-001 | The widget shows the balance. | AC-002 |
+
+                | AC ID | Criterion |
+                | --- | --- |
+                | AC-001 | Given a customer, when the dashboard opens, then the widget shows. |
+                """);
+
+        assertThat(s.requirements()).singleElement().satisfies(r -> assertThat(r.description()).isEqualTo("The system shall show the widget on the dashboard."));
+        assertThat(s.criteria().getFirst().requirements()).containsExactly("FR-001");
+    }
+
+    @Test
+    void theDocumentsQuestionTakesTheModelsOptionsForTheSameQuestion() {
+        assertThat(DocumentStructure.sameQuestion("Where should the widget be positioned?",
+                "Should the widget be shown above or below the account summary?")).isTrue();
+        assertThat(DocumentStructure.sameQuestion("Which currencies are supported?", "Where should the widget be positioned?")).isFalse();
+        assertThat(DocumentStructure.sameQuestion("Which currencies are supported?", "Which accounts are supported?")).isFalse();
+        assertThat(DocumentStructure.sameQuestion("Where should the widget be placed?",
+                "Should the widget show a balance above the summary?")).isFalse();
+
+        RequirementSpec drafted = SpecParser.parse("""
+                {"title": "Widget", "openQuestions": [{"question": "Should the widget be shown above or below the account summary?",
+                  "options": ["Above", "Below"], "suggestedAnswer": "Above"}]}
+                """, "x");
+        DocumentStructure.Structure doc = DocumentStructure.read("""
+                # Open Questions
+
+                | ID | Question | Owner | Status |
+                | --- | --- | --- | --- |
+                | OQ-001 | Where should the widget be positioned? | Product Owner | Open |
+                """);
+
+        RequirementSpec spec = DocumentStructure.apply(drafted, doc);
+
+        assertThat(spec.openQuestions()).singleElement().satisfies(q -> {
+            assertThat(q.question()).isEqualTo("Where should the widget be positioned?");
+            assertThat(q.reference()).isEqualTo("OQ-001");
+            assertThat(q.options()).containsExactly("Above", "Below");
+            assertThat(q.suggestedAnswer()).isEqualTo("Above");
+        });
+    }
+
+    @Test
     void aShortRequestWithoutTablesKeepsTheDraft() {
         RequirementSpec drafted = SpecParser.parse("{\"title\": \"x\", \"businessRules\": [{\"id\": \"BR-1\", \"description\": \"r\"}]}", "x");
         assertThat(DocumentStructure.apply(drafted, DocumentStructure.read("Add a remarks field to the transfer screen."))).isSameAs(drafted);

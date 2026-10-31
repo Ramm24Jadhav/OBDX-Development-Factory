@@ -74,16 +74,18 @@ final class DocumentStructure {
             if (kind == null) {
                 continue;
             }
+            boolean traceability = isTraceability(header) || onlyIdLists(rows);
             for (List<String> row : rows) {
                 String id = row.getFirst().strip();
                 if (!ID.matcher(id).matches()) {
                     continue;
                 }
                 String prefix = ID.matcher(id).replaceAll("$1");
-                if (isTraceability(header)) {
-                    // FR-001 | ... | AC-001, AC-002 | ...: the criteria that verify the requirement
-                    if (prefix.equals("FR") || prefix.equals("REQ")) {
-                        for (String cell : row.subList(1, row.size())) {
+                if (prefix.equals("FR") || prefix.equals("REQ")) {
+                    // FR-001 | ... | AC-001, AC-002 | ...: the criteria that verify the requirement, in a traceability matrix or
+                    // in a column of ID lists in the requirements table itself
+                    for (String cell : row.subList(1, row.size())) {
+                        if (traceability || isIdList(cell)) {
                             Matcher m = ANY_ID.matcher(cell);
                             while (m.find()) {
                                 if (!m.group(1).startsWith(prefix)) {
@@ -92,10 +94,12 @@ final class DocumentStructure {
                             }
                         }
                     }
+                }
+                if (traceability) {
                     continue;
                 }
                 switch (kind) {
-                    case "FR" -> requirements.add(new RequirementSpec.FunctionalRequirement(id, cell(header, row, "requirement", "name", "title", "feature"),
+                    case "FR" -> addOnce(requirements, new RequirementSpec.FunctionalRequirement(id, cell(header, row, "requirement", "name", "title", "feature"),
                             longest(header, row, "statement", "description", "detail", "requirement"), cell(header, row, "priority", "moscow"), List.of()));
                     case "AC" -> criteria.add(new RequirementSpec.AcceptanceCriterion(id, longest(header, row, "criterion", "criteria", "given", "description"),
                             List.of()));
@@ -147,10 +151,21 @@ final class DocumentStructure {
                 RequirementSpec.BusinessRule::description, (r, d) ->
                         new RequirementSpec.BusinessRule(r.id(), r.description(), d == null ? List.of() : d.screens(), r.reference()));
         // The document's questions first (the analysts asked them), then the model's that are not the same question
-        List<RequirementSpec.OpenQuestion> questions = new ArrayList<>(doc.questions().stream()
-                .filter(d -> spec.decisions().stream().noneMatch(x -> similar(x.question(), d.question()))).toList());
+        // The document's questions first (the analysts asked them), with the options and usual answer the model gave for
+        // the same question, then the model's other questions
+        List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
+        for (RequirementSpec.OpenQuestion d : doc.questions()) {
+            if (spec.decisions().stream().anyMatch(x -> sameQuestion(x.question(), d.question()))) {
+                continue;
+            }
+            RequirementSpec.OpenQuestion drafted = spec.openQuestions().stream().filter(q -> sameQuestion(d.question(), q.question()))
+                    .findFirst().orElse(null);
+            questions.add(drafted == null || !d.options().isEmpty() ? d : new RequirementSpec.OpenQuestion(d.question(),
+                    d.reason() != null ? d.reason() : drafted.reason(), d.reference(), drafted.options(),
+                    d.suggestedAnswer() != null ? d.suggestedAnswer() : drafted.suggestedAnswer(), d.answer()));
+        }
         for (RequirementSpec.OpenQuestion q : spec.openQuestions()) {
-            if (doc.questions().stream().noneMatch(d -> similar(d.question(), q.question()))) {
+            if (doc.questions().stream().noneMatch(d -> sameQuestion(d.question(), q.question()))) {
                 questions.add(q);
             }
         }
@@ -220,6 +235,44 @@ final class DocumentStructure {
         };
     }
 
+    /** "AC-001, AC-002", "TC-01; TC-02", "AC-003": a cell of IDs only. */
+    static boolean isIdList(String cell) {
+        return cell != null && cell.strip().matches("[A-Z]{1,5}-\\d{1,4}(\\s*[,;/]?\\s*(and\\s+)?[A-Z]{1,5}-\\d{1,4})*");
+    }
+
+    /**
+     * A table whose rows map an ID to lists of other IDs only (Requirement ID | Acceptance criteria): a traceability
+     * matrix, whatever its header says. Its rows are links, not requirements of their own.
+     */
+    private static boolean onlyIdLists(List<List<String>> rows) {
+        int linking = 0;
+        for (List<String> row : rows) {
+            List<String> rest = row.subList(1, row.size()).stream().filter(c -> !c.isBlank()).toList();
+            if (rest.isEmpty()) {
+                continue;
+            }
+            if (!rest.stream().allMatch(DocumentStructure::isIdList)) {
+                return false;
+            }
+            linking++;
+        }
+        return linking > 0;
+    }
+
+    /** Adds a requirement unless one with its ID is there already; then fills what the first one lacks. */
+    private static void addOnce(List<RequirementSpec.FunctionalRequirement> requirements, RequirementSpec.FunctionalRequirement r) {
+        for (int k = 0; k < requirements.size(); k++) {
+            RequirementSpec.FunctionalRequirement known = requirements.get(k);
+            if (key(known.id()).equals(key(r.id()))) {
+                requirements.set(k, new RequirementSpec.FunctionalRequirement(known.id(), known.title() != null ? known.title() : r.title(),
+                        known.description() != null ? known.description() : r.description(),
+                        known.priority() != null ? known.priority() : r.priority(), known.screens()));
+                return;
+            }
+        }
+        requirements.add(r);
+    }
+
     /** A traceability matrix: a table that links IDs to other IDs (its header names acceptance criteria or tests). */
     private static boolean isTraceability(List<String> header) {
         String h = String.join(" ", header).toLowerCase(Locale.ROOT);
@@ -229,7 +282,7 @@ final class DocumentStructure {
     private static String cell(List<String> header, List<String> row, String... names) {
         for (String name : names) {
             for (int c = 1; c < header.size() && c < row.size(); c++) {
-                if (header.get(c).toLowerCase(Locale.ROOT).contains(name) && !row.get(c).isBlank()) {
+                if (header.get(c).toLowerCase(Locale.ROOT).contains(name) && !row.get(c).isBlank() && !isIdList(row.get(c))) {
                     return row.get(c).strip();
                 }
             }
@@ -242,7 +295,7 @@ final class DocumentStructure {
         String named = null;
         for (String name : names) {
             for (int c = 1; c < header.size() && c < row.size(); c++) {
-                if (header.get(c).toLowerCase(Locale.ROOT).contains(name) && !row.get(c).isBlank()
+                if (header.get(c).toLowerCase(Locale.ROOT).contains(name) && !row.get(c).isBlank() && !isIdList(row.get(c))
                         && (named == null || row.get(c).length() > named.length())) {
                     named = row.get(c).strip();
                 }
@@ -253,7 +306,7 @@ final class DocumentStructure {
         }
         String longest = null;
         for (int c = 1; c < row.size(); c++) {
-            if (longest == null || row.get(c).length() > longest.length()) {
+            if (!isIdList(row.get(c)) && (longest == null || row.get(c).length() > longest.length())) {
                 longest = row.get(c).strip();
             }
         }
@@ -347,6 +400,48 @@ final class DocumentStructure {
         Set<String> large = small == x ? y : x;
         long shared = small.stream().filter(large::contains).count();
         return shared * 10 >= small.size() * 7L;
+    }
+
+    /** Words a question asks with, which say nothing about what it asks. */
+    private static final Set<String> QUESTION_WORDS = Set.of("should", "would", "could", "which", "where", "what", "when", "will",
+            "does", "there", "shown", "displa", "this", "that", "with", "from", "have", "need", "needs", "screen", "custom", "user");
+    /** Words that ask about the same thing: where something is placed. */
+    private static final Set<String> PLACEMENT = Set.of("positi", "placed", "placem", "place", "locati", "locate", "above", "below",
+            "before", "after", "top", "bottom");
+
+    /**
+     * The same question in other words: {@link #similar}, or, conservatively, all the words that carry the meaning of the
+     * shorter one in the other, at least three or half of the longer one's, placement words counted as one ("above or
+     * below the account summary" and "Where should the widget be positioned").
+     */
+    static boolean sameQuestion(String a, String b) {
+        if (similar(a, b)) {
+            return true;
+        }
+        Set<String> x = meaning(a);
+        Set<String> y = meaning(b);
+        Set<String> small = x.size() <= y.size() ? x : y;
+        Set<String> large = small == x ? y : x;
+        long shared = small.stream().filter(large::contains).count();
+        // Every meaningful word of the shorter one, and either three of them or half of the longer one's
+        return shared == small.size() && (shared >= 3 || (shared >= 2 && shared * 2 >= large.size()));
+    }
+
+    private static Set<String> meaning(String s) {
+        Set<String> words = new LinkedHashSet<>();
+        for (String w : words(s)) {
+            if (PLACEMENT.contains(w)) {
+                words.add("place");
+            } else if (!QUESTION_WORDS.contains(w)) {
+                words.add(w);
+            }
+        }
+        for (String w : (s == null ? "" : s).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (PLACEMENT.contains(w)) {
+                words.add("place");
+            }
+        }
+        return words;
     }
 
     private static Set<String> words(String s) {

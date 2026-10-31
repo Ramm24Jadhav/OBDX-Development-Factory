@@ -95,6 +95,14 @@ public class ChangeController {
         return change;
     }
 
+    /** Writes the planned files not written yet (after generation stopped at the model's limit). */
+    @PostMapping("/api/changes/{id}/continue")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ChangeService.ChangeDetail continueGeneration(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.MANAGE_CODE);
+        return service.continueGeneration(id);
+    }
+
     @PostMapping("/api/changes/{id}/regenerate")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail regenerate(@PathVariable UUID id, @RequestBody RegenerateRequest request) {
@@ -111,9 +119,9 @@ public class ChangeController {
     }
 
     @GetMapping("/api/changes/{id}/patch")
-    public ResponseEntity<String> patch(@PathVariable UUID id) {
+    public ResponseEntity<String> patch(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
         guard.requireForChange(id, Permission.VIEW);
-        String patch = service.patch(id);
+        String patch = service.patch(id, incomplete);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/x-diff;charset=UTF-8"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"change-" + id.toString().substring(0, 8) + ".patch\"")
@@ -121,9 +129,9 @@ public class ChangeController {
     }
 
     @PostMapping("/api/changes/{id}/deliver")
-    public ChangeService.ChangeDetail deliver(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = service.deliverToBranch(id);
+        ChangeService.ChangeDetail change = service.deliverToBranch(id, incomplete);
         audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision());
         return change;
     }

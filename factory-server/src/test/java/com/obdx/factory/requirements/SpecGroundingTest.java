@@ -26,6 +26,45 @@ class SpecGroundingTest {
     }
 
     @Test
+    void anApiTheDocumentNamesByMethodAndPathIsKept() {
+        String document = """
+                FR-008: The bank exposes POST, GET, GET /{instructionId} and DELETE on /payments/standingInstructions.
+                """;
+        RequirementSpec spec = SpecParser.parse("""
+                {"apis": [{"name": "POST /payments/standingInstructions", "method": "POST"},
+                  {"name": "GET /payments/standingInstructions", "method": "GET"},
+                  {"name": "GET /payments/standingInstructions/{instructionId}", "method": "GET"},
+                  {"name": "DELETE /payments/standingInstructions/{instructionId}", "method": "DELETE"},
+                  {"name": "PUT /payments/standingInstructions/{instructionId}", "method": "PUT"},
+                  {"name": "GET /payments/transfers", "method": "GET"}]}
+                """, "x");
+
+        assertThat(SpecGrounding.apply(spec, document).apis()).extracting(RequirementSpec.Api::name).containsExactly(
+                "POST /payments/standingInstructions", "GET /payments/standingInstructions",
+                "GET /payments/standingInstructions/{instructionId}", "DELETE /payments/standingInstructions/{instructionId}");
+    }
+
+    @Test
+    void wordsJoinedWithASlashAreNotAPath() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"apis": [{"name": "Date service", "method": "GET", "description": "Returns the date as dd/mm/yyyy and/or a holiday flag"}]}
+                """, "x");
+
+        assertThat(SpecGrounding.pathNamed(spec.apis().getFirst(), " get or mm yyyy date holiday flag ")).isFalse();
+    }
+
+    @Test
+    void aScreenARequirementOnlyPassesThroughIsNotAddedAsANewDesign() {
+        String document = "The customer initiates a transfer, then goes on to Review Transfer as today.";
+        RequirementSpec spec = SpecParser.parse("""
+                {"screens": [{"name": "Initiate Transfer", "changeType": "enhance", "fields": [{"name": "purpose"}]}],
+                 "requirements": [{"id": "FR-001", "description": "Add a purpose field", "screens": ["Initiate Transfer", "Review Transfer"]}]}
+                """, "x");
+
+        assertThat(SpecGrounding.apply(spec, document).screens()).extracting(RequirementSpec.Screen::name).containsExactly("Initiate Transfer");
+    }
+
+    @Test
     void sameWordsAreOneScreenAndARequiredScreenTheDocumentNamesIsAdded() {
         RequirementSpec spec = SpecParser.parse("""
                 {"screens": [{"name": "Review Transfer", "fields": [{"name": "amount"}]},

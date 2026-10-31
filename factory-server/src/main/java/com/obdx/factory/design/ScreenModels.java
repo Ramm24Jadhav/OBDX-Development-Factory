@@ -24,13 +24,23 @@ import java.util.regex.Pattern;
  */
 public final class ScreenModels {
 
-    private static final Pattern MAX_LENGTH = Pattern.compile("(?i)max(?:imum)?\\s*(?:length|len|chars?|characters)?\\s*(?:of|is|:|=)?\\s*(\\d{1,5})");
+    /**
+     * A length limit: "max length 35", "maximum length: 35", "max 35 characters", "up to 35 chars", "35 characters
+     * max", "length 35". Not any "max N": "Max 5 chips" and "Max 2 decimals" are not lengths.
+     */
+    private static final Pattern MAX_LENGTH = Pattern.compile("(?i)\\bmax(?:imum)?\\.?\\s*(?:length|len)\\s*(?:of|is|:|=)?\\s*(\\d{1,5})"
+            + "|\\b(?:max(?:imum)?\\.?|up to|at most|no more than)\\s*(?:of\\s*)?(\\d{1,5})\\s*(?:characters|chars?|digits|letters)\\b"
+            + "|\\b(\\d{1,5})\\s*(?:characters|chars?|digits|letters)\\s*(?:max(?:imum)?|or (?:less|fewer))\\b"
+            + "|(?<!\\bmin\\.?\\s{0,2})(?<!\\bminimum\\s{0,2})\\blength\\s*(?:of|is|:|=|<=)?\\s*(\\d{1,5})\\b");
+    /** "One of: Daily, Weekly, Monthly", "Values: A / B", "Options - Now, Later" */
+    private static final Pattern OPTIONS = Pattern.compile("(?i)\\b(?:one of\\s*:?|(?:values?|options?|allowed values?|choices?)\\s*[:\\-])\\s*(.+)");
     private static final Set<String> CHANGE_TYPES = Set.of("new", "enhance", "unknown");
     private static final Set<String> ACTION_KINDS = Set.of("primary", "secondary", "link");
     private static final int MAX_CODE = 20_000;
     public static final Set<String> STAGES = Set.of("initiate", "review", "confirm", "inquiry");
     public static final Set<String> CHANNELS = Set.of("desktop", "tablet", "mobile-web", "mobile-app");
     private static final Set<String> OPERATORS = Set.of("filled", "empty", "equals", "notEquals");
+    private static final Pattern NEGATIVE = Pattern.compile("\\b(no|not|never|unchanged|out of scope|excluded?|without|nor|none)\\b|n't\\b");
 
     private static final JsonMapper LENIENT = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS, JsonReadFeature.ALLOW_TRAILING_COMMA,
@@ -52,28 +62,61 @@ public final class ScreenModels {
      * @param channels the channels the requirement names (empty: all)
      */
     public static ScreenModel fromSpec(RequirementSpec.Screen screen, List<String> channels) {
+        return fromSpec(screen, channels, List.of());
+    }
+
+    /**
+     * @param rules the spec's business rules, for the values a choice field offers ("Frequency can be Daily, Weekly or
+     *              Monthly")
+     */
+    public static ScreenModel fromSpec(RequirementSpec.Screen screen, List<String> channels, List<RequirementSpec.BusinessRule> rules) {
+        String stage = guessStage(screen.name());
+        // A review or confirmation step shows what was captured; it takes no input
+        if (("review".equals(stage) || "confirm".equals(stage)) && screen.fields().stream().anyMatch(ScreenModels::isEntered)) {
+            // A step where the customer enters a secret (an OTP, a PIN) takes input, whatever its name says
+            stage = "initiate";
+        }
+        boolean shows = "review".equals(stage) || "confirm".equals(stage);
         List<ScreenModel.Component> components = new ArrayList<>();
-        for (RequirementSpec.Field field : screen.fields()) {
-            Integer maxLength = null;
-            for (String validation : field.validations()) {
-                Matcher matcher = MAX_LENGTH.matcher(validation);
-                if (matcher.find()) {
-                    maxLength = Integer.parseInt(matcher.group(1));
+        if ("inquiry".equals(stage) && isList(screen.name()) && !screen.fields().isEmpty()) {
+            // A list or history shows its fields as the columns of a table, not as inputs
+            components.add(new ScreenModel.Component(null, "table", camel(screen.name()), screen.name(), null, null, null, null, null,
+                    screen.fields().stream().map(f -> f.label() != null ? f.label() : humanize(f.name())).toList(), List.of(), true));
+        } else {
+            boolean details = "inquiry".equals(stage);
+            for (RequirementSpec.Field field : screen.fields()) {
+                Integer maxLength = null;
+                for (String validation : field.validations()) {
+                    maxLength = maxLengthIn(validation, maxLength);
                 }
+                boolean readOnly = shows || details;
+                String type = readOnly ? "display" : ComponentCatalog.normalize(field.type());
+                String label = field.label() != null ? field.label() : humanize(field.name());
+                List<String> options = List.of();
+                if (ComponentCatalog.find(type).orElseThrow().hasOptions()) {
+                    options = options(field, type);
+                    List<String> fromRules = optionsInRules(label, field.name(), rules);
+                    if (options.equals(defaultOptions(type)) && fromRules.size() >= 2) {
+                        options = fromRules;
+                    }
+                }
+                components.add(new ScreenModel.Component(null, type, field.name(), label,
+                        readOnly ? null : field.mandatory(), field.notes(), null, readOnly ? null : maxLength, field.defaultValue(),
+                        options, readOnly ? List.of() : field.validations(), "display".equals(type) ? true : null));
             }
-            String type = ComponentCatalog.normalize(field.type());
-            components.add(new ScreenModel.Component(null, type, field.name(),
-                    field.label() != null ? field.label() : humanize(field.name()),
-                    field.mandatory(), field.notes(), null, maxLength, field.defaultValue(),
-                    ComponentCatalog.find(type).orElseThrow().hasOptions() ? defaultOptions(type) : List.of(),
-                    field.validations(), "display".equals(type) ? true : null));
+            components = withShownWhen(components, screen.fields());
         }
         List<ScreenModel.ActionButton> actions = new ArrayList<>();
         for (RequirementSpec.Action action : screen.actions()) {
             actions.add(new ScreenModel.ActionButton(null, action.name(), actions.isEmpty() ? "primary" : "secondary"));
         }
-        String stage = guessStage(screen.name());
-        if (actions.isEmpty() && "inquiry".equals(stage)) {
+        if (actions.isEmpty() && "review".equals(stage)) {
+            actions.addAll(List.of(new ScreenModel.ActionButton(null, "Confirm", "primary"), new ScreenModel.ActionButton(null, "Back", "secondary"),
+                    new ScreenModel.ActionButton(null, "Cancel", "link")));
+        } else if (actions.isEmpty() && "confirm".equals(stage)) {
+            actions.addAll(List.of(new ScreenModel.ActionButton(null, "Go to dashboard", "primary"),
+                    new ScreenModel.ActionButton(null, "Start another", "secondary")));
+        } else if (actions.isEmpty() && "inquiry".equals(stage)) {
             // A list, history or details screen shows; it has nothing to submit
             actions.add(new ScreenModel.ActionButton(null, "Back", "primary"));
         } else if (actions.isEmpty()) {
@@ -82,6 +125,149 @@ public final class ScreenModels {
         }
         return normalize(new ScreenModel(screen.name(), screen.name(), screen.description(), screen.changeType(),
                 List.of(new ScreenModel.Section(null, "Details", 2, components)), actions, stage, channels));
+    }
+
+    /** What a customer enters to authorise: an OTP, a PIN, a password, a token or security code. */
+    private static final Pattern SECRET = Pattern.compile("\\b(otp|pin|password|passcode|passwords|token|cvv|2fa|mpin|tpin)\\b"
+            + "|one[- ]time|verification code|security code|authentication code");
+
+    /** A field the customer enters on a step named like a review ("Verify OTP"): a secret, or a password input. */
+    static boolean isEntered(RequirementSpec.Field field) {
+        String label = (field.label() != null ? field.label() : humanize(field.name())).toLowerCase(Locale.ROOT);
+        return "password".equalsIgnoreCase(field.type()) || SECRET.matcher(label).find();
+    }
+
+    /** A screen that lists records (a list, history, statement, search results): its fields are table columns. */
+    static boolean isList(String name) {
+        return (name == null ? "" : name.toLowerCase(Locale.ROOT)).matches(".*\\b(list|lists|history|book|statement|holdings?|search|results|transactions)\\b.*");
+    }
+
+    /** "shown when Later is selected", "visible only if Monthly is chosen": a value alone, the field is the one offering it */
+    private static final Pattern SHOWN_WHEN_SELECTED = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?"
+            + "(?:when|if)\\s+(?:the\\s+)?[\"']?([\\w -]+?)[\"']?\\s+(?:is|are)\\s+(?:selected|chosen|picked|ticked|checked)\\b");
+    /** "shown when Later", "visible only if Execution is Later", "displayed when Frequency = Monthly" */
+    private static final Pattern SHOWN_WHEN = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?(?:when|if)\\s+"
+            + "(?:the\\s+)?(?:(.+?)\\s*(?:=|==|\\bis\\b|\\bequals\\b)\\s*)?[\"']?([\\w -]+?)[\"']?(?:\\s+is\\s+(?:selected|chosen|picked))?\\s*(?:[.;,)]|$)");
+
+    /**
+     * Fields whose notes or validations say when they are shown ("shown when Later") get a visibleWhen condition on the
+     * field that offers that value (or the field named), checked when the model is normalized.
+     */
+    private static List<ScreenModel.Component> withShownWhen(List<ScreenModel.Component> components, List<RequirementSpec.Field> fields) {
+        List<ScreenModel.Component> result = new ArrayList<>();
+        for (int i = 0; i < components.size(); i++) {
+            ScreenModel.Component c = components.get(i);
+            RequirementSpec.Field field = fields.get(i);
+            List<String> texts = new ArrayList<>(field.validations());
+            texts.add(field.notes());
+            ScreenModel.Condition condition = null;
+            for (String text : texts) {
+                if (text == null) {
+                    continue;
+                }
+                // "Later is selected" first: read as "FIELD is VALUE" it would name a field "Later"
+                Matcher selected = SHOWN_WHEN_SELECTED.matcher(text);
+                Matcher m = SHOWN_WHEN.matcher(text);
+                String value;
+                String named;
+                if (selected.find()) {
+                    value = selected.group(1).strip();
+                    named = null;
+                } else if (m.find()) {
+                    value = m.group(2).strip();
+                    named = m.group(1) == null ? null : m.group(1).strip();
+                } else {
+                    continue;
+                }
+                ScreenModel.Component on = components.stream().filter(o -> o != c && (named != null
+                                ? o.name().equalsIgnoreCase(named) || o.label().equalsIgnoreCase(named)
+                                : o.options().stream().anyMatch(v -> v.equalsIgnoreCase(value))))
+                        .findFirst().orElse(null);
+                if (on != null) {
+                    String option = on.options().stream().filter(v -> v.equalsIgnoreCase(value)).findFirst().orElse(value);
+                    condition = new ScreenModel.Condition(on.name(), "equals", option);
+                    break;
+                }
+            }
+            result.add(condition == null ? c : new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(), c.required(), c.helpText(),
+                    c.placeholder(), c.maxLength(), c.defaultValue(), c.options(), c.validations(), c.readonly(), c.component(), c.params(),
+                    c.html(), c.css(), c.script(), c.dataSource(), condition, c.requiredWhen()));
+        }
+        return result;
+    }
+
+    /** The values a business rule gives a field: "Frequency can be Daily, Weekly or Monthly". */
+    static List<String> optionsInRules(String label, String name, List<RequirementSpec.BusinessRule> rules) {
+        for (RequirementSpec.BusinessRule rule : rules == null ? List.<RequirementSpec.BusinessRule>of() : rules) {
+            String text = rule.description() == null ? "" : rule.description();
+            for (String term : new String[] {label, humanize(name)}) {
+                if (term == null || term.isBlank()) {
+                    continue;
+                }
+                Matcher m = Pattern.compile("(?i)\\b" + Pattern.quote(term) + "\\b\\s*(?:values?\\s*)?(?:is|are|can be|must be|may be|options are)?\\s*"
+                        + "(?:one of|either)?\\s*[:\\-]?\\s*(.+)").matcher(text);
+                if (m.find()) {
+                    List<String> values = valuesIn("one of: " + m.group(1));
+                    // Values are named like "Daily"; a sentence that goes on ("before the start date") is not a list
+                    if (values.size() >= 2 && values.stream().allMatch(v -> Character.isUpperCase(v.charAt(0)) || Character.isDigit(v.charAt(0)))) {
+                        return values;
+                    }
+                }
+            }
+        }
+        return List.of();
+    }
+
+    /** The length limit a validation states, else the one found before. */
+    static Integer maxLengthIn(String validation, Integer before) {
+        if (validation == null) {
+            return before;
+        }
+        Matcher matcher = MAX_LENGTH.matcher(validation);
+        if (matcher.find()) {
+            for (int g = 1; g <= matcher.groupCount(); g++) {
+                if (matcher.group(g) != null) {
+                    return Integer.parseInt(matcher.group(g));
+                }
+            }
+        }
+        return before;
+    }
+
+    /**
+     * The options of a choice field: the values its validations, source or notes name ("One of: Daily, Weekly,
+     * Monthly"), else the catalog's placeholders.
+     */
+    static List<String> options(RequirementSpec.Field field, String type) {
+        List<String> texts = new ArrayList<>(field.validations());
+        texts.add(field.source());
+        texts.add(field.notes());
+        for (String text : texts) {
+            List<String> values = valuesIn(text);
+            if (values.size() >= 2) {
+                return values;
+            }
+        }
+        return defaultOptions(type);
+    }
+
+    /** "One of: Daily, Weekly or Monthly." -> Daily, Weekly, Monthly; empty when the text names no values. */
+    static List<String> valuesIn(String text) {
+        if (text == null) {
+            return List.of();
+        }
+        Matcher m = OPTIONS.matcher(text);
+        if (!m.find()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (String part : m.group(1).replaceAll("[.;)]+\\s*$", "").split("\\s*(?:,|/|\\||\\bor\\b|\\band\\b)\\s*")) {
+            String value = part.strip().replaceAll("^[\"'(]+|[\"')]+$", "");
+            if (!value.isEmpty() && value.length() <= 40 && value.split("\\s+").length <= 4) {
+                values.add(value);
+            }
+        }
+        return values;
     }
 
     /**
@@ -266,6 +452,10 @@ public final class ScreenModels {
     /** The stage a screen of a requirement most likely has, from its name. */
     static String guessStage(String name) {
         String lower = name == null ? "" : name.toLowerCase(Locale.ROOT);
+        if (SECRET.matcher(lower).find()) {
+            // "Verify OTP", "Confirm PIN": the customer enters something; not a review or confirmation step
+            return "initiate";
+        }
         if (lower.matches(".*\\b(review|verify|preview)\\b.*")) {
             return "review";
         }
@@ -283,9 +473,17 @@ public final class ScreenModels {
      * or several in a way that cannot be told apart, which means all channels.
      */
     public static List<String> channelsIn(String text) {
-        String lower = text == null ? "" : text.toLowerCase(Locale.ROOT);
+        // A sentence or clause that excludes a channel ("the desktop must see no change", "the tablet app is unchanged",
+        // "only in the app, not on the web", "out of scope") does not name it as one
+        StringBuilder kept = new StringBuilder();
+        for (String sentence : (text == null ? "" : text).toLowerCase(Locale.ROOT).split("[.!?;,\\n]|\\bbut\\b|\\bwhile\\b")) {
+            if (!NEGATIVE.matcher(sentence).find()) {
+                kept.append(sentence).append('\n');
+            }
+        }
+        String lower = kept.toString();
         List<String> found = new ArrayList<>();
-        if (lower.matches("(?s).*((?<!mobile )\\b(web|browser)\\b|\\b(desktop|internet banking)\\b).*")) {
+        if (lower.matches("(?s).*((?<!mobile )\\b(web|browser)\\b|\\b(desktop|internet|online banking|net banking)\\b).*")) {
             found.add("desktop");
         }
         if (lower.matches("(?s).*\\b(tablet|ipad)s?\\b.*")) {

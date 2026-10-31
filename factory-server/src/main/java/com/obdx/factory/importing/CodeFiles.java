@@ -1,5 +1,6 @@
 package com.obdx.factory.importing;
 
+import com.obdx.factory.common.RequestText;
 import com.obdx.factory.common.NotFoundException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -44,6 +45,7 @@ public class CodeFiles {
 
     /** The indexed files whose path contains text (all when it is empty), sorted by path. */
     public List<FileEntry> list(UUID workspaceId, String text, int limit) {
+        RequestText.requirePath(text);
         String like = "%" + text.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         return jdbc.query("SELECT path, language, size_bytes, revision FROM code_file "
                         + "WHERE workspace_id = ? AND lower(path) LIKE ? ORDER BY path LIMIT ?",
@@ -52,6 +54,7 @@ public class CodeFiles {
 
     /** One indexed file's content from the working copy, cut at MAX_BYTES. */
     public FileContent content(UUID workspaceId, String path) throws IOException {
+        RequestText.requirePath(path);
         List<FileEntry> found = jdbc.query("SELECT path, language, size_bytes, revision FROM code_file WHERE workspace_id = ? AND path = ?",
                 ENTRY, workspaceId, path);
         if (found.isEmpty()) {

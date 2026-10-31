@@ -177,13 +177,34 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.savePlan = () => api.put(base() + '/plan', this.planJson())
         .then((detail) => { this.editingPlan(false); show(detail); toast.success('Plan saved.'); })
         .catch(failed);
-      this.deliver = () => ask('Submit for review?', 'The reviewed code is committed to a new SVN branch. Trunk is not changed.', 'Submit for Review').then((ok) => {
+      // Planned files the model has not written (not yet, or it could not): delivering leaves them out
+      this.unwritten = ko.pureComputed(() => (this.detail() ? this.detail().files : [])
+        .filter((f) => f.status === 'PENDING' || f.status === 'FAILED').map((f) => f.path));
+      const incompleteNote = () => this.unwritten().length + ' planned file(s) are not written and would be left out: '
+        + this.unwritten().slice(0, 5).join(', ') + (this.unwritten().length > 5 ? ' …' : '') + '.';
+      this.deliver = () => (this.unwritten().length
+        ? ask('Submit an incomplete change?', incompleteNote() + ' The branch may not build. Write them first with Continue generation or Write again.', 'Submit Without Them', true)
+        : ask('Submit for review?', 'The reviewed code is committed to a new SVN branch. Trunk is not changed.', 'Submit for Review')).then((ok) => {
         if (!ok) {
           return;
         }
         this.busy(true);
-        busyService.block(api.post(base() + '/deliver'), 'Committing the change to a new SVN branch…').then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
+        busyService.block(api.post(base() + '/deliver' + (this.unwritten().length ? '?incomplete=true' : '')), 'Committing the change to a new SVN branch…')
+          .then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
       });
+      this.continueGeneration = () => api.post(base() + '/continue').then(done('The model is writing the files not written yet.')).catch(failed);
+      // The patch link: an incomplete change is confirmed first
+      this.downloadPatch = (event) => {
+        if (!this.unwritten().length) {
+          return;
+        }
+        event.preventDefault();
+        ask('Download an incomplete patch?', incompleteNote(), 'Download Without Them', true).then((ok) => {
+          if (ok) {
+            window.location.href = this.patchUrl();
+          }
+        });
+      };
       this.build = () => api.post(base() + '/build').then(done('Jenkins build started.')).catch(failed);
       this.checkAgain = () => api.post(base() + '/check').then(done('Quick checks run again.')).catch(failed);
       const close = (reason, force) => api.post(base() + '/close', { reason: reason, force: force })
@@ -718,7 +739,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return items.sort((a, b) => new Date(a.at) - new Date(b.at)).map((i) => Object.assign(i, { when: ui.when(i.at) }));
       });
-      this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' : '#'));
+      this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' + (this.unwritten().length ? '?incomplete=true' : '') : '#'));
       this.openImpact = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'impact' }));
       this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
       this.moreItems = ko.pureComputed(() => [

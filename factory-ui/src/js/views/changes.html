@@ -15,6 +15,10 @@
             <span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Save Draft</button></span>
         <button type="button" id="validateButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!hasCode() || !canManage()]]">
           <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Validate</button>
+        <oj-bind-if test="[[detail().status === 'GENERATED' && unwritten().length > 0 && canManage()]]">
+          <button type="button" id="continueButton" class="fx-btn fx-btn--secondary" on-click="[[continueGeneration]]">
+            <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Continue generation</button>
+        </oj-bind-if>
         <!-- Approving, delivering and closing stay apart from writing and checking the code -->
         <span class="fx-approval factory-ch-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
           <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
@@ -224,7 +228,7 @@
               <oj-bind-if test="[[detail().status === 'PLAN_READY' && canManage()]]">
                 <button type="button" id="editPlanButton" class="fx-btn fx-btn--secondary" on-click="[[togglePlanJson]]">Edit the plan</button>
               </oj-bind-if>
-              <a class="fx-btn fx-btn--tertiary" :href="[[patchUrl]]" id="patchLink">Download patch</a>
+              <a class="fx-btn fx-btn--tertiary" :href="[[patchUrl]]" on-click="[[downloadPatch]]" id="patchLink">Download patch</a>
               <oj-bind-if test="[[detail().status === 'PLAN_READY' && canApprove()]]">
                 <span class="fx-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
                   <button type="button" id="approvePlanButton" class="fx-btn fx-btn--primary" on-click="[[approvePlan]]">Approve the plan and write the code</button></span>
@@ -405,7 +409,7 @@
           </ul>
           <oj-bind-if test="[[proposed().length === 0]]"><p class="fx-muted factory-ch-none">No generated files yet.</p></oj-bind-if>
           <div class="factory-ch-applyrow">
-            <a :class="[[proposed().length ? 'fx-btn fx-btn--primary factory-ch-apply' : 'fx-btn fx-btn--primary factory-ch-apply factory-ch-apply-off']]" id="applyChangesLink" :href="[[patchUrl]]"
+            <a :class="[[proposed().length ? 'fx-btn fx-btn--primary factory-ch-apply' : 'fx-btn fx-btn--primary factory-ch-apply factory-ch-apply-off']]" id="applyChangesLink" :href="[[patchUrl]]" on-click="[[downloadPatch]]"
                :aria-disabled="[[proposed().length ? null : 'true']]" data-fx-tip="Download the patch and apply it to your working copy. Submit for Review commits it to a new SVN branch instead.">Apply Changes</a>
             <button type="button" class="fx-btn fx-btn--secondary factory-ch-viewdiff" id="viewDiffButton" on-click="[[viewDiff]]" :disabled="[[proposed().length === 0]]">View Diff</button>
           </div>

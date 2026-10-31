@@ -80,7 +80,9 @@ public final class PlanParser {
             throw new BadRequestException("The plan has " + items.size() + " files; at most " + maxItems + " are allowed in one change");
         }
         List<ChangePlan.Item> ordered = new ArrayList<>(items.values());
-        ordered.sort((a, b) -> Integer.compare(LAYER_ORDER.indexOf(a.layer()), LAYER_ORDER.indexOf(b.layer())));
+        // By layer, and within a layer what others use first: DTOs and models, then services, then REST resources
+        ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> LAYER_ORDER.indexOf(i.layer()))
+                .thenComparingInt(i -> dependencyRank(i.path())));
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream().filter(r -> r != null && !r.isBlank()).toList());
         List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
         risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
@@ -120,6 +122,35 @@ public final class PlanParser {
             return null;
         }
         return clean;
+    }
+
+    /**
+     * Where a file stands among those it depends on: data types (DTOs, models, entities, requests, responses) 0, data
+     * access and adapters 1, services and other classes 2, REST resources and controllers 3; in a UI, resource bundles
+     * 0, models 1, view models 2, views 3. Files the model writes later see the earlier ones' names.
+     */
+    static int dependencyRank(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        String name = lower.substring(lower.lastIndexOf('/') + 1);
+        if (lower.endsWith(".java")) {
+            if (name.matches(".*(dto|model|entity|request|response|vo|enum|constants)\\.java") || lower.contains("/dto/") || lower.contains("/model/")) {
+                return 0;
+            }
+            if (name.matches(".*(dao|repository|assembler|adapter|mapper)\\.java")) {
+                return 1;
+            }
+            if (name.matches(".*(resource|controller|endpoint|restservice)\\.java") || lower.contains("/rest/")) {
+                return 3;
+            }
+            return 2;
+        }
+        if (lower.contains("/nls/") || lower.contains("/resources/")) {
+            return 0;
+        }
+        if (name.equals("model.js")) {
+            return 1;
+        }
+        return lower.endsWith(".html") ? 3 : 2;
     }
 
     static String guessLayer(String path) {

@@ -199,7 +199,7 @@ public class ChangeBuildService {
                     ? current.getBranchUrl() : branchPath(current).path());
         } else {
             file = new JenkinsClient.FileParameter(settings.patchParameter(), "change-" + change.getId().toString().substring(0, 8) + ".patch",
-                    changes.patch(change.getId()).getBytes(StandardCharsets.UTF_8));
+                    changes.patch(change.getId(), true).getBytes(StandardCharsets.UTF_8));
         }
         String queue = client.trigger(job, parameters, file);
         JenkinsClient.BuildRef build = client.waitForStart(queue);
