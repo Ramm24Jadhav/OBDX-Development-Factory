@@ -237,8 +237,24 @@ final class DocumentStructure {
 
     /** "AC-001, AC-002", "TC-01; TC-02", "AC-003": a cell of IDs only. */
     static boolean isIdList(String cell) {
-        return cell != null && cell.strip().matches("[A-Z]{1,5}-\\d{1,4}(\\s*[,;/]?\\s*(and\\s+)?[A-Z]{1,5}-\\d{1,4})*");
+        if (cell == null || cell.isBlank()) {
+            return false;
+        }
+        // Token by token: a repeated group in one regular expression overflows the stack on a cell of a thousand IDs
+        int ids = 0;
+        for (String token : cell.strip().split("[\\s,;/]+")) {
+            if (token.isEmpty() || token.equals("and")) {
+                continue;
+            }
+            if (!ONE_ID.matcher(token).matches()) {
+                return false;
+            }
+            ids++;
+        }
+        return ids > 0;
     }
+
+    private static final Pattern ONE_ID = Pattern.compile("[A-Z]{1,5}-\\d{1,4}");
 
     /**
      * A table whose rows map an ID to lists of other IDs only (Requirement ID | Acceptance criteria): a traceability

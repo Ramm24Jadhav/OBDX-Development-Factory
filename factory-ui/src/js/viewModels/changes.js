@@ -193,17 +193,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
       });
       this.continueGeneration = () => api.post(base() + '/continue').then(done('The model is writing the files not written yet.')).catch(failed);
-      // The patch link: an incomplete change is confirmed first
+      // The patch link: an incomplete change is confirmed first, and only the confirmed download asks for it
+      // (the link itself never carries the flag, so opening it in a new tab is refused, not downloaded)
+      const confirmPatch = () => ask('Download an incomplete patch?', incompleteNote(), 'Download Without Them', true).then((ok) => {
+        if (ok) {
+          window.location.href = this.patchUrl() + '?incomplete=true';
+        }
+      });
       this.downloadPatch = (event) => {
         if (!this.unwritten().length) {
           return;
         }
         event.preventDefault();
-        ask('Download an incomplete patch?', incompleteNote(), 'Download Without Them', true).then((ok) => {
-          if (ok) {
-            window.location.href = this.patchUrl();
-          }
-        });
+        confirmPatch();
       };
       this.build = () => api.post(base() + '/build').then(done('Jenkins build started.')).catch(failed);
       this.checkAgain = () => api.post(base() + '/check').then(done('Quick checks run again.')).catch(failed);
@@ -739,7 +741,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return items.sort((a, b) => new Date(a.at) - new Date(b.at)).map((i) => Object.assign(i, { when: ui.when(i.at) }));
       });
-      this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' + (this.unwritten().length ? '?incomplete=true' : '') : '#'));
+      this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' : '#'));
       this.openImpact = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'impact' }));
       this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
       this.moreItems = ko.pureComputed(() => [
@@ -754,7 +756,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.moreAction = (event) => {
         const action = event.detail.value;
         if (action === 'patch') {
-          window.location.href = this.patchUrl();
+          if (this.unwritten().length) {
+            confirmPatch();
+          } else {
+            window.location.href = this.patchUrl();
+          }
           return;
         }
         if (action === 'newchange') {

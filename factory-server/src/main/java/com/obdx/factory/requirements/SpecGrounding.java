@@ -74,7 +74,8 @@ final class SpecGrounding {
      */
     static boolean pathNamed(RequirementSpec.Api api, String known) {
         String text = (api.name() == null ? "" : api.name()) + " " + (api.description() == null ? "" : api.description());
-        java.util.regex.Matcher path = PATH.matcher(text);
+        // An API name is short; a long text is cut so that the repeated path group cannot overflow the stack
+        java.util.regex.Matcher path = PATH.matcher(text.length() > 300 ? text.substring(0, 300) : text);
         if (!path.find()) {
             return false;
         }

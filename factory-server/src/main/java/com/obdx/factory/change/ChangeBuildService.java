@@ -198,6 +198,11 @@ public class ChangeBuildService {
             parameters.put(settings.branchParameter(), settings.branchValue() == JenkinsSettings.BranchValue.URL
                     ? current.getBranchUrl() : branchPath(current).path());
         } else {
+            // A build checks what is there, so the patch goes even without the files not written yet; the log says so
+            List<String> missing = ChangeService.unwritten(files.files(change.getId()));
+            if (!missing.isEmpty()) {
+                log.warn("Building change {} without {} planned file(s) not written yet: {}", change.getId(), missing.size(), missing);
+            }
             file = new JenkinsClient.FileParameter(settings.patchParameter(), "change-" + change.getId().toString().substring(0, 8) + ".patch",
                     changes.patch(change.getId(), true).getBytes(StandardCharsets.UTF_8));
         }

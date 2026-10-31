@@ -48,8 +48,8 @@ class ModelReasoningTest {
 
     @Test
     void urlsAndCommentMarksInStringsAreNotComments() {
-        String js = "define([], function () {\n  const url = 'https://bank.example/help // the prompt asks';\n  return url;\n});\n";
-        // the string has a model phrase too, but "the prompt asks" is only looked for in comments
+        String js = "define([], function () {\n  const url = 'https://bank.example/help // let us assume';\n  return url;\n});\n";
+        // "let us assume" in a string is not a comment
         assertThat(ModelReasoning.findings("vm.js", null, js)).isEmpty();
         assertThat(ModelReasoning.findings("vm.js", null, "const a = 1; // see http://x.example, let's assume it works\n"))
                 .singleElement().satisfies(f -> assertThat(f.line()).isEqualTo(1));

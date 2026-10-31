@@ -43,7 +43,7 @@ public final class FileChecks {
             Pattern.CASE_INSENSITIVE);
 
     /** Markup after return, => or ( (return <footer>, () => (<View>), a closing tag, or an import of React */
-    private static final Pattern JSX = Pattern.compile("(?:\\breturn|=>|\\()\\s*\\(?\\s*<[A-Za-z][\\w.-]*[\\s>/]|</[A-Za-z][\\w.-]*>"
+    private static final Pattern JSX = Pattern.compile("(?:\\breturn|=>|\\()\\s*+(?:\\(\\s*+)?<[A-Za-z][\\w.-]*+[\\s>/]|</[A-Za-z][\\w.-]*+>"
             + "|\\bfrom\\s+['\"]react['\"]");
 
     private FileChecks() {

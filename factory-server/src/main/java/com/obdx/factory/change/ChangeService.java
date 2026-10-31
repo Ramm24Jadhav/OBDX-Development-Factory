@@ -2,6 +2,7 @@ package com.obdx.factory.change;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.common.RequestText;
 import com.obdx.factory.design.DesignStore;
@@ -196,9 +197,10 @@ public class ChangeService {
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
             change.status(ChangeRequest.Status.PLAN_READY, "Plan ready: " + plan.items().size() + " file(s), " + creates
                     + " new and " + (plan.items().size() - creates) + " changed. Review and approve it to generate the code.");
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the change must not stay "analyzing"
             log.error("Impact analysis of change {} failed", id, e);
-            change.status(ChangeRequest.Status.FAILED, "Impact analysis failed: " + e.getMessage());
+            change.status(ChangeRequest.Status.FAILED, "Impact analysis failed: " + Messages.reason(e));
         }
         changes.save(change);
     }
@@ -298,7 +300,7 @@ public class ChangeService {
             log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
             try {
                 crossCheck(id, change.getWorkspaceId());
-            } catch (RuntimeException checkFailed) {
+            } catch (RuntimeException | StackOverflowError checkFailed) {
                 // The change must not stay "generating" because a check could not run
                 log.warn("Cross-file checks of change {} failed", id, checkFailed);
             }
@@ -309,11 +311,12 @@ public class ChangeService {
                     ? "Writing " + onlyPath + " again stopped: " + limitReason(e) + " The previous version is kept; write it again later."
                     : limitReason(e) + " Generation stopped after " + written + " of " + result.size() + " file(s). Click Continue "
                     + "generation when the limit resets; the files already written are kept.");
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the change must not stay "generating"
             log.error("Code generation for change {} failed", id, e);
             // Writing one file again, or the rest of them, leaves the files already written to review
             change.status(onlyPath != null || resume ? ChangeRequest.Status.GENERATED : ChangeRequest.Status.FAILED,
-                    "Code generation failed: " + e.getMessage());
+                    "Code generation failed: " + Messages.reason(e));
         }
         changes.save(change);
     }
@@ -357,7 +360,7 @@ public class ChangeService {
     }
 
     static String limitReason(ModelLimitReachedException e) {
-        return e.daily() ? "The model's daily limit is used up." : "The model is at its rate limit (" + e.getMessage() + ").";
+        return e.daily() ? "The model's daily limit is used up." : "The model is at its rate limit (" + Messages.reason(e) + ").";
     }
 
     /**
@@ -394,16 +397,16 @@ public class ChangeService {
             return null;
         } catch (ModelLimitReachedException e) {
             throw e;
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | StackOverflowError e) {
             log.warn("Could not write {} for change {}", item.path(), changeId, e);
             ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
             if (previous != null && previous.generated() != null) {
                 // Written before: a failed attempt to write it again must not throw that version away
-                return e.getMessage();
+                return Messages.reason(e);
             }
             files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, null, false,
-                    new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + e.getMessage()), 0);
-            return e.getMessage();
+                    new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + Messages.reason(e)), 0);
+            return Messages.reason(e);
         }
     }
 
@@ -514,6 +517,17 @@ public class ChangeService {
         return examples;
     }
 
+    /** The largest file a reviewer's edit may save: it is stored, checked and put in the patch. */
+    static final int MAX_EDIT_BYTES = 512 * 1024;
+
+    static void requireEditable(String content) {
+        if (content != null && content.length() > MAX_EDIT_BYTES / 4
+                && content.getBytes(StandardCharsets.UTF_8).length > MAX_EDIT_BYTES) {
+            throw new BadRequestException("The file is larger than " + MAX_EDIT_BYTES / 1024 + " KB, the most the factory keeps for a "
+                    + "change. Make a change this large in your working copy, outside the factory.");
+        }
+    }
+
     /** Writes the files not written yet, for example after generation stopped at the model's daily limit. */
     @Transactional
     public ChangeDetail continueGeneration(UUID id) {
@@ -529,7 +543,14 @@ public class ChangeService {
             throw new BadRequestException("No file is left that the model can write. Use Write again for a single file; files marked "
                     + "to change by hand need a developer.");
         }
-        change.status(ChangeRequest.Status.GENERATING, "Writing the " + left + " file(s) not written yet...");
+        // Claimed in the database: of two clicks at once only one finds the change GENERATED; the other waits for the row
+        // and then finds it running
+        String message = "Writing the " + left + " file(s) not written yet...";
+        if (jdbc.update("UPDATE change_request SET status = 'GENERATING', message = ?, updated_at = now() WHERE id = ? AND status = 'GENERATED'",
+                message, id) != 1) {
+            throw new ConflictException("Generation is already running for this change. Wait for it to finish.");
+        }
+        change.status(ChangeRequest.Status.GENERATING, message);
         changes.save(change);
         startAfterCommit(() -> runGeneration(id, null, null, true));
         return detail(change);
@@ -555,6 +576,7 @@ public class ChangeService {
     public ChangeDetail editFile(UUID id, String path, String content) {
         RequestText.requirePath(path);
         RequestText.requireText(content);
+        requireEditable(content);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);

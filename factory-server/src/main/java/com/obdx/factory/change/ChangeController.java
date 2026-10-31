@@ -132,7 +132,8 @@ public class ChangeController {
     public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
         ChangeService.ChangeDetail change = service.deliverToBranch(id, incomplete);
-        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision());
+        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision()
+                + (incomplete ? ", delivered without the planned files not written (confirmed)" : ""));
         return change;
     }
 

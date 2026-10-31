@@ -2,6 +2,7 @@ package com.obdx.factory.requirements;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.profile.ProjectProfileService;
@@ -266,9 +267,10 @@ public class RequirementService {
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
                     + spec.openQuestions().size() + " open question(s).");
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow): the requirement must not stay "processing"
             log.error("Drafting the spec for requirement {} failed", id, e);
-            requirement.failed("Drafting failed: " + e.getMessage());
+            requirement.failed("Drafting failed: " + Messages.reason(e));
         }
         requirements.save(requirement);
     }
@@ -291,9 +293,10 @@ public class RequirementService {
             result = SpecGrounding.apply(result, requirement.getDocumentText());
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
             requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left.");
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow): the requirement must not stay "updating"
             log.error("Updating the spec for requirement {} failed", id, e);
-            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + sentence(e.getMessage())
+            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + sentence(Messages.reason(e))
                     + " The answers are kept; try again.");
         }
         requirements.save(requirement);

@@ -144,10 +144,10 @@ public final class ScreenModels {
 
     /** "shown when Later is selected", "visible only if Monthly is chosen": a value alone, the field is the one offering it */
     private static final Pattern SHOWN_WHEN_SELECTED = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?"
-            + "(?:when|if)\\s+(?:the\\s+)?[\"']?([\\w -]+?)[\"']?\\s+(?:is|are)\\s+(?:selected|chosen|picked|ticked|checked)\\b");
+            + "(?:when|if)\\s+(?:the\\s+)?[\"']?([\\w -]{1,60}?)[\"']?\\s+(?:is|are)\\s+(?:selected|chosen|picked|ticked|checked)\\b");
     /** "shown when Later", "visible only if Execution is Later", "displayed when Frequency = Monthly" */
     private static final Pattern SHOWN_WHEN = Pattern.compile("(?i)\\b(?:shown|visible|displayed|appears|enabled)\\s+(?:only\\s+)?(?:when|if)\\s+"
-            + "(?:the\\s+)?(?:(.+?)\\s*(?:=|==|\\bis\\b|\\bequals\\b)\\s*)?[\"']?([\\w -]+?)[\"']?(?:\\s+is\\s+(?:selected|chosen|picked))?\\s*(?:[.;,)]|$)");
+            + "(?:the\\s+)?(?:([^=.;,]{1,80}?)\\s*(?:=|==|\\bis\\b|\\bequals\\b)\\s*)?[\"']?([\\w -]{1,60}?)[\"']?(?:\\s+is\\s+(?:selected|chosen|picked))?\\s*(?:[.;,)]|$)");
 
     /**
      * Fields whose notes or validations say when they are shown ("shown when Later") get a visibleWhen condition on the
@@ -165,6 +165,8 @@ public final class ScreenModels {
                 if (text == null) {
                     continue;
                 }
+                // A condition is a short phrase; a long text is cut so matching stays quick
+                text = text.length() > 500 ? text.substring(0, 500) : text;
                 // "Later is selected" first: read as "FIELD is VALUE" it would name a field "Later"
                 Matcher selected = SHOWN_WHEN_SELECTED.matcher(text);
                 Matcher m = SHOWN_WHEN.matcher(text);
@@ -223,7 +225,7 @@ public final class ScreenModels {
         if (validation == null) {
             return before;
         }
-        Matcher matcher = MAX_LENGTH.matcher(validation);
+        Matcher matcher = MAX_LENGTH.matcher(validation.length() > 500 ? validation.substring(0, 500) : validation);
         if (matcher.find()) {
             for (int g = 1; g <= matcher.groupCount(); g++) {
                 if (matcher.group(g) != null) {
@@ -256,7 +258,7 @@ public final class ScreenModels {
         if (text == null) {
             return List.of();
         }
-        Matcher m = OPTIONS.matcher(text);
+        Matcher m = OPTIONS.matcher(text.length() > 500 ? text.substring(0, 500) : text);
         if (!m.find()) {
             return List.of();
         }

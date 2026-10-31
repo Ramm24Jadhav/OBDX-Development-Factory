@@ -25,6 +25,8 @@ final class PlanReview {
 
     /** /payments/standingInstructions/{id} in an API's name or description */
     private static final Pattern API_PATH = Pattern.compile("(?<![\\w/])(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+)*)");
+    /** The most of an API's name or description that is searched for its path. */
+    static final int MAX_TEXT = 300;
     /**
      * The first path segments of OBDX's own REST services: a bank's extension that adds a resource under them can clash
      * with the product's services.
@@ -86,7 +88,8 @@ final class PlanReview {
     static String pathOf(RequirementSpec.Api api) {
         for (String text : new String[] {api.name(), api.description()}) {
             if (text != null) {
-                Matcher m = API_PATH.matcher(text);
+                // An API name is short; a long text is cut so that the repeated path group cannot overflow the stack
+                Matcher m = API_PATH.matcher(text.length() > MAX_TEXT ? text.substring(0, MAX_TEXT) : text);
                 if (m.find()) {
                     return m.group(1).replaceAll("[.,;:]+$", "");
                 }

@@ -1,5 +1,7 @@
 package com.obdx.factory.change;
 
+import com.obdx.factory.pack.SourceScan;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -210,12 +212,16 @@ final class JavaScriptCheck {
         return n;
     }
 
+    /** The content with its comments blanked (found by scanning, in linear time; strings kept). */
     private static String withoutComments(String content) {
-        return content.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("(?m)(?<![:\"'])//.*$", " ");
+        return SourceScan.blank(content, SourceScan.scan(content, SourceScan.Syntax.CODE).comments());
     }
 
     /** The content with comments, strings and template literals blanked, so names inside them are not taken as code. */
     static String codeOnly(String content) {
-        return withoutComments(content).replaceAll("'(?:[^'\\\\\\n]|\\\\.)*'|\"(?:[^\"\\\\\\n]|\\\\.)*\"|`(?:[^`\\\\]|\\\\.)*`", "''");
+        SourceScan.Parts parts = SourceScan.scan(content, SourceScan.Syntax.CODE);
+        List<SourceScan.Range> both = new ArrayList<>(parts.comments());
+        both.addAll(parts.strings());
+        return SourceScan.blank(content, both);
     }
 }

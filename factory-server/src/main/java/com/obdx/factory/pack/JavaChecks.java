@@ -25,7 +25,8 @@ final class JavaChecks {
     private static final Pattern PATH = Pattern.compile("@(?:(?:javax|jakarta)\\.ws\\.rs\\.)?Path\\s*\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"\\s*\\)");
     private static final Pattern TEMPLATE = Pattern.compile("\\{\\s*(\\w+)\\s*(?::[^}]*)?}");
     private static final Pattern PATH_PARAM_NAME = Pattern.compile("@(?:(?:javax|jakarta)\\.ws\\.rs\\.)?PathParam\\s*\\(\\s*(?:value\\s*=\\s*)?\"([^\"]+)\"");
-    private static final Pattern ANNOTATION = Pattern.compile("@[\\w.]+(?:\\s*\\((?:[^()\"]|\"(?:[^\"\\\\]|\\\\.)*\"|\\([^()]*\\))*\\))?");
+    /** Possessive and unrolled: a loop over single characters would recurse per character and overflow on a long string */
+    private static final Pattern ANNOTATION = Pattern.compile("@[\\w.]+(?:\\s*\\((?:[^()\"]++|\"[^\"\\\\]*+(?:\\\\.[^\"\\\\]*+)*+\"|\\([^()]*+\\))*+\\))?");
     private static final Pattern METHOD_NAME = Pattern.compile("(\\w+)\\s*\\(");
     private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([\\w.]+(?:\\.\\*)?)\\s*;");
     /** The JAX-RS annotations a resource uses, and the package each is in. */
