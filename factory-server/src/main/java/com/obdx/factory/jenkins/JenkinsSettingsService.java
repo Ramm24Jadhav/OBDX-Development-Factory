@@ -99,7 +99,7 @@ public class JenkinsSettingsService {
     public JenkinsClient client(UUID workspaceId) {
         JenkinsSettings settings = require(workspaceId);
         String encrypted = jdbc.query("SELECT token_encrypted FROM jenkins_settings WHERE workspace_id = ?",
-                (rs, row) -> rs.getString(1), workspaceId).stream().findFirst().orElse(null);
+                (rs, row) -> rs.getString(1), workspaceId).stream().filter(java.util.Objects::nonNull).findFirst().orElse(null);
         return new JenkinsClient(settings.url(), settings.username(), encrypted == null ? null : cipher.decrypt(encrypted), properties);
     }
 
