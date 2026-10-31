@@ -86,6 +86,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_MODEL_EMBEDDING_BASE_URL` | empty (the embedding model is on `FACTORY_MODEL_BASE_URL`) |
 | `FACTORY_MODEL_EMBEDDING_API_KEY` | empty |
 | `FACTORY_MODEL_MAX_CONTEXT` | `16384`: the most context (tokens) asked of an Ollama server |
+| `FACTORY_MODEL_MAX_OUTPUT_TOKENS` | `0`: the most tokens a model may write in one answer on an OpenAI-compatible server (0: the server decides). Groq stops at 2,048 unless asked; set 8192 there so long plans and code files are not cut off |
 
 To try the model gateway with Ollama:
 
@@ -170,6 +171,20 @@ On the **Profile** page a developer can **Confirm** a detected value, **Correct*
 The spec keeps the document's own structure for traceability: its scope, out of scope and assumptions, its functional requirements (ID, priority, the screens each needs), its acceptance criteria (ID, the requirements each verifies), its non-functional requirements and its business rules, all with the document's own IDs (FR-001, AC-001, NFR-001, BR-001; items without one are numbered after them). The document's own open questions become the spec's. The Requirements page shows them, with a traceability table (requirement, priority, screens, the criteria that verify it), and impact analysis and code generation receive them with the rest of the spec.
 
 Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes. Every JSON call (drafting, impact analysis, code generation) is streamed where the server allows it, so `FACTORY_MODEL_TIMEOUT` counts from the last piece the model wrote, not from the start; a server that refuses JSON in a stream (some cloud APIs) answers in one piece. On an Ollama server the factory chats through Ollama's own API and asks for a context large enough for each prompt and its answer (Ollama otherwise runs a model with 4,096 tokens and cuts longer prompts without a word), up to the model's own limit and `FACTORY_MODEL_MAX_CONTEXT` (16,384; a larger context needs more memory on the model server). Lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window.
+
+Cloud servers on a free plan limit tokens per minute (Groq: 7,000 input tokens a minute for some models). The factory works within them:
+- When the server answers "rate limit reached, try again in 7.66s", the call waits that long and is made again (up to 90 seconds a wait). A longer wait, such as a daily limit, fails with that message.
+- When a request is larger than the server takes at once ("Request too large ... Limit 7000, Requested 7663", or a model's maximum context length), the factory remembers the limit and builds the prompt again with less context. The spec, designs, code excerpts and examples shrink, and drafting uses smaller sections of the document. The log says how far a prompt was shortened.
+- When a model stops at its output limit, the answer is incomplete. A change plan or spec is asked for again, shorter. If the plan is still cut off, it is kept with a risk saying files may be missing. A cut-off code file fails its checks with that reason rather than passing silently.
+
+The spec goes to impact analysis and code generation without empty values or the answered questions, with requirements and acceptance criteria first, so a prompt that has to shorten it drops the background lists (scope, assumptions) rather than the requirements. While code is generated the change shows which file is being written ("Writing file 3 of 16: ...").
+
+After generation, and on **Check again**, checks that need more than one file add warnings:
+- **Unresolved imports:** a Java file imports a class from the bank's own packages (those starting like the file's package, such as `com.bank`) that is neither in the imported code nor in the change.
+- **View bindings:** a JET view binds names its view model does not define. The view model is the `.js` file of the same name, or a `model.js` with observables beside the view.
+- **Invalid bindings:** a binding is not a valid expression, such as `nls.fund-transfer.title`.
+
+These are warnings because a class can come from a library jar, and a view model can take names from elsewhere.
 
 ## Screen designer
 

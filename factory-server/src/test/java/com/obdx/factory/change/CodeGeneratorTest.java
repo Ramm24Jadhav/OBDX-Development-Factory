@@ -22,7 +22,9 @@ class CodeGeneratorTest {
         @Override
         public ChatResult chat(String systemPrompt, String userPrompt) {
             prompts.add(userPrompt);
-            return new ChatResult(replies.removeFirst(), "scripted", 1);
+            String reply = replies.removeFirst();
+            // "CUT:" marks a reply that stopped at the model's output limit
+            return reply.startsWith("CUT:") ? new ChatResult(reply.substring(4), "scripted", 1, true) : new ChatResult(reply, "scripted", 1);
         }
 
         @Override
@@ -76,6 +78,17 @@ class CodeGeneratorTest {
 
         assertThat(result.attempts()).isEqualTo(3);
         assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
+    }
+
+    @Test
+    void reportsAFileCutOffAtTheOutputLimitInsteadOfAskingAgainWithIt() {
+        replies.add("CUT:public class RemarksValidator { void check() {} }");
+
+        CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(result.attempts()).isEqualTo(1);
+        assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(result.check().message()).contains("output limit");
     }
 
     @Test

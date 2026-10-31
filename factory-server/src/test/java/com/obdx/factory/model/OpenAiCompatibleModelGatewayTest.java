@@ -24,6 +24,7 @@ class OpenAiCompatibleModelGatewayTest {
 
     private HttpServer server;
     private final AtomicReference<String> lastChatRequest = new AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicInteger limitedCalls = new java.util.concurrent.atomic.AtomicInteger();
 
     @BeforeEach
     void startStubServer() throws IOException {
@@ -84,6 +85,30 @@ class OpenAiCompatibleModelGatewayTest {
             respond(exchange, 200, """
                     {"id": "chatcmpl-2", "object": "chat.completion", "created": 1, "model": "cloud-model",
                      "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{\\"ok\\": true}"}}]}
+                    """);
+        });
+        // A cloud server on a free plan: the first request is rate limited for a moment, then it answers
+        server.createContext("/limited/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            if (limitedCalls.incrementAndGet() == 1) {
+                respond(exchange, 429, """
+                        {"error": {"message": "Rate limit reached for model `qwen` on tokens per minute (TPM): Limit 7000, Used 6500, \
+                        Requested 900. Please try again in 300ms.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                        """);
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-3", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{\\"ok\\": true}"}}]}
+                    """);
+        });
+        // A request larger than the server takes in a minute: asking again cannot help
+        server.createContext("/toolarge/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            limitedCalls.incrementAndGet();
+            respond(exchange, 413, """
+                    {"error": {"message": "Request too large for model `qwen` on input tokens per minute (ITPM): Limit 7000, \
+                    Requested 7663, please reduce your message size and try again.", "type": "tokens", "code": "rate_limit_exceeded"}}
                     """);
         });
         server.createContext("/slow/v1/chat/completions", exchange -> {
@@ -160,6 +185,47 @@ class OpenAiCompatibleModelGatewayTest {
     }
 
     @Test
+    void waitsOutARateLimitAndAsksAgain() {
+        ModelGateway gateway = gatewayFor("/limited/v1");
+
+        assertThat(gateway.chat("Answer in JSON.", "Plan the change").reply()).isEqualTo("{\"ok\": true}");
+        assertThat(limitedCalls.get()).isEqualTo(2);
+    }
+
+    @Test
+    void remembersTheLimitOfAServerThatRefusesALargeRequest() {
+        ModelGateway gateway = gatewayFor("/toolarge/v1");
+        assertThat(gateway.inputLimit()).isZero();
+
+        assertThatThrownBy(() -> gateway.chatJson("Answer in JSON.", "x".repeat(26_000)))
+                .isInstanceOf(PromptTooLargeException.class)
+                .hasMessageContaining("7000");
+        assertThat(limitedCalls.get()).isEqualTo(1);
+        assertThat(gateway.inputLimit()).isEqualTo(7000);
+        assertThat(gateway.charsPerToken()).isBetween(3.3, 3.5);
+    }
+
+    @Test
+    void readsHowLongARateLimitedServerAsksToWait() {
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("Rate limit reached ... Please try again in 7.66s.")).isEqualTo(Duration.ofMillis(8660));
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("rate_limit_exceeded: try again in 1m30.5s")).isEqualTo(Duration.ofMillis(91500));
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("Rate limit reached. Please try again in 330ms.")).isEqualTo(Duration.ofMillis(1330));
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("429 Too Many Requests")).isEqualTo(Duration.ofSeconds(20));
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("model not loaded")).isNull();
+        assertThat(OpenAiCompatibleModelGateway.tooLarge("TPM: Limit 6000, Used 5000, Requested 2000. Please try again in 9s")).isNull();
+        String output = "Rate limit reached for model `qwen` on output tokens per minute: Limit 1000, Requested 2048. The request's "
+                + "expected output tokens exceed the enforced limit; reduce max_tokens and try again. code: rate_limit_exceeded";
+        assertThat(OpenAiCompatibleModelGateway.tooLarge(output)).isNull();
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait(output)).isEqualTo(Duration.ofSeconds(20));
+        assertThat(OpenAiCompatibleModelGateway.serverMessage("failed: {\"error\":{\"message\":\"Request too large for model `qwen` in "
+                + "organization `org_1` service tier `on_demand` on output tokens per minute (OTPM): Limit 1000, Requested 2129. The "
+                + "request's expected output tokens exceed the enforced limit\",\"type\":\"tokens\"}}"))
+                .isEqualTo("Request too large for model `qwen` on output tokens per minute (OTPM): Limit 1000, Requested 2129");
+        assertThat(OpenAiCompatibleModelGateway.tooLarge("This model's maximum context length is 8192 tokens. However, your messages "
+                + "resulted in 9100 tokens.")).containsExactly(8192, 9100);
+    }
+
+    @Test
     void returnsEmbeddingVector() {
         assertThat(gatewayFor("/v1").embed("fund transfer screen")).containsExactly(0.1f, 0.2f, 0.3f, 0.4f);
     }
@@ -233,7 +299,7 @@ class OpenAiCompatibleModelGatewayTest {
     private ModelGateway gatewayFor(String path, Duration timeout) {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384));
+                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384, 0));
     }
 
     private static void respond(com.sun.net.httpserver.HttpExchange exchange, int status, String body) throws IOException {

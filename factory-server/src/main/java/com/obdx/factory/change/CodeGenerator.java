@@ -1,6 +1,7 @@
 package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.PromptFit;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.Recipe;
 import com.obdx.factory.target.ScreenScaffolder;
@@ -82,19 +83,35 @@ public class CodeGenerator {
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold) {
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
-        String prompt = prompt(context, plan, item, current, examples, earlier, note, checks.describeRules(context.checks(), item.path()), recipe,
-                checks.targetGuidance(context.checks(), item.path()), scaffold);
-        String content = clean(modelGateway.chat(SYSTEM, prompt).reply());
-        FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+        String rules = checks.describeRules(context.checks(), item.path());
+        String guidance = checks.targetGuidance(context.checks(), item.path());
+        java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
+                guidance, scaffold, scale);
+        ModelGateway.ChatResult reply = PromptFit.chat(modelGateway, SYSTEM, prompt);
+        String content = clean(reply.reply());
+        FileChecks.Result check = checked(context, item, original, content, scaffold, reply.cutOff());
         int attempts = 1;
-        while (check.status() == FileChecks.Status.FAILED && attempts <= properties.fixAttempts()) {
-            String fix = prompt + "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
+        // A file cut off at the output limit is not fixed by asking with it again, which is longer still
+        while (check.status() == FileChecks.Status.FAILED && !reply.cutOff() && attempts <= properties.fixAttempts()) {
+            String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
-            content = clean(modelGateway.chat(SYSTEM, fix).reply());
-            check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+            reply = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + fix);
+            content = clean(reply.reply());
+            check = checked(context, item, original, content, scaffold, reply.cutOff());
             attempts++;
         }
         return new Result(content, check, attempts);
+    }
+
+    private FileChecks.Result checked(ChangeContext context, ChangePlan.Item item, String original, String content,
+                                      ScreenScaffolder.Scaffold scaffold, boolean cutOff) {
+        FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
+        if (!cutOff) {
+            return check;
+        }
+        String cut = "The model stopped at its output limit, so the file is incomplete. Write it again with a model that writes "
+                + "longer answers, or finish it by hand.";
+        return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
 
     /** A screen of a React Native or React app must keep every field and action of the approved Screen Model. */
@@ -121,7 +138,7 @@ public class CodeGenerator {
 
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
                                  Map<String, String> examples, Map<String, String> earlier, String note, String rules,
-                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold) {
+                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold, double scale) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -132,13 +149,13 @@ public class CodeGenerator {
         user.append("\nThe whole change (").append(nullToDash(plan.summary())).append("):\n");
         user.append(plan.items().stream().map(i -> "- " + i.action() + " " + i.path() + ": " + nullToDash(i.purpose()))
                 .collect(Collectors.joining("\n"))).append("\n\n");
-        user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), 8000)).append("\n\n");
+        user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), PromptFit.size(8000, scale))).append("\n\n");
         if (!context.knowledge().isBlank()) {
             user.append("OBDX knowledge (Oracle manuals and approved notes for this OBDX version; follow it where it applies):\n")
-                    .append(ChangeContext.cap(context.knowledge(), 4000)).append("\n\n");
+                    .append(ChangeContext.cap(context.knowledge(), PromptFit.size(4000, scale))).append("\n\n");
         }
         if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
-            user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), 6000)).append("\n\n");
+            user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), PromptFit.size(6000, scale))).append("\n\n");
             String designs = context.designsJson();
             if (designs.contains("\"dataSource\":{")) {
                 user.append("Elements with a \"dataSource\" load their values from that API (in the screen's model, as the existing")
@@ -186,12 +203,12 @@ public class CodeGenerator {
         }
         for (Map.Entry<String, String> example : examples.entrySet()) {
             user.append("Example file to follow, ").append(example.getKey()).append(":\n")
-                    .append(ChangeContext.cap(example.getValue(), 12000)).append("\n\n");
+                    .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
         if (!earlier.isEmpty()) {
             user.append("Files already written in this change (beginnings):\n");
             for (Map.Entry<String, String> file : earlier.entrySet()) {
-                user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), 40)).append('\n');
+                user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), Math.max(8, (int) (40 * scale)))).append('\n');
             }
         }
         if (scaffold != null) {

@@ -53,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -251,13 +253,19 @@ public class ChangeService {
                     earlier.put(existing.path(), existing.generated());
                 }
             }
-            for (ChangePlan.Item item : plan.items()) {
+            for (int i = 0; i < plan.items().size(); i++) {
+                ChangePlan.Item item = plan.items().get(i);
                 if (onlyPath != null && !item.path().equals(onlyPath)) {
                     continue;
+                }
+                if (onlyPath == null) {
+                    change.status(ChangeRequest.Status.GENERATING, "Writing file " + (i + 1) + " of " + plan.items().size() + ": " + item.path());
+                    change = changes.save(change);
                 }
                 generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, note);
             }
 
+            crossCheck(id, workspace.getId());
             List<ChangeFileStore.ChangeFile> result = files.files(id);
             long failed = result.stream().filter(f -> f.status() == ChangeFileStore.Status.FAILED
                     || f.checkStatus() == FileChecks.Status.FAILED).count();
@@ -300,6 +308,42 @@ public class ChangeService {
             files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, null, false,
                     new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + e.getMessage()), 0);
         }
+    }
+
+    private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_]\\w*\\.[a-zA-Z_]\\w*)[\\w.]*\\s*;");
+    private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([a-z_][\\w.]*)\\.([A-Z]\\w*)\\s*;");
+
+    /**
+     * Classes a Java file imports from the bank's own packages (those starting like its own package, com.bank) that
+     * are neither in the codebase nor in this change: the model used a class nobody writes, and the build will fail.
+     *
+     * @param exists whether a class file (com/bank/x/Name.java, as the end of a path) is in the code or the change
+     */
+    static List<String> unresolvedImports(String content, Predicate<String> exists) {
+        if (content == null) {
+            return List.of();
+        }
+        Matcher pkg = PACKAGE.matcher(content);
+        if (!pkg.find()) {
+            return List.of();
+        }
+        String own = pkg.group(1) + ".";
+        List<String> missing = new ArrayList<>();
+        Matcher imports = IMPORT.matcher(content);
+        while (imports.find()) {
+            String name = imports.group(1) + "." + imports.group(2);
+            if (name.startsWith(own) && !exists.test(imports.group(1).replace('.', '/') + "/" + imports.group(2) + ".java")) {
+                missing.add(name);
+            }
+        }
+        return missing;
+    }
+
+    /** Whether the imported code has a file whose path ends with classFile. */
+    private boolean indexed(UUID workspaceId, String classFile) {
+        String like = "%/" + classFile.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path = ?))",
+                Boolean.class, workspaceId, like, classFile));
     }
 
     /**
@@ -387,7 +431,66 @@ public class ChangeService {
                 }
             }
         }
+        crossCheck(change.getId(), change.getWorkspaceId());
         return failing;
+    }
+
+    /**
+     * Checks that need more than one file, added to each written file's check as warnings: Java imports of the bank's
+     * classes that neither the code nor the change has, and JET views that bind names their view model lacks.
+     */
+    private void crossCheck(UUID changeId, UUID workspaceId) {
+        List<ChangeFileStore.ChangeFile> written = files.files(changeId).stream()
+                .filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
+        Map<String, String> contents = new LinkedHashMap<>();
+        written.forEach(f -> contents.put(f.path(), f.generated()));
+        List<String> paths = files.files(changeId).stream().map(ChangeFileStore.ChangeFile::path).toList();
+        Path workingCopy = storage.workingCopy(workspaceId);
+        for (ChangeFileStore.ChangeFile file : written) {
+            List<String> problems = new ArrayList<>();
+            String lower = file.path().toLowerCase(java.util.Locale.ROOT);
+            if (lower.endsWith(".java")) {
+                List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
+                        || indexed(workspaceId, classFile));
+                if (!missing.isEmpty()) {
+                    problems.add("Imports classes that are neither in the codebase nor in this change: " + String.join(", ", missing)
+                            + ". Add them to the plan, or change the imports to classes that exist.");
+                }
+            } else if (lower.endsWith(".html")) {
+                problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
+            }
+            if (problems.isEmpty() || (file.checkMessage() != null && file.checkMessage().contains(problems.getFirst()))) {
+                continue;
+            }
+            String added = String.join("\n", problems);
+            FileChecks.Status status = file.checkStatus() == FileChecks.Status.FAILED ? FileChecks.Status.FAILED : FileChecks.Status.WARNING;
+            files.saveCheck(changeId, file.path(), new FileChecks.Result(status,
+                    file.checkMessage() == null || file.checkMessage().isBlank() ? added : file.checkMessage() + "\n" + added));
+        }
+    }
+
+    /**
+     * The view model of a JET view: the .js file of the same name next to it (written in this change or existing),
+     * else a model.js beside it that holds observables; null when there is none.
+     */
+    private static String viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
+        String base = viewPath.substring(0, viewPath.length() - ".html".length());
+        String folder = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/') + 1) : "";
+        for (String candidate : List.of(base + ".js", folder + "model.js")) {
+            String content = written.get(candidate);
+            if (content == null) {
+                try {
+                    Path file = workingCopy.resolve(candidate);
+                    content = Files.isRegularFile(file) ? read(file) : null;
+                } catch (IOException e) {
+                    content = null;
+                }
+            }
+            if (content != null && (candidate.endsWith(base + ".js") || content.contains("ko.observable"))) {
+                return content;
+            }
+        }
+        return null;
     }
 
     // --- review and delivery ---
@@ -554,8 +657,9 @@ public class ChangeService {
         String designsJson = null;
         List<ScreenModel> models = designModels(change);
         if (!models.isEmpty()) {
-            designsJson = json.writeValueAsString(models);
+            designsJson = json.writeValueAsString(compact(json.valueToTree(models)));
         }
+        String specJson = specForModel(json, requirement.spec());
         String profile;
         try {
             profile = profiles.get(change.getWorkspaceId()).facts().stream().filter(f -> f.value() != null)
@@ -563,10 +667,54 @@ public class ChangeService {
         } catch (NotFoundException e) {
             profile = "";
         }
-        return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
+        return new ChangeContext(change.getTitle(), specJson, designsJson, profile,
                 structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
                 targets.planGuide(change.getWorkspaceId()), models,
-                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(json.writeValueAsString(requirement.spec()), 1500), 5000));
+                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(specJson, 1500), 5000));
+    }
+
+    /** The spec's parts in the order the model needs them most: a prompt that shortens the spec cuts the background lists. */
+    private static final List<String> SPEC_ORDER = List.of("title", "summary", "requirements", "acceptanceCriteria", "screens",
+            "businessRules", "messages", "roles", "apis", "hostInteractions", "nonFunctional", "scope", "outOfScope", "assumptions");
+
+    /**
+     * The approved spec as the model reads it: most useful parts first and without empty values. The answered
+     * questions are left out, since the spec already reflects them.
+     */
+    static String specForModel(ObjectMapper json, RequirementSpec spec) {
+        tools.jackson.databind.node.ObjectNode all = compact(json.valueToTree(spec)) instanceof tools.jackson.databind.node.ObjectNode o
+                ? o : json.createObjectNode();
+        tools.jackson.databind.node.ObjectNode ordered = json.createObjectNode();
+        for (String part : SPEC_ORDER) {
+            if (all.has(part)) {
+                ordered.set(part, all.get(part));
+            }
+        }
+        return json.writeValueAsString(ordered);
+    }
+
+    /** Removes nulls, empty texts, lists and objects, which only make a prompt longer. */
+    static tools.jackson.databind.JsonNode compact(tools.jackson.databind.JsonNode node) {
+        if (node instanceof tools.jackson.databind.node.ObjectNode object) {
+            for (String name : object.properties().stream().map(Map.Entry::getKey).toList()) {
+                tools.jackson.databind.JsonNode value = compact(object.get(name));
+                if (empty(value)) {
+                    object.remove(name);
+                }
+            }
+        } else if (node instanceof tools.jackson.databind.node.ArrayNode array) {
+            for (int i = array.size() - 1; i >= 0; i--) {
+                if (empty(compact(array.get(i)))) {
+                    array.remove(i);
+                }
+            }
+        }
+        return node;
+    }
+
+    private static boolean empty(tools.jackson.databind.JsonNode value) {
+        return value == null || value.isNull() || (value.isTextual() && value.asText().isBlank())
+                || ((value.isArray() || value.isObject()) && value.size() == 0);
     }
 
     /**

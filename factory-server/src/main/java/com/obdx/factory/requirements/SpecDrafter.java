@@ -1,6 +1,7 @@
 package com.obdx.factory.requirements;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.PromptTooLargeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -116,8 +117,29 @@ public class SpecDrafter {
 
     /** The same, telling {@code progress} which section is being read ("Reading section 2 of 5 ..."). */
     public RequirementSpec draft(String title, String documentText, String systemContext, java.util.function.Consumer<String> progress) {
-        List<String> sections = split(documentText, properties.maxCharsPerCall());
         String system = DRAFT_SYSTEM.formatted(context(systemContext), SPEC_FORMAT);
+        int maxChars = properties.maxCharsPerCall();
+        for (int round = 0; ; round++) {
+            maxChars = Math.min(maxChars, fitting(system));
+            try {
+                return draft(title, split(documentText, maxChars), system, progress);
+            } catch (PromptTooLargeException e) {
+                // The server takes less than one section: start again with sections that fit its limit
+                if (round >= 2 || fitting(system) < 2000) {
+                    throw e;
+                }
+                log.info("The model's server takes at most {} tokens at once; drafting again in smaller sections", e.limit());
+            }
+        }
+    }
+
+    /** The longest section that fits the server's input limit, once known (see ModelGateway.inputLimit). */
+    private int fitting(String system) {
+        int limit = modelGateway.inputLimit();
+        return limit <= 0 ? Integer.MAX_VALUE : (int) (limit * 0.85 * modelGateway.charsPerToken()) - system.length() - 300;
+    }
+
+    private RequirementSpec draft(String title, List<String> sections, String system, java.util.function.Consumer<String> progress) {
         List<RequirementSpec> drafts = new ArrayList<>();
         for (int i = 0; i < sections.size(); i++) {
             if (sections.size() > 1) {
@@ -154,7 +176,15 @@ public class SpecDrafter {
         for (int attempt = 1; attempt <= Math.max(1, properties.maxAttempts()); attempt++) {
             ModelGateway.ChatResult result = modelGateway.chatJson(system, prompt);
             try {
-                return SpecParser.parse(result.reply(), title);
+                RequirementSpec spec = SpecParser.parse(result.reply(), title);
+                if (result.cutOff() && attempt < Math.max(1, properties.maxAttempts())) {
+                    // Stopped at the output limit: the last parts of the spec are missing. Ask for a shorter one.
+                    log.warn("The spec was cut off at the model's output limit (attempt {}); asking for a shorter one", attempt);
+                    prompt = user + "\n\nYour previous answer was cut off at your output limit. Answer again with the complete JSON "
+                            + "object, shorter: descriptions in one short sentence, no notes or defaults that are null.";
+                    continue;
+                }
+                return spec;
             } catch (SpecParser.InvalidSpecException e) {
                 log.warn("Model answer was not a usable spec (attempt {}): {}", attempt, e.getMessage());
                 last = e;

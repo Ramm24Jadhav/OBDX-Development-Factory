@@ -19,6 +19,8 @@ import java.time.Duration;
  * @param maxContext       the most context (tokens) the factory asks an Ollama server for: Ollama runs a model with
  *                         4,096 unless asked, and the factory asks for what a prompt needs up to this and the model's
  *                         own limit. Larger needs more memory on the model server
+ * @param maxOutput        the most tokens a model may write in one answer on an OpenAI-compatible server (max_tokens);
+ *                         0 leaves it to the server, which may stop long answers early (Groq at 2,048)
  */
 @ConfigurationProperties(prefix = "factory.model")
 public record ModelProperties(
@@ -29,5 +31,6 @@ public record ModelProperties(
         @DefaultValue("120s") Duration timeout,
         String embeddingBaseUrl,
         String embeddingApiKey,
-        @DefaultValue("16384") int maxContext) {
+        @DefaultValue("16384") int maxContext,
+        @DefaultValue("0") int maxOutput) {
 }

@@ -148,6 +148,9 @@ factory:
     # The most context (tokens) asked of an Ollama server, which runs models with 4,096 unless asked: each call gets
     # what its prompt and answer need up to this and the model's own limit. Larger needs more memory there.
     max-context: ${FACTORY_MODEL_MAX_CONTEXT:16384}
+    # The most tokens a model may write in one answer (max_tokens), for OpenAI-compatible servers; 0 leaves it to the
+    # server. Some cloud servers stop at 2,048 unless asked for more, which cuts off long plans and code files.
+    max-output: ${FACTORY_MODEL_MAX_OUTPUT_TOKENS:0}
 
 management:
   endpoints:
