@@ -635,7 +635,12 @@ class OpenAiCompatibleModelGatewayTest {
         OpenAiCompatibleModelGateway[] holder = new OpenAiCompatibleModelGateway[1];
         // said once, when the connection is made: where a max_tokens that no answer taught this run comes from
         assertThat(logged(() -> holder[0] = new OpenAiCompatibleModelGateway(properties, store)))
-                .contains("Using stored limits for qwen: input 0, output 562, total 0");
+                .contains("Using stored limits for qwen: input 0, output 562, total 0 (at " + baseUrl + ")");
+        // a model without stored limits says so, so a missing line is never a question
+        assertThat(logged(() -> new OpenAiCompatibleModelGateway(new ModelProperties(baseUrl, "test-key", "qwen3-32b", "nomic-embed-text",
+                Duration.ofSeconds(5), null, null, 16384, 8192, null), store)))
+                .contains("No stored limits for qwen3-32b at " + baseUrl + ": they are learned from the server's answers",
+                        "Thinking turned off for model 'qwen3-32b' (/no_think, reasoning_effort none)");
         OpenAiCompatibleModelGateway restarted = holder[0];
         assertThat(restarted.outputLimit()).isEqualTo(562);
         restarted.chat("Write the file.", "B.java");

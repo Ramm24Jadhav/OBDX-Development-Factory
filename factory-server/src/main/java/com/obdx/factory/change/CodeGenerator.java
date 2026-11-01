@@ -590,6 +590,54 @@ public class CodeGenerator {
         return stitch(base, piece);
     }
 
+    /**
+     * A kept partial made fit to continue from: the model's reasoning cut off, then everything from the line before the
+     * first parse error that is not just the cut-off end (a seam that lost text, as Java or JavaScript sees it). Null
+     * when too little is left to be worth continuing (under a fifth of it, or a Java file without its class): the file
+     * is then written whole.
+     */
+    static String cleanPartial(String path, String partial) {
+        if (partial == null || partial.isBlank()) {
+            return null;
+        }
+        String cleaned = withoutReasoning(path, partial);
+        int broken = brokenLine(path, cleaned);
+        if (broken > 0) {
+            log.info("Cut the kept part of {} back to before its line {}, where it does not parse", path, broken);
+            List<String> lines = java.util.Arrays.asList(cleaned.split("\n", -1));
+            cleaned = String.join("\n", lines.subList(0, Math.max(0, Math.min(lines.size(), broken - 2)))) + "\n";
+        }
+        String name = path.substring(path.lastIndexOf('/') + 1).replaceAll("\\.\\w+$", "");
+        boolean typeKept = !path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")
+                || Pattern.compile("\\b(?:class|interface|enum|record)\\s+" + Pattern.quote(name) + "\\b").matcher(cleaned).find();
+        if (cleaned.strip().length() < partial.strip().length() / 5 || !typeKept) {
+            log.info("Dropped the kept part of {}: too little of it is usable; the file is written whole", path);
+            return null;
+        }
+        return cleaned.strip() + "\n";
+    }
+
+    /**
+     * The line (from 1) of a partial's first parse error before its last line, or 0: Java's first problem as JavaParser
+     * places it, JavaScript's bracket that closes nothing or the wrong thing. An error at the end is the file being cut off.
+     */
+    static int brokenLine(String path, String partial) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        long lastLine = partial.stripTrailing().lines().count();
+        int line = 0;
+        if (lower.endsWith(".java")) {
+            var result = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
+                    .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse(partial);
+            line = result.getProblems().stream().findFirst().flatMap(com.github.javaparser.Problem::getLocation)
+                    .flatMap(r -> r.getBegin().getRange()).map(r -> r.begin.line).orElse(0);
+        } else if (lower.endsWith(".js") && !FileChecks.looksLikeJsx(partial)) {
+            String problem = JavaScriptCheck.structure(partial);
+            Matcher m = Pattern.compile("on line (\\d+) (?:closes nothing|does not match)").matcher(problem == null ? "" : problem);
+            line = m.find() ? Integer.parseInt(m.group(1)) : 0;
+        }
+        return line > 0 && line < lastLine ? line : 0;
+    }
+
     /** Whether a continuation begins with the line it was to repeat, or with an exact repeat of the file's end. */
     static boolean seamless(String sofar, String last, String piece) {
         String base = sofar.isEmpty() || sofar.endsWith("\n") ? sofar : sofar + "\n";

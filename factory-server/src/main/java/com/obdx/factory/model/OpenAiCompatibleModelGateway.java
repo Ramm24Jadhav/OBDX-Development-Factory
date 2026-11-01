@@ -75,12 +75,16 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         Limits limits = new Limits();
         if (store != null) {
             try {
-                store.find(baseUrl, model).ifPresent(s -> {
+                java.util.Optional<ModelLimitsStore.Stored> stored = store.find(baseUrl, model);
+                if (stored.isEmpty()) {
+                    log.info("No stored limits for {} at {}: they are learned from the server's answers", model, baseUrl);
+                }
+                stored.ifPresent(s -> {
                     limits.input = s.input();
                     limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
                     limits.output = s.output();
                     limits.total = s.total();
-                    log.info("Using stored limits for {}: input {}, output {}, total {}", model, s.input(), s.output(), s.total());
+                    log.info("Using stored limits for {}: input {}, output {}, total {} (at {})", model, s.input(), s.output(), s.total(), baseUrl);
                 });
             } catch (RuntimeException e) {
                 log.warn("Could not read the learned limits of chat model '{}'", model, e);
@@ -293,6 +297,9 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     private Connection connect(ModelSettings.Current settings) {
+        if (properties.noThinkFor(settings.chatModel())) {
+            log.info("Thinking turned off for model '{}' (/no_think, reasoning_effort none)", settings.chatModel());
+        }
         return new Connection(settings.baseUrl(), settings.chatModel(), settings.embeddingUrl(), settings.embeddingModel(),
                 OpenAiChatModel.builder()
                         .baseUrl(settings.baseUrl())

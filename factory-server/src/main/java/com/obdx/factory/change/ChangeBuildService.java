@@ -257,8 +257,8 @@ public class ChangeBuildService {
                 result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
                         changes.scaffold(context, file.path(), file.original()));
             } catch (CodeGenerator.JoinFailed e) {
-                // The fix came in pieces that did not join: the file is kept as it was
-                log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it was", file.path(), change.getId());
+                // The fix came in pieces that did not join: the file is not written, so it is written whole again
+                ChangeService.recordFailure(files, change.getId(), file.path(), file.original(), e);
                 continue;
             }
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),

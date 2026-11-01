@@ -289,7 +289,7 @@ public class ChangeService {
                     fileNote = fixes.isEmpty() ? note : note == null || note.isBlank() ? fixes : note + "\n\n" + fixes;
                 }
                 // Continue goes on from the part of a file the limit stopped, instead of writing it all again
-                String partial = resume ? files.file(id, item.path()).filter(ChangeService::partial).map(ChangeFileStore.ChangeFile::generated)
+                String partial = resume ? files.file(id, item.path()).filter(ChangeService::partial).map(kept -> usablePartial(files, id, kept))
                         .orElse(null) : null;
                 writing = item.path();
                 String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
@@ -445,16 +445,51 @@ public class ChangeService {
         } catch (ModelLimitReachedException e) {
             throw e;
         } catch (IOException | RuntimeException | StackOverflowError e) {
-            log.warn("Could not write {} for change {}", item.path(), changeId, e);
-            ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
-            if (previous != null && previous.generated() != null) {
-                // Written before: a failed attempt to write it again must not throw that version away
-                return Messages.reason(e);
-            }
-            files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, null, false,
-                    new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + Messages.reason(e)), 0);
+            return recordFailure(files, changeId, item.path(), current, e);
+        }
+    }
+
+    /**
+     * The kept part of a file to continue from, cleaned first (the model's reasoning and a seam that does not parse cut
+     * off) and saved so: a broken part is not paid for on every Continue. Null when too little is usable; the file is
+     * then saved as not written and written whole.
+     */
+    static String usablePartial(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile kept) {
+        String cleaned = CodeGenerator.cleanPartial(kept.path(), kept.generated());
+        if (cleaned == null) {
+            files.saveResult(changeId, kept.path(), ChangeFileStore.Status.FAILED, kept.original(), null, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, "The part kept after the model's limit was not usable; it is written whole."),
+                    kept.attempts());
+        } else if (!cleaned.equals(kept.generated())) {
+            files.saveResult(changeId, kept.path(), ChangeFileStore.Status.FAILED, kept.original(), cleaned, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, kept.checkMessage()), kept.attempts());
+        }
+        return cleaned;
+    }
+
+    /**
+     * Saves why a file could not be written, and returns it. Pieces that did not join leave no content and no partial:
+     * the file counts as not written, and Continue writes it whole instead of failing on the same text again. Any other
+     * failure keeps a version written before (Write again, or a kept partial), so it is not thrown away.
+     */
+    static String recordFailure(ChangeFileStore files, UUID changeId, String path, String current, Throwable e) {
+        ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
+        int attempts = previous == null ? 0 : previous.attempts();
+        if (e instanceof CodeGenerator.JoinFailed) {
+            // Expected when a model continues badly: one line, no stack trace
+            log.warn("{} of change {}: {}", path, changeId, e.getMessage());
+            files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, null, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, e.getMessage()), attempts);
+            return e.getMessage();
+        }
+        log.warn("Could not write {} for change {}", path, changeId, e);
+        if (previous != null && previous.generated() != null) {
+            // Written before: a failed attempt to write it again must not throw that version away
             return Messages.reason(e);
         }
+        files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, null, false,
+                new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + Messages.reason(e)), 0);
+        return Messages.reason(e);
     }
 
     private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_]\\w*\\.[a-zA-Z_]\\w*)[\\w.]*\\s*;");
