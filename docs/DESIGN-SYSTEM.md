@@ -147,10 +147,11 @@ Every request goes through `services/api.js`, which reports it to `services/busy
 - **The progress bar** under the top bar runs while a request the user started (within 1.5 seconds of a click or key press) is open. Background polling does not move it.
 - **`busy.block(promise, message)`** covers the page with a message for operations that must finish before anything else:
   - starting the factory (the start screen);
-  - signing in ("Signing in…");
   - committing a change to SVN ("Committing the change to a new SVN branch…").
 
   The page behind it is inert and the overlay takes focus. Overlapping blocks are counted, so the first to finish does not hide the second.
+
+  Signing in does not block: the Sign in button is disabled and shows its spinner until the answer comes, so the form stays in view.
 - Spinners and the bar appear only after 150ms, so fast requests never flicker. Nothing is delayed to show an animation.
 - **Long jobs** (impact analysis, code generation, builds, imports) never block. Their pages show the real state from the server with `ui.status`:
   - queued, in progress, needs review (awaiting approval), done, closed (cancelled) or failed;
@@ -192,10 +193,10 @@ The screen designs (`design/design and implementation plan.docx`) are 23 flatten
 
 | Mockup | Illustration | In the app |
 |---|---|---|
-| Sign-in (image 3) | A code editor with the OBDX tree, and Analyze → Generate → Validate tiles | `.factory-login-art` on the sign-in page, built from markup and CSS |
+| Sign-in (image 3) | A code editor with the OBDX tree, and Analyze → Generate → Validate tiles | Removed in the declutter work (Nov 2026): the sign-in page is a single centred form |
 | About (image 23) | A laptop and phone showing the factory, with four feature badges | `.factory-ab-art` on the About page, built from markup and CSS |
 
-Both are rebuilt rather than cut out of the mockups. A crop would be a 440-pixel raster: blurred on high-density screens, wrong in the dark theme, and showing sample text that does not match the factory. The other mockups' icons are a single stroke family (1.8px, round caps), which the factory's own mask icons (`factory-ico-*`, in the text colour) follow. The logo and "Powered by AI" come from the design system (`css/images/factory-logo.svg`). No asset was invented or substituted. If the original illustration files are available, `factory-login-art` and `factory-ab-art` are the two places they belong.
+They were rebuilt rather than cut out of the mockups. A crop would be a 440-pixel raster: blurred on high-density screens, wrong in the dark theme, and showing sample text that does not match the factory. The other mockups' icons are a single stroke family (1.8px, round caps), which the factory's own mask icons (`factory-ico-*`, in the text colour) follow. The logo and "Powered by AI" come from the design system (`css/images/factory-logo.svg`). No asset was invented or substituted. If the original About illustration is available, `factory-ab-art` is where it belongs.
 
 ## Responsive design
 

@@ -342,12 +342,12 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   await record('1440x900 about', 'About illustration shows', about.shown, about);
   const shotA = await cdp('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(OUT, 'about-illustration.png'), Buffer.from(shotA.result.data, 'base64'));
-  // Sign out (only the session ends) to see the sign-in page and its illustration
+  // Sign out (only the session ends) to see the sign-in page: its card with the form or the single sign-on button
   await run(() => new Promise((r) => window.require(['services/session'], (x) => x.logout().then(() => setTimeout(() => r(1), 1500)))));
-  const login = await run(() => { const a = document.querySelector('.factory-login-art'); if (!a) { return { shown: false }; } const r = a.getBoundingClientRect(); return { shown: r.width > 100 && r.height > 100, size: Math.round(r.width) + 'x' + Math.round(r.height), ready: document.body.classList.contains('fx-ready') }; });
-  await record('1440x900 sign-in', 'sign-in illustration shows', login.shown, login);
+  const login = await run(() => { const c = document.querySelector('.factory-login-card'); if (!c) { return { shown: false }; } const r = c.getBoundingClientRect(); const action = c.querySelector('#signInButton, #ssoLink'); return { shown: r.width > 200 && r.height > 150 && !!action && action.getBoundingClientRect().height > 0, size: Math.round(r.width) + 'x' + Math.round(r.height), ready: document.body.classList.contains('fx-ready') }; });
+  await record('1440x900 sign-in', 'sign-in form shows', login.shown, login);
   const shotL = await cdp('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync(path.join(OUT, 'sign-in-illustration.png'), Buffer.from(shotL.result.data, 'base64'));
+  fs.writeFileSync(path.join(OUT, 'sign-in.png'), Buffer.from(shotL.result.data, 'base64'));
 
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ url: BASE, at: new Date().toISOString(), reducedMotion: REDUCED, results: results }, null, 2));
   console.log('\n' + results.length + ' checks, ' + defects + ' failed. Report and screenshots: ' + OUT);

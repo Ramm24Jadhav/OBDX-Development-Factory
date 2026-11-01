@@ -3,6 +3,7 @@ package com.obdx.factory.auth;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -36,11 +37,13 @@ public class AuthController {
     private final AuditLog audit;
     private final AuthProperties properties;
     private final BuildProperties buildInfo;
+    private final String environmentName;
 
     public AuthController(AuthenticationManager authenticationManager, SecurityContextRepository contextRepository,
                           UserDirectory directory, LoginAttempts attempts, AccessGuard guard, MembershipRepository memberships,
                           AuditLog audit, AuthProperties properties,
-                          ObjectProvider<BuildProperties> buildInfo) {
+                          ObjectProvider<BuildProperties> buildInfo,
+                          @Value("${factory.environment-name:}") String environmentName) {
         this.authenticationManager = authenticationManager;
         this.contextRepository = contextRepository;
         this.directory = directory;
@@ -50,9 +53,14 @@ public class AuthController {
         this.audit = audit;
         this.properties = properties;
         this.buildInfo = buildInfo.getIfAvailable();
+        this.environmentName = environmentLabel(environmentName);
     }
 
-    public record AuthConfig(String mode, String ssoLoginUrl, String version) {
+    /**
+     * @param environment the name an administrator gave this installation (factory.environment-name, for example UAT);
+     *                    null when none is set, and the sign-in page then shows no label
+     */
+    public record AuthConfig(String mode, String ssoLoginUrl, String version, String environment) {
     }
 
     public record LoginRequest(String username, String password) {
@@ -68,12 +76,22 @@ public class AuthController {
     public record PasswordChange(String currentPassword, String newPassword) {
     }
 
-    /** Tells the sign-in page which form to show, and the factory version for its top bar. */
+    /** Tells the sign-in page which form to show, the factory version for its top bar and the environment label. */
     @GetMapping("/api/auth/config")
     public AuthConfig config() {
         String ssoLoginUrl = properties.isOidc() ? "oauth2/authorization/" + properties.oidc().registrationId()
                 : properties.isSaml() ? "saml2/authenticate/" + properties.saml().registrationId() : null;
-        return new AuthConfig(properties.mode().toLowerCase(), ssoLoginUrl, buildInfo == null ? null : buildInfo.getVersion());
+        return new AuthConfig(properties.mode().toLowerCase(), ssoLoginUrl, buildInfo == null ? null : buildInfo.getVersion(),
+                environmentName);
+    }
+
+    /** The configured environment name, trimmed and short enough for a badge; null when none is set. */
+    static String environmentLabel(String configured) {
+        String name = configured == null ? "" : configured.strip().replaceAll("\\s+", " ");
+        if (name.length() > 30) {
+            name = name.substring(0, 30).strip();
+        }
+        return name.isEmpty() ? null : name;
     }
 
     @PostMapping("/api/auth/login")

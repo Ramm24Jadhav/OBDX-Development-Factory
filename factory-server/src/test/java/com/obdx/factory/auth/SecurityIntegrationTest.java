@@ -71,7 +71,7 @@ class SecurityIntegrationTest {
 
         // Public: sign-in configuration, health and review links. Everything else needs a session.
         mvc.perform(get("/api/auth/config")).andExpect(status().isOk()).andExpect(jsonPath("$.mode").value("local"))
-                .andExpect(jsonPath("$.version").hasJsonPath());
+                .andExpect(jsonPath("$.version").hasJsonPath()).andExpect(jsonPath("$.environment").doesNotExist());
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
         mvc.perform(get("/api/review/not-a-token")).andExpect(status().isNotFound());
         mvc.perform(get("/api/workspaces")).andExpect(status().isUnauthorized())
