@@ -50,7 +50,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return [
           { value: d.length, label: 'Workspaces', sub: '↑ ' + newThisWeek + ' new this week', tone: 'blue', subTone: 'up', icon: 'folder', open: this.go('workspaces') },
           { value: requirements.length, label: 'Requirements', sub: '↑ ' + inProgress + ' in progress', tone: 'violet', subTone: 'up', icon: 'doc', open: this.go('requirements') },
-          { value: designs.length, label: 'Screens', sub: count(designs, (s) => s.status === 'APPROVED') + ' approved', tone: 'green', subTone: 'good', icon: 'monitor', open: this.go('designer') },
+          { value: designs.length, label: 'Screens', sub: count(designs, (s) => s.status === 'APPROVED') + ' approved', tone: 'green', subTone: 'good', icon: 'monitor', open: this.go('studio') },
           { value: changes.length, label: 'Code Changes', sub: '↓ ' + pendingReview + ' pending review', tone: 'amber', subTone: 'warn', icon: 'code', open: this.go('changes') },
           { value: builds.length, label: 'Builds', sub: '↓ ' + failedBuilds + ' failed', tone: 'red', subTone: 'bad', icon: 'flask', open: this.go('changes') }
         ].map((t) => Object.assign(t, {
@@ -61,7 +61,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
 
       // Recent workspaces: the four most recently imported or created, each with a menu of its pages
       this.workspaceActions = [{ value: 'code', label: 'Open code' }, { value: 'profile', label: 'Project Profile' },
-        { value: 'requirements', label: 'Requirements' }, { value: 'designer', label: 'Designer' }];
+        { value: 'requirements', label: 'Requirements' }, { value: 'studio', label: 'Design Studio' }];
       this.recentWorkspaces = ko.pureComputed(() => data().map((d) => {
         const w = d.workspace;
         const job = d.imports.length ? d.imports[0] : null;
@@ -170,7 +170,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           d.requirements.forEach((r) => add(r.status === 'APPROVED' ? 'done' : (r.status === 'FAILED' ? 'failed' : 'none'), 'doc',
             'Requirement "' + r.title + '" ' + (r.status === 'APPROVED' ? 'approved' : 'updated'), w.name, r.updatedAt, dashboard.open('requirements', w.id)));
           d.designs.forEach((s) => add(s.status === 'APPROVED' ? 'done' : 'none', 'monitor', 'Screen "' + s.name + '" ' + (s.status === 'APPROVED' ? 'approved' : 'updated'),
-            w.name, s.updatedAt, dashboard.open('designer', w.id)));
+            w.name, s.updatedAt, dashboard.open('studio', w.id)));
           d.changes.forEach((c) => add(c.status === 'FAILED' ? 'failed' : (c.status === 'DELIVERED' || c.status === 'MERGED' ? 'done' : 'none'), 'code',
             'Change "' + c.title + '" ' + c.status.toLowerCase().replace(/_/g, ' '), w.name, c.updatedAt, dashboard.open('changes', w.id)));
           d.builds.forEach((b) => add(b.result === 'SUCCESS' ? 'done' : (b.result ? 'failed' : 'running'), b.result === 'SUCCESS' ? 'check' : (b.result ? 'x' : 'refresh'),

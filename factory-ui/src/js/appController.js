@@ -37,7 +37,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'work' } },
         { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'work' } },
         { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'work' } },
-        { path: 'designer', detail: { label: 'Visual Designer', icon: 'design', group: 'work' } },
+        { path: 'studio', detail: { label: 'UI Design Studio', icon: 'design', group: 'work' } },
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'work' } },
         { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'work' } },
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'work' } },
@@ -56,6 +56,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         // Opened from the Code and Changes pages
         { path: 'knowledge', detail: { label: 'Knowledge Explorer', hidden: true, parent: 'code' } },
         { path: 'impact', detail: { label: 'Impact Analysis', hidden: true, parent: 'changes' } },
+        { path: 'designer', detail: { label: 'Visual Designer', hidden: true, parent: 'studio' } },
         // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
         { path: 'review', detail: { label: 'Review', hidden: true } }

@@ -5,8 +5,8 @@
  * requirement's rules with the screen's validations, comments and history, beside the AI Assistant.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
-        '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast) {
+        '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast, pageRequests) {
     // Asks before an action (design system dialog); resolves true when confirmed
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
     // A screen's status in the shared categories (ui.status): {text, css, iconCss}
@@ -1884,7 +1884,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         workspaceSelection.load().then((list) => {
           list.forEach((workspace) => { bankNames[workspace.id] = workspace.bankName; });
           return Promise.all([loadDesigns(), refreshPalette()]);
+        }).then(() => {
+          // A screen opened from the Design Studio
+          const wanted = pageRequests.design();
+          if (wanted) {
+            pageRequests.design(null);
+            this.open(wanted);
+          }
         }).catch(showError);
+      };
+      this.backToStudio = () => {
+        pageRequests.studio(this.detail() ? this.detail().requirementId : null);
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' }));
       };
       this.disconnected = () => {
         preview.detach();

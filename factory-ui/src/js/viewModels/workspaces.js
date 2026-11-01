@@ -568,7 +568,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { value: 'code', label: 'Open code', icon: 'code' },
         { value: 'profile', label: 'Project Profile', icon: 'doc' },
         { value: 'requirements', label: 'Requirements', icon: 'list' },
-        { value: 'designer', label: 'Designer', icon: 'design' },
+        { value: 'studio', label: 'Design Studio', icon: 'design' },
         { value: 'copy', label: 'Copy repository URL', icon: 'share' }
       ];
       this.detailMenu = (event) => this.selectedWs() && this.rowAction(event.detail.value, this.selectedWs().id);

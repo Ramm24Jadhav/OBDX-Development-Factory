@@ -79,7 +79,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             const first = list.map((s) => s.updatedAt).sort()[0];
             add({
               key: 'ui' + rid, agent: 'ui', task: 'Generate screens for ' + (req ? req.title : 'a requirement'), workspace: w.name, workspaceId: w.id,
-              status: 'completed', started: first, finished: first, approx: true, requirement: req ? req.title : '', message: list.length + ' screens designed', page: 'designer',
+              status: 'completed', started: first, finished: first, approx: true, requirement: req ? req.title : '', message: list.length + ' screens designed', page: 'studio',
               steps: list.map((s) => ({ name: s.name + ' (v' + s.currentVersion + ', ' + s.status.toLowerCase().replace('_', ' ') + ')', done: true })),
               files: [], rerun: null,
               log: list.slice().sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt))
@@ -353,7 +353,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.taskItems = [
         { label: 'Draft a specification from a BRD/FSD', icon: 'doc', page: 'requirements' },
         { label: 'Plan a change (impact analysis)', icon: 'branch', page: 'changes' },
-        { label: 'Change a screen with AI', icon: 'design', page: 'designer' },
+        { label: 'Change a screen with AI', icon: 'design', page: 'studio' },
         { label: 'Import and index code', icon: 'code', page: 'code' }
       ].map((t) => Object.assign(t, { iconClass: 'factory-nav-icon factory-ico-' + t.icon, run: () => { this.taskMenu.close(); navigate(t.page); } }));
       this.newTaskDefault = () => navigate('requirements');

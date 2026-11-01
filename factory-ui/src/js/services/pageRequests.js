@@ -10,6 +10,9 @@ define(['knockout'], function (ko) {
     newWorkspace: ko.observable(null),
     /** A requirement or change id to open when its page loads (from the command palette) */
     requirement: ko.observable(null),
-    change: ko.observable(null)
+    change: ko.observable(null),
+    /** A screen design to open in the Visual Designer, and a requirement to open in the Design Studio */
+    design: ko.observable(null),
+    studio: ko.observable(null)
   };
 });
