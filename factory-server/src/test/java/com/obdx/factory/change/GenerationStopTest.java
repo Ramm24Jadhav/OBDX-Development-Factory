@@ -50,6 +50,25 @@ class GenerationStopTest {
     }
 
     @Test
+    void aFileStoppedPartWayIsKeptButCountsAsNotWritten() {
+        ChangeFileStore.ChangeFile partial = new ChangeFileStore.ChangeFile(0, "a/Service.java", "create", "service", null,
+                ChangeFileStore.Status.FAILED, null, "public class Service {\n", false, FileChecks.Status.FAILED,
+                CodeGenerator.PARTIAL + " Continue generation goes on from here when the limit resets, or write it again.", 1);
+        List<ChangeFileStore.ChangeFile> files = List.of(STOPPED.getFirst(), partial, STOPPED.get(2));
+
+        assertThat(ChangeService.partial(partial)).isTrue();
+        assertThat(ChangeService.partial(STOPPED.getFirst())).isFalse();
+        assertThat(ChangeService.notWritten(files)).containsExactly("a/Service.java", "a/Resource.java");
+        assertThat(ChangeService.unwritten(files)).containsExactly("a/Service.java", "a/Resource.java");
+        assertThatThrownBy(() -> ChangeService.requireComplete(files)).isInstanceOf(ConflictException.class);
+
+        ModelLimitReachedException daily = new ModelLimitReachedException("x", true, "about 15 minutes", null);
+        assertThat(ChangeService.stoppedMessage(daily, null, 1, 3, "a/Service.java"))
+                .endsWith("The part of a/Service.java written so far is kept; Continue generation goes on from it.");
+        assertThat(ChangeService.stoppedMessage(daily, null, 1, 3, null)).isEqualTo(ChangeService.stoppedMessage(daily, null, 1, 3));
+    }
+
+    @Test
     void anIncompleteChangeIsDeliveredOnlyWhenConfirmed() {
         assertThatThrownBy(() -> ChangeService.requireComplete(STOPPED)).isInstanceOf(ConflictException.class)
                 .hasMessageStartingWith(ChangeService.INCOMPLETE).hasMessageContaining("2 planned file(s) are not written: a/Service.java, a/Resource.java");

@@ -248,6 +248,7 @@ public class ChangeService {
     void runGeneration(UUID id, String onlyPath, String note, boolean resume) {
         ChangeRequest change = find(id);
         String failedAgain = null;
+        String writing = null;
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
@@ -268,7 +269,7 @@ public class ChangeService {
 
             Map<String, String> earlier = new LinkedHashMap<>();
             for (ChangeFileStore.ChangeFile existing : files.files(id)) {
-                if (existing.generated() != null && !existing.path().equals(onlyPath)) {
+                if (existing.generated() != null && !existing.path().equals(onlyPath) && !partial(existing)) {
                     earlier.put(existing.path(), existing.generated());
                 }
             }
@@ -287,7 +288,11 @@ public class ChangeService {
                     String fixes = files.file(id, item.path()).map(f -> crossFileFixes(f.checkMessage())).orElse("");
                     fileNote = fixes.isEmpty() ? note : note == null || note.isBlank() ? fixes : note + "\n\n" + fixes;
                 }
-                String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote);
+                // Continue goes on from the part of a file the limit stopped, instead of writing it all again
+                String partial = resume ? files.file(id, item.path()).filter(ChangeService::partial).map(ChangeFileStore.ChangeFile::generated)
+                        .orElse(null) : null;
+                writing = item.path();
+                String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
                 if (onlyPath != null) {
                     failedAgain = error;
                 }
@@ -309,7 +314,8 @@ public class ChangeService {
             List<ChangeFileStore.ChangeFile> result = files.files(id);
             long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
                     || f.status() == ChangeFileStore.Status.UNCHANGED).count();
-            change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size()));
+            String kept = e instanceof CodeGenerator.Partial ? writing : null;
+            change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size(), kept));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the change must not stay "generating"
             log.error("Code generation for change {} failed", id, e);
@@ -328,8 +334,15 @@ public class ChangeService {
     static Set<String> notWritten(List<ChangeFileStore.ChangeFile> files) {
         Set<String> paths = new LinkedHashSet<>();
         files.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING || (f.status() == ChangeFileStore.Status.FAILED
-                && f.generated() == null && (f.checkMessage() == null || !f.checkMessage().contains(BY_HAND)))).forEach(f -> paths.add(f.path()));
+                && f.generated() == null && (f.checkMessage() == null || !f.checkMessage().contains(BY_HAND)))
+                || partial(f)).forEach(f -> paths.add(f.path()));
         return paths;
+    }
+
+    /** A file the model's limit stopped part-way: its part is kept, but it is not written. */
+    static boolean partial(ChangeFileStore.ChangeFile f) {
+        return f.status() == ChangeFileStore.Status.FAILED && f.generated() != null && f.checkMessage() != null
+                && f.checkMessage().startsWith(CodeGenerator.PARTIAL);
     }
 
     /** How the message of a file that can never be written ends. */
@@ -363,6 +376,17 @@ public class ChangeService {
      * in about 15 minutes, then click Continue generation.").
      */
     static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned) {
+        return stoppedMessage(e, onlyPath, written, planned, null);
+    }
+
+    /** @param kept a file the limit stopped part-way, whose part is kept for Continue to go on from, or null */
+    static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned, String kept) {
+        String message = stopped(e, onlyPath, written, planned);
+        return kept == null || onlyPath != null ? message
+                : message + " The part of " + kept + " written so far is kept; Continue generation goes on from it.";
+    }
+
+    private static String stopped(ModelLimitReachedException e, String onlyPath, long written, int planned) {
         String when = e.retryIn() != null ? "in " + e.retryIn() : null;
         if (onlyPath != null) {
             return "Writing " + onlyPath + " again stopped: " + limitReason(e) + " The previous version is kept; write it again "
@@ -385,7 +409,7 @@ public class ChangeService {
      * @return why the file could not be written, or null
      */
     private String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
-                                Path workingCopy, Map<String, String> earlier, String note) {
+                                Path workingCopy, Map<String, String> earlier, String note, String partial) {
         boolean modify = "modify".equals(item.action());
         String current = null;
         try {
@@ -403,12 +427,21 @@ public class ChangeService {
             }
             Map<String, String> examples = examples(workspaceId, workingCopy, item);
             ScreenScaffolder.Scaffold scaffold = scaffold(context, item.path(), current);
-            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold);
+            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold, partial);
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
             earlier.put(item.path(), result.content());
             return null;
+        } catch (CodeGenerator.Partial e) {
+            ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
+            if (previous == null || previous.generated() == null || partial(previous)) {
+                // Kept for the reviewer to see and for Continue to go on from; it still counts as not written
+                files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, e.content(), false,
+                        new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " Continue generation goes on from here "
+                                + "when the limit resets, or write it again."), 1);
+            }
+            throw e;
         } catch (ModelLimitReachedException e) {
             throw e;
         } catch (IOException | RuntimeException | StackOverflowError e) {
@@ -1178,7 +1211,8 @@ public class ChangeService {
     /** Planned files that are not written (not yet, or the model could not write them). */
     static List<String> unwritten(List<ChangeFileStore.ChangeFile> files) {
         return files.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING
-                || (f.status() == ChangeFileStore.Status.FAILED && f.generated() == null)).map(ChangeFileStore.ChangeFile::path).toList();
+                || (f.status() == ChangeFileStore.Status.FAILED && f.generated() == null)
+                || partial(f)).map(ChangeFileStore.ChangeFile::path).toList();
     }
 
     /**

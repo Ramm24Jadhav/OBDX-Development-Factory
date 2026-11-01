@@ -15,8 +15,10 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiChatResponseMetadata;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.output.FinishReason;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -103,12 +106,13 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * Asks for no more output than the server's learned limits allow, and logs what the request asks for (QA reads
      * factory.log to see why a request was the size it was).
      */
-    private void capOutput(Connection current, ChatRequest.Builder request, int promptChars) {
+    private int capOutput(Connection current, ChatRequest.Builder request, int promptChars) {
         int max = maxTokens(current.limits(), maxOutput, promptChars);
         if (max > 0) {
             request.maxOutputTokens(max);
         }
         logRequest(current, promptChars, max);
+        return max;
     }
 
     /**
@@ -587,7 +591,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
-            capOutput(current, request, chars(systemPrompt, userMessage));
+            int max = capOutput(current, request, chars(systemPrompt, userMessage));
             current.streamingChatModel().chat(request.build(),
                     new StreamingChatResponseHandler() {
                         @Override
@@ -613,7 +617,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     String model = response.metadata() != null && response.metadata().modelName() != null
                             ? response.metadata().modelName() : current.chatModelName();
                     String reply = response.aiMessage() == null || response.aiMessage().text() == null ? "" : response.aiMessage().text();
-                    return new ChatResult(reply, model, (System.nanoTime() - start) / 1_000_000, cutOff(current, response, reply));
+                    return new ChatResult(reply, model, (System.nanoTime() - start) / 1_000_000, cutOff(current, response, reply, max));
                 } catch (TimeoutException e) {
                     if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
                         done.cancel(true);
@@ -660,23 +664,69 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
-            capOutput(current, request, chars(systemPrompt, userMessage));
+            int max = capOutput(current, request, chars(systemPrompt, userMessage));
             ChatResponse response = current.chatModel().chat(request.build());
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();
-            return new ChatResult(response.aiMessage().text(), model, latencyMs, cutOff(current, response, response.aiMessage().text()));
+            return new ChatResult(response.aiMessage().text(), model, latencyMs, cutOff(current, response, response.aiMessage().text(), max));
         } catch (RuntimeException e) {
             throw chatFailure(current, e);
         }
     }
 
-    /** The model stopped at its output limit (finish reason "length"): the reply is incomplete. */
-    private static boolean cutOff(Connection current, ChatResponse response, String reply) {
-        boolean cut = response.metadata() != null && response.metadata().finishReason() == dev.langchain4j.model.output.FinishReason.LENGTH;
+    /**
+     * The model stopped at its output limit (finish reason "length"), or an answer without a finish reason ended at about
+     * max_tokens (a stream the server ended early): the reply is incomplete. Also learns the server's tokens a minute
+     * from the response's rate-limit headers.
+     */
+    private boolean cutOff(Connection current, ChatResponse response, String reply, int max) {
+        learnFromHeaders(current, response);
+        FinishReason reason = response.metadata() == null ? null : response.metadata().finishReason();
+        boolean cut = reason == FinishReason.LENGTH || (reason != FinishReason.STOP && reason != FinishReason.TOOL_EXECUTION
+                && endedAtMax(reply, max, current.limits().charsPerToken));
         if (cut) {
             warnCutOff(current, reply);
         }
         return cut;
+    }
+
+    /** An answer about as long as max_tokens allows (95% of it, as estimated from its characters). */
+    static boolean endedAtMax(String reply, int max, double charsPerToken) {
+        return max > 0 && reply != null && reply.length() / charsPerToken >= max * 0.95;
+    }
+
+    /**
+     * Groq (and OpenAI) say in every response how many tokens a minute the key has (x-ratelimit-limit-tokens): learned
+     * as the limit prompt and max_tokens are counted against together, so max_tokens is sized before any refusal.
+     */
+    private void learnFromHeaders(Connection current, ChatResponse response) {
+        if (!(response.metadata() instanceof OpenAiChatResponseMetadata openAi) || openAi.rawHttpResponse() == null) {
+            return;
+        }
+        int limit = tokensPerMinute(openAi.rawHttpResponse().headers());
+        if (limit > 0 && limit != current.limits().total) {
+            current.limits().total = limit;
+            saveLimits(current);
+            log.info("Chat model '{}' takes {} tokens a minute (from its response); answers ask for no more than fits", current.chatModelName(), limit);
+        }
+    }
+
+    /** x-ratelimit-limit-tokens from response headers (any case), or 0. */
+    static int tokensPerMinute(Map<String, List<String>> headers) {
+        if (headers == null) {
+            return 0;
+        }
+        for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+            if (header.getKey() != null && header.getKey().equalsIgnoreCase("x-ratelimit-limit-tokens") && header.getValue() != null
+                    && !header.getValue().isEmpty()) {
+                try {
+                    return Integer.parseInt(header.getValue().getFirst().strip());
+                } catch (NumberFormatException e) {
+                    return 0;
+                }
+            }
+        }
+        return 0;
     }
 
     private static void warnCutOff(Connection current, String reply) {

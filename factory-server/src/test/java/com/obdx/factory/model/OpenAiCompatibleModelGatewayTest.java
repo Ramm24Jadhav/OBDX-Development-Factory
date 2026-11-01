@@ -195,6 +195,29 @@ class OpenAiCompatibleModelGatewayTest {
                      "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
                     """);
         });
+        // Groq's rate-limit headers on every answer: 6000 tokens a minute; a stream that ends without a finish reason
+        server.createContext("/headers/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+            otpmAsked.add(m.find() ? Integer.parseInt(m.group(1)) : 0);
+            exchange.getResponseHeaders().add("x-ratelimit-limit-tokens", "6000");
+            exchange.getResponseHeaders().add("x-ratelimit-remaining-tokens", "5400");
+            if (body.matches("(?s).*\"stream\"\\s*:\\s*true.*")) {
+                String chunk = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"qwen\","
+                        + "\"choices\":[{\"index\":0,\"delta\":{\"content\":\"%s\"},\"finish_reason\":null}]}\n\n";
+                byte[] bytes = (chunk.formatted("y".repeat(2000)) + "data: [DONE]\n\n").getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream out = exchange.getResponseBody()) {
+                    out.write(bytes);
+                }
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-8", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                    """);
+        });
         // A rolling daily limit that frees up in a moment: waited out like a per-minute one
         server.createContext("/dailyshort/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -563,6 +586,36 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(otpmAsked).containsExactly(8192, 1350);
         assertThat(OpenAiCompatibleModelGateway.countsAnswer("on input tokens per minute (ITPM): Limit 7000, Requested 7663")).isFalse();
         assertThat(OpenAiCompatibleModelGateway.countsAnswer("on tokens per day (TPD): Limit 100000, Used 99000, Requested 8921")).isFalse();
+    }
+
+    @Test
+    void theTokensAMinuteInTheResponseHeadersSizeMaxTokensBeforeAnyRefusal() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/headers/v1";
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
+        MemoryLimits store = new MemoryLimits();
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, store);
+
+        gateway.chat(null, "x".repeat(7000));
+        // 7000 characters are about 2000 tokens: 90% of 6000 leaves 3400 for the answer
+        gateway.chat(null, "x".repeat(7000));
+
+        assertThat(otpmAsked).containsExactly(8192, 3400);
+        assertThat(store.rows.get(baseUrl + "|qwen").total()).isEqualTo(6000);
+        assertThat(OpenAiCompatibleModelGateway.tokensPerMinute(java.util.Map.of("X-RateLimit-Limit-Tokens", List.of("12000")))).isEqualTo(12000);
+    }
+
+    @Test
+    void aStreamThatEndsWithoutAFinishReasonAtMaxTokensIsCutOff() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/headers/v1";
+        // max_tokens 600: 2000 characters are about 571 tokens, 95% of 600
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 600);
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, new MemoryLimits());
+
+        assertThat(gateway.chatStream(null, "Write the file.", piece -> { }).cutOff()).isTrue();
+        // the headers of a streamed answer are read too: 17,500 characters (5000 tokens) leave 400 of 90% of 6000
+        gateway.chatStream(null, "x".repeat(17_500), piece -> { });
+        assertThat(otpmAsked).containsExactly(600, 400);
+        assertThat(OpenAiCompatibleModelGateway.endedAtMax("y".repeat(1000), 600, 3.5)).isFalse();
     }
 
     @Test

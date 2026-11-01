@@ -137,6 +137,95 @@ class CodeGeneratorTest {
         assertThat(result.check().message()).contains("continue " + CodeGenerator.LOCAL_CONTINUATIONS + " times");
     }
 
+    /** A gateway with a known input limit, answering from the same replies; "LIMIT" is the daily limit used up. */
+    private ModelGateway limited(int inputLimit) {
+        return new ModelGateway() {
+            @Override
+            public ChatResult chat(String systemPrompt, String userPrompt) {
+                if ("LIMIT".equals(replies.peekFirst())) {
+                    replies.removeFirst();
+                    throw new com.obdx.factory.model.ModelLimitReachedException("daily limit", true, "about 15 minutes", null);
+                }
+                return model.chat(systemPrompt, userPrompt);
+            }
+
+            @Override
+            public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public float[] embed(String text) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<float[]> embedAll(List<String> texts) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int inputLimit() {
+                return inputLimit;
+            }
+        };
+    }
+
+    private CodeGenerator generatorWith(ModelGateway gateway) {
+        return new CodeGenerator(gateway, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"),
+                new LocalChecks(VersionPacks.builtIn()));
+    }
+
+    @Test
+    void aContinuationIsThePromptAtTheSameScalePlusOnlyTheFilesEnd() {
+        String longStart = "public class RemarksValidator {\n" + "    private String field;\n".repeat(400);
+        Map<String, String> earlier = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < 10; i++) {
+            earlier.put("backend/Remarks" + i + "Dto.java", "package com.bank;\npublic class Remarks" + i + "Dto {\n"
+                    + "    private String field;\n".repeat(200) + "}\n");
+        }
+        replies.add("CUT:" + longStart);
+        replies.add("}\n");
+
+        generatorWith(limited(0)).generate(context, plan, item, null, Map.of(), earlier, null);
+
+        // no limit known: the continuation is the first prompt and at most the last 3000 characters of the file (and the ask)
+        assertThat(prompts.get(1).length()).isLessThanOrEqualTo(prompts.get(0).length() + CodeGenerator.TAIL + 400);
+        assertThat(prompts.get(1)).doesNotContain(longStart.substring(0, 200));
+
+        // a known limit: the first prompt shrinks, and the continuation starts at that scale and fits too
+        int full = prompts.get(0).length();
+        prompts.clear();
+        replies.add("CUT:" + longStart);
+        replies.add("}\n");
+        int limit = (int) (full * 0.7 / 3.5);
+        generatorWith(limited(limit)).generate(context, plan, item, null, Map.of(), earlier, null);
+        double room = limit * 0.9 * 3.5;
+        assertThat(prompts.get(0).length()).isLessThan(full).isLessThanOrEqualTo((int) room);
+        assertThat(prompts.get(1).length()).isLessThanOrEqualTo((int) room);
+    }
+
+    @Test
+    void aFileStoppedByTheLimitPartWayIsKeptAndContinuedFromLater() {
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
+        replies.add("LIMIT");
+
+        CodeGenerator onGroq = generatorWith(limited(0));
+        CodeGenerator.Partial stopped = org.assertj.core.api.Assertions.catchThrowableOfType(CodeGenerator.Partial.class,
+                () -> onGroq.generate(context, plan, item, null, Map.of(), Map.of(), null));
+        assertThat(stopped.content()).isEqualTo("public class RemarksValidator {\n    void check(String remarks) {\n");
+        assertThat(stopped.daily()).isTrue();
+
+        // Continue: no new first piece; the model is asked at once to go on from the kept part
+        prompts.clear();
+        replies.add("    }\n}\n");
+        CodeGenerator.Result result = onGroq.generate(context, plan, item, null, null, Map.of(), Map.of(), null, null, stopped.content());
+
+        assertThat(prompts).hasSize(1);
+        assertThat(prompts.getFirst()).contains("It ended with:\npublic class RemarksValidator {");
+        assertThat(result.content()).isEqualTo("public class RemarksValidator {\n    void check(String remarks) {\n    }\n}\n");
+    }
+
     @Test
     void aFileCutOffAtTheOutputLimitIsContinuedAndJoined() {
         // A server that writes little per answer (a per-minute output limit): the file comes in pieces

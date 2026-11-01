@@ -22,15 +22,28 @@ public final class PromptFit {
     }
 
     public static ModelGateway.ChatResult chat(ModelGateway gateway, String system, DoubleFunction<String> build) {
-        return ask(gateway, system, build, false);
+        return ask(gateway, system, build, false, 1).result();
+    }
+
+    /** An answer and the scale its prompt was sent at. */
+    public record Fitted(ModelGateway.ChatResult result, double scale) {
+    }
+
+    /**
+     * As chat, starting at a scale an earlier request of the same work needed (a file's continuation after its first
+     * piece), so it is not sent at 100% again; it still shrinks when what the prompt carries besides (the file's end)
+     * makes it too large.
+     */
+    public static Fitted chatFrom(ModelGateway gateway, String system, DoubleFunction<String> build, double scale) {
+        return ask(gateway, system, build, false, scale);
     }
 
     public static ModelGateway.ChatResult chatJson(ModelGateway gateway, String system, DoubleFunction<String> build) {
-        return ask(gateway, system, build, true);
+        return ask(gateway, system, build, true, 1).result();
     }
 
-    private static ModelGateway.ChatResult ask(ModelGateway gateway, String system, DoubleFunction<String> build, boolean json) {
-        double scale = 1;
+    private static Fitted ask(ModelGateway gateway, String system, DoubleFunction<String> build, boolean json, double start) {
+        double scale = Math.clamp(start, MIN_SCALE, 1);
         for (int refused = 0; ; refused++) {
             String user = build.apply(scale);
             for (int i = 0; i < 8 && scale > MIN_SCALE; i++) {
@@ -49,7 +62,7 @@ public final class PromptFit {
             SCALE.set(scale);
             try {
                 // Streamed, so a slow server writing a long answer (a file) is timed from its last piece, not from the start
-                return json ? gateway.chatJson(system, user) : gateway.chatStream(system, user, piece -> { });
+                return new Fitted(json ? gateway.chatJson(system, user) : gateway.chatStream(system, user, piece -> { }), scale);
             } catch (PromptTooLargeException e) {
                 if (refused >= 2 || scale <= MIN_SCALE) {
                     throw new ModelGatewayException("The request is larger than the " + e.limit() + " tokens the model's server takes "

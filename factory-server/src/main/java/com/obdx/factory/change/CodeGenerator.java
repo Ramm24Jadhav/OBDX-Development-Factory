@@ -1,6 +1,7 @@
 package com.obdx.factory.change;
 
 import com.obdx.factory.model.ModelGateway;
+import com.obdx.factory.model.ModelLimitReachedException;
 import com.obdx.factory.model.PromptFit;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.Recipe;
@@ -94,12 +95,24 @@ public class CodeGenerator {
      */
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold) {
+        return generate(context, plan, item, current, original, examples, earlier, note, scaffold, null);
+    }
+
+    /**
+     * @param partial the part of the file written before the model's limit stopped it (kept with a {@link #PARTIAL}
+     *                check), which the model continues from instead of writing the whole file again; null to start
+     *                afresh
+     * @throws Partial when the model's limit stops the file after part of it was written
+     */
+    public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
+                           Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold,
+                           String partial) {
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
         String rules = checks.describeRules(context.checks(), item.path());
         String guidance = checks.targetGuidance(context.checks(), item.path());
         java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
                 guidance, scaffold, scale);
-        Written written = write(prompt);
+        Written written = write(prompt, partial, 1);
         String content = written.content();
         FileChecks.Result check = checked(context, item, original, content, scaffold, written.cutOff());
         int attempts = 1;
@@ -107,7 +120,7 @@ public class CodeGenerator {
         while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
             String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
-            written = write(scale -> prompt.apply(scale) + fix);
+            written = write(scale -> prompt.apply(scale) + fix, null, written.scale());
             content = written.content();
             check = checked(context, item, original, content, scaffold, written.cutOff());
             attempts++;
@@ -343,30 +356,73 @@ public class CodeGenerator {
         return modelGateway.local() ? LOCAL_CONTINUATIONS : MAX_CONTINUATIONS;
     }
 
-    /** A file as written, and whether it is still cut off at the model's output limit. */
-    record Written(String content, boolean cutOff) {
+    /** A file as written, whether it is still cut off at the model's output limit, and the scale its prompt needed. */
+    record Written(String content, boolean cutOff, double scale) {
     }
+
+    /** How the check of a file the model's limit stopped part-way starts: the file is kept, but counts as not written. */
+    public static final String PARTIAL = "Cut off: the model's limit stopped this file part-way.";
+
+    /** The model's limit stopped a file after part of it was written: that part, to keep and continue from later. */
+    public static final class Partial extends ModelLimitReachedException {
+        private final String content;
+
+        Partial(ModelLimitReachedException limit, String content) {
+            super(limit.getMessage(), limit.daily(), limit.retryIn(), limit);
+            this.content = content;
+        }
+
+        public String content() {
+            return content;
+        }
+    }
+
+    /** The most of the file's end a continuation prompt carries. */
+    static final int TAIL = 3000;
 
     /**
      * Asks for the file and, while the answer stops at the model's output limit (a server that writes little per
      * request), asks the model to go on where it stopped and joins the pieces, so a large file is still written whole.
+     * A continuation is the same prompt, at the scale the first piece needed or smaller, plus only the file's last
+     * 3000 characters.
+     *
+     * @param partial what was written of the file before (continued from at once), or null
      */
-    private Written write(java.util.function.DoubleFunction<String> prompt) {
-        ModelGateway.ChatResult reply = PromptFit.chat(modelGateway, SYSTEM, prompt);
-        if (!reply.cutOff()) {
-            return new Written(clean(reply.reply()), false);
+    private Written write(java.util.function.DoubleFunction<String> prompt, String partial, double start) {
+        double scale = start;
+        String sofar;
+        if (partial == null) {
+            PromptFit.Fitted first = PromptFit.chatFrom(modelGateway, SYSTEM, prompt, scale);
+            scale = first.scale();
+            ModelGateway.ChatResult reply = first.result();
+            if (!reply.cutOff()) {
+                return new Written(clean(reply.reply()), false, scale);
+            }
+            sofar = withoutFences(reply.reply());
+        } else {
+            sofar = partial;
         }
-        String sofar = withoutFences(reply.reply());
         boolean cut = true;
         boolean warned = false;
         int continuations = continuations();
         for (int i = 0; cut && i < continuations; i++) {
-            String end = sofar.length() > 3000 ? sofar.substring(sofar.length() - 3000) : sofar;
+            String end = sofar.length() > TAIL ? sofar.substring(sofar.length() - TAIL) : sofar;
             String more = "\n\nYour answer stopped at your output limit. It ended with:\n" + end + "\n\nContinue exactly where it stopped: "
                     + "answer with only the rest of the file, starting with the next characters, repeating nothing, without code fences."
                     + (warned ? " Do NOT start the file again: no package line, no imports, no class header; only what comes after the "
                     + "last characters above." : "");
-            ModelGateway.ChatResult next = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + more);
+            PromptFit.Fitted fitted;
+            try {
+                fitted = PromptFit.chatFrom(modelGateway, SYSTEM, s -> prompt.apply(s) + more, scale);
+            } catch (ModelLimitReachedException e) {
+                if (sofar.isBlank()) {
+                    throw e;
+                }
+                // Keep what was written: Continue goes on from it instead of paying for the whole file again
+                throw new Partial(e, sofar.strip() + "\n");
+            }
+            scale = fitted.scale();
+            ModelGateway.ChatResult next = fitted.result();
             if (next.reply() == null || next.reply().isBlank()) {
                 break;
             }
@@ -389,7 +445,7 @@ public class CodeGenerator {
             cut = next.cutOff();
         }
         // The pieces are joined without their fences already; clean() would cut at a ``` inside the file (a template string)
-        return new Written(sofar.strip() + "\n", cut);
+        return new Written(sofar.strip() + "\n", cut, scale);
     }
 
     /** The least repeated text that counts as an overlap: shorter matches are chance. */
