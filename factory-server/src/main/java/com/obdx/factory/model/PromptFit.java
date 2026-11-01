@@ -15,6 +15,8 @@ public final class PromptFit {
     /** Room left for the server counting tokens a little differently than estimated. */
     static final double MARGIN = 0.9;
     static final double MIN_SCALE = 0.1;
+    /** The scale of the prompt being sent on this thread, for the gateway's log of each request; null outside PromptFit. */
+    static final ThreadLocal<Double> SCALE = new ThreadLocal<>();
 
     private PromptFit() {
     }
@@ -44,6 +46,7 @@ public final class PromptFit {
                 log.info("Prompt shortened to {}% of its usual context to fit the {} tokens the model's server takes at once",
                         Math.round(scale * 100), gateway.inputLimit());
             }
+            SCALE.set(scale);
             try {
                 // Streamed, so a slow server writing a long answer (a file) is timed from its last piece, not from the start
                 return json ? gateway.chatJson(system, user) : gateway.chatStream(system, user, piece -> { });
@@ -52,6 +55,8 @@ public final class PromptFit {
                     throw new ModelGatewayException("The request is larger than the " + e.limit() + " tokens the model's server takes "
                             + "at once, even with less context. Use a model or plan with a larger limit (on a cloud server, a paid tier).", e);
                 }
+            } finally {
+                SCALE.remove();
             }
         }
     }
