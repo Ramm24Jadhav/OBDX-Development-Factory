@@ -195,10 +195,8 @@ final class CrossFileJava {
         if (unit == null) {
             return null;
         }
-        if (!unit.findAll(com.github.javaparser.ast.body.ClassOrInterfaceDeclaration.class).stream()
-                .allMatch(c -> c.getExtendedTypes().isEmpty() && c.getImplementedTypes().isEmpty())
-                || unit.findAll(com.github.javaparser.ast.body.RecordDeclaration.class).stream().anyMatch(r -> !r.getImplementedTypes().isEmpty())
-                || unit.findAll(com.github.javaparser.ast.body.EnumDeclaration.class).stream().anyMatch(e -> !e.getImplementedTypes().isEmpty())
+        // Only the file's own (top-level) types count: a nested HostLookupCallable implements Callable adds nothing to them
+        if (unit.getTypes().stream().anyMatch(CrossFileJava::inherits)
                 || unit.getImports().stream().anyMatch(i -> i.getNameAsString().startsWith("lombok"))
                 || unit.findAll(com.github.javaparser.ast.expr.AnnotationExpr.class).stream()
                 .anyMatch(a -> LOMBOK.contains(a.getNameAsString().replaceAll("^lombok\\.(experimental\\.)?", "")))) {
@@ -208,17 +206,228 @@ final class CrossFileJava {
         Map<String, Set<Integer>> methods = new HashMap<>();
         // Every object has these
         OBJECT_METHODS.forEach((name, arity) -> methods.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(arity));
-        for (com.github.javaparser.ast.body.RecordDeclaration record : unit.findAll(com.github.javaparser.ast.body.RecordDeclaration.class)) {
-            record.getParameters().forEach(p -> methods.computeIfAbsent(p.getNameAsString(), n -> new LinkedHashSet<>()).add(0));
+        // The methods of the file's own types, not of the classes nested in them
+        for (com.github.javaparser.ast.body.TypeDeclaration<?> type : unit.getTypes()) {
+            if (type instanceof com.github.javaparser.ast.body.RecordDeclaration record) {
+                record.getParameters().forEach(p -> methods.computeIfAbsent(p.getNameAsString(), n -> new LinkedHashSet<>()).add(0));
+            }
+            if (type instanceof com.github.javaparser.ast.body.EnumDeclaration) {
+                ENUM_METHODS.forEach((name, arity) -> methods.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(arity));
+            }
         }
-        if (!unit.findAll(com.github.javaparser.ast.body.EnumDeclaration.class).isEmpty()) {
-            ENUM_METHODS.forEach((name, arity) -> methods.computeIfAbsent(name, n -> new LinkedHashSet<>()).add(arity));
-        }
-        for (MethodDeclaration m : unit.findAll(MethodDeclaration.class)) {
+        for (MethodDeclaration m : unit.getTypes().stream().flatMap(t -> t.getMethods().stream()).toList()) {
             boolean varargs = m.getParameters().stream().anyMatch(Parameter::isVarArgs);
             methods.computeIfAbsent(m.getNameAsString(), n -> new LinkedHashSet<>()).add(varargs ? -1 : m.getParameters().size());
         }
         return methods;
+    }
+
+    static final String UNKNOWN_RECEIVERS = "Calls methods on names it does not declare";
+    static final String MISSING_IMPORTS = "Uses JDK classes without importing them";
+    static final String UNKNOWN_CLASSES = "Uses classes of its package that do not exist";
+
+    /**
+     * validationService.validateFormat(...) where the file declares no field, parameter or local variable
+     * validationService: it does not compile. Not checked in a class that extends another (it may inherit the field),
+     * with Lombok (a generated logger) or with a static import of all of a class's members.
+     */
+    static Optional<String> unknownReceivers(String content) {
+        CompilationUnit unit = parse(content);
+        if (unit == null || unit.getTypes().stream().anyMatch(t -> t instanceof com.github.javaparser.ast.body.ClassOrInterfaceDeclaration c
+                && !c.isInterface() && !c.getExtendedTypes().isEmpty()) || lombok(unit)
+                || unit.getImports().stream().anyMatch(i -> i.isStatic() && i.isAsterisk())) {
+            return Optional.empty();
+        }
+        Set<String> declared = new java.util.HashSet<>();
+        unit.findAll(VariableDeclarator.class).forEach(v -> declared.add(v.getNameAsString()));
+        unit.findAll(Parameter.class).forEach(p -> declared.add(p.getNameAsString()));
+        unit.findAll(com.github.javaparser.ast.body.EnumConstantDeclaration.class).forEach(e -> declared.add(e.getNameAsString()));
+        unit.findAll(com.github.javaparser.ast.expr.TypePatternExpr.class).forEach(p -> declared.add(p.getNameAsString()));
+        unit.getImports().stream().filter(i -> i.isStatic()).forEach(i -> declared.add(i.getName().getIdentifier()));
+        Set<String> unknown = new LinkedHashSet<>();
+        for (MethodCallExpr call : unit.findAll(MethodCallExpr.class)) {
+            if (call.getScope().orElse(null) instanceof NameExpr scope) {
+                String name = scope.getNameAsString();
+                if (Character.isLowerCase(name.charAt(0)) && !declared.contains(name)) {
+                    unknown.add(name);
+                }
+            }
+        }
+        return unknown.isEmpty() ? Optional.empty() : Optional.of(UNKNOWN_RECEIVERS + ": " + String.join(", ", unknown)
+                + ". Declare them (a field, a parameter or a local variable), or call an object the class has.");
+    }
+
+    /** Common JDK classes outside java.lang, by simple name: a file using one needs its import. */
+    private static final Map<String, String> JDK = jdkClasses();
+
+    private static Map<String, String> jdkClasses() {
+        Map<String, String> jdk = new HashMap<>();
+        for (String name : List.of("List", "ArrayList", "LinkedList", "Map", "HashMap", "LinkedHashMap", "TreeMap", "Set", "HashSet",
+                "LinkedHashSet", "TreeSet", "Optional", "Arrays", "Collections", "Objects", "UUID", "Collection", "Iterator", "Deque",
+                "ArrayDeque", "Queue", "Locale", "Date", "Calendar", "StringJoiner", "EnumMap", "EnumSet")) {
+            jdk.put(name, "java.util");
+        }
+        for (String name : List.of("Collectors", "Stream", "IntStream", "LongStream")) {
+            jdk.put(name, "java.util.stream");
+        }
+        for (String name : List.of("BigDecimal", "BigInteger", "RoundingMode")) {
+            jdk.put(name, "java.math");
+        }
+        for (String name : List.of("LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "ZonedDateTime", "OffsetDateTime")) {
+            jdk.put(name, "java.time");
+        }
+        return Map.copyOf(jdk);
+    }
+
+    /** HashMap, List, Collectors ... used without their import (and without a wildcard import of their package). */
+    static Optional<String> missingJdkImports(String content) {
+        CompilationUnit unit = parse(content);
+        if (unit == null) {
+            return Optional.empty();
+        }
+        String own = unit.getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
+        Set<String> imported = new java.util.HashSet<>();
+        Set<String> wildcards = new java.util.HashSet<>();
+        unit.getImports().stream().filter(i -> !i.isStatic()).forEach(i -> {
+            if (i.isAsterisk()) {
+                wildcards.add(i.getNameAsString());
+            } else {
+                imported.add(i.getName().getIdentifier());
+            }
+        });
+        Set<String> declared = declaredTypes(unit);
+        Set<String> missing = new java.util.TreeSet<>();
+        for (String name : usedTypes(unit)) {
+            String pkg = JDK.get(name);
+            if (pkg != null && !imported.contains(name) && !wildcards.contains(pkg) && !pkg.equals(own) && !declared.contains(name)) {
+                missing.add(name + " (" + pkg + "." + name + ")");
+            }
+        }
+        return missing.isEmpty() ? Optional.empty() : Optional.of(MISSING_IMPORTS + ": " + String.join(", ", missing) + ". Add the imports.");
+    }
+
+    /**
+     * Classes of the file's own package (used without an import) that are nowhere: not planned, not written, not in the
+     * imported code (AuditRepository). Not checked with wildcard imports, which could bring the class, nor in a class
+     * that extends another (it may inherit nested types).
+     *
+     * @param classExists whether a class file (com/bank/x/Name.java) is planned, written or imported
+     */
+    static Optional<String> unknownSamePackageClasses(String content, java.util.function.Predicate<String> classExists) {
+        CompilationUnit unit = parse(content);
+        if (unit == null || unit.getPackageDeclaration().isEmpty() || unit.getImports().stream().anyMatch(i -> !i.isStatic() && i.isAsterisk())
+                || unit.findAll(com.github.javaparser.ast.body.TypeDeclaration.class).stream().anyMatch(t -> inheritsFromOutsideTheJdk(unit, t))
+                || unit.findAll(com.github.javaparser.ast.expr.ObjectCreationExpr.class).stream()
+                .anyMatch(o -> o.getAnonymousClassBody().isPresent() && !jdkType(unit, o.getType()))) {
+            // A nested or anonymous class inheriting from the bank's own type may use that type's nested types too
+            return Optional.empty();
+        }
+        String folder = unit.getPackageDeclaration().get().getNameAsString().replace('.', '/');
+        Set<String> imported = new java.util.HashSet<>();
+        unit.getImports().forEach(i -> imported.add(i.getName().getIdentifier()));
+        Set<String> declared = declaredTypes(unit);
+        Set<String> unknown = new java.util.TreeSet<>();
+        for (String name : usedTypes(unit)) {
+            if (!imported.contains(name) && !declared.contains(name) && !JDK.containsKey(name) && !javaLang(name)
+                    && !classExists.test(folder + "/" + name + ".java")) {
+                unknown.add(name);
+            }
+        }
+        return unknown.isEmpty() ? Optional.empty() : Optional.of(UNKNOWN_CLASSES + ": " + String.join(", ", unknown)
+                + ". They are not in the plan, the change or the codebase: add them to the plan, import the right class, or remove the use.");
+    }
+
+    /** Types the file uses by their simple name: as a type (new X(), X x, List<X>), or for a static call or constant (X.of()). */
+    private static Set<String> usedTypes(CompilationUnit unit) {
+        Set<String> used = new LinkedHashSet<>();
+        // Not the first part of a qualified name (java in java.util.List), nor a variable in a method reference (map::get)
+        unit.findAll(com.github.javaparser.ast.type.ClassOrInterfaceType.class).stream()
+                .filter(t -> t.getScope().isEmpty() && Character.isUpperCase(t.getNameAsString().charAt(0))
+                        && !(t.getParentNode().orElse(null) instanceof com.github.javaparser.ast.type.ClassOrInterfaceType outer
+                        && outer.getScope().orElse(null) == t))
+                .forEach(t -> used.add(t.getNameAsString()));
+        Set<String> variables = new java.util.HashSet<>();
+        unit.findAll(VariableDeclarator.class).forEach(v -> variables.add(v.getNameAsString()));
+        unit.findAll(Parameter.class).forEach(p -> variables.add(p.getNameAsString()));
+        for (MethodCallExpr call : unit.findAll(MethodCallExpr.class)) {
+            if (call.getScope().orElse(null) instanceof NameExpr scope && Character.isUpperCase(scope.getNameAsString().charAt(0))
+                    && !variables.contains(scope.getNameAsString())) {
+                used.add(scope.getNameAsString());
+            }
+        }
+        for (FieldAccessExpr access : unit.findAll(FieldAccessExpr.class)) {
+            if (access.getScope() instanceof NameExpr scope && Character.isUpperCase(scope.getNameAsString().charAt(0))
+                    && !variables.contains(scope.getNameAsString())) {
+                used.add(scope.getNameAsString());
+            }
+        }
+        // ALL_CAPS names are constants, not classes
+        used.removeIf(name -> name.length() > 1 && name.equals(name.toUpperCase(java.util.Locale.ROOT)));
+        return used;
+    }
+
+    /** Types the file declares itself (nested too) and its type parameters. */
+    private static Set<String> declaredTypes(CompilationUnit unit) {
+        Set<String> declared = new java.util.HashSet<>();
+        unit.findAll(com.github.javaparser.ast.body.TypeDeclaration.class).forEach(t -> declared.add(t.getNameAsString()));
+        unit.findAll(com.github.javaparser.ast.type.TypeParameter.class).forEach(t -> declared.add(t.getNameAsString()));
+        return declared;
+    }
+
+    /**
+     * A type that extends or implements one that is not the JDK's: that supertype may declare nested types the file
+     * uses by their simple name (ModelGateway.ChatResult in a class implementing ModelGateway).
+     */
+    private static boolean inheritsFromOutsideTheJdk(CompilationUnit unit, com.github.javaparser.ast.body.TypeDeclaration<?> type) {
+        List<com.github.javaparser.ast.type.ClassOrInterfaceType> supertypes = new ArrayList<>();
+        if (type instanceof com.github.javaparser.ast.body.ClassOrInterfaceDeclaration c) {
+            supertypes.addAll(c.getExtendedTypes());
+            supertypes.addAll(c.getImplementedTypes());
+        } else if (type instanceof com.github.javaparser.ast.body.RecordDeclaration r) {
+            supertypes.addAll(r.getImplementedTypes());
+        } else if (type instanceof com.github.javaparser.ast.body.EnumDeclaration e) {
+            supertypes.addAll(e.getImplementedTypes());
+        }
+        return supertypes.stream().anyMatch(s -> !jdkType(unit, s));
+    }
+
+    /** A type of the JDK: imported from java.* or javax.*, written with such a package, or of java.lang. */
+    private static boolean jdkType(CompilationUnit unit, com.github.javaparser.ast.type.ClassOrInterfaceType type) {
+        String name = type.getNameAsString();
+        String imported = unit.getImports().stream().filter(i -> !i.isAsterisk() && i.getName().getIdentifier().equals(name))
+                .map(i -> i.getNameAsString()).findFirst().orElse(null);
+        return imported != null ? imported.startsWith("java.") || imported.startsWith("javax.")
+                : type.getScope().map(Object::toString).map(q -> q.startsWith("java.")).orElse(javaLang(name));
+    }
+
+    /** A class of java.lang (String, Math, IllegalStateException ...), which needs no import. */
+    private static boolean javaLang(String name) {
+        try {
+            Class.forName("java.lang." + name, false, CrossFileJava.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException | LinkageError e) {
+            return false;
+        }
+    }
+
+    private static boolean lombok(CompilationUnit unit) {
+        return unit.getImports().stream().anyMatch(i -> i.getNameAsString().startsWith("lombok"))
+                || unit.findAll(com.github.javaparser.ast.expr.AnnotationExpr.class).stream().anyMatch(a -> a.getNameAsString().startsWith("lombok.")
+                || LOMBOK.contains(a.getNameAsString()) || a.getNameAsString().matches("Slf4j|Log4j2?|CommonsLog|XSlf4j|Flogger|JBossLog|CustomLog|Log"));
+    }
+
+    /** A type that extends or implements another, so it has methods its file does not declare. */
+    private static boolean inherits(com.github.javaparser.ast.body.TypeDeclaration<?> type) {
+        if (type instanceof com.github.javaparser.ast.body.ClassOrInterfaceDeclaration c) {
+            return !c.getExtendedTypes().isEmpty() || !c.getImplementedTypes().isEmpty();
+        }
+        if (type instanceof com.github.javaparser.ast.body.RecordDeclaration r) {
+            return !r.getImplementedTypes().isEmpty();
+        }
+        if (type instanceof com.github.javaparser.ast.body.EnumDeclaration e) {
+            return !e.getImplementedTypes().isEmpty();
+        }
+        return false;
     }
 
     private static CompilationUnit parse(String content) {

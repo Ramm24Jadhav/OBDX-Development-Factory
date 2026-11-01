@@ -593,11 +593,19 @@ class OpenAiCompatibleModelGatewayTest {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/headers/v1";
         ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
         MemoryLimits store = new MemoryLimits();
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(OpenAiCompatibleModelGateway.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> logged = new ch.qos.logback.core.read.ListAppender<>();
+        logged.start();
+        logger.addAppender(logged);
         OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, store);
 
         gateway.chat(null, "x".repeat(7000));
         // 7000 characters are about 2000 tokens: 90% of 6000 leaves 3400 for the answer
         gateway.chat(null, "x".repeat(7000));
+        logger.detachAppender(logged);
+        // said once, when it was learned
+        assertThat(logged.list).extracting(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                .filteredOn(m -> m.startsWith("Learned the model server's per-minute token limit: 6000")).hasSize(1);
 
         assertThat(otpmAsked).containsExactly(8192, 3400);
         assertThat(store.rows.get(baseUrl + "|qwen").total()).isEqualTo(6000);

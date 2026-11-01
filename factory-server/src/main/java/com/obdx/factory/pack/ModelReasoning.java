@@ -34,7 +34,9 @@ final class ModelReasoning {
             + "(?:not|no)\\b[^.\\n]{0,60}?\\b(?:defined|given|specified|listed|mentioned)\\b[^.\\n]{0,40}? in the (?:provided|given) "
             + "(?:list|spec|specification|prompt)\\b|"
             // as per instruction "never exception text": a quoted instruction, not "as per instruction frequency"
-            + "as per (?:the )?instructions?\\s*[:,]?\\s*[\"'\\u201C\\u2018])"
+            + "as per (?:the )?instructions?\\s*[:,]?\\s*[\"'\\u201C\\u2018]|"
+            // "For now, we assume ..." and "Assuming the validation response has a way ...": the model guessing aloud
+            + "for now,? we assume|assum(?:e|ing) the \\w+ (?:response|request|service|validator) (?:has|returns|marks|will)\\b)"
             // "Assuming the host returns ...": an assumption opening a comment
             + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b)");
     /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */

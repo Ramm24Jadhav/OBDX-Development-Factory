@@ -704,10 +704,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             return;
         }
         int limit = tokensPerMinute(openAi.rawHttpResponse().headers());
-        if (limit > 0 && limit != current.limits().total) {
+        int before = current.limits().total;
+        if (limit > 0 && limit != before) {
             current.limits().total = limit;
             saveLimits(current);
-            log.info("Chat model '{}' takes {} tokens a minute (from its response); answers ask for no more than fits", current.chatModelName(), limit);
+            log.info("Learned the model server's per-minute token limit: {} (chat model '{}', from its response headers{}); "
+                    + "max_tokens is sized to fit it", limit, current.chatModelName(), before > 0 ? "; was " + before : "");
         }
     }
 

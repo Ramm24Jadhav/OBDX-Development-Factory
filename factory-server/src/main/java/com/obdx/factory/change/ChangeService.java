@@ -785,6 +785,8 @@ public class ChangeService {
         Map<String, String> classes = new LinkedHashMap<>();
         written.stream().filter(f -> f.path().endsWith(".java")).forEach(f -> classes.put(CrossFileJava.className(f.path()), f.generated()));
         Path workingCopy = storage.workingCopy(workspaceId);
+        boolean javaIndexed = !classes.isEmpty() && Boolean.TRUE.equals(jdbc.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND path LIKE '%.java')", Boolean.class, workspaceId));
         for (ChangeFileStore.ChangeFile file : written) {
             List<String> problems = new ArrayList<>();
             String lower = file.path().toLowerCase(java.util.Locale.ROOT);
@@ -798,6 +800,13 @@ public class ChangeService {
                 }
                 CrossFileJava.unwrittenClasses(file.path(), file.generated(), unwrittenJava).ifPresent(problems::add);
                 problems.addAll(CrossFileJava.missingMethods(file.generated(), classes));
+                CrossFileJava.unknownReceivers(file.generated()).ifPresent(problems::add);
+                CrossFileJava.missingJdkImports(file.generated()).ifPresent(problems::add);
+                if (javaIndexed) {
+                    // Without imported Java code a class of the package could exist unseen
+                    CrossFileJava.unknownSamePackageClasses(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
+                            || indexed(workspaceId, classFile)).ifPresent(problems::add);
+                }
             } else if (lower.endsWith(".html")) {
                 problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
             } else if (lower.endsWith(".js")) {
@@ -812,7 +821,8 @@ public class ChangeService {
 
     /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
     static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds",
-            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, CrossFileJava.MISSING_NESTED, JsModuleChecks.CALLED_BEFORE_SET,
+            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS,
+            CrossFileJava.MISSING_IMPORTS, CrossFileJava.UNKNOWN_CLASSES, JsModuleChecks.CALLED_BEFORE_SET,
             JsModuleChecks.NEVER_SET, JsModuleChecks.UNKNOWN_MODULES);
 
     /**
