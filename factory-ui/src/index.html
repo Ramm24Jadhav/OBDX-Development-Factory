@@ -52,40 +52,35 @@
                   :aria-expanded="[[sidebarCollapsed() ? 'false' : 'true']]" aria-controls="sidebar">
             <span class="factory-nav-notch-icon" aria-hidden="true"></span>
           </button>
-          <nav class="factory-nav" aria-label="Main menu">
-            <h2 class="factory-nav-heading" id="navWorkHeading">Workflow</h2>
-            <ul aria-labelledby="navWorkHeading">
-              <oj-bind-for-each data="[[workNav]]">
-                <template>
-                  <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
-                         :title="[[$current.data.label]]" :aria-current="[[$current.data.active() ? 'page' : null]]"
-                         on-click="[[$current.data.open]]">
-                    <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span>
-                    <span class="factory-nav-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-                  </a></li>
-                </template>
-              </oj-bind-for-each>
-            </ul>
-
-            <div :class="[[setupGroupClass]]">
-            <button type="button" class="factory-nav-heading factory-nav-group-toggle" id="navSetupHeading" on-click="[[toggleSetup]]"
-                    aria-controls="navSetupList" :aria-expanded="[[setupShown() ? 'true' : 'false']]">
-              <span class="factory-nav-group-name">Setup</span>
-              <span class="factory-nav-group-chevron" aria-hidden="true"></span>
-            </button>
-            <ul id="navSetupList" aria-labelledby="navSetupHeading">
-              <oj-bind-for-each data="[[setupNav]]">
-                <template>
-                  <li><a :href="[[$current.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': $current.data.active()}]]"
-                         :title="[[$current.data.label]]" :aria-current="[[$current.data.active() ? 'page' : null]]"
-                         on-click="[[$current.data.open]]">
-                    <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span>
-                    <span class="factory-nav-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-                  </a></li>
-                </template>
-              </oj-bind-for-each>
-            </ul>
-            </div>
+          <!-- Six sections (appController NAV_GROUPS); Administration folds. Up and Down move between the links. -->
+          <nav class="factory-nav" aria-label="Main menu" on-keydown="[[navKey]]">
+            <oj-bind-for-each data="[[navGroups]]" as="grp">
+              <template>
+                <div :class="[[grp.data.css]]">
+                  <oj-bind-if test="[[!grp.data.folds]]">
+                    <h2 class="factory-nav-heading" :id="[[grp.data.headingId]]"><oj-bind-text value="[[grp.data.label]]"></oj-bind-text></h2>
+                  </oj-bind-if>
+                  <oj-bind-if test="[[grp.data.folds]]">
+                    <button type="button" class="factory-nav-heading factory-nav-group-toggle" :id="[[grp.data.headingId]]" on-click="[[grp.data.toggle]]"
+                            :aria-controls="[[grp.data.listId]]" :aria-expanded="[[grp.data.shown() ? 'true' : 'false']]">
+                      <span class="factory-nav-group-name"><oj-bind-text value="[[grp.data.label]]"></oj-bind-text></span>
+                      <span class="factory-nav-group-chevron" aria-hidden="true"></span>
+                    </button>
+                  </oj-bind-if>
+                  <ul :id="[[grp.data.listId]]" :aria-labelledby="[[grp.data.headingId]]">
+                    <oj-bind-for-each data="[[grp.data.items]]" as="item">
+                      <template>
+                        <li><a :href="[[item.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': item.data.active()}]]"
+                               :aria-current="[[item.data.active() ? 'page' : null]]" on-click="[[item.data.open]]">
+                          <span :class="[[item.data.iconClass]]" aria-hidden="true"></span>
+                          <span class="factory-nav-label"><oj-bind-text value="[[item.data.label]]"></oj-bind-text></span>
+                        </a></li>
+                      </template>
+                    </oj-bind-for-each>
+                  </ul>
+                </div>
+              </template>
+            </oj-bind-for-each>
           </nav>
           <section class="factory-nav-promo" aria-label="Build smarter with AI">
             <span class="factory-brand-mark factory-nav-promo-mark" aria-hidden="true"></span>
@@ -96,6 +91,8 @@
           </section>
         </aside>
         <div class="factory-scrim" on-click="[[closeSidebar]]"></div>
+        <!-- The collapsed menu's tooltip (appController watchNav): the link's own text is its accessible name -->
+        <div class="factory-nav-tip" id="navTip" aria-hidden="true"></div>
 
         <div class="factory-main">
           <header role="banner" class="factory-topbar">
@@ -107,6 +104,9 @@
               <fx-select id="topWorkspace" class="factory-topbar-select" label="Workspace" hide-label searchable
                          options="[[workspaceOptions]]" value="{{workspaceId}}" placeholder="Select a workspace"></fx-select>
             </div>
+            <oj-bind-if test="[[workspaceVersion()]]">
+              <span class="factory-topbar-version" id="workspaceVersion" :title="[['The selected workspace runs ' + workspaceVersion()]]"><oj-bind-text value="[[workspaceVersion]]"></oj-bind-text></span>
+            </oj-bind-if>
             <button type="button" class="factory-topbar-search" id="globalSearch" on-click="[[openPalette]]" aria-haspopup="dialog"
                     aria-label="Search pages, actions, requirements, changes and code (Ctrl K)">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
@@ -163,6 +163,8 @@
               <oj-bind-if test="[[userMenu.open()]]">
                 <div class="fx-menu" role="menu" id="userMenuList" aria-labelledby="userMenu" on-keydown="[[userMenu.key]]">
                   <button type="button" role="menuitem" id="account" on-click="[[userGo('account')]]"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span>Account &amp; Preferences</button>
+                  <button type="button" role="menuitem" id="userNotifications" on-click="[[userGo('notifications')]]"><span class="factory-nav-icon factory-ico-bell" aria-hidden="true"></span>Notifications</button>
+                  <button type="button" role="menuitem" id="userAbout" on-click="[[userGo('about')]]"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>About</button>
                   <div class="fx-menu-sep" role="separator"></div>
                   <button type="button" role="menuitem" id="out" on-click="[[userGo('out')]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Sign out</button>
                 </div>
@@ -184,6 +186,18 @@
                 <button type="button" id="updateNowButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[installUpdate]]">Update now</button>
               </oj-bind-if>
             </div>
+          </oj-bind-if>
+          <!-- Where this page sits: section › page it was opened from › page (appController crumbs) -->
+          <oj-bind-if test="[[crumbs()]]">
+            <nav class="factory-crumbs" aria-label="Breadcrumb">
+              <ol class="fx-breadcrumb">
+                <li><oj-bind-text value="[[crumbs().section]]"></oj-bind-text></li>
+                <oj-bind-if test="[[crumbs().parent]]">
+                  <li><a :href="[[crumbs().parent.href]]" on-click="[[crumbs().parent.open]]"><oj-bind-text value="[[crumbs().parent.label]]"></oj-bind-text></a></li>
+                </oj-bind-if>
+                <li><span aria-current="page"><oj-bind-text value="[[crumbs().page]]"></oj-bind-text></span></li>
+              </ol>
+            </nav>
           </oj-bind-if>
           <oj-module role="main" class="oj-web-applayout-content factory-page" config="[[moduleAdapter.koObservableConfig]]">
           </oj-module>

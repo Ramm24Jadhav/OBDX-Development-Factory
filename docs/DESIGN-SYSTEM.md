@@ -158,6 +158,11 @@ Every request goes through `services/api.js`, which reports it to `services/busy
 
 ## Navigation
 
+- **Sections:** the sidebar has six: Overview, Analyze, Design, Build & Deliver, Modernize and Administration. Section labels are plain headings; only Administration folds (remembered in the browser), and it opens by itself on one of its pages. Notifications, Account and About are reached from the top bar (bell, Help, user menu).
+  - Up and Down move between the menu's links, Home and End go to the first and last.
+  - The current page's entry is filled with a bar on its inner edge; a page without its own entry (Impact Analysis) highlights the one it is opened from.
+- **Breadcrumb:** one slim row above every page (not on `embed=1` pages): section › the page it was opened from (a link) › the page.
+- **Collapsed menu:** section labels become thin dividers, and every link shows its name in a tooltip to the right of the icon on hover and keyboard focus (Escape hides it).
 - **Collapse notch:** a round button on the menu's edge beside the logo collapses and expands the menu ("Collapse sidebar" or "Expand sidebar", with `aria-expanded`).
   - The menu's width animates. The icons stay where they are and the labels fade, so nothing jumps, and the page widens or narrows with it.
   - On tablets the menu starts as icons, and the notch opens it.

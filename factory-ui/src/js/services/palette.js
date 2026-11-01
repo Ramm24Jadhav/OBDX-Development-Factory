@@ -189,7 +189,7 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
       open: open, query: query, rows: rows, results: results, activeId: activeId, helpOpen: helpOpen, shortcuts: shortcuts,
       show: show, close: close, onInput: onInput, onKey: onKey, onBackdrop: onBackdrop,
       closeHelp: () => helpOpen(false),
-      /** Called by the app controller with the sidebar pages and its router. */
+      /** Called by the app controller with the pages (sidebar, top bar and user menu ones) and its router. */
       init: (pageList, navigateTo) => { pages = pageList; navigate = navigateTo; }
     };
   });

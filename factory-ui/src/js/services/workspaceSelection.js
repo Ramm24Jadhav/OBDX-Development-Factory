@@ -9,7 +9,7 @@ define(['knockout', './api', './preferences'], function (ko, api, preferences) {
   function load() {
     return api.get('workspaces').then(function (list) {
       options(list.map(function (workspace) {
-        return { value: workspace.id, label: workspace.name + ' (' + workspace.bankName + ', ' + workspace.obdxVersion + ')' };
+        return { value: workspace.id, label: workspace.name + ' (' + workspace.bankName + ', ' + workspace.obdxVersion + ')', obdxVersion: workspace.obdxVersion };
       }));
       const stillExists = list.some(function (workspace) { return workspace.id === selectedId(); });
       if (!stillExists) {
@@ -20,5 +20,11 @@ define(['knockout', './api', './preferences'], function (ko, api, preferences) {
     });
   }
 
-  return { selectedId: selectedId, options: options, load: load };
+  /** The selected workspace's OBDX version (shown beside the top bar's workspace picker), or null */
+  const selectedVersion = ko.pureComputed(function () {
+    const selected = options().find(function (o) { return o.value === selectedId(); });
+    return selected && selected.obdxVersion ? selected.obdxVersion : null;
+  });
+
+  return { selectedId: selectedId, options: options, selectedVersion: selectedVersion, load: load };
 });
