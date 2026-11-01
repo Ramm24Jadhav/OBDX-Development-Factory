@@ -204,10 +204,15 @@ class PartialRecoveryTest {
 
     @Test
     void aKeptPartWithTooLittleLeftIsDroppedAndTheFileWrittenWhole() {
+        // the model's reasoning starts early: what is before it is too little to go on from
         String early = "package com.bank.beneficiary;\n\npublic class BeneficiaryValidationServiceTest {\n"
-                + "    void a() { foo(; }\n" + "    void b() {\n        service.validate(\"x\");\n    }\n".repeat(60);
+                + "    // Wait, I already wrote the tests below\n" + "    void b() {\n        service.validate(\"x\");\n    }\n".repeat(60);
 
         assertThat(CodeGenerator.cleanPartial(PATH, early)).isNull();
+        // a parse error early in the part is the model's own (seams are at its end): the part is kept, and fixed when complete
+        String ownError = "package com.bank.beneficiary;\n\npublic class BeneficiaryValidationServiceTest {\n"
+                + "    void a() { foo(; }\n" + "    void b() {\n        service.validate(\"x\");\n    }\n".repeat(60);
+        assertThat(CodeGenerator.cleanPartial(PATH, ownError)).isEqualTo(ownError);
         // without its class it is no use either
         assertThat(CodeGenerator.cleanPartial(PATH, "    void b() {\n        service.validate(\"x\");\n    }\n")).isNull();
 

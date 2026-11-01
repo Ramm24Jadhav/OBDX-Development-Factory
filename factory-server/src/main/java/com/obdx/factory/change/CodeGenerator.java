@@ -189,7 +189,30 @@ public class CodeGenerator {
         double room = total * 0.9 - content.length() / perToken;
         String lean = leanHeader(item, note, rules) + tail;
         Map<String, String> regions = item.path().endsWith(".java") ? regionsWithFindings(content, findings) : Map.of();
-        if ((SYSTEM.length() + lean.length()) / perToken <= room || regions.isEmpty()) {
+        boolean leanFits = (SYSTEM.length() + lean.length()) / perToken <= room;
+        int[] unparsed = !leanFits && regions.isEmpty() && item.path().endsWith(".java") ? methodLines(content, errorLine(item.path(), content))
+                : null;
+        if (unparsed != null) {
+            // The file does not parse, so its methods are found by their text: only the one with the error is sent
+            String[] lines = content.split("\n", -1);
+            String method = String.join("\n", java.util.Arrays.asList(lines).subList(unparsed[0] - 1, unparsed[1]));
+            log.info("Fitted the fix of {}: only the method with its parse error (lines {} to {})", item.path(), unparsed[0], unparsed[1]);
+            String ask = leanHeader(item, note, rules) + "\nThis method of the file does not parse:\n" + method + "\n\nThe finding:\n" + findings
+                    + "\n\nWrite only this method again, corrected and complete; nothing else, without code fences.";
+            ModelGateway.ChatResult reply = PromptFit.chatFrom(modelGateway, SYSTEM, s -> ask, 1).result();
+            String fixed = reply.reply() == null || reply.cutOff() ? "" : withoutFences(reply.reply()).stripTrailing();
+            List<String> replaced = new java.util.ArrayList<>(java.util.Arrays.asList(lines).subList(0, unparsed[0] - 1));
+            replaced.addAll(java.util.Arrays.asList(fixed.split("\n", -1)));
+            replaced.addAll(java.util.Arrays.asList(lines).subList(unparsed[1], lines.length));
+            String result = String.join("\n", replaced);
+            if (fixed.isBlank() || joinProblem(item.path(), result) != null) {
+                log.info("The method written for {} did not make the file parse; the file is kept as it was", item.path());
+                return new Written(content, false, 1, List.of());
+            }
+            return new Written(result, false, 1, List.of("Corrected only the method with the parse error (lines " + unparsed[0] + " to "
+                    + unparsed[1] + ")."));
+        }
+        if (leanFits || regions.isEmpty()) {
             log.info("Fitted the fix of {}: only the file, its rules and the findings", item.path());
             return write(item.path(), s -> lean, brief, null, 1);
         }
@@ -205,6 +228,46 @@ public class CodeGenerator {
             return new Written(content, false, 1, List.of());
         }
         return new Written(spliced, false, 1, List.of("Corrected only the method(s) with findings: " + String.join(", ", regions.keySet()) + "."));
+    }
+
+    private static final Pattern METHOD_START = Pattern.compile("^\\s*(?:@\\w+(?:\\([^)]*\\))?\\s*)*(?:(?:public|protected|private|static|final|"
+            + "synchronized|abstract|default)\\s+)*(?:<[^>]+>\\s*)?[\\w<>\\[\\],.?]+\\s+\\w+\\s*\\([^)]*\\)\\s*(?:throws\\s+[\\w., ]+)?\\s*\\{\\s*$");
+
+    /**
+     * The lines (from, to; from 1) of the method around a line of a file that does not parse, found by its text: the
+     * nearest method declaration above it and the brace that closes it (with the annotations above it); null when there
+     * is none.
+     */
+    static int[] methodLines(String content, int line) {
+        String[] lines = content.split("\n", -1);
+        if (line <= 0 || line > lines.length) {
+            return null;
+        }
+        int start = line - 1;
+        while (start >= 0 && !METHOD_START.matcher(lines[start]).matches()) {
+            start--;
+        }
+        if (start < 0) {
+            return null;
+        }
+        int depth = 0;
+        int end = -1;
+        for (int i = start; i < lines.length && end < 0; i++) {
+            for (char c : lines[i].toCharArray()) {
+                depth += c == '{' ? 1 : c == '}' ? -1 : 0;
+            }
+            if (depth <= 0 && i > start) {
+                end = i;
+            }
+        }
+        if (end < line - 1) {
+            return null;
+        }
+        int from = start;
+        while (from > 0 && lines[from - 1].strip().startsWith("@")) {
+            from--;
+        }
+        return new int[] {from + 1, end + 1};
     }
 
     /** What a fix of the file needs to know about it besides the file itself: the plan item, the reviewer's note, the rules. */
@@ -707,6 +770,11 @@ public class CodeGenerator {
                 return new Written(clean(reply.reply()), false, scale, List.of());
             }
             sofar = withoutReasoning(path, withoutFences(reply.reply()));
+            // An error inside the first piece is the model's own, whatever the joins after it do
+            int own = brokenLine(path, sofar);
+            if (own > 0) {
+                log.info("The model's answer for {} does not parse at line {} already in its first piece", path, own);
+            }
         } else {
             sofar = withoutReasoning(path, partial);
         }
@@ -715,6 +783,8 @@ public class CodeGenerator {
         boolean strict = false;
         boolean repeatAsked = false;
         boolean joined = false;
+        // The line where the last piece was joined on: a parse error before it lies in text the model wrote whole
+        int lastSeam = 0;
         int continuations = continuations();
         for (int i = 0; cut && i < continuations; i++) {
             // A fresh line: the cut-off end of a line is left out, so the model writes that line whole
@@ -771,6 +841,7 @@ public class CodeGenerator {
                 }
                 log.info("Cut a continuation of {} back to the {} line(s) before the model's reasoning", path, kept.lines().count());
                 piece = kept + "\n";
+                lastSeam = (int) sofar.lines().count();
                 sofar = joinOn(sofar, last, piece);
                 joined = true;
                 // the rest of the file is still to come
@@ -802,6 +873,7 @@ public class CodeGenerator {
                 }
                 log.info("A continuation of {} again did not begin with the file's last line; joined as it came", path);
             }
+            lastSeam = (int) sofar.lines().count();
             sofar = joinOn(sofar, last, piece);
             joined = true;
             cut = next.cutOff();
@@ -810,12 +882,20 @@ public class CodeGenerator {
         List<String> notes = new java.util.ArrayList<>();
         if ((joined || partial != null) && !cut) {
             String problem = brief(joinProblem(path, content));
-            if (problem != null) {
+            int errorLine = problem == null ? 0 : errorLine(path, content);
+            if (problem != null && errorLine > 0 && errorLine < lastSeam) {
+                // The error is in text the model wrote whole, before the last seam: its own mistake, not the join's. The file is
+                // kept and goes to the fix, which is told where the error is
+                log.info("The model's answer for {} does not parse at line {} (before its last seam, line {}): {}", path, errorLine,
+                        lastSeam, problem);
+                notes.add("The model's answer does not parse at line " + errorLine + ": " + problem);
+            } else if (problem != null) {
                 log.info("The pieces of {} did not join cleanly: {}", path, problem);
                 throw new JoinFailed("The model's answer came in pieces that did not join cleanly (" + problem + "); write it again.");
+            } else {
+                // A piece that wrote a method again, or a helper no piece wrote
+                content = completeJoined(path, content, brief, scale, notes).strip() + "\n";
             }
-            // A piece that wrote a method again, or a helper no piece wrote
-            content = completeJoined(path, content, brief, scale, notes).strip() + "\n";
         }
         // The pieces are joined without their fences already; clean() would cut at a ``` inside the file (a template string)
         return new Written(content, cut, scale, notes);
@@ -968,7 +1048,11 @@ public class CodeGenerator {
         }
         String cleaned = withoutReasoning(path, partial);
         int broken = brokenLine(path, cleaned);
-        if (broken > 0) {
+        if (broken > 0 && broken < cleaned.lines().count() / 2) {
+            // Early in the part: the model's own mistake in text it wrote whole, not a seam (seams are at the end of what
+            // was written); the part is kept and the error fixed once the file is complete
+            log.info("The kept part of {} does not parse at line {}; it is kept, and the error is fixed once the file is complete", path, broken);
+        } else if (broken > 0) {
             log.info("Cut the kept part of {} back to before its line {}, where it does not parse", path, broken);
             List<String> lines = java.util.Arrays.asList(cleaned.split("\n", -1));
             cleaned = String.join("\n", lines.subList(0, Math.max(0, Math.min(lines.size(), broken - 2)))) + "\n";
@@ -992,16 +1076,29 @@ public class CodeGenerator {
         long lastLine = partial.stripTrailing().lines().count();
         int line = 0;
         if (lower.endsWith(".java")) {
-            var result = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
-                    .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse(partial);
-            line = result.getProblems().stream().findFirst().flatMap(com.github.javaparser.Problem::getLocation)
-                    .flatMap(r -> r.getBegin().getRange()).map(r -> r.begin.line).orElse(0);
+            line = errorLine(path, partial);
         } else if (lower.endsWith(".js") && !FileChecks.looksLikeJsx(partial)) {
             String problem = JavaScriptCheck.structure(partial);
             Matcher m = Pattern.compile("on line (\\d+) (?:closes nothing|does not match)").matcher(problem == null ? "" : problem);
             line = m.find() ? Integer.parseInt(m.group(1)) : 0;
         }
         return line > 0 && line < lastLine ? line : 0;
+    }
+
+    /** The line (from 1) of a file's first parse error: JavaParser's first problem for Java, the structure check's for JavaScript; or 0. */
+    static int errorLine(String path, String content) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".java")) {
+            var result = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
+                    .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse(content);
+            return result.getProblems().stream().findFirst().flatMap(com.github.javaparser.Problem::getLocation)
+                    .flatMap(r -> r.getBegin().getRange()).map(r -> r.begin.line).orElse(0);
+        }
+        if (lower.endsWith(".js") && !FileChecks.looksLikeJsx(content)) {
+            Matcher m = Pattern.compile("line (\\d+)").matcher(String.valueOf(JavaScriptCheck.structure(content)));
+            return m.find() ? Integer.parseInt(m.group(1)) : 0;
+        }
+        return 0;
     }
 
     /** Whether a continuation begins with the line it was to repeat, or with an exact repeat of the file's end. */

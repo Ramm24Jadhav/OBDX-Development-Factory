@@ -251,6 +251,35 @@ class OpenAiCompatibleModelGatewayTest {
                         """);
             });
         }
+        // Output per minute with what the minute already used: 400 (a busy minute) or 0 (the request alone is over the limit)
+        for (String variant : List.of("/busy", "/alone")) {
+            server.createContext(variant + "/v1/chat/completions", exchange -> {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+                int asked = m.find() ? Integer.parseInt(m.group(1)) : -1;
+                otpmAsked.add(asked);
+                if (asked > 1000) {
+                    respond(exchange, 413, """
+                            {"error": {"message": "Request too large for model `qwen` on output tokens per minute (OTPM): Limit 1000, \
+                            Used %d, Requested %d, please reduce your message size and try again.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                            """.formatted(variant.equals("/busy") ? 400 : 0, asked));
+                    return;
+                }
+                respond(exchange, 200, """
+                        {"id": "chatcmpl-10", "object": "chat.completion", "created": 1, "model": "qwen",
+                         "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                        """);
+            });
+        }
+        // An answer of 3600 tokens, more than a remembered cap of 900
+        server.createContext("/big/v1/chat/completions", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-11", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "public class A {}"}}],
+                     "usage": {"prompt_tokens": 4000, "completion_tokens": 3600, "total_tokens": 7600}}
+                    """);
+        });
         // A rolling daily limit that frees up in a moment: waited out like a per-minute one
         server.createContext("/dailyshort/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -593,7 +622,9 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(otpmAsked).containsExactly(8192, 900, 900);
 
         assertThat(OpenAiCompatibleModelGateway.outputTooLarge("on output tokens per minute (OTPM): Limit 1000, Requested 1407"))
-                .containsExactly(1000, 1407);
+                .containsExactly(1000, 1407, -1);
+        assertThat(OpenAiCompatibleModelGateway.outputTooLarge("output tokens per minute (OTPM): Limit 1000, Used 400, Requested 1407"))
+                .containsExactly(1000, 1407, 400);
         assertThat(OpenAiCompatibleModelGateway.outputTooLarge("output tokens per minute (OTPM): Limit 1000, Used 900, Requested 500")).isNull();
         assertThat(OpenAiCompatibleModelGateway.outputCap(1000)).isEqualTo(900);
     }
@@ -716,6 +747,48 @@ class OpenAiCompatibleModelGatewayTest {
         gateway.chatStream(null, "x".repeat(17_500), piece -> { });
         assertThat(otpmAsked).containsExactly(600, 400);
         assertThat(OpenAiCompatibleModelGateway.endedAtMax("y".repeat(1000), 600, 3.5)).isFalse();
+    }
+
+    @Test
+    void aRefusalInABusyMinuteLowersOnlyThatCallAndARequestAloneOverTheLimitIsRemembered() {
+        String busy = "http://127.0.0.1:" + server.getAddress().getPort() + "/busy/v1";
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(busy, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), new MemoryLimits());
+
+        List<String> log = logged(() -> gateway.chat("Write the file.", "A.java"));
+        gateway.chat("Write the file.", "B.java");
+
+        // each call asks for 8192 again: the 900 was for the refused call's retry only
+        assertThat(otpmAsked).containsExactly(8192, 900, 8192, 900);
+        assertThat(gateway.outputLimit()).isZero();
+        assertThat(log).anyMatch(l -> l.contains("refused 8192 output tokens in a busy minute (used 400 of 1000); asking again with max_tokens 900 "
+                + "for this call only"));
+
+        otpmAsked.clear();
+        String alone = "http://127.0.0.1:" + server.getAddress().getPort() + "/alone/v1";
+        OpenAiCompatibleModelGateway remembered = new OpenAiCompatibleModelGateway(
+                new ModelProperties(alone, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), new MemoryLimits());
+        List<String> rememberedLog = logged(() -> remembered.chat("Write the file.", "A.java"));
+        remembered.chat("Write the file.", "B.java");
+        assertThat(otpmAsked).containsExactly(8192, 900, 900);
+        assertThat(remembered.outputLimit()).isEqualTo(900);
+        assertThat(rememberedLog).anyMatch(l -> l.contains("one answer alone was over it") && l.contains("answers now ask for at most 900"));
+    }
+
+    @Test
+    void aLargerAnswerThanTheRememberedCapClearsIt() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/big/v1";
+        MemoryLimits store = new MemoryLimits();
+        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(0, 3.5, 900, 0));
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), store);
+        assertThat(gateway.outputLimit()).isEqualTo(900);
+
+        List<String> log = logged(() -> gateway.chat("Write the file.", "A.java"));
+
+        assertThat(gateway.outputLimit()).isZero();
+        assertThat(store.rows.get(baseUrl + "|qwen").output()).isZero();
+        assertThat(log).contains("Chat model 'qwen' wrote 3600 tokens in one answer, more than its remembered cap of 900: the cap is cleared");
     }
 
     @Test

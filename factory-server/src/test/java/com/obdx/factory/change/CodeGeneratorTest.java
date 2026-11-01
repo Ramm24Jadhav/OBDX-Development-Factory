@@ -533,6 +533,54 @@ class CodeGeneratorTest {
     }
 
     @Test
+    void aParseErrorInTheModelsOwnPieceGoesToTheFixNotToABadJoin() {
+        // QA round 15: the first piece has `a + b = c;` at line 70, well before the seam; the join itself is clean
+        StringBuilder first = new StringBuilder("public class RemarksValidator {\n");
+        for (int i = 0; first.toString().lines().count() < 64; i++) {
+            first.append("    void rule").append(i).append("() {\n        check(").append(i).append(");\n    }\n\n");
+        }
+        while (first.toString().lines().count() < 68) {
+            first.append("\n");
+        }
+        first.append("    void total(int a, int b, int c) {\n        a + b = c;\n    }\n\n");
+        for (int i = 100; first.toString().lines().count() < 110; i++) {
+            first.append("    void rule").append(i).append("() {\n        check(").append(i).append(");\n    }\n\n");
+        }
+        first.append("    void check(int i) {\n");
+        assertThat(first.toString().lines().toList().get(69)).isEqualTo("        a + b = c;");
+        replies.add("CUT:" + first);
+        replies.add("    void check(int i) {\n    }\n}\n");
+        // the fix gets the parser's message as the finding
+        replies.add(first.toString().replace("a + b = c;", "c = a + b;") + "    }\n}\n");
+
+        CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(prompts.get(2)).contains("It did not pass the checks:", "line 69", "The model's answer does not parse at line 69");
+        assertThat(result.content()).contains("c = a + b;").doesNotContain("a + b = c;");
+        assertThat(result.check().status()).isNotEqualTo(FileChecks.Status.FAILED);
+        // the parser places it on the method's header line, just before the statement
+        assertThat(CodeGenerator.errorLine(item.path(), first + "    }\n}\n")).isEqualTo(69);
+    }
+
+    @Test
+    void onASmallLimitAFileThatDoesNotParseSendsOnlyTheMethodWithTheError() {
+        StringBuilder file = new StringBuilder("public class RemarksValidator {\n");
+        for (int i = 0; i < 60; i++) {
+            file.append("    void rule").append(i).append("(int a, int b, int c) {\n").append("        check(a);\n".repeat(12)).append("    }\n\n");
+        }
+        String broken = file.toString().replace("    void rule7(int a, int b, int c) {\n", "    void rule7(int a, int b, int c) {\n        a + b = c;\n")
+                + "    void check(int i) { }\n}\n";
+        replies.add(broken);
+        replies.add("    void rule7(int a, int b, int c) {\n        c = a + b;\n    }\n");
+
+        CodeGenerator.Result result = generatorWith(eightThousand()).generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(prompts.get(1)).contains("This method of the file does not parse:", "a + b = c;").doesNotContain("void rule8(");
+        assertThat(result.content()).contains("    void rule7(int a, int b, int c) {\n        c = a + b;\n    }").contains("void rule59(");
+        assertThat(result.check().message()).contains("Corrected only the method with the parse error");
+    }
+
+    @Test
     void aContinuationIsMuchSmallerThanTheFirstPrompt() {
         replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
         replies.add("    void check(String remarks) {\n    }\n}\n");
