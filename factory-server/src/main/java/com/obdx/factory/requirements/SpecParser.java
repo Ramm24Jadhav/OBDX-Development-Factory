@@ -47,7 +47,40 @@ public final class SpecParser {
         } catch (JacksonException e) {
             throw new InvalidSpecException("The response is not valid JSON: " + e.getOriginalMessage(), e);
         }
-        return fromJson(root, fallbackTitle);
+        return fromJson(specObject(root), fallbackTitle);
+    }
+
+    /** The fields a spec has; an object with none of them is not a spec. */
+    static final java.util.Set<String> FIELDS = java.util.Set.of("title", "summary", "screens", "businessRules", "roles", "apis",
+            "hostInteractions", "messages", "openQuestions", "decisions", "scope", "outOfScope", "assumptions", "requirements",
+            "acceptanceCriteria", "nonFunctional");
+
+    /**
+     * The spec in the JSON: the object itself, or the object under "spec" when it was wrapped ({"spec": {...}}). Refused
+     * when it has none of a spec's fields, so a wrong body never saves an empty spec.
+     */
+    static JsonNode specObject(JsonNode root) {
+        // {} is a section with nothing in it (the model leaves empty what a section does not say); not a wrong body
+        if (hasSpecField(root) || (root.isObject() && root.isEmpty())) {
+            return root;
+        }
+        JsonNode wrapped = root.path("spec");
+        if (wrapped.isObject() && hasSpecField(wrapped)) {
+            return wrapped;
+        }
+        throw new InvalidSpecException("The spec has none of its fields (title, requirements, screens…). Send the spec itself.", null);
+    }
+
+    private static boolean hasSpecField(JsonNode node) {
+        if (!node.isObject()) {
+            return false;
+        }
+        for (String name : node.propertyNames()) {
+            if (FIELDS.contains(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static RequirementSpec fromJson(JsonNode root, String fallbackTitle) {

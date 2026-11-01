@@ -175,6 +175,11 @@ public class RequirementService {
         } catch (SpecParser.InvalidSpecException e) {
             throw new BadRequestException(e.getMessage());
         }
+        if (empty(edited) && !empty(currentSpec(requirement))) {
+            // An edit that keeps only a title would throw the drafted spec away
+            throw new BadRequestException("The edited spec has no screens, requirements, rules or APIs, but the current one has. "
+                    + "Send the whole spec; to start again, draft it again with Retry.");
+        }
         return addVersion(requirement, RequirementSpecRepository.Origin.EDITED, edited, "Spec edited.");
     }
 
@@ -201,6 +206,12 @@ public class RequirementService {
         List<String> bare = spec.screens().stream().filter(s -> s.fields().isEmpty()).map(RequirementSpec.Screen::name).toList();
         return bare.isEmpty() ? "" : " Screens without fields: " + String.join(", ", bare)
                 + ". Add their fields by editing the spec, or draft it again with Retry.";
+    }
+
+    /** A spec with nothing to build or ask: no screens, requirements, rules, APIs, criteria or questions. */
+    static boolean empty(RequirementSpec spec) {
+        return spec.screens().isEmpty() && spec.requirements().isEmpty() && spec.businessRules().isEmpty() && spec.apis().isEmpty()
+                && spec.acceptanceCriteria().isEmpty() && spec.openQuestions().isEmpty() && spec.nonFunctional().isEmpty();
     }
 
     /** A message as one sentence ending with a single period: "limit." stays, "limit" gets one. */

@@ -56,6 +56,45 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private static final class Limits {
         volatile int input;
         volatile double charsPerToken = 3.5;
+        /** The most output tokens one answer may ask for (a per-minute output limit smaller than max_tokens); 0 while unknown. */
+        volatile int output;
+    }
+
+    /** "output tokens per minute (OTPM): Limit 1000, Requested 1407" (or with "Used 600, " between) */
+    private static final Pattern OUTPUT_LIMIT = Pattern.compile("(?i)limit:?\\s*(\\d+),\\s*(?:used:?\\s*\\d+,\\s*)?requested:?\\s*(\\d+)");
+    /** The fewest output tokens worth asking for; a server that allows less cannot write files. */
+    static final int MIN_OUTPUT = 256;
+
+    /** Asks for no more output than the server's learned per-minute output limit allows. */
+    private static void capOutput(Connection current, ChatRequest.Builder request) {
+        if (current.limits().output > 0) {
+            request.maxOutputTokens(current.limits().output);
+        }
+    }
+
+    /**
+     * [limit, requested] when the server refused a request because its max_tokens alone is more than the server writes
+     * in a minute (Groq "output tokens per minute (OTPM): Limit 1000, Requested 1407"): waiting cannot help, a smaller
+     * max_tokens does. Null otherwise (also when the output of this minute is merely used up: that is waited out).
+     */
+    static int[] outputTooLarge(String text) {
+        if (!text.toLowerCase(java.util.Locale.ROOT).contains("output tokens")) {
+            return null;
+        }
+        Matcher m = OUTPUT_LIMIT.matcher(text.length() > 2000 ? text.substring(0, 2000) : text);
+        if (m.find()) {
+            int limit = Integer.parseInt(m.group(1));
+            int requested = Integer.parseInt(m.group(2));
+            if (requested > limit) {
+                return new int[] {limit, requested};
+            }
+        }
+        return null;
+    }
+
+    /** The max_tokens to ask for below a per-minute output limit: 90% of it, room for the server counting differently. */
+    static int outputCap(int limit) {
+        return (int) (limit * 0.9);
     }
 
     /** "Request too large ... Limit 7000, Requested 7663": a per-minute token limit smaller than the request. */
@@ -166,6 +205,22 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     current.limits().charsPerToken = Math.clamp((double) chars / tooLarge[1], 2.0, 6.0);
                     throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
+                }
+                int[] output = outputTooLarge(text);
+                if (output != null && canRetry.getAsBoolean()) {
+                    int cap = outputCap(output[0]);
+                    if (cap < MIN_OUTPUT) {
+                        throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " writes at most "
+                                + output[0] + " tokens a minute, too few for an answer. Use a plan or model with higher limits.", e);
+                    }
+                    if (current.limits().output == 0 || cap < current.limits().output) {
+                        // One answer may not ask for more than the server writes in a minute: ask again at once, for less;
+                        // a file cut off at that size is continued by the caller (CodeGenerator)
+                        current.limits().output = cap;
+                        log.info("Chat model '{}' writes at most {} tokens a minute; answers now ask for at most {}", current.chatModelName(),
+                                output[0], cap);
+                        continue;
+                    }
                 }
                 Duration wait = rateLimitWait(text);
                 if (wait == null || !canRetry.getAsBoolean()) {
@@ -301,7 +356,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             try {
                 return streamed(current, systemPrompt, UserMessage.from(userPrompt), ResponseFormat.JSON, piece -> pieces.incrementAndGet());
             } catch (ModelGatewayException e) {
-                if (pieces.get() > 0 || !refused(e) || tooLarge(messages(e)) != null) {
+                if (pieces.get() > 0 || !refused(e) || tooLarge(messages(e)) != null || outputTooLarge(messages(e)) != null) {
                     throw e;
                 }
                 current.jsonStreams().set(false);
@@ -394,6 +449,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
+            capOutput(current, request);
             current.streamingChatModel().chat(request.build(),
                     new StreamingChatResponseHandler() {
                         @Override
@@ -466,6 +522,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
+            capOutput(current, request);
             ChatResponse response = current.chatModel().chat(request.build());
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();

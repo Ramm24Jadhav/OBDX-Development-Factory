@@ -21,6 +21,10 @@ final class JavaChecks {
     static final String EXCEPTION_TEXT = "java-exception-text";
     static final String LOG_CONCAT = "java-log-concat";
     static final String USER_FROM_REQUEST = "java-user-from-request";
+    static final String USER_FROM_HEADER_RULE = "java-user-from-header";
+    /** @HeaderParam("X-Caller-Id"), request.getHeader("x-user-id"), headers.getHeaderString("customerId") */
+    private static final Pattern USER_FROM_HEADER = Pattern.compile("(?i)(?:@HeaderParam\\s*\\(\\s*|\\bget(?:Header|HeaderString|RequestHeader)"
+            + "\\s*\\(\\s*)\"(?:x-)?(?:caller|user|customer|party|actor|login|requester)[-_]?(?:id|name)?\"");
 
     private static final Pattern PATH = Pattern.compile("@(?:(?:javax|jakarta)\\.ws\\.rs\\.)?Path\\s*\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"\\s*\\)");
     private static final Pattern TEMPLATE = Pattern.compile("\\{\\s*(\\w+)\\s*(?::[^}]*)?}");
@@ -59,6 +63,10 @@ final class JavaChecks {
             warn(text, USER_FROM_BODY, USER_FROM_REQUEST, "Takes the customer or user from the request. Take it from the session "
                     + "(the SecurityContext or the session context the codebase uses), so no one can act for another customer.", found);
         }
+        // Anywhere, not only in resources: a service reading the caller from a header is as wrong
+        warn(text, USER_FROM_HEADER, USER_FROM_HEADER_RULE, "Takes the caller or user from a request header. Take the identity of "
+                + "the authenticated user (SecurityContext or Principal, as the codebase does) for checks and the audit; a header can "
+                + "be set by anyone.", found);
         Matcher log = LOG_CALL.matcher(text);
         while (log.find()) {
             if (CONCAT.matcher(log.group(1)).find()) {

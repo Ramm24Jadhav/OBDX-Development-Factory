@@ -34,6 +34,8 @@ public class CodeGenerator {
               and annotation you use; a REST method whose @Path has {id} takes it with @PathParam("id").
             - Security, as a bank's review expects:
               - Take the customer or user from the session (as the codebase does), never from the request.
+              - The caller and audit identity come from the authenticated user (SecurityContext or Principal, as the
+                codebase does), never from a request header such as X-Caller-Id.
               - Check that the customer owns what every lookup by ID returns.
               - Validate amounts and inputs on the server, not only in the UI.
               - Return error codes or messages from the resource bundle, never exception text.
@@ -96,17 +98,17 @@ public class CodeGenerator {
         String guidance = checks.targetGuidance(context.checks(), item.path());
         java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
                 guidance, scaffold, scale);
-        ModelGateway.ChatResult reply = PromptFit.chat(modelGateway, SYSTEM, prompt);
-        String content = clean(reply.reply());
-        FileChecks.Result check = checked(context, item, original, content, scaffold, reply.cutOff());
+        Written written = write(prompt);
+        String content = written.content();
+        FileChecks.Result check = checked(context, item, original, content, scaffold, written.cutOff());
         int attempts = 1;
-        // A file cut off at the output limit is not fixed by asking with it again, which is longer still
-        while (check.status() == FileChecks.Status.FAILED && !reply.cutOff() && attempts <= properties.fixAttempts()) {
+        // A file still cut off after its continuations is not fixed by asking with it again, which is longer still
+        while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
             String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
-            reply = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + fix);
-            content = clean(reply.reply());
-            check = checked(context, item, original, content, scaffold, reply.cutOff());
+            written = write(scale -> prompt.apply(scale) + fix);
+            content = written.content();
+            check = checked(context, item, original, content, scaffold, written.cutOff());
             attempts++;
         }
         return new Result(content, check, attempts);
@@ -118,8 +120,9 @@ public class CodeGenerator {
         if (!cutOff) {
             return check;
         }
-        String cut = "The model stopped at its output limit, so the file is incomplete. Write it again with a model that writes "
-                + "longer answers, or finish it by hand.";
+        String cut = "The model stopped at its output limit, so the file is incomplete even after asking it to continue "
+                + MAX_CONTINUATIONS + " times. Lower FACTORY_MODEL_MAX_OUTPUT_TOKENS or use a plan with higher limits, then write it "
+                + "again, or finish it by hand.";
         return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
 
@@ -214,11 +217,10 @@ public class CodeGenerator {
             user.append("Example file to follow, ").append(example.getKey()).append(":\n")
                     .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
-        if (!earlier.isEmpty()) {
-            user.append("Files already written in this change (beginnings):\n");
-            for (Map.Entry<String, String> file : earlier.entrySet()) {
-                user.append("--- ").append(file.getKey()).append('\n').append(head(file.getValue(), Math.max(8, (int) (40 * scale)))).append('\n');
-            }
+        Map<String, String> related = related(item, earlier, scale);
+        if (!related.isEmpty()) {
+            user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
+            related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
         }
         if (scaffold != null) {
             user.append(scaffold.kind().equals("texts")
@@ -232,6 +234,133 @@ public class CodeGenerator {
         }
         user.append("\nWrite the complete content of ").append(item.path()).append('.');
         return user.toString();
+    }
+
+    /**
+     * The files already written that this file most likely uses, at most 6: those its plan item names, those that share
+     * its name's stem (FundTransferService for FundTransferResource), then those in its folder. Java files are given as
+     * signatures (fields, method signatures, nested types, no bodies), others as their first lines; a model with a small
+     * input limit then still sees every name it must use.
+     */
+    static Map<String, String> related(ChangePlan.Item item, Map<String, String> earlier, double scale) {
+        String self = baseName(item.path());
+        String said = (nullToDash(item.purpose()) + " " + nullToDash(item.details())).toLowerCase(java.util.Locale.ROOT);
+        String folder = item.path().contains("/") ? item.path().substring(0, item.path().lastIndexOf('/')) : "";
+        boolean isJava = item.path().endsWith(".java");
+        Map<String, Integer> score = new java.util.LinkedHashMap<>();
+        for (String path : earlier.keySet()) {
+            if (path.endsWith(".java") != isJava) {
+                continue;
+            }
+            String name = baseName(path);
+            int s = 0;
+            if (said.contains(name.toLowerCase(java.util.Locale.ROOT))) {
+                s += 3;
+            }
+            if (commonPrefix(self, name) >= Math.min(6, Math.min(self.length(), name.length()))) {
+                s += 2;
+            }
+            String otherFolder = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+            if (otherFolder.equals(folder) || (isJava && (otherFolder.startsWith(folder) || folder.startsWith(otherFolder)))) {
+                s += 1;
+            }
+            if (s > 0) {
+                score.put(path, s);
+            }
+        }
+        Map<String, String> related = new java.util.LinkedHashMap<>();
+        score.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(6).forEach(e -> {
+            String content = earlier.get(e.getKey());
+            String outline = isJava ? JavaOutline.of(content) : head(content, Math.max(6, (int) (20 * scale)));
+            related.put(e.getKey(), ChangeContext.cap(outline, PromptFit.size(2500, scale)));
+        });
+        return related;
+    }
+
+    private static String baseName(String path) {
+        String name = path.substring(path.lastIndexOf('/') + 1);
+        return name.contains(".") ? name.substring(0, name.indexOf('.')) : name;
+    }
+
+    private static int commonPrefix(String a, String b) {
+        int n = 0;
+        while (n < a.length() && n < b.length() && a.charAt(n) == b.charAt(n)) {
+            n++;
+        }
+        return n;
+    }
+
+    /** How many times a file cut off at the model's output limit is continued. */
+    static final int MAX_CONTINUATIONS = 6;
+
+    /** A file as written, and whether it is still cut off at the model's output limit. */
+    record Written(String content, boolean cutOff) {
+    }
+
+    /**
+     * Asks for the file and, while the answer stops at the model's output limit (a server that writes little per
+     * request), asks the model to go on where it stopped and joins the pieces, so a large file is still written whole.
+     */
+    private Written write(java.util.function.DoubleFunction<String> prompt) {
+        ModelGateway.ChatResult reply = PromptFit.chat(modelGateway, SYSTEM, prompt);
+        if (!reply.cutOff()) {
+            return new Written(clean(reply.reply()), false);
+        }
+        String sofar = withoutFences(reply.reply());
+        boolean cut = true;
+        for (int i = 0; cut && i < MAX_CONTINUATIONS; i++) {
+            String end = sofar.length() > 3000 ? sofar.substring(sofar.length() - 3000) : sofar;
+            String more = "\n\nYour answer stopped at your output limit. It ended with:\n" + end + "\n\nContinue exactly where it stopped: "
+                    + "answer with only the rest of the file, starting with the next characters, repeating nothing, without code fences.";
+            ModelGateway.ChatResult next = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + more);
+            if (next.reply() == null || next.reply().isBlank()) {
+                break;
+            }
+            sofar = stitch(sofar, next.reply());
+            cut = next.cutOff();
+        }
+        return new Written(clean(sofar), cut);
+    }
+
+    /**
+     * The file so far with a continuation joined on: code fences around the continuation are dropped, and so is a line
+     * the model repeated (the cut-off line written again in full, or the last whole line once more).
+     */
+    static String stitch(String sofar, String continuation) {
+        String a = sofar;
+        String b = withoutFences(continuation);
+        int lastBreak = a.lastIndexOf('\n');
+        String partial = a.substring(lastBreak + 1);
+        String bStart = b.replaceFirst("^\\n+", "");
+        String firstLine = bStart.contains("\n") ? bStart.substring(0, bStart.indexOf('\n')) : bStart;
+        if (partial.strip().length() >= 3 && firstLine.strip().startsWith(partial.strip())) {
+            // The cut-off line written again from its start
+            return a.substring(0, lastBreak + 1) + bStart;
+        }
+        if (partial.isEmpty() && lastBreak > 0) {
+            String before = a.substring(0, lastBreak);
+            String lastLine = before.substring(before.lastIndexOf('\n') + 1);
+            if (!lastLine.isBlank() && lastLine.strip().equals(firstLine.strip())) {
+                return a + bStart.substring(firstLine.length()).replaceFirst("^\\n", "");
+            }
+        }
+        return a + b;
+    }
+
+    /** The text without a markdown fence line at its start and a closing fence at its end. */
+    static String withoutFences(String text) {
+        String t = text == null ? "" : text;
+        int fence = t.indexOf("```");
+        // An opening fence, possibly after a short sentence ("Here is the file:")
+        if (fence >= 0 && fence < 300 && !t.substring(0, fence).contains("\n\n")) {
+            int line = t.indexOf('\n', fence);
+            t = line < 0 ? "" : t.substring(line + 1);
+        }
+        String trail = t.stripTrailing();
+        if (trail.endsWith("```")) {
+            t = trail.substring(0, trail.length() - 3);
+        }
+        return t;
     }
 
     /** Removes markdown fences and text around them if the model added them anyway. */

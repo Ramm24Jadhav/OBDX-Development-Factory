@@ -181,8 +181,8 @@ public final class ScreenModels {
     }
 
     /** "with Date, Amount, Status, Failure Reason for last 5 entries", "columns: A, B and C", "showing A, B, C" */
-    private static final Pattern COLUMNS = Pattern.compile("(?i)\\b(?:with|columns?|showing|shows|show|displays?|lists?)\\s*:?\\s*(?:the\\s+)?"
-            + "([^.;:()\\n]{2,300})");
+    /** Where a list of columns may start; every one is tried, the first giving short columns wins */
+    private static final Pattern COLUMNS = Pattern.compile("(?i)\\b(?:with|columns?|showing|shows|show|displays?|lists?)\\b\\s*:?\\s*(?:the\\s+)?");
 
     /** The column names a table field's text gives, or empty. */
     static List<String> columnsIn(RequirementSpec.Field field) {
@@ -200,9 +200,16 @@ public final class ScreenModels {
         if (text == null) {
             return List.of();
         }
-        Matcher m = COLUMNS.matcher(text.length() > 500 ? text.substring(0, 500) : text);
+        String cut = text.length() > 500 ? text.substring(0, 500) : text;
+        Matcher m = COLUMNS.matcher(cut);
         while (m.find()) {
-            String list = m.group(1);
+            // From the keyword to the end of its sentence ("list the customer's instructions with A, B and C" tries "the
+            // customer's instructions with A, B and C" first, then "A, B and C")
+            int end = m.end();
+            while (end < cut.length() && ".;:()\n".indexOf(cut.charAt(end)) < 0) {
+                end++;
+            }
+            String list = cut.substring(m.end(), end);
             if (!list.contains(",") && !list.matches("(?i).*\\band\\b.*")) {
                 continue;
             }

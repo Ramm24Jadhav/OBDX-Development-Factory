@@ -81,14 +81,77 @@ class CodeGeneratorTest {
     }
 
     @Test
-    void reportsAFileCutOffAtTheOutputLimitInsteadOfAskingAgainWithIt() {
+    void reportsAFileStillCutOffAfterItsContinuationsInsteadOfAskingAgainWithIt() {
         replies.add("CUT:public class RemarksValidator { void check() {} }");
+        for (int i = 0; i < CodeGenerator.MAX_CONTINUATIONS; i++) {
+            replies.add("CUT:// more " + i + "\n");
+        }
 
         CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
 
         assertThat(result.attempts()).isEqualTo(1);
+        assertThat(replies).isEmpty();
         assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
-        assertThat(result.check().message()).contains("output limit");
+        assertThat(result.check().message()).contains("output limit", "FACTORY_MODEL_MAX_OUTPUT_TOKENS");
+    }
+
+    @Test
+    void aFileCutOffAtTheOutputLimitIsContinuedAndJoined() {
+        // A server that writes little per answer (a per-minute output limit): the file comes in pieces
+        replies.add("CUT:```java\npublic class RemarksValidator {\n    void check(String remarks) {");
+        replies.add("CUT:    void check(String remarks) {\n        if (remarks.length() > 35) {\n");
+        replies.add("```java\n        if (remarks.length() > 35) {\n            throw new IllegalArgumentException();\n        }\n    }\n}\n```");
+
+        CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(result.content()).isEqualTo("""
+                public class RemarksValidator {
+                    void check(String remarks) {
+                        if (remarks.length() > 35) {
+                            throw new IllegalArgumentException();
+                        }
+                    }
+                }
+                """);
+        assertThat(result.check().status()).isEqualTo(FileChecks.Status.PASSED);
+        assertThat(prompts.get(1)).contains("Continue exactly where it stopped", "void check(String remarks) {");
+    }
+
+    @Test
+    void stitchesWithoutRepeatingALine() {
+        assertThat(CodeGenerator.stitch("a();\nb(", "x, y);\nc();")).isEqualTo("a();\nb(x, y);\nc();");
+        assertThat(CodeGenerator.stitch("a();\nb();\n", "b();\nc();")).isEqualTo("a();\nb();\nc();");
+        assertThat(CodeGenerator.stitch("a();\nfoo(bar", "foo(bar, baz);\n")).isEqualTo("a();\nfoo(bar, baz);\n");
+        assertThat(CodeGenerator.withoutFences("Here it is:\n```js\nx();\n```")).isEqualTo("x();\n");
+    }
+
+    @Test
+    void givesOnlyTheSignaturesOfTheFilesThisFileUses() {
+        ChangePlan.Item resource = new ChangePlan.Item("backend/si/StandingInstructionResource.java", "create", "service",
+                "REST resource calling StandingInstructionService", List.of(), null);
+        Map<String, String> earlier = new java.util.LinkedHashMap<>();
+        earlier.put("backend/si/StandingInstructionService.java", """
+                package com.bank.si;
+                public class StandingInstructionService {
+                    private final HostAdapter host = new HostAdapter();
+                    /** Lists them. */
+                    public java.util.List<String> list(String customer) {
+                        String a = "body that is long";
+                        return java.util.List.of(a);
+                    }
+                    public enum Frequency { DAILY, MONTHLY }
+                }
+                """);
+        earlier.put("ui/js/viewModels/other.js", "define([], function () {});");
+        earlier.put("backend/unrelated/Audit.java", "package x; class Audit {}");
+
+        Map<String, String> related = CodeGenerator.related(resource, earlier, 1);
+
+        assertThat(related).containsOnlyKeys("backend/si/StandingInstructionService.java");
+        assertThat(related.get("backend/si/StandingInstructionService.java"))
+                .contains("public class StandingInstructionService", "private final HostAdapter host;",
+                        "public java.util.List<String> list(String customer);", "public enum Frequency", "DAILY, MONTHLY")
+                .doesNotContain("body that is long").doesNotContain("Lists them");
     }
 
     @Test

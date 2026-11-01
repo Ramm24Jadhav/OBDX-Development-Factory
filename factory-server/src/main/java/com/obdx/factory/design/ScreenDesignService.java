@@ -143,7 +143,9 @@ public class ScreenDesignService {
      */
     static ScreenModel fillEmptyList(ScreenModel model, RequirementSpec spec) {
         boolean empty = model.sections().stream().allMatch(s -> s.components().isEmpty());
-        if (!empty || !ScreenModels.isList(model.name())) {
+        boolean list = ScreenModels.isList(model.name());
+        // A list gets a table; a details screen (an inquiry) its fields read-only
+        if (!empty || !(list || "inquiry".equals(model.stage()))) {
             return model;
         }
         for (RequirementSpec.FunctionalRequirement r : spec.requirements()) {
@@ -152,11 +154,14 @@ public class ScreenDesignService {
             }
             List<String> columns = ScreenModels.columnsIn(r.description());
             if (!columns.isEmpty()) {
-                ScreenModel.Component table = new ScreenModel.Component(null, "table", ScreenModels.camel(model.name()), model.name(), null,
-                        null, null, null, null, columns, List.of(), true);
+                List<ScreenModel.Component> components = list
+                        ? List.of(new ScreenModel.Component(null, "table", ScreenModels.camel(model.name()), model.name(), null, null, null, null,
+                        null, columns, List.of(), true))
+                        : columns.stream().map(c -> new ScreenModel.Component(null, "display", ScreenModels.camel(c), c, null, null, null, null,
+                        null, List.of(), List.of(), true)).toList();
                 List<ScreenModel.Section> sections = new ArrayList<>(model.sections());
                 ScreenModel.Section first = sections.getFirst();
-                sections.set(0, new ScreenModel.Section(first.id(), first.title(), first.columns(), List.of(table)));
+                sections.set(0, new ScreenModel.Section(first.id(), first.title(), first.columns(), components));
                 return ScreenModels.normalize(new ScreenModel(model.name(), model.title(), model.description(), model.changeType(),
                         sections, model.actions(), model.stage(), model.channels()));
             }

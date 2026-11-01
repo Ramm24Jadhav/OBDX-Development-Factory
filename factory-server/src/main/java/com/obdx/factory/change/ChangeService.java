@@ -191,8 +191,9 @@ public class ChangeService {
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
             ChangeContext context = context(change, requirement);
             List<ImpactAnalyzer.Candidate> candidates = candidates(workspace.getId(), requirement.spec());
-            ChangePlan plan = PlanReview.review(analyzer.analyze(context, candidates, existsIn(workspace.getId())), requirement.spec(),
-                    servedPaths(workspace.getId()));
+            ChangePlan analyzed = analyzer.analyze(context, candidates, existsIn(workspace.getId()));
+            ChangePlan plan = PlanReview.review(analyzed, requirement.spec(), servedPaths(workspace.getId()),
+                    sameNamed(workspace.getId(), analyzed));
             change.plan(json.writeValueAsString(plan), workspace.getIndexedRevision());
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
             change.status(ChangeRequest.Status.PLAN_READY, "Plan ready: " + plan.items().size() + " file(s), " + creates
@@ -211,8 +212,9 @@ public class ChangeService {
     public ChangeDetail updatePlan(UUID id, String planJson) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
-        ChangePlan plan = PlanReview.review(PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems()),
-                requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()));
+        ChangePlan parsed = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
+        ChangePlan plan = PlanReview.review(parsed, requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()),
+                sameNamed(change.getWorkspaceId(), parsed));
         change.plan(json.writeValueAsString(plan), change.getBaseRevision());
         change.status(ChangeRequest.Status.PLAN_READY, "Plan edited: " + plan.items().size() + " file(s).");
         return detail(changes.save(change));
@@ -436,6 +438,14 @@ public class ChangeService {
      * @param packageExists whether a package folder (com/bank/x) holds a file in the code or the change
      */
     static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists) {
+        return unresolvedImports(content, classExists, packageExists, null);
+    }
+
+    /**
+     * @param bankRoot the bank's root package (the common prefix of the indexed code's packages, com.bank.obdx), or null:
+     *                 an import under it is checked even when its package folder has no file at all
+     */
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists, String bankRoot) {
         if (content == null) {
             return List.of();
         }
@@ -458,11 +468,57 @@ public class ChangeService {
             }
             String folder = String.join("/", java.util.Arrays.copyOfRange(parts, 0, cls));
             String name = folder.replace('/', '.') + "." + parts[cls];
-            if (name.startsWith(own) && !classExists.test(folder + "/" + parts[cls] + ".java") && packageExists.test(folder)) {
+            boolean bank = bankRoot != null && name.startsWith(bankRoot + ".");
+            if ((name.startsWith(own) || bank) && !classExists.test(folder + "/" + parts[cls] + ".java") && (packageExists.test(folder) || bank)) {
                 missing.add(name);
             }
         }
         return missing;
+    }
+
+    /** The indexed Java files named like the classes the plan creates (FundTransferService -> its existing paths). */
+    private Map<String, List<String>> sameNamed(UUID workspaceId, ChangePlan plan) {
+        Map<String, List<String>> found = new LinkedHashMap<>();
+        for (ChangePlan.Item item : plan.items()) {
+            if ("create".equals(item.action()) && item.path().endsWith(".java")) {
+                String file = item.path().substring(item.path().lastIndexOf('/') + 1);
+                List<String> paths = jdbc.queryForList("SELECT path FROM code_file WHERE workspace_id = ? AND (path = ? OR path LIKE ?) LIMIT 5",
+                        String.class, workspaceId, file, "%/" + file.replace("_", "\\_").replace("%", "\\%"));
+                if (!paths.isEmpty()) {
+                    found.put(file.replaceAll("\\.java$", ""), paths);
+                }
+            }
+        }
+        return found;
+    }
+
+    /** The bank's root package from the indexed Java code's package lines, or null (see {@link #commonRoot}). */
+    private String bankRoot(UUID workspaceId) {
+        List<String> packages = jdbc.queryForList("SELECT DISTINCT substring(content from '(?n)^\\s*package\\s+([a-zA-Z_][a-zA-Z0-9_.]*)\\s*;') "
+                + "FROM code_chunk WHERE workspace_id = ? AND language = 'java' LIMIT 5000", String.class, workspaceId);
+        return commonRoot(packages);
+    }
+
+    /**
+     * The longest package prefix the bank's own packages share (com.bank.obdx for com.bank.obdx.payments and
+     * com.bank.obdx.accounts), leaving out Oracle's and Java's; null when it has fewer than two parts.
+     */
+    static String commonRoot(List<String> packages) {
+        List<String[]> own = packages.stream().filter(p -> p != null && !p.isBlank())
+                .filter(p -> !p.startsWith("com.ofss.") && !p.startsWith("oracle.") && !p.startsWith("java.") && !p.startsWith("javax."))
+                .map(p -> p.split("\\.")).toList();
+        if (own.isEmpty()) {
+            return null;
+        }
+        List<String> root = new ArrayList<>(List.of(own.getFirst()));
+        for (String[] p : own) {
+            int n = 0;
+            while (n < root.size() && n < p.length && root.get(n).equals(p[n])) {
+                n++;
+            }
+            root = new ArrayList<>(root.subList(0, n));
+        }
+        return root.size() < 2 ? null : String.join(".", root);
     }
 
     /** The REST paths the imported Java code serves (from its @Path annotations), each with the file that serves it. */
@@ -647,6 +703,7 @@ public class ChangeService {
         written.forEach(f -> contents.put(f.path(), f.generated()));
         List<String> paths = files.files(changeId).stream().map(ChangeFileStore.ChangeFile::path).toList();
         List<String> unwrittenJava = unwritten(files.files(changeId)).stream().filter(p -> p.endsWith(".java")).toList();
+        String bankRoot = written.stream().anyMatch(f -> f.path().endsWith(".java")) ? bankRoot(workspaceId) : null;
         Map<String, String> classes = new LinkedHashMap<>();
         written.stream().filter(f -> f.path().endsWith(".java")).forEach(f -> classes.put(CrossFileJava.className(f.path()), f.generated()));
         Path workingCopy = storage.workingCopy(workspaceId);
@@ -656,7 +713,7 @@ public class ChangeService {
             if (lower.endsWith(".java")) {
                 List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
                         || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
-                        || indexedFolder(workspaceId, folder));
+                        || indexedFolder(workspaceId, folder), bankRoot);
                 if (!missing.isEmpty()) {
                     problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
                             + ". Add them to the plan, or change the imports to classes that exist.");
@@ -677,8 +734,8 @@ public class ChangeService {
 
     /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
     static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds",
-            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, JsModuleChecks.CALLED_BEFORE_SET, JsModuleChecks.NEVER_SET,
-            JsModuleChecks.UNKNOWN_MODULES);
+            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, CrossFileJava.MISSING_NESTED, JsModuleChecks.CALLED_BEFORE_SET,
+            JsModuleChecks.NEVER_SET, JsModuleChecks.UNKNOWN_MODULES);
 
     /**
      * Whether the code base knows an AMD module: another file (indexed, or written in this change) names it in quotes,

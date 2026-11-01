@@ -27,7 +27,16 @@ final class SpecGrounding {
         StringBuilder decided = new StringBuilder(doc);
         spec.decisions().forEach(d -> decided.append(' ').append(words(d.answer())));
         String known = decided.toString();
-        List<RequirementSpec.Api> apis = spec.apis().stream().filter(a -> known.contains(words(a.name())) || pathNamed(a, known)).toList();
+        List<RequirementSpec.Api> apis = new ArrayList<>(spec.apis().stream().filter(a -> known.contains(words(a.name())) || pathNamed(a, known))
+                .toList());
+        // And every "METHOD /path" the document names that the draft left out (a model drops some)
+        java.util.Set<String> have = new java.util.HashSet<>();
+        apis.forEach(a -> have.add(SpecMerger.normalize(SpecMerger.apiKey(a))));
+        for (RequirementSpec.Api named : namedApis(documentText)) {
+            if (have.add(SpecMerger.normalize(SpecMerger.apiKey(named)))) {
+                apis.add(named);
+            }
+        }
 
         // Screens: one per set of words, the first name kept, their fields and actions together
         Map<String, RequirementSpec.Screen> screens = new LinkedHashMap<>();
@@ -56,7 +65,7 @@ final class SpecGrounding {
                 .map(r -> new RequirementSpec.FunctionalRequirement(r.id(), r.title(), r.description(), r.priority(),
                         r.screens().stream().map(n -> names.getOrDefault(screenKey(n), n)).distinct().toList()))
                 .toList();
-        if (apis.size() == spec.apis().size() && screens.size() == spec.screens().size() && requirements.equals(spec.requirements())) {
+        if (apis.equals(spec.apis()) && screens.size() == spec.screens().size() && requirements.equals(spec.requirements())) {
             return spec;
         }
         return new RequirementSpec(spec.title(), spec.summary(), new ArrayList<>(screens.values()), spec.businessRules(), spec.roles(), apis,
@@ -90,6 +99,33 @@ final class SpecGrounding {
         }
         java.util.regex.Matcher method = METHOD.matcher(api.method() == null ? text : api.method());
         return !method.find() || known.contains(" " + method.group(1).toLowerCase(Locale.ROOT) + " ");
+    }
+
+    private static final java.util.regex.Pattern NAMED_API = java.util.regex.Pattern.compile(
+            "\\b(GET|POST|PUT|PATCH|DELETE)\\s+(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+){0,12})");
+    private static final java.util.regex.Pattern REQUIREMENT_ID = java.util.regex.Pattern.compile("\\b((?:FR|REQ|NFR|BR)-\\d{1,4})\\b");
+
+    /**
+     * The APIs the document names as "METHOD /path" ("POST /payments/beneficiaries/validation" in FR-001), each with the
+     * requirement ID of its line (or the last one before it) in its description.
+     */
+    static List<RequirementSpec.Api> namedApis(String documentText) {
+        List<RequirementSpec.Api> apis = new ArrayList<>();
+        String requirement = null;
+        for (String line : (documentText == null ? "" : documentText).split("\n")) {
+            String part = line.length() > 2000 ? line.substring(0, 2000) : line;
+            java.util.regex.Matcher id = REQUIREMENT_ID.matcher(part);
+            if (id.find()) {
+                requirement = id.group(1);
+            }
+            java.util.regex.Matcher m = NAMED_API.matcher(part);
+            while (m.find()) {
+                String path = m.group(2).replaceAll("[.,;:]+$", "");
+                apis.add(new RequirementSpec.Api(m.group(1) + " " + path, m.group(1),
+                        "Named in the document" + (requirement == null ? "" : " (" + requirement + ")")));
+            }
+        }
+        return apis;
     }
 
     /** "Transfer Review screen" and "Review Transfer" are the same screen. */

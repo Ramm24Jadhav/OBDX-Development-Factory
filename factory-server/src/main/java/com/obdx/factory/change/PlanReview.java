@@ -21,7 +21,8 @@ final class PlanReview {
     static final String NO_TEST = "The spec has acceptance criteria but the plan writes no test";
     static final String UNSERVED_API = "No planned file serves the API ";
     static final String SERVED_PATH = "A new REST resource for ";
-    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH);
+    static final String SAME_NAME = "A new class has the name of an existing one in another package: ";
+    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH, SAME_NAME);
 
     /** /payments/standingInstructions/{id} in an API's name or description */
     private static final Pattern API_PATH = Pattern.compile("(?<![\\w/])(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+)*)");
@@ -44,8 +45,26 @@ final class PlanReview {
      * @param served the REST paths the existing code serves (normalised, see {@link #normalize}) and the file serving each
      */
     static ChangePlan review(ChangePlan plan, RequirementSpec spec, Map<String, String> served) {
+        return review(plan, spec, served, Map.of());
+    }
+
+    /**
+     * @param existing indexed Java files by class name (HostAccountAdapter -> accounts/HostAccountAdapter.java), for the
+     *                 classes the plan creates: a new class of the same name elsewhere is often a parallel copy
+     */
+    static ChangePlan review(ChangePlan plan, RequirementSpec spec, Map<String, String> served, Map<String, List<String>> existing) {
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks());
         risks.removeIf(r -> PREFIXES.stream().anyMatch(r::startsWith));
+        for (ChangePlan.Item item : plan.items()) {
+            String name = item.path().substring(item.path().lastIndexOf('/') + 1).replaceAll("\\.java$", "");
+            String folder = item.path().contains("/") ? item.path().substring(0, item.path().lastIndexOf('/')) : "";
+            List<String> others = existing.getOrDefault(name, List.of()).stream()
+                    .filter(p -> !(p.contains("/") ? p.substring(0, p.lastIndexOf('/')) : "").endsWith(folder)).toList();
+            if ("create".equals(item.action()) && item.path().endsWith(".java") && !others.isEmpty()) {
+                risks.add(SAME_NAME + item.path() + " and " + String.join(", ", others) + ". Reuse the existing class, or give the new one "
+                        + "a name of its own.");
+            }
+        }
         if (spec == null) {
             return new ChangePlan(plan.summary(), plan.items(), risks);
         }
@@ -62,18 +81,20 @@ final class PlanReview {
             String label = (api.method() == null ? "" : api.method().toUpperCase(Locale.ROOT) + " ") + path;
             // A UI-only change calls existing services; a plan with Java code is expected to serve the APIs it adds
             boolean backend = plan.items().stream().anyMatch(i -> i.path().toLowerCase(Locale.ROOT).endsWith(".java"));
-            if (backend && !served.containsKey(normalize(path)) && plan.items().stream().noneMatch(i -> serves(i.path(), path))) {
+            // Served by a REST resource or controller whose name matches: a service or validator of the same name serves nothing
+            if (backend && !served.containsKey(normalize(path))
+                    && plan.items().stream().noneMatch(i -> isResource(i.path()) && serves(i.path(), path))) {
                 risks.add(UNSERVED_API + label + ": no file name matches its path. Add the resource and service that "
                         + "implement it, or say which planned file does.");
             }
             if (createsResource) {
                 String normalized = normalize(path);
-                String existing = served.entrySet().stream().filter(e -> normalized.equals(e.getKey())
+                String servedBy = served.entrySet().stream().filter(e -> normalized.equals(e.getKey())
                         || (e.getKey().contains("/") && normalized.startsWith(e.getKey() + "/")))
                         .map(Map.Entry::getValue).findFirst().orElse(null);
                 String root = normalized.contains("/") ? normalized.substring(0, normalized.indexOf('/')) : normalized;
-                if (existing != null) {
-                    risks.add(SERVED_PATH + label + " would sit on a path the existing code serves (" + existing + "). Change that "
+                if (servedBy != null) {
+                    risks.add(SERVED_PATH + label + " would sit on a path the existing code serves (" + servedBy + "). Change that "
                             + "resource instead, or use another path.");
                 } else if (PRODUCT_ROOTS.contains(root.toLowerCase(Locale.ROOT))) {
                     risks.add(SERVED_PATH + label + " would sit under /" + root + ", a path of OBDX's own services, and can clash "

@@ -138,6 +138,26 @@ class BrdDesignTest {
     }
 
     @Test
+    void everyKeywordIsTriedForTheColumns() {
+        assertThat(ScreenModels.columnsIn("list the customer's standing instructions with beneficiary name, amount, frequency, "
+                + "next execution date and status")).containsExactly("Beneficiary name", "Amount", "Frequency", "Next execution date", "Status");
+    }
+
+    @Test
+    void anEmptyDetailsScreenTakesItsFieldsFromItsRequirement() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"title": "x", "requirements": [{"id": "FR-005", "title": "Instruction details",
+                  "description": "The details screen shows the beneficiary name, amount, frequency and status.", "screens": ["Instruction Details"]}]}
+                """, "x");
+        ScreenModel bare = ScreenModels.fromSpec(screen("Instruction Details", List.of(), List.of()));
+
+        List<ScreenModel.Component> c = ScreenDesignService.fillEmptyList(bare, spec).sections().getFirst().components();
+
+        assertThat(c).extracting(ScreenModel.Component::label).containsExactly("Beneficiary name", "Amount", "Frequency", "Status");
+        assertThat(c).allSatisfy(x -> assertThat(x.type()).isEqualTo("display"));
+    }
+
+    @Test
     void aCancelOfItsOwnIsNotDoubled() {
         RequirementSpec spec = SpecParser.parse("""
                 {"title": "x", "requirements": [{"id": "FR-006", "title": "Cancel instruction",

@@ -35,6 +35,10 @@ public class ImpactAnalyzer {
               services, business logic, DTOs), ui (JET views, view models, resource bundles, navigation), test, config.
             - When new or changed code needs classes that do not exist yet (DTOs, services, exceptions, models), plan a
               file for each; code may only use classes that exist or that this plan creates.
+            - Plan every helper type a file uses (exceptions, enums, mappers). Each public Java type goes in its own file;
+              a request DTO and its response DTO are separate files.
+            - Reuse the existing classes that do the job (for example an existing accounts.HostAccountAdapter) instead of
+              creating a parallel one with the same purpose in another package.
             - Use "modify" only for paths shown in the existing code or folder structure. Paths are relative, with
               forward slashes, exactly as shown.
             - basedOn lists existing files whose patterns the new or changed code should follow.

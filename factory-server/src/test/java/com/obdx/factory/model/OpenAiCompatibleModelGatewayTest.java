@@ -25,6 +25,7 @@ class OpenAiCompatibleModelGatewayTest {
     private HttpServer server;
     private final AtomicReference<String> lastChatRequest = new AtomicReference<>();
     private final java.util.concurrent.atomic.AtomicInteger limitedCalls = new java.util.concurrent.atomic.AtomicInteger();
+    private final List<Integer> otpmAsked = java.util.Collections.synchronizedList(new ArrayList<>());
 
     @BeforeEach
     void startStubServer() throws IOException {
@@ -134,6 +135,25 @@ class OpenAiCompatibleModelGatewayTest {
             respond(exchange, 429, """
                     {"error": {"message": "Rate limit reached for model `qwen` on tokens per day (TPD): Limit 100000, Used 99500, \
                     Requested 900. Please try again in 14m30s.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                    """);
+        });
+        // Groq on a free plan: one answer may not ask for more than the 1000 output tokens it writes a minute
+        server.createContext("/otpm/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+            int asked = m.find() ? Integer.parseInt(m.group(1)) : -1;
+            otpmAsked.add(asked);
+            if (asked > 1000) {
+                respond(exchange, 413, """
+                        {"error": {"message": "Request too large for model `qwen` in organization `org_1` service tier `on_demand` on \
+                        output tokens per minute (OTPM): Limit 1000, Requested %d, please reduce your message size and try again.", \
+                        "type": "tokens", "code": "rate_limit_exceeded"}}
+                        """.formatted(asked));
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-5", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "length", "message": {"role": "assistant", "content": "public class A {"}}]}
                     """);
         });
         // A rolling daily limit that frees up in a moment: waited out like a per-minute one
@@ -407,6 +427,30 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(limitedCalls.get()).isEqualTo(2);
         assertThat(OpenAiCompatibleModelGateway.waitGiven("tokens per day (TPD). Please try again in 7.66s")).isTrue();
         assertThat(OpenAiCompatibleModelGateway.waitGiven("daily limit reached")).isFalse();
+    }
+
+    @Test
+    void anAnswerLargerThanTheOutputPerMinuteAsksAgainAtOnceForLess() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/otpm/v1";
+        ModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192));
+        long start = System.nanoTime();
+
+        ModelGateway.ChatResult first = gateway.chat("Write the file.", "RemarksValidator.java");
+
+        // refused once with max_tokens 8192, then asked at once for 900 (90% of 1000), not waited out
+        assertThat(otpmAsked).containsExactly(8192, 900);
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
+        // the answer is cut off at that size, for the caller to continue
+        assertThat(first.cutOff()).isTrue();
+        // and later calls ask for 900 straight away
+        gateway.chat("Write the file.", "Another.java");
+        assertThat(otpmAsked).containsExactly(8192, 900, 900);
+
+        assertThat(OpenAiCompatibleModelGateway.outputTooLarge("on output tokens per minute (OTPM): Limit 1000, Requested 1407"))
+                .containsExactly(1000, 1407);
+        assertThat(OpenAiCompatibleModelGateway.outputTooLarge("output tokens per minute (OTPM): Limit 1000, Used 900, Requested 500")).isNull();
+        assertThat(OpenAiCompatibleModelGateway.outputCap(1000)).isEqualTo(900);
     }
 
     @Test
