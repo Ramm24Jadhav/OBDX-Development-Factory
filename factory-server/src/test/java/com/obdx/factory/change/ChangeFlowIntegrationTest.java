@@ -73,7 +73,12 @@ class ChangeFlowIntegrationTest {
     static final String SERVICE = """
             package com.bank.payments;
 
+            import com.bank.host.HostClient;
+            import com.bank.host.TransferRequest;
+
             public class FundTransferService {
+                private final HostClient host = new HostClient();
+
                 public void transfer(TransferRequest request) {
                     host.book(request);
                 }
