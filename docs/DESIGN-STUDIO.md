@@ -64,6 +64,34 @@ the components used and a short specification. What we left out: Figma export, "
 workspace already fixes the OBDX version and the preview shows the bank's components), screen-variation and
 annotation toggles, and the over-dense export panel. None of these has a server behind it.
 
+## The design workspace (UI declutter step 9)
+
+The Studio became the central design workspace. The stages, the order of the flow and every approval stay as they were
+(approve one screen, approve a requirement's screens, approve all with a confirmation, reopen with a confirmation).
+
+- **Layout:** a compact workflow bar that stays at the top; requirements on the left; the selected requirement's
+  screen flow as a map of nodes in the middle; the selected screen's preview on the right. Below 1440 px the flow runs
+  across above the preview; below 1100 px everything stacks. The page title is the breadcrumb's, so the page has no
+  heading line of its own.
+- **One preview** instead of a phone frame per screen: phone, tablet (the preview has tablet layouts) or desktop.
+  It never shrinks below 80%; a wider page scrolls inside it.
+- **Coverage:** each screen helps meet the acceptance criteria of the requirements it serves; a criterion that names
+  some of those screens belongs to them only. Criteria linked to no requirement, or only to requirements without
+  screens, are listed as not covered.
+- **Open items, each with its own colour and mark:** criteria not covered (red, warning sign), design decisions still
+  open (violet, diamond) and values to confirm (amber, dashed outline in the preview). A spec cannot be approved with
+  open questions, so after approval the open decisions are what the BRD does not say: whether a captured field is
+  mandatory, and whether a screen is new or a change to an existing one.
+- **BRD values only:** the Studio's preview no longer invents sample names, amounts or options. A choice or table
+  without values from the BRD reads "To be confirmed by the analyst"; accounts and lists loaded from an API say so.
+  The Visual Designer keeps its realistic sample data.
+- **Regenerate** saves the version generated from the approved spec again as a new version. Generation from a spec is
+  deterministic, so this is the screen the generator makes from that spec; changes stay in the version history.
+- **Compare versions** lists what changed between two versions (title, sections, fields and their label, type,
+  mandatory flag, values, default, length and checks, buttons) and can show the earlier one in the preview.
+- **Keyboard:** arrow keys, Home and End move through the flow nodes and the tabs; the preview can be scrolled with the
+  keyboard.
+
 ## Server support
 
 - `GET /api/requirements/{id}/design-flow`: the BRD's screens in flow order (each review and confirmation screen right

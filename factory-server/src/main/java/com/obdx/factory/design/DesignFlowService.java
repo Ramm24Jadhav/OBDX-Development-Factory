@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,10 +31,19 @@ public class DesignFlowService {
     }
 
     /**
-     * @param needsSteps the screen takes input but has no review and confirmation screens after it
+     * @param needsSteps  the screen takes input but has no review and confirmation screens after it
+     * @param criteria    the acceptance criteria (ID, or text without one) the screen helps meet
+     * @param unconfirmed labels of its choices and tables whose values the BRD does not give
+     * @param decisions   design decisions the BRD leaves open on it
      */
     public record FlowScreen(UUID id, String name, ScreenDesign.Status status, int currentVersion, Integer approvedVersion,
-                             String approvedBy, String stage, List<String> channels, ScreenModel model, boolean needsSteps) {
+                             String approvedBy, String stage, List<String> channels, ScreenModel model, boolean needsSteps,
+                             List<String> criteria, List<String> unconfirmed, List<String> decisions) {
+    }
+
+    /** An open question of the spec without an answer, and the requirements (IDs) and screens it mentions. */
+    public record OpenQuestion(String question, String reason, String reference, List<String> options, String suggestedAnswer,
+                               List<String> requirements, List<UUID> screens) {
     }
 
     public record FlowRequirement(String id, String title, String description, String priority, List<String> screenNames,
@@ -46,10 +56,14 @@ public class DesignFlowService {
      * @param requirements the spec's functional requirements, each with its screens
      * @param others       screens no functional requirement names
      * @param rules        all business rules of the spec
+     * @param uncovered    the criteria no screen helps meet
+     * @param questions    the spec's open questions that have no answer yet
+     * @param decisions    the answered ones
      */
     public record DesignFlow(UUID requirementId, UUID workspaceId, String title, Requirement.Status status, List<FlowScreen> screens,
                              List<FlowRequirement> requirements, List<UUID> others,
-                             List<RequirementSpec.BusinessRule> rules, List<RequirementSpec.AcceptanceCriterion> criteria) {
+                             List<RequirementSpec.BusinessRule> rules, List<RequirementSpec.AcceptanceCriterion> criteria,
+                             List<String> uncovered, List<OpenQuestion> questions, List<RequirementSpec.Decision> decisions) {
     }
 
     /** What approving changed, for the audit log, and the flow after it. */
@@ -65,19 +79,25 @@ public class DesignFlowService {
                 .toList());
         RequirementSpec spec = requirement.spec();
         List<RequirementFlows.Flow> flows = RequirementFlows.flows(spec, ordered);
+        Map<UUID, List<String>> criteria = RequirementFlows.criteriaByScreen(ordered, flows);
         List<FlowScreen> screens = new ArrayList<>();
         for (RequirementFlows.Screen s : ordered) {
             ScreenDesign d = all.stream().filter(x -> x.getId().equals(s.id())).findFirst().orElseThrow();
             screens.add(new FlowScreen(d.getId(), d.getName(), d.getStatus(), d.getCurrentVersion(), d.getApprovedVersion(),
                     d.getApprovedBy(), s.stage(), s.model() == null ? List.of() : s.model().channels(), s.model(),
-                    RequirementFlows.needsSteps(s, ordered)));
+                    RequirementFlows.needsSteps(s, ordered), criteria.get(s.id()), RequirementFlows.unconfirmed(s.model()),
+                    RequirementFlows.openDecisions(spec, s)));
         }
         return new DesignFlow(requirementId, requirement.workspaceId(), requirement.title(), requirement.status(), screens,
                 flows.stream().map(f -> new FlowRequirement(f.id(), f.title(), f.description(), f.priority(), f.screenNames(),
                         f.screens(), f.rules(), f.criteria())).toList(),
                 RequirementFlows.others(ordered, flows),
                 spec == null || spec.businessRules() == null ? List.of() : spec.businessRules(),
-                spec == null ? List.of() : spec.acceptanceCriteria());
+                spec == null ? List.of() : spec.acceptanceCriteria(),
+                spec == null ? List.of() : RequirementFlows.uncovered(spec.acceptanceCriteria(), criteria),
+                RequirementFlows.unresolved(spec, ordered).stream().map(q -> new OpenQuestion(q.question(), q.reason(), q.reference(),
+                        q.options(), q.suggestedAnswer(), q.requirements(), q.screens())).toList(),
+                spec == null || spec.decisions() == null ? List.of() : spec.decisions());
     }
 
     /**

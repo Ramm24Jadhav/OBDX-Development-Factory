@@ -4,9 +4,11 @@ import com.obdx.factory.requirements.RequirementSpec;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -87,6 +89,128 @@ final class RequirementFlows {
         Set<UUID> mapped = new HashSet<>();
         flows.forEach(f -> mapped.addAll(f.screens()));
         return ordered.stream().map(Screen::id).filter(id -> !mapped.contains(id)).toList();
+    }
+
+    /** How the studio names a criterion: its ID, or its text when the document gave it none. */
+    static String criterionKey(RequirementSpec.AcceptanceCriterion criterion) {
+        return criterion.id() == null || criterion.id().isBlank() ? String.valueOf(criterion.description()) : criterion.id();
+    }
+
+    /**
+     * The acceptance criteria each screen helps meet: those of the requirements the screen serves. A criterion that
+     * names some of those screens ("the Review screen shows the fee") belongs to them only.
+     */
+    static Map<UUID, List<String>> criteriaByScreen(List<Screen> ordered, List<Flow> flows) {
+        Map<UUID, List<String>> byScreen = new LinkedHashMap<>();
+        ordered.forEach(s -> byScreen.put(s.id(), new ArrayList<>()));
+        Map<String, RequirementSpec.AcceptanceCriterion> criteria = new LinkedHashMap<>();
+        Map<String, Set<UUID>> candidates = new LinkedHashMap<>();
+        for (Flow f : flows) {
+            for (RequirementSpec.AcceptanceCriterion c : f.criteria()) {
+                criteria.putIfAbsent(criterionKey(c), c);
+                candidates.computeIfAbsent(criterionKey(c), k -> new LinkedHashSet<>()).addAll(f.screens());
+            }
+        }
+        candidates.forEach((key, screens) -> {
+            String text = " " + key(criteria.get(key).description()) + " ";
+            List<UUID> matched = ordered.stream().filter(s -> screens.contains(s.id()) && !key(s.name()).isEmpty()
+                    && text.contains(" " + key(s.name()) + " ")).map(Screen::id).toList();
+            // "Add Beneficiary – Review" names that screen, not also "Add Beneficiary"
+            List<String> names = matched.stream().map(id -> key(ordered.stream().filter(s -> s.id().equals(id)).findFirst().orElseThrow().name())).toList();
+            List<UUID> named = matched.stream().filter(id -> {
+                String own = names.get(matched.indexOf(id));
+                return names.stream().noneMatch(other -> other.length() > own.length() && (" " + other + " ").contains(" " + own + " "));
+            }).toList();
+            (named.isEmpty() ? screens : named).forEach(id -> byScreen.get(id).add(key));
+        });
+        return byScreen;
+    }
+
+    /** The criteria no screen helps meet: linked to no requirement, or only to requirements without screens. */
+    static List<String> uncovered(List<RequirementSpec.AcceptanceCriterion> criteria, Map<UUID, List<String>> byScreen) {
+        Set<String> covered = new HashSet<>();
+        byScreen.values().forEach(covered::addAll);
+        return criteria.stream().map(RequirementFlows::criterionKey).filter(k -> !covered.contains(k)).distinct().toList();
+    }
+
+    /** Option lists the generator fills in when the document names none ("Option 1", "Column 1": ScreenModels). */
+    private static final Set<String> STAND_INS = Set.of("option 1", "option 2", "column 1", "column 2");
+
+    /**
+     * The labels of a screen's choices and tables whose values the document does not give, so an analyst must confirm
+     * them. Lists loaded from an API and the bank's own components are not counted.
+     */
+    static List<String> unconfirmed(ScreenModel model) {
+        if (model == null) {
+            return List.of();
+        }
+        return model.sections().stream().flatMap(s -> s.components().stream())
+                .filter(c -> Set.of("select", "radio", "checkbox", "table").contains(c.type()))
+                .filter(c -> c.dataSource() == null || c.dataSource().api() == null || c.dataSource().api().isBlank())
+                .filter(c -> c.options() == null || c.options().stream().allMatch(o -> o == null || o.isBlank()
+                        || STAND_INS.contains(o.trim().toLowerCase(Locale.ROOT))))
+                .map(c -> c.label() == null || c.label().isBlank() ? String.valueOf(c.name()) : c.label())
+                .toList();
+    }
+
+    /**
+     * An open question of the spec that has no answer yet, with the requirements and screens it mentions by ID or name
+     * (none: it concerns the whole BRD).
+     */
+    record Question(String question, String reason, String reference, List<String> options, String suggestedAnswer,
+                    List<String> requirements, List<UUID> screens) {
+    }
+
+    /**
+     * Design decisions the BRD leaves open on a screen made from it: whether it is a new screen or a change to an
+     * existing one, and, for each field it captures, whether the field is mandatory. A field someone has since made
+     * mandatory is decided. (An approved spec has no open questions, so these are what is left for an analyst.)
+     */
+    static List<String> openDecisions(RequirementSpec spec, Screen screen) {
+        if (spec == null || spec.screens() == null || screen.model() == null) {
+            return List.of();
+        }
+        RequirementSpec.Screen source = spec.screens().stream()
+                .filter(s -> s != null && !key(s.name()).isEmpty() && key(s.name()).equals(key(screen.name()))).findFirst().orElse(null);
+        if (source == null) {
+            return List.of();
+        }
+        List<String> open = new ArrayList<>();
+        if ("unknown".equalsIgnoreCase(source.changeType())) {
+            open.add("New screen, or a change to an existing OBDX screen? The BRD does not say.");
+        }
+        List<ScreenModel.Component> components = screen.model().sections().stream().flatMap(s -> s.components().stream()).toList();
+        for (RequirementSpec.Field field : source.fields() == null ? List.<RequirementSpec.Field>of() : source.fields()) {
+            if (field == null || field.mandatory() != null) {
+                continue;
+            }
+            components.stream()
+                    .filter(c -> c.name() != null && c.name().equals(field.name()) && c.required() == null && !Boolean.TRUE.equals(c.readonly())
+                            && !"display".equals(c.type()) && !"table".equals(c.type()))
+                    .findFirst()
+                    .ifPresent(c -> open.add("Is \"" + (c.label() == null ? c.name() : c.label()) + "\" mandatory? The BRD does not say."));
+        }
+        return open;
+    }
+
+    static List<Question> unresolved(RequirementSpec spec, List<Screen> ordered) {
+        if (spec == null || spec.openQuestions() == null) {
+            return List.of();
+        }
+        List<Question> questions = new ArrayList<>();
+        for (RequirementSpec.OpenQuestion q : spec.openQuestions()) {
+            if (q == null || q.question() == null || (q.answer() != null && !q.answer().isBlank())) {
+                continue;
+            }
+            String text = " " + key(q.question() + " " + (q.reason() == null ? "" : q.reason()) + " "
+                    + (q.reference() == null ? "" : q.reference())) + " ";
+            List<String> requirements = spec.requirements().stream().map(RequirementSpec.FunctionalRequirement::id)
+                    .filter(id -> id != null && !key(id).isEmpty() && text.contains(" " + key(id) + " ")).toList();
+            List<UUID> screens = ordered.stream().filter(s -> !key(s.name()).isEmpty() && text.contains(" " + key(s.name()) + " "))
+                    .map(Screen::id).toList();
+            questions.add(new Question(q.question(), q.reason(), q.reference(), q.options(), q.suggestedAnswer(), requirements, screens));
+        }
+        return questions;
     }
 
     /**

@@ -14,6 +14,8 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
     // OBDX framework components the preview shows like the real ones; others appear as a labelled placeholder
     const LOOKS = { 'account-input': 'account', 'amount-input': 'amount', 'page-section': 'section' };
     const PLACEHOLDERS = ['Option 1', 'Option 2', 'Column 1', 'Column 2'];
+    // Shown instead of invented values when the page asks for the BRD's values only (the Design Studio)
+    const TO_CONFIRM = 'To be confirmed by the analyst';
 
     /**
      * Sample values a bank's screen would show, picked by words in a field's name or label: [words, text, number].
@@ -48,14 +50,18 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       return match ? { texts: match[1], number: match[2] } : null;
     };
 
-    /** Columns and two rows of sample data for a table; its options are the column headers. */
-    const table = (columns) => {
-      const headers = columns.length > 0 ? columns : ['Column 1', 'Column 2'];
-      const rows = [0, 1].map((n) => {
+    /**
+     * Columns and two rows of sample data for a table; its options are the column headers. With brdOnly the headers
+     * are the BRD's own (or one to be confirmed) and the single row is empty: the values come at run time.
+     */
+    const table = (columns, brdOnly) => {
+      const named = columns.filter((c) => c && !PLACEHOLDERS.includes(c));
+      const headers = brdOnly ? (named.length > 0 ? named : [TO_CONFIRM]) : (columns.length > 0 ? columns : ['Column 1', 'Column 2']);
+      const rows = (brdOnly ? [0] : [0, 1]).map((n) => {
         const row = { key: n };
         headers.forEach((header, i) => {
           const sample = sampleFor(header);
-          row['c' + i] = sample ? sample.texts[n % sample.texts.length] : (n === 0 ? 'Sample' : 'Example');
+          row['c' + i] = brdOnly ? '—' : sample ? sample.texts[n % sample.texts.length] : (n === 0 ? 'Sample' : 'Example');
         });
         return row;
       });
@@ -118,30 +124,58 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
       return c.defaultValue || null;
     };
 
+    /** The value a field shows with only the BRD's values: its default, else nothing (a choice shows its one option). */
+    const brdValue = (c, options) => {
+      if (c.type === 'number' || c.type === 'amount') {
+        const parsed = Number(c.defaultValue);
+        return c.defaultValue && !isNaN(parsed) ? parsed : null;
+      }
+      if (c.type === 'date') {
+        return c.defaultValue && /^\d{4}-\d{2}-\d{2}/.test(c.defaultValue) ? c.defaultValue.slice(0, 10) : null;
+      }
+      if (c.defaultValue && (options.length === 0 || options.includes(c.defaultValue))) {
+        return c.defaultValue;
+      }
+      return c.type === 'select' || c.type === 'account' ? options[0] || null : null;
+    };
+
     /**
      * @param context optional: bank (name in the header), breadcrumb, steps (screen names of the journey) and step
-     *                (index of this screen), warnings (by component id), editing (true in the designer)
+     *                (index of this screen), warnings (by component id), editing (true in the designer), brdOnly
+     *                (true: no invented sample values; what the BRD does not give is marked to be confirmed)
      */
     function toView(model, highlight, context) {
       const ctx = context || {};
       const warnings = ctx.warnings || {};
+      const brdOnly = ctx.brdOnly === true;
       const component = (c) => {
         const look = c.type === 'component' && !c.html && !c.script ? (LOOKS[c.component] || 'generic') : null;
-        const options = (c.type === 'account' || look === 'account') && (!c.options || c.options.length === 0 || c.options[0] === 'Option 1')
+        const named = (c.options || []).filter((o) => o && !PLACEHOLDERS.includes(o));
+        const loaded = c.dataSource && c.dataSource.api;
+        let options = (c.type === 'account' || look === 'account') && (!c.options || c.options.length === 0 || c.options[0] === 'Option 1')
           ? SAMPLE_ACCOUNTS : (c.options || []);
+        let unconfirmed = false;
+        if (brdOnly && (c.type === 'account' || look === 'account' || loaded)) {
+          options = [loaded ? 'Loaded at run time (' + c.dataSource.api + ')' : "The customer's accounts, loaded at run time"];
+        } else if (brdOnly && (c.type === 'select' || c.type === 'radio' || c.type === 'checkbox')) {
+          unconfirmed = named.length === 0;
+          options = unconfirmed ? [TO_CONFIRM] : named;
+        }
+        unconfirmed = unconfirmed || (brdOnly && c.type === 'table' && named.length === 0);
         const optionItems = options.map((label) => ({ value: label, label: label }));
         const params = c.params || {};
-        const value = sampleValue(c, look, options);
+        const value = brdOnly ? brdValue(c, options) : sampleValue(c, look, options);
         return {
           look: look,
           tag: c.component ? '<' + c.component + '>' : '',
           params: Object.keys(params).map((key) => key + (params[key] ? ': ' + params[key] : '')),
-          table: c.type === 'table' ? table(c.options || []) : null,
+          table: c.type === 'table' ? table(c.options || [], brdOnly) : null,
           id: c.id,
           // An element with its own HTML or script is drawn by it, in its own sandboxed frame
           type: c.html || c.script ? 'custom' : c.type,
           srcdoc: c.html || c.script ? elementPage(c) : '',
           label: c.label,
+          amountLabel: brdOnly ? c.label : c.label + ' (INR)',
           required: c.required === true,
           readonly: c.readonly === true,
           placeholder: c.placeholder || '',
@@ -152,7 +186,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           value: ko.observable(value),
           values: ko.observableArray([]),
           checked: ko.observable(c.defaultValue === 'true' || c.defaultValue === 'on'),
-          displayValue: value === null || value === undefined ? 'Sample value' : String(value),
+          displayValue: value === null || value === undefined ? (brdOnly ? '—' : 'Sample value') : String(value),
           optionsProvider: new ArrayDataProvider(optionItems, { keyAttributes: 'value' }),
           warning: warnings[c.id] || '',
           // Where the values come from, shown on the canvas while designing
@@ -160,7 +194,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           visibleWhen: c.visibleWhen || null,
           requiredWhen: c.requiredWhen || null,
           baseRequired: c.required === true,
-          baseCss: 'factory-cmp' + (c.id === highlight ? ' factory-highlight' : '') + (warnings[c.id] ? ' factory-warning-mark' : '')
+          baseCss: 'factory-cmp' + (c.id === highlight ? ' factory-highlight' : '') + (warnings[c.id] || unconfirmed ? ' factory-warning-mark' : '')
         };
       };
       const editing = ctx.editing === true;
