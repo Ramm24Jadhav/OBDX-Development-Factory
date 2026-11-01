@@ -451,7 +451,13 @@ public class ChangeService {
      */
     static void recordPartial(ChangeFileStore files, UUID changeId, String path, String current, CodeGenerator.Partial e) {
         ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
-        if (previous == null || previous.generated() == null || partial(previous)) {
+        boolean none = previous == null || previous.generated() == null || partial(previous);
+        if (e.check() != null && none) {
+            // A whole answer whose fix the limit stopped: the file's content, with the check it failed (Write again fixes it)
+            files.saveResult(changeId, path, ChangeFileStore.Status.GENERATED, current, e.content(), false, e.check(), 1);
+            return;
+        }
+        if (none) {
             // Kept for the reviewer to see and for Continue to go on from; it still counts as not written
             files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, e.content(), false,
                     new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " Continue generation goes on from here "

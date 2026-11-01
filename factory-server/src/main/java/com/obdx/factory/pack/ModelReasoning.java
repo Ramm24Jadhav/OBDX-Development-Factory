@@ -112,6 +112,77 @@ public final class ModelReasoning {
         return found.stream().mapToInt(LocalChecks.Finding::line).min().orElse(0);
     }
 
+    /** A file with the comments that carry the model's reasoning taken out, and how many comments that was. */
+    public record Cleaned(String content, int removed) {
+    }
+
+    /**
+     * The file without its comments that carry the model's reasoning ("// The prompt asks ...", "// Wait, ..."): a comment
+     * on a line of its own goes with its line, a comment after code is cut from the line. Comments on lines the file had
+     * before the change (original) stay; strings are not touched.
+     */
+    public static Cleaned withoutReasoningComments(String path, String original, String content) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        SourceScan.Syntax syntax = lower.matches(".*\\.(java|js|ts|tsx|jsx)") ? SourceScan.Syntax.CODE
+                : lower.endsWith(".html") || lower.endsWith(".xml") ? SourceScan.Syntax.MARKUP
+                : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
+                : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : null;
+        if (content == null || syntax == null) {
+            return new Cleaned(content, 0);
+        }
+        Set<String> before = new HashSet<>();
+        if (original != null) {
+            original.lines().forEach(l -> before.add(l.strip()));
+        }
+        boolean[] removed = new boolean[content.length()];
+        int count = 0;
+        for (SourceScan.Range range : SourceScan.scan(content, syntax).comments()) {
+            Matcher p = PHRASE.matcher(content).region(range.start(), range.end());
+            p.useAnchoringBounds(true);
+            if (!p.find()) {
+                continue;
+            }
+            int lineStart = content.lastIndexOf('\n', range.start() - 1) + 1;
+            int lineEnd = content.indexOf('\n', range.start());
+            String line = content.substring(lineStart, lineEnd < 0 ? content.length() : lineEnd).strip();
+            if (before.contains(line)) {
+                continue;
+            }
+            java.util.Arrays.fill(removed, range.start(), range.end(), true);
+            count++;
+        }
+        if (count == 0) {
+            return new Cleaned(content, 0);
+        }
+        StringBuilder out = new StringBuilder();
+        int start = 0;
+        while (start <= content.length()) {
+            int end = content.indexOf('\n', start);
+            int stop = end < 0 ? content.length() : end;
+            StringBuilder kept = new StringBuilder();
+            boolean touched = false;
+            for (int i = start; i < stop; i++) {
+                if (removed[i]) {
+                    touched = true;
+                } else {
+                    kept.append(content.charAt(i));
+                }
+            }
+            // a line that was only the comment goes; a line with code keeps its code
+            if (!(touched && kept.toString().isBlank())) {
+                out.append(touched ? kept.toString().stripTrailing() : kept);
+                if (end >= 0) {
+                    out.append('\n');
+                }
+            }
+            if (end < 0) {
+                break;
+            }
+            start = end + 1;
+        }
+        return new Cleaned(out.toString(), count);
+    }
+
     /** Tests, mocks and stories, where simulated data belongs. */
     static boolean testCode(String path) {
         String lower = path.toLowerCase(Locale.ROOT);

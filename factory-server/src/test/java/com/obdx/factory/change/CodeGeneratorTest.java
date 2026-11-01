@@ -417,6 +417,121 @@ class CodeGeneratorTest {
         assertThat(prompts.getFirst()).contains("an example test line");
     }
 
+    /** A gateway with Groq's 8000 tokens a minute; "LIMIT" is the daily limit used up. */
+    private ModelGateway eightThousand() {
+        return new ModelGateway() {
+            @Override
+            public ChatResult chat(String systemPrompt, String userPrompt) {
+                if ("LIMIT".equals(replies.peekFirst())) {
+                    replies.removeFirst();
+                    prompts.add(userPrompt);
+                    throw new com.obdx.factory.model.ModelLimitReachedException("daily limit", true, "about 15 minutes", null);
+                }
+                return model.chat(systemPrompt, userPrompt);
+            }
+
+            @Override
+            public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public float[] embed(String text) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<float[]> embedAll(List<String> texts) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int tokensPerMinute() {
+                return 8000;
+            }
+        };
+    }
+
+    @Test
+    void aWholeFileWhoseOnlyFindingIsAReasoningCommentIsCleanedNotWrittenAgain() {
+        replies.add("""
+                public class RemarksValidator {
+                    // The prompt asks for remarks of at most 35 characters.
+                    private static final int MAX = 35; // As per the instructions, a constant.
+
+                    boolean valid(String remarks) {
+                        return remarks.length() <= MAX;
+                    }
+                }
+                """);
+
+        CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        // no second request: the comments are taken out and the file checked again
+        assertThat(prompts).hasSize(1);
+        assertThat(result.content()).doesNotContain("prompt").doesNotContain("instructions")
+                .contains("    private static final int MAX = 35;\n\n    boolean valid");
+        assertThat(result.check().status()).isNotEqualTo(FileChecks.Status.FAILED);
+        assertThat(result.check().message()).contains("Removed 2 comment(s) with the model's reasoning.");
+        assertThat(CodeGenerator.SYSTEM).contains("Write no comments about the prompt, the instructions or your own reasoning");
+    }
+
+    @Test
+    void onASmallLimitAFixSendsOnlyTheFileItsRulesAndTheFindings() {
+        Map<String, String> examples = Map.of("backend/LimitValidator.java", "public class LimitValidator {\n" + "    // an example line\n".repeat(600) + "}\n");
+        replies.add("public class RemarksValidator {\n    void a() { }\n    void a() { }\n}\n");
+        replies.add("public class RemarksValidator {\n    void a() { }\n}\n");
+
+        CodeGenerator.Result result = generatorWith(eightThousand()).generate(context, plan, item, null, examples, Map.of(), null);
+
+        assertThat(prompts.get(1)).startsWith("File to correct: backend/RemarksValidator.java (create, service)")
+                .contains("You wrote this content:", "is declared twice").doesNotContain("an example line").doesNotContain("The whole change");
+        assertThat(result.content()).isEqualTo("public class RemarksValidator {\n    void a() { }\n}\n");
+    }
+
+    @Test
+    void whenEvenTheFileIsTooLargeOnlyTheMethodsWithFindingsAreSentAndPutBack() {
+        StringBuilder large = new StringBuilder("public class RemarksValidator {\n");
+        for (int i = 0; i < 40; i++) {
+            large.append("    void rule").append(i).append("(String remarks) {\n").append("        remarks.trim();\n".repeat(20)).append("    }\n\n");
+        }
+        // one method calls a helper never written
+        String file = large.toString().replace("    void rule7(String remarks) {\n", "    void rule7(String remarks) {\n        helper(remarks);\n") + "}\n";
+        replies.add(file);
+        replies.add("    void rule7(String remarks) {\n        remarks.strip();\n    }\n");
+
+        CodeGenerator.Result result = generatorWith(eightThousand()).generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(prompts.get(1)).contains("Write only these methods again", "void rule7(String remarks) {\n        helper(remarks);",
+                "Calls helper(...)").doesNotContain("void rule8(String remarks) {\n        remarks.trim();");
+        assertThat(prompts.get(1).length()).isLessThan(file.length() / 3);
+        assertThat(result.content()).contains("    void rule7(String remarks) {\n        remarks.strip();\n    }")
+                .doesNotContain("helper(").contains("void rule39(String remarks)");
+        assertThat(result.check().status()).isNotEqualTo(FileChecks.Status.FAILED);
+        assertThat(result.check().message()).contains("Corrected only the method(s) with findings: rule7.");
+    }
+
+    @Test
+    void aWholeAnswerWhoseFixTheLimitStoppedIsKept() {
+        String whole = "public class RemarksValidator {\n    void a() { }\n    void a() { }\n}\n";
+        replies.add(whole);
+        replies.add("LIMIT");
+
+        CodeGenerator.Partial stopped = org.assertj.core.api.Assertions.catchThrowableOfType(CodeGenerator.Partial.class,
+                () -> generatorWith(eightThousand()).generate(context, plan, item, null, Map.of(), Map.of(), null));
+
+        assertThat(stopped.content()).isEqualTo(whole);
+        assertThat(stopped.check().status()).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(stopped.daily()).isTrue();
+        // kept whole, it is checked and fixed next time, not continued
+        assertThat(CodeGenerator.complete(item.path(), whole)).isTrue();
+        prompts.clear();
+        replies.add("public class RemarksValidator {\n    void a() { }\n}\n");
+        CodeGenerator.Result fixed = generatorWith(eightThousand()).generate(context, plan, item, null, null, Map.of(), Map.of(), null, null, whole);
+        assertThat(prompts).singleElement().asString().startsWith("File to correct:");
+        assertThat(fixed.content()).isEqualTo("public class RemarksValidator {\n    void a() { }\n}\n");
+    }
+
     @Test
     void aContinuationIsMuchSmallerThanTheFirstPrompt() {
         replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");

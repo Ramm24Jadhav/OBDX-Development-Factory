@@ -184,6 +184,25 @@ class PartialRecoveryTest {
     }
 
     @Test
+    void aWholeAnswerWhoseFixWasStoppedIsTheContentOfAFileThatHadNone() {
+        FileChecks.Result failed = new FileChecks.Result(FileChecks.Status.FAILED, "Line 3 (java-duplicate-method, error): ...");
+        CodeGenerator.Partial stopped = new CodeGenerator.Partial(new com.obdx.factory.model.ModelLimitReachedException("x", true, null),
+                "public class A { }\n", failed);
+
+        ChangeFileStore none = mock(ChangeFileStore.class);
+        when(none.file(CHANGE, PATH)).thenReturn(Optional.empty());
+        ChangeService.recordPartial(none, CHANGE, PATH, null, stopped);
+        verify(none).saveResult(CHANGE, PATH, ChangeFileStore.Status.GENERATED, null, "public class A { }\n", false, failed, 1);
+
+        // a file with a version keeps it, and the whole answer waits beside it for the next Write again
+        ChangeFileStore written = mock(ChangeFileStore.class);
+        when(written.file(CHANGE, PATH)).thenReturn(Optional.of(new ChangeFileStore.ChangeFile(0, PATH, "create", "test", null,
+                ChangeFileStore.Status.GENERATED, null, "public class Old { }\n", false, FileChecks.Status.PASSED, null, 1)));
+        ChangeService.recordPartial(written, CHANGE, PATH, null, stopped);
+        verify(written).saveRewrite(CHANGE, PATH, "public class A { }\n");
+    }
+
+    @Test
     void aKeptPartWithTooLittleLeftIsDroppedAndTheFileWrittenWhole() {
         String early = "package com.bank.beneficiary;\n\npublic class BeneficiaryValidationServiceTest {\n"
                 + "    void a() { foo(; }\n" + "    void b() {\n        service.validate(\"x\");\n    }\n".repeat(60);

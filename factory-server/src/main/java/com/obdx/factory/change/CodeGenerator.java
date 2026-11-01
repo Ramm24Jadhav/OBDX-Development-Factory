@@ -51,6 +51,7 @@ public class CodeGenerator {
             - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
               say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
               test per criterion, named or commented with the criterion's ID.
+            - Write no comments about the prompt, the instructions or your own reasoning; comments explain the code only.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
 
@@ -121,7 +122,10 @@ public class CodeGenerator {
                 guidance, scaffold, fit.trim(), scale);
         // A continuation needs far less: what the file is, its spec, the names of the files it uses, and its own end
         java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
-        Written written = write(item.path(), prompt, brief, partial, fit.scale());
+        // A kept part that is already a whole file (a complete answer kept when its fix was stopped) is checked, not continued
+        Written written = partial != null && complete(item.path(), partial) ? new Written(partial, false, 1, List.of())
+                : write(item.path(), prompt, brief, partial, fit.scale());
+        written = withoutReasoningComments(item.path(), original, written);
         String content = written.content();
         FileChecks.Result check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
         int attempts = 1;
@@ -129,14 +133,175 @@ public class CodeGenerator {
         while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
             log.info("Writing {} again (attempt {}): it did not pass its checks ({})", item.path(), attempts + 1,
                     check.message() == null ? "no message" : check.message().lines().findFirst().orElse(""));
-            String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
-                    + "\nWrite the complete corrected file.";
-            written = write(item.path(), scale -> prompt.apply(scale) + fix, brief, null, written.scale());
+            try {
+                written = withoutReasoningComments(item.path(), original, fix(item, note, rules, content, check, prompt, brief, written.scale()));
+            } catch (ModelLimitReachedException e) {
+                // The answer is whole, only its checks failed: kept (as the rewrite, or as the content of a file that has none)
+                // rather than lost with the fix that could not be made
+                throw new Partial(e instanceof Partial p ? (ModelLimitReachedException) p.getCause() : e, content, check);
+            }
             content = written.content();
             check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
             attempts++;
         }
         return new Result(content, check, attempts);
+    }
+
+    /** Whether a part of a file is already whole: Java or JavaScript that parses to its end. */
+    static boolean complete(String path, String part) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        return (lower.endsWith(".java") || lower.endsWith(".js") && !FileChecks.looksLikeJsx(part)) && joinProblem(path, part) == null;
+    }
+
+    /**
+     * A whole answer without the comments that carry the model's reasoning: they fail the file on their own, and asking
+     * the model again for the whole file costs far more than taking them out.
+     */
+    private static Written withoutReasoningComments(String path, String original, Written written) {
+        if (written.cutOff()) {
+            return written;
+        }
+        ModelReasoning.Cleaned cleaned = ModelReasoning.withoutReasoningComments(path, original, written.content());
+        if (cleaned.removed() == 0) {
+            return written;
+        }
+        log.info("Removed {} comment line(s) of the model's reasoning from {}", cleaned.removed(), path);
+        List<String> notes = new java.util.ArrayList<>(written.notes());
+        notes.add("Removed " + cleaned.removed() + " comment(s) with the model's reasoning.");
+        return new Written(cleaned.content(), false, written.scale(), notes);
+    }
+
+    /**
+     * Asks for a file that failed its checks to be corrected. On a server with a small per-minute token limit the request
+     * is fitted like a first prompt: only the file, its rules and the findings (no examples, knowledge, designs or other
+     * files); and when even that does not leave room for the answer, only the Java methods with findings are sent, with
+     * the file's outline, and the methods that come back replace them by name.
+     */
+    private Written fix(ChangePlan.Item item, String note, String rules, String content, FileChecks.Result check,
+                        java.util.function.DoubleFunction<String> prompt, java.util.function.DoubleFunction<String> brief, double scale) {
+        String findings = check.message();
+        String tail = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + findings + "\nWrite the complete corrected file.";
+        int total = modelGateway.tokensPerMinute();
+        if (total <= 0 || total >= SMALL_TOTAL) {
+            return write(item.path(), s -> prompt.apply(s) + tail, brief, null, scale);
+        }
+        double perToken = modelGateway.charsPerToken();
+        double room = total * 0.9 - content.length() / perToken;
+        String lean = leanHeader(item, note, rules) + tail;
+        Map<String, String> regions = item.path().endsWith(".java") ? regionsWithFindings(content, findings) : Map.of();
+        if ((SYSTEM.length() + lean.length()) / perToken <= room || regions.isEmpty()) {
+            log.info("Fitted the fix of {}: only the file, its rules and the findings", item.path());
+            return write(item.path(), s -> lean, brief, null, 1);
+        }
+        log.info("Fitted the fix of {}: only the method(s) with findings: {}", item.path(), String.join(", ", regions.keySet()));
+        String ask = leanHeader(item, note, rules) + "\nThe file's outline:\n" + JavaOutline.of(content) + "\n\nThese methods of the file did not "
+                + "pass the checks:\n" + String.join("\n\n", regions.values()) + "\n\nThe findings:\n" + findings
+                + "\n\nWrite only these methods again, corrected and complete, each once; nothing else, without code fences.";
+        ModelGateway.ChatResult reply = PromptFit.chatFrom(modelGateway, SYSTEM, s -> ask, 1).result();
+        String methods = reply.reply() == null || reply.cutOff() ? "" : withoutFences(reply.reply());
+        String spliced = methods.isBlank() ? null : spliceMethods(content, methods);
+        if (spliced == null) {
+            log.info("The methods written for {} could not be put in place; the file is kept as it was", item.path());
+            return new Written(content, false, 1, List.of());
+        }
+        return new Written(spliced, false, 1, List.of("Corrected only the method(s) with findings: " + String.join(", ", regions.keySet()) + "."));
+    }
+
+    /** What a fix of the file needs to know about it besides the file itself: the plan item, the reviewer's note, the rules. */
+    private static String leanHeader(ChangePlan.Item item, String note, String rules) {
+        StringBuilder user = new StringBuilder();
+        user.append("File to correct: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
+        user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
+        if (note != null && !note.isBlank()) {
+            user.append("Reviewer's instruction: ").append(note).append('\n');
+        }
+        if (rules != null && !rules.isEmpty()) {
+            user.append("Rules for this file (they are checked):\n").append(rules).append('\n');
+        }
+        return user.toString();
+    }
+
+    private static final Pattern FINDING_LINE = Pattern.compile("(?:^Line (\\d+)|\\(line (\\d+),col \\d+\\))", Pattern.MULTILINE);
+
+    /** The Java methods (name to source) that contain the lines the findings name; empty when a finding is outside any. */
+    static Map<String, String> regionsWithFindings(String content, String findings) {
+        var parsed = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
+                .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse(content);
+        if (!parsed.isSuccessful() || findings == null) {
+            return Map.of();
+        }
+        List<com.github.javaparser.ast.body.MethodDeclaration> methods = parsed.getResult().orElseThrow()
+                .findAll(com.github.javaparser.ast.body.MethodDeclaration.class);
+        Map<String, String> regions = new java.util.LinkedHashMap<>();
+        Matcher m = FINDING_LINE.matcher(findings);
+        String[] lines = content.split("\n", -1);
+        boolean any = false;
+        while (m.find()) {
+            any = true;
+            int line = Integer.parseInt(m.group(1) != null ? m.group(1) : m.group(2));
+            var method = methods.stream().filter(d -> d.getBegin().isPresent() && d.getEnd().isPresent()
+                    && d.getBegin().get().line <= line && line <= d.getEnd().get().line).findFirst().orElse(null);
+            if (method == null) {
+                return Map.of();
+            }
+            int from = method.getBegin().get().line;
+            int to = method.getEnd().get().line;
+            regions.putIfAbsent(method.getNameAsString(), String.join("\n", java.util.Arrays.asList(lines).subList(from - 1, to)));
+        }
+        return any ? regions : Map.of();
+    }
+
+    /**
+     * The file with methods written again put in place of those with the same name and number of parameters (a method
+     * not in the file goes before the class's closing brace); null when the methods do not parse or the result does not.
+     */
+    static String spliceMethods(String content, String methods) {
+        var reply = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
+                .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse("class Fix {\n" + methods + "\n}\n");
+        var file = new com.github.javaparser.JavaParser(new com.github.javaparser.ParserConfiguration()
+                .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21)).parse(content);
+        if (!reply.isSuccessful() || !file.isSuccessful()) {
+            return null;
+        }
+        String[] replyLines = ("class Fix {\n" + methods + "\n}\n").split("\n", -1);
+        List<String> lines = new java.util.ArrayList<>(java.util.Arrays.asList(content.split("\n", -1)));
+        List<com.github.javaparser.ast.body.MethodDeclaration> existing = file.getResult().orElseThrow()
+                .findAll(com.github.javaparser.ast.body.MethodDeclaration.class);
+        List<String> added = new java.util.ArrayList<>();
+        // replaced from the bottom of the file, so the line numbers above stay right
+        List<int[]> replacements = new java.util.ArrayList<>();
+        List<String> texts = new java.util.ArrayList<>();
+        for (var method : reply.getResult().orElseThrow().findAll(com.github.javaparser.ast.body.MethodDeclaration.class)) {
+            int from = method.getBegin().map(p -> p.line).orElse(0);
+            int to = method.getEnd().map(p -> p.line).orElse(0);
+            String text = String.join("\n", java.util.Arrays.asList(replyLines).subList(from - 1, to));
+            var target = existing.stream().filter(d -> d.getNameAsString().equals(method.getNameAsString())
+                    && d.getParameters().size() == method.getParameters().size()).findFirst().orElse(null);
+            if (target == null) {
+                added.add(text);
+            } else {
+                replacements.add(new int[] {target.getBegin().get().line, target.getEnd().get().line});
+                texts.add(text);
+            }
+        }
+        java.util.List<Integer> order = new java.util.ArrayList<>();
+        for (int i = 0; i < replacements.size(); i++) {
+            order.add(i);
+        }
+        order.sort((a, b) -> replacements.get(b)[0] - replacements.get(a)[0]);
+        for (int i : order) {
+            int[] range = replacements.get(i);
+            for (int line = range[1]; line >= range[0]; line--) {
+                lines.remove(line - 1);
+            }
+            lines.addAll(range[0] - 1, java.util.Arrays.asList(texts.get(i).split("\n", -1)));
+        }
+        String result = String.join("\n", lines);
+        if (!added.isEmpty()) {
+            int close = result.lastIndexOf('}');
+            result = result.substring(0, close).stripTrailing() + "\n\n" + String.join("\n\n", added) + "\n" + result.substring(close);
+        }
+        return joinProblem("Fix.java", result) == null ? result : null;
     }
 
     private FileChecks.Result checked(ChangeContext context, ChangePlan.Item item, String original, String content,
@@ -486,14 +651,26 @@ public class CodeGenerator {
     /** The model's limit stopped a file after part of it was written: that part, to keep and continue from later. */
     public static final class Partial extends ModelLimitReachedException {
         private final String content;
+        private final FileChecks.Result check;
 
         Partial(ModelLimitReachedException limit, String content) {
+            this(limit, content, null);
+        }
+
+        /** @param check for a whole answer whose fix the limit stopped: its failed check; null for a part cut off */
+        Partial(ModelLimitReachedException limit, String content, FileChecks.Result check) {
             super(limit.getMessage(), limit.daily(), limit.retryIn(), limit);
             this.content = content;
+            this.check = check;
         }
 
         public String content() {
             return content;
+        }
+
+        /** The failed check of a whole answer (it is complete, only not fixed); null for a part that was cut off. */
+        public FileChecks.Result check() {
+            return check;
         }
     }
 
