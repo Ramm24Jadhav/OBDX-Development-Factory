@@ -5,7 +5,7 @@
  *    operation cannot be sent twice;
  *  - a thin bar under the top bar runs while requests the user started are open (not background polling);
  *  - block(promise, message) covers the page with a message for the few operations that must finish before anything
- *    else (starting the factory, signing in, committing a change to SVN).
+ *    else (starting the factory, committing a change to SVN).
  * Every count is reference-counted and released in finally, so success, failure and errors all clear it. Nothing waits
  * longer than the request itself: the spinner and the bar only appear when a request takes more than a moment.
  */

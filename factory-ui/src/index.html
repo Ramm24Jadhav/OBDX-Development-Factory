@@ -250,7 +250,7 @@
           </div>
         </div>
       </oj-bind-if>
-      <!-- Signed out: the sign-in page -->
+      <!-- Signed out: the sign-in page. The form (or the single sign-on button) is the one thing on it. -->
       <oj-bind-if test="[[!embedded && sessionChecked() && !signedIn()]]">
         <div class="factory-login">
           <header class="factory-login-bar">
@@ -258,106 +258,42 @@
             <span class="factory-login-bar-name">OBDX Development Factory</span>
             <oj-bind-if test="[[loginVersion()]]"><span class="factory-login-version"><oj-bind-text value="[[loginVersion]]"></oj-bind-text></span></oj-bind-if>
             <a class="factory-login-bar-help" href="https://github.com/Ramm24Jadhav/OBDX-Development-Factory/blob/HEAD/docs/DEVELOPMENT.md" target="_blank" rel="noopener">
-              <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Help</a>
+              <span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Help<span class="fx-visually-hidden"> (opens in a new tab)</span></a>
           </header>
-          <div role="main" class="factory-login-body">
-            <section class="factory-login-intro">
-              <p class="factory-login-kicker">Build <span aria-hidden="true">•</span> Analyze <span aria-hidden="true">•</span> Generate <span aria-hidden="true">•</span> Validate</p>
-              <h1>Accelerate OBDX Development</h1>
-              <p class="factory-login-lead">OBDX Development Factory helps you analyze your codebase, implement banking transactions using AI,
-                and ensure high-quality, standards-compliant deliverables.</p>
-              <div class="factory-login-hero">
-                <ul class="factory-login-points">
-                  <li><span class="factory-login-tile factory-login-tile-blue"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>
-                    <span><strong>Understand Your Codebase</strong>Detect OBDX version, frameworks and customizations</span></li>
-                  <li><span class="factory-login-tile factory-login-tile-violet"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span></span>
-                    <span><strong>AI-Assisted Development</strong>Generate transactions using GPT, Grok or local models</span></li>
-                  <li><span class="factory-login-tile factory-login-tile-green"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>
-                    <span><strong>Built-in Quality Checks</strong>Validate code, run builds and tests automatically</span></li>
-                  <li><span class="factory-login-tile factory-login-tile-amber"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span></span>
-                    <span><strong>Follow OBDX Standards</strong>Use proven patterns from your existing implementation</span></li>
-                </ul>
-                <div class="factory-login-art" aria-hidden="true">
-                  <div class="factory-login-editor">
-                    <div class="factory-login-editor-dots"><span></span><span></span><span></span></div>
-                    <div class="factory-login-editor-body">
-                      <ul class="factory-login-tree">
-                        <li class="factory-login-tree-root">OBDX</li><li>transactions</li><li>customer-services</li><li>funds-transfer</li>
-                        <li class="factory-login-tree-on">scheduled-transfers</li><li class="factory-login-tree-sub">ui</li><li class="factory-login-tree-sub">viewmodel</li>
-                        <li class="factory-login-tree-sub">services</li><li class="factory-login-tree-sub">api</li><li class="factory-login-tree-sub">config</li>
-                      </ul>
-                      <div class="factory-login-code">
-                        <div class="factory-login-code-tabs"><span>ScheduledTransferService.java</span><span>ScheduledTransferView.js</span></div>
-                        <p><i>public class</i> ScheduledTransferService {</p>
-                        <p>&nbsp;&nbsp;<i>public</i> List&lt;ScheduledTransfer&gt; getTransfers(</p>
-                        <p>&nbsp;&nbsp;&nbsp;&nbsp;<i>return</i> repository.findUpcoming(accountId);</p>
-                        <p>}</p>
-                        <p class="factory-login-code-line"></p>
-                        <p class="factory-login-code-line factory-login-code-short"></p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="factory-login-flow">
-                    <span class="factory-login-step factory-login-step-blue"><span class="factory-nav-icon factory-ico-refresh"></span>Analyze Requirement</span>
-                    <span class="factory-login-arrow">→</span>
-                    <span class="factory-login-step factory-login-step-violet"><span class="factory-nav-icon factory-ico-sparkle"></span>Generate Implementation</span>
-                    <span class="factory-login-arrow">→</span>
-                    <span class="factory-login-step factory-login-step-green"><span class="factory-nav-icon factory-ico-check"></span>Validate Build &amp; Tests</span>
-                  </div>
-                </div>
-              </div>
-              <ul class="factory-login-benefits">
-                <li><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Faster Development</li>
-                <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span>Higher Quality</li>
-                <li><span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span>Consistent Standards</li>
-                <li><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span>Team Collaboration</li>
-              </ul>
-            </section>
+          <main class="factory-login-body">
             <section class="factory-login-card" aria-labelledby="loginTitle">
-              <p class="factory-login-welcome">Welcome to</p>
-              <h2 id="loginTitle">OBDX Development Factory</h2>
-              <p class="factory-login-sub">Sign in to continue to your development workspace.</p>
-              <!-- One tab per sign-in method this installation offers -->
-              <div class="factory-login-tabs" role="tablist" aria-label="Sign-in method">
-                <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
-                  <span role="tab" aria-selected="true" class="factory-login-tab">Single Sign-On</span>
-                  <span role="tab" aria-selected="false" aria-disabled="true" class="factory-login-tab factory-login-tab-off" title="This factory uses single sign-on">Username &amp; Password</span>
+              <div class="factory-login-head">
+                <h1 id="loginTitle">Sign in</h1>
+                <!-- Only when an administrator named this installation (FACTORY_ENVIRONMENT_NAME) -->
+                <oj-bind-if test="[[loginEnvironment()]]">
+                  <span id="loginEnvironment" class="factory-login-env"><span class="fx-visually-hidden">Environment: </span><oj-bind-text value="[[loginEnvironment]]"></oj-bind-text></span>
                 </oj-bind-if>
-                <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
-                  <span role="tab" aria-selected="false" aria-disabled="true" class="factory-login-tab factory-login-tab-off" title="Single sign-on is not set up for this factory; an administrator can turn it on">Single Sign-On</span>
-                  <span role="tab" aria-selected="true" class="factory-login-tab"><oj-bind-text value="[[loginTabLabel]]"></oj-bind-text></span>
+              </div>
+              <p class="factory-login-sub">Turn requirements into code for your bank's OBDX code base.</p>
+              <div class="factory-login-alert" role="alert" aria-atomic="true">
+                <oj-bind-if test="[[loginError()]]">
+                  <p id="loginError" class="fx-alert fx-alert--danger"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[loginError]]"></oj-bind-text></span></p>
                 </oj-bind-if>
               </div>
               <oj-bind-if test="[[authConfig() && authConfig().ssoLoginUrl]]">
+                <p class="factory-login-method">Use your organization's single sign-on.</p>
                 <a id="ssoLink" class="factory-sso-button" :href="[[authConfig().ssoLoginUrl]]">
-                  <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>Sign in with Single Sign-On<span class="factory-sso-chev" aria-hidden="true">›</span></a>
-                <div class="factory-login-or"><span>or</span></div>
-                <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>Use your organization's single sign-on to access the OBDX Development Factory.</p>
+                  <span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span>Sign in with Single Sign-On</a>
               </oj-bind-if>
               <oj-bind-if test="[[authConfig() && !authConfig().ssoLoginUrl]]">
-                <form class="fx-form factory-login-form" on-submit="[[signInSubmit]]">
-                  <fx-input id="loginUsername" label="Username" value="{{loginUsername}}" autocomplete="username" name="username" input-id="loginUsernameInput"></fx-input>
-                  <fx-input id="loginPassword" label="Password" type="password" value="{{loginPassword}}" autocomplete="current-password" name="password" input-id="loginPasswordInput"></fx-input>
-                  <button type="submit" id="signInButton" :class="[[signingIn() ? 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit is-loading' : 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit']]" :disabled="[[signingIn]]">Sign in</button>
+                <p id="loginMethod" class="factory-login-method"><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
+                <form class="fx-form factory-login-form" novalidate aria-describedby="loginMethod" on-submit="[[signInSubmit]]">
+                  <fx-input id="loginUsername" label="Username" value="{{loginUsername}}" required error="[[loginUsernameError]]" autocomplete="username" name="username" input-id="loginUsernameInput" on-focusout="[[loginFieldLeft]]"></fx-input>
+                  <fx-input id="loginPassword" label="Password" type="password" value="{{loginPassword}}" required error="[[loginPasswordError]]" autocomplete="current-password" name="password" input-id="loginPasswordInput" on-focusout="[[loginFieldLeft]]"></fx-input>
+                  <button type="submit" id="signInButton" :class="[[signingIn() ? 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit is-loading' : 'fx-btn fx-btn--primary fx-btn--lg fx-btn--block factory-login-submit']]" :disabled="[[signingIn]]" :aria-busy="[[signingIn() ? 'true' : null]]"><oj-bind-text value="[[signingIn() ? 'Signing in…' : 'Sign in']]"></oj-bind-text></button>
                 </form>
-                <p class="factory-login-info"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><oj-bind-text value="[[loginHint]]"></oj-bind-text></p>
+                <p class="fx-visually-hidden" role="status"><oj-bind-text value="[[signingIn() ? 'Signing in…' : '']]"></oj-bind-text></p>
               </oj-bind-if>
-              <oj-bind-if test="[[loginError()]]">
-                <p id="loginError" class="oj-text-color-danger"><oj-bind-text value="[[loginError]]"></oj-bind-text></p>
+              <oj-bind-if test="[[loginHelp()]]">
+                <p class="factory-login-help"><oj-bind-text value="[[loginHelp]]"></oj-bind-text></p>
               </oj-bind-if>
-              <p class="factory-login-help">No account yet? Ask an administrator of this factory to add you.</p>
             </section>
-          </div>
-          <ul class="factory-login-strip">
-            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-target" aria-hidden="true"></span></span>
-              <span><strong>From Requirements to Code</strong>Convert business requirements into working OBDX transactions.</span></li>
-            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span></span>
-              <span><strong>Leverage Existing Patterns</strong>Reuse components and follow your bank's implementation standards.</span></li>
-            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-chart" aria-hidden="true"></span></span>
-              <span><strong>Integrated Quality Pipeline</strong>Build, test and validate with automated checks and security rules.</span></li>
-            <li><span class="factory-login-round"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span></span>
-              <span><strong>Built for Teams</strong>Collaborate, review and track all development activities.</span></li>
-          </ul>
+          </main>
         </div>
       </oj-bind-if>
 

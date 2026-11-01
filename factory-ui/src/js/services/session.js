@@ -29,8 +29,16 @@ define(['knockout', './api'], function (ko, api) {
     ]).finally(() => checked(true));
   }
 
+  // Signing out ends the session and its CSRF token, so a sign-in on the same page is refused (403) before the password
+  // is checked. One read gets a fresh token from the server, and the sign-in is sent once more.
   function login(username, password) {
-    return api.post('auth/login', { username: username, password: password }).then((me) => {
+    const send = () => api.post('auth/login', { username: username, password: password });
+    return send().catch((e) => {
+      if (e.status !== 403 || !/csrf/i.test(e.message)) {
+        throw e;
+      }
+      return api.get('auth/config').then(send);
+    }).then((me) => {
       user(me);
       return me;
     });

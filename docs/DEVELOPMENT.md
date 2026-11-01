@@ -69,6 +69,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_PORT` | `8080` |
 | `FACTORY_DB_URL` | `jdbc:postgresql://localhost:5432/factory` |
 | `FACTORY_DB_USER` / `FACTORY_DB_PASSWORD` | `factory` / `factory` |
+| `FACTORY_ENVIRONMENT_NAME` | empty. A short name for this installation (for example `Development`, `UAT` or `Production`, at most 30 characters), shown as a label on the sign-in page. Empty: no label |
 | `FACTORY_TRIAL_DATABASE` | `false`. `true`: the factory starts its own PostgreSQL (data in `FACTORY_DATA_DIR/trial-database`) and ignores the `FACTORY_DB_*` settings. For trials only |
 | `FACTORY_LOCAL_FOLDERS` | the value of `FACTORY_TRIAL_DATABASE`. `true`: workspaces can be created from folders on the factory's computer (see Creating a workspace) |
 | `FACTORY_UPDATES` | `false`. `true`: check GitHub for newer builds and install them with Update now (only with the download's start scripts) |
@@ -587,7 +588,7 @@ object: compute those in the view model.
 
 | Method and path | Purpose |
 |---|---|
-| `GET /api/auth/config` | Sign-in mode, single sign-on link and factory version (public) |
+| `GET /api/auth/config` | Sign-in mode, single sign-on link, factory version and environment name (`FACTORY_ENVIRONMENT_NAME`, null when not set) (public) |
 | `POST /api/auth/login` | Sign in with username and password (`local` and `ldap`) |
 | `POST /api/auth/logout` | Sign out |
 | `GET /api/auth/me` | The signed-in user with workspace roles and permissions |

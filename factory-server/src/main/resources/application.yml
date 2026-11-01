@@ -42,6 +42,9 @@ spring:
     locations: classpath:db/migration
 
 factory:
+  # Optional name of this installation (for example Development, UAT or Production), shown as a label on the sign-in
+  # page. Empty: no label.
+  environment-name: ${FACTORY_ENVIRONMENT_NAME:}
   auth:
     # local (accounts in the factory), ldap (bank directory), oidc or saml (single sign-on)
     mode: ${FACTORY_AUTH_MODE:local}

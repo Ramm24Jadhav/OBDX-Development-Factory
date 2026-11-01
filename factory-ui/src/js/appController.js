@@ -377,16 +377,62 @@ define(['knockout', './services/session', './services/updates', './services/dash
         ? 'Single sign-on did not complete. Try again or contact your administrator.' : session.unreachable());
       session.unreachable.subscribe((message) => { if (message) { this.loginError(message); } });
       this.signingIn = ko.observable(false);
+      // Inline validation: a field left empty says so under it (on leaving it, or on Sign in) and clears once typed in
+      this.loginUsernameError = ko.observable('');
+      this.loginPasswordError = ko.observable('');
+      const usernameMissing = () => !String(this.loginUsername() || '').trim();
+      const passwordMissing = () => !this.loginPassword();
+      this.loginUsername.subscribe(() => { if (!usernameMissing()) { this.loginUsernameError(''); } });
+      this.loginPassword.subscribe(() => { if (!passwordMissing()) { this.loginPasswordError(''); } });
+      const focusLogin = (id) => window.setTimeout(() => { const box = document.getElementById(id); if (box) { box.focus(); } }, 0);
+      // Leaving a field (not for its own show-password button) checks it
+      this.loginFieldLeft = (event) => {
+        const field = event.currentTarget;
+        if (!event.target.matches('input') || (event.relatedTarget && field.contains(event.relatedTarget)) || this.signingIn()) { return; }
+        if (field.id === 'loginUsername' && usernameMissing()) { this.loginUsernameError('Enter your username.'); }
+        if (field.id === 'loginPassword' && passwordMissing()) { this.loginPasswordError('Enter your password.'); }
+      };
+      // Says what went wrong in words a person can act on; the server's own words for a lockout or a disabled account
+      const signInFailure = (error) => {
+        if (!error.status) { return 'The factory cannot be reached. Check your connection and that the factory is running, then try again.'; }
+        if (error.status === 401) {
+          return this.authConfig() && this.authConfig().mode === 'ldap'
+            ? 'Wrong username or password. Use your bank network username and password, and try again.'
+            : 'Wrong username or password. Try again, or ask an administrator to reset your password.';
+        }
+        if (error.status === 403 && /csrf/i.test(error.message)) { return 'This sign-in page has expired. Reload the page and try again.'; }
+        if (error.status >= 500) { return 'The factory could not sign you in just now. Try again in a moment, and tell an administrator if it keeps happening.'; }
+        return error.message;
+      };
       this.signInSubmit = (event) => { event.preventDefault(); this.signIn(); };
+      // One request at a time: the button is disabled and shows its spinner until the answer comes. After a failure the
+      // username stays, the password is cleared and focused for the next try.
       this.signIn = () => {
+        if (this.signingIn()) { return; }
+        this.loginUsernameError(usernameMissing() ? 'Enter your username.' : '');
+        this.loginPasswordError(passwordMissing() ? 'Enter your password.' : '');
+        if (usernameMissing() || passwordMissing()) {
+          focusLogin(usernameMissing() ? 'loginUsernameInput' : 'loginPasswordInput');
+          return;
+        }
         this.signingIn(true);
         this.loginError('');
-        busy.block(session.login(this.loginUsername(), this.loginPassword()), 'Signing in…')
+        let failed = false;
+        session.login(this.loginUsername(), this.loginPassword())
           .then(() => this.loginPassword(''))
-          .catch((error) => this.loginError(error.message))
-          .finally(() => this.signingIn(false));
+          .catch((error) => {
+            failed = true;
+            this.loginPassword('');
+            this.loginError(signInFailure(error));
+          })
+          .finally(() => {
+            this.signingIn(false);
+            if (failed) { focusLogin('loginPasswordInput'); }
+          });
       };
-      this.loginTabLabel = ko.pureComputed(() => (this.authConfig() && this.authConfig().mode === 'ldap' ? 'Bank Directory' : 'Username & Password'));
+      this.loginEnvironment = ko.pureComputed(() => (this.authConfig() && this.authConfig().environment) || '');
+      this.loginHelp = ko.pureComputed(() => (this.authConfig() && this.authConfig().mode === 'local'
+        ? 'No account yet? Ask an administrator of this factory to add you.' : ''));
       this.loginVersion = ko.pureComputed(() => {
         const v = this.authConfig() && this.authConfig().version;
         const m = v ? /^(\d+)\.(\d+)/.exec(v) : null;
