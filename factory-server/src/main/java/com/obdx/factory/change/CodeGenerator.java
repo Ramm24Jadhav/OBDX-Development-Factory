@@ -1042,6 +1042,9 @@ public class CodeGenerator {
      * when too little is left to be worth continuing (under a fifth of it, or a Java file without its class): the file
      * is then written whole.
      */
+    private static final Pattern TYPE_DECLARATION = Pattern.compile("(?m)^\\s*(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|"
+            + "abstract|final|static|sealed|non-sealed|strictfp)\\s+)*(?:class|interface|enum|record|@interface)\\s+\\w+");
+
     static String cleanPartial(String path, String partial) {
         if (partial == null || partial.isBlank()) {
             return null;
@@ -1057,11 +1060,17 @@ public class CodeGenerator {
             List<String> lines = java.util.Arrays.asList(cleaned.split("\n", -1));
             cleaned = String.join("\n", lines.subList(0, Math.max(0, Math.min(lines.size(), broken - 2)))) + "\n";
         }
-        String name = path.substring(path.lastIndexOf('/') + 1).replaceAll("\\.\\w+$", "");
-        boolean typeKept = !path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")
-                || Pattern.compile("\\b(?:class|interface|enum|record)\\s+" + Pattern.quote(name) + "\\b").matcher(cleaned).find();
-        if (cleaned.strip().length() < partial.strip().length() / 5 || !typeKept) {
-            log.info("Dropped the kept part of {}: too little of it is usable; the file is written whole", path);
+        // A clean part is resumed however short it is (on a small daily plan it is all the progress a day buys); it is dropped
+        // only without a type declaration (any name: the model may not have named the class after the file), or when the
+        // cleaning above took most of it away
+        boolean typeKept = !path.toLowerCase(java.util.Locale.ROOT).endsWith(".java") || TYPE_DECLARATION.matcher(cleaned).find();
+        if (!typeKept) {
+            log.info("Dropped the kept part of {}: it has no class or other type declaration; the file is written whole", path);
+            return null;
+        }
+        if (cleaned.strip().length() < partial.strip().length() / 5) {
+            log.info("Dropped the kept part of {}: cleaning took most of it away ({} of {} characters left); the file is written whole", path,
+                    cleaned.strip().length(), partial.strip().length());
             return null;
         }
         return cleaned.strip() + "\n";

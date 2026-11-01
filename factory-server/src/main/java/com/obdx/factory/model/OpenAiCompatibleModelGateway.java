@@ -61,8 +61,48 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private static final class Limits {
         volatile int input;
         volatile double charsPerToken = 3.5;
-        /** The most output tokens one answer may ask for (a per-minute output limit smaller than max_tokens); 0 while unknown. */
+        /**
+         * The output tokens a minute the server allows (Groq's OTPM), learned from its refusals; 0 while unknown. Each answer
+         * asks for no more than what is left of it this minute.
+         */
         volatile int output;
+        /** When output was learned: an hour later one call goes without it, to see whether it still holds. */
+        volatile long outputLearnedAt;
+        /** The output tokens of this server's answers in the last minute: [when (ms), tokens]. */
+        private final java.util.ArrayDeque<long[]> written = new java.util.ArrayDeque<>();
+
+        synchronized void wrote(int tokens, long now) {
+            written.addLast(new long[] {now, tokens});
+            forget(now);
+        }
+
+        /** Output tokens this server wrote for the factory in the minute before now. */
+        synchronized int usedLastMinute(long now) {
+            forget(now);
+            return written.stream().mapToInt(w -> (int) w[1]).sum();
+        }
+
+        /** How long until at least wanted output tokens of the minute's allowance are free again (ms), at most a minute. */
+        synchronized long waitFor(int wanted, long now) {
+            forget(now);
+            int left = (int) (output * 0.9) - written.stream().mapToInt(w -> (int) w[1]).sum();
+            for (long[] w : written) {
+                if (left >= wanted) {
+                    break;
+                }
+                left += (int) w[1];
+                if (left >= wanted) {
+                    return Math.max(0, w[0] + 60_000 - now);
+                }
+            }
+            return left >= wanted ? 0 : 60_000;
+        }
+
+        private void forget(long now) {
+            while (!written.isEmpty() && written.peekFirst()[0] <= now - 60_000) {
+                written.removeFirst();
+            }
+        }
         /**
          * Tokens a minute in all, prompt and max_tokens together (Groq counts both against "tokens per minute"); 0
          * while unknown. max_tokens is sized so that the two stay within it.
@@ -82,9 +122,17 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 stored.ifPresent(s -> {
                     limits.input = s.input();
                     limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
-                    limits.output = s.output();
+                    limits.output = s.outputPerMinute();
+                    limits.outputLearnedAt = System.currentTimeMillis();
                     limits.total = s.total();
-                    log.info("Using stored limits for {}: input {}, output {}, total {} (at {})", model, s.input(), s.output(), s.total(), baseUrl);
+                    log.info("Using stored limits for {}: input {}, output {} a minute, total {} (at {})", model, s.input(), s.outputPerMinute(),
+                            s.total(), baseUrl);
+                    if (s.output() > 0) {
+                        // A per-answer cap from earlier rules: one refusal in a busy minute could set it, and nothing could clear it
+                        log.info("Cleared a stored output cap of {} for {}: answers are sized by what is left of the server's output "
+                                + "tokens a minute instead", s.output(), model);
+                        store.save(baseUrl, model, new ModelLimitsStore.Stored(s.input(), s.charsPerToken(), 0, s.total(), s.outputPerMinute()));
+                    }
                 });
             } catch (RuntimeException e) {
                 log.warn("Could not read the learned limits of chat model '{}'", model, e);
@@ -97,7 +145,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (store != null) {
             try {
                 store.save(current.baseUrl(), current.chatModelName(), new ModelLimitsStore.Stored(current.limits().input,
-                        current.limits().charsPerToken, current.limits().output, current.limits().total));
+                        current.limits().charsPerToken, 0, current.limits().total, current.limits().output));
             } catch (RuntimeException e) {
                 log.warn("Could not keep the learned limits of chat model '{}'", current.chatModelName(), e);
             }
@@ -122,6 +170,30 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * format, max_tokens within the learned limits, and reasoning_effort "none" where the server takes it.
      */
     private Prepared prepare(Connection current, String systemPrompt, UserMessage userMessage, ResponseFormat format) {
+        Limits limits = current.limits();
+        if (limits.output > 0 && CALL_CAP.get() == null && PROBE.get() == null) {
+            long now = System.currentTimeMillis();
+            if (now - limits.outputLearnedAt > PROBE_AFTER.toMillis()) {
+                // Learned over an hour ago: one call goes without it, and an answer the server takes clears it
+                PROBE.set(true);
+                log.info("Trying chat model '{}' without its learned output limit of {} tokens a minute (learned over an hour ago)",
+                        current.chatModelName(), limits.output);
+            } else {
+                // The minute nearly used up: wait the short while until enough is free, rather than ask for a tiny answer
+                int wanted = MIN_OUTPUT;
+                long wait = limits.waitFor(wanted, now);
+                if (wait > 0) {
+                    log.info("Waiting {} for chat model '{}' to have {} output tokens free this minute (used {} of {} a minute)",
+                            roughly(Duration.ofMillis(wait)), current.chatModelName(), wanted, limits.usedLastMinute(now), limits.output);
+                    try {
+                        Thread.sleep(wait);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' was stopped", e);
+                    }
+                }
+            }
+        }
         OpenAiChatRequestParameters.Builder parameters = OpenAiChatRequestParameters.builder();
         if (format != null) {
             parameters.responseFormat(format);
@@ -170,6 +242,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (max > 0) {
             request.maxOutputTokens(max);
         }
+        ASKED.set(max);
         logRequest(current, promptChars, max);
         return max;
     }
@@ -181,9 +254,20 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      */
     /** A lower max_tokens for the call being asked again after an output-per-minute refusal; null otherwise. */
     private static final ThreadLocal<Integer> CALL_CAP = new ThreadLocal<>();
+    /** The max_tokens the call on this thread asked for last (to tell what the server counted against what was asked). */
+    private static final ThreadLocal<Integer> ASKED = new ThreadLocal<>();
+    /** Set while one call goes without the learned output limit, to see whether it still holds. */
+    private static final ThreadLocal<Boolean> PROBE = new ThreadLocal<>();
+    /** How long a learned output limit is used before one call goes without it. */
+    static final Duration PROBE_AFTER = Duration.ofHours(1);
 
     private static int maxTokens(Limits limits, Integer maxOutput, int promptChars) {
-        int cap = limits.output > 0 ? limits.output : maxOutput == null ? 0 : maxOutput;
+        int cap = maxOutput == null ? 0 : maxOutput;
+        if (limits.output > 0 && !Boolean.TRUE.equals(PROBE.get())) {
+            // What is left of the server's output tokens this minute (90%, room for counting differently)
+            int left = Math.max(MIN_OUTPUT, (int) (limits.output * 0.9) - limits.usedLastMinute(System.currentTimeMillis()));
+            cap = cap > 0 ? Math.min(cap, left) : left;
+        }
         Integer callCap = CALL_CAP.get();
         if (callCap != null) {
             cap = cap > 0 ? Math.min(cap, callCap) : callCap;
@@ -382,6 +466,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         } finally {
             // a lower max_tokens asked of one call's retry does not carry over to the next call
             CALL_CAP.remove();
+            ASKED.remove();
+            PROBE.remove();
         }
     }
 
@@ -432,33 +518,44 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     int limit = output[0];
                     int requested = output[1];
                     int used = output[2];
-                    int known = current.limits().output;
-                    Integer retried = CALL_CAP.get();
-                    // Refused while asking for no more than a cap already in force (this call's, or the remembered one): the
-                    // server counts more than asked; lower it by what it reported
-                    int inForce = retried != null ? retried : known;
-                    boolean alone = used <= 0;
-                    boolean atCap = retried != null || known > 0 && alone;
-                    int cap = atCap ? Math.min(lowerCap(inForce, limit, requested), outputCap(limit)) : outputCap(limit);
-                    if (cap < MIN_OUTPUT || lowered >= 3) {
+                    Limits limits = current.limits();
+                    // The limit is output tokens a MINUTE: learned as such, and each answer asks for what is left of it. A server
+                    // that counted more than was asked (requested above what max_tokens said) allows that much less of it
+                    Integer asked = ASKED.get();
+                    int perMinute = asked != null && asked > 0 && requested > asked ? (int) ((long) limit * asked / requested) : limit;
+                    if (limits.output == 0 || perMinute < limits.output || Boolean.TRUE.equals(PROBE.get())) {
+                        limits.output = perMinute;
+                        saveLimits(current);
+                        log.info("Learned the model server's output limit: {} tokens a minute (chat model '{}', from its refusal)", perMinute,
+                                current.chatModelName());
+                    }
+                    limits.outputLearnedAt = System.currentTimeMillis();
+                    PROBE.remove();
+                    long now = System.currentTimeMillis();
+                    // What this minute still allows: the server's own count of what is used, or the factory's, the larger
+                    int room = (int) (perMinute * 0.9) - Math.max(Math.max(used, 0), limits.usedLastMinute(now));
+                    if (room < MIN_OUTPUT && perMinute * 0.9 >= MIN_OUTPUT && lowered < 3) {
+                        // The minute is used up: wait for it (at most a minute) rather than ask for a tiny answer
+                        long wait = used > 0 ? 60_000 : limits.waitFor(MIN_OUTPUT, now);
+                        log.info("Waiting {} for chat model '{}': this minute's output tokens are used up (used {} of {})",
+                                roughly(Duration.ofMillis(wait)), current.chatModelName(), Math.max(used, limits.usedLastMinute(now)), perMinute);
+                        try {
+                            Thread.sleep(wait);
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped",
+                                    interrupted);
+                        }
+                        room = (int) (perMinute * 0.9) - limits.usedLastMinute(System.currentTimeMillis());
+                    }
+                    if (room < MIN_OUTPUT || lowered >= 3) {
                         throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " writes at most "
                                 + limit + " tokens a minute, too few for an answer. Use a model or plan with a higher output limit.", e);
                     }
                     lowered++;
-                    CALL_CAP.set(cap);
-                    // A busy minute (others' answers used part of it) says nothing lasting about one answer; a request alone
-                    // over the limit, or refused again at a cap, does
-                    if (alone || retried != null) {
-                        if (known == 0 || cap < known) {
-                            current.limits().output = cap;
-                            saveLimits(current);
-                            log.info("Chat model '{}' writes at most {} tokens a minute ({}); answers now ask for at most {}",
-                                    current.chatModelName(), limit, alone ? "one answer alone was over it" : "refused again at a cap", cap);
-                        }
-                    } else {
-                        log.info("Chat model '{}' refused {} output tokens in a busy minute (used {} of {}); asking again with max_tokens {} "
-                                + "for this call only", current.chatModelName(), requested, used, limit, cap);
-                    }
+                    CALL_CAP.set(room);
+                    log.info("Chat model '{}' refused {} output tokens (limit {} a minute{}); asking again with max_tokens {}", current.chatModelName(),
+                            requested, limit, used > 0 ? ", " + used + " used" : "", room);
                     continue;
                 }
                 Duration wait = rateLimitWait(text);
@@ -800,16 +897,20 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * holds: it is cleared, and answers ask for as much as the other limits allow again.
      */
     private void clearCapIfExceeded(Connection current, ChatResponse response, String reply) {
+        Integer counted = response.tokenUsage() == null ? null : response.tokenUsage().outputTokenCount();
+        int written = counted != null && counted > 0 ? counted : (int) ((reply == null ? 0 : reply.length()) / current.limits().charsPerToken);
+        // counted against this minute's output allowance
+        current.limits().wrote(written, System.currentTimeMillis());
         int cap = current.limits().output;
         if (cap <= 0) {
             return;
         }
-        Integer counted = response.tokenUsage() == null ? null : response.tokenUsage().outputTokenCount();
-        int written = counted != null && counted > 0 ? counted : (int) ((reply == null ? 0 : reply.length()) / current.limits().charsPerToken);
-        if (written > cap) {
+        boolean probed = Boolean.TRUE.equals(PROBE.get());
+        if (written > cap || probed) {
             current.limits().output = 0;
             saveLimits(current);
-            log.info("Chat model '{}' wrote {} tokens in one answer, more than its remembered cap of {}: the cap is cleared",
+            log.info(probed ? "Chat model '{}' answered ({} tokens) without its learned output limit of {} tokens a minute: the limit is cleared"
+                            : "Chat model '{}' wrote {} tokens in one answer, more than its learned output limit of {} a minute: the limit is cleared",
                     current.chatModelName(), written, cap);
         }
     }
@@ -858,8 +959,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private static void warnCutOff(Connection current, String reply) {
         int cap = current.limits().output;
         log.warn("Chat model '{}' stopped at its output limit after {} characters{}; the answer is incomplete", current.chatModelName(),
-                reply == null ? 0 : reply.length(), cap > 0 ? " (its server writes at most " + cap + " tokens per answer, learned from "
-                        + "its refusal; use a model or plan with a higher output limit)" : "");
+                reply == null ? 0 : reply.length(), cap > 0 ? " (its server allows " + cap + " output tokens a minute; use a model "
+                        + "or plan with a higher output limit)" : "");
     }
 
     private ModelGatewayException chatFailure(Connection current, RuntimeException e) {

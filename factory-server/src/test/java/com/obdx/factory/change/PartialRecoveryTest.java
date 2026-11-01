@@ -203,6 +203,42 @@ class PartialRecoveryTest {
     }
 
     @Test
+    void aCleanShortKeptPartIsResumedNotDropped() {
+        // QA round 16: a clean 3,305-character first piece of a file of about 12,000, the day's only progress
+        StringBuilder part = new StringBuilder("""
+                package com.bank.obdx.payments;
+
+                import org.junit.Before;
+                import org.junit.Test;
+
+                import static org.junit.Assert.assertEquals;
+
+                public class BeneficiaryValidatorTest {
+
+                    private BeneficiaryValidator validator;
+
+                    @Before
+                    public void setUp() {
+                        validator = new BeneficiaryValidator();
+                    }
+
+                """);
+        for (int i = 0; part.length() < 3300; i++) {
+            part.append("    @Test\n    public void rule").append(i).append("() {\n        assertEquals(").append(i)
+                    .append(", validator.count(\"REF").append(i).append("\"));\n    }\n\n");
+        }
+        String clean = part.toString().stripTrailing() + "\n";
+
+        assertThat(CodeGenerator.cleanPartial(PATH, clean)).isEqualTo(clean);
+        // the model named the class otherwise than the file: still a class, still resumed
+        assertThat(CodeGenerator.cleanPartial(PATH, clean.replace("class BeneficiaryValidatorTest", "class BeneficiaryValidatorTests")))
+                .contains("class BeneficiaryValidatorTests");
+        ChangeFileStore files = mock(ChangeFileStore.class);
+        assertThat(ChangeService.usablePartial(files, CHANGE, kept(clean))).isEqualTo(clean);
+        verify(files, never()).saveResult(any(), anyString(), any(), any(), any(), eq(false), any(), anyInt());
+    }
+
+    @Test
     void aKeptPartWithTooLittleLeftIsDroppedAndTheFileWrittenWhole() {
         // the model's reasoning starts early: what is before it is too little to go on from
         String early = "package com.bank.beneficiary;\n\npublic class BeneficiaryValidationServiceTest {\n"

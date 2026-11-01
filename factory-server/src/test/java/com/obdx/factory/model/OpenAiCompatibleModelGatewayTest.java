@@ -271,6 +271,17 @@ class OpenAiCompatibleModelGatewayTest {
                         """);
             });
         }
+        // 1000 output tokens a minute; every answer takes 600
+        server.createContext("/opm/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+            otpmAsked.add(m.find() ? Integer.parseInt(m.group(1)) : -1);
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-12", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}],
+                     "usage": {"prompt_tokens": 100, "completion_tokens": 600, "total_tokens": 700}}
+                    """);
+        });
         // An answer of 3600 tokens, more than a remembered cap of 900
         server.createContext("/big/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -617,9 +628,9 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
         // the answer is cut off at that size, for the caller to continue
         assertThat(first.cutOff()).isTrue();
-        // and later calls ask for 900 straight away
+        // and later calls ask for what is left of the 1000 a minute: 900 less the 4 tokens that answer took
         gateway.chat("Write the file.", "Another.java");
-        assertThat(otpmAsked).containsExactly(8192, 900, 900);
+        assertThat(otpmAsked).containsExactly(8192, 900, 896);
 
         assertThat(OpenAiCompatibleModelGateway.outputTooLarge("on output tokens per minute (OTPM): Limit 1000, Requested 1407"))
                 .containsExactly(1000, 1407, -1);
@@ -664,8 +675,9 @@ class OpenAiCompatibleModelGatewayTest {
 
         assertThat(new OpenAiCompatibleModelGateway(properties, store).chat("Write the file.", "A.java").reply()).isEqualTo("ok");
 
-        // 8192 refused, 900 refused again (the server counted 1440), then 900 x 1000/1440 x 0.9 = 562: no waiting
-        assertThat(otpmAsked).containsExactly(8192, 900, 562);
+        // 8192 refused as 13107 (the server counts 1.6 times what is asked): it allows 625 of what the factory asks a minute,
+        // so the retry asks for 90% of that at once, 562: no waiting
+        assertThat(otpmAsked).containsExactly(8192, 562);
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
         assertThat(OpenAiCompatibleModelGateway.lowerCap(900, 1000, 1440)).isEqualTo(562);
 
@@ -674,14 +686,14 @@ class OpenAiCompatibleModelGatewayTest {
         OpenAiCompatibleModelGateway[] holder = new OpenAiCompatibleModelGateway[1];
         // said once, when the connection is made: where a max_tokens that no answer taught this run comes from
         assertThat(logged(() -> holder[0] = new OpenAiCompatibleModelGateway(properties, store)))
-                .contains("Using stored limits for qwen: input 0, output 562, total 0 (at " + baseUrl + ")");
+                .contains("Using stored limits for qwen: input 0, output 625 a minute, total 0 (at " + baseUrl + ")");
         // a model without stored limits says so, so a missing line is never a question
         assertThat(logged(() -> new OpenAiCompatibleModelGateway(new ModelProperties(baseUrl, "test-key", "qwen3-32b", "nomic-embed-text",
                 Duration.ofSeconds(5), null, null, 16384, 8192, null), store)))
                 .contains("No stored limits for qwen3-32b at " + baseUrl + ": they are learned from the server's answers",
                         "Thinking turned off for model 'qwen3-32b' (/no_think, reasoning_effort none)");
         OpenAiCompatibleModelGateway restarted = holder[0];
-        assertThat(restarted.outputLimit()).isEqualTo(562);
+        assertThat(restarted.outputLimit()).isEqualTo(625);
         restarted.chat("Write the file.", "B.java");
         assertThat(otpmAsked).containsExactly(562);
 
@@ -750,7 +762,7 @@ class OpenAiCompatibleModelGatewayTest {
     }
 
     @Test
-    void aRefusalInABusyMinuteLowersOnlyThatCallAndARequestAloneOverTheLimitIsRemembered() {
+    void aRefusalInABusyMinuteAsksForWhatIsLeftAndLaterCallsForTheWholeMinute() {
         String busy = "http://127.0.0.1:" + server.getAddress().getPort() + "/busy/v1";
         OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
                 new ModelProperties(busy, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), new MemoryLimits());
@@ -758,28 +770,60 @@ class OpenAiCompatibleModelGatewayTest {
         List<String> log = logged(() -> gateway.chat("Write the file.", "A.java"));
         gateway.chat("Write the file.", "B.java");
 
-        // each call asks for 8192 again: the 900 was for the refused call's retry only
-        assertThat(otpmAsked).containsExactly(8192, 900, 8192, 900);
-        assertThat(gateway.outputLimit()).isZero();
-        assertThat(log).anyMatch(l -> l.contains("refused 8192 output tokens in a busy minute (used 400 of 1000); asking again with max_tokens 900 "
-                + "for this call only"));
+        // 400 of the 1000 a minute were used: the retry asks for 500; the next call has the minute again, 900, not a lasting 500
+        assertThat(otpmAsked).containsExactly(8192, 500, 900);
+        assertThat(gateway.outputLimit()).isEqualTo(1000);
+        assertThat(log).contains("Learned the model server's output limit: 1000 tokens a minute (chat model 'qwen', from its refusal)")
+                .anyMatch(l -> l.contains("refused 8192 output tokens (limit 1000 a minute, 400 used); asking again with max_tokens 500"));
 
         otpmAsked.clear();
         String alone = "http://127.0.0.1:" + server.getAddress().getPort() + "/alone/v1";
         OpenAiCompatibleModelGateway remembered = new OpenAiCompatibleModelGateway(
                 new ModelProperties(alone, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), new MemoryLimits());
-        List<String> rememberedLog = logged(() -> remembered.chat("Write the file.", "A.java"));
+        remembered.chat("Write the file.", "A.java");
         remembered.chat("Write the file.", "B.java");
         assertThat(otpmAsked).containsExactly(8192, 900, 900);
-        assertThat(remembered.outputLimit()).isEqualTo(900);
-        assertThat(rememberedLog).anyMatch(l -> l.contains("one answer alone was over it") && l.contains("answers now ask for at most 900"));
+        assertThat(remembered.outputLimit()).isEqualTo(1000);
     }
 
     @Test
-    void aLargerAnswerThanTheRememberedCapClearsIt() {
+    void eachAnswerAsksForWhatIsLeftOfTheMinute() {
+        // 8000 tokens a minute in all, 1000 of them output; each answer takes 600
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/opm/v1";
+        MemoryLimits store = new MemoryLimits();
+        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(0, 3.5, 0, 8000, 1000));
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), store);
+
+        gateway.chat("Write the file.", "A.java");
+        gateway.chat("Write the file.", "B.java");
+
+        // the first asks for the whole room (90% of 1000 a minute), the second for what is left of the same minute
+        assertThat(otpmAsked).containsExactly(900, 300);
+    }
+
+    @Test
+    void aStoredPerAnswerCapFromTheOldRulesIsClearedWhenRead() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/opm/v1";
+        MemoryLimits store = new MemoryLimits();
+        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(0, 3.5, 900, 0, 0));
+
+        OpenAiCompatibleModelGateway[] holder = new OpenAiCompatibleModelGateway[1];
+        List<String> log = logged(() -> holder[0] = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), store));
+
+        assertThat(log).anyMatch(l -> l.startsWith("Cleared a stored output cap of 900 for qwen"));
+        assertThat(store.rows.get(baseUrl + "|qwen").output()).isZero();
+        assertThat(holder[0].outputLimit()).isZero();
+        holder[0].chat("Write the file.", "A.java");
+        assertThat(otpmAsked).containsExactly(8192);
+    }
+
+    @Test
+    void aLargerAnswerThanTheLearnedLimitClearsIt() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/big/v1";
         MemoryLimits store = new MemoryLimits();
-        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(0, 3.5, 900, 0));
+        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(0, 3.5, 0, 0, 900));
         OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
                 new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null), store);
         assertThat(gateway.outputLimit()).isEqualTo(900);
@@ -787,8 +831,9 @@ class OpenAiCompatibleModelGatewayTest {
         List<String> log = logged(() -> gateway.chat("Write the file.", "A.java"));
 
         assertThat(gateway.outputLimit()).isZero();
-        assertThat(store.rows.get(baseUrl + "|qwen").output()).isZero();
-        assertThat(log).contains("Chat model 'qwen' wrote 3600 tokens in one answer, more than its remembered cap of 900: the cap is cleared");
+        assertThat(store.rows.get(baseUrl + "|qwen").outputPerMinute()).isZero();
+        assertThat(log).contains("Chat model 'qwen' wrote 3600 tokens in one answer, more than its learned output limit of 900 a minute: "
+                + "the limit is cleared");
     }
 
     @Test
