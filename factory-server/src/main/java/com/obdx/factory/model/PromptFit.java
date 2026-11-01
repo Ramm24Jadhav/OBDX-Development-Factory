@@ -61,6 +61,11 @@ public final class PromptFit {
                 scale = Math.max(MIN_SCALE, scale * 0.8);
                 user = build.apply(scale);
             }
+            if (user.length() >= refusedLength) {
+                // A prompt that does not get smaller with less context (a fix of one file, a method): asking again would be refused again
+                throw new ModelGatewayException("The request is larger than the model's server takes at once, and it cannot be made "
+                        + "smaller. Use a model or plan with a larger limit (on a cloud server, a paid tier).", null);
+            }
             if (scale < 1) {
                 log.info("Prompt shortened to {}% of its usual context to fit the {} tokens the model's server takes at once",
                         Math.round(scale * 100), gateway.inputLimit());

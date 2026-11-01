@@ -51,6 +51,8 @@ final class RequirementFlows {
             steps.stream().filter(step -> initiateOf(step, screens) == s)
                     .sorted((a, b) -> Integer.compare(stepRank(a), stepRank(b))).forEach(ordered::add);
         }
+        // Screens whose steps point at each other (a cycle) belong to no main screen: they come last, not left out
+        screens.stream().filter(s -> !ordered.contains(s)).forEach(ordered::add);
         return ordered;
     }
 
@@ -74,7 +76,7 @@ final class RequirementFlows {
                     .filter(rule -> rule.screens() != null && rule.screens().stream().anyMatch(n -> names.contains(key(n))))
                     .toList();
             List<RequirementSpec.AcceptanceCriterion> criteria = r.id() == null ? List.of() : spec.acceptanceCriteria().stream()
-                    .filter(c -> c.requirements().stream().anyMatch(id -> id.equalsIgnoreCase(r.id()))).toList();
+                    .filter(c -> c.requirements().stream().anyMatch(id -> r.id().equalsIgnoreCase(id))).toList();
             flows.add(new Flow(r.id(), r.title(), r.description(), r.priority(), r.screens(), List.copyOf(members), rules, criteria));
         }
         return flows;

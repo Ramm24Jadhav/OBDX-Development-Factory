@@ -75,6 +75,10 @@ public interface ModelGateway {
         return 0;
     }
 
+    /** Forgets the limits learned from the chat model's server, so they are learned again. */
+    default void forgetLimits() {
+    }
+
     /** The chat model runs on Ollama, on the factory's own hardware: slow, so long work is kept short. */
     default boolean local() {
         return false;

@@ -39,7 +39,7 @@ class ModelReasoningTest {
         assertThat(ModelReasoning.findings("ui/resources/nls/si.js", null, nls)).isEmpty();
         assertThat(ModelReasoning.findings("A.java", null, "class A {\n  // we need to refresh the cache; I will add paging later\n}\n")).isEmpty();
 
-        String original = "class A {\n  // In this response the old code\n  void a() {}\n}\n";
+        String original = "class A {\n  // In this response, I kept the old code\n  void a() {}\n}\n";
         String changed = original.replace("void a() {}", "void a() {}\n  void b() {}");
         assertThat(ModelReasoning.findings("A.java", original, changed)).isEmpty();
         assertThat(ModelReasoning.findings("A.java", null, original)).singleElement()

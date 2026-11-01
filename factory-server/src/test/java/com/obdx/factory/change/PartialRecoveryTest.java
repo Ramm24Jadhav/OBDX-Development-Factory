@@ -159,7 +159,7 @@ class PartialRecoveryTest {
         ChangeService.recordPartial(files, CHANGE, item.path(), null, stopped);
 
         // the previous version stays the content; the new part is kept beside it
-        verify(files).saveRewrite(CHANGE, item.path(), stopped.content());
+        verify(files).saveRewrite(CHANGE, item.path(), stopped.content(), false);
         verify(files, never()).saveResult(any(), anyString(), any(), any(), any(), eq(false), any(), anyInt());
         ChangeFileStore.ChangeFile withRewrite = new ChangeFileStore.ChangeFile(0, item.path(), "create", "service", null,
                 ChangeFileStore.Status.GENERATED, null, previousVersion, false, FileChecks.Status.FAILED, "Line 2 (java-x, error): ...", 1,
@@ -173,7 +173,7 @@ class PartialRecoveryTest {
                 item.path(), 1, 1, item.path())).endsWith("The rewrite written so far is kept beside it; Write again (or Continue) goes on from it.");
 
         // the next Write again resumes the rewrite instead of starting over
-        String resumed = ChangeService.resumable(files, CHANGE, withRewrite);
+        String resumed = ChangeService.resumable(files, CHANGE, withRewrite).text();
         assertThat(resumed).isEqualTo(stopped.content());
         prompts.clear();
         replies.add("        if (remarks.length() > 35) {\n            throw new IllegalArgumentException();\n        }\n    }\n}\n");
@@ -199,7 +199,7 @@ class PartialRecoveryTest {
         when(written.file(CHANGE, PATH)).thenReturn(Optional.of(new ChangeFileStore.ChangeFile(0, PATH, "create", "test", null,
                 ChangeFileStore.Status.GENERATED, null, "public class Old { }\n", false, FileChecks.Status.PASSED, null, 1)));
         ChangeService.recordPartial(written, CHANGE, PATH, null, stopped);
-        verify(written).saveRewrite(CHANGE, PATH, "public class A { }\n");
+        verify(written).saveRewrite(CHANGE, PATH, "public class A { }\n", true);
     }
 
     @Test

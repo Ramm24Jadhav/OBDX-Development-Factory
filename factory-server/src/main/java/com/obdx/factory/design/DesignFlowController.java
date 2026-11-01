@@ -36,7 +36,8 @@ public class DesignFlowController {
     @PostMapping("/api/requirements/{requirementId}/designs/approve")
     public DesignFlowService.DesignFlow approve(@PathVariable UUID requirementId, @RequestBody(required = false) ApproveRequest request) {
         var user = guard.requireForRequirement(requirementId, Permission.APPROVE);
-        DesignFlowService.Approval approval = service.approve(requirementId, request == null ? null : request.designIds(), user.getDisplayName());
+        DesignFlowService.Approval approval = service.approve(requirementId, request == null || request.designIds() == null ? null
+                : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName());
         DesignFlowService.DesignFlow flow = approval.flow();
         approval.approved().forEach(name -> audit.record("DESIGN_APPROVED", flow.workspaceId(), name, "with the requirement's other screens"));
         return flow;

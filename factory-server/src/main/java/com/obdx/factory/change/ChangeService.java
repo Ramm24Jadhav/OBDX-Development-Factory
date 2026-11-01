@@ -289,7 +289,9 @@ public class ChangeService {
                     fileNote = fixes.isEmpty() ? note : note == null || note.isBlank() ? fixes : note + "\n\n" + fixes;
                 }
                 // Continue and Write again go on from the part of a file (or of its rewrite) the limit stopped, instead of writing it all again
-                String partial = resume || onlyPath != null ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
+                // (Write again with a reviewer's note starts afresh: the kept part was written without it)
+                boolean resumes = resume || onlyPath != null && (note == null || note.isBlank());
+                Kept partial = resumes ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
                 writing = item.path();
                 String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
                 if (onlyPath != null) {
@@ -298,8 +300,11 @@ public class ChangeService {
             }
 
             crossCheck(id, workspace.getId());
+            // Says whether a version is still there: a file that had none has none after a failed Write again
+            boolean versionKept = onlyPath != null && files.file(id, onlyPath).map(f -> f.generated() != null && !partial(f)).orElse(false);
             change.status(ChangeRequest.Status.GENERATED, (onlyPath == null ? ""
-                    : failedAgain != null ? "Writing " + onlyPath + " again failed (" + failedAgain + "); the previous version is kept. "
+                    : failedAgain != null ? "Writing " + onlyPath + " again failed (" + failedAgain + "); "
+                    + (versionKept ? "the previous version is kept. " : "it is not written yet. ")
                     : onlyPath + " written again. ") + summary(files.files(id)) + revisionNote);
         } catch (ModelLimitReachedException e) {
             // Every further file would fail the same way: stop, and leave the rest to Continue generation
@@ -313,7 +318,7 @@ public class ChangeService {
             List<ChangeFileStore.ChangeFile> result = files.files(id);
             long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
                     || f.status() == ChangeFileStore.Status.UNCHANGED).count();
-            String kept = e instanceof CodeGenerator.Partial ? writing : null;
+            String kept = e instanceof CodeGenerator.Partial p && p.check() == null ? writing : null;
             change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size(), kept));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the change must not stay "generating"
@@ -411,7 +416,7 @@ public class ChangeService {
      * @return why the file could not be written, or null
      */
     private String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
-                                Path workingCopy, Map<String, String> earlier, String note, String partial) {
+                                Path workingCopy, Map<String, String> earlier, String note, Kept partial) {
         boolean modify = "modify".equals(item.action());
         String current = null;
         try {
@@ -429,7 +434,8 @@ public class ChangeService {
             }
             Map<String, String> examples = examples(workspaceId, workingCopy, item);
             ScreenScaffolder.Scaffold scaffold = scaffold(context, item.path(), current);
-            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold, partial);
+            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold,
+                    partial == null ? null : partial.text(), partial != null && partial.complete());
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
@@ -465,7 +471,7 @@ public class ChangeService {
         } else {
             // A rewrite (Write again) stopped part-way: the version written before stays the file's content for review and
             // delivery; the new part is kept beside it, and the next Write again or Continue goes on from it
-            files.saveRewrite(changeId, path, e.content());
+            files.saveRewrite(changeId, path, e.content(), e.check() != null);
         }
     }
 
@@ -489,18 +495,27 @@ public class ChangeService {
      * The part of a file to go on from: a kept partial, or the part of a stopped rewrite, cleaned (and saved so); null
      * when there is none, or too little of it is usable.
      */
-    static String resumable(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile file) {
+    static Kept resumable(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile file) {
         if (partial(file)) {
-            return usablePartial(files, changeId, file);
+            String usable = usablePartial(files, changeId, file);
+            return usable == null ? null : new Kept(usable, false);
         }
         if (file.rewrite() == null) {
             return null;
+        }
+        if (file.rewriteComplete()) {
+            // a whole answer: checked and fixed as it is
+            return new Kept(file.rewrite(), true);
         }
         String cleaned = CodeGenerator.cleanPartial(file.path(), file.rewrite());
         if (!java.util.Objects.equals(cleaned, file.rewrite())) {
             files.saveRewrite(changeId, file.path(), cleaned);
         }
-        return cleaned;
+        return cleaned == null ? null : new Kept(cleaned, false);
+    }
+
+    /** A kept part of a file to go on from, and whether it is a whole answer (checked and fixed) rather than a part (continued). */
+    record Kept(String text, boolean complete) {
     }
 
     /**
@@ -529,11 +544,13 @@ public class ChangeService {
     static String recordFailure(ChangeFileStore files, UUID changeId, String path, String current, Throwable e) {
         ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
         int attempts = previous == null ? 0 : previous.attempts();
-        if (e instanceof CodeGenerator.JoinFailed && previous != null && previous.rewrite() != null && previous.generated() != null
-                && !partial(previous)) {
-            // A rewrite that did not join: dropped, so the next Write again starts it afresh; the version before stays
-            log.warn("{} of change {}: {} The rewrite is dropped; the version before is kept.", path, changeId, e.getMessage());
-            files.saveRewrite(changeId, path, null);
+        if (e instanceof CodeGenerator.JoinFailed && previous != null && previous.generated() != null && !partial(previous)) {
+            // A version written before (and any edit of it) stays; a rewrite that did not join is dropped, so the next Write
+            // again starts afresh
+            log.warn("{} of change {}: {} The version before is kept.", path, changeId, e.getMessage());
+            if (previous.rewrite() != null) {
+                files.saveRewrite(changeId, path, null);
+            }
             return e.getMessage();
         }
         if (e instanceof CodeGenerator.JoinFailed) {
@@ -1163,7 +1180,16 @@ public class ChangeService {
     // --- helpers ---
 
     /** Background work must see the committed change, so it starts only after the current transaction commits. */
-    private void startAfterCommit(Runnable work) {
+    private void startAfterCommit(Runnable job) {
+        // Each job may wait on rate limits only so long in all: the jobs share one thread
+        Runnable work = () -> {
+            com.obdx.factory.model.WaitBudget.start(com.obdx.factory.model.WaitBudget.PER_JOB);
+            try {
+                job.run();
+            } finally {
+                com.obdx.factory.model.WaitBudget.end();
+            }
+        };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override

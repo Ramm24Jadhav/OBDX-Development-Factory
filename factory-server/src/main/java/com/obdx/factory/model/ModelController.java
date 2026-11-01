@@ -52,6 +52,15 @@ public class ModelController {
         return apiKey != null && !apiKey.isBlank() && !apiKey.equals("not-needed");
     }
 
+    /** Forgets the limits learned from the chat model's server (admins): they are learned again from its answers. */
+    @PostMapping("/limits/forget")
+    public void forgetLimits() {
+        String username = guard.requireAdmin().getUsername();
+        gateway.forgetLimits();
+        ModelSettings.Current current = settings.current();
+        audit.record("MODEL_LIMITS_FORGOTTEN", null, current.baseUrl(), current.chatModel() + " by " + username);
+    }
+
     /** Model servers running on the computer the factory runs on. */
     @GetMapping("/servers/local")
     public List<ModelServers.Server> localServers() {

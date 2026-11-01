@@ -18,11 +18,16 @@ public class ModelLimitsStore {
      *
      * @param output          a per-answer output cap learned under earlier rules: cleared when read
      * @param outputPerMinute the output tokens a minute the server allows
+     * @param answerMax       the most max_tokens the server takes in one request
      */
-    public record Stored(int input, double charsPerToken, int output, int total, int outputPerMinute) {
+    public record Stored(int input, double charsPerToken, int output, int total, int outputPerMinute, int answerMax) {
 
         public Stored(int input, double charsPerToken, int output, int total) {
-            this(input, charsPerToken, output, total, 0);
+            this(input, charsPerToken, output, total, 0, 0);
+        }
+
+        public Stored(int input, double charsPerToken, int output, int total, int outputPerMinute) {
+            this(input, charsPerToken, output, total, outputPerMinute, 0);
         }
     }
 
@@ -33,17 +38,19 @@ public class ModelLimitsStore {
     }
 
     public Optional<Stored> find(String baseUrl, String model) {
-        return jdbc.query("SELECT input_tokens, chars_per_token, output_tokens, total_tokens, output_per_minute FROM model_limits "
-                        + "WHERE base_url = ? AND model = ?",
-                (rs, row) -> new Stored(rs.getInt(1), rs.getDouble(2), rs.getInt(3), rs.getInt(4), rs.getInt(5)), key(baseUrl), key(model)).stream().findFirst();
+        return jdbc.query("SELECT input_tokens, chars_per_token, output_tokens, total_tokens, output_per_minute, answer_max FROM model_limits "
+                        + "WHERE base_url = ? AND model = ? AND updated_at > now() - interval '7 days'",
+                (rs, row) -> new Stored(rs.getInt(1), rs.getDouble(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getInt(6)), key(baseUrl), key(model)).stream().findFirst();
     }
 
     public void save(String baseUrl, String model, Stored limits) {
         jdbc.update("INSERT INTO model_limits (base_url, model, input_tokens, chars_per_token, output_tokens, total_tokens, output_per_minute, "
-                        + "updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, now()) ON CONFLICT (base_url, model) DO UPDATE SET input_tokens = EXCLUDED.input_tokens, "
+                        + "answer_max, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, now()) ON CONFLICT (base_url, model) DO UPDATE SET input_tokens = EXCLUDED.input_tokens, "
                         + "chars_per_token = EXCLUDED.chars_per_token, output_tokens = EXCLUDED.output_tokens, "
-                        + "total_tokens = EXCLUDED.total_tokens, output_per_minute = EXCLUDED.output_per_minute, updated_at = now()",
-                key(baseUrl), key(model), limits.input(), limits.charsPerToken(), limits.output(), limits.total(), limits.outputPerMinute());
+                        + "total_tokens = EXCLUDED.total_tokens, output_per_minute = EXCLUDED.output_per_minute, "
+                        + "answer_max = EXCLUDED.answer_max, updated_at = now()",
+                key(baseUrl), key(model), limits.input(), limits.charsPerToken(), limits.output(), limits.total(), limits.outputPerMinute(),
+                limits.answerMax());
     }
 
     /** Forgets what one server and model showed (the settings moved to another, or its plan may have changed). */

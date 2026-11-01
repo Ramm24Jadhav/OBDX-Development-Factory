@@ -66,6 +66,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
          * asks for no more than what is left of it this minute.
          */
         volatile int output;
+        /** The most max_tokens the server takes in one request, learned from its refusal ("must be less than or equal to N"); 0 while unknown. */
+        volatile int answerMax;
+        /** The model refuses max_tokens and takes max_completion_tokens instead (OpenAI's reasoning models). */
+        volatile boolean completionTokens;
         /** When output was learned: an hour later one call goes without it, to see whether it still holds. */
         volatile long outputLearnedAt;
         /** The output tokens of this server's answers in the last minute: [when (ms), tokens]. */
@@ -117,21 +121,24 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             try {
                 java.util.Optional<ModelLimitsStore.Stored> stored = store.find(baseUrl, model);
                 if (stored.isEmpty()) {
-                    log.info("No stored limits for {} at {}: they are learned from the server's answers", model, baseUrl);
+                    log.info("No stored limits for {} at {}: they are learned from the server's answers", model, ModelSettings.origin(baseUrl));
                 }
                 stored.ifPresent(s -> {
-                    limits.input = s.input();
+                    // values below the floors are no limit any server has: unknown
+                    limits.input = s.input() >= MIN_INPUT ? s.input() : 0;
                     limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
                     limits.output = s.outputPerMinute();
                     limits.outputLearnedAt = System.currentTimeMillis();
-                    limits.total = s.total();
+                    limits.total = s.total() >= MIN_TOTAL ? s.total() : 0;
+                    limits.answerMax = s.answerMax();
                     log.info("Using stored limits for {}: input {}, output {} a minute, total {} (at {})", model, s.input(), s.outputPerMinute(),
-                            s.total(), baseUrl);
+                            s.total(), ModelSettings.origin(baseUrl));
                     if (s.output() > 0) {
                         // A per-answer cap from earlier rules: one refusal in a busy minute could set it, and nothing could clear it
                         log.info("Cleared a stored output cap of {} for {}: answers are sized by what is left of the server's output "
                                 + "tokens a minute instead", s.output(), model);
-                        store.save(baseUrl, model, new ModelLimitsStore.Stored(s.input(), s.charsPerToken(), 0, s.total(), s.outputPerMinute()));
+                        store.save(baseUrl, model, new ModelLimitsStore.Stored(s.input(), s.charsPerToken(), 0, s.total(), s.outputPerMinute(),
+                                s.answerMax()));
                     }
                 });
             } catch (RuntimeException e) {
@@ -145,7 +152,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (store != null) {
             try {
                 store.save(current.baseUrl(), current.chatModelName(), new ModelLimitsStore.Stored(current.limits().input,
-                        current.limits().charsPerToken, 0, current.limits().total, current.limits().output));
+                        current.limits().charsPerToken, 0, current.limits().total, current.limits().output, current.limits().answerMax));
             } catch (RuntimeException e) {
                 log.warn("Could not keep the learned limits of chat model '{}'", current.chatModelName(), e);
             }
@@ -153,7 +160,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     /** "output tokens per minute (OTPM): Limit 1000, Requested 1407" (or with "Used 600, " between) */
-    private static final Pattern OUTPUT_LIMIT = Pattern.compile("(?i)limit:?\\s*(\\d+),\\s*(?:used:?\\s*(\\d+),\\s*)?requested:?\\s*(\\d+)");
+    private static final Pattern OUTPUT_LIMIT = Pattern.compile("(?i)limit:?\\s*(\\d{1,9}),\\s*(?:used:?\\s*(\\d{1,9}),\\s*)?requested:?\\s*(\\d{1,9})");
     /** The fewest output tokens worth asking for; a server that allows less cannot write files. */
     static final int MIN_OUTPUT = 256;
 
@@ -181,10 +188,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             } else {
                 // The minute nearly used up: wait the short while until enough is free, rather than ask for a tiny answer
                 int wanted = MIN_OUTPUT;
-                long wait = limits.waitFor(wanted, now);
+                long wait = limits.output * 0.9 < MIN_OUTPUT ? 0 : limits.waitFor(wanted, now);
                 if (wait > 0) {
                     log.info("Waiting {} for chat model '{}' to have {} output tokens free this minute (used {} of {} a minute)",
                             roughly(Duration.ofMillis(wait)), current.chatModelName(), wanted, limits.usedLastMinute(now), limits.output);
+                    WaitBudget.spend(Duration.ofMillis(wait), current.chatModelName());
                     try {
                         Thread.sleep(wait);
                     } catch (InterruptedException e) {
@@ -214,7 +222,6 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         return systemPrompt == null || systemPrompt.isBlank() ? "/no_think" : systemPrompt + "\n\n/no_think";
     }
 
-    private static final Pattern THINKING = Pattern.compile("(?s)<think>.*?</think>\\s*");
 
     /**
      * A reply without the model's thinking: &lt;think&gt;...&lt;/think&gt; blocks are left out, and a reply that stopped
@@ -224,9 +231,26 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (reply == null || !reply.contains("<think>")) {
             return reply;
         }
-        String answer = THINKING.matcher(reply).replaceAll("");
-        int open = answer.indexOf("<think>");
-        return open >= 0 ? answer.substring(0, open) : answer;
+        // One pass with indexOf (a regex over a long run of "<think>" takes seconds): each block and the spaces after it go
+        StringBuilder answer = new StringBuilder();
+        int at = 0;
+        while (true) {
+            int open = reply.indexOf("<think>", at);
+            if (open < 0) {
+                answer.append(reply, at, reply.length());
+                return answer.toString();
+            }
+            answer.append(reply, at, open);
+            int close = reply.indexOf("</think>", open + 7);
+            if (close < 0) {
+                // stopped while still thinking: no answer after it
+                return answer.toString();
+            }
+            at = close + 8;
+            while (at < reply.length() && Character.isWhitespace(reply.charAt(at))) {
+                at++;
+            }
+        }
     }
 
     /** The server refused the request because of its reasoning_effort (an unknown or unsupported parameter). */
@@ -239,10 +263,13 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private int capOutput(Connection current, OpenAiChatRequestParameters.Builder request, int promptChars) {
         int max = maxTokens(current.limits(), maxOutput, promptChars);
-        if (max > 0) {
+        if (max > 0 && current.limits().completionTokens) {
+            request.maxCompletionTokens(max);
+        } else if (max > 0) {
             request.maxOutputTokens(max);
         }
         ASKED.set(max);
+        PROMPT.set(promptChars);
         logRequest(current, promptChars, max);
         return max;
     }
@@ -258,6 +285,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private static final ThreadLocal<Integer> ASKED = new ThreadLocal<>();
     /** Set while one call goes without the learned output limit, to see whether it still holds. */
     private static final ThreadLocal<Boolean> PROBE = new ThreadLocal<>();
+    /** The prompt characters of the call on this thread (a larger prompt the server took raises a learned input limit). */
+    private static final ThreadLocal<Integer> PROMPT = new ThreadLocal<>();
     /** How long a learned output limit is used before one call goes without it. */
     static final Duration PROBE_AFTER = Duration.ofHours(1);
 
@@ -272,11 +301,65 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (callCap != null) {
             cap = cap > 0 ? Math.min(cap, callCap) : callCap;
         }
-        if (limits.total > 0) {
+        // Only a small per-minute total sizes the answer: on a large plan (OpenAI's 30 million, Groq's 300,000) prompt and answer
+        // fit anyway, and 90% of it would be a max_tokens no server takes
+        if (limits.total > 0 && limits.total < SMALL_TOTAL) {
             int room = Math.max(MIN_OUTPUT, (int) (limits.total * 0.9 - promptChars / limits.charsPerToken));
             cap = cap > 0 ? Math.min(cap, room) : room;
         }
-        return cap;
+        if (limits.answerMax > 0) {
+            cap = cap > 0 ? Math.min(cap, limits.answerMax) : limits.answerMax;
+        }
+        // Never above FACTORY_MODEL_MAX_OUTPUT_TOKENS, or a sane size when that is not set
+        return cap > 0 ? Math.min(cap, maxOutput != null && maxOutput > 0 ? maxOutput : DEFAULT_ANSWER) : cap;
+    }
+
+    /** Learned limits below these are taken as unknown: no server's limit is that small, so they came from a stray message. */
+    static final int MIN_INPUT = 1024;
+    static final int MIN_TOTAL = 2048;
+
+    /**
+     * Whether a refusal is about the request's size: 413 or 429, or a 400 whose message is about the context or tokens (a 400
+     * for anything else, such as a bad parameter, teaches no limit). Without a status, its message decides.
+     */
+    static boolean sizeRefusal(Throwable e, String text) {
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        boolean aboutSize = lower.contains("context") || lower.contains("token");
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof dev.langchain4j.exception.HttpException h) {
+                return h.statusCode() == 413 || h.statusCode() == 429 || h.statusCode() == 400 && aboutSize;
+            }
+        }
+        return aboutSize;
+    }
+
+    /** Below this many tokens a minute in all, the answer is sized to fit beside the prompt. */
+    static final int SMALL_TOTAL = 12_000;
+    /** The most max_tokens asked for when FACTORY_MODEL_MAX_OUTPUT_TOKENS is not set and a limit gives a size. */
+    static final int DEFAULT_ANSWER = 8192;
+
+    private static final Pattern ANSWER_MAX = Pattern.compile("(?i)(?:max_(?:completion_)?tokens`?\\s+must\\s+be\\s+(?:less\\s+than\\s+or\\s+equal\\s+to|<=|≤)"
+            + "\\s*`?(\\d{1,9})|supports\\s+at\\s+most\\s+(\\d{1,9})\\s+(?:completion|output)\\s+tokens|maximum\\s+(?:allowed\\s+)?(?:value\\s+)?"
+            + "(?:for\\s+`?max_(?:completion_)?tokens`?\\s+)?is\\s+`?(\\d{1,9}))");
+
+    /** The most max_tokens a server said it takes ("max_tokens must be less than or equal to 32768"), or 0. */
+    static int answerMaxRefused(String text) {
+        Matcher m = ANSWER_MAX.matcher(text);
+        if (!m.find()) {
+            return 0;
+        }
+        for (int g = 1; g <= m.groupCount(); g++) {
+            if (m.group(g) != null) {
+                return Integer.parseInt(m.group(g));
+            }
+        }
+        return 0;
+    }
+
+    /** The model takes max_completion_tokens, not max_tokens ("Use 'max_completion_tokens' instead"). */
+    static boolean completionTokensAsked(String text) {
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("max_completion_tokens") && (lower.contains("instead") || lower.contains("not supported") || lower.contains("unsupported"));
     }
 
     private static void logRequest(Connection current, int promptChars, int maxTokens) {
@@ -325,12 +408,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     /** "Request too large ... Limit 7000, Requested 7663": a per-minute token limit smaller than the request. */
-    private static final Pattern TOO_LARGE = Pattern.compile("(?i)limit:?\\s*(\\d+),\\s*requested:?\\s*(\\d+)");
+    private static final Pattern TOO_LARGE = Pattern.compile("(?i)limit:?\\s*(\\d{1,9}),\\s*requested:?\\s*(\\d{1,9})");
     /** "maximum context length is 8192 tokens. However, your messages resulted in 9000 tokens" */
-    private static final Pattern CONTEXT_LENGTH = Pattern.compile("(?is)maximum context length is (\\d+) tokens.*?(?:resulted in|requested) (\\d+) tokens");
+    private static final Pattern CONTEXT_LENGTH = Pattern.compile("(?is)maximum context length is (\\d{1,9}) tokens.{0,300}?(?:resulted in|requested) (\\d{1,9}) tokens");
     /** "Please try again in 7.66s", "in 1m30.5s", "in 330ms" */
-    private static final Pattern TRY_AGAIN = Pattern.compile("(?i)try again in ([\\d.]+ms|(?:\\d+h)?(?:\\d+m)?(?:[\\d.]+s)?)");
-    private static final Pattern TIME_PART = Pattern.compile("([\\d.]+)([hms])");
+    private static final Pattern TRY_AGAIN = Pattern.compile("(?i)try again in ([\\d.]{1,12}ms|(?:\\d{1,9}h)?(?:\\d{1,9}m)?(?:[\\d.]{1,12}s)?)");
+    private static final Pattern TIME_PART = Pattern.compile("([\\d.]{1,12})([hms])");
     /** Longest rate-limit wait before giving up; a per-minute limit frees up within it (some servers ask for over 90 s). */
     static final Duration MAX_WAIT = Duration.ofMinutes(3);
     private static final int RATE_LIMIT_ATTEMPTS = 8;
@@ -371,6 +454,24 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 properties.embeddingModel(), null, null, false, null, null));
     }
 
+    /** Forgets what the chat model's server showed (an admin's action, after a plan changed or a limit was learned wrongly). */
+    @Override
+    public void forgetLimits() {
+        Connection current = connection;
+        if (store != null) {
+            store.clear(current.baseUrl(), current.chatModelName());
+        }
+        Limits fresh = new Limits();
+        Limits limits = current.limits();
+        limits.input = fresh.input;
+        limits.charsPerToken = fresh.charsPerToken;
+        limits.output = 0;
+        limits.total = 0;
+        limits.answerMax = 0;
+        limits.completionTokens = false;
+        log.info("Forgot the learned limits of chat model '{}': they are learned again from the server's answers", current.chatModelName());
+    }
+
     @EventListener
     public void settingsChanged(ModelSettings.Changed event) {
         ollama.forget();
@@ -397,7 +498,6 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .baseUrl(settings.baseUrl())
                         .apiKey(keyOrPlaceholder(settings.apiKey()))
                         .modelName(settings.chatModel())
-                        .maxTokens(maxOutput)
                         .timeout(timeout)
                         .maxRetries(0)
                         .build(),
@@ -405,7 +505,6 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .baseUrl(settings.baseUrl())
                         .apiKey(keyOrPlaceholder(settings.apiKey()))
                         .modelName(settings.chatModel())
-                        .maxTokens(maxOutput)
                         .timeout(timeout)
                         .build(),
                 OpenAiEmbeddingModel.builder()
@@ -468,6 +567,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             CALL_CAP.remove();
             ASKED.remove();
             PROBE.remove();
+            PROMPT.remove();
         }
     }
 
@@ -485,10 +585,36 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 if (current.noThink() && !current.effortRefused().get() && reasoningEffortRefused(text)) {
                     // The server does not take reasoning_effort: asked again without it, and not sent to it again
                     current.effortRefused().set(true);
-                    log.info("Chat model '{}' at {} does not take reasoning_effort; asking without it", current.chatModelName(), current.baseUrl());
+                    log.info("Chat model '{}' at {} does not take reasoning_effort; asking without it", current.chatModelName(),
+                            ModelSettings.origin(current.baseUrl()));
+                    continue;
+                }
+                if (!current.limits().completionTokens && completionTokensAsked(text)) {
+                    // The model takes max_completion_tokens instead: asked again with it, and always from now on
+                    current.limits().completionTokens = true;
+                    log.info("Chat model '{}' takes max_completion_tokens, not max_tokens; asking with it", current.chatModelName());
+                    continue;
+                }
+                int answerMax = answerMaxRefused(text);
+                Integer askedMax = ASKED.get();
+                if (answerMax > 0 && askedMax != null && askedMax > answerMax && lowered < 3) {
+                    // One request may not ask for more: learned and kept, and asked again at once within it
+                    current.limits().answerMax = answerMax;
+                    saveLimits(current);
+                    lowered++;
+                    log.info("Chat model '{}' takes at most {} max_tokens in one request (asked {}); answers now ask for no more", current.chatModelName(),
+                            answerMax, askedMax);
                     continue;
                 }
                 int[] tooLarge = tooLarge(text);
+                // Learned only from a refusal of size (413, 429, or a 400 about context or tokens), and never below a floor: one odd
+                // message must not shrink every later prompt for good
+                if (tooLarge != null && (!sizeRefusal(e, text) || tooLarge[0] < MIN_INPUT)) {
+                    log.info("Chat model '{}' refused a request as too large ({} tokens, limit {}); not learned as its limit", current.chatModelName(),
+                            tooLarge[1], tooLarge[0]);
+                    throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
+                            + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
+                }
                 if (tooLarge != null) {
                     int chars = (systemPrompt == null ? 0 : systemPrompt.length()) + userPrompt.length();
                     int input;
@@ -501,13 +627,17 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                             prompt = tooLarge[1] - asked;
                         }
                         input = tooLarge[0] - Math.min(asked > 0 ? asked : 1024, tooLarge[0] / 4);
-                        current.limits().total = current.limits().total == 0 ? tooLarge[0] : Math.min(current.limits().total, tooLarge[0]);
+                        if (tooLarge[0] >= MIN_TOTAL) {
+                            current.limits().total = current.limits().total == 0 ? tooLarge[0] : Math.min(current.limits().total, tooLarge[0]);
+                        }
                         log.info("Learned the model server's per-minute token limit: {} (chat model '{}', from its refusal)", current.limits().total,
                                 current.chatModelName());
                     } else {
                         input = inputLimit(text, tooLarge[0], maxOutput);
                     }
-                    current.limits().input = current.limits().input == 0 ? input : Math.min(current.limits().input, input);
+                    if (input >= MIN_INPUT) {
+                        current.limits().input = current.limits().input == 0 ? input : Math.min(current.limits().input, input);
+                    }
                     current.limits().charsPerToken = Math.clamp((double) chars / prompt, 2.0, 6.0);
                     saveLimits(current);
                     throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
@@ -539,6 +669,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         long wait = used > 0 ? 60_000 : limits.waitFor(MIN_OUTPUT, now);
                         log.info("Waiting {} for chat model '{}': this minute's output tokens are used up (used {} of {})",
                                 roughly(Duration.ofMillis(wait)), current.chatModelName(), Math.max(used, limits.usedLastMinute(now)), perMinute);
+                        WaitBudget.spend(Duration.ofMillis(wait), current.chatModelName());
                         try {
                             Thread.sleep(wait);
                         } catch (InterruptedException interrupted) {
@@ -584,6 +715,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 }
                 log.info("Chat model '{}' is at its rate limit ({}); waiting {} before asking again", current.chatModelName(), serverMessage(text),
                         roughly(wait));
+                WaitBudget.spend(wait, current.chatModelName());
                 try {
                     Thread.sleep(wait);
                 } catch (InterruptedException interrupted) {
@@ -649,12 +781,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         }
         String when = m.group(1);
         if (when.endsWith("ms")) {
-            return Duration.ofMillis((long) Double.parseDouble(when.substring(0, when.length() - 2)) + 1000);
+            return Duration.ofMillis((long) number(when.substring(0, when.length() - 2)) + 1000);
         }
         double seconds = 0;
         Matcher part = TIME_PART.matcher(when);
         while (part.find()) {
-            double value = Double.parseDouble(part.group(1));
+            double value = number(part.group(1));
             seconds += switch (part.group(2)) {
                 case "h" -> value * 3600;
                 case "m" -> value * 60;
@@ -664,26 +796,39 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         return Duration.ofMillis((long) (seconds * 1000) + 1000);
     }
 
+    /** A number a server wrote ("7.66"), or 0 when it is none ("." or "1.2.3"). */
+    private static double number(String text) {
+        try {
+            return Double.parseDouble(text);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     private static final Pattern ERROR_MESSAGE = Pattern.compile("\"message\"\\s*:\\s*\"([^\"]+)\"");
 
     /** The first sentence of the server's own error message, without its JSON around it. */
     static String serverMessage(String text) {
         Matcher m = ERROR_MESSAGE.matcher(text);
         String message = m.find() ? m.group(1) : text.strip();
-        message = message.replaceAll("\\s+in organization `[^`]*`", "").replaceAll("\\s+service tier `[^`]*`", "");
+        // patterns that start with their words, not with spaces, so a long run of spaces costs nothing
+        message = message.replaceAll("in organization `[^`]{0,200}` ?", "").replaceAll("service tier `[^`]{0,200}` ?", "").replaceAll(" {2,}", " ");
         int end = message.indexOf(". ");
         return end > 0 ? message.substring(0, end) : message.length() > 200 ? message.substring(0, 200) : message;
     }
 
-    private static String messages(Throwable e) {
+    /** The messages of an error and its causes, at most 4 KB: the patterns read only the start of what a server sent. */
+    static String messages(Throwable e) {
         StringBuilder text = new StringBuilder();
-        for (Throwable t = e; t != null; t = t.getCause()) {
+        for (Throwable t = e; t != null && text.length() < MAX_ERROR_TEXT; t = t.getCause()) {
             if (t.getMessage() != null) {
                 text.append(t.getMessage()).append('\n');
             }
         }
-        return text.toString();
+        return text.length() > MAX_ERROR_TEXT ? text.substring(0, MAX_ERROR_TEXT) : text.toString();
     }
+
+    static final int MAX_ERROR_TEXT = 4096;
 
     /**
      * A JSON answer, streamed where the server allows it: a long answer from a slow model (a spec drafted from a BRD,
@@ -705,7 +850,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             try {
                 return streamed(current, systemPrompt, UserMessage.from(userPrompt), ResponseFormat.JSON, piece -> pieces.incrementAndGet());
             } catch (ModelGatewayException e) {
-                if (pieces.get() > 0 || !refused(e) || tooLarge(messages(e)) != null || outputTooLarge(messages(e)) != null) {
+                String refusal = messages(e);
+                // A refusal of a parameter or of the size is no refusal of JSON in a stream: limited() handles it
+                if (pieces.get() > 0 || !refused(e) || tooLarge(refusal) != null || outputTooLarge(refusal) != null || reasoningEffortRefused(refusal)
+                        || completionTokensAsked(refusal) || answerMaxRefused(refusal) > 0) {
                     throw e;
                 }
                 current.jsonStreams().set(false);
@@ -716,8 +864,9 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     @Override
     public ChatResult chatJsonWithImage(String systemPrompt, String userPrompt, byte[] image, String mimeType) {
-        return chat(systemPrompt, UserMessage.from(TextContent.from(userPrompt),
-                ImageContent.from(Base64.getEncoder().encodeToString(image), mimeType)), ResponseFormat.JSON);
+        // Through limited(), as every call: its limits are learned, and this thread's per-call state is cleared after it
+        return limited(systemPrompt, userPrompt, () -> chat(systemPrompt, UserMessage.from(TextContent.from(userPrompt),
+                ImageContent.from(Base64.getEncoder().encodeToString(image), mimeType)), ResponseFormat.JSON));
     }
 
     @Override
@@ -901,17 +1050,36 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         int written = counted != null && counted > 0 ? counted : (int) ((reply == null ? 0 : reply.length()) / current.limits().charsPerToken);
         // counted against this minute's output allowance
         current.limits().wrote(written, System.currentTimeMillis());
+        raiseInput(current);
         int cap = current.limits().output;
         if (cap <= 0) {
             return;
         }
-        boolean probed = Boolean.TRUE.equals(PROBE.get());
+        // A call without the limit proves nothing unless it asked for more than the limit allows
+        Integer asked = ASKED.get();
+        boolean probed = Boolean.TRUE.equals(PROBE.get()) && asked != null && asked > cap;
         if (written > cap || probed) {
             current.limits().output = 0;
             saveLimits(current);
             log.info(probed ? "Chat model '{}' answered ({} tokens) without its learned output limit of {} tokens a minute: the limit is cleared"
                             : "Chat model '{}' wrote {} tokens in one answer, more than its learned output limit of {} a minute: the limit is cleared",
                     current.chatModelName(), written, cap);
+        }
+    }
+
+    /** A prompt the server took that is larger than the learned input limit: the limit was too low, and is raised to it. */
+    private void raiseInput(Connection current) {
+        Integer chars = PROMPT.get();
+        int input = current.limits().input;
+        if (chars == null || input <= 0) {
+            return;
+        }
+        int tokens = (int) (chars / current.limits().charsPerToken);
+        if (tokens > input) {
+            current.limits().input = tokens;
+            saveLimits(current);
+            log.info("Chat model '{}' took a prompt of about {} tokens, more than its learned input limit of {}: the limit is raised",
+                    current.chatModelName(), tokens, input);
         }
     }
 
@@ -930,7 +1098,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         }
         int limit = tokensPerMinute(openAi.rawHttpResponse().headers());
         int before = current.limits().total;
-        if (limit > 0 && limit != before) {
+        if (limit > 0 && limit >= MIN_TOTAL && limit != before) {
             current.limits().total = limit;
             saveLimits(current);
             log.info("Learned the model server's per-minute token limit: {} (chat model '{}', from its response headers{}); "

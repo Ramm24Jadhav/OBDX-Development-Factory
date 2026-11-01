@@ -71,13 +71,22 @@ class CodeGeneratorTest {
     @Test
     void stopsAfterTheAllowedFixAttempts() {
         replies.add("class A { void x( }");
-        replies.add("class A { void x( }");
-        replies.add("class A { void x( }");
+        replies.add("class A { void y( }");
+        replies.add("class A { void z( }");
 
         CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
 
         assertThat(result.attempts()).isEqualTo(3);
         assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
+
+        // a fix that changes nothing ends the attempts: asking again would pay for the same answer
+        replies.clear();
+        prompts.clear();
+        replies.add("class A { void x( }");
+        replies.add("class A { void x( }");
+        replies.add("class A { void x( }");
+        assertThat(generator.generate(context, plan, item, null, Map.of(), Map.of(), null).attempts()).isEqualTo(1);
+        assertThat(prompts).hasSize(2);
     }
 
     @Test
@@ -508,7 +517,7 @@ class CodeGeneratorTest {
         assertThat(result.content()).contains("    void rule7(String remarks) {\n        remarks.strip();\n    }")
                 .doesNotContain("helper(").contains("void rule39(String remarks)");
         assertThat(result.check().status()).isNotEqualTo(FileChecks.Status.FAILED);
-        assertThat(result.check().message()).contains("Corrected only the method(s) with findings: rule7.");
+        assertThat(result.check().message()).contains("Corrected only the method(s) with findings: rule7(String).");
     }
 
     @Test
@@ -523,11 +532,10 @@ class CodeGeneratorTest {
         assertThat(stopped.content()).isEqualTo(whole);
         assertThat(stopped.check().status()).isEqualTo(FileChecks.Status.FAILED);
         assertThat(stopped.daily()).isTrue();
-        // kept whole, it is checked and fixed next time, not continued
-        assertThat(CodeGenerator.complete(item.path(), whole)).isTrue();
+        // kept whole (recorded so with it), it is checked and fixed next time, not continued
         prompts.clear();
         replies.add("public class RemarksValidator {\n    void a() { }\n}\n");
-        CodeGenerator.Result fixed = generatorWith(eightThousand()).generate(context, plan, item, null, null, Map.of(), Map.of(), null, null, whole);
+        CodeGenerator.Result fixed = generatorWith(eightThousand()).generate(context, plan, item, null, null, Map.of(), Map.of(), null, null, whole, true);
         assertThat(prompts).singleElement().asString().startsWith("File to correct:");
         assertThat(fixed.content()).isEqualTo("public class RemarksValidator {\n    void a() { }\n}\n");
     }

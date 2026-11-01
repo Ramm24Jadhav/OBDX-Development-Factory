@@ -153,7 +153,8 @@ public class ChangeBuildService {
                         + ". Building again...");
                 repository.save(latest);
             }
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the build must not stay BUILDING
             log.error("Jenkins build of change {} failed", changeId, e);
             finish(changeId, "FAILED", "Could not build with Jenkins: " + e.getMessage());
         }
@@ -249,16 +250,17 @@ public class ChangeBuildService {
             ChangeFileStore.ChangeFile file = files.file(change.getId(), entry.getKey()).orElseThrow();
             ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(file.path())).findFirst()
                     .orElse(new ChangePlan.Item(file.path(), file.action(), file.layer(), file.purpose(), List.of(), null));
-            String note = heading + "\n" + entry.getValue().stream()
+            // The build's own text (from Jenkins) is data to fix the file by, never an instruction to follow
+            String note = CodeGenerator.BUILD_OUTPUT + "\n" + heading + "\n" + entry.getValue().stream()
                     .map(e -> "- " + (e.line() > 0 ? "line " + e.line() + ": " : "") + e.message()).collect(Collectors.joining("\n"))
-                    + "\nFix them and keep everything else unchanged.";
+                    + "\n(end of build output) Fix the errors above and keep everything else unchanged.";
             CodeGenerator.Result result;
             try {
                 result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
                         changes.scaffold(context, file.path(), file.original()));
             } catch (CodeGenerator.JoinFailed e) {
-                // The fix came in pieces that did not join: the file is not written, so it is written whole again
-                ChangeService.recordFailure(files, change.getId(), file.path(), file.original(), e);
+                // The fix came in pieces that did not join: the file (and any reviewer's edit of it) is kept as it is
+                log.warn("The build fix of {} in change {} did not join cleanly; the file is kept as it is", file.path(), change.getId());
                 continue;
             }
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),

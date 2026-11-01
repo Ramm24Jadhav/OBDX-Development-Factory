@@ -271,6 +271,52 @@ class OpenAiCompatibleModelGatewayTest {
                         """);
             });
         }
+        // Large plans: OpenAI's 30 million and Groq's developer 300,000 tokens a minute in the headers
+        for (String total : List.of("30000000", "300000")) {
+            server.createContext("/hdr" + total + "/v1/chat/completions", exchange -> {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+                otpmAsked.add(m.find() ? Integer.parseInt(m.group(1)) : -1);
+                exchange.getResponseHeaders().add("x-ratelimit-limit-tokens", total);
+                respond(exchange, 200, """
+                        {"id": "chatcmpl-13", "object": "chat.completion", "created": 1, "model": "qwen",
+                         "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                        """);
+            });
+        }
+        // A model that takes at most 32768 max_tokens; and one that takes only max_completion_tokens
+        server.createContext("/answermax/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+            int asked = m.find() ? Integer.parseInt(m.group(1)) : -1;
+            otpmAsked.add(asked);
+            if (asked > 32768) {
+                respond(exchange, 400, """
+                        {"error": {"message": "`max_tokens` must be less than or equal to `32768`, the maximum value for `max_tokens` is less \
+                        than the `context_window` for this model", "type": "invalid_request_error"}}
+                        """);
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-14", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                    """);
+        });
+        server.createContext("/completiontokens/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            thinkRequests.add(body);
+            if (body.contains("\"max_tokens\"")) {
+                respond(exchange, 400, """
+                        {"error": {"message": "Unsupported parameter: 'max_tokens' is not supported with this model. Use \
+                        'max_completion_tokens' instead.", "type": "invalid_request_error"}}
+                        """);
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-15", "object": "chat.completion", "created": 1, "model": "o4-mini",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                    """);
+        });
         // 1000 output tokens a minute; every answer takes 600
         server.createContext("/opm/v1/chat/completions", exchange -> {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -686,11 +732,14 @@ class OpenAiCompatibleModelGatewayTest {
         OpenAiCompatibleModelGateway[] holder = new OpenAiCompatibleModelGateway[1];
         // said once, when the connection is made: where a max_tokens that no answer taught this run comes from
         assertThat(logged(() -> holder[0] = new OpenAiCompatibleModelGateway(properties, store)))
-                .contains("Using stored limits for qwen: input 0, output 625 a minute, total 0 (at " + baseUrl + ")");
+                // the server's address as scheme://host:port only, never its path or anything that could carry a secret
+                .contains("Using stored limits for qwen: input 0, output 625 a minute, total 0 (at http://127.0.0.1:"
+                        + server.getAddress().getPort() + ")");
         // a model without stored limits says so, so a missing line is never a question
         assertThat(logged(() -> new OpenAiCompatibleModelGateway(new ModelProperties(baseUrl, "test-key", "qwen3-32b", "nomic-embed-text",
                 Duration.ofSeconds(5), null, null, 16384, 8192, null), store)))
-                .contains("No stored limits for qwen3-32b at " + baseUrl + ": they are learned from the server's answers",
+                .contains("No stored limits for qwen3-32b at http://127.0.0.1:" + server.getAddress().getPort()
+                                + ": they are learned from the server's answers",
                         "Thinking turned off for model 'qwen3-32b' (/no_think, reasoning_effort none)");
         OpenAiCompatibleModelGateway restarted = holder[0];
         assertThat(restarted.outputLimit()).isEqualTo(625);
@@ -834,6 +883,138 @@ class OpenAiCompatibleModelGatewayTest {
         assertThat(store.rows.get(baseUrl + "|qwen").outputPerMinute()).isZero();
         assertThat(log).contains("Chat model 'qwen' wrote 3600 tokens in one answer, more than its learned output limit of 900 a minute: "
                 + "the limit is cleared");
+    }
+
+    private OpenAiCompatibleModelGateway gatewayAt(String path, String model, int maxOutput, ModelLimitsStore store) {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
+        return new OpenAiCompatibleModelGateway(new ModelProperties(baseUrl, "test-key", model, "nomic-embed-text", Duration.ofSeconds(5), null,
+                null, 16384, maxOutput, null), store);
+    }
+
+    @Test
+    void aLargePlansHeadersNeverMakeAHugeMaxTokens() {
+        for (String total : List.of("30000000", "300000")) {
+            otpmAsked.clear();
+            MemoryLimits store = new MemoryLimits();
+            OpenAiCompatibleModelGateway configured = gatewayAt("/hdr" + total + "/v1", "qwen", 8192, store);
+            configured.chat("Write the file.", "A.java");
+            configured.chat("Write the file.", "B.java");
+            // the total is learned, but only a small one sizes the answer: still FACTORY_MODEL_MAX_OUTPUT_TOKENS
+            assertThat(configured.tokensPerMinute()).isEqualTo(Integer.parseInt(total));
+            assertThat(otpmAsked).as(total).containsExactly(8192, 8192);
+
+            // and with nothing configured, the server decides, as before
+            otpmAsked.clear();
+            OpenAiCompatibleModelGateway unset = gatewayAt("/hdr" + total + "/v1", "qwen", 0, new MemoryLimits());
+            unset.chat("Write the file.", "A.java");
+            unset.chat("Write the file.", "B.java");
+            assertThat(otpmAsked).as(total).containsExactly(-1, -1);
+        }
+    }
+
+    @Test
+    void aMaxTokensRefusalIsLearnedAndAModelThatTakesMaxCompletionTokensGetsThem() {
+        MemoryLimits store = new MemoryLimits();
+        OpenAiCompatibleModelGateway gateway = gatewayAt("/answermax/v1", "qwen", 50_000, store);
+
+        gateway.chat("Write the file.", "A.java");
+        gateway.chat("Write the file.", "B.java");
+
+        assertThat(otpmAsked).containsExactly(50_000, 32_768, 32_768);
+        assertThat(store.rows.values()).singleElement().satisfies(s -> assertThat(s.answerMax()).isEqualTo(32_768));
+        assertThat(OpenAiCompatibleModelGateway.answerMaxRefused("max_tokens is too large: 50000. This model supports at most 16384 completion "
+                + "tokens, whereas you provided 50000.")).isEqualTo(16_384);
+
+        OpenAiCompatibleModelGateway o4 = gatewayAt("/completiontokens/v1", "o4-mini", 4096, new MemoryLimits());
+        assertThat(o4.chat("Write the file.", "A.java").reply()).isEqualTo("ok");
+        assertThat(thinkRequests).hasSize(2);
+        assertThat(thinkRequests.getLast()).contains("\"max_completion_tokens\"").doesNotContain("\"max_tokens\"");
+        o4.chat("Write the file.", "B.java");
+        assertThat(thinkRequests).hasSize(3);
+    }
+
+    @Test
+    void anImageCallIsLimitedLikeEveryOtherCall() {
+        ModelGateway gateway = gatewayFor("/limited/v1");
+
+        assertThat(gateway.chatJsonWithImage("Answer in JSON.", "Plan the change", new byte[] {1, 2, 3}, "image/png").reply())
+                .isEqualTo("{\"ok\": true}");
+        // waited out and asked again, as a text call is
+        assertThat(limitedCalls.get()).isEqualTo(2);
+    }
+
+    @Test
+    void aReasoningEffortRefusalDoesNotTurnOffStreamingForJson() {
+        OpenAiCompatibleModelGateway gateway = gatewayAt("/strict/v1", "qwen3-coder", 0, new MemoryLimits());
+
+        try {
+            gateway.chatJson("Answer in JSON.", "A plan");
+        } catch (RuntimeException e) {
+            // the stub answers a stream in one piece; only the requests matter here
+        }
+        assertThat(thinkRequests.getFirst()).containsPattern("\"stream\"\\s*:\\s*true").contains("reasoning_effort");
+        // asked again without reasoning_effort, still streamed
+        assertThat(thinkRequests.get(1)).containsPattern("\"stream\"\\s*:\\s*true").doesNotContain("reasoning_effort");
+    }
+
+    @Test
+    void textFromAServerIsReadInLinearTime() {
+        long start = System.nanoTime();
+        assertThat(OpenAiCompatibleModelGateway.withoutThinking("<think>".repeat(16_000))).isEmpty();
+        assertThat(OpenAiCompatibleModelGateway.withoutThinking("<think>a</think>\n x<think>b</think> y")).isEqualTo("xy");
+        assertThat(OpenAiCompatibleModelGateway.serverMessage(" ".repeat(100_000) + "x")).isNotNull();
+        assertThat(OpenAiCompatibleModelGateway.tooLarge("maximum context length is 8192 tokens" + " ".repeat(100_000))).isNull();
+        assertThat(OpenAiCompatibleModelGateway.rateLimitWait("rate limit reached, try again in .s")).isNotNull();
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(2));
+        assertThat(OpenAiCompatibleModelGateway.messages(new RuntimeException("x".repeat(100_000))))
+                .hasSize(OpenAiCompatibleModelGateway.MAX_ERROR_TEXT);
+    }
+
+    @Test
+    void oddLearnedValuesAreUnknownAndAnAdminCanForgetWhatWasLearned() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/opm/v1";
+        MemoryLimits store = new MemoryLimits();
+        // below the floors: no server's limit is that small
+        store.save(baseUrl, "qwen", new ModelLimitsStore.Stored(500, 3.5, 0, 1000, 1000));
+        OpenAiCompatibleModelGateway gateway = gatewayAt("/opm/v1", "qwen", 8192, store);
+        assertThat(gateway.inputLimit()).isZero();
+        assertThat(gateway.tokensPerMinute()).isZero();
+        assertThat(gateway.outputLimit()).isEqualTo(1000);
+
+        gateway.forgetLimits();
+
+        assertThat(gateway.outputLimit()).isZero();
+        assertThat(store.cleared).containsExactly(baseUrl + "|qwen");
+        // a refusal that is no refusal of size teaches nothing
+        assertThat(OpenAiCompatibleModelGateway.sizeRefusal(new RuntimeException("x"), "Invalid value for temperature")).isFalse();
+        assertThat(OpenAiCompatibleModelGateway.sizeRefusal(new RuntimeException("x"), "Request too large: Limit 7000, Requested 7663 tokens"))
+                .isTrue();
+    }
+
+    @Test
+    void aJobWaitsOnRateLimitsOnlySoLongInAll() {
+        WaitBudget.start(Duration.ofMillis(100));
+        try {
+            WaitBudget.spend(Duration.ofMillis(60), "qwen");
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> WaitBudget.spend(Duration.ofMillis(60), "qwen"))
+                    .isInstanceOf(ModelLimitReachedException.class)
+                    .hasMessageContaining("The model's server kept rate-limiting; try again later or use a plan with higher limits.");
+        } finally {
+            WaitBudget.end();
+        }
+        // outside a job nothing is counted
+        WaitBudget.spend(Duration.ofHours(1), "qwen");
+    }
+
+    @Test
+    void aModelServerAddressCarriesNoSecrets() {
+        for (String url : List.of("http://user:pass@host:11434/v1", "https://api.example.com/v1?key=secret", "https://api.example.com/v1#x")) {
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> ModelSettings.plainServerUrl(url))
+                    .isInstanceOf(com.obdx.factory.common.BadRequestException.class).hasMessageContaining("without a user name");
+        }
+        ModelSettings.plainServerUrl("https://api.groq.com/openai/v1");
+        assertThat(ModelSettings.origin("https://api.groq.com/openai/v1")).isEqualTo("https://api.groq.com");
+        assertThat(ModelSettings.origin("http://localhost:11434/v1")).isEqualTo("http://localhost:11434");
     }
 
     @Test

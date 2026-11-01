@@ -110,7 +110,8 @@ public final class JavaCompileChecks {
                 return true;
             }
         }
-        return unit.findAll(ObjectCreationExpr.class).stream().anyMatch(o -> o.getAnonymousClassBody().isPresent() && !jdk(unit, o.getType()));
+        // Any anonymous class inherits its methods, the JDK's too: new HashMap<>() {{ put(...); }}, new TimerTask() { ... cancel(); }
+        return unit.findAll(ObjectCreationExpr.class).stream().anyMatch(o -> o.getAnonymousClassBody().isPresent());
     }
 
     /** A type of the JDK: imported from java.* or javax.*, written with such a package, or of java.lang. */
@@ -147,6 +148,10 @@ public final class JavaCompileChecks {
         for (TypeDeclaration<?> type : unit.findAll(TypeDeclaration.class)) {
             Map<String, Integer> seen = new LinkedHashMap<>();
             for (MethodDeclaration method : type.getMethods()) {
+                if (!method.getTypeParameters().isEmpty()) {
+                    // generic methods may differ only by their bounds: not told apart here
+                    continue;
+                }
                 String signature = method.getNameAsString() + "(" + String.join(", ", method.getParameters().stream()
                         .map(p -> p.getType().asString().replaceAll("\\s+", "") + (p.isVarArgs() ? "..." : "")).toList()) + ")";
                 int line = method.getBegin().map(p -> p.line).orElse(0);
@@ -161,8 +166,17 @@ public final class JavaCompileChecks {
         return duplicates;
     }
 
-    private static final Pattern METHOD = Pattern.compile("(?m)^\\s*(?:(?:public|protected|private|static|final|synchronized|abstract|default)\\s+)*"
-            + "(?:<[^>]+>\\s*)?[\\w<>\\[\\],.?]+(?:\\s*<[^>]*>)?\\s+(\\w+)\\s*\\([^)]*\\)\\s*(?:throws\\s+[\\w., ]+)?\\s*\\{");
+    /**
+     * A method declaration on one line (checked line by line, lines over 300 characters skipped). Parameters may carry
+     * annotations with arguments (@PathParam("id")); every part is possessive and the throws clause unambiguous, so no
+     * line can make it backtrack for long.
+     */
+    private static final Pattern METHOD = Pattern.compile("^\\s*+(?:@\\w++(?:\\([^()]*+\\))?\\s++)*+(?:(?:public|protected|private|static|final|"
+            + "synchronized|abstract|default)\\s++)*+(?:<[^>]*+>\\s*+)?[\\w<>\\[\\],.?]++(?:\\s*+<[^>]*+>)?\\s++(\\w++)\\s*+"
+            + "\\((?:[^()]|\\([^()]*+\\))*+\\)\\s*+(?:throws\\s++[\\w.]++(?:\\s*+,\\s*+[\\w.]++)*+)?\\s*+\\{");
+    /** After a name's parameter list: the start of its body, so the name is declared there, not called. */
+    private static final Pattern BODY_AFTER = Pattern.compile("\\s*+(?:throws\\s++[\\w.]++(?:\\s*+,\\s*+[\\w.]++)*+)?\\s*+\\{");
+    static final int LONGEST_LINE = 300;
     private static final Pattern FIELD = Pattern.compile("(?m)^\\s*(?:private|protected|public)\\s+(?:static\\s+)?(?:final\\s+)?"
             + "[\\w<>\\[\\],.? ]+?\\s+(\\w+)\\s*(?:=|;)");
     private static final Pattern CALL = Pattern.compile("(?<![\\w$.])([a-z_]\\w*)\\s*\\(");
@@ -185,9 +199,12 @@ public final class JavaCompileChecks {
         literal.addAll(parts.strings());
         String code = SourceScan.blank(partial, literal);
         Set<String> methods = new LinkedHashSet<>();
-        Matcher m = METHOD.matcher(code);
-        while (m.find()) {
-            if (!KEYWORDS.contains(m.group(1))) {
+        for (String line : code.split("\n")) {
+            if (line.length() > LONGEST_LINE) {
+                continue;
+            }
+            Matcher m = METHOD.matcher(line);
+            if (m.find() && !KEYWORDS.contains(m.group(1))) {
                 methods.add(m.group(1));
             }
         }
@@ -209,12 +226,37 @@ public final class JavaCompileChecks {
             Matcher c = CALL.matcher(code);
             while (c.find()) {
                 String name = c.group(1);
+                if (KEYWORDS.contains(name)) {
+                    continue;
+                }
+                if (declaredAt(code, c.end() - 1)) {
+                    // the name, its parameter list, then its body: a declaration the line-by-line pattern did not read
+                    methods.add(name);
+                    missing.remove(name);
+                    continue;
+                }
                 if (!KEYWORDS.contains(name) && !methods.contains(name) && !imported.contains(name) && !OBJECT_METHODS.contains(name)) {
                     missing.add(name);
                 }
             }
         }
         return new Outline(methods, fields, missing);
+    }
+
+    /** Whether the parenthesis at open starts a parameter list followed by a body ({, or throws ... {). */
+    private static boolean declaredAt(String code, int open) {
+        int depth = 0;
+        int limit = Math.min(code.length(), open + 2000);
+        for (int i = open; i < limit; i++) {
+            char c = code.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')' && --depth == 0) {
+                Matcher body = BODY_AFTER.matcher(code).region(i + 1, Math.min(code.length(), i + 1 + LONGEST_LINE));
+                return body.lookingAt();
+            }
+        }
+        return false;
     }
 
     private static CompilationUnit parse(String content) {

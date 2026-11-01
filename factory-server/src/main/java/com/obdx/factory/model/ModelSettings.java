@@ -96,6 +96,33 @@ public class ModelSettings {
      * @return whether embeddings were removed
      */
     @Transactional
+    /**
+     * A model server address without a user and password or a query: those are where secrets end up (and would then be
+     * written to the log and shown on the page); the API key has its own field.
+     */
+    static void plainServerUrl(String url) {
+        java.net.URI uri;
+        try {
+            uri = java.net.URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("The model server URL is not a valid address. Enter it as http(s)://host:port/v1.");
+        }
+        if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null) {
+            throw new BadRequestException("Enter the model server URL without a user name, password or query (http(s)://host:port/v1); "
+                    + "put the API key in its own field.");
+        }
+    }
+
+    /** scheme://host:port of a server address, for the log. */
+    public static String origin(String url) {
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return "(the model server)";
+        }
+    }
+
     public boolean save(Update update, String username) {
         String baseUrl = normalize(update.baseUrl());
         if (!baseUrl.matches("https?://.+")) {
@@ -107,6 +134,10 @@ public class ModelSettings {
         }
         if (embeddingBaseUrl != null && !embeddingBaseUrl.matches("https?://.+")) {
             throw new BadRequestException("The code search server URL must start with http:// or https://");
+        }
+        plainServerUrl(baseUrl);
+        if (embeddingBaseUrl != null) {
+            plainServerUrl(embeddingBaseUrl);
         }
         if (blank(update.chatModel()) || blank(update.embeddingModel())) {
             throw new BadRequestException("Choose a chat model and an embedding model");

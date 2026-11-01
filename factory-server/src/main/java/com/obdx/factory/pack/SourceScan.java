@@ -84,6 +84,12 @@ public final class SourceScan {
                 int end = Math.min(n, j + 1);
                 strings.add(new Range(i, end));
                 i = end;
+            } else if (syntax == Syntax.CODE && content.startsWith("\"\"\"", i)) {
+                // A Java text block: a string over several lines, whose // and /* are text (unterminated: to the end)
+                int end = content.indexOf("\"\"\"", i + 3);
+                end = end < 0 ? n : end + 3;
+                strings.add(new Range(i, end));
+                i = end;
             } else if (syntax == Syntax.CODE && (c == '\'' || c == '"' || c == '`')) {
                 int j = i + 1;
                 while (j < n && content.charAt(j) != c && (c == '`' || content.charAt(j) != '\n')) {

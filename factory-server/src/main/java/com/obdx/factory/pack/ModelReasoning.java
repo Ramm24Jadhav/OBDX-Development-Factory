@@ -27,7 +27,7 @@ public final class ModelReasoning {
     static final int MAX_PER_RULE = 3;
 
     private static final Pattern PHRASE = Pattern.compile("(?i)\\b(let'?s assume|let us assume|the prompt (?:says|asks|wants|requires)|"
-            + "as an ai\\b|as an ai language model|as per (?:the|your) (?:prompt|instructions)\\b|in this response|the user (?:wants|asked)|"
+            + "as an ai\\b|as an ai language model|as per (?:the|your) (?:prompt|instructions)\\b|in this response,? (?:i|we)\\b|the user (?:wants|asked) (?:me|us)\\b|"
             + "as you requested|here is the (?:complete|updated|corrected) (?:file|code)|for this exercise|in this isolated artifact|"
             + "not defined in (?:the )?prompt|we model the behaviou?r|since we don'?t have|"
             // "No specific error code defined for Name Format in the provided list": what the model was given
@@ -39,8 +39,15 @@ public final class ModelReasoning {
             + "for now,? we assume|assum(?:e|ing) the \\w+ (?:response|request|service|validator) (?:has|returns|marks|will)\\b)"
             // "Assuming the host returns ...": an assumption opening a comment; and the model talking to itself mid-answer
             // ("// Wait, ...", "// Let's check ...", "// But wait, I already wrote that line"), only where a comment starts
-            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b|(?:but |hmm,? )?wait\\s*[,.!:]"
+            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assuming (?:the )?(?:host|standard|default)\\b|(?:but |hmm,? )?wait\\s*[,.!:]"
             + "|let'?s check\\b|i already wrote\\b)");
+    /**
+     * The model talking to itself where a comment starts ("// Wait, ...", "// Let's check ...", "// I already wrote ...", "// The prompt
+     * says ..."): in a piece of a continued file this is where its code stops, so the piece is cut there. Other reasoning
+     * phrases only take their comment out.
+     */
+    private static final Pattern SELF_TALK = Pattern.compile("(?i)^(?:/[/*]+|\\*|<!--|--|#)?\\s*((?:but |hmm,? )?wait\\s*[,.!:]|let'?s check\\b"
+            + "|i already wrote\\b|the prompt (?:says|asks|wants|requires)\\b)");
     /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */
     private static final Pattern STUB = Pattern.compile("(?i)\\b(placeholder logic|simulated (?:host |api |backend )?(?:response|call|delay|data)\\b|"
             + "simulate (?:the )?(?:host|api|call|backend|response)\\b|in a real implementation|todo:?\\s*call|mock (?:response|data))");
@@ -53,7 +60,7 @@ public final class ModelReasoning {
     private ModelReasoning() {
     }
 
-    static List<LocalChecks.Finding> findings(String path, String original, String content) {
+    public static List<LocalChecks.Finding> findings(String path, String original, String content) {
         if (content == null) {
             return List.of();
         }
@@ -84,7 +91,7 @@ public final class ModelReasoning {
             if (syntax == SourceScan.Syntax.CODE && !bundle) {
                 // Sample names may be fine (a demo customer): a warning, and not in a placeholder or hint
                 List<SourceScan.Range> notHints = parts.strings().stream()
-                        .filter(r -> !HINT_BEFORE.matcher(content.substring(Math.max(0, content.lastIndexOf('\n', r.start()) + 1), r.start())).find())
+                        .filter(r -> !HINT_BEFORE.matcher(before(content, r.start())).find())
                         .toList();
                 search(content, notHints, SAMPLE_DATA, SAMPLE_RULE, PackRule.Severity.WARNING, SAMPLE_MESSAGE, lines, before, found);
             }
@@ -107,9 +114,19 @@ public final class ModelReasoning {
                 : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
                 : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : SourceScan.Syntax.CODE;
         List<LocalChecks.Finding> found = new ArrayList<>();
-        search(piece, SourceScan.scan(piece, syntax).comments(), PHRASE, RULE, PackRule.Severity.ERROR, REASONING, piece.split("\n", -1),
+        search(piece, SourceScan.scan(piece, syntax).comments(), SELF_TALK, RULE, PackRule.Severity.ERROR, REASONING, piece.split("\n", -1),
                 Set.of(), found);
         return found.stream().mapToInt(LocalChecks.Finding::line).min().orElse(0);
+    }
+
+    /** A comment longer than this many lines is not taken out (it may be code the scan misread). */
+    static final int MAX_REMOVED_LINES = 10;
+
+    /** At most 120 characters of the line before an offset: what a placeholder or hint label would be (bounded, so linear). */
+    private static String before(String content, int offset) {
+        String window = content.substring(Math.max(0, offset - 120), offset);
+        int newline = window.lastIndexOf('\n');
+        return newline < 0 ? window : window.substring(newline + 1);
     }
 
     /** A file with the comments that carry the model's reasoning taken out, and how many comments that was. */
@@ -137,6 +154,11 @@ public final class ModelReasoning {
         boolean[] removed = new boolean[content.length()];
         int count = 0;
         for (SourceScan.Range range : SourceScan.scan(content, syntax).comments()) {
+            // A comment that never closes (runs to the end of the file) or spans many lines may be code the scan misread: kept
+            if (range.end() >= content.length() && !content.startsWith("//", range.start()) && !content.startsWith("#", range.start())
+                    || content.substring(range.start(), range.end()).lines().count() > MAX_REMOVED_LINES) {
+                continue;
+            }
             Matcher p = PHRASE.matcher(content).region(range.start(), range.end());
             p.useAnchoringBounds(true);
             if (!p.find()) {

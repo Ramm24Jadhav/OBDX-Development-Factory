@@ -300,7 +300,9 @@
       <oj-bind-if test="[[!isAdmin()]]"><p class="factory-ov-subtle">Administrators only.</p></oj-bind-if>
       <oj-bind-if test="[[isAdmin()]]">
         <fx-textarea id="prompt" label="Prompt" value="{{prompt}}" rows="4"></fx-textarea>
-        <div class="factory-btn-row"><button type="button" id="sendButton" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[busy]]">Send</button></div>
+        <div class="factory-btn-row"><button type="button" id="sendButton" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[busy]]">Send</button>
+          <button type="button" id="forgetLimitsButton" class="fx-btn fx-btn--secondary" on-click="[[forgetLimits]]"
+                  title="Forget the token limits learned from the model's server; they are learned again from its answers">Forget learned limits</button></div>
       </oj-bind-if>
       <oj-bind-if test="[[reply()]]">
         <h3>Reply <span class="factory-ov-subtle">(<oj-bind-text value="[[reply().model]]"></oj-bind-text>, <oj-bind-text value="[[reply().latencyMs]]"></oj-bind-text> ms)</span></h3>

@@ -258,6 +258,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .finally(() => this.busy(false));
       };
 
+      // The token limits the factory learned from the model's server (a plan changed, or one was learned wrongly)
+      this.forgetLimits = () => {
+        api.post('model/limits/forget')
+          .then(() => toast.success('The learned limits are forgotten. They are learned again from the model server\'s answers.'))
+          .catch(actionError);
+      };
+
       // ---- Provider cards: known cloud providers and the servers found on this computer ----
       this.tab = ko.observable('providers');
       this.tabs = ui.tabs(this.tab, [

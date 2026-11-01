@@ -315,7 +315,7 @@ final class CrossFileJava {
      */
     static Optional<String> unknownSamePackageClasses(String content, java.util.function.Predicate<String> classExists) {
         CompilationUnit unit = parse(content);
-        if (unit == null || unit.getPackageDeclaration().isEmpty() || unit.getImports().stream().anyMatch(i -> !i.isStatic() && i.isAsterisk())
+        if (unit == null || unit.getPackageDeclaration().isEmpty() || unit.getImports().stream().anyMatch(i -> i.isAsterisk())
                 || unit.findAll(com.github.javaparser.ast.body.TypeDeclaration.class).stream().anyMatch(t -> inheritsFromOutsideTheJdk(unit, t))
                 || unit.findAll(com.github.javaparser.ast.expr.ObjectCreationExpr.class).stream()
                 .anyMatch(o -> o.getAnonymousClassBody().isPresent() && !jdkType(unit, o.getType()))) {
