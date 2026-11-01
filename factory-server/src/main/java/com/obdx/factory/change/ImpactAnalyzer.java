@@ -84,8 +84,10 @@ public class ImpactAnalyzer {
                     continue;
                 }
                 List<String> risks = new java.util.ArrayList<>(plan.risks());
-                risks.add(0, "The model's answer was cut off at its output limit, so files may be missing from this plan. "
-                        + "Add them before approving, or analyze again with a model that writes longer answers.");
+                int cap = modelGateway.outputLimit();
+                risks.add(0, "The model's answer was cut off at its output limit" + (cap > 0 ? " (its server writes at most " + cap
+                        + " tokens per answer)" : "") + ", so files may be missing from this plan. Add them before approving, or analyze "
+                        + "again with a model or plan with a higher output limit.");
                 return new ChangePlan(plan.summary(), plan.items(), risks);
             } catch (BadRequestException e) {
                 log.warn("Unusable change plan from the model (attempt {}): {}", attempt + 1, e.getMessage());

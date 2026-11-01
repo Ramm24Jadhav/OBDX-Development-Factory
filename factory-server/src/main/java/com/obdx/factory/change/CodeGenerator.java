@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -121,8 +122,7 @@ public class CodeGenerator {
             return check;
         }
         String cut = "The model stopped at its output limit, so the file is incomplete even after asking it to continue "
-                + MAX_CONTINUATIONS + " times. Lower FACTORY_MODEL_MAX_OUTPUT_TOKENS or use a plan with higher limits, then write it "
-                + "again, or finish it by hand.";
+                + continuations() + " times. Use a model or plan with a higher output limit, then write it again, or finish it by hand.";
         return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
 
@@ -237,8 +237,10 @@ public class CodeGenerator {
     }
 
     /**
-     * The files already written that this file most likely uses, at most 6: those its plan item names, those that share
-     * its name's stem (FundTransferService for FundTransferResource), then those in its folder. Java files are given as
+     * The files already written that this file most likely uses, within a character budget that shrinks with the
+     * prompt's scale: those its plan item names (in any language), those that share its name's stem (FundTransferService
+     * for FundTransferResource) or its package; for a screen's script, the REST resources it calls (their paths and
+     * method signatures); for a REST resource, the resource bundle keys of the change. Java files are given as
      * signatures (fields, method signatures, nested types, no bodies), others as their first lines; a model with a small
      * input limit then still sees every name it must use.
      */
@@ -247,15 +249,29 @@ public class CodeGenerator {
         String said = (nullToDash(item.purpose()) + " " + nullToDash(item.details())).toLowerCase(java.util.Locale.ROOT);
         String folder = item.path().contains("/") ? item.path().substring(0, item.path().lastIndexOf('/')) : "";
         boolean isJava = item.path().endsWith(".java");
+        boolean script = item.path().matches(".*\\.(js|ts|tsx|jsx)");
+        boolean resource = isJava && PlanReview.isResource(item.path());
         Map<String, Integer> score = new java.util.LinkedHashMap<>();
+        Map<String, String> outline = new java.util.LinkedHashMap<>();
         for (String path : earlier.keySet()) {
-            if (path.endsWith(".java") != isJava) {
+            String name = baseName(path);
+            boolean named = said.contains(name.toLowerCase(java.util.Locale.ROOT)) || said.contains(path.toLowerCase(java.util.Locale.ROOT));
+            boolean otherJava = path.endsWith(".java");
+            if (otherJava != isJava && !named) {
+                if (script && otherJava && PlanReview.isResource(path)) {
+                    // The services a screen calls: their exact paths and methods
+                    score.put(path, 2);
+                    outline.put(path, JavaOutline.rest(earlier.get(path)));
+                } else if (resource && bundle(path)) {
+                    // The labels and messages a resource may return, by key
+                    score.put(path, 2);
+                    outline.put(path, "Keys: " + String.join(", ", bundleKeys(earlier.get(path))));
+                }
                 continue;
             }
-            String name = baseName(path);
             int s = 0;
-            if (said.contains(name.toLowerCase(java.util.Locale.ROOT))) {
-                s += 3;
+            if (named) {
+                s += 5;
             }
             if (commonPrefix(self, name) >= Math.min(6, Math.min(self.length(), name.length()))) {
                 s += 2;
@@ -269,12 +285,39 @@ public class CodeGenerator {
             }
         }
         Map<String, String> related = new java.util.LinkedHashMap<>();
-        score.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(6).forEach(e -> {
+        int budget = PromptFit.size(12000, scale);
+        for (Map.Entry<String, Integer> e : score.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).toList()) {
+            if (budget <= 0) {
+                break;
+            }
             String content = earlier.get(e.getKey());
-            String outline = isJava ? JavaOutline.of(content) : head(content, Math.max(6, (int) (20 * scale)));
-            related.put(e.getKey(), ChangeContext.cap(outline, PromptFit.size(2500, scale)));
-        });
+            String text = outline.containsKey(e.getKey()) ? outline.get(e.getKey())
+                    : e.getKey().endsWith(".java") ? JavaOutline.of(content) : head(content, Math.max(6, (int) (20 * scale)));
+            String capped = ChangeContext.cap(text, Math.min(budget, PromptFit.size(2500, scale)));
+            related.put(e.getKey(), capped);
+            budget -= capped.length();
+        }
         return related;
+    }
+
+    /** A resource bundle: an nls file or a .properties file. */
+    private static boolean bundle(String path) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("/nls/") || lower.endsWith(".properties");
+    }
+
+    private static final Pattern BUNDLE_KEY = Pattern.compile("(?m)(?:^|[{,])\\s*[\"']?([A-Za-z_][\\w.-]*)[\"']?\\s*[:=]");
+
+    /** The keys a bundle defines (label: 'Amount', amount.label=Amount), at most 100. */
+    static List<String> bundleKeys(String content) {
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        Matcher m = BUNDLE_KEY.matcher(content == null ? "" : content);
+        while (m.find() && keys.size() < 100) {
+            if (!m.group(1).equals("root")) {
+                keys.add(m.group(1));
+            }
+        }
+        return List.copyOf(keys);
     }
 
     private static String baseName(String path) {
@@ -293,6 +336,13 @@ public class CodeGenerator {
     /** How many times a file cut off at the model's output limit is continued. */
     static final int MAX_CONTINUATIONS = 6;
 
+    /** On Ollama each continuation takes minutes on the factory's own hardware: fewer of them. */
+    static final int LOCAL_CONTINUATIONS = 2;
+
+    private int continuations() {
+        return modelGateway.local() ? LOCAL_CONTINUATIONS : MAX_CONTINUATIONS;
+    }
+
     /** A file as written, and whether it is still cut off at the model's output limit. */
     record Written(String content, boolean cutOff) {
     }
@@ -308,51 +358,100 @@ public class CodeGenerator {
         }
         String sofar = withoutFences(reply.reply());
         boolean cut = true;
-        for (int i = 0; cut && i < MAX_CONTINUATIONS; i++) {
+        boolean warned = false;
+        int continuations = continuations();
+        for (int i = 0; cut && i < continuations; i++) {
             String end = sofar.length() > 3000 ? sofar.substring(sofar.length() - 3000) : sofar;
             String more = "\n\nYour answer stopped at your output limit. It ended with:\n" + end + "\n\nContinue exactly where it stopped: "
-                    + "answer with only the rest of the file, starting with the next characters, repeating nothing, without code fences.";
+                    + "answer with only the rest of the file, starting with the next characters, repeating nothing, without code fences."
+                    + (warned ? " Do NOT start the file again: no package line, no imports, no class header; only what comes after the "
+                    + "last characters above." : "");
             ModelGateway.ChatResult next = PromptFit.chat(modelGateway, SYSTEM, scale -> prompt.apply(scale) + more);
             if (next.reply() == null || next.reply().isBlank()) {
                 break;
             }
-            sofar = stitch(sofar, next.reply());
+            String piece = withoutFences(next.reply());
+            if (restarts(sofar, piece)) {
+                if (compact(piece).startsWith(compact(sofar))) {
+                    // The whole file again and further: that is the file now
+                    sofar = piece;
+                    cut = next.cutOff();
+                    continue;
+                }
+                if (warned) {
+                    break;
+                }
+                // Started the file again: ask once more, more strictly, and keep what was written
+                warned = true;
+                continue;
+            }
+            sofar = stitch(sofar, piece);
             cut = next.cutOff();
         }
-        return new Written(clean(sofar), cut);
+        // The pieces are joined without their fences already; clean() would cut at a ``` inside the file (a template string)
+        return new Written(sofar.strip() + "\n", cut);
+    }
+
+    /** The least repeated text that counts as an overlap: shorter matches are chance. */
+    static final int MIN_OVERLAP = 20;
+
+    /**
+     * The file so far with a continuation joined on. The longest end of the file so far (at least 20 characters that are
+     * not spaces, at most 3000) that the continuation starts with is written once; otherwise the continuation is
+     * appended exactly as it came, so a closing brace or a line break the model wrote is never lost.
+     */
+    static String stitch(String sofar, String continuation) {
+        String b = continuation;
+        int max = Math.min(Math.min(sofar.length(), b.length()), 3000);
+        for (int k = max; k > 0; k--) {
+            if (sofar.regionMatches(sofar.length() - k, b, 0, k)) {
+                if (nonSpace(b, k) >= MIN_OVERLAP) {
+                    return sofar + b.substring(k);
+                }
+                break;
+            }
+        }
+        return sofar + b;
+    }
+
+    private static int nonSpace(String text, int end) {
+        int n = 0;
+        for (int i = 0; i < end; i++) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                n++;
+            }
+        }
+        return n;
     }
 
     /**
-     * The file so far with a continuation joined on: code fences around the continuation are dropped, and so is a line
-     * the model repeated (the cut-off line written again in full, or the last whole line once more).
+     * Whether a continuation starts the file again: it begins (spaces aside) with the file's own first 40 characters
+     * (its package line, imports, class header), or with all of a shorter file so far.
      */
-    static String stitch(String sofar, String continuation) {
-        String a = sofar;
-        String b = withoutFences(continuation);
-        int lastBreak = a.lastIndexOf('\n');
-        String partial = a.substring(lastBreak + 1);
-        String bStart = b.replaceFirst("^\\n+", "");
-        String firstLine = bStart.contains("\n") ? bStart.substring(0, bStart.indexOf('\n')) : bStart;
-        if (partial.strip().length() >= 3 && firstLine.strip().startsWith(partial.strip())) {
-            // The cut-off line written again from its start
-            return a.substring(0, lastBreak + 1) + bStart;
+    static boolean restarts(String sofar, String continuation) {
+        String a = compact(sofar);
+        String b = compact(continuation);
+        int shorter = Math.min(a.length(), b.length());
+        if (shorter < 20) {
+            return false;
         }
-        if (partial.isEmpty() && lastBreak > 0) {
-            String before = a.substring(0, lastBreak);
-            String lastLine = before.substring(before.lastIndexOf('\n') + 1);
-            if (!lastLine.isBlank() && lastLine.strip().equals(firstLine.strip())) {
-                return a + bStart.substring(firstLine.length()).replaceFirst("^\\n", "");
-            }
+        int same = 0;
+        while (same < shorter && same < 200 && a.charAt(same) == b.charAt(same)) {
+            same++;
         }
-        return a + b;
+        return same >= Math.min(40, shorter);
+    }
+
+    private static String compact(String text) {
+        return text.replaceAll("\\s+", "");
     }
 
     /** The text without a markdown fence line at its start and a closing fence at its end. */
     static String withoutFences(String text) {
         String t = text == null ? "" : text;
         int fence = t.indexOf("```");
-        // An opening fence, possibly after a short sentence ("Here is the file:")
-        if (fence >= 0 && fence < 300 && !t.substring(0, fence).contains("\n\n")) {
+        // An opening fence, possibly after up to two short lines of prose ("Continuing from where it stopped:")
+        if (fence >= 0 && fence < 400 && prose(t.substring(0, fence))) {
             int line = t.indexOf('\n', fence);
             t = line < 0 ? "" : t.substring(line + 1);
         }
@@ -361,6 +460,14 @@ public class CodeGenerator {
             t = trail.substring(0, trail.length() - 3);
         }
         return t;
+    }
+
+    /** Up to two short lines of prose (no code characters), blank lines allowed: what a model writes before a fence. */
+    static boolean prose(String text) {
+        List<String> lines = text.lines().filter(l -> !l.isBlank()).toList();
+        // A markdown heading is the file's own content (a .md file's first fence belongs to it)
+        return lines.size() <= 2 && lines.stream().allMatch(l -> l.length() <= 200 && !l.matches(".*[{};=<>()\\[\\]].*")
+                && !l.stripLeading().startsWith("#"));
     }
 
     /** Removes markdown fences and text around them if the model added them anyway. */

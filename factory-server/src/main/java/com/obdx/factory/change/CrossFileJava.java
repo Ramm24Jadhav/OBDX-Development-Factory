@@ -93,6 +93,14 @@ final class CrossFileJava {
         Set<String> variables = new java.util.HashSet<>();
         unit.findAll(VariableDeclarator.class).forEach(v -> variables.add(v.getNameAsString()));
         unit.findAll(Parameter.class).forEach(p -> variables.add(p.getNameAsString()));
+        // A simple name imported from another package than the written class's is another class: not checked against it
+        unit.getImports().stream().filter(i -> !i.isAsterisk() && !i.isStatic()).forEach(i -> {
+            String simple = i.getName().getIdentifier();
+            String pkg = i.getName().getQualifier().map(Object::toString).orElse("");
+            if (classes.containsKey(simple) && !pkg.equals(packageOf(classes.get(simple)))) {
+                variables.add(simple);
+            }
+        });
         for (MethodCallExpr call : unit.findAll(MethodCallExpr.class)) {
             String variable = call.getScope().map(s -> s instanceof NameExpr n ? n.getNameAsString()
                     : s instanceof FieldAccessExpr f && f.getScope().isThisExpr() ? f.getNameAsString() : null).orElse(null);
@@ -138,7 +146,8 @@ final class CrossFileJava {
         };
         for (com.github.javaparser.ast.type.ClassOrInterfaceType type : unit.findAll(com.github.javaparser.ast.type.ClassOrInterfaceType.class)) {
             type.getScope().ifPresent(scope -> {
-                if (scope.getScope().isEmpty() && classes.containsKey(scope.getNameAsString())) {
+                if (scope.getScope().isEmpty() && classes.containsKey(scope.getNameAsString())
+                        && !variables.contains(scope.getNameAsString())) {
                     check.accept(scope.getNameAsString(), type.getNameAsString());
                 }
             });
@@ -159,8 +168,11 @@ final class CrossFileJava {
     /** The nested types, fields and enum constants a class declares; null when it does not parse or inherits some. */
     private static Set<String> members(String content) {
         CompilationUnit unit = parse(content);
+        // Members inherited from a superclass or an interface (records and enums implement them too) are not known here
         if (unit == null || unit.getTypes().isEmpty() || !unit.findAll(com.github.javaparser.ast.body.ClassOrInterfaceDeclaration.class).stream()
-                .allMatch(c -> c.getExtendedTypes().isEmpty() && c.getImplementedTypes().isEmpty())) {
+                .allMatch(c -> c.getExtendedTypes().isEmpty() && c.getImplementedTypes().isEmpty())
+                || unit.findAll(com.github.javaparser.ast.body.RecordDeclaration.class).stream().anyMatch(r -> !r.getImplementedTypes().isEmpty())
+                || unit.findAll(com.github.javaparser.ast.body.EnumDeclaration.class).stream().anyMatch(e -> !e.getImplementedTypes().isEmpty())) {
             return null;
         }
         Set<String> names = new java.util.HashSet<>();
@@ -216,6 +228,11 @@ final class CrossFileJava {
         ParseResult<CompilationUnit> result = new JavaParser(new ParserConfiguration()
                 .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21)).parse(content);
         return result.isSuccessful() ? result.getResult().orElse(null) : null;
+    }
+
+    private static String packageOf(String content) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^\\s*package\\s+([\\w.]+)\\s*;").matcher(content == null ? "" : content);
+        return m.find() ? m.group(1) : "";
     }
 
     /** The class name of a Java file (FundTransferService.java -> FundTransferService). */

@@ -77,7 +77,7 @@ class RealModelOutputTest {
 
         // com.bank.obdx.common has no file at all: without the bank's root it was taken for a library
         assertThat(ChangeService.unresolvedImports(service, classes::contains, folder -> false)).isEmpty();
-        assertThat(ChangeService.unresolvedImports(service, classes::contains, folder -> false, "com.bank.obdx"))
+        assertThat(ChangeService.unresolvedImports(service, classes::contains, folder -> false, "com.bank.obdx", folder -> true))
                 .containsExactly("com.bank.obdx.common.HostIntegrationException");
     }
 

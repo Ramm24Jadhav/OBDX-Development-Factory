@@ -60,6 +60,34 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         volatile int output;
     }
 
+    /** The limits learned before for this server and model (they survive restarts), or none. */
+    private Limits loadLimits(String baseUrl, String model) {
+        Limits limits = new Limits();
+        if (store != null) {
+            try {
+                store.find(baseUrl, model).ifPresent(s -> {
+                    limits.input = s.input();
+                    limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
+                    limits.output = s.output();
+                });
+            } catch (RuntimeException e) {
+                log.warn("Could not read the learned limits of chat model '{}'", model, e);
+            }
+        }
+        return limits;
+    }
+
+    private void saveLimits(Connection current) {
+        if (store != null) {
+            try {
+                store.save(current.baseUrl(), current.chatModelName(), new ModelLimitsStore.Stored(current.limits().input,
+                        current.limits().charsPerToken, current.limits().output));
+            } catch (RuntimeException e) {
+                log.warn("Could not keep the learned limits of chat model '{}'", current.chatModelName(), e);
+            }
+        }
+    }
+
     /** "output tokens per minute (OTPM): Limit 1000, Requested 1407" (or with "Used 600, " between) */
     private static final Pattern OUTPUT_LIMIT = Pattern.compile("(?i)limit:?\\s*(\\d+),\\s*(?:used:?\\s*\\d+,\\s*)?requested:?\\s*(\\d+)");
     /** The fewest output tokens worth asking for; a server that allows less cannot write files. */
@@ -92,6 +120,14 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         return null;
     }
 
+    /**
+     * A lower cap after the server refused the current one: it counted requested tokens for the cap's answers, so the cap
+     * shrinks by limit/requested, with the same 90% margin.
+     */
+    static int lowerCap(int cap, int limit, int requested) {
+        return (int) (cap * ((double) limit / requested) * 0.9);
+    }
+
     /** The max_tokens to ask for below a per-minute output limit: 90% of it, room for the server counting differently. */
     static int outputCap(int limit) {
         return (int) (limit * 0.9);
@@ -113,20 +149,29 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private final Integer maxOutput;
     private final OllamaChat ollama;
     private volatile Connection connection;
+    /** Where learned limits are kept over restarts; null in tests without a database */
+    private final ModelLimitsStore store;
 
     @Autowired
-    public OpenAiCompatibleModelGateway(ModelProperties properties, ModelSettings settings) {
+    public OpenAiCompatibleModelGateway(ModelProperties properties, ModelSettings settings, ModelLimitsStore store) {
         this.timeout = properties.timeout();
         this.maxOutput = properties.maxOutput() > 0 ? properties.maxOutput() : null;
         this.ollama = new OllamaChat(properties.maxContext());
+        this.store = store;
         this.connection = connect(settings.current());
     }
 
     /** With the FACTORY_MODEL_* settings only (tests). */
     public OpenAiCompatibleModelGateway(ModelProperties properties) {
+        this(properties, (ModelLimitsStore) null);
+    }
+
+    /** With the FACTORY_MODEL_* settings and a store for learned limits (tests). */
+    OpenAiCompatibleModelGateway(ModelProperties properties, ModelLimitsStore store) {
         this.timeout = properties.timeout();
         this.maxOutput = properties.maxOutput() > 0 ? properties.maxOutput() : null;
         this.ollama = new OllamaChat(properties.maxContext());
+        this.store = store;
         this.connection = connect(new ModelSettings.Current(properties.baseUrl(), properties.apiKey(), properties.chatModel(),
                 properties.embeddingModel(), null, null, false, null, null));
     }
@@ -134,7 +179,18 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     @EventListener
     public void settingsChanged(ModelSettings.Changed event) {
         ollama.forget();
-        this.connection = connect(event.settings());
+        Connection old = connection;
+        ModelSettings.Current next = event.settings();
+        if (store != null && old != null && (!java.util.Objects.equals(old.baseUrl(), next.baseUrl())
+                || !java.util.Objects.equals(old.chatModelName(), next.chatModel()))) {
+            // Another server or model: what the old one showed is no longer known to hold (a new plan may have come with it)
+            try {
+                store.clear(old.baseUrl(), old.chatModelName());
+            } catch (RuntimeException e) {
+                log.warn("Could not clear the learned limits of chat model '{}'", old.chatModelName(), e);
+            }
+        }
+        this.connection = connect(next);
     }
 
     private Connection connect(ModelSettings.Current settings) {
@@ -161,7 +217,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .timeout(timeout)
                         .maxRetries(0)
                         .build(),
-                new java.util.concurrent.atomic.AtomicBoolean(true), new Limits());
+                new java.util.concurrent.atomic.AtomicBoolean(true), loadLimits(settings.baseUrl(), settings.chatModel()));
     }
 
     @Override
@@ -172,6 +228,16 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     @Override
     public int inputLimit() {
         return connection.limits().input;
+    }
+
+    @Override
+    public int outputLimit() {
+        return connection.limits().output;
+    }
+
+    @Override
+    public boolean local() {
+        return ollama.isOllama(connection.baseUrl());
     }
 
     @Override
@@ -192,7 +258,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     private ChatResult limited(String systemPrompt, String userPrompt, java.util.function.Supplier<ChatResult> call,
                                java.util.function.BooleanSupplier canRetry) {
         Connection current = connection;
+        int lowered = 0;
         for (int attempt = 1; ; attempt++) {
+            // The call uses the connection of the moment: limits learned below go to the same one
+            current = connection;
             try {
                 return call.get();
             } catch (ModelGatewayException e) {
@@ -203,24 +272,32 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     int input = inputLimit(text, tooLarge[0], maxOutput);
                     current.limits().input = current.limits().input == 0 ? input : Math.min(current.limits().input, input);
                     current.limits().charsPerToken = Math.clamp((double) chars / tooLarge[1], 2.0, 6.0);
+                    saveLimits(current);
                     throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
                 }
                 int[] output = outputTooLarge(text);
                 if (output != null && canRetry.getAsBoolean()) {
-                    int cap = outputCap(output[0]);
-                    if (cap < MIN_OUTPUT) {
+                    int known = current.limits().output;
+                    // Refused while already at the cap: the server counts more than asked; lower it by what it reported
+                    int cap = known > 0 ? Math.min(lowerCap(known, output[0], output[1]), outputCap(output[0])) : outputCap(output[0]);
+                    if (cap < MIN_OUTPUT || lowered >= 3) {
                         throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " writes at most "
-                                + output[0] + " tokens a minute, too few for an answer. Use a plan or model with higher limits.", e);
+                                + output[0] + " tokens a minute, too few for an answer. Use a model or plan with a higher output limit.", e);
                     }
-                    if (current.limits().output == 0 || cap < current.limits().output) {
+                    if (known == 0 || cap < known) {
                         // One answer may not ask for more than the server writes in a minute: ask again at once, for less;
                         // a file cut off at that size is continued by the caller (CodeGenerator)
                         current.limits().output = cap;
+                        lowered++;
+                        saveLimits(current);
                         log.info("Chat model '{}' writes at most {} tokens a minute; answers now ask for at most {}", current.chatModelName(),
                                 output[0], cap);
                         continue;
                     }
+                    // Waiting would not help either: the request alone is over the limit
+                    throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " refuses answers of "
+                            + cap + " tokens with a limit of " + output[0] + " a minute. Use a model or plan with a higher output limit.", e);
                 }
                 Duration wait = rateLimitWait(text);
                 if (wait == null || !canRetry.getAsBoolean()) {
@@ -542,8 +619,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     private static void warnCutOff(Connection current, String reply) {
-        log.warn("Chat model '{}' stopped at its output limit after {} characters; the answer is incomplete",
-                current.chatModelName(), reply == null ? 0 : reply.length());
+        int cap = current.limits().output;
+        log.warn("Chat model '{}' stopped at its output limit after {} characters{}; the answer is incomplete", current.chatModelName(),
+                reply == null ? 0 : reply.length(), cap > 0 ? " (its server writes at most " + cap + " tokens per answer, learned from "
+                        + "its refusal; use a model or plan with a higher output limit)" : "");
     }
 
     private ModelGatewayException chatFailure(Connection current, RuntimeException e) {

@@ -21,17 +21,24 @@ final class ModelReasoning {
 
     static final String STUB_RULE = "no-stub-code";
 
+    static final String SAMPLE_RULE = "no-sample-data";
+
+    /** At most this many findings of one rule; each rule keeps its own, so many of one do not hide another. */
+    static final int MAX_PER_RULE = 3;
+
     private static final Pattern PHRASE = Pattern.compile("(?i)\\b(let'?s assume|let us assume|the prompt (?:says|asks|wants|requires)|"
-            + "as an ai\\b|as an ai language model|as per (?:the )?(?:prompt|instructions?)|in this response|the user (?:wants|asked)|"
+            + "as an ai\\b|as an ai language model|as per (?:the|your) (?:prompt|instructions)\\b|in this response|the user (?:wants|asked)|"
             + "as you requested|here is the (?:complete|updated|corrected) (?:file|code)|for this exercise|in this isolated artifact|"
-            + "not defined in (?:the )?prompt|in the provided list|we model the behaviou?r|since we don'?t have)"
+            + "not defined in (?:the )?prompt|we model the behaviou?r|since we don'?t have)"
             // "Assuming the host returns ...": an assumption opening a comment
-            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default|service|api|backend|response|caller|that))");
+            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b)");
     /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */
-    private static final Pattern STUB = Pattern.compile("(?i)\\b(placeholder logic|simulated?\\b|in a real implementation|todo:?\\s*call|"
-            + "mock (?:response|data))");
-    /** Sample people in a returned string: "JOHN SMITH", "Jane Doe" */
+    private static final Pattern STUB = Pattern.compile("(?i)\\b(placeholder logic|simulated (?:host |api |backend )?(?:response|call|delay|data)\\b|"
+            + "simulate (?:the )?(?:host|api|call|backend|response)\\b|in a real implementation|todo:?\\s*call|mock (?:response|data))");
+    /** Sample people in a string: "JOHN SMITH", "Jane Doe" */
     private static final Pattern SAMPLE_DATA = Pattern.compile("(?i)\\b((?:john|jane) (?:smith|doe)|lorem ipsum)\\b");
+    /** A placeholder or hint shows sample text on purpose: placeholder: 'John Smith', hint-text="..." */
+    private static final Pattern HINT_BEFORE = Pattern.compile("(?i)(placeholder|hint|example|sample|helptext|help-text)[\\w-]*\\s*[:=]\\s*\\(?\\s*$");
     private static final Pattern IN_STRINGS = Pattern.compile("(?i)\\b(the prompt (?:says|asks|wants)|as an ai\\b|let'?s assume|as per the prompt)");
 
     private ModelReasoning() {
@@ -57,20 +64,30 @@ final class ModelReasoning {
         List<LocalChecks.Finding> found = new ArrayList<>();
         SourceScan.Parts parts = SourceScan.scan(content, syntax);
         // Comments outside strings ("http://x" or "a // b" in a string is no comment), and for code its strings
-        search(content, parts.comments(), PHRASE, RULE, REASONING, lines, before, found);
+        search(content, parts.comments(), PHRASE, RULE, PackRule.Severity.ERROR, REASONING, lines, before, found);
         if (syntax == SourceScan.Syntax.CODE) {
-            search(content, parts.strings(), IN_STRINGS, RULE, REASONING, lines, before, found);
+            search(content, parts.strings(), IN_STRINGS, RULE, PackRule.Severity.ERROR, REASONING, lines, before, found);
         }
-        // Stubs fail the bank's code; a test may mock and simulate
-        boolean test = lower.matches(".*/(tests?|__tests__)/.*") || path.matches(".*(Test|Tests|IT)\\.java")
-                || lower.matches(".*\\.(spec|test)\\.(js|ts|jsx|tsx)");
-        if (!test) {
-            search(content, parts.comments(), STUB, STUB_RULE, STUB_MESSAGE, lines, before, found);
-            if (syntax == SourceScan.Syntax.CODE) {
-                search(content, parts.strings(), SAMPLE_DATA, STUB_RULE, STUB_MESSAGE, lines, before, found);
+        // Stubs fail the bank's code; a test, a mock or a story may mock and simulate
+        if (!testCode(path)) {
+            search(content, parts.comments(), STUB, STUB_RULE, PackRule.Severity.ERROR, STUB_MESSAGE, lines, before, found);
+            boolean bundle = lower.contains("/nls/") || lower.contains("/resources/") && lower.endsWith(".js");
+            if (syntax == SourceScan.Syntax.CODE && !bundle) {
+                // Sample names may be fine (a demo customer): a warning, and not in a placeholder or hint
+                List<SourceScan.Range> notHints = parts.strings().stream()
+                        .filter(r -> !HINT_BEFORE.matcher(content.substring(Math.max(0, content.lastIndexOf('\n', r.start()) + 1), r.start())).find())
+                        .toList();
+                search(content, notHints, SAMPLE_DATA, SAMPLE_RULE, PackRule.Severity.WARNING, SAMPLE_MESSAGE, lines, before, found);
             }
         }
-        return found.size() > 3 ? found.subList(0, 3) : found;
+        return found;
+    }
+
+    /** Tests, mocks and stories, where simulated data belongs. */
+    static boolean testCode(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        return lower.matches(".*/(tests?|__tests__|__mocks__|mocks)/.*") || lower.startsWith("mocks/") || lower.startsWith("test/")
+                || path.matches(".*(Test|Tests|IT)\\.java") || lower.matches(".*\\.(spec|test|stories)\\.(js|ts|jsx|tsx|mjs)");
     }
 
     private static final String REASONING = "The model's own reasoning (\"%s\") is left in the file. Write code and comments only, as a "
@@ -78,9 +95,15 @@ final class ModelReasoning {
     private static final String STUB_MESSAGE = "Stub code (\"%s\"): placeholder, simulated or sample data instead of the real call. Call "
             + "the service or host the way the codebase does.";
 
-    private static void search(String content, List<SourceScan.Range> ranges, Pattern phrase, String rule, String message, String[] lines,
-                               Set<String> before, List<LocalChecks.Finding> found) {
+    private static final String SAMPLE_MESSAGE = "Sample data (\"%s\") in the code: take the value from the service, or say why it "
+            + "is fixed.";
+
+    private static void search(String content, List<SourceScan.Range> ranges, Pattern phrase, String rule, PackRule.Severity severity,
+                               String message, String[] lines, Set<String> before, List<LocalChecks.Finding> found) {
         for (SourceScan.Range range : ranges) {
+            if (found.stream().filter(f -> f.ruleId().equals(rule)).count() >= MAX_PER_RULE) {
+                return;
+            }
             Matcher p = phrase.matcher(content).region(range.start(), range.end());
             p.useAnchoringBounds(true);
             if (p.find()) {
@@ -89,8 +112,8 @@ final class ModelReasoning {
                     continue;
                 }
                 String said = p.group(1) != null ? p.group(1) : p.groupCount() > 1 && p.group(2) != null ? p.group(2) : p.group();
-                if (found.stream().noneMatch(f -> f.line() == line)) {
-                    found.add(new LocalChecks.Finding(rule, PackRule.Severity.ERROR, line, message.formatted(said)));
+                if (found.stream().noneMatch(f -> f.line() == line && f.ruleId().equals(rule))) {
+                    found.add(new LocalChecks.Finding(rule, severity, line, message.formatted(said)));
                 }
             }
         }

@@ -80,7 +80,23 @@ public final class SpecMerger {
         String name = api.name() == null ? "" : api.name();
         java.util.regex.Matcher m = METHOD.matcher(name);
         String method = api.method() != null && !api.method().isBlank() ? api.method() : m.find() ? m.group(1) : "";
-        return method.strip().toUpperCase(Locale.ROOT) + " " + METHOD.matcher(name).replaceFirst("");
+        // The path, from the name or else the description ("Validate beneficiary" described as POST /payments/...)
+        String path = pathOf(name);
+        if (path == null) {
+            path = pathOf(api.description());
+        }
+        return method.strip().toUpperCase(Locale.ROOT) + " " + (path != null ? path : METHOD.matcher(name).replaceFirst(""));
+    }
+
+    private static final java.util.regex.Pattern PATH = java.util.regex.Pattern.compile("(?<![\\w/])/[A-Za-z{][\\w{}.-]*(?:/[\\w{}.-]+){0,15}");
+
+    /** The first REST path in a text (/payments/beneficiaries/{id}), without trailing punctuation; null when there is none. */
+    static String pathOf(String text) {
+        if (text == null) {
+            return null;
+        }
+        java.util.regex.Matcher m = PATH.matcher(text.length() > 300 ? text.substring(0, 300) : text);
+        return m.find() ? m.group().replaceAll("[.,;:]+$", "") : null;
     }
 
     /** The open questions of all sections, once each: the same question in other words is one (the first kept). */

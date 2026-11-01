@@ -58,9 +58,10 @@ final class PlanReview {
         for (ChangePlan.Item item : plan.items()) {
             String name = item.path().substring(item.path().lastIndexOf('/') + 1).replaceAll("\\.java$", "");
             String folder = item.path().contains("/") ? item.path().substring(0, item.path().lastIndexOf('/')) : "";
+            // Same folder by whole path segments ("accounts" is no match for "subaccounts"); package-info.java is in every package
             List<String> others = existing.getOrDefault(name, List.of()).stream()
-                    .filter(p -> !(p.contains("/") ? p.substring(0, p.lastIndexOf('/')) : "").endsWith(folder)).toList();
-            if ("create".equals(item.action()) && item.path().endsWith(".java") && !others.isEmpty()) {
+                    .filter(p -> !sameFolder(p.contains("/") ? p.substring(0, p.lastIndexOf('/')) : "", folder)).toList();
+            if ("create".equals(item.action()) && item.path().endsWith(".java") && !name.equals("package-info") && !others.isEmpty()) {
                 risks.add(SAME_NAME + item.path() + " and " + String.join(", ", others) + ". Reuse the existing class, or give the new one "
                         + "a name of its own.");
             }
@@ -152,7 +153,15 @@ final class PlanReview {
 
     static boolean isResource(String path) {
         String lower = path.toLowerCase(Locale.ROOT);
-        return lower.endsWith(".java") && (lower.matches(".*(resource|controller|endpoint|restservice)\\.java") || lower.contains("/rest/"));
+        String name = lower.substring(lower.lastIndexOf('/') + 1);
+        // PaymentResource, PaymentRest, PaymentApi, PaymentRestApi, PaymentController(Impl), and anything in a rest folder
+        return lower.endsWith(".java") && (name.matches(".*(resource|endpoint|restservice|rest|api)\\.java") || name.contains("controller")
+                || lower.contains("/rest/"));
+    }
+
+    /** Whether two folders are the same, one ending with the other by whole path segments. */
+    static boolean sameFolder(String a, String b) {
+        return a.equals(b) || a.endsWith("/" + b) || b.endsWith("/" + a);
     }
 
     private static final Pattern PATH_ANNOTATION = Pattern.compile("@(?:(?:javax|jakarta)\\.ws\\.rs\\.)?Path\\s*\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"");

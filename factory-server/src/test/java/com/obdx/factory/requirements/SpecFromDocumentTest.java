@@ -31,6 +31,39 @@ class SpecFromDocumentTest {
     }
 
     @Test
+    void examplesExistingServicesAndOutOfScopeLinesNameNoApi() {
+        String document = """
+                # 8. Functional Requirements
+                FR-001: POST /payments/beneficiaries/validation validates the account.
+                FR-002: Reuse the existing GET /payments/beneficiaries list.
+                FR-003: Paths follow the bank's style, e.g. GET /payments/{id}.
+                # 4.2 Out of scope
+                DELETE /payments/beneficiaries/{id} is not part of this change.
+                # Appendix A - Examples
+                PUT /payments/beneficiaries/{id}
+                """;
+
+        assertThat(SpecGrounding.namedApis(document)).extracting(RequirementSpec.Api::name)
+                .containsExactly("POST /payments/beneficiaries/validation");
+    }
+
+    @Test
+    void anApiIsTheSameWhetherItsPathIsInItsNameOrDescription() {
+        RequirementSpec drafted = SpecParser.parse("""
+                {"title": "x", "apis": [{"name": "Validate beneficiary", "method": "POST",
+                  "description": "POST /payments/beneficiaries/validation checks the account"}]}
+                """, "x");
+        String document = "FR-001: POST /payments/beneficiaries/validation validates the beneficiary account.";
+
+        assertThat(SpecGrounding.apply(drafted, document).apis()).extracting(RequirementSpec.Api::name).containsExactly("Validate beneficiary");
+        assertThat(SpecMerger.apiKey(drafted.apis().getFirst())).isEqualTo("POST /payments/beneficiaries/validation");
+        // updating with answers adds no API the document names: one the analyst removed stays removed
+        RequirementSpec removed = SpecParser.parse("{\"title\": \"x\", \"screens\": [{\"name\": \"A\"}]}", "x");
+        assertThat(SpecGrounding.apply(removed, document, false).apis()).isEmpty();
+        assertThat(SpecGrounding.apply(removed, document, true).apis()).hasSize(1);
+    }
+
+    @Test
     void aBodyThatIsNoSpecIsRefusedAndAWrappedOneIsRead() {
         assertThatThrownBy(() -> SpecParser.parse("{\"spek\": {\"x\": 1}}", "x")).isInstanceOf(SpecParser.InvalidSpecException.class)
                 .hasMessage("The spec has none of its fields (title, requirements, screens…). Send the spec itself.");

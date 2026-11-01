@@ -438,14 +438,17 @@ public class ChangeService {
      * @param packageExists whether a package folder (com/bank/x) holds a file in the code or the change
      */
     static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists) {
-        return unresolvedImports(content, classExists, packageExists, null);
+        return unresolvedImports(content, classExists, packageExists, null, folder -> false);
     }
 
     /**
-     * @param bankRoot the bank's root package (the common prefix of the indexed code's packages, com.bank.obdx), or null:
-     *                 an import under it is checked even when its package folder has no file at all
+     * @param bankRoot       the bank's root package (the common prefix of the indexed code's packages, com.bank.obdx), or null
+     * @param missingCounts  for an import under the bank's root whose package folder has no file: whether that folder
+     *                       still belongs to the bank (the change creates it, or a sibling package is indexed), rather
+     *                       than to a library or generated code
      */
-    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists, String bankRoot) {
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists, String bankRoot,
+                                          Predicate<String> missingCounts) {
         if (content == null) {
             return List.of();
         }
@@ -469,7 +472,8 @@ public class ChangeService {
             String folder = String.join("/", java.util.Arrays.copyOfRange(parts, 0, cls));
             String name = folder.replace('/', '.') + "." + parts[cls];
             boolean bank = bankRoot != null && name.startsWith(bankRoot + ".");
-            if ((name.startsWith(own) || bank) && !classExists.test(folder + "/" + parts[cls] + ".java") && (packageExists.test(folder) || bank)) {
+            if ((name.startsWith(own) || bank) && !classExists.test(folder + "/" + parts[cls] + ".java")
+                    && (packageExists.test(folder) || (bank && missingCounts.test(folder)))) {
                 missing.add(name);
             }
         }
@@ -492,8 +496,49 @@ public class ChangeService {
         return found;
     }
 
+    /**
+     * Whether a package folder under the bank's root with no indexed file still belongs to the bank: the change creates
+     * files in it, or a sibling package (same parent) is indexed and the folder is not generated code (generated, gen,
+     * stub). Otherwise it is taken for a library's package, as before.
+     */
+    private boolean bankFolder(UUID workspaceId, String folder, List<String> planned) {
+        return bankFolder(folder, planned, parent -> Boolean.TRUE.equals(jdbc.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path LIKE ?))", Boolean.class,
+                workspaceId, "%/" + like(parent) + "/%/%", like(parent) + "/%/%")));
+    }
+
+    /** @param siblingIndexed whether a package below the parent folder is indexed */
+    static boolean bankFolder(String folder, List<String> planned, Predicate<String> siblingIndexed) {
+        if (planned.stream().anyMatch(p -> inFolder(p, folder))) {
+            return true;
+        }
+        String name = folder.substring(folder.lastIndexOf('/') + 1);
+        if (name.matches("(?i)generated|gen|stubs?") || !folder.contains("/")) {
+            return false;
+        }
+        return siblingIndexed.test(folder.substring(0, folder.lastIndexOf('/')));
+    }
+
+    private static String like(String text) {
+        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    /** The bank's root package by workspace, for the indexed revision it was read at. */
+    private final Map<UUID, Map.Entry<Long, String>> bankRoots = new java.util.concurrent.ConcurrentHashMap<>();
+
     /** The bank's root package from the indexed Java code's package lines, or null (see {@link #commonRoot}). */
     private String bankRoot(UUID workspaceId) {
+        Long revision = workspaces.findById(workspaceId).map(Workspace::getIndexedRevision).orElse(null);
+        Map.Entry<Long, String> cached = bankRoots.get(workspaceId);
+        if (cached != null && java.util.Objects.equals(cached.getKey(), revision)) {
+            return cached.getValue();
+        }
+        String root = readBankRoot(workspaceId);
+        bankRoots.put(workspaceId, new java.util.AbstractMap.SimpleImmutableEntry<>(revision, root));
+        return root;
+    }
+
+    private String readBankRoot(UUID workspaceId) {
         List<String> packages = jdbc.queryForList("SELECT DISTINCT substring(content from '(?n)^\\s*package\\s+([a-zA-Z_][a-zA-Z0-9_.]*)\\s*;') "
                 + "FROM code_chunk WHERE workspace_id = ? AND language = 'java' LIMIT 5000", String.class, workspaceId);
         return commonRoot(packages);
@@ -713,7 +758,7 @@ public class ChangeService {
             if (lower.endsWith(".java")) {
                 List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
                         || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
-                        || indexedFolder(workspaceId, folder), bankRoot);
+                        || indexedFolder(workspaceId, folder), bankRoot, folder -> bankFolder(workspaceId, folder, paths));
                 if (!missing.isEmpty()) {
                     problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
                             + ". Add them to the plan, or change the imports to classes that exist.");

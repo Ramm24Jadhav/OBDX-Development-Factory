@@ -59,6 +59,19 @@ public interface ModelGateway {
         return 0;
     }
 
+    /**
+     * The most output tokens one answer may ask for, learned when the chat model's server refused more (a per-minute
+     * output limit on a free tier); 0 while unknown.
+     */
+    default int outputLimit() {
+        return 0;
+    }
+
+    /** The chat model runs on Ollama, on the factory's own hardware: slow, so long work is kept short. */
+    default boolean local() {
+        return false;
+    }
+
     /** Characters per token as the chat model's server counted them in a refused request; an estimate until then. */
     default double charsPerToken() {
         return 3.5;

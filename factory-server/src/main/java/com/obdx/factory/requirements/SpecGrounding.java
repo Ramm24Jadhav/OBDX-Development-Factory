@@ -19,6 +19,14 @@ final class SpecGrounding {
     }
 
     static RequirementSpec apply(RequirementSpec spec, String documentText) {
+        return apply(spec, documentText, true);
+    }
+
+    /**
+     * @param addNamedApis add the APIs the document names that the spec lacks: when drafting, not when updating with
+     *                     answers (an API the analyst removed must not come back)
+     */
+    static RequirementSpec apply(RequirementSpec spec, String documentText, boolean addNamedApis) {
         String doc = words(documentText == null ? "" : documentText);
         if (doc.isBlank()) {
             return spec;
@@ -32,7 +40,7 @@ final class SpecGrounding {
         // And every "METHOD /path" the document names that the draft left out (a model drops some)
         java.util.Set<String> have = new java.util.HashSet<>();
         apis.forEach(a -> have.add(SpecMerger.normalize(SpecMerger.apiKey(a))));
-        for (RequirementSpec.Api named : namedApis(documentText)) {
+        for (RequirementSpec.Api named : addNamedApis ? namedApis(documentText) : List.<RequirementSpec.Api>of()) {
             if (have.add(SpecMerger.normalize(SpecMerger.apiKey(named)))) {
                 apis.add(named);
             }
@@ -112,8 +120,18 @@ final class SpecGrounding {
     static List<RequirementSpec.Api> namedApis(String documentText) {
         List<RequirementSpec.Api> apis = new ArrayList<>();
         String requirement = null;
+        boolean skipped = false;
         for (String line : (documentText == null ? "" : documentText).split("\n")) {
             String part = line.length() > 2000 ? line.substring(0, 2000) : line;
+            String lower = part.toLowerCase(Locale.ROOT);
+            if (part.startsWith("#")) {
+                // What is out of scope, assumed or only an example names no API of this change
+                skipped = lower.matches(".*\\b(out of scope|not in scope|exclusions?|assumptions?|examples?|appendix)\\b.*");
+                continue;
+            }
+            if (skipped || lower.matches(".*(\\be\\.g\\.|\\bfor example\\b|\\bexisting\\b|\\bout of scope\\b|\\bnot in scope\\b).*")) {
+                continue;
+            }
             java.util.regex.Matcher id = REQUIREMENT_ID.matcher(part);
             if (id.find()) {
                 requirement = id.group(1);

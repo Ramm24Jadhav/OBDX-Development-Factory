@@ -175,7 +175,8 @@ public class RequirementService {
         } catch (SpecParser.InvalidSpecException e) {
             throw new BadRequestException(e.getMessage());
         }
-        if (empty(edited) && !empty(currentSpec(requirement))) {
+        RequirementSpec current = currentSpec(requirement);
+        if (empty(edited) && current != null && !empty(current)) {
             // An edit that keeps only a title would throw the drafted spec away
             throw new BadRequestException("The edited spec has no screens, requirements, rules or APIs, but the current one has. "
                     + "Send the whole spec; to start again, draft it again with Retry.");
@@ -311,7 +312,8 @@ public class RequirementService {
             RequirementSpec result = linkRelatedCode(requirement.getWorkspaceId(),
                     withQuestions(refined, stillOpen, withDecisions.decisions()), previousCode);
             result = DocumentStructure.apply(result, DocumentStructure.read(requirement.getDocumentText()));
-            result = SpecGrounding.apply(result, requirement.getDocumentText());
+            // Not the APIs the document names: one the analyst removed must not come back with the answers
+            result = SpecGrounding.apply(result, requirement.getDocumentText(), false);
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
             requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left."
                     + noFieldsNote(result));
