@@ -29,7 +29,10 @@ class RealModelLeftoversTest {
                 "// No specific error code defined for Name Format in the provided list",
                 "// Using a general error message as per instruction \"never exception text\"",
                 "// For now, we assume the name format check is done by the host.",
-                "// Assuming the validation response has a way to mark the account as inactive.")) {
+                "// Assuming the validation response has a way to mark the account as inactive.",
+                // QA round 10: the model talking to itself in a continuation
+                "// Wait, the prompt says to continue from here.", "// Let's check the fields again.", "// WAIT. The prompt says",
+                "// But wait, I already wrote that line", "// I already wrote the validate method above.")) {
             String java = "package com.bank.si;\nclass A {\n    " + line + "\n    void a() {}\n}\n";
             assertThat(rules(ModelReasoning.findings("backend/src/com/bank/si/A.java", null, java))).as(line).containsExactly(ModelReasoning.RULE);
         }
@@ -92,6 +95,8 @@ class RealModelLeftoversTest {
                 "// Only codes in the provided list are accepted.", "// Returns null when no code is in the provided list.",
                 "/** The codes defined in the provided list, in order. */", "// Debit as per instruction: frequency of the plan", "// For now, the cache holds one day.",
                 "// The service will assume the default currency when none is given.",
+                "// Wait for the host to answer before showing the receipt.", "// Retry, then wait 5 seconds.",
+                "// Check the limit first; let's not call the host twice.",
                 "// Assuming the response has no items, show the empty state.")) {
             String java = "package com.bank.td;\nclass A {\n    " + line + "\n    void a() {}\n}\n";
             assertThat(ModelReasoning.findings("backend/src/com/bank/td/A.java", null, java)).as(line).isEmpty();

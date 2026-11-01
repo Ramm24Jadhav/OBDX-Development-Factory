@@ -252,8 +252,15 @@ public class ChangeBuildService {
             String note = heading + "\n" + entry.getValue().stream()
                     .map(e -> "- " + (e.line() > 0 ? "line " + e.line() + ": " : "") + e.message()).collect(Collectors.joining("\n"))
                     + "\nFix them and keep everything else unchanged.";
-            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
-                    changes.scaffold(context, file.path(), file.original()));
+            CodeGenerator.Result result;
+            try {
+                result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
+                        changes.scaffold(context, file.path(), file.original()));
+            } catch (CodeGenerator.JoinFailed e) {
+                // The fix came in pieces that did not join: the file is kept as it was
+                log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it was", file.path(), change.getId());
+                continue;
+            }
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),
                     file.edited(), result.check(), file.attempts() + result.attempts());
             fixed.add(file.path());

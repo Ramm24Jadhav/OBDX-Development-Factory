@@ -21,6 +21,9 @@ import java.time.Duration;
  *                         own limit. Larger needs more memory on the model server
  * @param maxOutput        the most tokens a model may write in one answer on an OpenAI-compatible server (max_tokens);
  *                         0 leaves it to the server, which may stop long answers early (Groq at 2,048)
+ * @param noThink          "true": ask the chat model not to think out loud before answering (/no_think in the system
+ *                         prompt, and reasoning_effort "none" where the server takes it); "false": do not ask; empty: ask
+ *                         models whose name contains "qwen3", which think out loud unless told not to
  */
 @ConfigurationProperties(prefix = "factory.model")
 public record ModelProperties(
@@ -32,5 +35,14 @@ public record ModelProperties(
         String embeddingBaseUrl,
         String embeddingApiKey,
         @DefaultValue("16384") int maxContext,
-        @DefaultValue("0") int maxOutput) {
+        @DefaultValue("0") int maxOutput,
+        String noThink) {
+
+    /** Whether to ask this chat model not to think out loud (see noThink). */
+    public boolean noThinkFor(String chatModel) {
+        if (noThink != null && !noThink.isBlank()) {
+            return Boolean.parseBoolean(noThink.strip());
+        }
+        return chatModel != null && chatModel.toLowerCase(java.util.Locale.ROOT).contains("qwen3");
+    }
 }

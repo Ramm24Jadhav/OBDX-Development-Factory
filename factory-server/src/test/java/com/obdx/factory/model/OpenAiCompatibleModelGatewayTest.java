@@ -26,6 +26,21 @@ class OpenAiCompatibleModelGatewayTest {
     private final AtomicReference<String> lastChatRequest = new AtomicReference<>();
     private final java.util.concurrent.atomic.AtomicInteger limitedCalls = new java.util.concurrent.atomic.AtomicInteger();
     private final List<Integer> otpmAsked = java.util.Collections.synchronizedList(new ArrayList<>());
+    private final List<String> thinkRequests = java.util.Collections.synchronizedList(new ArrayList<>());
+
+    /** What the gateway logs while run runs. */
+    private static List<String> logged(Runnable run) {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(OpenAiCompatibleModelGateway.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender = new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            run.run();
+        } finally {
+            logger.detachAppender(appender);
+        }
+        return appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+    }
 
     @BeforeEach
     void startStubServer() throws IOException {
@@ -218,6 +233,24 @@ class OpenAiCompatibleModelGatewayTest {
                      "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
                     """);
         });
+        // A qwen3 model that thinks out loud; /strict refuses reasoning_effort as an unknown parameter
+        for (String variant : List.of("/think", "/strict")) {
+            server.createContext(variant + "/v1/chat/completions", exchange -> {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                thinkRequests.add(body);
+                if (variant.equals("/strict") && body.contains("reasoning_effort")) {
+                    respond(exchange, 400, """
+                            {"error": {"message": "Unrecognized request argument supplied: reasoning_effort", "type": "invalid_request_error"}}
+                            """);
+                    return;
+                }
+                respond(exchange, 200, """
+                        {"id": "chatcmpl-9", "object": "chat.completion", "created": 1, "model": "qwen3-32b",
+                         "choices": [{"index": 0, "finish_reason": "stop",
+                                      "message": {"role": "assistant", "content": "<think>The user wants a class.</think>\\npublic class A {}"}}]}
+                        """);
+            });
+        }
         // A rolling daily limit that frees up in a moment: waited out like a per-minute one
         server.createContext("/dailyshort/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -371,8 +404,50 @@ class OpenAiCompatibleModelGatewayTest {
     void waitsOutARateLimitAndAsksAgain() {
         ModelGateway gateway = gatewayFor("/limited/v1");
 
-        assertThat(gateway.chat("Answer in JSON.", "Plan the change").reply()).isEqualTo("{\"ok\": true}");
+        List<String> log = logged(() -> assertThat(gateway.chat("Answer in JSON.", "Plan the change").reply()).isEqualTo("{\"ok\": true}"));
         assertThat(limitedCalls.get()).isEqualTo(2);
+        // QA reads why a call waited, and how long
+        assertThat(log).anyMatch(line -> line.startsWith("Chat model 'qwen2.5-coder:7b' is at its rate limit (") && line.contains("waiting"));
+    }
+
+    @Test
+    void aQwen3ModelIsAskedNotToThinkAndItsThinkingIsLeftOut() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/think/v1";
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen/qwen3-32b", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 0, null));
+
+        assertThat(gateway.chat("Write code.", "A class").reply()).isEqualTo("public class A {}");
+        assertThat(thinkRequests.getLast()).contains("Write code.\\n\\n/no_think").containsPattern("\"reasoning_effort\"\\s*:\\s*\"none\"");
+
+        // another model is not asked, unless FACTORY_MODEL_NO_THINK says so
+        thinkRequests.clear();
+        new OpenAiCompatibleModelGateway(new ModelProperties(baseUrl, "test-key", "llama-3.3-70b", "nomic-embed-text", Duration.ofSeconds(5),
+                null, null, 16384, 0, null)).chat("Write code.", "A class");
+        assertThat(thinkRequests.getLast()).doesNotContain("/no_think").doesNotContain("reasoning_effort");
+        assertThat(new ModelProperties(baseUrl, "k", "llama-3.3-70b", "e", Duration.ofSeconds(5), null, null, 16384, 0, "true")
+                .noThinkFor("llama-3.3-70b")).isTrue();
+        assertThat(new ModelProperties(baseUrl, "k", "qwen3:8b", "e", Duration.ofSeconds(5), null, null, 16384, 0, "false")
+                .noThinkFor("qwen3:8b")).isFalse();
+
+        assertThat(OpenAiCompatibleModelGateway.withoutThinking("<think>a\nb</think>\n\nx")).isEqualTo("x");
+        // cut off while still thinking: no answer
+        assertThat(OpenAiCompatibleModelGateway.withoutThinking("<think>a long thought")).isEmpty();
+    }
+
+    @Test
+    void aServerThatRefusesReasoningEffortIsAskedWithoutIt() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/strict/v1";
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(
+                new ModelProperties(baseUrl, "test-key", "qwen3-coder", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 0, null));
+
+        assertThat(gateway.chat("Write code.", "A class").reply()).isEqualTo("public class A {}");
+        assertThat(thinkRequests).hasSize(2);
+        assertThat(thinkRequests.getLast()).doesNotContain("reasoning_effort").contains("/no_think");
+
+        // remembered: not sent again
+        gateway.chat("Write code.", "Another class");
+        assertThat(thinkRequests).hasSize(3);
+        assertThat(thinkRequests.getLast()).doesNotContain("reasoning_effort");
     }
 
     @Test
@@ -495,7 +570,7 @@ class OpenAiCompatibleModelGatewayTest {
     void anAnswerLargerThanTheOutputPerMinuteAsksAgainAtOnceForLess() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/otpm/v1";
         ModelGateway gateway = new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192));
+                new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null));
         long start = System.nanoTime();
 
         ModelGateway.ChatResult first = gateway.chat("Write the file.", "RemarksValidator.java");
@@ -544,7 +619,7 @@ class OpenAiCompatibleModelGatewayTest {
     @Test
     void refusedAtTheCapItLowersItAgainAndKeepsItOverARestart() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/otpm2/v1";
-        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null);
         MemoryLimits store = new MemoryLimits();
         long start = System.nanoTime();
 
@@ -557,7 +632,11 @@ class OpenAiCompatibleModelGatewayTest {
 
         // after a restart the learned cap is used from the first request
         otpmAsked.clear();
-        OpenAiCompatibleModelGateway restarted = new OpenAiCompatibleModelGateway(properties, store);
+        OpenAiCompatibleModelGateway[] holder = new OpenAiCompatibleModelGateway[1];
+        // said once, when the connection is made: where a max_tokens that no answer taught this run comes from
+        assertThat(logged(() -> holder[0] = new OpenAiCompatibleModelGateway(properties, store)))
+                .contains("Using stored limits for qwen: input 0, output 562, total 0");
+        OpenAiCompatibleModelGateway restarted = holder[0];
         assertThat(restarted.outputLimit()).isEqualTo(562);
         restarted.chat("Write the file.", "B.java");
         assertThat(otpmAsked).containsExactly(562);
@@ -572,7 +651,7 @@ class OpenAiCompatibleModelGatewayTest {
     @Test
     void aTokensPerMinuteLimitCountsMaxTokensSoThePromptAndAnswerAreSizedToFitIt() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/tpm/v1";
-        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null);
         OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, new MemoryLimits());
 
         // 20,000 characters (5000 tokens) + max_tokens 8192 = 13192: refused; the prompt's share is 5000 tokens, not 13192
@@ -591,7 +670,7 @@ class OpenAiCompatibleModelGatewayTest {
     @Test
     void theTokensAMinuteInTheResponseHeadersSizeMaxTokensBeforeAnyRefusal() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/headers/v1";
-        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192, null);
         MemoryLimits store = new MemoryLimits();
         ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(OpenAiCompatibleModelGateway.class);
         ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> logged = new ch.qos.logback.core.read.ListAppender<>();
@@ -616,7 +695,7 @@ class OpenAiCompatibleModelGatewayTest {
     void aStreamThatEndsWithoutAFinishReasonAtMaxTokensIsCutOff() {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/headers/v1";
         // max_tokens 600: 2000 characters are about 571 tokens, 95% of 600
-        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 600);
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 600, null);
         OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, new MemoryLimits());
 
         assertThat(gateway.chatStream(null, "Write the file.", piece -> { }).cutOff()).isTrue();
@@ -648,7 +727,7 @@ class OpenAiCompatibleModelGatewayTest {
     private ModelGateway gatewayFor(String path, Duration timeout) {
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + path;
         return new OpenAiCompatibleModelGateway(
-                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384, 0));
+                new ModelProperties(baseUrl, "test-key", "qwen2.5-coder:7b", "nomic-embed-text", timeout, null, null, 16384, 0, null));
     }
 
     private static void ndjson(com.sun.net.httpserver.HttpExchange exchange, String lines) throws IOException {

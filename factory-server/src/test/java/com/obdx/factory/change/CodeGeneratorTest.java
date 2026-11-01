@@ -185,7 +185,7 @@ class CodeGeneratorTest {
                     + "    private String field;\n".repeat(200) + "}\n");
         }
         replies.add("CUT:" + longStart);
-        replies.add("}\n");
+        replies.add("    private String field;\n}\n");
 
         generatorWith(limited(0)).generate(context, plan, item, null, Map.of(), earlier, null);
 
@@ -197,7 +197,7 @@ class CodeGeneratorTest {
         int full = prompts.get(0).length();
         prompts.clear();
         replies.add("CUT:" + longStart);
-        replies.add("}\n");
+        replies.add("    private String field;\n}\n");
         int limit = (int) (full * 0.7 / 3.5);
         generatorWith(limited(limit)).generate(context, plan, item, null, Map.of(), earlier, null);
         double room = limit * 0.9 * 3.5;
@@ -218,19 +218,21 @@ class CodeGeneratorTest {
 
         // Continue: no new first piece; the model is asked at once to go on from the kept part
         prompts.clear();
-        replies.add("    }\n}\n");
+        replies.add("    void check(String remarks) {\n    }\n}\n");
         CodeGenerator.Result result = onGroq.generate(context, plan, item, null, null, Map.of(), Map.of(), null, null, stopped.content());
 
         assertThat(prompts).hasSize(1);
-        assertThat(prompts.getFirst()).contains("It ended with:\npublic class RemarksValidator {");
+        assertThat(prompts.getFirst()).contains("The file so far ends with:\npublic class RemarksValidator {",
+                "repeating its last line exactly as it is:\n    void check(String remarks) {");
         assertThat(result.content()).isEqualTo("public class RemarksValidator {\n    void check(String remarks) {\n    }\n}\n");
     }
 
     @Test
     void aFileCutOffAtTheOutputLimitIsContinuedAndJoined() {
         // A server that writes little per answer (a per-minute output limit): the file comes in pieces
+        // Each piece starts by repeating the last whole line of the one before (the cut-off "    void check(..." is left out)
         replies.add("CUT:```java\npublic class RemarksValidator {\n    void check(String remarks) {");
-        replies.add("CUT:    void check(String remarks) {\n        if (remarks.length() > 35) {\n");
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n        if (remarks.length() > 35) {\n");
         replies.add("```java\n        if (remarks.length() > 35) {\n            throw new IllegalArgumentException();\n        }\n    }\n}\n```");
 
         CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
@@ -245,7 +247,96 @@ class CodeGeneratorTest {
                 }
                 """);
         assertThat(result.check().status()).isEqualTo(FileChecks.Status.PASSED);
-        assertThat(prompts.get(1)).contains("Continue exactly where it stopped", "void check(String remarks) {");
+        assertThat(prompts.get(1)).contains("Begin your answer by repeating its last line exactly as it is:\npublic class RemarksValidator {")
+                .doesNotContain("void check(String remarks)");
+    }
+
+    @Test
+    void aContinuationThatIsTheModelsReasoningIsAskedForAgainAndNeverKept() {
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
+        // QA round 10: the model talking to itself instead of writing the file
+        replies.add("// Wait, the prompt says to continue.\n// Let's check what was written.\n// But wait, I already wrote that line\n");
+        replies.add("    void check(String remarks) {\n    }\n}\n");
+
+        CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(result.content()).isEqualTo("public class RemarksValidator {\n    void check(String remarks) {\n    }\n}\n");
+        assertThat(prompts.get(2)).contains("Do not write notes to yourself");
+
+        // a piece with code before the reasoning keeps the code and asks for the rest
+        prompts.clear();
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
+        replies.add("    void check(String remarks) {\n        if (remarks == null) {\n            return;\n        }\n"
+                + "        // WAIT. The prompt says remarks are optional\n        trim(remarks);\n");
+        replies.add("        }\n    }\n}\n");
+        replies.add("        }\n    }\n}\n");
+        CodeGenerator.Result cutBack = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
+
+        assertThat(cutBack.content()).doesNotContain("WAIT").doesNotContain("trim(remarks)")
+                .startsWith("public class RemarksValidator {\n    void check(String remarks) {\n        if (remarks == null) {\n");
+        assertThat(prompts.get(2)).contains("repeating its last line exactly as it is:\n        }");
+    }
+
+    @Test
+    void reasoningIsNeverSavedAsThePartial() {
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n        // Let's assume the limit is 35\n"
+                + "        // Wait, I need the limit from the spec\n");
+        replies.add("LIMIT");
+
+        CodeGenerator.Partial stopped = org.assertj.core.api.Assertions.catchThrowableOfType(CodeGenerator.Partial.class,
+                () -> generatorWith(limited(0)).generate(context, plan, item, null, Map.of(), Map.of(), null));
+
+        assertThat(stopped.content()).isEqualTo("public class RemarksValidator {\n    void check(String remarks) {\n");
+    }
+
+    @Test
+    void aSeamThatLostTextFailsTheFileInsteadOfKeepingIt() {
+        // QA round 10, BeneficiaryValidationServiceTest: the partial ended in the middle of a name
+        String partial = """
+                package com.bank.beneficiary;
+
+                public class BeneficiaryValidationServiceTest {
+                    void rejectsAShortName() {
+                        BeneficiaryValidationRequest request = new BeneficiaryValidationRequest();
+                        BeneficiaryValidationRequest.Beneficiary""";
+        ChangePlan.Item test = new ChangePlan.Item("backend/BeneficiaryValidationServiceTest.java", "create", "test", null, List.of(), null);
+        ChangePlan testPlan = new ChangePlan(null, List.of(test), List.of());
+        // no fix attempts: only the join is under test
+        CodeGenerator generator = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 0, "branches/factory", "-"),
+                new LocalChecks(VersionPacks.builtIn()));
+
+        // the model goes on in the middle of the line it did not see whole, twice: asked again once, then the pieces do not parse
+        replies.add("Name(\"AB\"), \"123456789\"); // 2 chars, too short\n    }\n}\n");
+        replies.add("Name(\"AB\"), \"123456789\"); // 2 chars, too short\n    }\n}\n");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> generator.generate(context, testPlan, test, null, null, Map.of(), Map.of(), null,
+                        null, partial))
+                .isInstanceOf(CodeGenerator.JoinFailed.class).hasMessageContaining("did not join cleanly").hasMessageContaining("write it again")
+                .hasMessageNotContaining("expected one of");
+        // it was asked for a fresh line: the cut-off name is not in what it was shown
+        assertThat(prompts.getFirst()).contains("repeating its last line exactly as it is:\n"
+                + "        BeneficiaryValidationRequest request = new BeneficiaryValidationRequest();")
+                .doesNotContain("BeneficiaryValidationRequest.Beneficiary");
+        assertThat(prompts.get(1)).contains("MUST begin with that exact line");
+
+        // repeating the last line, as asked: joined on it
+        replies.add("        BeneficiaryValidationRequest request = new BeneficiaryValidationRequest();\n"
+                + "        request.setBeneficiaryName(\"AB\"); // 2 chars, too short\n    }\n}\n");
+        assertThat(generator.generate(context, testPlan, test, null, null, Map.of(), Map.of(), null, null, partial).content())
+                .contains("new BeneficiaryValidationRequest();\n        request.setBeneficiaryName(\"AB\");")
+                .containsOnlyOnce("BeneficiaryValidationRequest request =");
+    }
+
+    @Test
+    void aContinuationIsMuchSmallerThanTheFirstPrompt() {
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
+        replies.add("    void check(String remarks) {\n    }\n}\n");
+        Map<String, String> examples = Map.of("backend/LimitValidator.java", "public class LimitValidator {\n" + "    // a long example\n".repeat(500) + "}\n");
+
+        generator.generate(context, plan, item, null, examples, Map.of(), null);
+
+        assertThat(prompts.get(1).length()).isLessThan(prompts.get(0).length() / 3);
+        assertThat(prompts.get(1)).contains("File being written: backend/RemarksValidator.java", "Purpose: Validate remarks",
+                "Requirement specification (excerpt)").doesNotContain("a long example").doesNotContain("The whole change");
     }
 
     @Test
@@ -276,7 +367,7 @@ class CodeGeneratorTest {
         replies.add("CUT:package com.bank;\n\nimport java.util.List;\n\npublic class RemarksValidator {\n    void check(String remarks) {");
         // the model starts again with another class: asked once more, strictly
         replies.add("package com.bank;\n\nimport java.util.List;\n\npublic class RemarksValidatorV2 {\n}\n");
-        replies.add("\n    }\n}\n");
+        replies.add("public class RemarksValidator {\n    void check(String remarks) {\n    }\n}\n");
 
         CodeGenerator.Result result = generator.generate(context, plan, item, null, Map.of(), Map.of(), null);
 
@@ -296,7 +387,7 @@ class CodeGeneratorTest {
     void aMarkdownFileKeepsItsOwnFencesWhenItIsContinued() {
         ChangePlan.Item readme = new ChangePlan.Item("docs/remarks.md", "create", "config", null, List.of(), null);
         replies.add("CUT:# Remarks\n\nRun:\n\n```bash\nmvn verify\n```\n\nThen open the");
-        replies.add(" page.\n");
+        replies.add("```\n\nThen open the page.\n");
 
         CodeGenerator.Result result = generator.generate(context, new ChangePlan(null, List.of(readme), List.of()), readme, null, Map.of(),
                 Map.of(), null);

@@ -15,6 +15,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.openai.OpenAiChatResponseMetadata;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
@@ -52,7 +53,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      */
     private record Connection(String baseUrl, String chatModelName, String embeddingUrl, String embeddingModelName,
                               ChatModel chatModel, StreamingChatModel streamingChatModel, EmbeddingModel embeddingModel,
-                              java.util.concurrent.atomic.AtomicBoolean jsonStreams, Limits limits) {
+                              java.util.concurrent.atomic.AtomicBoolean jsonStreams, Limits limits, boolean noThink,
+                              java.util.concurrent.atomic.AtomicBoolean effortRefused) {
     }
 
     /** What the chat model's server takes in one request, learned when it refused a larger one. */
@@ -78,6 +80,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
                     limits.output = s.output();
                     limits.total = s.total();
+                    log.info("Using stored limits for {}: input {}, output {}, total {}", model, s.input(), s.output(), s.total());
                 });
             } catch (RuntimeException e) {
                 log.warn("Could not read the learned limits of chat model '{}'", model, e);
@@ -106,7 +109,59 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * Asks for no more output than the server's learned limits allow, and logs what the request asks for (QA reads
      * factory.log to see why a request was the size it was).
      */
-    private int capOutput(Connection current, ChatRequest.Builder request, int promptChars) {
+    /** A request ready to send, and the max_tokens it asks for (0: left to the server). */
+    private record Prepared(ChatRequest request, int max) {
+    }
+
+    /**
+     * The request for a chat: the messages (with /no_think for a model asked not to think out loud), the response
+     * format, max_tokens within the learned limits, and reasoning_effort "none" where the server takes it.
+     */
+    private Prepared prepare(Connection current, String systemPrompt, UserMessage userMessage, ResponseFormat format) {
+        OpenAiChatRequestParameters.Builder parameters = OpenAiChatRequestParameters.builder();
+        if (format != null) {
+            parameters.responseFormat(format);
+        }
+        int max = capOutput(current, parameters, chars(systemPrompt, userMessage));
+        if (current.noThink() && !current.effortRefused().get()) {
+            parameters.reasoningEffort("none");
+        }
+        return new Prepared(ChatRequest.builder().messages(messages(systemFor(current, systemPrompt), userMessage))
+                .parameters(parameters.build()).build(), max);
+    }
+
+    /** The system prompt, with /no_think for a model asked not to think out loud (qwen3 understands it). */
+    static String systemFor(Connection current, String systemPrompt) {
+        if (!current.noThink()) {
+            return systemPrompt;
+        }
+        return systemPrompt == null || systemPrompt.isBlank() ? "/no_think" : systemPrompt + "\n\n/no_think";
+    }
+
+    private static final Pattern THINKING = Pattern.compile("(?s)<think>.*?</think>\\s*");
+
+    /**
+     * A reply without the model's thinking: &lt;think&gt;...&lt;/think&gt; blocks are left out, and a reply that stopped
+     * while still thinking (no closing tag) has no answer at all.
+     */
+    static String withoutThinking(String reply) {
+        if (reply == null || !reply.contains("<think>")) {
+            return reply;
+        }
+        String answer = THINKING.matcher(reply).replaceAll("");
+        int open = answer.indexOf("<think>");
+        return open >= 0 ? answer.substring(0, open) : answer;
+    }
+
+    /** The server refused the request because of its reasoning_effort (an unknown or unsupported parameter). */
+    static boolean reasoningEffortRefused(String text) {
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("reasoning_effort") || lower.contains("reasoning effort")
+                || lower.contains("reasoning") && (lower.contains("not supported") || lower.contains("unsupported")
+                || lower.contains("unrecognized") || lower.contains("unknown") || lower.contains("invalid"));
+    }
+
+    private int capOutput(Connection current, OpenAiChatRequestParameters.Builder request, int promptChars) {
         int max = maxTokens(current.limits(), maxOutput, promptChars);
         if (max > 0) {
             request.maxOutputTokens(max);
@@ -184,6 +239,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     static final Duration MAX_WAIT = Duration.ofMinutes(3);
     private static final int RATE_LIMIT_ATTEMPTS = 8;
 
+    /** The FACTORY_MODEL_* settings (whether to ask the chat model not to think out loud) */
+    private final ModelProperties properties;
     private final Duration timeout;
     /** max_tokens for each answer; null leaves it to the server (FACTORY_MODEL_MAX_OUTPUT_TOKENS). */
     private final Integer maxOutput;
@@ -194,6 +251,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     @Autowired
     public OpenAiCompatibleModelGateway(ModelProperties properties, ModelSettings settings, ModelLimitsStore store) {
+        this.properties = properties;
         this.timeout = properties.timeout();
         this.maxOutput = properties.maxOutput() > 0 ? properties.maxOutput() : null;
         this.ollama = new OllamaChat(properties.maxContext());
@@ -208,6 +266,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     /** With the FACTORY_MODEL_* settings and a store for learned limits (tests). */
     OpenAiCompatibleModelGateway(ModelProperties properties, ModelLimitsStore store) {
+        this.properties = properties;
         this.timeout = properties.timeout();
         this.maxOutput = properties.maxOutput() > 0 ? properties.maxOutput() : null;
         this.ollama = new OllamaChat(properties.maxContext());
@@ -257,7 +316,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         .timeout(timeout)
                         .maxRetries(0)
                         .build(),
-                new java.util.concurrent.atomic.AtomicBoolean(true), loadLimits(settings.baseUrl(), settings.chatModel()));
+                new java.util.concurrent.atomic.AtomicBoolean(true), loadLimits(settings.baseUrl(), settings.chatModel()),
+                properties.noThinkFor(settings.chatModel()), new java.util.concurrent.atomic.AtomicBoolean());
     }
 
     @Override
@@ -306,6 +366,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 return call.get();
             } catch (ModelGatewayException e) {
                 String text = messages(e);
+                if (current.noThink() && !current.effortRefused().get() && reasoningEffortRefused(text)) {
+                    // The server does not take reasoning_effort: asked again without it, and not sent to it again
+                    current.effortRefused().set(true);
+                    log.info("Chat model '{}' at {} does not take reasoning_effort; asking without it", current.chatModelName(), current.baseUrl());
+                    continue;
+                }
                 int[] tooLarge = tooLarge(text);
                 if (tooLarge != null) {
                     int chars = (systemPrompt == null ? 0 : systemPrompt.length()) + userPrompt.length();
@@ -320,6 +386,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                         }
                         input = tooLarge[0] - Math.min(asked > 0 ? asked : 1024, tooLarge[0] / 4);
                         current.limits().total = current.limits().total == 0 ? tooLarge[0] : Math.min(current.limits().total, tooLarge[0]);
+                        log.info("Learned the model server's per-minute token limit: {} (chat model '{}', from its refusal)", current.limits().total,
+                                current.chatModelName());
                     } else {
                         input = inputLimit(text, tooLarge[0], maxOutput);
                     }
@@ -376,6 +444,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                             + " reached its rate limit and asks to wait " + roughly(wait) + ". Try again then, or use a plan or model "
                             + "with a larger limit.", false, roughly(wait), e);
                 }
+                log.info("Chat model '{}' is at its rate limit ({}); waiting {} before asking again", current.chatModelName(), serverMessage(text),
+                        roughly(wait));
                 try {
                     Thread.sleep(wait);
                 } catch (InterruptedException interrupted) {
@@ -541,7 +611,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         CompletableFuture<OllamaChat.Answer> done = new CompletableFuture<>();
         Thread worker = Thread.ofVirtual().name("ollama-chat").start(() -> {
             try {
-                done.complete(ollama.chat(current.baseUrl(), current.chatModelName(), systemPrompt, userPrompt, jsonFormat, pieces, lastPiece::set, body::set));
+                done.complete(ollama.chat(current.baseUrl(), current.chatModelName(), systemFor(current, systemPrompt), userPrompt, jsonFormat, pieces, lastPiece::set, body::set));
             } catch (Throwable t) {
                 done.completeExceptionally(t);
             }
@@ -553,7 +623,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     if (answer.cutOff()) {
                         warnCutOff(current, answer.text());
                     }
-                    return new ChatResult(answer.text(), current.chatModelName(), (System.nanoTime() - start) / 1_000_000, answer.cutOff());
+                    return new ChatResult(withoutThinking(answer.text()), current.chatModelName(), (System.nanoTime() - start) / 1_000_000, answer.cutOff());
                 } catch (TimeoutException e) {
                     if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
                         stop(worker, body.get());
@@ -587,12 +657,9 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         AtomicLong lastPiece = new AtomicLong(start);
         CompletableFuture<ChatResponse> done = new CompletableFuture<>();
         try {
-            ChatRequest.Builder request = ChatRequest.builder().messages(messages(systemPrompt, userMessage));
-            if (format != null) {
-                request.responseFormat(format);
-            }
-            int max = capOutput(current, request, chars(systemPrompt, userMessage));
-            current.streamingChatModel().chat(request.build(),
+            Prepared prepared = prepare(current, systemPrompt, userMessage, format);
+            int max = prepared.max();
+            current.streamingChatModel().chat(prepared.request(),
                     new StreamingChatResponseHandler() {
                         @Override
                         public void onPartialResponse(String piece) {
@@ -617,7 +684,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     String model = response.metadata() != null && response.metadata().modelName() != null
                             ? response.metadata().modelName() : current.chatModelName();
                     String reply = response.aiMessage() == null || response.aiMessage().text() == null ? "" : response.aiMessage().text();
-                    return new ChatResult(reply, model, (System.nanoTime() - start) / 1_000_000, cutOff(current, response, reply, max));
+                    return new ChatResult(withoutThinking(reply), model, (System.nanoTime() - start) / 1_000_000, cutOff(current, response, reply, max));
                 } catch (TimeoutException e) {
                     if (System.nanoTime() - lastPiece.get() > timeout.toNanos()) {
                         done.cancel(true);
@@ -656,19 +723,15 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private ChatResult chat(String systemPrompt, UserMessage userMessage, ResponseFormat format) {
         Connection current = connection;
-        List<ChatMessage> messages = messages(systemPrompt, userMessage);
-
         long start = System.nanoTime();
         try {
-            ChatRequest.Builder request = ChatRequest.builder().messages(messages);
-            if (format != null) {
-                request.responseFormat(format);
-            }
-            int max = capOutput(current, request, chars(systemPrompt, userMessage));
-            ChatResponse response = current.chatModel().chat(request.build());
+            Prepared prepared = prepare(current, systemPrompt, userMessage, format);
+            int max = prepared.max();
+            ChatResponse response = current.chatModel().chat(prepared.request());
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();
-            return new ChatResult(response.aiMessage().text(), model, latencyMs, cutOff(current, response, response.aiMessage().text(), max));
+            return new ChatResult(withoutThinking(response.aiMessage().text()), model, latencyMs,
+                    cutOff(current, response, response.aiMessage().text(), max));
         } catch (RuntimeException e) {
             throw chatFailure(current, e);
         }

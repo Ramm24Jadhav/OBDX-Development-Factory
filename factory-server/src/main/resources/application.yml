@@ -151,6 +151,9 @@ factory:
     # The most tokens a model may write in one answer (max_tokens), for OpenAI-compatible servers; 0 leaves it to the
     # server. Some cloud servers stop at 2,048 unless asked for more, which cuts off long plans and code files.
     max-output: ${FACTORY_MODEL_MAX_OUTPUT_TOKENS:0}
+    # Ask the chat model not to think out loud (/no_think, reasoning_effort "none"): true or false; empty asks models
+    # whose name contains qwen3, which otherwise write their reasoning before (and into) the code.
+    no-think: ${FACTORY_MODEL_NO_THINK:}
 
 management:
   endpoints:

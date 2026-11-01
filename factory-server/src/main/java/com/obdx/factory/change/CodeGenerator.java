@@ -4,6 +4,7 @@ import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.model.ModelLimitReachedException;
 import com.obdx.factory.model.PromptFit;
 import com.obdx.factory.pack.LocalChecks;
+import com.obdx.factory.pack.ModelReasoning;
 import com.obdx.factory.pack.Recipe;
 import com.obdx.factory.target.ScreenScaffolder;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
  */
 @Component
 public class CodeGenerator {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CodeGenerator.class);
 
     static final String SYSTEM = """
             You are a senior Oracle Banking Digital Experience (OBDX) developer writing one file of a planned change in
@@ -112,7 +115,9 @@ public class CodeGenerator {
         String guidance = checks.targetGuidance(context.checks(), item.path());
         java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
                 guidance, scaffold, scale);
-        Written written = write(prompt, partial, 1);
+        // A continuation needs far less: what the file is, its spec, the names of the files it uses, and its own end
+        java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
+        Written written = write(item.path(), prompt, brief, partial, 1);
         String content = written.content();
         FileChecks.Result check = checked(context, item, original, content, scaffold, written.cutOff());
         int attempts = 1;
@@ -120,7 +125,7 @@ public class CodeGenerator {
         while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
             String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
-            written = write(scale -> prompt.apply(scale) + fix, null, written.scale());
+            written = write(item.path(), scale -> prompt.apply(scale) + fix, brief, null, written.scale());
             content = written.content();
             check = checked(context, item, original, content, scaffold, written.cutOff());
             attempts++;
@@ -246,6 +251,35 @@ public class CodeGenerator {
                     .append(recipe.part().content()).append('\n');
         }
         user.append("\nWrite the complete content of ").append(item.path()).append('.');
+        return user.toString();
+    }
+
+    /**
+     * The prompt a continuation is built on: the file's path, purpose and rules, an excerpt of the spec, the file's
+     * current content when it is modified, and the signatures of the change's files it uses; no examples, designs,
+     * knowledge or template, which the first piece already followed. The file's end is added by write().
+     */
+    static String continuationPrompt(ChangeContext context, ChangePlan.Item item, String current, Map<String, String> earlier, String note,
+                                     String rules, double scale) {
+        StringBuilder user = new StringBuilder();
+        user.append("File being written: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
+        user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
+        user.append("Details: ").append(nullToDash(item.details())).append('\n');
+        if (note != null && !note.isBlank()) {
+            user.append("Reviewer's instruction: ").append(note).append('\n');
+        }
+        user.append("\nRequirement specification (excerpt):\n").append(ChangeContext.cap(context.specJson(), PromptFit.size(2500, scale))).append("\n\n");
+        if (rules != null && !rules.isEmpty()) {
+            user.append("Rules for this file (they are checked):\n").append(rules).append("\n\n");
+        }
+        if (current != null) {
+            user.append("Current content of ").append(item.path()).append(" (keep what the change does not touch):\n").append(current).append("\n\n");
+        }
+        Map<String, String> related = related(item, earlier, scale * 0.5);
+        if (!related.isEmpty()) {
+            user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
+            related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
+        }
         return user.toString();
     }
 
@@ -383,50 +417,99 @@ public class CodeGenerator {
     /**
      * Asks for the file and, while the answer stops at the model's output limit (a server that writes little per
      * request), asks the model to go on where it stopped and joins the pieces, so a large file is still written whole.
-     * A continuation is the same prompt, at the scale the first piece needed or smaller, plus only the file's last
-     * 3000 characters.
+     * <ul>
+     * <li>A continuation is a short prompt (the file, its spec excerpt and the signatures it uses, at the scale the first
+     * piece needed or smaller) plus the file's last 3000 characters, cut back to its last complete line; the model
+     * repeats that line first, and the piece is joined on it.</li>
+     * <li>Each piece is read for the model's reasoning in comments ("// Wait, ..."): a piece that is mostly reasoning is
+     * asked for again once, more strictly; otherwise it is cut back to the line before the reasoning.</li>
+     * <li>The joined file must still parse (Java, JavaScript): a seam that lost text fails it, so it is written again.</li>
+     * </ul>
      *
      * @param partial what was written of the file before (continued from at once), or null
+     * @throws JoinFailed when the joined pieces do not parse
      */
-    private Written write(java.util.function.DoubleFunction<String> prompt, String partial, double start) {
+    private Written write(String path, java.util.function.DoubleFunction<String> prompt, java.util.function.DoubleFunction<String> brief,
+                          String partial, double start) {
         double scale = start;
         String sofar;
         if (partial == null) {
             PromptFit.Fitted first = PromptFit.chatFrom(modelGateway, SYSTEM, prompt, scale);
             scale = first.scale();
             ModelGateway.ChatResult reply = first.result();
+            if (reply.reply() == null || reply.reply().isBlank()) {
+                log.info("The model's answer for {} was empty", path);
+            }
             if (!reply.cutOff()) {
                 return new Written(clean(reply.reply()), false, scale);
             }
-            sofar = withoutFences(reply.reply());
+            sofar = withoutReasoning(path, withoutFences(reply.reply()));
         } else {
-            sofar = partial;
+            sofar = withoutReasoning(path, partial);
         }
         boolean cut = true;
         boolean warned = false;
+        boolean strict = false;
+        boolean repeatAsked = false;
+        boolean joined = false;
         int continuations = continuations();
         for (int i = 0; cut && i < continuations; i++) {
+            // A fresh line: the cut-off end of a line is left out, so the model writes that line whole
+            sofar = completeLines(sofar);
+            if (!sofar.isBlank()) {
+                // and no blank lines after it, which the model would write again after repeating the last line
+                sofar = sofar.stripTrailing() + "\n";
+            }
+            String last = lastLine(sofar);
             String end = sofar.length() > TAIL ? sofar.substring(sofar.length() - TAIL) : sofar;
-            String more = "\n\nYour answer stopped at your output limit. It ended with:\n" + end + "\n\nContinue exactly where it stopped: "
-                    + "answer with only the rest of the file, starting with the next characters, repeating nothing, without code fences."
+            String more = "\n\nYou are writing " + path + " and your answer stopped at your output limit. The file so far ends with:\n"
+                    + end + "\n\nContinue the file. Begin your answer by repeating its last line exactly as it is:\n" + last
+                    + "\nthen write the rest of the file after it. Write only the file's code and its normal comments, without code fences."
                     + (warned ? " Do NOT start the file again: no package line, no imports, no class header; only what comes after the "
-                    + "last characters above." : "");
+                    + "last line above." : "")
+                    + (strict ? " Do not write notes to yourself or remarks about the prompt (no \"Wait\", \"Let's check\" or \"I already "
+                    + "wrote\"); if a line is already written, simply go on after it." : "")
+                    + (repeatAsked ? " Your answer MUST begin with that exact line, repeated in full, so the two parts join." : "");
             PromptFit.Fitted fitted;
             try {
-                fitted = PromptFit.chatFrom(modelGateway, SYSTEM, s -> prompt.apply(s) + more, scale);
+                fitted = PromptFit.chatFrom(modelGateway, SYSTEM, s -> brief.apply(s) + more, scale);
             } catch (ModelLimitReachedException e) {
                 if (sofar.isBlank()) {
                     throw e;
                 }
-                // Keep what was written: Continue goes on from it instead of paying for the whole file again
+                // Keep what was written (whole lines, no reasoning): Continue goes on from it instead of paying for the whole file again
                 throw new Partial(e, sofar.strip() + "\n");
             }
             scale = fitted.scale();
             ModelGateway.ChatResult next = fitted.result();
             if (next.reply() == null || next.reply().isBlank()) {
+                log.info("The model's continuation of {} was empty; the file stays cut off", path);
                 break;
             }
-            String piece = withoutFences(next.reply());
+            // A Markdown file whose last line is its own fence: the repeated fence is the file's, not the answer's
+            String piece = last.strip().startsWith("```") && next.reply().stripLeading().startsWith(last.strip())
+                    ? next.reply().stripLeading() : withoutFences(next.reply());
+            int reasoning = ModelReasoning.firstReasoningLine(path, piece);
+            if (reasoning > 0) {
+                String kept = String.join("\n", java.util.Arrays.asList(piece.split("\n", -1)).subList(0, reasoning - 1));
+                if (kept.lines().filter(l -> !l.isBlank()).count() < 3) {
+                    if (strict) {
+                        log.info("The model's continuation of {} was its reasoning again; the file stays cut off", path);
+                        break;
+                    }
+                    // Mostly the model talking to itself: asked once more, strictly
+                    log.info("Dropped a continuation of {} that was the model's reasoning; asking again", path);
+                    strict = true;
+                    continue;
+                }
+                log.info("Cut a continuation of {} back to the {} line(s) before the model's reasoning", path, kept.lines().count());
+                piece = kept + "\n";
+                sofar = joinOn(sofar, last, piece);
+                joined = true;
+                // the rest of the file is still to come
+                cut = true;
+                continue;
+            }
             if (restarts(sofar, piece)) {
                 if (compact(piece).startsWith(compact(sofar))) {
                     // The whole file again and further: that is the file now
@@ -435,17 +518,116 @@ public class CodeGenerator {
                     continue;
                 }
                 if (warned) {
+                    log.info("The model started {} again a second time; the file stays cut off", path);
                     break;
                 }
                 // Started the file again: ask once more, more strictly, and keep what was written
+                log.info("Dropped a continuation of {} that started the file again; asking again", path);
                 warned = true;
                 continue;
             }
-            sofar = stitch(sofar, piece);
+            if (!seamless(sofar, last, piece)) {
+                if (!repeatAsked) {
+                    // It went on without the line it was to repeat: perhaps in the middle of a line it never saw whole
+                    log.info("Dropped a continuation of {} that did not begin with the file's last line; asking again", path);
+                    repeatAsked = true;
+                    continue;
+                }
+                log.info("A continuation of {} again did not begin with the file's last line; joined as it came", path);
+            }
+            sofar = joinOn(sofar, last, piece);
+            joined = true;
             cut = next.cutOff();
         }
+        String content = sofar.strip() + "\n";
+        if ((joined || partial != null) && !cut) {
+            String problem = brief(joinProblem(path, content));
+            if (problem != null) {
+                log.info("The pieces of {} did not join cleanly: {}", path, problem);
+                throw new JoinFailed("The model's answer came in pieces that did not join cleanly (" + problem + "); write it again.");
+            }
+        }
         // The pieces are joined without their fences already; clean() would cut at a ``` inside the file (a template string)
-        return new Written(sofar.strip() + "\n", cut, scale);
+        return new Written(content, cut, scale);
+    }
+
+    /** The pieces of a continued file do not parse once joined: text was lost or repeated at a seam. */
+    public static final class JoinFailed extends RuntimeException {
+        JoinFailed(String message) {
+            super(message);
+        }
+    }
+
+    /** The text up to its last line break: a line cut off in the middle is left out (unless there is no whole line). */
+    static String completeLines(String text) {
+        int end = text.lastIndexOf('\n');
+        return end < 0 || end == text.length() - 1 ? text : text.substring(0, end + 1);
+    }
+
+    /** The last line that is not blank. */
+    static String lastLine(String text) {
+        List<String> lines = text.lines().filter(l -> !l.isBlank()).toList();
+        return lines.isEmpty() ? "" : lines.getLast();
+    }
+
+    /**
+     * A continuation joined on the line the model was asked to repeat first: that line is written once. A continuation
+     * that does not start with it is joined on an exact overlap, or appended (see stitch).
+     */
+    static String joinOn(String sofar, String last, String piece) {
+        String base = sofar.isEmpty() || sofar.endsWith("\n") ? sofar : sofar + "\n";
+        if (!last.isBlank()) {
+            int at = 0;
+            while (at < piece.length() && (piece.charAt(at) == '\n' || piece.charAt(at) == '\r')) {
+                at++;
+            }
+            int lineEnd = piece.indexOf('\n', at);
+            String first = lineEnd < 0 ? piece.substring(at) : piece.substring(at, lineEnd);
+            if (first.strip().equals(last.strip())) {
+                return base + (lineEnd < 0 ? "" : piece.substring(lineEnd + 1));
+            }
+        }
+        return stitch(base, piece);
+    }
+
+    /** Whether a continuation begins with the line it was to repeat, or with an exact repeat of the file's end. */
+    static boolean seamless(String sofar, String last, String piece) {
+        String base = sofar.isEmpty() || sofar.endsWith("\n") ? sofar : sofar + "\n";
+        return last.isBlank() || !joinOn(sofar, last, piece).equals(stitch(base, piece)) || !stitch(base, piece).equals(base + piece);
+    }
+
+    /** The comments of a piece before the model's reasoning starts (the whole piece when there is none). */
+    static String withoutReasoning(String path, String text) {
+        int reasoning = ModelReasoning.firstReasoningLine(path, text);
+        if (reasoning <= 0) {
+            return text;
+        }
+        log.info("Cut the model's reasoning from the written part of {} (from its line {})", path, reasoning);
+        List<String> lines = java.util.Arrays.asList(text.split("\n", -1)).subList(0, reasoning - 1);
+        return lines.isEmpty() ? "" : String.join("\n", lines) + "\n";
+    }
+
+    /** A parser's message without its list of what it expected, at most 200 characters. */
+    private static String brief(String problem) {
+        if (problem == null) {
+            return null;
+        }
+        int expected = problem.indexOf(", expected one of");
+        String shorter = expected > 0 ? problem.substring(0, expected) : problem;
+        return shorter.length() > 200 ? shorter.substring(0, 200) + "..." : shorter;
+    }
+
+    /** Why a joined file does not parse (Java, or JavaScript that is not React), or null. */
+    static String joinProblem(String path, String content) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".java")) {
+            FileChecks.Result java = FileChecks.check(path, content);
+            return java.status() == FileChecks.Status.FAILED ? java.message() : null;
+        }
+        if (lower.endsWith(".js") && !FileChecks.looksLikeJsx(content)) {
+            return JavaScriptCheck.structure(content);
+        }
+        return null;
     }
 
     /** The least repeated text that counts as an overlap: shorter matches are chance. */

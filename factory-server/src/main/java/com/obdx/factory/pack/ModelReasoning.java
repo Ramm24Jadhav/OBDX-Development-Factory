@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  * label such as "We need to verify your identity" is not. Comments and strings are found with {@link SourceScan}, in
  * linear time whatever the file holds.
  */
-final class ModelReasoning {
+public final class ModelReasoning {
 
     static final String RULE = "no-model-reasoning";
 
@@ -37,8 +37,10 @@ final class ModelReasoning {
             + "as per (?:the )?instructions?\\s*[:,]?\\s*[\"'\\u201C\\u2018]|"
             // "For now, we assume ..." and "Assuming the validation response has a way ...": the model guessing aloud
             + "for now,? we assume|assum(?:e|ing) the \\w+ (?:response|request|service|validator) (?:has|returns|marks|will)\\b)"
-            // "Assuming the host returns ...": an assumption opening a comment
-            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b)");
+            // "Assuming the host returns ...": an assumption opening a comment; and the model talking to itself mid-answer
+            // ("// Wait, ...", "// Let's check ...", "// But wait, I already wrote that line"), only where a comment starts
+            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b|(?:but |hmm,? )?wait\\s*[,.!:]"
+            + "|let'?s check\\b|i already wrote\\b)");
     /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */
     private static final Pattern STUB = Pattern.compile("(?i)\\b(placeholder logic|simulated (?:host |api |backend )?(?:response|call|delay|data)\\b|"
             + "simulate (?:the )?(?:host|api|call|backend|response)\\b|in a real implementation|todo:?\\s*call|mock (?:response|data))");
@@ -88,6 +90,26 @@ final class ModelReasoning {
             }
         }
         return found;
+    }
+
+    /**
+     * The first line (from 1) of a piece of code whose comments carry the model's reasoning ("// Wait, ...", "// Let's
+     * check ...", "// The prompt says ..."), or 0; only comments are read. For a continued file, whose pieces are checked
+     * before they are joined.
+     */
+    public static int firstReasoningLine(String path, String piece) {
+        if (piece == null || piece.isBlank()) {
+            return 0;
+        }
+        String lower = path.toLowerCase(Locale.ROOT);
+        SourceScan.Syntax syntax = lower.matches(".*\\.(java|js|ts|tsx|jsx)") ? SourceScan.Syntax.CODE
+                : lower.endsWith(".html") || lower.endsWith(".xml") ? SourceScan.Syntax.MARKUP
+                : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
+                : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : SourceScan.Syntax.CODE;
+        List<LocalChecks.Finding> found = new ArrayList<>();
+        search(piece, SourceScan.scan(piece, syntax).comments(), PHRASE, RULE, PackRule.Severity.ERROR, REASONING, piece.split("\n", -1),
+                Set.of(), found);
+        return found.stream().mapToInt(LocalChecks.Finding::line).min().orElse(0);
     }
 
     /** Tests, mocks and stories, where simulated data belongs. */
