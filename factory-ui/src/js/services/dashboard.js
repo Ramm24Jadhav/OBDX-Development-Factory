@@ -135,7 +135,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
       });
       d.designs.forEach((s) => {
         if (s.status === 'IN_REVIEW') {
-          items.push({ tone: 'amber', title: s.name, text: w.name + ': screen waiting for review.', at: s.updatedAt, open: open('designer', w.id) });
+          items.push({ tone: 'amber', title: s.name, text: w.name + ': screen waiting for review.', at: s.updatedAt, open: open('studio', w.id) });
         }
       });
       d.changes.forEach((c) => {

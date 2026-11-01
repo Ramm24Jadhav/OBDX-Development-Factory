@@ -102,7 +102,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Preferences
       this.workspaceOptions = workspaceSelection.options;
       this.landingOptions = [{ value: 'overview', label: 'Home' }, { value: 'workspaces', label: 'Workspaces' }, { value: 'requirements', label: 'Requirements' },
-        { value: 'designer', label: 'Visual Designer' }, { value: 'changes', label: 'Changes' }, { value: 'notifications', label: 'Notifications' }];
+        { value: 'studio', label: 'UI Design Studio' }, { value: 'changes', label: 'Changes' }, { value: 'notifications', label: 'Notifications' }];
       this.landingChange = ui.value(preferences.landing);
       this.workspaceChange = ui.value(preferences.workspace);
       this.textChange = ui.value(preferences.textSize);

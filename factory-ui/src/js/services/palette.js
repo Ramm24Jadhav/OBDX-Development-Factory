@@ -6,7 +6,7 @@
 define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './preferences', './session'],
   function (ko, dashboard, workspaceSelection, pageRequests, preferences, session) {
     // "g" then the letter opens the page (Linear-style two-key shortcuts)
-    const GO = { o: 'overview', w: 'workspaces', c: 'code', p: 'profile', r: 'requirements', d: 'designer', h: 'changes', b: 'build',
+    const GO = { o: 'overview', w: 'workspaces', c: 'code', p: 'profile', r: 'requirements', d: 'studio', h: 'changes', b: 'build',
       m: 'models', a: 'agents', k: 'knowledge', i: 'impact', x: 'modernization', n: 'notifications', s: 'account', y: 'design' };
     const goKey = Object.keys(GO).reduce((map, k) => { map[GO[k]] = k; return map; }, {});
 

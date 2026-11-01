@@ -1,0 +1,111 @@
+package com.obdx.factory.design;
+
+import com.obdx.factory.common.BadRequestException;
+import com.obdx.factory.requirements.Requirement;
+import com.obdx.factory.requirements.RequirementService;
+import com.obdx.factory.requirements.RequirementSpec;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * The Design Studio's view of a BRD: its screens in flow order with their models, the functional requirements each
+ * one serves, and approving a requirement's screens in one action.
+ */
+@Service
+public class DesignFlowService {
+
+    private final ScreenDesignRepository designs;
+    private final DesignStore store;
+    private final RequirementService requirements;
+
+    public DesignFlowService(ScreenDesignRepository designs, DesignStore store, RequirementService requirements) {
+        this.designs = designs;
+        this.store = store;
+        this.requirements = requirements;
+    }
+
+    /**
+     * @param needsSteps the screen takes input but has no review and confirmation screens after it
+     */
+    public record FlowScreen(UUID id, String name, ScreenDesign.Status status, int currentVersion, Integer approvedVersion,
+                             String approvedBy, String stage, List<String> channels, ScreenModel model, boolean needsSteps) {
+    }
+
+    public record FlowRequirement(String id, String title, String description, String priority, List<String> screenNames,
+                                  List<UUID> screens, List<RequirementSpec.BusinessRule> rules,
+                                  List<RequirementSpec.AcceptanceCriterion> criteria) {
+    }
+
+    /**
+     * @param screens      every screen of the BRD in flow order
+     * @param requirements the spec's functional requirements, each with its screens
+     * @param others       screens no functional requirement names
+     * @param rules        all business rules of the spec
+     */
+    public record DesignFlow(UUID requirementId, UUID workspaceId, String title, Requirement.Status status, List<FlowScreen> screens,
+                             List<FlowRequirement> requirements, List<UUID> others,
+                             List<RequirementSpec.BusinessRule> rules, List<RequirementSpec.AcceptanceCriterion> criteria) {
+    }
+
+    /** What approving changed, for the audit log, and the flow after it. */
+    public record Approval(List<String> approved, DesignFlow flow) {
+    }
+
+    @Transactional(readOnly = true)
+    public DesignFlow flow(UUID requirementId) {
+        RequirementService.RequirementDetail requirement = requirements.get(requirementId);
+        List<ScreenDesign> all = designs.findByRequirementIdOrderByCreatedAt(requirementId);
+        List<RequirementFlows.Screen> ordered = RequirementFlows.order(all.stream()
+                .map(d -> new RequirementFlows.Screen(d.getId(), d.getName(), store.model(d.getId(), d.getCurrentVersion()).orElse(null)))
+                .toList());
+        RequirementSpec spec = requirement.spec();
+        List<RequirementFlows.Flow> flows = RequirementFlows.flows(spec, ordered);
+        List<FlowScreen> screens = new ArrayList<>();
+        for (RequirementFlows.Screen s : ordered) {
+            ScreenDesign d = all.stream().filter(x -> x.getId().equals(s.id())).findFirst().orElseThrow();
+            screens.add(new FlowScreen(d.getId(), d.getName(), d.getStatus(), d.getCurrentVersion(), d.getApprovedVersion(),
+                    d.getApprovedBy(), s.stage(), s.model() == null ? List.of() : s.model().channels(), s.model(),
+                    RequirementFlows.needsSteps(s, ordered)));
+        }
+        return new DesignFlow(requirementId, requirement.workspaceId(), requirement.title(), requirement.status(), screens,
+                flows.stream().map(f -> new FlowRequirement(f.id(), f.title(), f.description(), f.priority(), f.screenNames(),
+                        f.screens(), f.rules(), f.criteria())).toList(),
+                RequirementFlows.others(ordered, flows),
+                spec == null || spec.businessRules() == null ? List.of() : spec.businessRules(),
+                spec == null ? List.of() : spec.acceptanceCriteria());
+    }
+
+    /**
+     * Approves the BRD's screens that are not approved yet, in one transaction.
+     *
+     * @param ids the screens to approve; null or empty: all of the BRD's screens
+     */
+    @Transactional
+    public Approval approve(UUID requirementId, List<UUID> ids, String by) {
+        if (by == null || by.isBlank()) {
+            throw new BadRequestException("Enter your name");
+        }
+        List<ScreenDesign> all = designs.findByRequirementIdOrderByCreatedAt(requirementId);
+        if (all.isEmpty()) {
+            throw new BadRequestException("Generate the screens first");
+        }
+        Set<UUID> wanted = ids == null || ids.isEmpty() ? null : Set.copyOf(ids);
+        if (wanted != null && !all.stream().map(ScreenDesign::getId).toList().containsAll(wanted)) {
+            throw new BadRequestException("Some of these screens are not part of this requirement. Reload the page and try again.");
+        }
+        List<String> approved = new ArrayList<>();
+        for (ScreenDesign design : all) {
+            if ((wanted == null || wanted.contains(design.getId())) && design.getStatus() != ScreenDesign.Status.APPROVED) {
+                design.approve(by.trim());
+                designs.save(design);
+                approved.add(design.getName());
+            }
+        }
+        return new Approval(approved, flow(requirementId));
+    }
+}

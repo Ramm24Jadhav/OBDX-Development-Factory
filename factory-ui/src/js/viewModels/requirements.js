@@ -390,7 +390,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       })));
       this.designRows = ko.pureComputed(() => this.designs().map((d) => ({
         name: d.name, status: ui.status(d.status, DESIGN_WORDS[d.status]), version: 'v' + d.currentVersion, updated: day(d.updatedAt),
-        open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' }))
+        open: () => { pageRequests.studio(this.detail() ? this.detail().id : null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); }
       })));
 
       // Open questions across all requirements (Open Questions tab) and of the selected one
@@ -562,7 +562,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .then((detail) => { this.editingJson(false); show(detail); toast.success('Specification saved.'); })
         .catch(failed);
       this.makeScreens = () => api.post(base() + '/designs')
-        .then(() => { toast.success('Screens are being made in the designer.'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' })); })
+        .then(() => { toast.success('Screens generated. Review them in the Design Studio.'); pageRequests.studio(this.detail().id); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); })
         .catch(failed);
       this.planChange = () => api.post(base() + '/changes')
         .then(() => { toast.success('Change planned.'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' })); })

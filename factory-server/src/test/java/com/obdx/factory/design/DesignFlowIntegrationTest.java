@@ -167,6 +167,32 @@ class DesignFlowIntegrationTest {
         assertThat(designs.reopen(designId).status()).isEqualTo(ScreenDesign.Status.DRAFT);
     }
 
+    @Autowired
+    private DesignFlowService flows;
+
+    @Test
+    void approvesARequirementsScreensTogether() throws Exception {
+        workspaceId = workspaces.create(new WorkspaceRequest("studio-" + UUID.randomUUID(), "Test Bank", "22.x", null)).id();
+        UUID requirementId = requirements.fromText(workspaceId, "Remarks", "Add remarks to transfers.").id();
+        waitForStatus(requirementId, Requirement.Status.READY);
+        requirements.approve(requirementId, "Lead");
+        assertThatThrownBy(() -> flows.approve(requirementId, null, "Lead")).hasMessageContaining("Generate the screens");
+        List<ScreenDesignService.DesignSummary> created = designs.fromRequirement(requirementId);
+
+        DesignFlowService.DesignFlow flow = flows.flow(requirementId);
+        assertThat(flow.screens()).extracting(DesignFlowService.FlowScreen::name).containsExactly("Own Account Transfer", "Transfer Confirmation");
+        assertThat(flow.screens().getFirst().model().sections()).isNotEmpty();
+        // A text request has no functional requirements: every screen is an "other" one
+        assertThat(flow.others()).hasSize(2);
+
+        DesignFlowService.Approval one = flows.approve(requirementId, List.of(created.getFirst().id()), "Lead");
+        assertThat(one.approved()).containsExactly("Own Account Transfer");
+        DesignFlowService.Approval rest = flows.approve(requirementId, null, "Lead");
+        assertThat(rest.approved()).containsExactly("Transfer Confirmation");
+        assertThat(rest.flow().screens()).allMatch(s -> s.status() == ScreenDesign.Status.APPROVED && s.approvedVersion() == 1);
+        assertThatThrownBy(() -> flows.approve(requirementId, List.of(UUID.randomUUID()), "Lead")).hasMessageContaining("not part of");
+    }
+
     private void waitForStatus(UUID id, Requirement.Status status) throws InterruptedException {
         Instant deadline = Instant.now().plus(Duration.ofSeconds(30));
         while (Instant.now().isBefore(deadline)) {
