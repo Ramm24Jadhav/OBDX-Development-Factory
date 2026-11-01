@@ -114,16 +114,21 @@ public class CodeGenerator {
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
         String rules = checks.describeRules(context.checks(), item.path());
         String guidance = checks.targetGuidance(context.checks(), item.path());
+        // A small per-minute token limit: the first prompt leaves room for the whole answer, so the file comes in one piece
+        Fit fit = partial != null ? new Fit(0, 1) : fitFirstPrompt(item, current, (level, scale) -> prompt(context, plan, item, current,
+                examples, earlier, note, rules, recipe, guidance, scaffold, level, scale));
         java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, current, examples, earlier, note, rules, recipe,
-                guidance, scaffold, scale);
+                guidance, scaffold, fit.trim(), scale);
         // A continuation needs far less: what the file is, its spec, the names of the files it uses, and its own end
         java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
-        Written written = write(item.path(), prompt, brief, partial, 1);
+        Written written = write(item.path(), prompt, brief, partial, fit.scale());
         String content = written.content();
         FileChecks.Result check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
         int attempts = 1;
         // A file still cut off after its continuations is not fixed by asking with it again, which is longer still
         while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
+            log.info("Writing {} again (attempt {}): it did not pass its checks ({})", item.path(), attempts + 1,
+                    check.message() == null ? "no message" : check.message().lines().findFirst().orElse(""));
             String fix = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + check.message()
                     + "\nWrite the complete corrected file.";
             written = write(item.path(), scale -> prompt.apply(scale) + fix, brief, null, written.scale());
@@ -180,7 +185,7 @@ public class CodeGenerator {
 
     private static String prompt(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current,
                                  Map<String, String> examples, Map<String, String> earlier, String note, String rules,
-                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold, double scale) {
+                                 Recipe.Match recipe, String targetGuidance, ScreenScaffolder.Scaffold scaffold, int trim, double scale) {
         StringBuilder user = new StringBuilder();
         user.append("File to write: ").append(item.path()).append(" (").append(item.action()).append(", ").append(item.layer()).append(")\n");
         user.append("Purpose: ").append(nullToDash(item.purpose())).append('\n');
@@ -192,11 +197,11 @@ public class CodeGenerator {
         user.append(plan.items().stream().map(i -> "- " + i.action() + " " + i.path() + ": " + nullToDash(i.purpose()))
                 .collect(Collectors.joining("\n"))).append("\n\n");
         user.append("Requirement specification (approved):\n").append(ChangeContext.cap(context.specJson(), PromptFit.size(8000, scale))).append("\n\n");
-        if (!context.knowledge().isBlank()) {
+        if (!context.knowledge().isBlank() && trim < TRIM_KNOWLEDGE) {
             user.append("OBDX knowledge (Oracle manuals and approved notes for this OBDX version; follow it where it applies):\n")
                     .append(ChangeContext.cap(context.knowledge(), PromptFit.size(4000, scale))).append("\n\n");
         }
-        if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer()))) {
+        if (context.designsJson() != null && ("ui".equals(item.layer()) || "test".equals(item.layer())) && trim < TRIM_DESIGNS) {
             user.append("Screen designs (approved):\n").append(ChangeContext.cap(context.designsJson(), PromptFit.size(6000, scale))).append("\n\n");
             String designs = context.designsJson();
             if (designs.contains("\"dataSource\":{")) {
@@ -243,11 +248,11 @@ public class CodeGenerator {
         if (current != null) {
             user.append("Current content of ").append(item.path()).append(":\n").append(current).append("\n\n");
         }
-        for (Map.Entry<String, String> example : examples.entrySet()) {
+        for (Map.Entry<String, String> example : trim < TRIM_EXAMPLES ? examples.entrySet() : Map.<String, String>of().entrySet()) {
             user.append("Example file to follow, ").append(example.getKey()).append(":\n")
                     .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
-        Map<String, String> related = related(item, earlier, scale);
+        Map<String, String> related = trim < TRIM_CONTEXT ? related(item, earlier, scale) : named(item, related(item, earlier, scale));
         if (!related.isEmpty()) {
             user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
             related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
@@ -264,6 +269,75 @@ public class CodeGenerator {
         }
         user.append("\nWrite the complete content of ").append(item.path()).append('.');
         return user.toString();
+    }
+
+    /** What the first prompt leaves out, from least to most: examples, then knowledge, then designs, then context files. */
+    static final int TRIM_EXAMPLES = 1;
+    static final int TRIM_KNOWLEDGE = 2;
+    static final int TRIM_DESIGNS = 3;
+    static final int TRIM_CONTEXT = 4;
+    /** Below this many tokens a minute (prompt and answer together), the first prompt is fitted to leave room for the answer. */
+    static final int SMALL_TOTAL = 12_000;
+
+    /** How far the first prompt is trimmed (0: not at all), and the scale it starts at. */
+    record Fit(int trim, double scale) {
+    }
+
+    /**
+     * On a server with a small per-minute token limit, the first prompt made small enough that prompt and the expected
+     * answer fit in 90% of it, so the file is written in one call rather than in pieces: examples are left out first, then
+     * the OBDX knowledge, the designs, and the change's files other than those the plan item names; if that is still too
+     * much, the rest of the prompt is scaled down.
+     */
+    private Fit fitFirstPrompt(ChangePlan.Item item, String current, java.util.function.BiFunction<Integer, Double, String> prompt) {
+        int total = modelGateway.tokensPerMinute();
+        if (total <= 0 || total >= SMALL_TOTAL) {
+            return new Fit(0, 1);
+        }
+        double perToken = modelGateway.charsPerToken();
+        int expected = expectedAnswerTokens(item, current, perToken);
+        double room = Math.max(total * 0.9 - expected, total * 0.25);
+        int trim = 0;
+        double tokens = (SYSTEM.length() + prompt.apply(trim, 1.0).length()) / perToken;
+        while (tokens > room && trim < TRIM_CONTEXT) {
+            trim++;
+            tokens = (SYSTEM.length() + prompt.apply(trim, 1.0).length()) / perToken;
+        }
+        double scale = tokens > room ? Math.max(PromptFit.MIN_SCALE, room / tokens) : 1;
+        if (trim > 0 || scale < 1) {
+            log.info("Fitted the prompt of {} to leave about {} tokens for its answer within {} tokens a minute: {}{}", item.path(), expected,
+                    total, trim == 0 ? "nothing left out" : "left out " + String.join(", ", List.of("examples", "knowledge", "designs",
+                            "other context files").subList(0, trim)), scale < 1 ? ", context at " + Math.round(scale * 100) + "%" : "");
+        }
+        return new Fit(trim, scale);
+    }
+
+    /** The answer a file is expected to take: the current file for a change to it, else a typical size for its layer. */
+    static int expectedAnswerTokens(ChangePlan.Item item, String current, double charsPerToken) {
+        if (current != null) {
+            return (int) (current.length() / charsPerToken);
+        }
+        String layer = item.layer() == null ? "" : item.layer().toLowerCase(java.util.Locale.ROOT);
+        return switch (layer) {
+            case "test" -> 3000;
+            case "ui" -> 2500;
+            case "service" -> 2000;
+            case "data", "database", "sql" -> 1000;
+            case "config" -> 700;
+            default -> 1500;
+        };
+    }
+
+    /** The change's files the plan item names (by file name), out of those related to it. */
+    private static Map<String, String> named(ChangePlan.Item item, Map<String, String> related) {
+        String said = (nullToDash(item.purpose()) + " " + nullToDash(item.details())).toLowerCase(java.util.Locale.ROOT);
+        Map<String, String> named = new java.util.LinkedHashMap<>();
+        related.forEach((path, outline) -> {
+            if (said.contains(baseName(path).toLowerCase(java.util.Locale.ROOT))) {
+                named.put(path, outline);
+            }
+        });
+        return named;
     }
 
     /**
@@ -485,6 +559,9 @@ public class CodeGenerator {
                     + writtenSoFar(path, sofar);
             PromptFit.Fitted fitted;
             try {
+                log.info("Continuing {} (continuation {} of at most {}): {}", path, i + 1, continuations,
+                        strict ? "the last piece was the model's reasoning" : warned ? "the last piece started the file again"
+                        : repeatAsked ? "the last piece did not begin with the file's last line" : "the answer stopped at the output limit");
                 fitted = PromptFit.chatFrom(modelGateway, SYSTEM, s -> brief.apply(s) + more, scale);
             } catch (ModelLimitReachedException e) {
                 if (sofar.isBlank()) {
@@ -614,6 +691,7 @@ public class CodeGenerator {
         String ask = "\n\nThe file " + path + " is complete except that it calls methods it does not declare: " + names
                 + ". Write only these missing methods, complete, as members of its class, each once; nothing else, without code fences."
                 + "\nThe file's outline:\n" + JavaOutline.of(deduplicated) + "\nWhere they are called:\n" + uses;
+        log.info("Asking for the missing methods of {}: {}", path, names);
         String added;
         try {
             ModelGateway.ChatResult reply = PromptFit.chatFrom(modelGateway, SYSTEM, s -> brief.apply(s) + ask, scale).result();

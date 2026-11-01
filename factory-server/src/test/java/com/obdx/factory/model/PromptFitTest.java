@@ -83,6 +83,33 @@ class PromptFitTest {
     }
 
     @Test
+    void aRequestAskedAgainAfterARefusalIsSmallerAndSaysWhy() {
+        // The server counts more than the factory estimates: the learned limit alone would let the same prompt go again
+        LimitedGateway gateway = new LimitedGateway(7000) {
+            @Override
+            public int inputLimit() {
+                return learned == 0 ? 0 : 100_000;
+            }
+        };
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(PromptFit.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> logged = new ch.qos.logback.core.read.ListAppender<>();
+        logged.start();
+        logger.addAppender(logged);
+        try {
+            PromptFit.chat(gateway, "system", PromptFitTest::prompt);
+        } finally {
+            logger.detachAppender(logged);
+        }
+
+        assertThat(gateway.sent).hasSizeGreaterThan(1);
+        for (int i = 1; i < gateway.sent.size(); i++) {
+            assertThat(gateway.sent.get(i)).isLessThan(gateway.sent.get(i - 1));
+        }
+        assertThat(logged.list).extracting(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                .anyMatch(m -> m.startsWith("Asking again with a smaller prompt: the model's server refused") && m.contains("limit 7000 tokens"));
+    }
+
+    @Test
     void saysWhatToDoWhenEvenTheSmallestPromptIsTooLarge() {
         LimitedGateway gateway = new LimitedGateway(500);
 

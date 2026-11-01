@@ -14,7 +14,7 @@ public final class PromptFit {
 
     /** Room left for the server counting tokens a little differently than estimated. */
     static final double MARGIN = 0.9;
-    static final double MIN_SCALE = 0.1;
+    public static final double MIN_SCALE = 0.1;
     /** The scale of the prompt being sent on this thread, for the gateway's log of each request; null outside PromptFit. */
     static final ThreadLocal<Double> SCALE = new ThreadLocal<>();
 
@@ -44,6 +44,7 @@ public final class PromptFit {
 
     private static Fitted ask(ModelGateway gateway, String system, DoubleFunction<String> build, boolean json, double start) {
         double scale = Math.clamp(start, MIN_SCALE, 1);
+        int refusedLength = Integer.MAX_VALUE;
         for (int refused = 0; ; refused++) {
             String user = build.apply(scale);
             for (int i = 0; i < 8 && scale > MIN_SCALE; i++) {
@@ -53,6 +54,11 @@ public final class PromptFit {
                     break;
                 }
                 scale = Math.max(MIN_SCALE, scale * room / tokens);
+                user = build.apply(scale);
+            }
+            // A request asked again after a refusal is smaller than the refused one, whatever the estimate says
+            for (int i = 0; i < 8 && user.length() >= refusedLength && scale > MIN_SCALE; i++) {
+                scale = Math.max(MIN_SCALE, scale * 0.8);
                 user = build.apply(scale);
             }
             if (scale < 1) {
@@ -68,6 +74,9 @@ public final class PromptFit {
                     throw new ModelGatewayException("The request is larger than the " + e.limit() + " tokens the model's server takes "
                             + "at once, even with less context. Use a model or plan with a larger limit (on a cloud server, a paid tier).", e);
                 }
+                refusedLength = user.length();
+                log.info("Asking again with a smaller prompt: the model's server refused {} prompt characters as too large (limit {} "
+                        + "tokens, the request had {})", refusedLength, e.limit(), e.requested());
             } finally {
                 SCALE.remove();
             }

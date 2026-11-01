@@ -343,6 +343,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     }
 
     @Override
+    public int tokensPerMinute() {
+        return connection.limits().total;
+    }
+
+    @Override
     public boolean local() {
         return ollama.isOllama(connection.baseUrl());
     }

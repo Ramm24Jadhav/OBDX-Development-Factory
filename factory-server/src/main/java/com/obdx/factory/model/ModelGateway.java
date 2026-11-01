@@ -67,6 +67,14 @@ public interface ModelGateway {
         return 0;
     }
 
+    /**
+     * The tokens a minute the chat model's server counts prompt and answer against together (Groq's tokens per minute),
+     * learned from its refusals or response headers; 0 while unknown.
+     */
+    default int tokensPerMinute() {
+        return 0;
+    }
+
     /** The chat model runs on Ollama, on the factory's own hardware: slow, so long work is kept short. */
     default boolean local() {
         return false;

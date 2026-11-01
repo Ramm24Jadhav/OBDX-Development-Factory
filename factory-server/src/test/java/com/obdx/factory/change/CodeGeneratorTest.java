@@ -368,6 +368,56 @@ class CodeGeneratorTest {
     }
 
     @Test
+    void onASmallPerMinuteLimitTheFirstPromptLeavesRoomForTheWholeAnswer() {
+        // Groq's 8000 tokens a minute, prompt and answer together; a test file is expected to take about 3000 tokens
+        ModelGateway smallPlan = new ModelGateway() {
+            @Override
+            public ChatResult chat(String systemPrompt, String userPrompt) {
+                return model.chat(systemPrompt, userPrompt);
+            }
+
+            @Override
+            public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public float[] embed(String text) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<float[]> embedAll(List<String> texts) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int tokensPerMinute() {
+                return 8000;
+            }
+        };
+        ChangePlan.Item test = new ChangePlan.Item("backend/RemarksValidatorTest.java", "create", "test", "Tests of RemarksValidator", List.of(), null);
+        // two examples (each capped at 12,000 characters): too much beside a 3000-token answer
+        Map<String, String> examples = Map.of("backend/LimitValidatorTest.java", "public class LimitValidatorTest {\n"
+                + "    // an example test line\n".repeat(1500) + "}\n", "backend/AmountValidatorTest.java", "public class AmountValidatorTest {\n"
+                + "    // an example test line\n".repeat(1500) + "}\n");
+        replies.add("public class RemarksValidatorTest { }");
+
+        generatorWith(smallPlan).generate(context, new ChangePlan(null, List.of(test), List.of()), test, null, examples, Map.of(), null);
+
+        assertThat(CodeGenerator.expectedAnswerTokens(test, null, 3.5)).isEqualTo(3000);
+        // prompt + expected answer within 90% of 8000: at most 4200 tokens of prompt, so the examples are left out first
+        assertThat((CodeGenerator.SYSTEM.length() + prompts.getFirst().length()) / 3.5).isLessThanOrEqualTo(0.9 * 8000 - 3000);
+        assertThat(prompts.getFirst()).doesNotContain("an example test line").contains("File to write: backend/RemarksValidatorTest.java");
+
+        // with room enough, nothing is left out
+        prompts.clear();
+        replies.add("public class RemarksValidatorTest { }");
+        generator.generate(context, new ChangePlan(null, List.of(test), List.of()), test, null, examples, Map.of(), null);
+        assertThat(prompts.getFirst()).contains("an example test line");
+    }
+
+    @Test
     void aContinuationIsMuchSmallerThanTheFirstPrompt() {
         replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
         replies.add("    void check(String remarks) {\n    }\n}\n");

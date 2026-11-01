@@ -273,7 +273,7 @@ public class ChangeService {
                     earlier.put(existing.path(), existing.generated());
                 }
             }
-            Set<String> toWrite = resume ? notWritten(files.files(id)) : null;
+            Set<String> toWrite = resume ? continued(files.files(id)) : null;
             for (int i = 0; i < plan.items().size(); i++) {
                 ChangePlan.Item item = plan.items().get(i);
                 if ((onlyPath != null && !item.path().equals(onlyPath)) || (toWrite != null && !toWrite.contains(item.path()))) {
@@ -288,9 +288,8 @@ public class ChangeService {
                     String fixes = files.file(id, item.path()).map(f -> crossFileFixes(f.checkMessage())).orElse("");
                     fileNote = fixes.isEmpty() ? note : note == null || note.isBlank() ? fixes : note + "\n\n" + fixes;
                 }
-                // Continue goes on from the part of a file the limit stopped, instead of writing it all again
-                String partial = resume ? files.file(id, item.path()).filter(ChangeService::partial).map(kept -> usablePartial(files, id, kept))
-                        .orElse(null) : null;
+                // Continue and Write again go on from the part of a file (or of its rewrite) the limit stopped, instead of writing it all again
+                String partial = resume || onlyPath != null ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
                 writing = item.path();
                 String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
                 if (onlyPath != null) {
@@ -382,7 +381,10 @@ public class ChangeService {
     /** @param kept a file the limit stopped part-way, whose part is kept for Continue to go on from, or null */
     static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned, String kept) {
         String message = stopped(e, onlyPath, written, planned);
-        return kept == null || onlyPath != null ? message
+        if (kept == null) {
+            return message;
+        }
+        return onlyPath != null ? message + " The rewrite written so far is kept beside it; Write again (or Continue) goes on from it."
                 : message + " The part of " + kept + " written so far is kept; Continue generation goes on from it.";
     }
 
@@ -434,19 +436,65 @@ public class ChangeService {
             earlier.put(item.path(), result.content());
             return null;
         } catch (CodeGenerator.Partial e) {
-            ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
-            if (previous == null || previous.generated() == null || partial(previous)) {
-                // Kept for the reviewer to see and for Continue to go on from; it still counts as not written
-                files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, e.content(), false,
-                        new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " Continue generation goes on from here "
-                                + "when the limit resets, or write it again."), 1);
-            }
+            recordPartial(files, changeId, item.path(), current, e);
             throw e;
         } catch (ModelLimitReachedException e) {
             throw e;
         } catch (IOException | RuntimeException | StackOverflowError e) {
             return recordFailure(files, changeId, item.path(), current, e);
         }
+    }
+
+    /**
+     * Keeps the part of a file the model's limit stopped. A file without a version yet keeps it as its content, marked
+     * "Cut off" (not written); a file with one (Write again) keeps that version as its content and the new part beside it.
+     */
+    static void recordPartial(ChangeFileStore files, UUID changeId, String path, String current, CodeGenerator.Partial e) {
+        ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
+        if (previous == null || previous.generated() == null || partial(previous)) {
+            // Kept for the reviewer to see and for Continue to go on from; it still counts as not written
+            files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, e.content(), false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " Continue generation goes on from here "
+                            + "when the limit resets, or write it again."), 1);
+        } else {
+            // A rewrite (Write again) stopped part-way: the version written before stays the file's content for review and
+            // delivery; the new part is kept beside it, and the next Write again or Continue goes on from it
+            files.saveRewrite(changeId, path, e.content());
+        }
+    }
+
+    /** What Continue writes: the files not written yet, and the rewrites the model's limit stopped part-way. */
+    static Set<String> continued(List<ChangeFileStore.ChangeFile> files) {
+        Set<String> paths = notWritten(files);
+        files.stream().filter(f -> f.rewrite() != null).forEach(f -> paths.add(f.path()));
+        return paths;
+    }
+
+    /** "Rewrite in progress: ..." before a file's own check message while a stopped rewrite is kept beside it. */
+    static String withRewrite(ChangeFileStore.ChangeFile f) {
+        if (f.rewrite() == null) {
+            return f.checkMessage();
+        }
+        String rewrite = "Rewrite in progress: " + f.rewrite().length() + " characters written; Write again (or Continue) goes on from it.";
+        return f.checkMessage() == null ? rewrite : rewrite + "\n" + f.checkMessage();
+    }
+
+    /**
+     * The part of a file to go on from: a kept partial, or the part of a stopped rewrite, cleaned (and saved so); null
+     * when there is none, or too little of it is usable.
+     */
+    static String resumable(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile file) {
+        if (partial(file)) {
+            return usablePartial(files, changeId, file);
+        }
+        if (file.rewrite() == null) {
+            return null;
+        }
+        String cleaned = CodeGenerator.cleanPartial(file.path(), file.rewrite());
+        if (!java.util.Objects.equals(cleaned, file.rewrite())) {
+            files.saveRewrite(changeId, file.path(), cleaned);
+        }
+        return cleaned;
     }
 
     /**
@@ -475,6 +523,13 @@ public class ChangeService {
     static String recordFailure(ChangeFileStore files, UUID changeId, String path, String current, Throwable e) {
         ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
         int attempts = previous == null ? 0 : previous.attempts();
+        if (e instanceof CodeGenerator.JoinFailed && previous != null && previous.rewrite() != null && previous.generated() != null
+                && !partial(previous)) {
+            // A rewrite that did not join: dropped, so the next Write again starts it afresh; the version before stays
+            log.warn("{} of change {}: {} The rewrite is dropped; the version before is kept.", path, changeId, e.getMessage());
+            files.saveRewrite(changeId, path, null);
+            return e.getMessage();
+        }
         if (e instanceof CodeGenerator.JoinFailed) {
             // Expected when a model continues badly: one line, no stack trace
             log.warn("{} of change {}: {}", path, changeId, e.getMessage());
@@ -719,7 +774,7 @@ public class ChangeService {
         if (moved != null) {
             throw new BadRequestException(moved);
         }
-        int left = notWritten(files.files(id)).size();
+        int left = continued(files.files(id)).size();
         if (left == 0) {
             throw new BadRequestException("No file is left that the model can write. Use Write again for a single file; files marked "
                     + "to change by hand need a developer.");
@@ -1301,7 +1356,7 @@ public class ChangeService {
                 }
             }
             return new FileView(f.path(), f.action(), f.layer(), f.purpose(), f.status(), f.edited(), f.checkStatus(),
-                    f.checkMessage(), f.attempts(), added, removed);
+                    withRewrite(f), f.attempts(), added, removed);
         }).toList();
         return new ChangeDetail(c.getId(), c.getWorkspaceId(), c.getRequirementId(), c.getTitle(), c.getStatus(), c.getMessage(),
                 c.getBaseRevision(), c.getPlan() == null ? null : json.readValue(c.getPlan(), ChangePlan.class),

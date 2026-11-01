@@ -111,6 +111,79 @@ class PartialRecoveryTest {
     }
 
     @Test
+    void aRewriteStoppedByTheLimitIsKeptBesideThePreviousVersionAndResumed() {
+        String previousVersion = "public class RemarksValidator {\n    void check(String remarks) { }\n}\n";
+        ChangeFileStore.ChangeFile written = new ChangeFileStore.ChangeFile(0, "backend/RemarksValidator.java", "create", "service", null,
+                ChangeFileStore.Status.GENERATED, null, previousVersion, false, FileChecks.Status.FAILED, "Line 2 (java-x, error): ...", 1);
+        java.util.Deque<String> replies = new java.util.ArrayDeque<>();
+        java.util.List<String> prompts = new java.util.ArrayList<>();
+        com.obdx.factory.model.ModelGateway groq = new com.obdx.factory.model.ModelGateway() {
+            @Override
+            public ChatResult chat(String systemPrompt, String userPrompt) {
+                prompts.add(userPrompt);
+                String reply = replies.removeFirst();
+                if (reply.equals("LIMIT")) {
+                    throw new com.obdx.factory.model.ModelLimitReachedException("daily limit", true, "about 15 minutes", null);
+                }
+                return reply.startsWith("CUT:") ? new ChatResult(reply.substring(4), "scripted", 1, true) : new ChatResult(reply, "scripted", 1);
+            }
+
+            @Override
+            public ChatResult chatJson(String systemPrompt, String userPrompt) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public float[] embed(String text) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.List<float[]> embedAll(java.util.List<String> texts) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        CodeGenerator generator = new CodeGenerator(groq, new ChangeProperties(30, 25, org.springframework.util.unit.DataSize.ofKilobytes(80), 0,
+                "branches/factory", "-"), new com.obdx.factory.pack.LocalChecks(com.obdx.factory.pack.VersionPacks.builtIn()));
+        ChangeContext context = new ChangeContext("Remarks", "{\"screens\": []}", "[]", "- Java version: Java 8", "backend/: 3");
+        ChangePlan.Item item = new ChangePlan.Item("backend/RemarksValidator.java", "create", "service", "Validate remarks", java.util.List.of(), null);
+        ChangePlan plan = new ChangePlan("Add remarks", java.util.List.of(item), java.util.List.of());
+
+        // Write again: the first piece is cut off at max_tokens, the continuation refused on the daily limit
+        replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n        if (remarks.length() > 35) {\n");
+        replies.add("LIMIT");
+        CodeGenerator.Partial stopped = org.assertj.core.api.Assertions.catchThrowableOfType(CodeGenerator.Partial.class,
+                () -> generator.generate(context, plan, item, null, java.util.Map.of(), java.util.Map.of(), "use a constant"));
+        ChangeFileStore files = mock(ChangeFileStore.class);
+        when(files.file(CHANGE, item.path())).thenReturn(Optional.of(written));
+        ChangeService.recordPartial(files, CHANGE, item.path(), null, stopped);
+
+        // the previous version stays the content; the new part is kept beside it
+        verify(files).saveRewrite(CHANGE, item.path(), stopped.content());
+        verify(files, never()).saveResult(any(), anyString(), any(), any(), any(), eq(false), any(), anyInt());
+        ChangeFileStore.ChangeFile withRewrite = new ChangeFileStore.ChangeFile(0, item.path(), "create", "service", null,
+                ChangeFileStore.Status.GENERATED, null, previousVersion, false, FileChecks.Status.FAILED, "Line 2 (java-x, error): ...", 1,
+                stopped.content());
+        assertThat(ChangeService.withRewrite(withRewrite)).startsWith("Rewrite in progress: " + stopped.content().length()
+                + " characters written; Write again (or Continue) goes on from it.\nLine 2");
+        // Continue takes it up; delivery still has the previous version
+        assertThat(ChangeService.continued(java.util.List.of(withRewrite))).containsExactly(item.path());
+        assertThat(ChangeService.unwritten(java.util.List.of(withRewrite))).isEmpty();
+        assertThat(ChangeService.stoppedMessage(new com.obdx.factory.model.ModelLimitReachedException("x", true, "about 15 minutes", null),
+                item.path(), 1, 1, item.path())).endsWith("The rewrite written so far is kept beside it; Write again (or Continue) goes on from it.");
+
+        // the next Write again resumes the rewrite instead of starting over
+        String resumed = ChangeService.resumable(files, CHANGE, withRewrite);
+        assertThat(resumed).isEqualTo(stopped.content());
+        prompts.clear();
+        replies.add("        if (remarks.length() > 35) {\n            throw new IllegalArgumentException();\n        }\n    }\n}\n");
+        CodeGenerator.Result done = generator.generate(context, plan, item, null, null, java.util.Map.of(), java.util.Map.of(), "use a constant", null, resumed);
+
+        assertThat(prompts).singleElement().asString().contains("The file so far ends with:\npublic class RemarksValidator {");
+        assertThat(done.content()).contains("throw new IllegalArgumentException();").endsWith("}\n");
+    }
+
+    @Test
     void aKeptPartWithTooLittleLeftIsDroppedAndTheFileWrittenWhole() {
         String early = "package com.bank.beneficiary;\n\npublic class BeneficiaryValidationServiceTest {\n"
                 + "    void a() { foo(; }\n" + "    void b() {\n        service.validate(\"x\");\n    }\n".repeat(60);
