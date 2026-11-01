@@ -95,7 +95,7 @@
                                     help.instruction="[[c.data.helpText]]"></oj-select-single>
                 </oj-bind-if>
                 <oj-bind-if test="[[c.data.look === 'amount']]">
-                  <oj-input-number :data-cid="[[c.data.id]]" :data-api="[[c.data.api]]" :style.display="[[c.data.display]]" :data-label="[[c.data.label]]" :class="[[c.data.css]]" label-hint="[[c.data.label + ' (INR)']]" value="{{c.data.value}}"
+                  <oj-input-number :data-cid="[[c.data.id]]" :data-api="[[c.data.api]]" :style.display="[[c.data.display]]" :data-label="[[c.data.label]]" :class="[[c.data.css]]" label-hint="[[c.data.amountLabel]]" value="{{c.data.value}}"
                                    required="[[c.data.required]]" readonly="[[c.data.readonly]]" converter="[[c.data.converter]]"
                                    help.instruction="[[c.data.helpText]]"></oj-input-number>
                 </oj-bind-if>

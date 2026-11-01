@@ -213,20 +213,27 @@ These are warnings because a class can come from a library jar, and a view model
 The **UI Design Studio** (`?ojr=studio`, "UI Design Studio" in the menu) is the way from a BRD to approved screens; the
 Visual Designer below is for detailed work on one screen. See `docs/DESIGN-STUDIO.md` for the design note.
 
-- A **stepper** shows where the chosen BRD stands (BRD, Spec, Screens, Approve, Code) and a card under it names the next
-  action: upload a BRD (it is drafted as on the Requirements page), review and approve the spec (opens it on the
-  Requirements page), **Generate screens**, approve them, and **Generate code** (starts the change and opens it on the
-  Changes page; before the workspace's code is imported it says so instead).
-- On the left, the BRD's **functional requirements** (FR-001 ...) with priority, screens and how many are approved, a
-  search and a priority filter; **All screens**, and **Other screens** for screens no requirement names.
-- On the right, the selected requirement's description, business rules and acceptance criteria, its **user flow** (the
-  screens in order, each review and confirmation screen right after its initiate screen), and every screen in **phone
-  frames**, or one at a time in a **desktop frame**. Clicking a screen selects it.
-- For the selected screen: **Change with AI** (a plain-language change to the whole screen), a **quick edit** of the
-  title, labels and mandatory flags (saved as a new version), **Add them** when an input screen has no review and
-  confirmation screens, **Approve** or **Reopen**, and **Open in designer**.
-- **Approve the n screens** approves the selected requirement's screens in one action; the next-action card approves
-  every remaining screen of the BRD. A summary lists the channels, screens, fields and OBDX components used.
+- A **workflow bar** stays at the top while the page scrolls: the BRD, the five stages (BRD, Spec, Screens, Approve,
+  Code) and the next action: upload a BRD (it is drafted as on the Requirements page), review and approve the spec
+  (opens it on the Requirements page), **Generate screens**, approve them all, and **Generate code** (starts the change
+  and opens it on the Changes page; before the workspace's code is imported it says so instead).
+- **Requirements** (left): the BRD's functional requirements (FR-001 ...) with priority, screens, how many are approved
+  and what is still open (criteria not covered, decisions open, values to confirm); a search and a priority filter;
+  **All screens**, and **Other screens** for screens no requirement names.
+- **Screen flow** (middle; above the preview below 1440 px): the selected requirement's description, rules and criteria
+  (each marked covered or not), then one node per screen in the order the customer meets them, with its status, the
+  criteria it helps meet and its open items. Clicking a node, or the arrow keys, shows that screen in the preview.
+  Below the nodes: **Approve the n screens**, the criteria no screen covers, the design decisions still open, and a
+  summary of the channels, fields and OBDX components used.
+- **The selected screen** (right): its preview as a **phone** (390 px), **tablet** (820 px) or **desktop** (1280 px)
+  page, never shown below 80% so the text stays readable (a wider page scrolls inside the preview). The preview shows the
+  BRD's labels and values only: a choice or table the BRD gives no values for reads "To be confirmed by the analyst"
+  and is outlined; other values are left empty for run time. **Approve screen** or **Reopen** (Approve permission) and
+  **Open in designer**, then one row of tabs: **Coverage** (the criteria this screen helps meet, values to confirm,
+  decisions it waits for, and **Add them** when an input screen has no review and confirmation screens), **Refine**
+  (Change with AI; **Regenerate this screen**, which saves the version generated from the approved spec again as a new
+  version), **Edit** (title, labels and mandatory flags, saved as a new version) and **Compare versions** (what changed
+  between two versions, and a preview of the earlier one). Refine and Edit show to the Analyst and Developer roles.
 
 ## Screen designer
 
@@ -642,7 +649,7 @@ object: compute those in the view model.
 | `GET /api/workspaces/{id}/designs` | List screen designs |
 | `POST /api/workspaces/{id}/designs` | Create a blank design (`name`) |
 | `POST /api/requirements/{id}/designs` | Create designs from an approved requirement |
-| `GET /api/requirements/{id}/design-flow` | The requirement's screens in flow order with their models, and per functional requirement its screens, business rules and acceptance criteria (`others`: screens no requirement names) |
+| `GET /api/requirements/{id}/design-flow` | The requirement's screens in flow order with their models, and per functional requirement its screens, business rules and acceptance criteria (`others`: screens no requirement names). Per screen: `criteria` (the acceptance criteria it helps meet), `unconfirmed` (choices and tables the BRD gives no values for) and `decisions` (what the BRD leaves open: a field's mandatory flag, new screen or change). `uncovered`: criteria no screen covers; `questions`: unanswered spec questions; `decisions`: answered ones |
 | `POST /api/requirements/{id}/designs/approve` | Approve the requirement's screens that are not approved yet (`designIds`: only these; none: all), in one transaction; returns the flow |
 | `GET /api/designs/{id}` | Design with current model, versions and comments |
 | `GET /api/designs/{id}/versions/{version}` | An earlier version's model |
