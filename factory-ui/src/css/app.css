@@ -9268,3 +9268,126 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
     .factory-topbar-version { order: 11; margin-left: 0; }
     .factory-shell .factory-topbar-workspace:has(+ .factory-topbar-version) { flex: 1 1 calc(100% - 96px) !important; }
 }
+
+/* ---------- Home (overview): next action first, then progress and recent work ---------- */
+.factory-home { display: flex; flex-direction: column; gap: var(--fx-gap); padding: 14px 12px 8px; }
+.factory-home-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.factory-home-title { min-width: 0; }
+.factory-home-head h1 { margin: 0; font-size: var(--fx-text-h1); line-height: 1.15; color: var(--fx-text); }
+.factory-home-lead { margin: 4px 0 0; font-size: var(--fx-text-base); color: var(--fx-text-muted); overflow-wrap: anywhere; }
+.factory-home-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.factory-home-scope > button { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.factory-home-alert { align-items: center; }
+.factory-home-alert .fx-btn { flex: 0 0 auto; }
+.factory-home-muted { font-size: var(--fx-text-sm); font-weight: 400; color: var(--fx-text-muted); }
+.factory-home-none { margin: 0; }
+.factory-home-link { font-size: var(--fx-text-sm); font-weight: var(--fx-weight-medium); color: var(--fx-primary-text); text-decoration: none; white-space: nowrap; }
+.factory-home-link:hover { text-decoration: underline; }
+
+.factory-home-main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--fx-gap); align-items: start; }
+.factory-home-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fx-gap); align-items: start; }
+.factory-home-card { display: flex; flex-direction: column; gap: 12px; }
+.factory-home-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.factory-home-card-head .fx-card-title { display: flex; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; min-width: 0; }
+.factory-home-skel { width: 50%; height: 20px; }
+.factory-home-skel-short { width: 40%; }
+
+/* The work to continue: the newest as a card with its four steps, the others as rows */
+.factory-home-next {
+    display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 16px; box-sizing: border-box;
+    border: 1px solid var(--fx-border); border-left: 3px solid var(--fx-primary); border-radius: var(--fx-radius-lg);
+    background: var(--fx-surface-2); font: inherit; color: inherit; text-align: left; cursor: pointer;
+    transition: border-color var(--fx-dur-hover) var(--fx-ease-out), box-shadow var(--fx-dur-hover) var(--fx-ease-out);
+}
+.factory-home-next:hover { border-color: var(--fx-primary-border); border-left-color: var(--fx-primary); box-shadow: var(--fx-shadow-sm); }
+.factory-home-next:focus-visible { outline: none; box-shadow: var(--fx-focus); }
+.factory-home-next-top, .factory-home-next-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px 8px; flex-wrap: wrap; }
+.factory-home-step-text { font-size: var(--fx-text-caption); font-weight: var(--fx-weight-medium); color: var(--fx-text-muted); }
+.factory-home-next-title { font-size: var(--fx-text-h4); font-weight: var(--fx-weight-semibold); color: var(--fx-text); overflow-wrap: anywhere; }
+.factory-home-next-text { color: var(--fx-text-body); }
+.factory-home-steps { display: flex; gap: 4px; }
+.factory-home-step { flex: 1 1 0; min-width: 0; padding-top: 5px; border-top: 3px solid var(--fx-border-strong); font-size: var(--fx-text-caption); color: var(--fx-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.factory-home-step.is-done { border-top-color: var(--fx-success); color: var(--fx-text-body); }
+.factory-home-step.is-current { border-top-color: var(--fx-primary); color: var(--fx-primary-text); font-weight: var(--fx-weight-semibold); }
+.factory-home-go { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fx-weight-semibold); color: var(--fx-primary-text); }
+.factory-home-go .factory-nav-icon { width: 16px; height: 16px; flex-basis: 16px; }
+
+/* Rows: work in progress, attention, recent requirements, builds and workspaces */
+.factory-home-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.factory-home-list > li + li { border-top: 1px solid var(--fx-border); }
+.factory-home-row {
+    display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 6px; box-sizing: border-box;
+    border: 0; border-radius: var(--fx-radius-sm); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; cursor: pointer;
+    transition: background-color var(--fx-dur-hover) var(--fx-ease-out);
+}
+.factory-home-list--compact .factory-home-row { padding: 8px 6px; }
+.factory-home-row:hover { background: var(--fx-surface-2); }
+.factory-home-row:focus-visible { outline: none; box-shadow: var(--fx-focus); }
+.factory-home-row > .fx-badge { flex: 0 0 auto; }
+.factory-home-row-main { display: flex; flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; }
+.factory-home-row-title { font-weight: var(--fx-weight-medium); color: var(--fx-text); overflow-wrap: anywhere; }
+.factory-home-row-text { font-size: var(--fx-text-sm); color: var(--fx-text-body); overflow-wrap: anywhere; }
+.factory-home-row-action { font-size: var(--fx-text-sm); font-weight: var(--fx-weight-medium); color: var(--fx-primary-text); }
+.factory-home-dot { flex: 0 0 10px; width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; }
+.factory-home-dot-red { background: var(--fx-danger); }
+.factory-home-dot-amber { background: var(--fx-warning); }
+.factory-home-more { align-self: flex-start; }
+.factory-home-elsewhere { display: flex; align-items: center; gap: 4px 8px; flex-wrap: wrap; margin: 0; padding-top: 10px; border-top: 1px solid var(--fx-border); font-size: var(--fx-text-sm); color: var(--fx-text-muted); }
+.factory-home-empty { padding: 20px 12px; }
+.factory-home-ok { background: var(--fx-success-soft); color: var(--fx-success-text); }
+
+/* Progress: one cell per stage with its definition */
+.factory-home-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.factory-home-metric {
+    display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 12px; box-sizing: border-box;
+    border: 1px solid var(--fx-border); border-radius: var(--fx-radius); color: inherit; text-decoration: none;
+    transition: border-color var(--fx-dur-hover) var(--fx-ease-out);
+}
+.factory-home-metric:hover { border-color: var(--fx-primary-border); }
+.factory-home-metric:focus-visible { outline: none; box-shadow: var(--fx-focus); }
+.factory-home-metric-top { display: flex; align-items: center; gap: 8px; }
+.factory-home-metric-icon { display: inline-flex; flex: 0 0 28px; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--fx-radius-sm); }
+.factory-home-metric-icon .factory-nav-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.factory-home-metric-label { font-weight: var(--fx-weight-medium); color: var(--fx-text); }
+.factory-home-metric-value { font-size: var(--fx-text-h4); font-weight: var(--fx-weight-semibold); color: var(--fx-text); font-variant-numeric: tabular-nums; }
+.factory-home-metric-word { font-size: var(--fx-text-sm); font-weight: 400; color: var(--fx-text-body); }
+.factory-home-bar { display: block; height: 6px; }
+.factory-home-bar-green > span { background: var(--fx-success); }
+.factory-home-bar-amber > span { background: var(--fx-warning); }
+.factory-home-bar-violet > span { background: var(--fx-violet); }
+.factory-home-metric-def { font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-home-metric-sub { font-size: var(--fx-text-caption); color: var(--fx-text-body); }
+
+/* Recent activity (the shared timeline) and the workspaces list */
+.factory-home .factory-ov5-timeline > li { align-items: start; padding-bottom: 12px; }
+.factory-home .factory-ov5-event { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.factory-home .factory-ov5-event .factory-ov2-activity-text { display: block; max-width: 100%; line-height: 1.35; }
+.factory-home .factory-ov5-event .factory-ov2-activity-text:focus-visible { outline: none; box-shadow: var(--fx-focus); border-radius: 4px; }
+.factory-home .factory-ov5-event .factory-ov2-ws { display: block; font-size: var(--fx-text-caption); }
+.factory-home-ws { display: flex; align-items: center; gap: 4px; }
+.factory-home-ws[aria-current="true"] { box-shadow: inset 3px 0 0 var(--fx-primary); padding-left: 3px; }
+.factory-home-ws-open { flex: 1 1 auto; min-width: 0; align-items: center; }
+.factory-home-connect { align-self: flex-start; }
+
+/* First run: setting up the first workspace */
+.factory-home-setup { max-width: 680px; }
+.factory-home-setup-sub { margin: 0; }
+.factory-home-setup .factory-ov4-segs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; }
+.factory-home-setup .factory-ov4-segs > button { justify-content: center; min-width: 0; height: 32px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-home-setup .factory-ov2-source { align-items: flex-end; margin: 0; }
+.factory-home-browse { flex: 0 0 auto; }
+.factory-home-setup .factory-ov2-check, .factory-home-setup .factory-ov2-found { margin: 0; }
+.factory-home-setup #setupCreate { align-self: flex-start; }
+
+@media (max-width: 1099px) {
+    .factory-home-main, .factory-home-grid { grid-template-columns: minmax(0, 1fr); }
+    .factory-home-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+    .factory-home-head { align-items: stretch; }
+    .factory-home-actions { width: 100%; }
+    .factory-home-scope { display: grid; grid-template-columns: 1fr 1fr; width: 100%; box-sizing: border-box; }
+    .factory-home-scope > button { max-width: none; justify-content: center; }
+    .factory-home-actions > .fx-btn { flex: 1 1 auto; justify-content: center; }
+    .factory-home-head h1 { font-size: var(--fx-text-h2); }
+}

@@ -3,8 +3,11 @@
  * see: each workspace with its requirements, screens, changes (with their Jenkins builds), code index and imports, plus
  * what needs the user's attention. Loaded from the same endpoints the other pages use; nothing here is stored.
  */
-define(['knockout', './api', './session', './workspaceSelection', './preferences'], function (ko, api, session, workspaceSelection, preferences) {
+define(['knockout', './api', './session', './workspaceSelection', './preferences', './pageRequests'], function (ko, api, session, workspaceSelection, preferences, pageRequests) {
   const OPEN_CHANGES = ['ANALYZING', 'PLAN_READY', 'GENERATING', 'GENERATED'];
+  // The parts of a workspace's data, by endpoint. A part that could not be loaded is named in the entry's `missing`
+  // (pages say so rather than showing it as empty).
+  const PARTS = ['requirements', 'designs', 'changes', 'index', 'imports', 'changes/details'];
   const data = ko.observableArray([]);
   const model = ko.observable(null);
   const loading = ko.observable(false);
@@ -13,6 +16,16 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
 
   const settled = (promise) => promise.then((value) => value, () => null);
   const isIndexed = (w) => w.indexedRevision !== null && w.indexedRevision !== undefined;
+  // Work the server marked as stopped by a restart (requirements, changes, builds and imports say so in their message)
+  const interrupted = (message) => /interrupted/i.test(message || '');
+  // The first clause of a server message, for a one-line status ("Impact analysis failed: <model error>" gives
+  // "Impact analysis failed"); the whole message stays on the record's own page
+  const firstClause = (message) => {
+    const text = String(message || '').trim();
+    const cut = text.search(/: |\. /);
+    const part = cut > 0 ? text.slice(0, cut) : text.replace(/\.$/, '');
+    return part.length > 90 ? part.slice(0, 89) + '…' : part;
+  };
 
   /** "5 minutes ago", "3 days ago", or the date for anything older than a month. */
   function ago(value) {
@@ -60,27 +73,26 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
   }
 
   function loadWorkspace(w) {
-    return Promise.all([
-      settled(api.get('workspaces/' + w.id + '/requirements')),
-      settled(api.get('workspaces/' + w.id + '/designs')),
-      settled(api.get('workspaces/' + w.id + '/changes')),
-      settled(api.get('workspaces/' + w.id + '/index')),
-      settled(api.get('workspaces/' + w.id + '/imports')),
-      // Every change's detail (its files and builds) in one request, not one per change
-      settled(api.get('workspaces/' + w.id + '/changes/details'))
-    ]).then(([requirements, designs, changes, index, imports, changeDetails]) =>
-      Promise.resolve(changeDetails || []).then((details) => ({
-        workspace: w,
-        requirements: requirements || [],
-        designs: designs || [],
-        changes: changes || [],
-        changeDetails: details.filter(Boolean),
-        builds: details.filter(Boolean).reduce((all, d) => all.concat((d.builds || []).map((b) => Object.assign({}, b, {
-          changeTitle: d.title, branchUrl: d.branchUrl, workspaceName: w.name, workspaceId: w.id
-        }))), []),
-        index: index,
-        imports: imports || []
-      })));
+    const missing = [];
+    // Every change's detail (its files and builds) comes in one request, not one per change
+    return Promise.all(PARTS.map((part) => api.get('workspaces/' + w.id + '/' + part)
+      .catch(() => { missing.push(part === 'changes/details' ? 'builds' : part); return null; })))
+      .then(([requirements, designs, changes, index, imports, changeDetails]) => {
+        const details = (changeDetails || []).filter(Boolean);
+        return {
+          workspace: w,
+          requirements: requirements || [],
+          designs: designs || [],
+          changes: changes || [],
+          changeDetails: details,
+          builds: details.reduce((all, d) => all.concat((d.builds || []).map((b) => Object.assign({}, b, {
+            changeId: d.id, changeTitle: d.title, branchUrl: d.branchUrl, workspaceName: w.name, workspaceId: w.id
+          }))), []),
+          index: index,
+          imports: imports || [],
+          missing: missing
+        };
+      });
   }
 
   /** Loads (or reloads) everything. Calls made while a load runs share it. */
@@ -114,42 +126,104 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     };
   }
 
-  // What needs the user: code not imported, specifications that failed or have open questions, screens in review,
-  // plans waiting for approval, generated or failed changes, and models never chosen (administrators).
+  /**
+   * Opens one record on its page: request names the page request the receiving page reads once it has loaded
+   * (requirement, change, design or studio, see pageRequests) and id the record.
+   */
+  function openRecord(page, workspaceId, request, id) {
+    const go = open(page, workspaceId);
+    return (event) => {
+      if (request && id) {
+        pageRequests[request](id);
+      }
+      go(event);
+    };
+  }
+
+  /** The latest Jenkins build of a change (its detail), or null */
+  function latestBuild(detail) {
+    const builds = (detail && detail.builds) || [];
+    return builds.slice().sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
+  }
+
+  // What needs someone: failed or interrupted work (spec drafts, changes, builds, imports), approvals waiting (specs,
+  // screens, plans), open questions, generated code to review and deliver, code never imported, and models never
+  // chosen (administrators). Each item opens its record; `action` says what the user can do there with their role.
   const attention = ko.pureComputed(() => {
     const items = [];
     data().forEach((d) => {
       const w = d.workspace;
+      const can = (permission) => session.can(w.id, permission);
+      const add = (item) => items.push(Object.assign({ workspaceId: w.id, workspaceName: w.name }, item));
       const state = codeState(d);
       if (state.key === 'new' || state.key === 'failed') {
-        items.push({ tone: 'red', title: w.name + ': code not imported',
-          text: state.key === 'failed' ? (d.imports[0].message || 'The last import failed.') : 'Import the code so the factory can search and change it.',
-          at: d.imports.length ? d.imports[0].createdAt : w.createdAt, open: open('code', w.id) });
+        const job = d.imports[0];
+        add({ key: 'code:' + w.id, kind: state.key === 'failed' ? 'failed' : 'setup', tone: state.key === 'failed' ? 'red' : 'amber',
+          title: w.name + ': ' + (state.key === 'new' ? 'code not imported' : (interrupted(job.message) ? 'code import interrupted' : 'code import failed')),
+          text: state.key === 'failed' ? (job.message || 'The last import failed.') : 'Import the code so the factory can search and change it.',
+          action: can('MANAGE_CODE') ? 'Import the code' : 'Ask a developer or lead to import it',
+          at: job ? job.createdAt : w.createdAt, open: open('code', w.id) });
       }
+      const titles = {};
       d.requirements.forEach((r) => {
+        titles[r.id] = r.title;
+        const openIt = openRecord('requirements', w.id, 'requirement', r.id);
         if (r.status === 'FAILED') {
-          items.push({ tone: 'red', title: r.title, text: w.name + ': the specification could not be made. Open it to try again.', at: r.updatedAt, open: open('requirements', w.id) });
+          add({ key: 'req:' + r.id, kind: 'failed', tone: 'red', title: r.title,
+            text: w.name + ': ' + (interrupted(r.message) ? 'drafting the spec was interrupted by a restart.' : 'the specification could not be made.'),
+            action: can('EDIT_REQUIREMENTS') ? 'Open it to try again' : 'Waiting for an analyst to try again', at: r.updatedAt, open: openIt });
         } else if (r.status === 'READY' && r.openQuestions > 0) {
-          items.push({ tone: 'amber', title: r.title, text: w.name + ': ' + r.openQuestions + ' open question' + (r.openQuestions === 1 ? '' : 's') + ' to answer.', at: r.updatedAt, open: open('requirements', w.id) });
+          add({ key: 'req:' + r.id, kind: 'questions', tone: 'amber', title: r.title,
+            text: w.name + ': ' + r.openQuestions + ' open question' + (r.openQuestions === 1 ? '' : 's') + ' to answer.',
+            action: can('EDIT_REQUIREMENTS') ? 'Answer the questions' : 'Waiting for an analyst to answer', at: r.updatedAt, open: openIt });
+        } else if (r.status === 'READY') {
+          add({ key: 'req:' + r.id, kind: 'approval', tone: 'amber', title: r.title, text: w.name + ': the spec is ready for approval.',
+            action: can('APPROVE') ? 'Review and approve the spec' : 'Waiting for someone who can approve', at: r.updatedAt, open: openIt });
         }
       });
-      d.designs.forEach((s) => {
-        if (s.status === 'IN_REVIEW') {
-          items.push({ tone: 'amber', title: s.name, text: w.name + ': screen waiting for review.', at: s.updatedAt, open: open('studio', w.id) });
-        }
+      // Screens in review, one item per requirement (a screen without one opens in the Visual Designer)
+      const review = {};
+      d.designs.filter((s) => s.status === 'IN_REVIEW').forEach((s) => {
+        const group = s.requirementId || 'design:' + s.id;
+        (review[group] = review[group] || []).push(s);
       });
+      Object.keys(review).forEach((group) => {
+        const list = review[group];
+        const first = list[0];
+        const at = list.map((s) => s.updatedAt).sort().pop();
+        add({ key: 'review:' + group, kind: 'approval', tone: 'amber',
+          title: first.requirementId ? (titles[first.requirementId] || first.name) : first.name,
+          text: w.name + ': ' + (list.length === 1 ? 'a screen is' : list.length + ' screens are') + ' waiting for approval.',
+          action: can('APPROVE') ? 'Review and approve' : 'Waiting for someone who can approve', at: at,
+          open: first.requirementId ? openRecord('studio', w.id, 'studio', first.requirementId) : openRecord('designer', w.id, 'design', first.id) });
+      });
+      const details = {};
+      d.changeDetails.forEach((c) => { details[c.id] = c; });
       d.changes.forEach((c) => {
+        const openIt = openRecord('changes', w.id, 'change', c.id);
+        // The change's build status (BUILDING, PASSED or FAILED) is the state of its last Jenkins build
+        const detail = details[c.id];
+        const build = latestBuild(detail);
         if (c.status === 'PLAN_READY') {
-          items.push({ tone: 'amber', title: c.title, text: w.name + ': the plan is ready for approval.', at: c.updatedAt, open: open('changes', w.id) });
+          add({ key: 'change:' + c.id, kind: 'approval', tone: 'amber', title: c.title, text: w.name + ': the plan is ready for approval.',
+            action: can('APPROVE') ? 'Review and approve the plan' : 'Waiting for someone who can approve', at: c.updatedAt, open: openIt });
+        } else if (c.status === 'GENERATED' && detail && detail.buildStatus === 'FAILED') {
+          add({ key: 'change:' + c.id, kind: 'failed', tone: 'red', title: c.title,
+            text: w.name + ': build ' + (build && build.buildNumber ? '#' + build.buildNumber + ' ' : '') + (interrupted(detail.buildMessage) ? 'was interrupted by a restart.' : 'failed.'),
+            action: can('MANAGE_CODE') ? 'See the errors and build again' : 'Waiting for a developer', at: (build && (build.finishedAt || build.startedAt)) || c.updatedAt, open: openIt });
         } else if (c.status === 'GENERATED') {
-          items.push({ tone: 'amber', title: c.title, text: w.name + ': code generated, ready to review and deliver.', at: c.updatedAt, open: open('changes', w.id) });
+          add({ key: 'change:' + c.id, kind: 'review', tone: 'amber', title: c.title, text: w.name + ': code generated, ready to review and deliver.',
+            action: can('MANAGE_CODE') ? 'Review and deliver' : 'Waiting for a developer', at: c.updatedAt, open: openIt });
         } else if (c.status === 'FAILED') {
-          items.push({ tone: 'red', title: c.title, text: w.name + ': ' + (c.message || 'the change failed.'), at: c.updatedAt, open: open('changes', w.id) });
+          add({ key: 'change:' + c.id, kind: 'failed', tone: 'red', title: c.title,
+            text: w.name + ': ' + (interrupted(c.message) ? 'interrupted by a restart.' : (firstClause(c.message) || 'the change failed') + '.'),
+            action: can('MANAGE_CODE') ? 'Open it to try again or close it' : 'Waiting for a developer', at: c.updatedAt, open: openIt });
         }
       });
     });
     if (session.isAdmin() && model() && !model().saved) {
-      items.push({ tone: 'amber', title: 'Models not chosen yet', text: 'The factory is using the models from its settings file. Choose them on the Models page.', open: open('models') });
+      items.push({ key: 'models', kind: 'setup', tone: 'amber', title: 'Models not chosen yet', text: 'The factory is using the models from its settings file. Choose them on the Models page.',
+        action: 'Choose the models', workspaceId: null, open: open('models') });
     }
     return items.map((item) => Object.assign(item, { when: ago(item.at) }));
   });
@@ -164,6 +238,10 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     attention: attention,
     load: load,
     open: open,
+    openRecord: openRecord,
+    latestBuild: latestBuild,
+    interrupted: interrupted,
+    firstClause: firstClause,
     codeState: codeState,
     isIndexed: isIndexed,
     openChanges: OPEN_CHANGES,
