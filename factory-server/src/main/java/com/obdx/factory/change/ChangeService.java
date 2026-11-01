@@ -892,7 +892,10 @@ public class ChangeService {
         if (checkMessage == null) {
             return "";
         }
-        List<String> lines = checkMessage.lines().filter(line -> CROSS_CHECKS.stream().anyMatch(line::startsWith)).toList();
+        // and the file's own compile errors that come from what it uses (methods never written, or written twice)
+        List<String> lines = checkMessage.lines().filter(line -> CROSS_CHECKS.stream().anyMatch(line::startsWith)
+                || line.contains("(" + com.obdx.factory.pack.JavaCompileChecks.UNDECLARED_RULE + ",")
+                || line.contains("(" + com.obdx.factory.pack.JavaCompileChecks.DUPLICATE_RULE + ",")).toList();
         return lines.isEmpty() ? "" : "Fix these problems found by comparing this file with the other files of the change:\n- "
                 + String.join("\n- ", lines);
     }

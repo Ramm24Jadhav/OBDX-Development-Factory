@@ -3,6 +3,7 @@ package com.obdx.factory.change;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.model.ModelLimitReachedException;
 import com.obdx.factory.model.PromptFit;
+import com.obdx.factory.pack.JavaCompileChecks;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.ModelReasoning;
 import com.obdx.factory.pack.Recipe;
@@ -119,7 +120,7 @@ public class CodeGenerator {
         java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
         Written written = write(item.path(), prompt, brief, partial, 1);
         String content = written.content();
-        FileChecks.Result check = checked(context, item, original, content, scaffold, written.cutOff());
+        FileChecks.Result check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
         int attempts = 1;
         // A file still cut off after its continuations is not fixed by asking with it again, which is longer still
         while (check.status() == FileChecks.Status.FAILED && !written.cutOff() && attempts <= properties.fixAttempts()) {
@@ -127,7 +128,7 @@ public class CodeGenerator {
                     + "\nWrite the complete corrected file.";
             written = write(item.path(), scale -> prompt.apply(scale) + fix, brief, null, written.scale());
             content = written.content();
-            check = checked(context, item, original, content, scaffold, written.cutOff());
+            check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
             attempts++;
         }
         return new Result(content, check, attempts);
@@ -142,6 +143,17 @@ public class CodeGenerator {
         String cut = "The model stopped at its output limit, so the file is incomplete even after asking it to continue "
                 + continuations() + " times. Use a model or plan with a higher output limit, then write it again, or finish it by hand.";
         return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
+    }
+
+    /** A check with what joining the answer's pieces changed: a passed file then shows it as a warning, for review. */
+    static FileChecks.Result withNotes(FileChecks.Result check, List<String> notes) {
+        if (notes.isEmpty()) {
+            return check;
+        }
+        String text = String.join("\n", notes);
+        FileChecks.Status status = check.status() == FileChecks.Status.PASSED || check.status() == FileChecks.Status.NOT_CHECKED
+                ? FileChecks.Status.WARNING : check.status();
+        return new FileChecks.Result(status, check.message() == null ? text : check.message() + "\n" + text);
     }
 
     /** A screen of a React Native or React app must keep every field and action of the approved Screen Model. */
@@ -391,7 +403,7 @@ public class CodeGenerator {
     }
 
     /** A file as written, whether it is still cut off at the model's output limit, and the scale its prompt needed. */
-    record Written(String content, boolean cutOff, double scale) {
+    record Written(String content, boolean cutOff, double scale, List<String> notes) {
     }
 
     /** How the check of a file the model's limit stopped part-way starts: the file is kept, but counts as not written. */
@@ -441,7 +453,7 @@ public class CodeGenerator {
                 log.info("The model's answer for {} was empty", path);
             }
             if (!reply.cutOff()) {
-                return new Written(clean(reply.reply()), false, scale);
+                return new Written(clean(reply.reply()), false, scale, List.of());
             }
             sofar = withoutReasoning(path, withoutFences(reply.reply()));
         } else {
@@ -469,7 +481,8 @@ public class CodeGenerator {
                     + "last line above." : "")
                     + (strict ? " Do not write notes to yourself or remarks about the prompt (no \"Wait\", \"Let's check\" or \"I already "
                     + "wrote\"); if a line is already written, simply go on after it." : "")
-                    + (repeatAsked ? " Your answer MUST begin with that exact line, repeated in full, so the two parts join." : "");
+                    + (repeatAsked ? " Your answer MUST begin with that exact line, repeated in full, so the two parts join." : "")
+                    + writtenSoFar(path, sofar);
             PromptFit.Fitted fitted;
             try {
                 fitted = PromptFit.chatFrom(modelGateway, SYSTEM, s -> brief.apply(s) + more, scale);
@@ -540,15 +553,113 @@ public class CodeGenerator {
             cut = next.cutOff();
         }
         String content = sofar.strip() + "\n";
+        List<String> notes = new java.util.ArrayList<>();
         if ((joined || partial != null) && !cut) {
             String problem = brief(joinProblem(path, content));
             if (problem != null) {
                 log.info("The pieces of {} did not join cleanly: {}", path, problem);
                 throw new JoinFailed("The model's answer came in pieces that did not join cleanly (" + problem + "); write it again.");
             }
+            // A piece that wrote a method again, or a helper no piece wrote
+            content = completeJoined(path, content, brief, scale, notes).strip() + "\n";
         }
         // The pieces are joined without their fences already; clean() would cut at a ``` inside the file (a template string)
-        return new Written(content, cut, scale);
+        return new Written(content, cut, scale, notes);
+    }
+
+    /**
+     * For a Java file: what its part so far declares (not to be written again) and the methods it calls but has not
+     * written yet, so a model that sees only the file's end does not repeat a test or forget a helper.
+     */
+    static String writtenSoFar(String path, String sofar) {
+        if (!path.toLowerCase(java.util.Locale.ROOT).endsWith(".java") || sofar.isBlank()) {
+            return "";
+        }
+        JavaCompileChecks.Outline outline = JavaCompileChecks.outline(sofar);
+        StringBuilder text = new StringBuilder();
+        if (!outline.methods().isEmpty() || !outline.fields().isEmpty()) {
+            text.append("\n\nAlready written, do not write these again:");
+            if (!outline.methods().isEmpty()) {
+                text.append(" methods ").append(String.join(", ", outline.methods().stream().limit(80).toList())).append(';');
+            }
+            if (!outline.fields().isEmpty()) {
+                text.append(" fields ").append(String.join(", ", outline.fields().stream().limit(40).toList())).append(';');
+            }
+        }
+        if (!outline.missing().isEmpty()) {
+            text.append("\nMethods called but not yet written (write each of them once, in this file): ")
+                    .append(String.join(", ", outline.missing().stream().limit(40).toList())).append('.');
+        }
+        return text.toString();
+    }
+
+    /**
+     * A continued Java file put right after its pieces were joined: a method a later piece wrote again with the same
+     * parameters is left out (the first is kept), and methods it calls but no piece wrote are asked for once and added
+     * before the class's closing brace (kept only if the file still parses and needs fewer). What was done goes to notes.
+     */
+    private String completeJoined(String path, String content, java.util.function.DoubleFunction<String> brief, double scale,
+                                  List<String> notes) {
+        if (!path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            return content;
+        }
+        String deduplicated = withoutLaterDuplicates(content, notes);
+        Map<String, Integer> missing = JavaCompileChecks.undeclaredCalls(deduplicated);
+        if (missing.isEmpty()) {
+            return deduplicated;
+        }
+        String names = String.join(", ", missing.keySet());
+        String uses = deduplicated.lines().filter(l -> missing.keySet().stream().anyMatch(n -> l.contains(n + "("))).limit(8)
+                .map(String::strip).collect(Collectors.joining("\n"));
+        String ask = "\n\nThe file " + path + " is complete except that it calls methods it does not declare: " + names
+                + ". Write only these missing methods, complete, as members of its class, each once; nothing else, without code fences."
+                + "\nThe file's outline:\n" + JavaOutline.of(deduplicated) + "\nWhere they are called:\n" + uses;
+        String added;
+        try {
+            ModelGateway.ChatResult reply = PromptFit.chatFrom(modelGateway, SYSTEM, s -> brief.apply(s) + ask, scale).result();
+            added = reply.reply() == null || reply.cutOff() ? "" : withoutFences(reply.reply()).strip();
+        } catch (ModelLimitReachedException e) {
+            log.info("Could not ask for the missing methods of {} ({}): the model's limit", path, names);
+            return deduplicated;
+        }
+        int close = deduplicated.lastIndexOf('}');
+        if (added.isEmpty() || close < 0) {
+            return deduplicated;
+        }
+        String completed = deduplicated.substring(0, close).stripTrailing() + "\n\n" + indent(added) + "\n" + deduplicated.substring(close);
+        Map<String, Integer> still = JavaCompileChecks.undeclaredCalls(completed);
+        if (joinProblem(path, completed) != null || still.size() >= missing.size()) {
+            log.info("The missing methods of {} the model wrote did not fit; the file is kept without them", path);
+            return deduplicated;
+        }
+        log.info("Added the missing methods of {}: {}", path, names);
+        notes.add("Methods called but not written in the answer's pieces were asked for and added: " + names + ".");
+        return withoutLaterDuplicates(completed, notes);
+    }
+
+    /** Members written without indentation get four spaces, as a class's members have. */
+    private static String indent(String members) {
+        boolean flush = members.lines().filter(l -> !l.isBlank()).anyMatch(l -> !Character.isWhitespace(l.charAt(0)));
+        return flush ? members.lines().map(l -> l.isBlank() ? "" : "    " + l).collect(Collectors.joining("\n")) : members;
+    }
+
+    /** The file without the second (and later) declarations of a method with the same parameters, noted in notes. */
+    static String withoutLaterDuplicates(String content, List<String> notes) {
+        List<JavaCompileChecks.Duplicate> duplicates = JavaCompileChecks.duplicates(content);
+        if (duplicates.isEmpty()) {
+            return content;
+        }
+        List<String> lines = new java.util.ArrayList<>(java.util.Arrays.asList(content.split("\n", -1)));
+        // from the bottom, so the line numbers above stay right
+        duplicates.stream().sorted(java.util.Comparator.comparingInt(JavaCompileChecks.Duplicate::fromLine).reversed()).forEach(d -> {
+            for (int line = d.endLine(); line >= d.fromLine(); line--) {
+                lines.remove(line - 1);
+            }
+            notes.add("The method " + d.signature() + " was written twice across the answer's pieces; the second one (line " + d.line()
+                    + ") was left out.");
+        });
+        log.info("Left out {} method(s) written twice in the pieces of a file", duplicates.size());
+        return String.join("\n", lines);
     }
 
     /** The pieces of a continued file do not parse once joined: text was lost or repeated at a seam. */

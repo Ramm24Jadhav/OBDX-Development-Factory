@@ -59,6 +59,10 @@ public class LocalChecks {
             // Deployment and security checks of Java that a pattern rule cannot express
             JavaChecks.findings(path, original, content).stream().filter(f -> !scope.disabled().contains(f.ruleId())).forEach(findings::add);
         }
+        if (path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            // What stops the class compiling although it parses: methods called but never declared, or declared twice
+            JavaCompileChecks.findings(path, original, content).stream().filter(f -> !scope.disabled().contains(f.ruleId())).forEach(findings::add);
+        }
         boolean error = syntax.status() == FileChecks.Status.FAILED
                 || findings.stream().anyMatch(f -> f.severity() == PackRule.Severity.ERROR);
         boolean warning = syntax.status() == FileChecks.Status.WARNING || !findings.isEmpty();

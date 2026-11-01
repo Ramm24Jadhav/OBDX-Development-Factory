@@ -327,6 +327,47 @@ class CodeGeneratorTest {
     }
 
     @Test
+    void aContinuedJavaFileKnowsWhatIsWrittenLosesItsRepeatsAndGetsItsMissingMethods() throws Exception {
+        // QA round 12's BeneficiaryValidatorTest: cut off after two tests, then a piece that wrote a test again
+        String test = com.obdx.factory.pack.JavaCompileChecksTest.roundTwelve();
+        int seam = test.indexOf("    // BR-006 / AC-004");
+        ChangePlan.Item testItem = new ChangePlan.Item("backend/src/com/bank/obdx/payments/BeneficiaryValidatorTest.java", "create", "test",
+                null, List.of(), null);
+        CodeGenerator noFixes = new CodeGenerator(model, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 0, "branches/factory", "-"),
+                new LocalChecks(VersionPacks.builtIn()));
+        replies.add("CUT:" + test.substring(0, seam));
+        replies.add("    }\n\n" + test.substring(seam));
+        // asked once for the helpers no piece wrote
+        replies.add("""
+                private BeneficiaryValidationRequest.BeneficiaryEntry createValidEntry(String clientRef) {
+                    BeneficiaryValidationRequest.BeneficiaryEntry entry = new BeneficiaryValidationRequest.BeneficiaryEntry();
+                    entry.setClientRef(clientRef);
+                    return entry;
+                }
+
+                private boolean hasErrorCode(BeneficiaryValidationResponse.Result result, String code) {
+                    return result.getErrors().stream().anyMatch(e -> code.equals(e.getCode()));
+                }
+                """);
+
+        CodeGenerator.Result result = noFixes.generate(context, new ChangePlan(null, List.of(testItem), List.of()), testItem, null, null,
+                Map.of(), Map.of(), null, null, null);
+
+        assertThat(prompts.get(1)).contains("Already written, do not write these again: methods setUp, testInvalidIfscFormat, testDuplicateClientRef;",
+                "Methods called but not yet written (write each of them once, in this file): createValidEntry, hasErrorCode.");
+        assertThat(prompts.get(2)).contains("calls methods it does not declare: createValidEntry, hasErrorCode, assertFalse",
+                "Write only these missing methods");
+        assertThat(result.content()).containsOnlyOnce("public void testDuplicateClientRef()")
+                .contains("    private BeneficiaryValidationRequest.BeneficiaryEntry createValidEntry(String clientRef) {")
+                .endsWith("}\n");
+        assertThat(com.obdx.factory.pack.JavaCompileChecks.undeclaredCalls(result.content())).containsOnlyKeys("assertFalse");
+        // what joining changed is in the file's check, and the one call still undeclared fails it
+        assertThat(result.check().message()).contains("testDuplicateClientRef() was written twice across the answer's pieces",
+                "were asked for and added: createValidEntry, hasErrorCode, assertFalse", "Calls assertFalse(...)");
+        assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
+    }
+
+    @Test
     void aContinuationIsMuchSmallerThanTheFirstPrompt() {
         replies.add("CUT:public class RemarksValidator {\n    void check(String remarks) {\n");
         replies.add("    void check(String remarks) {\n    }\n}\n");

@@ -418,6 +418,14 @@ class OpenAiCompatibleModelGatewayTest {
 
         assertThat(gateway.chat("Write code.", "A class").reply()).isEqualTo("public class A {}");
         assertThat(thinkRequests.getLast()).contains("Write code.\\n\\n/no_think").containsPattern("\"reasoning_effort\"\\s*:\\s*\"none\"");
+        // a continuation is streamed through PromptFit: it is asked the same way
+        try {
+            PromptFit.chatFrom(gateway, "Write code.", scale -> "Continue the file.", 0.5);
+        } catch (RuntimeException e) {
+            // the stub answers a stream in one piece; only the request matters here
+        }
+        assertThat(thinkRequests.getLast()).contains("Continue the file.", "Write code.\\n\\n/no_think")
+                .containsPattern("\"stream\"\\s*:\\s*true").containsPattern("\"reasoning_effort\"\\s*:\\s*\"none\"");
 
         // another model is not asked, unless FACTORY_MODEL_NO_THINK says so
         thinkRequests.clear();
