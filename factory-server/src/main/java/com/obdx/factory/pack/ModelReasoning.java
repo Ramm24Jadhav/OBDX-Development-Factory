@@ -29,7 +29,12 @@ final class ModelReasoning {
     private static final Pattern PHRASE = Pattern.compile("(?i)\\b(let'?s assume|let us assume|the prompt (?:says|asks|wants|requires)|"
             + "as an ai\\b|as an ai language model|as per (?:the|your) (?:prompt|instructions)\\b|in this response|the user (?:wants|asked)|"
             + "as you requested|here is the (?:complete|updated|corrected) (?:file|code)|for this exercise|in this isolated artifact|"
-            + "not defined in (?:the )?prompt|we model the behaviou?r|since we don'?t have)"
+            + "not defined in (?:the )?prompt|we model the behaviou?r|since we don'?t have|"
+            // "No specific error code defined for Name Format in the provided list": what the model was given
+            + "(?:not|no)\\b[^.\\n]{0,60}?\\b(?:defined|given|specified|listed|mentioned)\\b[^.\\n]{0,40}? in the (?:provided|given) "
+            + "(?:list|spec|specification|prompt)\\b|"
+            // as per instruction "never exception text": a quoted instruction, not "as per instruction frequency"
+            + "as per (?:the )?instructions?\\s*[:,]?\\s*[\"'\\u201C\\u2018])"
             // "Assuming the host returns ...": an assumption opening a comment
             + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assum(?:e|ing) (?:the )?(?:host|standard|default)\\b)");
     /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */

@@ -58,6 +58,11 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         volatile double charsPerToken = 3.5;
         /** The most output tokens one answer may ask for (a per-minute output limit smaller than max_tokens); 0 while unknown. */
         volatile int output;
+        /**
+         * Tokens a minute in all, prompt and max_tokens together (Groq counts both against "tokens per minute"); 0
+         * while unknown. max_tokens is sized so that the two stay within it.
+         */
+        volatile int total;
     }
 
     /** The limits learned before for this server and model (they survive restarts), or none. */
@@ -69,6 +74,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     limits.input = s.input();
                     limits.charsPerToken = s.charsPerToken() > 0 ? s.charsPerToken() : 3.5;
                     limits.output = s.output();
+                    limits.total = s.total();
                 });
             } catch (RuntimeException e) {
                 log.warn("Could not read the learned limits of chat model '{}'", model, e);
@@ -81,7 +87,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         if (store != null) {
             try {
                 store.save(current.baseUrl(), current.chatModelName(), new ModelLimitsStore.Stored(current.limits().input,
-                        current.limits().charsPerToken, current.limits().output));
+                        current.limits().charsPerToken, current.limits().output, current.limits().total));
             } catch (RuntimeException e) {
                 log.warn("Could not keep the learned limits of chat model '{}'", current.chatModelName(), e);
             }
@@ -93,11 +99,41 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     /** The fewest output tokens worth asking for; a server that allows less cannot write files. */
     static final int MIN_OUTPUT = 256;
 
-    /** Asks for no more output than the server's learned per-minute output limit allows. */
-    private static void capOutput(Connection current, ChatRequest.Builder request) {
-        if (current.limits().output > 0) {
-            request.maxOutputTokens(current.limits().output);
+    /**
+     * Asks for no more output than the server's learned limits allow, and logs what the request asks for (QA reads
+     * factory.log to see why a request was the size it was).
+     */
+    private void capOutput(Connection current, ChatRequest.Builder request, int promptChars) {
+        int max = maxTokens(current.limits(), maxOutput, promptChars);
+        if (max > 0) {
+            request.maxOutputTokens(max);
         }
+        logRequest(current, promptChars, max);
+    }
+
+    /**
+     * max_tokens for a prompt: the learned per-minute output cap (else FACTORY_MODEL_MAX_OUTPUT_TOKENS), and, once the
+     * server's tokens a minute in all are known, no more than what is left of them after the prompt (90%, room for the
+     * server counting differently), never below MIN_OUTPUT. 0 leaves it to the server.
+     */
+    private static int maxTokens(Limits limits, Integer maxOutput, int promptChars) {
+        int cap = limits.output > 0 ? limits.output : maxOutput == null ? 0 : maxOutput;
+        if (limits.total > 0) {
+            int room = Math.max(MIN_OUTPUT, (int) (limits.total * 0.9 - promptChars / limits.charsPerToken));
+            cap = cap > 0 ? Math.min(cap, room) : room;
+        }
+        return cap;
+    }
+
+    private static void logRequest(Connection current, int promptChars, int maxTokens) {
+        Double scale = PromptFit.SCALE.get();
+        log.info("Chat request to '{}': {} prompt characters, about {} tokens, max_tokens {}, context {}", current.chatModelName(),
+                promptChars, Math.round(promptChars / current.limits().charsPerToken), maxTokens > 0 ? maxTokens : "server default",
+                scale == null ? "not scaled" : "at " + Math.round(scale * 100) + "%");
+    }
+
+    private static int chars(String systemPrompt, UserMessage userMessage) {
+        return (systemPrompt == null ? 0 : systemPrompt.length()) + (userMessage.hasSingleText() ? userMessage.singleText().length() : 0);
     }
 
     /**
@@ -269,9 +305,22 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 int[] tooLarge = tooLarge(text);
                 if (tooLarge != null) {
                     int chars = (systemPrompt == null ? 0 : systemPrompt.length()) + userPrompt.length();
-                    int input = inputLimit(text, tooLarge[0], maxOutput);
+                    int input;
+                    int prompt = tooLarge[1];
+                    if (countsAnswer(text)) {
+                        // Groq's "Requested" is the prompt plus max_tokens: learn the prompt's share, keep room for an
+                        // answer, and size max_tokens from now on so that the two stay within the limit
+                        int asked = maxTokens(current.limits(), maxOutput, chars);
+                        if (asked > 0 && tooLarge[1] - asked >= tooLarge[1] / 5) {
+                            prompt = tooLarge[1] - asked;
+                        }
+                        input = tooLarge[0] - Math.min(asked > 0 ? asked : 1024, tooLarge[0] / 4);
+                        current.limits().total = current.limits().total == 0 ? tooLarge[0] : Math.min(current.limits().total, tooLarge[0]);
+                    } else {
+                        input = inputLimit(text, tooLarge[0], maxOutput);
+                    }
                     current.limits().input = current.limits().input == 0 ? input : Math.min(current.limits().input, input);
-                    current.limits().charsPerToken = Math.clamp((double) chars / tooLarge[1], 2.0, 6.0);
+                    current.limits().charsPerToken = Math.clamp((double) chars / prompt, 2.0, 6.0);
                     saveLimits(current);
                     throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
@@ -309,7 +358,8 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 if (daily && (!waitGiven(text) || wait.compareTo(MAX_WAIT) > 0)) {
                     throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
                             + " has used up its daily limit (" + serverMessage(text) + "). Try again "
-                            + (waitGiven(text) ? "in " + roughly(wait) : "later") + ", or use a plan or model with a larger limit.", true,
+                            + (waitGiven(text) ? "in " + roughly(wait) + " (the server's estimate; it changes if others use the same key)"
+                            : "later") + ", or use a plan or model with a larger limit.", true,
                             waitGiven(text) ? roughly(wait) : null, e);
                 }
                 if (attempt >= RATE_LIMIT_ATTEMPTS) {
@@ -363,6 +413,16 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         }
         int answer = maxOutput != null && maxOutput > 0 ? maxOutput : 1024;
         return Math.max(limit / 4, limit - answer);
+    }
+
+    /**
+     * A refusal of a per-minute limit on all tokens, prompt and max_tokens together (Groq "on tokens per minute (TPM):
+     * Limit 6000, Requested 7663"); not an input-only limit (ITPM) or a model's context length.
+     */
+    static boolean countsAnswer(String text) {
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
+        return TOO_LARGE.matcher(text).find() && !CONTEXT_LENGTH.matcher(text).find() && lower.contains("tokens per minute")
+                && !lower.contains("input tokens per minute");
     }
 
     /** How long a rate-limited server asks to wait, plus a second to be safe; null when the call was not rate limited. */
@@ -470,6 +530,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
      * OllamaChat); timed from the last piece, like a streamed answer.
      */
     private ChatResult ollamaChat(Connection current, String systemPrompt, String userPrompt, boolean jsonFormat, Consumer<String> pieces) {
+        logRequest(current, (systemPrompt == null ? 0 : systemPrompt.length()) + userPrompt.length(), 0);
         long start = System.nanoTime();
         AtomicLong lastPiece = new AtomicLong(start);
         java.util.concurrent.atomic.AtomicReference<java.io.InputStream> body = new java.util.concurrent.atomic.AtomicReference<>();
@@ -526,7 +587,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
-            capOutput(current, request);
+            capOutput(current, request, chars(systemPrompt, userMessage));
             current.streamingChatModel().chat(request.build(),
                     new StreamingChatResponseHandler() {
                         @Override
@@ -599,7 +660,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             if (format != null) {
                 request.responseFormat(format);
             }
-            capOutput(current, request);
+            capOutput(current, request, chars(systemPrompt, userMessage));
             ChatResponse response = current.chatModel().chat(request.build());
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             String model = response.metadata().modelName() != null ? response.metadata().modelName() : current.chatModelName();

@@ -25,7 +25,9 @@ class RealModelLeftoversTest {
                 "// The fee table is not defined in the prompt, so it is empty.", "// As per the instructions, amounts are in minor units.",
                 "// Assuming the host returns the account as active.",
                 "/* Assuming standard OBDX error codes */", "// We model the behavior of the host here.",
-                "// Since we don't have the adapter, the call is skipped.")) {
+                "// Since we don't have the adapter, the call is skipped.",
+                "// No specific error code defined for Name Format in the provided list",
+                "// Using a general error message as per instruction \"never exception text\"")) {
             String java = "package com.bank.si;\nclass A {\n    " + line + "\n    void a() {}\n}\n";
             assertThat(rules(ModelReasoning.findings("backend/src/com/bank/si/A.java", null, java))).as(line).containsExactly(ModelReasoning.RULE);
         }
@@ -85,7 +87,9 @@ class RealModelLeftoversTest {
     @Test
     void aDevelopersOwnWordsAreNotReasoningOrStubs() {
         for (String line : List.of("// Simulate the maturity amount for the selected tenure", "// Debit as per instruction frequency",
-                "// Only codes in the provided list are accepted.", "// Assuming the response has no items, show the empty state.")) {
+                "// Only codes in the provided list are accepted.", "// Returns null when no code is in the provided list.",
+                "/** The codes defined in the provided list, in order. */", "// Debit as per instruction: frequency of the plan",
+                "// Assuming the response has no items, show the empty state.")) {
             String java = "package com.bank.td;\nclass A {\n    " + line + "\n    void a() {}\n}\n";
             assertThat(ModelReasoning.findings("backend/src/com/bank/td/A.java", null, java)).as(line).isEmpty();
         }

@@ -175,6 +175,26 @@ class OpenAiCompatibleModelGatewayTest {
                      "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
                     """);
         });
+        // Tokens a minute in all (Groq TPM): the prompt (4 characters a token) plus max_tokens must stay within 6000
+        server.createContext("/tpm/v1/chat/completions", exchange -> {
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"max(?:_completion)?_tokens\"\\s*:\\s*(\\d+)").matcher(body);
+            int asked = m.find() ? Integer.parseInt(m.group(1)) : 0;
+            java.util.regex.Matcher content = java.util.regex.Pattern.compile("\"content\"\\s*:\\s*\"(x*)\"").matcher(body);
+            int prompt = content.find() ? content.group(1).length() / 4 : 0;
+            otpmAsked.add(asked);
+            if (prompt + asked > 6000) {
+                respond(exchange, 413, """
+                        {"error": {"message": "Request too large for model `qwen` on tokens per minute (TPM): Limit 6000, \
+                        Requested %d, please reduce your message size and try again.", "type": "tokens", "code": "rate_limit_exceeded"}}
+                        """.formatted(prompt + asked));
+                return;
+            }
+            respond(exchange, 200, """
+                    {"id": "chatcmpl-7", "object": "chat.completion", "created": 1, "model": "qwen",
+                     "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+                    """);
+        });
         // A rolling daily limit that frees up in a moment: waited out like a per-minute one
         server.createContext("/dailyshort/v1/chat/completions", exchange -> {
             exchange.getRequestBody().readAllBytes();
@@ -431,7 +451,7 @@ class OpenAiCompatibleModelGatewayTest {
 
         assertThatThrownBy(() -> gatewayFor("/daily/v1").chatJson("Answer in JSON.", "Write the file"))
                 .isInstanceOfSatisfying(ModelLimitReachedException.class, e -> assertThat(e.daily()).isTrue())
-                .hasMessageContaining("daily limit").hasMessageContaining("about 15 minutes");
+                .hasMessageContaining("daily limit").hasMessageContaining("about 15 minutes (the server's estimate");
         assertThat(limitedCalls.get()).isEqualTo(1);
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(10));
         assertThat(OpenAiCompatibleModelGateway.daily("Rate limit reached on requests per day (RPD)")).isTrue();
@@ -524,6 +544,25 @@ class OpenAiCompatibleModelGatewayTest {
                 null, null, true, null, null)));
         assertThat(store.cleared).containsExactly(baseUrl + "|qwen");
         assertThat(restarted.outputLimit()).isZero();
+    }
+
+    @Test
+    void aTokensPerMinuteLimitCountsMaxTokensSoThePromptAndAnswerAreSizedToFitIt() {
+        String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/tpm/v1";
+        ModelProperties properties = new ModelProperties(baseUrl, "test-key", "qwen", "nomic-embed-text", Duration.ofSeconds(5), null, null, 16384, 8192);
+        OpenAiCompatibleModelGateway gateway = new OpenAiCompatibleModelGateway(properties, new MemoryLimits());
+
+        // 20,000 characters (5000 tokens) + max_tokens 8192 = 13192: refused; the prompt's share is 5000 tokens, not 13192
+        assertThatThrownBy(() -> gateway.chat(null, "x".repeat(20_000))).isInstanceOf(PromptTooLargeException.class);
+        assertThat(gateway.charsPerToken()).isEqualTo(4.0);
+        assertThat(gateway.inputLimit()).isEqualTo(6000 - 1500);
+
+        // the prompt shortened to fit (4050 tokens), and max_tokens what is left of 90% of the minute's tokens: accepted
+        // (the stub answers a stream in one piece the client reads as empty; a refusal would throw)
+        PromptFit.chat(gateway, null, scale -> "x".repeat((int) (20_000 * scale)));
+        assertThat(otpmAsked).containsExactly(8192, 1350);
+        assertThat(OpenAiCompatibleModelGateway.countsAnswer("on input tokens per minute (ITPM): Limit 7000, Requested 7663")).isFalse();
+        assertThat(OpenAiCompatibleModelGateway.countsAnswer("on tokens per day (TPD): Limit 100000, Used 99000, Requested 8921")).isFalse();
     }
 
     @Test
