@@ -8479,6 +8479,112 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-dz-body .factory-dz-cardhead { flex-wrap: wrap; row-gap: 6px; }
 .factory-dz-body .factory-dz-cardhead .factory-dz-cardname { flex: 0 1 auto; min-width: 90px; }
 
+/* ---------- Visual Designer: three zones, canvas toolbar, inspector sections, one drawer (UI declutter step 10) ---------- */
+/* The inspector runs the full height; the drawer under the canvas is a tab strip until it is opened */
+@media (min-width: 1251px) {
+    .factory-dz .factory-dz-body:not(.factory-dz-nodetail):not(.factory-dz-previewing) {
+        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-areas: "left canvas right" "left ctx right";
+        gap: 10px;
+    }
+    .factory-dz .factory-dz-body.factory-dz-ctx-open:not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-rows: minmax(0, 1fr) minmax(220px, 34%); }
+    /* Narrower side panels than before, so the canvas gets the width (the left one can still be resized) */
+    .factory-dz .factory-dz-body.factory-dz-left-open.factory-dz-right-open:not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: var(--fx-pane, 208px) minmax(0, 1fr) 264px; }
+    .factory-dz .factory-dz-body.factory-dz-left-open:not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: var(--fx-pane, 208px) minmax(0, 1fr) 50px; }
+    .factory-dz .factory-dz-body.factory-dz-right-open:not(.factory-dz-left-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: 50px minmax(0, 1fr) 264px; }
+    .factory-dz .factory-dz-body:not(.factory-dz-left-open):not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: 50px minmax(0, 1fr) 50px; }
+}
+.factory-dz-pagehead .factory-dz-pagetitle { flex: 1 1 auto; min-width: 0; }
+/* Three short tabs fit the narrower left panel */
+#leftPanel .factory-dz-tabs { gap: 12px; }
+#leftPanel .factory-dz-tab { padding-left: 0; padding-right: 0; font-size: var(--fx-text-sm); white-space: nowrap; }
+
+/* Canvas toolbar */
+.factory-dz-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--fx-border); background: var(--fx-surface); }
+.factory-dz-toolbar .factory-dz-sizes > button { min-width: 36px; height: 28px; padding: 0 8px; }
+.factory-dz-toolselect, .factory-dz-toolbar .factory-dz-zoom { height: 32px; min-width: 0; padding: 0 6px; border: 1px solid var(--fx-border-strong); border-radius: var(--fx-radius);
+    background: var(--fx-surface); color: var(--fx-text); font: inherit; font-size: var(--fx-text-sm); }
+.factory-dz-toolselect { max-width: 190px; }
+.factory-dz-zoomgroup { display: inline-flex; align-items: center; gap: 2px; }
+.factory-dz-zoomgroup .factory-dz-icon:disabled { opacity: 0.4; cursor: default; }
+.factory-dz-toolsep { width: 1px; height: 22px; background: var(--fx-border); }
+.factory-dz-toolbtn { height: 32px; padding: 0 10px; border: 1px solid var(--fx-border-strong); border-radius: var(--fx-radius); background: var(--fx-surface); color: var(--fx-text-body);
+    font: inherit; font-size: var(--fx-text-sm); cursor: pointer; transition: background var(--fx-dur-hover), border-color var(--fx-dur-hover); }
+.factory-dz-toolbtn:hover { background: var(--fx-surface-2); }
+.factory-dz-toolbtn[aria-pressed="true"] { background: var(--fx-primary-soft); border-color: var(--fx-focus-color); color: var(--fx-primary-text); font-weight: 600; }
+.factory-dz-compat-chip { max-width: 100%; padding: 4px 10px; border: 1px solid var(--fx-border); border-radius: 999px; background: var(--fx-surface-2); color: var(--fx-text-body);
+    font: inherit; font-size: var(--fx-text-caption); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-dz-compat-chip-bad { border-color: var(--fx-danger-text); background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+
+/* Compatibility marks: on layers and at the top of the inspector */
+.factory-dz-compat { flex: 0 0 16px; text-align: center; font-size: var(--fx-text-caption); font-weight: 700; color: var(--fx-text-muted); }
+.factory-dz-compat-verified { color: var(--fx-success-text); }
+.factory-dz-compat-unsupported { color: var(--fx-danger-text); }
+.factory-dz-compat-line { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius);
+    background: var(--fx-surface-2); font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
+.factory-dz-compat-line code { font-size: var(--fx-text-caption); }
+.factory-dz-compat-mark { flex: 0 0 16px; text-align: center; font-weight: 700; color: var(--fx-text-muted); }
+.factory-dz-compat-line-verified .factory-dz-compat-mark { color: var(--fx-success-text); }
+.factory-dz-compat-line-unsupported { border-color: var(--fx-danger-text); background: var(--fx-danger-soft); }
+.factory-dz-compat-line-unsupported .factory-dz-compat-mark { color: var(--fx-danger-text); }
+
+/* Layers: a grip to drag, a line where the drop lands, and a visible keyboard focus */
+.factory-dz-grip { flex: 0 0 auto; color: var(--fx-text-muted); font-size: var(--fx-text-caption); cursor: grab; }
+.factory-layer-component { display: flex; align-items: center; gap: 6px; }
+.factory-layer-component .factory-row-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.factory-layer-component .factory-dz-layer-type { flex: 0 1 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fx-text-caption); }
+.factory-layer:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: -2px; }
+.factory-layer.factory-layer-drop-before { box-shadow: inset 0 3px 0 0 var(--fx-focus-color); }
+.factory-layer-group.factory-layer-drop-into { outline: 2px dashed var(--fx-focus-color); outline-offset: -2px; border-radius: 6px; }
+.factory-dz-palette-note { margin: 2px 0 6px; }
+.factory-palette-item:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: -2px; }
+
+/* Inspector */
+.factory-dz-inspector-title { margin: 0; padding: 12px 2px 10px; font-size: var(--fx-text-base); font-weight: 600; color: var(--fx-text); }
+.factory-dz-a11y { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; margin: 0 0 8px; font-size: var(--fx-text-sm); }
+.factory-dz-a11y dt { color: var(--fx-text-muted); }
+.factory-dz-a11y dd { margin: 0; color: var(--fx-text); overflow-wrap: anywhere; }
+.factory-dz-focuslist { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.factory-dz-focusrow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px; border: 1px solid transparent; border-radius: 6px; background: none;
+    font: inherit; font-size: var(--fx-text-sm); color: var(--fx-text); text-align: left; cursor: pointer; }
+.factory-dz-focusrow:hover, .factory-dz-focusrow-on { background: var(--fx-primary-soft); }
+.factory-dz-focusnum { flex: 0 0 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--fx-violet); color: #fff;
+    font-size: var(--fx-text-2xs); font-weight: 700; }
+
+/* The drawer: history with compare, and the AI Assistant */
+.factory-dz-history2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.factory-dz-compare-pick { display: flex; gap: 8px; flex-wrap: wrap; }
+.factory-dz-compare-pick fx-select { flex: 1 1 160px; min-width: 0; }
+.factory-dz-difflist { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--fx-text-sm); }
+.factory-dz-diff { display: flex; gap: 8px; align-items: baseline; }
+.factory-dz-diff .factory-dz-link { text-align: left; }
+.factory-dz-diff-kind { flex: 0 0 72px; padding: 0 6px; border-radius: 4px; background: var(--fx-surface-2); color: var(--fx-text-body); font-size: var(--fx-text-caption); font-weight: 600; text-align: center; }
+.factory-dz-diff-added .factory-dz-diff-kind { background: var(--fx-success-soft); color: var(--fx-success-text); }
+.factory-dz-diff-removed .factory-dz-diff-kind { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-dz-diff-changed .factory-dz-diff-kind { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-dz-body .factory-dz-context .factory-dz-assist { display: flex; grid-area: auto; height: 100%; min-height: 0; padding: 6px 0 0; border: 0; border-radius: 0; background: transparent; }
+.factory-dz-context .factory-dz-assist-head { align-items: flex-start; }
+@media (max-width: 900px) {
+    .factory-dz-history2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1250px) {
+    .factory-dz-body .factory-dz-context .factory-dz-assist { min-height: 260px; }
+}
+
+/* Phones: the title row's actions and the approval group wrap instead of running off the screen */
+@media (max-width: 767px) {
+    .factory-dz-pagehead .factory-dz-headactions { flex-wrap: wrap; }
+    .factory-dz-body .factory-dz-cardhead .factory-dz-approval { flex-wrap: wrap; row-gap: 6px; }
+    .factory-dz-toolselect { max-width: 150px; }
+}
+
+/* On the canvas (the preview frame): the focus order as numbered badges */
+.factory-cmp[data-focus] { position: relative; }
+.factory-cmp[data-focus]::after {
+    content: attr(data-focus); position: absolute; top: -10px; right: -6px; z-index: 6; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    background: var(--fx-violet); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; pointer-events: none; box-shadow: var(--fx-shadow-sm);
+}
+
 /* ---------- Models page, workflow ---------- */
 .factory-md .factory-md-advanced { margin-top: 12px; }
 .factory-md .factory-md-advanced .factory-md-form { margin-top: 0; }
