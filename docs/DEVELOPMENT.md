@@ -602,6 +602,12 @@ the missing ones named at the top, the scan revision, a fact opened from the key
 filters, and the phone width. With `--write 1` it also saves a correction and a reset and checks the correction history;
 use that only on a factory whose data is a copy.
 
+`node scripts/check-requirements.js --url ...` checks the Requirements list: one row per requirement with its ID, title,
+source document, type, spec status and Home's four workflow steps, choosing a row, the next-step links, search and
+filters (only values that exist), the Upload BRD/FSD and New requirement panel (focus, an unreadable file, a document the
+server refuses, Close), the viewer role, keyboard reach, the offline message, and that the Workspaces page asks for no
+profile a workspace cannot have yet. Its only upload is an empty text file, which the server refuses before storing it.
+
 `npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
 drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
 - the page transition runs (or is off with reduced motion);

@@ -1,13 +1,15 @@
 /*
- * Requirements page: the workspace's requirements as a searchable list, and the selected one with its lifecycle
+ * Requirements page: the workspace's requirements as a searchable, filterable list (ID, title, source document, type,
+ * spec status, the four workflow steps Home shows and the next step as a link to where it is taken), uploading a
+ * BRD/FSD or describing a requirement in a panel above it, and the selected one with its lifecycle
  * (draft, analysis, approval, design, build, review, completed), its drafted specification by part (screens, business
  * rules, APIs, host interfaces, roles, open questions), traceability to screens and changes, and the actions: upload or
  * describe a requirement, answer open questions, update the spec with the answers, edit it as JSON, approve, retry and
  * delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast, pageRequests) {
+        '../services/dialog', '../services/toast', '../services/pageRequests', '../services/dashboard', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast, pageRequests, dashboard) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
@@ -32,6 +34,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       return lower.indexOf('brd') >= 0 ? 'BRD' : (name.split('.').pop() || 'Document').toUpperCase();
     };
     const size = (bytes) => (bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB');
+    // What the server reads (DocumentTextExtractor) and its size limit (RequirementController)
+    const ACCEPTED = ['.docx', '.doc', '.pdf', '.html', '.htm', '.txt', '.md'];
+    const MAX_BYTES = 25 * 1024 * 1024;
     const NOT_STATED = 'Not stated in the specification';
     const day = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
     // A spec part that may be text or a list of texts (or of objects with a description)
@@ -54,71 +59,163 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.canEdit = ko.pureComputed(() => session.can(this.workspaceId(), 'EDIT_REQUIREMENTS'));
       this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
       this.busy = ko.observable(false);
-      this.tab = ko.observable('all');
       const items = ko.observableArray([]);
-      this.tabs = ui.tabs(this.tab, [
-        { value: 'all', label: 'All Requirements' },
-        { value: 'upload', label: 'BRD/FSD Upload' },
-        { value: 'questions', label: 'Open Questions' },
-        { value: 'traceability', label: 'Traceability' },
-        { value: 'reports', label: 'Reports' }
-      ]);
+      // The first load of the list has not answered yet (loading state), or failed (listError)
+      this.listLoading = ko.observable(true);
+      this.listError = ko.observable('');
+      this.listErrorText = ko.pureComputed(() => (/failed to fetch|networkerror|load failed/i.test(this.listError())
+        ? 'Could not reach the factory. Check your connection, then try again.' : this.listError()));
+      // With no requirements the list takes the whole width
+      this.layoutCss = ko.pureComputed(() => 'factory-row factory-row-side factory-rq-layout'
+        + (!this.listLoading() && items().length === 0 ? ' factory-rq-layout-empty' : ''));
 
-      // New requirement: a document or a description
+      // New requirement: a document (creating 'upload') or a description ('text'), in a panel above the list
+      this.creating = ko.observable(null);
+      this.createError = ko.observable('');
       this.newTitle = ko.observable('');
       this.newText = ko.observable('');
       this.chosenFile = ko.observable(null);
-      this.chosenFileName = ko.pureComputed(() => (this.chosenFile() ? this.chosenFile().name : 'No file chosen'));
-      this.startUpload = () => this.tab('upload');
+      this.chosenFileName = ko.pureComputed(() => (this.chosenFile() ? this.chosenFile().name + ' (' + size(this.chosenFile().size) + ')' : 'No file chosen'));
+      const focusLater = (id) => setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.focus();
+        }
+      }, 0);
+      const startCreating = (kind) => {
+        this.creating(kind);
+        this.createError('');
+        focusLater(kind === 'upload' ? 'reqFile' : 'reqText');
+      };
+      this.startUpload = () => startCreating('upload');
+      this.startText = () => startCreating('text');
+      this.cancelCreate = () => {
+        const kind = this.creating();
+        this.creating(null);
+        this.createError('');
+        focusLater(kind === 'upload' ? 'uploadTabButton' : 'newRequirementButton');
+      };
 
-      // The list, with search and the status filter
+      // Every screen design and change of the workspace (one request each): the list's progress and the selected
+      // requirement's screens and changes
+      const allDesigns = ko.observableArray([]);
+      const allChanges = ko.observableArray([]);
+      this.detail = ko.observable(null);
+      this.designs = ko.pureComputed(() => (this.detail() ? allDesigns().filter((d) => d.requirementId === this.detail().id) : []));
+      this.changes = ko.pureComputed(() => (this.detail() ? allChanges().filter((c) => c.requirementId === this.detail().id) : []));
+
+      // The list: each requirement with its source, its spec status, where its workflow stands (Home's four steps)
+      // and what to act on next
+      this.total = ko.pureComputed(() => items().length);
+      const entries = ko.pureComputed(() => items().map((r) => {
+        const flow = dashboard.workflow(r, allDesigns(), allChanges(), this.workspaceId());
+        const own = !flow.perm || session.can(this.workspaceId(), flow.perm);
+        return Object.assign({}, r, { flow: flow, mine: !flow.finished && !!flow.perm && own, stage: flow.finished ? 'done' : String(flow.step) });
+      }));
+
+      // Search and filters. Only what a requirement records: spec status, workflow step, type and source document
       this.search = ko.observable('');
       this.statusFilter = ko.observable('');
+      this.stageFilter = ko.observable('');
       this.typeFilter = ko.observable('');
-      this.searchInput = ui.value(this.search);
-      this.statusChange = ui.value(this.statusFilter);
-      this.typeChange = ui.value(this.typeFilter);
-      this.detail = ko.observable(null);
-      this.designs = ko.observableArray([]);
-      this.changes = ko.observableArray([]);
-      this.total = ko.pureComputed(() => items().length);
-      this.rows = ko.pureComputed(() => {
-        const text = this.search().trim().toLowerCase();
-        return items().filter((r) => (!text || (r.title + ' ' + r.code).toLowerCase().indexOf(text) >= 0)
-          && (!this.statusFilter() || r.status === this.statusFilter())
-          && (!this.typeFilter() || r.type === this.typeFilter()))
-          .map((r) => Object.assign({}, r, {
-            css: ko.pureComputed(() => 'factory-rq-item' + (this.detail() && this.detail().id === r.id ? ' factory-rq-item-on' : '')),
-            countText: r.screens + ' screen' + (r.screens === 1 ? '' : 's') + ' · ' + r.openQuestions + ' open question' + (r.openQuestions === 1 ? '' : 's'),
-            tags: [r.type]
-          }));
-      });
-      this.moreFilters = ko.observable(false);
-      this.toggleFilters = () => {
-        if (this.moreFilters()) {
-          this.typeFilter('');
-        }
-        this.moreFilters(!this.moreFilters());
+      this.sourceFilter = ko.observable('');
+      this.actionFilter = ko.observable(false);
+      const counted = (label, n) => label + ' (' + n + ')';
+      this.statusOptions = ko.pureComputed(() => [{ value: '', label: 'All statuses' }].concat(Object.keys(WORDS)
+        .map((s) => ({ value: s, n: items().filter((r) => r.status === s).length }))
+        .filter((o) => o.n > 0 || o.value === this.statusFilter())
+        .map((o) => ({ value: o.value, label: counted(WORDS[o.value], o.n) }))));
+      this.stageOptions = ko.pureComputed(() => [{ value: '', label: 'All steps' }].concat(['1', '2', '3', '4', 'done']
+        .map((s) => ({ value: s, n: entries().filter((r) => r.stage === s).length }))
+        .filter((o) => o.n > 0 || o.value === this.stageFilter())
+        .map((o) => ({ value: o.value, label: counted(o.value === 'done' ? 'All steps done' : dashboard.steps[+o.value - 1], o.n) }))));
+      const distinct = (key) => {
+        const seen = {};
+        items().forEach((r) => { seen[r[key]] = (seen[r[key]] || 0) + 1; });
+        return Object.keys(seen).sort().map((v) => ({ value: v, label: counted(v, seen[v]) }));
       };
+      this.typeOptions = ko.pureComputed(() => [{ value: '', label: 'All types' }].concat(distinct('type')));
+      this.sourceOptions = ko.pureComputed(() => [{ value: '', label: 'All source documents' }].concat(distinct('source')));
+      // A filter with a single choice filters nothing, so it is left out
+      this.showTypeFilter = ko.pureComputed(() => this.typeOptions().length > 2 || !!this.typeFilter());
+      this.showSourceFilter = ko.pureComputed(() => this.sourceOptions().length > 2 || !!this.sourceFilter());
+      this.actionCount = ko.pureComputed(() => entries().filter((r) => r.mine).length);
+      this.actionPressed = ko.pureComputed(() => String(this.actionFilter()));
+      this.toggleAction = () => this.actionFilter(!this.actionFilter());
+      this.activeFilters = ko.pureComputed(() => [this.statusFilter(), this.stageFilter(), this.typeFilter(), this.sourceFilter()].filter(Boolean).length);
+      this.moreFilters = ko.observable(false);
+      this.toggleFilters = () => this.moreFilters(!this.moreFilters());
       this.filterButtonCss = ko.pureComputed(() => 'fx-btn fx-btn--secondary fx-btn--icon factory-rq-filterbtn' + (this.moreFilters() ? ' factory-rq-filterbtn-on' : ''));
+      this.filterLabel = ko.pureComputed(() => (this.moreFilters() ? 'Hide filters' : 'Show filters') + (this.activeFilters() ? ' (' + this.activeFilters() + ' on)' : ''));
+      this.clearFilters = () => {
+        this.search('');
+        this.statusFilter('');
+        this.stageFilter('');
+        this.typeFilter('');
+        this.sourceFilter('');
+        this.actionFilter(false);
+      };
+      this.filtered = ko.pureComputed(() => !!(this.search() || '').trim() || this.activeFilters() > 0 || this.actionFilter());
+
+      // Opens what a row's next step points at: on this page the requirement (its open questions when those are the
+      // step), elsewhere the Design Studio or the change
+      const act = (r) => () => {
+        if (r.flow.target !== 'requirement') {
+          r.flow.open();
+          return;
+        }
+        this.open(r.id).then(() => {
+          if (r.flow.questions) {
+            this.part('questions');
+          }
+          focusLater('requirementDetailTitle');
+        });
+      };
+      this.rows = ko.pureComputed(() => {
+        const text = (this.search() || '').trim().toLowerCase();
+        return entries().filter((r) => (!text || (r.code + ' ' + r.title + ' ' + r.source).toLowerCase().indexOf(text) >= 0)
+          && (!this.statusFilter() || r.status === this.statusFilter())
+          && (!this.stageFilter() || r.stage === this.stageFilter())
+          && (!this.typeFilter() || r.type === this.typeFilter())
+          && (!this.sourceFilter() || r.source === this.sourceFilter())
+          && (!this.actionFilter() || r.mine))
+          .map((r) => {
+            const flow = r.flow;
+            const selected = ko.pureComputed(() => !!this.detail() && this.detail().id === r.id);
+            return Object.assign({}, r, {
+              css: ko.pureComputed(() => 'factory-rq-row' + (selected() ? ' is-on' : '')),
+              current: ko.pureComputed(() => (selected() ? 'true' : null)),
+              select: () => this.openRow(r),
+              sourceIcon: r.fileName ? 'factory-nav-icon factory-ico-doc' : 'factory-nav-icon factory-ico-edit',
+              steps: flow.steps.map((st) => ({ name: st.name, css: 'factory-rq-step is-' + st.state })),
+              stepText: flow.stepText,
+              stepLabel: 'Progress: ' + flow.stepText,
+              // The next step as a link, unless the workflow is finished
+              next: flow.finished ? null : {
+                status: flow.status,
+                text: !flow.perm || r.mine ? flow.act : 'Waiting for ' + flow.who,
+                label: flow.status.text + ': ' + (!flow.perm || r.mine ? flow.next : 'waiting for ' + flow.who) + ' Opens ' + flow.place + '.',
+                go: act(r)
+              }
+            });
+          });
+      });
+      this.shownText = ko.pureComputed(() => (this.filtered() ? this.rows().length + ' of ' + this.total() + ' shown' : ''));
       this.pageMenuItems = [
         { value: 'refresh', label: 'Refresh the list' },
-        { value: 'csv', label: 'Download the list (CSV)' },
-        { value: 'questions', label: 'Open questions' },
-        { value: 'traceability', label: 'Traceability' },
-        { value: 'reports', label: 'Reports' }
+        { value: 'csv', label: 'Download the list (CSV)' }
       ];
       this.pageMenu = (event) => {
         const value = event.detail.value;
         if (value === 'refresh') {
           loadList();
+          loadLinks();
         } else if (value === 'csv') {
           const quote = (v) => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g, '""') + '"';
-          const lines = [['ID', 'Title', 'Type', 'Status', 'Screens', 'Open questions', 'Updated'].map(quote).join(',')]
-            .concat(items().map((r) => [r.code, r.title, r.type, r.statusPill.text, r.screens, r.openQuestions, r.updatedAt].map(quote).join(',')));
+          const lines = [['ID', 'Title', 'Source document', 'Type', 'Status', 'Progress', 'Screens', 'Open questions', 'Updated'].map(quote).join(',')]
+            .concat(entries().map((r) => [r.code, r.title, r.source, r.type, r.statusPill.text, r.flow.stepText + ' · ' + r.flow.status.text,
+              r.screens, r.openQuestions, r.updatedAt].map(quote).join(',')));
           saveFile('requirements.csv', lines.join('\r\n'), 'text/csv');
-        } else {
-          this.tab(value);
         }
       };
 
@@ -393,22 +490,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         open: () => { pageRequests.studio(this.detail() ? this.detail().id : null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); }
       })));
 
-      // Open questions across all requirements (Open Questions tab) and of the selected one
-      this.allQuestions = ko.pureComputed(() => items().filter((r) => r.openQuestions > 0));
-      this.reports = ko.pureComputed(() => {
-        const list = items();
-        const c = (s) => list.filter((r) => r.status === s).length;
-        return [
-          { label: 'Requirements', value: list.length },
-          { label: 'Approved', value: c('APPROVED') },
-          { label: 'In review', value: c('READY') },
-          { label: 'Drafting', value: c('PROCESSING') },
-          { label: 'Failed', value: c('FAILED') },
-          { label: 'Open questions', value: list.reduce((sum, r) => sum + r.openQuestions, 0) },
-          { label: 'Screens specified', value: list.reduce((sum, r) => sum + r.screens, 0) }
-        ];
-      });
-
       let pollTimer = null;
       const showError = (error) => this.errorMessage(error.message);
       // After an action: the error stays on the page and a toast says it failed
@@ -418,19 +499,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const id = this.workspaceId();
         if (!id) {
           items([]);
+          this.listLoading(false);
           return Promise.resolve();
         }
         return api.get('workspaces/' + id + '/requirements').then((list) => {
+          if (id !== this.workspaceId()) {
+            return;
+          }
           items(list.map((r) => Object.assign({}, r, {
             code: shortId(r.id), type: fileType(r.fileName), statusPill: reqStatus(r.status),
-            updated: new Date(r.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
-            openAction: () => { this.tab('all'); this.open(r.id); }
+            source: r.fileName || 'Typed description',
+            updated: day(r.updatedAt),
+            openAction: () => this.open(r.id)
           })));
+          this.listError('');
           if (!this.detail() && list.length) {
             this.open(list[0].id);
           }
           loadOtherSpecs(list);
-        }).catch(showError);
+        }).catch((error) => this.listError(error.message)).finally(() => this.listLoading(false));
+      };
+      this.retryList = () => {
+        this.listLoading(true);
+        loadList();
+        loadLinks();
       };
 
       /**
@@ -473,13 +565,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       });
 
-      const loadLinks = (detail) => {
+      // The workspace's screen designs and changes (with their builds). Without them the progress shows only the spec.
+      const loadLinks = () => {
         const id = this.workspaceId();
-        api.get('workspaces/' + id + '/designs')
-          .then((list) => this.designs(list.filter((d) => d.requirementId === detail.id))).catch(() => this.designs([]));
-        api.get('workspaces/' + id + '/changes')
-          .then((list) => Promise.all(list.map((c) => api.get('changes/' + c.id).catch(() => null))))
-          .then((list) => this.changes(list.filter((c) => c && c.requirementId === detail.id))).catch(() => this.changes([]));
+        if (!id) {
+          allDesigns([]);
+          allChanges([]);
+          return;
+        }
+        api.get('workspaces/' + id + '/designs').then((list) => { if (id === this.workspaceId()) { allDesigns(list); } }).catch(() => allDesigns([]));
+        api.get('workspaces/' + id + '/changes/details').then((list) => { if (id === this.workspaceId()) { allChanges(list); } }).catch(() => allChanges([]));
       };
       const show = (detail) => {
         const same = this.detail() && this.detail().id === detail.id;
@@ -501,9 +596,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (this.editingJson()) {
           this.specJson(detail.spec ? JSON.stringify(detail.spec, null, 2) : '');
         }
-        if (!same) {
-          loadLinks(detail);
-        }
         clearTimeout(pollTimer);
         if (detail.status === 'PROCESSING') {
           pollTimer = setTimeout(() => this.open(detail.id), POLL_MS);
@@ -511,11 +603,35 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         loadList();
       };
       this.open = (id) => api.get('requirements/' + id).then(show).catch(showError);
+      // A row of the list: opens it, then moves to it when the detail sits below the list (narrow windows)
+      this.openRow = (r) => this.open(r.id).then(() => {
+        const panel = document.getElementById('requirementDetail');
+        if (panel && window.matchMedia('(max-width: 1000px)').matches) {
+          panel.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+        }
+      });
 
       // The native picker: keep the file and empty the box so the same file can be chosen again after an upload
       this.fileSelected = (event) => {
-        this.chosenFile(event.target.files[0] || null);
+        const file = event.target.files[0] || null;
         event.target.value = '';
+        this.createError('');
+        const ext = file ? (file.name.split('.').pop() || '').toLowerCase() : '';
+        if (file && ACCEPTED.indexOf('.' + ext) < 0) {
+          this.chosenFile(null);
+          this.createError(file.name + ' is not a document the factory can read. Choose a Word (.docx, .doc), PDF, HTML, .txt or .md file.');
+        } else if (file && file.size > MAX_BYTES) {
+          this.chosenFile(null);
+          this.createError(file.name + ' is ' + size(file.size) + ', larger than 25 MB. Remove large images or split it, then choose it again.');
+        } else {
+          this.chosenFile(file);
+        }
+      };
+      // An upload or a description that was not accepted: said in the panel, with the server's reason
+      const createFailed = (error) => {
+        this.createError(/failed to fetch|networkerror|load failed/i.test(error.message)
+          ? 'Could not reach the factory. Check your connection, then try again.' : error.message);
+        focusLater('createError');
       };
       this.upload = () => {
         const form = new FormData();
@@ -525,15 +641,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         this.busy(true);
         api.upload('workspaces/' + this.workspaceId() + '/requirements', form)
-          .then((detail) => { this.chosenFile(null); this.newTitle(''); this.tab('all'); show(detail); toast.success('Document uploaded. The factory is drafting the specification.'); })
-          .catch(failed)
+          .then((detail) => { this.chosenFile(null); this.newTitle(''); this.creating(null); show(detail); toast.success('Document uploaded. The factory is drafting the specification.'); })
+          .catch(createFailed)
           .finally(() => this.busy(false));
       };
       this.submitText = () => {
         this.busy(true);
         api.post('workspaces/' + this.workspaceId() + '/requirements/text', { title: this.newTitle() || null, text: this.newText() })
-          .then((detail) => { this.newText(''); this.newTitle(''); this.tab('all'); show(detail); toast.success('Requirement added. The factory is drafting the specification.'); })
-          .catch(failed)
+          .then((detail) => { this.newText(''); this.newTitle(''); this.creating(null); show(detail); toast.success('Requirement added. The factory is drafting the specification.'); })
+          .catch(createFailed)
           .finally(() => this.busy(false));
       };
 
@@ -597,18 +713,32 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.createdText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
       this.updatedText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
-      this.tab.subscribe((t) => { if (t === 'traceability') { this.part('trace'); } });
 
       let subscription = null;
       this.connected = () => {
         accUtils.announce('Requirements page loaded.');
         document.title = 'Requirements';
-        subscription = this.workspaceId.subscribe(() => { this.detail(null); this.designs([]); this.changes([]); loadList(); });
-        // A requirement asked for from another page (the command palette)
-        workspaceSelection.load().then(loadList).then(() => {
+        subscription = this.workspaceId.subscribe(() => {
+          clearTimeout(pollTimer);
+          this.detail(null);
+          items([]);
+          this.listLoading(true);
+          this.clearFilters();
+          loadList();
+          loadLinks();
+        });
+        // A requirement asked for from another page (the command palette), or a new one (Home, the palette)
+        workspaceSelection.load().then(() => { loadLinks(); return loadList(); }).then(() => {
           const wanted = pageRequests.requirement();
           if (wanted) { pageRequests.requirement(null); this.open(wanted); }
-        }).catch(showError);
+          const create = pageRequests.newRequirement();
+          if (create) {
+            pageRequests.newRequirement(null);
+            if (this.canEdit()) {
+              startCreating(create);
+            }
+          }
+        }).catch((error) => { this.listError(error.message); this.listLoading(false); });
       };
       this.disconnected = () => {
         clearTimeout(pollTimer);
