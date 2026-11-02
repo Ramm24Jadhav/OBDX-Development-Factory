@@ -41,6 +41,12 @@ class LastSignInTest {
     @MockitoBean
     private AuditLog audit;
 
+    @MockitoBean
+    private AppUserRepository users;
+
+    @MockitoBean
+    private AuthProperties properties;
+
     @Test
     void returnsTheLastRecordedSignInOfTheSourceForAdministrators() throws Exception {
         OffsetDateTime at = OffsetDateTime.of(2026, 11, 2, 9, 30, 0, 0, ZoneOffset.UTC);
