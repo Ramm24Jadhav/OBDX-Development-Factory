@@ -427,9 +427,52 @@ define(['knockout', './preferences'], function (ko, preferences) {
     return text === full ? { text: full, details: '' } : { text: text, details: full };
   }
 
+  // Java exception names in a message, as people read them (the factory's own words around them stay)
+  const JAVA_WORDS = [
+    [/\b(?:java\.net\.)?ConnectException\b(?::\s*Connection refused\b)?/g, 'the server refused the connection'],
+    [/\b(?:java\.net\.|java\.nio\.channels\.)?(?:UnknownHostException|UnresolvedAddressException)\b/g, 'the server name is not known'],
+    [/\b(?:java\.net\.(?:http\.)?)?(?:HttpConnectTimeoutException|HttpTimeoutException|SocketTimeoutException)\b/g, 'the server did not answer in time'],
+    [/\bjava\.nio\.channels\.ClosedChannelException\b|\bjava\.io\.IOException\b|\bjava\.io\.EOFException\b/g, 'the connection was closed'],
+    [/\b(?:java|javax|jdk|org|com|tools)\.(?:[a-z][\w$]*\.)+([A-Z][\w$]*(?:Exception|Error))\b:?\s*/g, '']
+  ];
+  /** An SVN client's failure ("svn: E170013: Unable to connect ... svn: E730061: Can't connect ..."), plainly, with what to do next. */
+  function svnWords(text) {
+    if (!/\bsvn: E\d{6}:/.test(text)) {
+      return text;
+    }
+    const start = text.search(/\b(?:svn \w+ failed:\s*)?svn: E\d{6}:/);
+    const parts = text.substring(start).split(/\s*\bsvn: E\d{6}:\s*/).map((p) => p.trim()).filter((p) => p && !/^svn \w+ failed:?$/.test(p));
+    const url = /at URL '([^']+)'/.exec(text);
+    const cause = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+    const lead = text.substring(0, start).trim();
+    const said = (url ? 'Could not reach the repository at ' + url[1] + (cause && !/^Unable to connect/.test(cause) ? ': ' + cause : '') : cause)
+      .replace(/\s+$/, '');
+    return (lead ? lead + ' ' : '') + said + (/[.!?]$/.test(said) ? '' : '.')
+      + ' Check the repository URL, the user name and password, and that the SVN server is running, then try again.';
+  }
+
+  /**
+   * A failed request as people read it, for any page: a network failure says to check the connection, an SVN client's
+   * codes and Java exception names become words, and a model server's raw answer is shortened (shortError). Takes an
+   * Error (from api.js) or a message; returns the text.
+   */
+  function errorText(error) {
+    const message = error && typeof error === 'object' ? error.message : error;
+    if (/Failed to fetch|NetworkError|Load failed/i.test(message || '')) {
+      return 'Could not reach the factory. Check your connection, then try again.';
+    }
+    if (!message) {
+      return 'Something went wrong. Try again.';
+    }
+    let text = svnWords(String(message));
+    JAVA_WORDS.forEach(([pattern, words]) => { text = text.replace(pattern, words); });
+    text = text.replace(/:\s*$/, '.').replace(/\s{2,}/g, ' ').trim();
+    return shortError(text || String(message)).text;
+  }
+
   return {
     tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when,
     badge: pill, status: status, tableKeys: tableKeys, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy,
-    shortError: shortError
+    shortError: shortError, errorText: errorText
   };
 });

@@ -9,9 +9,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     // Server statuses as design-system status chips (ui.status: the category gives colour and icon), in this page's words
     const status = (raw, words, title) => Object.assign(ui.status(raw, words), { title: title || '' });
     const JOB_WORDS = { SUCCEEDED: 'Succeeded', FAILED: 'Failed', RUNNING: 'Running', QUEUED: 'Queued' };
-    // A failed request in plain words: a network failure says to check the connection
-    const plain = (error) => (/Failed to fetch|NetworkError|Load failed/i.test((error && error.message) || '')
-      ? 'Could not reach the factory. Check your connection, then try again.' : (error && error.message) || 'Something went wrong. Try again.');
+    // A failed request in plain words (ui.errorText): a network failure says to check the connection
+    const plain = (error) => ui.errorText(error);
+    const jobText = (message) => (message ? ui.errorText(message) : '');
     const failed = (error) => toast.error(plain(error));
     const POLL_MS = 2000;
     // The code viewer renders at most this many lines (a window around the match for longer files)
@@ -184,7 +184,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             { label: 'Searchable pieces', value: j.chunksIndexed.toLocaleString() }, { label: 'Embeddings', value: j.embeddingsCreated.toLocaleString() },
             { label: 'Revisions', value: running.revisions }, { label: 'Started', value: j.startedAt ? ui.when(j.startedAt) : 'Not yet' }
           ],
-          message: j.message || ''
+          message: jobText(j.message)
         };
       });
 
@@ -211,7 +211,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               files: job.filesIndexed + ' / ' + job.filesRemoved + ' (of ' + job.filesScanned + ' scanned)',
               chunksIndexed: job.chunksIndexed,
               embeddingsCreated: job.embeddingsCreated,
-              message: job.message || '',
+              message: jobText(job.message),
               progress: job.filesScanned ? Math.min(100, Math.round(100 * (job.filesIndexed + job.filesRemoved) / job.filesScanned)) : 5,
               finished: job.finishedAt ? ui.when(job.finishedAt) : '',
               duration: job.startedAt && job.finishedAt ? duration(new Date(job.finishedAt) - new Date(job.startedAt)) : '',
@@ -889,13 +889,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.connected = () => {
         accUtils.announce('Code page loaded.');
         dashboard.load();
-        api.get('sources/local').then((local) => {
-          this.localEnabled(!!local.enabled);
-          if (local.enabled && /^file:/.test(this.svnUrl())) {
-            this.folderPath(urlToFolder(this.svnUrl()));
-            this.sourceKind('folder');
-          }
-        }).catch(() => null);
+        // Folders on the factory's computer are for administrators only (the server refuses everyone else)
+        if (session.isAdmin()) {
+          api.get('sources/local').then((local) => {
+            this.localEnabled(!!local.enabled);
+            if (local.enabled && /^file:/.test(this.svnUrl())) {
+              this.folderPath(urlToFolder(this.svnUrl()));
+              this.sourceKind('folder');
+            }
+          }).catch(() => null);
+        }
         document.title = 'Code';
         subscription = this.workspaceId.subscribe(loadWorkspace);
         const before = this.workspaceId();

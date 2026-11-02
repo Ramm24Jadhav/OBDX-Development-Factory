@@ -223,8 +223,9 @@
         </oj-bind-if>
       </section>
 
-      <div class="factory-cd-search" :hidden="[[results().length === 0]]">
-        <section class="fx-card factory-cd-results" aria-label="Search results">
+      <!-- The viewer also shows a file another page opened (Open in Code) when there are no results -->
+      <div :class="[[results().length === 0 ? 'factory-cd-search factory-cd-search--file' : 'factory-cd-search']]" :hidden="[[results().length === 0 && !selected()]]">
+        <section class="fx-card factory-cd-results" aria-label="Search results" :hidden="[[results().length === 0]]">
           <oj-bind-if test="[[filteredResults().length === 0 && results().length > 0]]">
             <p class="factory-cd-muted">No results match the filters.</p>
           </oj-bind-if>

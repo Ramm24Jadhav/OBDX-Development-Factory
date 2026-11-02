@@ -18,9 +18,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const AI_CHARS = 15000;
     const langOf = syntax.langOf;
     const tokenize = syntax.tokenize;
-    // A failed request in plain words: a network failure says to check the connection
-    const plain = (error) => (/Failed to fetch|NetworkError|Load failed/i.test((error && error.message) || '')
-      ? 'Could not reach the factory. Check your connection, then try again.' : (error && error.message) || 'Something went wrong. Try again.');
+    // A failed request in plain words (ui.errorText): a network failure says to check the connection
+    const plain = (error) => ui.errorText(error);
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     // Line references in an AI answer: "lines 12-20", "line 7", "L12-L20", "path:12-20"
     const CITE = /(?:\blines?\s+|\bL|:)(\d{1,6})(?:\s*(?:-|–|to)\s*L?(\d{1,6}))?/gi;
@@ -538,7 +537,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const last = list[list.length - 1];
         if (pending && last && !last.mine) {
           const m = Object.assign({}, replies());
-          m[pending] = { text: last.text, meta: last.meta, sources: last.sources || ko.observable([]), path: this.file() ? this.file().path : '',
+          const f = this.file();
+          // failed: the factory's own message (a refusal such as the privacy policy, or a failure), shown as a notice, not an answer.
+          // lineCount: the file's lines when known (cited lines past it are flagged)
+          m[pending] = { text: last.text, meta: last.meta, sources: last.sources || ko.observable([]), path: f ? f.path : '', failed: !!last.failed,
+            lineCount: f && !f.partial ? (f.lines || (f.truncated ? 0 : f.content.split('\n').length)) : 0,
             css: ko.unwrap(last.css).indexOf('error') >= 0 ? 'factory-kn-insight factory-kn-insight-bad' : 'factory-kn-insight' };
           replies(m);
           pending = null;
@@ -548,7 +551,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // The lines the answer cites (they open in the viewer), and the manuals it used, each named
       this.citations = ko.pureComputed(() => {
         const i = this.insight();
-        if (!i) {
+        if (!i || i.failed) {
           return [];
         }
         const text = String(ko.unwrap(i.text) || '').replace(/\[\d+\]/g, '');
@@ -562,16 +565,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const key = from + '-' + to;
           if (from > 0 && !seen[key]) {
             seen[key] = true;
-            list.push({ from: from, to: to, label: i.path.split('/').pop() + ' ' + (from === to ? 'line ' + from : 'lines ' + from + '-' + to),
-              show: () => this.showLines(i.path, from, to), open: () => openInCode(i.path, from, to) });
+            // Lines past the end of the file are not in it: flagged, with nothing to open; a range running past it ends there
+            const outside = i.lineCount > 0 && from > i.lineCount;
+            const end = i.lineCount > 0 ? Math.min(to, i.lineCount) : to;
+            list.push({ from: from, to: end, outside: outside,
+              label: i.path.split('/').pop() + ' ' + (from === to ? 'line ' + from : 'lines ' + from + '-' + to),
+              note: outside ? 'The file has ' + i.lineCount + ' line' + (i.lineCount === 1 ? '' : 's') + ': check this part of the answer.'
+                : end < to ? 'The file ends at line ' + i.lineCount + '.' : '',
+              show: () => this.showLines(i.path, from, end), open: () => openInCode(i.path, from, end) });
           }
         }
         return list.sort((x, y) => x.from - y.from);
       });
       this.manualSources = ko.pureComputed(() => {
         const i = this.insight();
-        return i ? (ko.unwrap(i.sources) || []).map((src) => ({
-          n: '[' + src.n + ']', kind: src.bank ? 'Bank document' : src.kind === 'note' || src.noteId ? 'Knowledge note' : 'Oracle manual',
+        return i && !i.failed ? (ko.unwrap(i.sources) || []).map((src) => ({
+          // A note first: the bank's own notes are bank too (kind NOTE, as the OBDX Library labels them)
+          n: '[' + src.n + ']', kind: /^note$/i.test(src.kind || '') || src.noteId ? 'Note' : src.bank ? 'Bank document' : 'Oracle manual',
           title: src.title + (src.heading ? ': ' + src.heading : ''),
           where: (src.obdxVersion ? 'OBDX ' + src.obdxVersion : '') + (src.pageFrom ? ', pages ' + src.pageFrom + (src.pageTo && src.pageTo !== src.pageFrom ? '-' + src.pageTo : '') : '')
         })) : [];

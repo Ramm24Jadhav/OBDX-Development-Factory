@@ -61,7 +61,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ];
       const data = dashboard.data;
       this.errorMessage = ko.observable('');
-      const showError = (error) => this.errorMessage(error.message);
+      const showError = (error) => this.errorMessage(ui.errorText(error));
+      // A failure in plain words (ui.errorText) with what to do next, unless the words already say it
+      const said = (error, next) => { const t = ui.errorText(error); return /try again\.?$/i.test(t) ? t : t + ' ' + next; };
       this.go = (page) => dashboard.open(page);
 
       // Per workspace, read on demand: project profile, modernization inventory and members. A workspace whose code
@@ -267,7 +269,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           state: stateOf(entry), status: STATUS[stateOf(entry)], running: running, progress: running ? jobProgress(job) : '',
           // The last import: what the server reported, in full
           jobText: job ? (job.status === 'SUCCEEDED' ? 'Last import ' + dashboard.when(job.finishedAt) : (job.status === 'FAILED' ? 'Import failed ' + dashboard.when(job.finishedAt || job.createdAt) : 'Import started ' + dashboard.when(job.startedAt || job.createdAt))) : 'The code has not been imported yet.',
-          jobMessage: job && !running ? job.message || '' : '',
+          jobMessage: job && !running && job.message ? ui.errorText(job.message) : '',
           jobFailed: !!job && job.status === 'FAILED',
           canManage: canManage, canUpdate: canManage && !running && !!w.svnUrl,
           updateLabel: indexed ? 'Update code' : 'Import code',
@@ -305,7 +307,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           return;
         }
         startImport(s.id).then(() => toast.success((s.updateLabel === 'Update code' ? 'Updating ' : 'Importing ') + s.name + '. Progress shows here and in the list.'))
-          .catch((error) => toast.error(error.message));
+          .catch((error) => toast.error(ui.errorText(error)));
       };
       this.confirmVersion = () => {
         const s = this.sheet();
@@ -314,7 +316,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         api.put('workspaces/' + s.id + '/profile/facts/obdx.version', { value: s.version.fact.detectedValue })
           .then((profile) => { setProfile(s.id, profile); toast.success('Detected OBDX version confirmed.'); })
-          .catch((error) => toast.error(error.message));
+          .catch((error) => toast.error(ui.errorText(error)));
       };
       this.testConnection = () => {
         const s = this.sheet();
@@ -328,7 +330,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             this.svnTest({ ok: true, text: 'Connected. The latest revision is r' + r.headRevision
               + (behind === null ? '.' : (behind > 0 ? '; the index is ' + plural(behind, 'revision') + ' behind.' : '; the index is up to date.')) });
           })
-          .catch((error) => this.svnTest({ ok: false, text: error.message + ' Check the URL and sign-in on the Code page, then test again.' }));
+          .catch((error) => this.svnTest({ ok: false, text: said(error, 'Check the URL and sign-in on the Code page, then test again.') }));
       };
       this.copyUrl = () => {
         const s = this.sheet();
@@ -380,7 +382,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               toast.success('Workspace ' + s.name + ' deleted.');
               return Promise.all([dashboard.load(), workspaceSelection.load()]);
             })
-            .catch((error) => toast.error(error.message));
+            .catch((error) => toast.error(ui.errorText(error)));
         });
       };
 
@@ -440,7 +442,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.checkError('');
         this.inspection(null);
         this.checking(true);
-        return request.then(showInspection).catch((error) => this.checkError(error.message)).finally(() => this.checking(false));
+        return request.then(showInspection).catch((error) => this.checkError(ui.errorText(error))).finally(() => this.checking(false));
       };
       this.checkUrl = () => {
         if (!this.svnUrl().trim()) {
@@ -470,7 +472,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             use: () => useFolder(folder.path)
           }))
         })))
-        .catch((error) => this.checkError(error.message));
+        .catch((error) => this.checkError(ui.errorText(error)));
       this.toggleBrowse = () => {
         if (this.browsing()) {
           this.browsing(false);
@@ -576,7 +578,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const failed = ownJob && ownJob.status === 'FAILED';
         const checkedOut = ownJob && ownJob.toRevision !== null && ownJob.toRevision !== undefined;
         const succeeded = ownJob && ownJob.status === 'SUCCEEDED';
-        const message = ownJob ? ownJob.message || '' : '';
+        const message = ownJob && ownJob.message ? ui.errorText(ownJob.message) : '';
         const retry = run.create === 'done' && session.can(run.id, 'MANAGE_CODE') ? this.retryStart : null;
         const state = (begun, done, failedHere) => (failedHere ? 'failed' : (done ? 'done' : (begun ? 'running' : 'pending')));
         steps.push(step('checkout', 'Check out the code from SVN',
@@ -628,7 +630,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         setRun({ start: 'running', startError: '' });
         return startImport(run.id)
           .then((job) => setRun({ start: 'done', jobId: job.id, importNow: true }))
-          .catch((error) => setRun({ start: 'failed', startError: error.message + ' Try again; the workspace is saved.' }));
+          .catch((error) => setRun({ start: 'failed', startError: said(error, 'Try again; the workspace is saved.') }));
       };
       const saveSignIn = () => {
         const run = this.run();
@@ -638,7 +640,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         setRun({ signIn: 'running' });
         return api.put('workspaces/' + run.id + '/svn', { svnUrl: run.svnUrl, svnUsername: this.svnUsername().trim(), svnPassword: this.svnPassword() })
           .then(() => { setRun({ signIn: 'done' }); return true; })
-          .catch((error) => { setRun({ signIn: 'failed', signInError: error.message + ' Try again, or set the sign-in later on the Code page.' }); return false; });
+          .catch((error) => { setRun({ signIn: 'failed', signInError: said(error, 'Try again, or set the sign-in later on the Code page.') }); return false; });
       };
       const afterCreate = () => saveSignIn().then((ok) => (ok ? startRun() : null));
       const create = () => {
@@ -652,7 +654,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               return dashboard.load();
             }).then(afterCreate);
           })
-          .catch((error) => setRun({ create: 'failed', createError: error.message + ' Change the details and try again.' }));
+          .catch((error) => setRun({ create: 'failed', createError: said(error, 'Change the details and try again.') }));
       };
       this.retryCreate = () => create();
       this.retrySignIn = () => afterCreate();
@@ -661,7 +663,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const run = this.run();
         api.post('workspaces/' + run.id + '/profile/refresh')
           .then((profile) => { setProfile(run.id, profile); setRun({ profileRetried: true }); toast.success('Project profile detected.'); })
-          .catch((error) => toast.error(error.message));
+          .catch((error) => toast.error(ui.errorText(error)));
       };
       this.createFailed = ko.pureComputed(() => !!this.run() && this.run().create === 'failed');
       this.backToDetails = () => this.run(null);
@@ -691,7 +693,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         api.put('workspaces/' + run.id + '/profile/facts/obdx.version', { value: p.version.fact.detectedValue })
           .then((profile) => { setProfile(run.id, profile); toast.success('Detected OBDX version confirmed.'); })
-          .catch((error) => toast.error(error.message));
+          .catch((error) => toast.error(ui.errorText(error)));
       };
       this.runGo = (page) => () => {
         const run = this.run();
