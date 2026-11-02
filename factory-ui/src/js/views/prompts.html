@@ -1,9 +1,8 @@
 <div class="factory-pg factory-pr-page">
-  <div class="factory-pg-head">
-    <div>
-      <h1>AI Prompt &amp; Template Library</h1>
-      <p>Manage approved prompts, reusable templates and AI patterns for OBDX development</p>
-    </div>
+  <h1 class="fx-visually-hidden">AI Prompt &amp; Template Library</h1>
+  <div class="factory-pg-head factory-pr-top">
+    <p class="factory-pr-intro" id="promptGovernance"><strong><oj-bind-text value="[[governance().templates]]"></oj-bind-text></strong> · <strong><oj-bind-text value="[[governance().system]]"></oj-bind-text></strong> · <oj-bind-text value="[[governance().model]]"></oj-bind-text>.
+      Templates change in the version pack files, reviewed in source control; system prompts change only with a factory update.</p>
     <div class="factory-pg-actions">
       <div class="fx-split">
         <button type="button" id="addTemplateButton" class="fx-btn fx-btn--primary" on-click="[[toggleHowToAdd]]" :aria-expanded="[[howToAdd() ? 'true' : 'false']]" aria-controls="howToAdd"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Create Prompt / Template</button>
@@ -26,17 +25,9 @@
       using the same keys as the factory's own packs (id, title, when, match, guidance, parts), then restart the factory. A recipe with the same id replaces the factory's.</span></div>
   </oj-bind-if>
 
-  <div class="factory-kpis factory-pr-kpis">
-    <oj-bind-for-each data="[[kpis]]">
-      <template><div class="factory-kpi"><span :class="[[$current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
-        <span class="factory-pr-kpitext"><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-          <span :class="[[$current.data.css]]" :title="[[$current.data.sub]]"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
-    </oj-bind-for-each>
-  </div>
-
-  <div class="factory-tabbar factory-pr-tabs" role="tablist" aria-label="Prompt categories">
+  <div class="factory-tabbar factory-pr-tabs" role="tablist" aria-label="Prompt categories" on-keydown="[[tabKey]]">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['pr-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
+      <template><button type="button" role="tab" :id="[[tabId($current.data.value)]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]">
         <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
@@ -75,15 +66,16 @@
       </div>
       <div class="fx-table-wrap">
         <table class="fx-table factory-pr-table" id="promptTable">
-          <thead><tr><th class="factory-pr-chk fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[allChecked]]" on-click="[[checkAll]]" aria-label="Select all prompts on this page"></label></th><th>Name</th><th>Category</th><th>Version</th><th>Status</th><th>Last Updated</th>
+          <thead><tr><th class="factory-pr-chk fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[allChecked]]" on-click="[[checkAll]]" aria-label="Select all prompts on this page"></label></th><th>Name</th><th>Agent / task</th><th>Version</th><th>Status · kind · approval</th>
             <th title="Planned files of this workspace's changes the recipe applies to">Usage</th><th class="factory-pr-act fx-table-actions">Actions</th></tr></thead>
           <tbody><oj-bind-for-each data="[[rows]]"><template><tr :class="[[$current.data.css]]" on-click="[[$current.data.pick]]">
             <td class="factory-pr-chk fx-col-check"><label class="fx-check"><input type="checkbox" :checked="[[$current.data.isChecked]]" on-click="[[$current.data.check]]" :aria-label="[['Select ' + $current.data.title]]"></label></td>
-            <td><span class="factory-name-cell factory-pr-name"><span :class="[[$current.data.iconCss]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><span><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span></span></td>
-            <td><span :class="[[$current.data.catCss]]" :title="[[$current.data.category]]"><oj-bind-text value="[[$current.data.category]]"></oj-bind-text></span></td>
-            <td class="factory-pr-nowrap" :title="[[$current.data.versionTitle]]"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
-            <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span></td>
-            <td class="factory-pr-nowrap" :title="[[$current.data.updatedTitle]]"><oj-bind-text value="[[$current.data.updated]]"></oj-bind-text></td>
+            <td><span class="factory-name-cell factory-pr-name"><span :class="[[$current.data.iconCss]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><span><oj-bind-text value="[[$current.data.title]]"></oj-bind-text>
+              <span class="factory-pr-purpose" :title="[[$current.data.when]]"><oj-bind-text value="[[$current.data.category + ' · ' + $current.data.when]]"></oj-bind-text></span></span></span></td>
+            <td class="factory-pr-wrap"><oj-bind-text value="[[$current.data.agent]]"></oj-bind-text></td>
+            <td class="factory-pr-nowrap" :title="[[$current.data.versionTitle + ' · ' + $current.data.updatedTitle]]"><oj-bind-text value="[[$current.data.version]]"></oj-bind-text></td>
+            <td><span :class="[[$current.data.status.css]]"><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
+              <span class="factory-pr-approval" :title="[[$current.data.approval]]"><oj-bind-text value="[[$current.data.kindText + ' · ' + $current.data.approvalShort]]"></oj-bind-text></span></td>
             <td><oj-bind-text value="[[$current.data.usageText]]"></oj-bind-text></td>
             <td class="factory-pr-act fx-table-actions"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-pr-kebab" aria-haspopup="menu" on-click="[[$current.data.menu]]" :aria-label="[['Actions for ' + $current.data.title]]"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button></td></tr></template></oj-bind-for-each></tbody>
         </table>
@@ -110,16 +102,23 @@
           <span :class="[[selected().status.css]]"><oj-bind-text value="[[selected().status.text]]"></oj-bind-text></span>
           <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-pr-kebab" aria-haspopup="menu" on-click="[[detailMenu]]" aria-label="More actions"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
         </div>
-        <div class="factory-subtabs factory-pr-subtabs">
-          <oj-bind-for-each data="[[detailTabs]]"><template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+        <div class="factory-subtabs factory-pr-subtabs" role="tablist" aria-label="Prompt details" on-keydown="[[detailKey]]">
+          <oj-bind-for-each data="[[detailTabs]]"><template><button type="button" role="tab" :id="[['prd-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
         </div>
+        <oj-bind-if test="[[selected().hasSecret]]"><p class="fx-alert fx-alert--warning factory-pr-secret" role="note"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span><span class="fx-alert-text">Values that look like secrets are hidden here and in copies. Move them out of the pack files.</span></p></oj-bind-if>
         <div class="factory-pr-dbody">
           <oj-bind-if test="[[detailTab() === 'overview']]">
-            <dl class="factory-kv factory-pr-kv">
+            <dl class="factory-kv factory-pr-kv" id="promptFacts">
+              <dt>Kind</dt><dd><span :class="[[selected().kindCss]]"><oj-bind-text value="[[selected().kindText]]"></oj-bind-text></span></dd>
+              <dt>Purpose</dt><dd class="factory-pr-desc"><oj-bind-text value="[[description]]"></oj-bind-text></dd>
               <dt>Category</dt><dd><oj-bind-text value="[[selected().category]]"></oj-bind-text></dd>
+              <dt>Agent / task</dt><dd><oj-bind-text value="[[selected().agent]]"></oj-bind-text></dd>
               <dt>Use Case</dt><dd><oj-bind-text value="[[selected().when]]"></oj-bind-text></dd>
-              <dt>Description</dt><dd class="factory-pr-desc"><oj-bind-text value="[[description]]"></oj-bind-text></dd>
-              <dt>Target Version</dt><dd><oj-bind-text value="[[selected().versionTitle]]"></oj-bind-text></dd>
+              <dt>Model</dt><dd><oj-bind-text value="[[selected().model]]"></oj-bind-text></dd>
+              <dt>Version</dt><dd><oj-bind-text value="[[selected().versionTitle]]"></oj-bind-text></dd>
+              <dt>Last updated</dt><dd><oj-bind-text value="[[selected().updatedTitle]]"></oj-bind-text></dd>
+              <dt>Approval</dt><dd><oj-bind-text value="[[selected().approval]]"></oj-bind-text></dd>
+              <dt>Lifecycle</dt><dd><oj-bind-text value="[[selected().lifecycle]]"></oj-bind-text></dd>
               <dt>Applicable Modules</dt><dd><oj-bind-text value="[[selected().layers + ' (' + selected().actions + ')']]"></oj-bind-text></dd>
               <dt>Tags</dt><dd><oj-bind-for-each data="[[selected().tagPills]]"><template><span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></dd>
               <dt>Created By</dt><dd><oj-bind-text value="[[selected().createdBy]]"></oj-bind-text></dd>
@@ -146,13 +145,39 @@
             <ul class="factory-list"><oj-bind-for-each data="[[selected().byChange]]"><template><li><span class="factory-step-dot factory-dot-blue"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span></span>
               <span class="factory-list-title"><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></span><span class="fx-badge fx-badge--primary fx-badge--plain"><oj-bind-text value="[[$current.data.n + ' files']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
           </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'versions']]">
+            <p class="factory-card-sub" id="versionCompare"><oj-bind-text value="[[versionCompare().text]]"></oj-bind-text></p>
+            <oj-bind-if test="[[versionCompare().state === 'ok']]">
+              <div class="factory-code factory-pr-diff" role="region" aria-label="Guidance compared between the two versions" tabindex="0">
+                <oj-bind-for-each data="[[versionCompare().rows]]" as="d"><template><div :class="[[d.data.css]]"><span aria-hidden="true"><oj-bind-text value="[[d.data.sign]]"></oj-bind-text></span><span><oj-bind-text value="[[d.data.text]]"></oj-bind-text></span></div></template></oj-bind-for-each>
+              </div>
+            </oj-bind-if>
+            <p class="fx-help">Rollback is not supported here: the factory keeps no earlier versions of a prompt. A recipe goes back to an earlier version in the pack files' source control, then the factory restarts.</p>
+          </oj-bind-if>
+          <oj-bind-if test="[[detailTab() === 'evaluation']]">
+            <oj-bind-if test="[[!selected().evaluation]]"><p class="factory-card-sub">No evaluation cases for this prompt. The factory has a question set only for the OBDX Library's answers.</p></oj-bind-if>
+            <oj-bind-if test="[[selected().evaluation && !isAdmin()]]"><p class="factory-card-sub">The Library's question set and its results are for administrators.</p></oj-bind-if>
+            <oj-bind-if test="[[selected().evaluation && isAdmin()]]">
+              <div id="promptEvaluation">
+                <oj-bind-if test="[[evaluationView()]]">
+                  <p class="factory-card-sub"><oj-bind-text value="[[evaluationView().head]]"></oj-bind-text></p>
+                  <dl class="factory-kv factory-pr-kv"><oj-bind-for-each data="[[evaluationView().facts]]" as="e"><template><dt><oj-bind-text value="[[e.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[e.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+                  <ul class="factory-pr-evalrows"><oj-bind-for-each data="[[evaluationView().rows]]" as="r"><template><li><span :class="[[r.data.ok ? 'fx-badge fx-badge--success' : 'fx-badge fx-badge--danger']]"><oj-bind-text value="[[r.data.ok ? 'Passed' : 'Missed']]"></oj-bind-text></span>
+                    <span><oj-bind-text value="[[r.data.q]]"></oj-bind-text></span> <span class="fx-muted"><oj-bind-text value="[[r.data.text]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+                  <oj-bind-if test="[[evaluationView().error]]"><p class="fx-alert fx-alert--danger"><span class="fx-alert-text"><oj-bind-text value="[[evaluationView().error]]"></oj-bind-text></span></p></oj-bind-if>
+                </oj-bind-if>
+                <oj-bind-if test="[[!evaluationView()]]"><p class="factory-card-sub">The question set has not been run since the factory started.</p></oj-bind-if>
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="runEvaluation" on-click="[[runEvaluation]]" :disabled="[[!!(evaluation() && evaluation().running)]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Run the search evaluation</button>
+              </div>
+            </oj-bind-if>
+          </oj-bind-if>
           <oj-bind-if test="[[detailTab() === 'history']]">
             <p class="fx-alert fx-alert--info factory-pr-note">No history is kept. <oj-bind-text value="[[selected().statusKey === 'approved' ? 'This recipe changes with the version pack file ' + selected().source + '; its history is in source control.' : 'This task changes with factory updates; see the release notes on the About page.']]"></oj-bind-text></p>
           </oj-bind-if>
         </div>
         <div class="factory-pr-dbtns">
           <button type="button" id="useTemplateButton" class="fx-btn fx-btn--primary fx-btn--block" on-click="[[useTemplate]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Use Template</button>
-          <span data-fx-tip="Recipes are edited in the version pack files, not on this page"><button type="button" id="editTemplateButton" class="fx-btn fx-btn--secondary fx-btn--block" disabled><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Template</button></span>
+          <span tabindex="0" :data-fx-tip="[[selected().kind === 'system' ? 'Protected: system prompts are part of the factory and change only with a factory update' : 'Templates in effect are changed in the version pack files and reviewed in source control before the factory uses them; there is no editing here']]"><button type="button" id="editTemplateButton" class="fx-btn fx-btn--secondary fx-btn--block" disabled><span class="factory-nav-icon factory-ico-edit" aria-hidden="true"></span>Edit Template</button></span>
           <button type="button" class="fx-btn fx-btn--tertiary fx-btn--icon" aria-haspopup="menu" on-click="[[detailMenu]]" aria-label="More actions"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
         </div>
       </oj-bind-if>

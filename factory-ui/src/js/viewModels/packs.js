@@ -2,15 +2,28 @@
  * Version Packs page: the factory's OBDX version packs (22.x and 25.x) with their rules, Java level and implementation
  * recipes and templates, as the workspaces using them see them (rules turned off for a workspace show as off). Also
  * the UI target packs' reusable components, the workspace's own components, how the versions relate, and recent
- * changes to rules and reference examples (from the audit log, for administrators).
+ * changes to rules and reference examples (from the audit log, for administrators). Rules show apart by where they come
+ * from: the factory's version pack, the bank's own standards (the bank's pack folder) and the UI target pack, each
+ * with its file, severity, how it is enforced, who turned it off, and the findings it made in the workspace's changes.
+ * History and impact lists the workspaces and open changes a pack update reaches; nothing is re-checked by itself.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/ui',
-        '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, session, workspaceSelection, ui, toast) {
+        '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, workspaceSelection, ui, toast, pageRequests) {
     const VERSIONS = ['25.x', '22.x'];
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const copy = (text) => { if (text) { ui.copy(text).then(() => toast.success('Copied ' + text + '.')).catch(() => toast.error('The browser did not allow copying.')); } };
     const badge = (text, tone) => ({ text: text, css: 'fx-badge' + (tone ? ' fx-badge--' + tone : '') });
+    // Where a rule comes from, and what that means for who sets it
+    const ORIGIN = {
+      VERSION_PACK: { title: 'Oracle OBDX version pack rules', short: 'Version pack', approval: 'Ships with the factory (no approval step)' },
+      BANK: { title: 'Bank standards', short: 'Bank standard', approval: 'Set in the bank\'s pack folder by the factory\'s administrator' },
+      TARGET: { title: 'UI target pack rules', short: 'UI target', approval: 'Ships with the UI target pack' }
+    };
+    // Changes still open: a pack update reaches them only when someone checks them again
+    const OPEN = ['ANALYZING', 'PLAN_READY', 'GENERATING', 'GENERATED', 'FAILED'];
+    // Quick-check findings name their rule: "Line 12 (rule-id, error): ..."
+    const FINDING = /\(([a-z0-9][a-z0-9-]+), (error|warning)\)/g;
 
     function PacksViewModel() {
       this.errorMessage = ko.observable('');
@@ -42,9 +55,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const off = p ? p.checks.rules.filter((r) => !r.enabled).length : 0;
         const menu = ui.menu();
         const go = (fn) => () => { menu.close(); this.version(v); fn(); };
+        const byOrigin = (o) => (p ? p.checks.rules.filter((r) => (r.origin || 'VERSION_PACK') === o).length : 0);
         return {
           version: v, name: 'OBDX ' + v, description: p ? p.checks.description : 'No workspace uses this version', state: using.length ? 'active' : 'supported',
-          status: using.length ? badge('Active', 'success') : badge('Supported', 'info'), loaded: !!p,
+          status: using.length ? badge('Active · ' + using.length + (using.length === 1 ? ' workspace' : ' workspaces'), 'success') : badge('Supported', 'info'), loaded: !!p,
+          uiTargets: targetsFor(v),
+          ruleCounts: p ? byOrigin('VERSION_PACK') + ' pack · ' + byOrigin('BANK') + ' bank' + (byOrigin('TARGET') ? ' · ' + byOrigin('TARGET') + ' target' : '') : '–',
           java: p ? 'Java ' + p.checks.javaLevel : (v === '22.x' ? 'Java 8' : 'Java 11'),
           rules: p ? p.checks.rules.length : '–', recipes: p ? p.recipes.recipes.length : '–', workspaces: using.map((w) => w.name).join(', ') || 'None',
           custom: !p ? 'No workspace yet' : off ? off + ' rule' + (off === 1 ? '' : 's') + ' off in ' + p.workspace.name : 'All rules on in ' + p.workspace.name,
@@ -57,10 +73,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           menu: menu,
           go: {
             details: go(() => this.detailTab('overview')), standards: go(() => this.tab('standards')),
-            templates: go(() => this.tab('templates')), upgrade: go(() => this.tab('upgrade'))
+            templates: go(() => this.tab('templates')), upgrade: go(() => this.tab('upgrade')), history: go(() => this.tab('history'))
           }
         };
       }));
+      // UI targets a version's workspaces build for: OBDX's own JET UI always, plus the new-app targets they use
+      const targetsFor = (v) => {
+        const titles = {};
+        this.targets().forEach((t) => { titles[t.id] = t.title; });
+        const used = Array.from(new Set(workspaces().filter((w) => w.obdxVersion === v && w.target && w.appFolder).map((w) => titles[w.target] || w.target)));
+        return ['OBDX JET UI'].concat(used).join(', ');
+      };
       this.rows = ko.pureComputed(() => {
         const text = this.packSearch().trim().toLowerCase();
         return allRows().filter((r) => (!this.packFilter() || r.state === this.packFilter())
@@ -68,23 +91,46 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
       this.allSelected = ko.pureComputed(() => this.rows().length > 0 && this.rows().every((r) => this.checked.indexOf(r.version) >= 0));
       this.toggleAll = (event) => this.checked(event.target.checked ? this.rows().map((r) => r.version) : []);
-      this.kpis = ko.pureComputed(() => {
-        const p = pack();
-        const components = this.targets().reduce((sum, t) => sum + Object.keys(t.components || {}).length, 0);
-        return [
-          { label: 'Total Version Packs', value: VERSIONS.length, sub: VERSIONS.join(', '), tone: 'primary', icon: 'cube', pill: false },
-          { label: 'Active Pack', value: this.version() ? 'OBDX ' + this.version() : '–', sub: p ? 'Java ' + p.checks.javaLevel + ' · ' + p.workspace.name : '', tone: 'info', icon: 'cube', pill: !!p },
-          { label: 'Standard Components', value: components + this.custom().length, sub: 'Mappings and custom', tone: 'primary', icon: 'design', pill: false },
-          { label: 'Implementation Patterns', value: p ? p.recipes.recipes.length : 0, sub: 'Recipes with templates', tone: 'violet', icon: 'doc', pill: false },
-          { label: 'Compliance Rules', value: p ? p.checks.rules.filter((r) => r.enabled).length : 0, sub: 'Rules on', tone: 'warning', icon: 'shield', pill: false }
-        ].map((k) => Object.assign(k, { iconCss: 'fx-kpi-icon factory-pk-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
-      });
       this.tab = ko.observable('packs');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'packs', label: 'Version Packs', icon: 'cube' }, { value: 'standards', label: 'Bank Standards', icon: 'shield' },
+        { value: 'packs', label: 'Version Packs', icon: 'cube' }, { value: 'standards', label: 'Rules & Standards', icon: 'shield' },
         { value: 'templates', label: 'Templates', icon: 'doc' }, { value: 'components', label: 'Reusable Components', icon: 'design' },
-        { value: 'rules', label: 'Validation Rules', icon: 'check' }, { value: 'upgrade', label: 'Upgrade Guidance', icon: 'refresh' }
+        { value: 'history', label: 'History & Impact', icon: 'clock' }, { value: 'upgrade', label: 'Upgrade Guidance', icon: 'refresh' }
       ]);
+      // Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern)
+      this.tabKey = (event) => {
+        const keys = this.tabs.map((t) => t.value);
+        const at = keys.indexOf(this.tab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.tab(keys[next]);
+        const button = document.getElementById('pk-' + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
+      // Findings per rule in the changes of the pack's workspace (the last quick checks of each written file)
+      const changeDetails = ko.observableArray([]);
+      const evidence = ko.pureComputed(() => {
+        const by = {};
+        changeDetails().forEach((c) => (c.files || []).forEach((file) => {
+          const text = file.checkMessage || '';
+          let m;
+          FINDING.lastIndex = 0;
+          while ((m = FINDING.exec(text)) !== null) {
+            const e = by[m[1]] = by[m[1]] || { findings: 0, changes: {} };
+            e.findings += 1;
+            e.changes[c.id] = c.title;
+          }
+        }));
+        return by;
+      });
+      const checkedChanges = ko.pureComputed(() => changeDetails().filter((c) => (c.files || []).some((x) => x.checkStatus)).length);
 
       const area = (r) => (r.files.some((f) => /\.java$/.test(f)) ? 'Java' : r.files.some((f) => /\.html$/.test(f)) ? 'UI / UX'
         : r.files.some((f) => /\.(js|ts|tsx)$/.test(f)) ? 'UI code' : r.files.some((f) => /\.sql$/.test(f)) ? 'Database' : 'General');
@@ -94,8 +140,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           toast.success(r.title + (enabled ? ' turned on' : ' turned off') + ' for ' + pack().workspace.name + '.');
         })
         .catch((error) => { toast.error(error.message); const all = Object.assign({}, packs()); packs(all); });
-      this.standards = ko.pureComputed(() => (pack() ? pack().checks.rules : []).map((r) => { const menu = ui.menu(); return {
+      this.standards = ko.pureComputed(() => (pack() ? pack().checks.rules : []).map((r) => { const menu = ui.menu(); const origin = r.origin || 'VERSION_PACK'; const ev = evidence()[r.id]; return {
         id: r.id, title: r.title, area: area(r), message: r.message, enabled: r.enabled, files: r.files.join(', '), version: this.version(),
+        origin: origin, originText: ORIGIN[origin].short, source: r.source || 'Not recorded',
+        enforcement: !r.enabled ? 'Off for this workspace' : !r.matchesProfile ? 'Not checked: not this codebase'
+          : r.severity === 'ERROR' ? 'Blocks the build; sent back to the model to fix' : 'Shown as a warning',
+        approval: r.enabled ? ORIGIN[origin].approval : 'Turned off' + (r.disabledBy ? ' by ' + r.disabledBy : '') + (r.disabledAt ? ', ' + ui.when(r.disabledAt) : ''),
+        evidence: ev ? ev.findings + (ev.findings === 1 ? ' finding' : ' findings') + ' in ' + Object.keys(ev.changes).length + (Object.keys(ev.changes).length === 1 ? ' change' : ' changes')
+          : checkedChanges() ? 'No findings in ' + checkedChanges() + (checkedChanges() === 1 ? ' checked change' : ' checked changes') : 'No checked changes yet',
+        evidenceTitle: ev ? Object.keys(ev.changes).map((k) => ev.changes[k]).join(', ') : '',
         status: r.enabled ? badge('Active', 'success') : badge('Off', ''), severity: r.severity === 'ERROR' ? badge('Error', 'danger') : badge('Warning', 'warning'),
         applies: r.matchesProfile ? r.appliesTo : 'Not this codebase', toggle: (event) => {
           if (event.detail.updatedFrom !== 'internal') {
@@ -111,14 +164,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
       }; }));
       this.topStandards = ko.pureComputed(() => this.standards().slice(0, 5));
+      // The rules in three groups by where they come from
+      this.ruleGroups = ko.pureComputed(() => ['VERSION_PACK', 'BANK', 'TARGET'].map((o) => ({
+        key: o, title: ORIGIN[o].title, rules: this.standards().filter((s) => s.origin === o),
+        empty: o === 'BANK' ? 'No bank standards. The factory\'s administrator adds them as files in the bank\'s pack folder (FACTORY_PACKS_DIR); they apply to every workspace on the version.'
+          : o === 'TARGET' ? 'This workspace builds no new app, so no UI target rules apply.' : 'No rules.'
+      })));
       this.recipes = ko.pureComputed(() => (pack() ? pack().recipes.recipes : []).map((r) => ({
         id: r.id, title: r.title, when: r.when || '', layers: r.layers.join(', ') || 'any layer', actions: r.actions.join(', ') || 'create, modify',
         parts: r.parts.map((p) => ({ name: p.name, files: p.files.join(', '), template: p.template || '', content: p.templateContent || '', examples: p.examples.length })),
-        source: r.source, version: this.version(), open: () => { this.recipeId(r.id); this.tab('templates'); },
+        source: r.source, version: this.version(), applies: appliesTo(r), open: () => { this.recipeId(r.id); this.tab('templates'); },
         css: ko.pureComputed(() => 'factory-pk-recipe' + (this.recipe() && this.recipe().id === r.id ? ' is-on' : '')),
         pressed: ko.pureComputed(() => (this.recipe() && this.recipe().id === r.id ? 'true' : 'false'))
       })));
       this.topRecipes = ko.pureComputed(() => this.recipes().slice(0, 5));
+      // The versions a recipe applies to, from the file it comes from (recipes.yml is common to both)
+      const appliesTo = (r) => {
+        const src = String(r.source || '');
+        if (/(^|\/)packs\/recipes\.yml$/.test(src) || /^packs\/common/.test(src)) {
+          return VERSIONS.slice().reverse().map((v) => 'OBDX ' + v).join(' and ');
+        }
+        const m = /(\d+\.x)\.yml$/.exec(src);
+        return (m ? 'OBDX ' + m[1] : 'OBDX ' + this.version()) + (/^packs\//.test(src) ? '' : ' (bank\'s pack folder)');
+      };
       this.recipeId = ko.observable(null);
       this.recipe = ko.pureComputed(() => this.recipes().find((r) => r.id === this.recipeId()) || this.recipes()[0] || null);
       this.templates = ko.pureComputed(() => [].concat.apply([], this.recipes().map((r) => r.parts.filter((p) => p.template).map((p) => ({
@@ -149,7 +217,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             cards.push({
               key: t.id + ':' + name, name: name, sub: t.title, kind: 'target', types: e.types,
               badge: { text: e.types.length + (e.types.length === 1 ? ' type' : ' types'), css: 'fx-badge fx-badge--primary fx-badge--plain' }, icon: 'cube', tone: 'primary',
-              facts: [{ k: 'UI target', v: t.title }, { k: 'Component', v: name, css: 'factory-mono' }, { k: 'Value', v: e.values.join(', ') || '–' },
+              facts: [{ k: 'UI target', v: t.title }, { k: 'Applies to', v: 'Any OBDX version (UI target pack)' }, { k: 'Component', v: name, css: 'factory-mono' }, { k: 'Value', v: e.values.join(', ') || '–' },
                 { k: 'Options', v: e.options ? 'Takes a list of options' : 'No options' }, { k: 'Extra props', v: e.props.join(', ') || 'None', css: 'factory-mono' },
                 { k: 'Starter project', v: t.starterFiles ? t.starterFiles + ' files' : 'None' }]
             });
@@ -159,7 +227,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           cards.push({
             key: 'custom:' + c.id, name: c.name, sub: 'This workspace · ' + (c.tag || ''), kind: 'custom', types: [],
             badge: { text: 'Custom', css: 'fx-badge fx-badge--violet fx-badge--plain' }, icon: 'design', tone: 'violet',
-            facts: [{ k: 'Tag', v: c.tag || '–', css: 'factory-mono' }, { k: 'Description', v: c.description || 'No description' },
+            facts: [{ k: 'Tag', v: c.tag || '–', css: 'factory-mono' }, { k: 'Applies to', v: 'This workspace' + (this.version() ? ' (OBDX ' + this.version() + ')' : '') }, { k: 'Description', v: c.description || 'No description' },
               { k: 'Made from', v: c.source || '–' }, { k: 'Made by', v: c.createdBy || '–' }, { k: 'Created', v: c.createdAt ? ui.when(c.createdAt) : '–' }]
           });
         });
@@ -188,6 +256,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const other = v === '25.x' ? '22.x' : '25.x';
         return {
           name: 'OBDX ' + v, description: p.checks.description, java: 'Java ' + p.checks.javaLevel, javaFull: 'Java ' + p.checks.javaLevel + ' (' + p.checks.javaLevelSource + ')',
+          uiTargets: targetsFor(v), shownFor: p.workspace.name,
+          ruleOrigins: ['VERSION_PACK', 'BANK', 'TARGET'].map((o) => p.checks.rules.filter((r) => (r.origin || 'VERSION_PACK') === o).length + ' ' + ORIGIN[o].short.toLowerCase()).join(' · '),
           rules: p.checks.rules.length + ' rules (' + p.checks.rules.filter((r) => r.severity === 'ERROR').length + ' errors)', recipes: p.recipes.recipes.length + ' recipes',
           rulesShort: p.checks.rules.filter((r) => r.enabled).length + ' standards on',
           statusText: active ? 'Active' : 'Supported', pillCss: 'fx-badge fx-badge--' + (active ? 'success' : 'info'),
@@ -223,6 +293,37 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         title: UPDATE[e.action].title, iconCss: 'fx-kpi-icon factory-pk-uicon factory-pk-tone-' + UPDATE[e.action].tone, iconClass: 'factory-nav-icon factory-ico-' + UPDATE[e.action].icon,
         text: (e.target || '') + (e.username ? ' by ' + e.username : ''), when: ui.when(e.at)
       })));
+      // Rule changes of the shown workspace (anyone can see who turned a rule off), and the audit log for administrators
+      this.ruleHistory = ko.pureComputed(() => this.standards().filter((s) => !s.enabled).map((s) => ({ title: s.title + ' turned off', text: s.approval, id: s.id })));
+      this.auditHistory = ko.pureComputed(() => {
+        const ids = workspaces().filter((w) => w.obdxVersion === this.version()).map((w) => w.id);
+        const names = {};
+        workspaces().forEach((w) => { names[w.id] = w.name; });
+        return audit().filter((e) => UPDATE[e.action] && ids.indexOf(e.workspaceId) >= 0).slice(0, 30).map((e) => ({
+          title: UPDATE[e.action].title, text: (e.target || '') + (e.detail ? ' (' + e.detail + ')' : '') + ' · ' + (names[e.workspaceId] || 'a workspace') + (e.username ? ' · by ' + e.username : ''),
+          when: ui.when(e.at)
+        }));
+      });
+      // What a change to this pack reaches: the workspaces on the version and their open changes
+      const openChanges = ko.observable({});
+      this.impact = ko.pureComputed(() => workspaces().filter((w) => w.obdxVersion === this.version()).map((w) => ({
+        name: w.name, target: w.target && w.appFolder ? targetsFor(this.version()) : 'OBDX JET UI',
+        changes: (openChanges()[w.id] || []).map((c) => ({ title: c.title, status: ui.status(c.status), when: ui.when(c.updatedAt),
+          open: () => { workspaceSelection.selectedId(w.id); pageRequests.change(c.id); navigate('build'); } })),
+        loaded: openChanges()[w.id] !== undefined
+      })));
+      const loadImpact = () => {
+        workspaces().filter((w) => w.obdxVersion === this.version() && openChanges()[w.id] === undefined).forEach((w) => {
+          api.get('workspaces/' + w.id + '/changes').then((list) => {
+            const all = Object.assign({}, openChanges());
+            all[w.id] = list.filter((c) => OPEN.indexOf(c.status) >= 0);
+            openChanges(all);
+          }).catch(() => null);
+        });
+      };
+      this.tab.subscribe((t) => { if (t === 'history') { loadImpact(); } });
+      this.version.subscribe(() => { if (this.tab() === 'history') { loadImpact(); } });
+      this.showHistory = () => this.tab('history');
       this.showStandards = () => this.tab('standards');
       this.showTemplates = () => this.tab('templates');
       this.showComponents = () => this.tab('components');
@@ -256,6 +357,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
       });
       this.openProfile = () => navigate('profile');
+      // The evidence comes from the workspace whose pack is shown
+      ko.computed(() => {
+        const p = pack();
+        changeDetails([]);
+        if (p) {
+          api.get('workspaces/' + p.workspace.id + '/changes/details').then((list) => { if (pack() === p) { changeDetails(list || []); } }).catch(() => null);
+        }
+      });
 
       this.connected = () => {
         accUtils.announce('Version Packs page loaded.');

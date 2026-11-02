@@ -328,8 +328,16 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   // What has focus when the key goes in (for a failure: the track, something inert, an overlay)
   const pre = await run(() => ({ focus: document.activeElement.className, inert: !!document.querySelector('[inert]'), overlay: !!document.querySelector('.fx-overlay, .fx-dialog, .fx-cmd') }));
   await key('ArrowRight');
-  await sleep(800);
-  const car = await run(() => { const c = document.querySelector('.factory-pk-carousel'); return { left: Math.round(c.querySelector('.fx-carousel-track').scrollLeft), current: [...c.querySelectorAll('.fx-carousel-dot')].findIndex((d) => d.classList.contains('is-current')), prevEnabled: !c.querySelector('.fx-carousel-btn--prev').disabled }; });
+  // The scroll is smooth (instant with reduced motion) and takes longer on a busy machine: wait until it has settled,
+  // up to 4 seconds, instead of a fixed pause
+  let car = null;
+  for (let i = 0; i < 20; i++) {
+    await sleep(200);
+    car = await run(() => { const c = document.querySelector('.factory-pk-carousel'); return { left: Math.round(c.querySelector('.fx-carousel-track').scrollLeft), current: [...c.querySelectorAll('.fx-carousel-dot')].findIndex((d) => d.classList.contains('is-current')), prevEnabled: !c.querySelector('.fx-carousel-btn--prev').disabled }; });
+    if (car.left > 100 && car.current === 1 && car.prevEnabled) {
+      break;
+    }
+  }
   car.before = pre;
   await record('1440x900 packs', 'carousel moves with the arrow key', car.left > 100 && car.current === 1 && car.prevEnabled, car);
 
