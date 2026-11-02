@@ -66,12 +66,12 @@ class ContinuedTestsTest {
                 public class BeneficiaryValidationServiceTest {
 
                     @Test
-                    public void rejectsAnEmptyList() {
+                    public void ac001_rejectsAnEmptyList() {
                         assertEquals(1, 1); // AC-001
                     }
 
                     @Test
-                    public void rejectsMoreThanAHundred() {
+                    public void ac002_rejectsMoreThanAHundred() {
                         assertEquals(2, 2); // AC-002
                     }
 
@@ -85,7 +85,7 @@ class ContinuedTestsTest {
                     }
 
                     @Test
-                    public void rejectsAnEmptyList() {
+                    public void ac001_rejectsAnEmptyList() {
                         assertEquals(1, 1);
                     }
 
@@ -212,6 +212,63 @@ class ContinuedTestsTest {
     }
 
     @Test
+    void aMethodBetweenAnUnclosedFirstCopyAndTheSecondStays() {
+        String content = """
+                package com.bank.x;
+
+                public class ATest {
+
+                    @Test
+                    public void first() {
+                        check(1);
+
+                    @Test
+                    public void b() {
+                        check(2);
+                    }
+
+                    @Test
+                    public void first() {
+                        check(1);
+                    }
+                }
+                """;
+        List<String> notes = new ArrayList<>();
+
+        String once = CodeGenerator.withoutRepeatedMethods(content, notes);
+
+        assertThat(once).contains("public void b() {").doesNotContain("check(1);\n\n");
+        assertThat(once.split("void first", -1)).hasSize(2);
+        assertThat(CodeGenerator.joinProblem("ATest.java", once)).isNull();
+        assertThat(notes).singleElement().asString().contains("first()");
+    }
+
+    @Test
+    void annotatedEnumConstantsAndAnonymousClassesAreClassesOfTheirOwn() {
+        String content = """
+                enum Op {
+                    @Deprecated ADD {
+                        int apply(int a, int b) { return a + b; }
+                    },
+                    @SuppressWarnings("x") SUB {
+                        int apply(int a, int b) { return a - b; }
+                    };
+                    abstract int apply(int a, int b);
+                }
+                class B {
+                    Runnable one = new @Tagged Base() {
+                        public void run() { }
+                    };
+                    Runnable two = new @Tagged("t") Base() {
+                        public void run() { }
+                    };
+                }
+                """;
+
+        assertThat(CodeGenerator.withoutRepeatedMethods(content, new ArrayList<>())).isEqualTo(content);
+    }
+
+    @Test
     void enumConstantBodiesAndAnonymousClassesWithLambdasAreClassesOfTheirOwn() {
         String content = """
                 enum Op {
@@ -248,6 +305,10 @@ class ContinuedTestsTest {
         assertThat(CodeGenerator.covered("@Test void a() {} // AC-001\n@Test void b() {} // AC-002\n@Test void b() {} // AC-002", criteria))
                 .isFalse();
         assertThat(CodeGenerator.covered("@Test void ac001() {}\n@Test void ac_002() {}\n@Test void AC003_rejects() {}", criteria)).isTrue();
+        // a header comment listing them all is no test of each
+        assertThat(CodeGenerator.covered("/** Tests AC-001, AC-002 and AC-003. */\nclass T {\n  @Test void ac001() {}\n}", criteria)).isFalse();
+        assertThat(CodeGenerator.covered("@DisplayName(\"AC-001\") @Test void a() {}\n@Test void ac002() {}\n@Test void b() { check(\"AC-003\"); }",
+                criteria)).isTrue();
         // a range too wide to be a plan of tests is not followed
         assertThat(CodeGenerator.criteria(new ChangePlan.Item("test/ATest.java", "create", "test", null, List.of(), "AC-1 to AC-9999")))
                 .isEmpty();

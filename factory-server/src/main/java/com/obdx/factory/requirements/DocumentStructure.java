@@ -157,23 +157,29 @@ final class DocumentStructure {
             return false;
         }
         String says = (String.join(" ", header) + " " + heading).toLowerCase(Locale.ROOT);
-        if (says.contains("rule") && !says.contains("error") && !says.contains("message")) {
-            // Rule code | Rule description: rules, not messages
+        if (String.join(" ", header).toLowerCase(Locale.ROOT).contains("rule")) {
+            // Rule code | Rule description: rules, not messages (a heading such as "Validation rules" alone decides nothing)
             return false;
         }
         boolean messageColumn = header.subList(1, header.size()).stream().map(h -> h.toLowerCase(Locale.ROOT))
                 .anyMatch(h -> h.contains("message") || h.contains("text"));
-        boolean messageHeading = says.contains("error") || says.contains("message");
+        boolean messageHeading = says.contains("error") || says.contains("message") || CODE_HEADING.matcher(says).find();
         boolean describedCodes = messageHeading && header.subList(1, header.size()).stream().map(h -> h.toLowerCase(Locale.ROOT))
                 .anyMatch(h -> h.contains("description") || h.contains("meaning"));
         long codes = rows.stream().filter(r -> messageCode(r.getFirst().strip())).count();
         return (messageColumn || describedCodes) && codes * 2 >= rows.size();
     }
 
+    /** "Response codes", "Status code", "Return codes", "Reason codes": a heading of codes the code returns. */
+    private static final Pattern CODE_HEADING = Pattern.compile("\\b(response|status|return|reason) codes?\\b");
+
     /** The most messages read from one document's tables. */
     static final int MAX_MESSAGES = 2_000;
-    /** ID prefixes of the document's other tables, which are never message codes. */
-    private static final Set<String> ID_PREFIXES = Set.of("FR", "REQ", "F", "AC", "ACC", "NFR", "NF", "BR", "RULE", "R", "OQ", "Q", "QU", "TC", "UC", "US");
+    /**
+     * ID prefixes the document's ID tables are read by, whatever their header says, which are never message codes; F1001,
+     * R-01 or Q12 can be (those prefixes count as IDs only where a header or heading says so).
+     */
+    private static final Set<String> ID_PREFIXES = Set.of("FR", "REQ", "AC", "ACC", "NFR", "NF", "BR", "RULE", "OQ");
 
     /** DIGX_BV_001 or ERR-004, but not FR-001 or BR-003. */
     private static boolean messageCode(String code) {

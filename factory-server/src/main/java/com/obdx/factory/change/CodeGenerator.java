@@ -50,7 +50,7 @@ public class CodeGenerator {
               - Encode IDs put in UI URLs (encodeURIComponent), and call the exact service paths the server code defines.
             - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
               say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
-              short test per criterion and no others, named or commented with the criterion's ID.
+              short test per criterion and no others, with the criterion's ID in its name (or its DisplayName).
             - Write no comments about the prompt, the instructions or your own reasoning; comments explain the code only.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
@@ -1169,11 +1169,14 @@ public class CodeGenerator {
     static final int MAX_CRITERIA = 100;
 
     /**
-     * Whether a test file names each of the criteria (AC-001, as AC_001 or ac001 in a test's name too): then every one
-     * has its test, however many tests the file has.
+     * Whether a test file names each of the criteria in its code (AC-001 as AC_001 or ac001 in a test's name, in a
+     * DisplayName or in a test's body; not in comments, where a header may list them all before any test is written):
+     * then every one has its test, however many tests the file has.
      */
     static boolean covered(String content, java.util.Set<String> criteria) {
-        String flat = content.toUpperCase(java.util.Locale.ROOT).replaceAll("[-_ ]", "");
+        String code = com.obdx.factory.pack.SourceScan.blank(content,
+                com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE).comments());
+        String flat = code.toUpperCase(java.util.Locale.ROOT).replaceAll("[-_ ]", "");
         return !criteria.isEmpty() && criteria.stream().allMatch(id -> flat.contains(id.replace("-", "")));
     }
 
@@ -1241,35 +1244,50 @@ public class CodeGenerator {
         String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
         Braces braces = Braces.of(code);
         int[] lineStarts = lineStarts(code);
-        Map<String, Member> seen = new java.util.HashMap<>();
-        List<Repeat> repeated = new java.util.ArrayList<>();
+        // Every method declaration, in order: where its text starts and ends (to is -1 when it never closes), its class body
+        List<Member> members = new java.util.ArrayList<>();
         Matcher m = DECLARATION.matcher(code);
-        while (m.find() && repeated.size() < MAX_REPEATS) {
+        while (m.find() && members.size() < 20_000) {
             if (NOT_A_TYPE.contains(m.group(1)) || NOT_A_NAME.contains(m.group(2)) || m.group(3).length() > 1_000) {
                 continue;
             }
             int container = braces.typeBodyAt(m.start());
             String parameters = m.group(3).replaceAll("@\\w++(\\([^)]*+\\))?", "").replaceAll("\\bfinal\\b", "")
                     .replaceAll("(?<!\\s)\\s++\\w++\\s*+(,|$)", "$1").replaceAll("\\s++", "");
-            String key = container + ":" + m.group(2) + "(" + parameters + ")";
             int close = braces.close(m.end() - 1);
-            int from = memberStart(content, code, m.start());
             int to = close < 0 ? -1 : (code.indexOf('\n', close) < 0 ? code.length() : code.indexOf('\n', close) + 1);
-            String signature = m.group(2) + "(" + m.group(3).strip() + ")";
-            Member first = seen.get(key);
-            if (first == null) {
-                seen.put(key, new Member(from, to, m.start()));
+            members.add(new Member(memberStart(content, code, m.start()), to, m.start(), container,
+                    container + ":" + m.group(2) + "(" + parameters + ")", m.group(2) + "(" + m.group(3).strip() + ")"));
+        }
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        List<Repeat> repeated = new java.util.ArrayList<>();
+        for (int k = 0; k < members.size() && repeated.size() < MAX_REPEATS; k++) {
+            Member member = members.get(k);
+            Integer index = seen.get(member.key());
+            if (index == null) {
+                seen.put(member.key(), k);
                 continue;
             }
-            if (first.to() < 0 || first.to() > m.start()) {
-                // The first copy never closes before this one starts (a piece cut off in it): it goes, the whole one stays
-                if (to < 0) {
+            Member first = members.get(index);
+            if (first.to() < 0 || first.to() > member.start()) {
+                // The first copy never closes before this one starts (a piece cut off in it): the first goes, up to the next
+                // member of its class (a method written between them stays), and the whole second one stays
+                if (member.to() < 0) {
                     continue;
                 }
-                repeated.add(new Repeat(first.from(), from, lineOf(lineStarts, first.start()), lineOf(lineStarts, m.start()), signature, true));
-                seen.put(key, new Member(from, to, m.start()));
-            } else if (to >= 0) {
-                repeated.add(new Repeat(from, to, lineOf(lineStarts, m.start()), lineOf(lineStarts, first.start()), signature, false));
+                int next = member.from();
+                for (int n = index + 1; n < k; n++) {
+                    if (members.get(n).container() == first.container()) {
+                        next = members.get(n).from();
+                        break;
+                    }
+                }
+                repeated.add(new Repeat(first.from(), next, lineOf(lineStarts, first.start()), lineOf(lineStarts, member.start()),
+                        member.signature(), true));
+                seen.put(member.key(), k);
+            } else if (member.to() >= 0) {
+                repeated.add(new Repeat(member.from(), member.to(), lineOf(lineStarts, member.start()), lineOf(lineStarts, first.start()),
+                        member.signature(), false));
             }
         }
         if (repeated.isEmpty()) {
@@ -1316,8 +1334,11 @@ public class CodeGenerator {
         return from;
     }
 
-    /** A method seen first: its text (to is -1 when it never closes) and where its declaration starts. */
-    private record Member(int from, int to, int start) {
+    /**
+     * A method declaration: its text (to is -1 when it never closes), where its declaration starts, its class body,
+     * its key (class body, name and parameter types) and its signature as written.
+     */
+    private record Member(int from, int to, int start, int container, String key, String signature) {
     }
 
     /**
@@ -1334,8 +1355,10 @@ public class CodeGenerator {
     private record Braces(int[] close, int[] typeBody) {
 
         private static final Pattern TYPE_KEYWORD = Pattern.compile("\\b(class|interface|enum|record)\\b");
-        private static final Pattern NEW_TYPE = Pattern.compile("\\bnew\\s++[\\w.<>\\[\\], ?]++$");
-        private static final Pattern ENUM_CONSTANT = Pattern.compile("^\\s*+@?[A-Za-z_$][\\w$]*+\\s*+$");
+        /** new Base(, new @Ann("x") Base( : what comes before an anonymous class's arguments */
+        private static final Pattern NEW_TYPE = Pattern.compile("\\bnew\\s++(?:@[\\w.]++(?:\\s*+\\([^()]*+\\))?\\s*+)*+[\\w.<>\\[\\], ?]++$");
+        /** ADD, @Deprecated ADD, @SuppressWarnings("x") SUB : an enum constant, before its arguments or its body */
+        private static final Pattern ENUM_CONSTANT = Pattern.compile("^\\s*+(?:@[\\w.]++(?:\\s*+\\([^()]*+\\))?\\s*+)*+[A-Za-z_$][\\w$]*+\\s*+$");
 
         static Braces of(String code) {
             int n = code.length();
@@ -1410,10 +1433,10 @@ public class CodeGenerator {
             return open >= 0 && open < close.length ? close[open] : -1;
         }
 
-        /** The ( that the ) at close matches, looking back at most 10,000 characters; -1 when not found. */
+        /** The ( that the ) at close matches, looking back at most 1,000 characters (an argument list); -1 when not found. */
         private static int openingParen(String code, int close) {
             int depth = 0;
-            for (int i = close; i >= 0 && close - i < 10_000; i--) {
+            for (int i = close; i >= 0 && close - i < 1_000; i--) {
                 char c = code.charAt(i);
                 if (c == ')') {
                     depth++;

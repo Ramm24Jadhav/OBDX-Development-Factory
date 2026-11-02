@@ -138,12 +138,14 @@ final class JsModuleChecks {
             if (close < 0) {
                 return null;
             }
-            String list = text.substring(i + 1, close);
-            i = skipSpace(text, close + 1);
-            if (i >= text.length() || text.charAt(i) != ',') {
+            int after = skipSpace(text, close + 1);
+            if (after >= text.length() || text.charAt(after) != ',') {
+                // every define( before this ] ends at the same ]: none of them is the one
+                at = Math.max(at, close + 1);
                 continue;
             }
-            i = skipSpace(text, i + 1);
+            String list = text.substring(i + 1, close);
+            i = skipSpace(text, after + 1);
             String parameters;
             if (text.startsWith("async", i) && !Character.isJavaIdentifierPart(charAt(text, i + 5))) {
                 i = skipSpace(text, i + 5);
@@ -289,12 +291,24 @@ final class JsModuleChecks {
                     + "define list: list the modules the function uses first, in the order of its parameters, and the others after them.");
         }
         List<String> notReceived = new ArrayList<>();
-        for (int i = parameters.size(); i < modules.size(); i++) {
-            String module = modules.get(i);
+        Set<String> called = null;
+        // the same file under several names is read once
+        Map<String, Set<String>> exports = new java.util.IdentityHashMap<>();
+        for (String module : new LinkedHashSet<>(modules.subList(Math.min(parameters.size(), modules.size()), modules.size()))) {
             String other = (module.startsWith("./") || module.startsWith("../")) && source != null ? source.apply(module) : null;
+            if (other == null) {
+                continue;
+            }
+            if (called == null) {
+                // the names this file calls as methods (x.name(...)), read once
+                called = new java.util.HashSet<>();
+                Matcher call = CALLED.matcher(code);
+                while (call.find()) {
+                    called.add(call.group(1));
+                }
+            }
             // Only a module this change writes, whose functions this file calls: a loader kept for what it does is no finding
-            List<String> functions = other == null ? List.of() : exported(other).stream().limit(200)
-                    .filter(f -> Pattern.compile("\\.\\s*+" + Pattern.quote(f) + "\\s*+\\(").matcher(code).find()).toList();
+            List<String> functions = exports.computeIfAbsent(other, JsModuleChecks::exported).stream().limit(200).filter(called::contains).toList();
             if (!functions.isEmpty()) {
                 notReceived.add(module + " (whose " + String.join(", ", functions) + " this file calls on other objects)");
             }
@@ -319,6 +333,9 @@ final class JsModuleChecks {
         String file = expected.substring(expected.lastIndexOf('/') + 1);
         return module.equals(expected) || module.startsWith(expected + "-") || module.endsWith("/" + file) || module.endsWith("/" + file + "-base");
     }
+
+    /** .name( : a method call, by its name. */
+    private static final Pattern CALLED = Pattern.compile("\\.\\s*+([A-Za-z_$][\\w$]*+)\\s*+\\(");
 
     /** foo: function, foo() {, this.foo = function: the functions a module (a model.js) offers. */
     private static final Pattern EXPORTED = Pattern.compile("(?m)(?:^|[{,])\\s*+([A-Za-z_$][\\w$]*+)\\s*+(?::\\s*+(?:async\\s++)?function\\b"

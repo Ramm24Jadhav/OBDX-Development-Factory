@@ -349,6 +349,25 @@ class DocumentStructureTest {
     }
 
     @Test
+    void codeTablesUnderOtherHeadingsAndWithOtherPrefixesAreMessages() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 5. Validation rules
+
+                | Code | Text |
+                | --- | --- |
+                | DIGX_BV_002 | The account number must be 9 to 18 digits. |
+                # 7. Response codes
+
+                | Code | Description |
+                | --- | --- |
+                | F1001 | The payee is blocked. |
+                | R-01 | Try again later. |
+                """);
+
+        assertThat(s.messages()).extracting(RequirementSpec.Message::code).containsExactly("DIGX_BV_002", "F1001", "R-01");
+    }
+
+    @Test
     void aDocumentGivesAtMostItsShareOfMessages() {
         StringBuilder brd = new StringBuilder("# Error codes\n\n| Code | Message |\n| --- | --- |\n");
         for (int i = 0; i < DocumentStructure.MAX_MESSAGES + 50; i++) {

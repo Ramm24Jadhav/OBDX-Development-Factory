@@ -220,5 +220,7 @@ class ImpactAnalyzerTest {
         // a long summary is read without a regular expression's recursion, and kept to its first 2,000 characters
         assertThat(PlanParser.partial("{\"summary\": \"" + "s".repeat(100_000) + "\", \"items\": [{\"path\": \"a\"}, {\"pa").summary())
                 .hasSize(PlanParser.MAX_SUMMARY);
+        // an escaped backslash at the end of a closed summary is kept
+        assertThat(PlanParser.partial("{\"summary\": \"C:\\\\\", \"items\": [{\"pa").summary()).isEqualTo("C:\\");
     }
 }

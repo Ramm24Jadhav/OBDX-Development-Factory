@@ -349,7 +349,8 @@ public class ChangeService {
                 // Certain errors only the other files show (a method the called class lacks): each file written now is fixed once
                 CheckScope scope = packs.scope(workspace.getId());
                 writing = null;
-                for (String path : toFit) {
+                for (int k = 0; k < toFit.size(); k++) {
+                    String path = toFit.get(k);
                     ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(path)).findFirst().orElse(null);
                     if (item == null) {
                         continue;
@@ -362,8 +363,7 @@ public class ChangeService {
                     } catch (ModelLimitReachedException e) {
                         // Every file is written; only these fixes wait for the model
                         log.warn("Fixing the files of change {} by the other files stopped at the model's limit: {}", id, e.getMessage());
-                        fixesStopped = " The model's limit stopped the fixes of what the files' cross-checks found (" + Messages.reason(e)
-                                + "); the files are written as they are: Write again a file to fix it.";
+                        fixesStopped = fixesStopped(toFit.subList(k, toFit.size()), e);
                         break;
                     }
                 }
@@ -397,6 +397,12 @@ public class ChangeService {
                     "Code generation failed: " + Messages.reason(e));
         }
         changes.save(change);
+    }
+
+    /** What the change says when the model's limit stopped the cross-check fixes: every file is written, these were not fixed. */
+    static String fixesStopped(List<String> skipped, RuntimeException limit) {
+        return " The model's limit (" + Messages.reason(limit) + ") stopped the fixes of what the cross-checks found; not fixed: "
+                + String.join(", ", skipped) + ". Every file is written: Write again a file to fix it.";
     }
 
     /** The most files of one generation fixed by what the cross-check found, so their model calls stay bounded. */
@@ -1039,17 +1045,10 @@ public class ChangeService {
                 problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
                 problems.addAll(JsModuleChecks.defineProblems(file.generated(), module -> moduleSource(file.path(), module, contents)));
             }
-            FileChecks.Status own = file.checkStatus();
-            if (own == FileChecks.Status.FAILED && file.checkMessage() != null && file.checkMessage().lines().anyMatch(ChangeService::crossError)) {
-                // It may have failed only by an earlier cross-check: its own checks say whether it fails by itself
-                // (with the screen parity of a React Native or React app's file, as Check again has it)
-                ScreenScaffolder.Scaffold scaffold = scope.inApp(file.path()) && scope.appFolder() != null ? targetPacks.find(scope.target())
-                        .flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(), designModels(find(changeId)), file.original()))
-                        .orElse(null) : null;
-                own = file.checkMessage().contains(CodeGenerator.CUT) ? FileChecks.Status.FAILED
-                        : CodeGenerator.withParity(localChecks.check(scope, file.path(), file.original(), file.generated()), file.generated(),
-                        scaffold).status();
-            }
+            // (the screen parity of a React Native or React app's file, as Check again has it, read only when needed)
+            FileChecks.Status own = ownStatus(file, localChecks, scope, () -> scope.inApp(file.path()) && scope.appFolder() != null
+                    ? targetPacks.find(scope.target()).flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(),
+                    designModels(find(changeId)), file.original())).orElse(null) : null);
             FileChecks.Result check = withCrossChecks(own, file.checkMessage(), problems);
             if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
                 files.saveCheck(changeId, file.path(), check);
@@ -1059,6 +1058,23 @@ public class ChangeService {
             }
         }
         return failing;
+    }
+
+    /**
+     * A file's own status, without the cross-check's findings: as stored, unless an earlier cross-check may have failed
+     * it; then what its own checks (with the screen parity of an app's file) say, or failed while it is cut off.
+     */
+    static FileChecks.Status ownStatus(ChangeFileStore.ChangeFile file, LocalChecks checks, CheckScope scope,
+                                       java.util.function.Supplier<ScreenScaffolder.Scaffold> scaffold) {
+        FileChecks.Status stored = file.checkStatus();
+        if (stored != FileChecks.Status.FAILED || file.checkMessage() == null || file.checkMessage().lines().noneMatch(ChangeService::crossError)) {
+            return stored;
+        }
+        if (file.checkMessage().contains(CodeGenerator.CUT)) {
+            return FileChecks.Status.FAILED;
+        }
+        return CodeGenerator.withParity(checks.check(scope, file.path(), file.original(), file.generated()), file.generated(),
+                scaffold.get()).status();
     }
 
     /**

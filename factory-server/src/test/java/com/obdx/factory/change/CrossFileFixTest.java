@@ -103,6 +103,34 @@ class CrossFileFixTest {
     }
 
     @Test
+    void aFileFailedByAnEarlierCrossCheckGetsItsOwnStatusWithTheScreenParity() {
+        String screen = "export function FundTransferScreen() {\n  return null;\n}\n";
+        ChangeFileStore.ChangeFile failedByCross = new ChangeFileStore.ChangeFile(0, "mobile/src/screens/FundTransferScreen.tsx", "create", "ui",
+                null, ChangeFileStore.Status.GENERATED, null, screen, false, FileChecks.Status.FAILED,
+                CrossFileJava.MISSING_METHODS + " Service does not have: save().", 1);
+        com.obdx.factory.target.ScreenScaffolder.Scaffold scaffold = new com.obdx.factory.target.ScreenScaffolder.Scaffold("screen", "",
+                List.of("amount"));
+
+        // without its parity the file passes by itself; with it, it still fails: the cross-check must not let it pass
+        assertThat(ChangeService.ownStatus(failedByCross, checks, CheckScope.none(), () -> null)).isNotEqualTo(FileChecks.Status.FAILED);
+        assertThat(ChangeService.ownStatus(failedByCross, checks, CheckScope.none(), () -> scaffold)).isEqualTo(FileChecks.Status.FAILED);
+        // a file that failed by itself stays failed, without being checked again
+        ChangeFileStore.ChangeFile ownFailure = file(PATH, false, WRITTEN);
+        assertThat(ChangeService.ownStatus(new ChangeFileStore.ChangeFile(0, PATH, "create", "service", null, ChangeFileStore.Status.GENERATED,
+                null, WRITTEN, false, FileChecks.Status.FAILED, "Java does not parse", 1), checks, CheckScope.none(), () -> {
+                    throw new AssertionError("not needed");
+                })).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(ownFailure.checkStatus()).isEqualTo(FileChecks.Status.FAILED);
+    }
+
+    @Test
+    void theMessageNamesTheFixesTheModelsLimitStopped() {
+        assertThat(ChangeService.fixesStopped(List.of("a/B.java", "a/C.java"),
+                new com.obdx.factory.model.ModelLimitReachedException("daily limit reached", true, null)))
+                .contains("not fixed: a/B.java, a/C.java", "daily limit reached", "Every file is written");
+    }
+
+    @Test
     void onlyTheModelsFilesOfThisRunAreFixedAndAtMostAFew() {
         Map<String, String> unfit = new java.util.LinkedHashMap<>();
         List<ChangeFileStore.ChangeFile> all = new java.util.ArrayList<>();

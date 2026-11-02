@@ -83,7 +83,9 @@ public final class PlanParser {
                 stop += text.charAt(stop) == '\\' ? 2 : 1;
             }
             String raw = text.substring(summary.end(), Math.min(stop, text.length()));
-            if (raw.endsWith("\\")) {
+            // the text ends in the middle of an escape (its backslash is the last character): the backslash goes; a summary
+            // that closes, or stops at the cap (always after a whole escape), keeps all it has
+            if (stop > text.length() && raw.endsWith("\\")) {
                 raw = raw.substring(0, raw.length() - 1);
             }
             try {

@@ -176,6 +176,20 @@ class JsModuleChecksTest {
     }
 
     @Test
+    void aModuleListedTwiceWithoutAParameterIsNamedOnce() {
+        java.util.Map<String, String> written = java.util.Map.of("a/model.js", MODEL);
+
+        List<String> problems = JsModuleChecks.defineProblems("""
+                define(['knockout', './model', './model'], function (ko) {
+                  return function VM(params) { this.load = function () { return params.rootModel.fetchPayees(); }; };
+                });
+                """, module -> ChangeService.moduleSource("a/vm.js", module, written));
+
+        assertThat(problems).singleElement().asString().startsWith(JsModuleChecks.NOT_RECEIVED)
+                .contains("./model (whose fetchPayees this file calls on other objects).");
+    }
+
+    @Test
     void validDefineListsAreNoFinding() {
         java.util.Map<String, String> written = java.util.Map.of("a/model.js", MODEL, "channel/resources/nls/quick-transfer.js", BUNDLE);
         java.util.function.Function<String, String> source = module -> ChangeService.moduleSource("a/vm.js", module, written);
