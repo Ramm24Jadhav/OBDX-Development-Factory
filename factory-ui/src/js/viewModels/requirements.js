@@ -1,11 +1,12 @@
 /*
  * Requirements page: the workspace's requirements as a searchable, filterable list (ID, title, source document, type,
  * spec status, the four workflow steps Home shows and the next step as a link to where it is taken), uploading a
- * BRD/FSD or describing a requirement in a panel above it, and the selected one with its lifecycle
- * (draft, analysis, approval, design, build, review, completed), its drafted specification by part (screens, business
- * rules, APIs, host interfaces, roles, open questions), traceability to screens and changes, and the actions: upload or
- * describe a requirement, answer open questions, update the spec with the answers, edit it as JSON, approve, retry and
- * delete.
+ * BRD/FSD or describing a requirement in a panel above it, and the selected one: where its workflow stands and the
+ * next valid step (approval only by a person who may approve), its specification by part (overview, functional
+ * requirements, acceptance criteria linked to the requirements they verify, business rules, APIs and hosts, screens and
+ * data, roles, open questions and decisions, traceability, history), with the document's own wording told apart from
+ * what the factory drafted, and the actions: answer open questions, update the spec with the answers, edit it as JSON,
+ * approve, retry and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/dialog', '../services/toast', '../services/pageRequests', '../services/dashboard', 'ojs/ojknockout'],
@@ -37,7 +38,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     // What the server reads (DocumentTextExtractor) and its size limit (RequirementController)
     const ACCEPTED = ['.docx', '.doc', '.pdf', '.html', '.htm', '.txt', '.md'];
     const MAX_BYTES = 25 * 1024 * 1024;
-    const NOT_STATED = 'Not stated in the specification';
     const day = (value) => (value ? new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
     // A spec part that may be text or a list of texts (or of objects with a description)
     const texts = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).map((x) => (typeof x === 'string' ? x : (x.description || x.text || x.name || ''))).filter(Boolean);
@@ -224,39 +224,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.questions = ko.observableArray([]);
       this.editingJson = ko.observable(false);
       this.specJson = ko.observable('');
-      this.part = ko.observable('specification');
-      const n = (key) => ko.pureComputed(() => (this.spec() ? (this.spec()[key] || []).length : 0));
-      this.parts = ui.tabs(this.part, [
-        { value: 'specification', label: 'Specification' },
-        { value: 'screens', label: 'Screens', count: n('screens') },
-        { value: 'rules', label: 'Business Rules', count: n('businessRules') },
-        { value: 'apis', label: 'APIs', count: n('apis') },
-        { value: 'hosts', label: 'Host Interfaces', count: n('hostInteractions') },
-        { value: 'roles', label: 'Roles', count: n('roles') },
-        { value: 'questions', label: 'Open Questions', count: n('openQuestions') },
-        { value: 'trace', label: 'Traceability' }
-      ]);
+      this.part = ko.observable('overview');
       this.code = ko.pureComputed(() => (this.detail() ? shortId(this.detail().id) : ''));
       this.statusPill = ko.pureComputed(() => reqStatus(this.detail() ? this.detail().status : 'PROCESSING'));
+      this.sourceName = ko.pureComputed(() => (this.detail() ? this.detail().fileName || 'Typed description' : ''));
+      this.sourceIcon = ko.pureComputed(() => 'factory-nav-icon ' + (this.detail() && this.detail().fileName ? 'factory-ico-doc' : 'factory-ico-edit'));
       // While the spec is drafted the page polls the requirement; this is when it last did
       this.drafting = ko.pureComputed(() => !!this.detail() && this.detail().status === 'PROCESSING');
       this.lastChecked = ko.observable('');
       this.draftingText = ko.pureComputed(() => 'Drafting the specification. The page checks every ' + (POLL_MS / 1000)
         + ' seconds' + (this.lastChecked() ? ', last at ' + this.lastChecked() : '') + ', and tells you when it is ready.');
       this.canMakeScreens = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && this.canEdit());
-      this.typeText = ko.pureComputed(() => (this.detail() ? fileType(this.detail().fileName) : ''));
-      this.modulePill = ko.pureComputed(() => {
-        const s = this.spec();
-        return s && s.module ? { text: s.module, css: 'fx-badge fx-badge--violet', title: 'Module' }
-          : Object.assign(pill('Module not set', 'grey'), { title: 'The specification does not record a module.' });
-      });
-      this.priorityPill = ko.pureComputed(() => {
-        const s = this.spec();
-        const p = s && s.priority ? String(s.priority) : '';
-        const tone = /high|critical/i.test(p) ? 'red' : /medium/i.test(p) ? 'amber' : 'grey';
-        return p ? Object.assign(pill(p, tone), { title: 'Priority' })
-          : Object.assign(pill('Not set', 'grey'), { title: 'The specification does not record a priority.' });
-      });
       this.canEditSpec = ko.pureComputed(() => !!this.spec() && this.canEdit() && this.detail().status !== 'APPROVED');
       this.editBlockedReason = ko.pureComputed(() => {
         const d = this.detail();
@@ -268,127 +246,223 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return 'An approved requirement is locked. Start a new requirement for further changes.';
       });
-      this.relatedChanges = ko.pureComputed(() => this.changes().map((c) => 'CHG-' + c.id.replace(/-/g, '').slice(0, 3).toUpperCase()).join(', ') || 'None');
 
-      // Lifecycle: each stage is done, current or to come
-      this.stages = ko.pureComputed(() => {
+      // Where the workflow stands: the same four steps and next step as the list and Home
+      const unanswered = () => (this.spec() ? this.spec().openQuestions.filter((q) => !q.answer).length : 0);
+      this.flow = ko.pureComputed(() => {
+        const d = this.detail();
+        return d ? dashboard.workflow(Object.assign({}, d, { openQuestions: unanswered() }), allDesigns(), allChanges(), this.workspaceId())
+          : { steps: [], stepText: '' };
+      });
+      this.progressSteps = ko.pureComputed(() => this.flow().steps.map((st) => ({ name: st.name, css: 'factory-rq-step is-' + st.state })));
+      /**
+       * The next valid step for this requirement with what it needs (kind picks the button), or who it waits for.
+       * Approval is offered only when the server would accept it (READY, no open question); it is never automatic.
+       */
+      this.nextStep = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
-          return [];
+          return { kind: '', title: '', text: '', css: '' };
         }
-        const designs = this.designs();
-        const changes = this.changes();
-        const approved = d.status === 'APPROVED';
-        const designed = designs.length > 0 && designs.every((s) => s.status === 'APPROVED');
-        const built = changes.some((c) => ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(c.status) >= 0);
-        const reviewed = changes.some((c) => c.status === 'DELIVERED' || c.status === 'CLOSED');
-        const completed = changes.some((c) => c.status === 'CLOSED' && c.closedReason === 'MERGED');
-        const done = [true, d.status !== 'PROCESSING', approved, designed, built, reviewed, completed];
-        const failed = d.status === 'FAILED';
-        const names = ['Draft', 'Analysis', 'Approved', 'Design', 'Build', 'Review', 'Completed'];
-        const current = done.indexOf(false);
-        return names.map((name, i) => ({
-          name: name, number: i + 1,
-          css: 'factory-' + (failed ? (i === 0 ? 'st-done' : i === 1 ? 'st-failed' : 'st-todo')
-            : (done[i] ? 'st-done' : (i === current ? 'st-now' : 'st-todo'))),
-          check: failed ? i === 0 : done[i]
-        }));
-      });
-
-      this.overview = ko.pureComputed(() => {
+        const step = (kind, title, text, tone) => ({ kind: kind, title: title, text: text, act: '', css: 'factory-rqd-next factory-rqd-next--' + (tone || 'info') });
         const s = this.spec();
-        if (!s) {
-          return [];
+        const open = unanswered();
+        if (d.status === 'PROCESSING') {
+          return step('', 'Drafting the specification', this.draftingText());
         }
-        const row = (label, list, fallback) => (list.length > 1 ? { label: label, list: list, value: '' }
-          : { label: label, list: null, value: list[0] || fallback, missing: !list.length });
-        // Scope: what the spec says will be built, when it does not state the scope itself
-        const scope = texts(s.scope).length ? texts(s.scope)
-          : s.screens.map((x) => (x.changeType === 'new' ? 'New screen ' : x.changeType === 'enhance' ? 'Change to screen ' : 'Screen ') + x.name)
-            .concat(s.apis.map((a) => 'API ' + a.name), s.hostInteractions.map((h) => 'Host interface ' + h.system));
-        return [
-          row('Business Objective', texts(s.objective || s.businessObjective || s.summary || s.title), NOT_STATED),
-          row('Scope', scope, NOT_STATED),
-          row('Out of Scope', texts(s.outOfScope), NOT_STATED),
-          row('Target Users', texts(s.targetUsers).length ? texts(s.targetUsers) : [s.roles.map((r) => r.name).join(', ')].filter(Boolean), NOT_STATED),
-          row('Assumptions', texts(s.assumptions), NOT_STATED),
-          row('Decisions', (s.decisions || []).map((x) => x.question + ' ' + x.answer), 'None yet')
-        ];
+        if (d.status === 'FAILED') {
+          return step(this.canEdit() ? 'retry' : '', 'Drafting stopped', (d.message || 'The draft failed.')
+            + (this.canEdit() ? ' Try again to draft it again.' : ' An analyst can try again.'), 'danger');
+        }
+        if (d.status === 'READY' && open > 0) {
+          return step(this.canEdit() ? 'questions' : '', open + ' open question' + (open === 1 ? '' : 's') + ' to answer',
+            'Answer them, then update the spec with the answers. Approval waits until no question is left.'
+            + (this.canEdit() ? '' : ' Waiting for an analyst.'), 'warning');
+        }
+        if (d.status === 'READY' && s && s.openQuestions.length > 0) {
+          return step(this.canEdit() ? 'refine' : '', 'Every question is answered',
+            'Update the spec with the answers. Approval waits until the answers are in the spec.' + (this.canEdit() ? '' : ' Waiting for an analyst.'), 'warning');
+        }
+        if (d.status === 'READY') {
+          return step(this.canApprove() ? 'approve' : '', 'Ready for approval', 'Review the specification below and approve it. Nothing is designed or built before it is approved.'
+            + (this.canApprove() ? '' : ' Waiting for someone who can approve.'));
+        }
+        // Approved: the workflow's next step (screens, plan, the change)
+        const f = this.flow();
+        const approval = 'Approved' + (d.approvedBy ? ' by ' + d.approvedBy : '') + (d.approvedAt ? ' on ' + day(d.approvedAt) : '')
+          + (d.currentVersion ? ' (spec v' + d.currentVersion + ')' : '') + '. ';
+        if (f.finished) {
+          return Object.assign(step('open', 'All steps done', approval + 'The change is ' + f.status.text.toLowerCase() + '.', 'success'), { act: f.act });
+        }
+        const mine = !f.perm || session.can(this.workspaceId(), f.perm);
+        const kind = !mine ? '' : f.step === 2 && !f.designs.length ? (this.canMakeScreens() ? 'screens' : '')
+          : f.step === 3 && !f.change ? (this.canEdit() ? 'plan' : '') : 'open';
+        return Object.assign(step(kind, f.status.text, approval + f.next + (mine ? '' : ' Waiting for ' + f.who + '.'), 'success'), { act: f.act });
       });
-      // Acceptance criteria: the spec's own, or what can be checked from its screens, messages and roles
-      this.criteria = ko.pureComputed(() => {
+      this.openNext = () => {
+        const f = this.flow();
+        if (f.open) {
+          f.open();
+        }
+      };
+
+      // Source wording: an item whose text is in the document word for word (the import reads the document's tables
+      // as they are, with their IDs) is source text; any other was drafted by the factory or edited by hand
+      const squash = (t) => String(t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const docText = ko.pureComputed(() => squash(this.detail() ? this.detail().documentText : ''));
+      const fromDoc = (t) => !!squash(t) && docText().indexOf(squash(t)) >= 0;
+      const docName = ko.pureComputed(() => (this.detail() && this.detail().fileName ? this.detail().fileName : 'the description'));
+      // A list with its provenance: each item drafted or not, and a note for the whole list
+      const sourced = (list, text) => {
+        const items = list.map((x) => Object.assign({}, typeof x === 'string' ? { text: x } : x, { drafted: !fromDoc(text(x)) }));
+        const ids = items.some((x) => x.id) ? ', with its own IDs' : '';
+        const drafted = items.filter((x) => x.drafted).length;
+        return {
+          items: items,
+          note: drafted === 0 ? 'Word for word from ' + docName() + ids + '.'
+            : drafted === items.length ? 'Drafted by the factory: not found word for word in ' + docName() + '.'
+              : 'Word for word from ' + docName() + ids + ', except those marked Drafted (written by the factory or edited by hand).'
+        };
+      };
+      // Moves to a part and to one item in it (the requirement or criterion a link names)
+      const goTo = (part, target) => () => {
+        this.part(part);
+        setTimeout(() => {
+          const el = document.getElementById(target);
+          if (el) {
+            el.focus({ preventScroll: true });
+            el.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+          }
+        }, 60);
+      };
+      const anchor = (prefix, id) => 'rqd-' + prefix + '-' + String(id).replace(/[^A-Za-z0-9_-]/g, '');
+
+      this.scopeLists = ko.pureComputed(() => {
+        const s = this.spec();
+        return !s ? [] : [['Scope', s.scope], ['Out of scope', s.outOfScope], ['Assumptions', s.assumptions]]
+          .filter((x) => texts(x[1]).length).map((x) => Object.assign({ label: x[0] }, sourced(texts(x[1]), (t) => t)));
+      });
+      this.frRows = ko.pureComputed(() => {
         const s = this.spec();
         if (!s) {
           return { items: [], note: '' };
         }
-        // The document's own, with their IDs and the requirements they verify
-        const own = (s.acceptanceCriteria || []).filter((c) => c.description).map((c) => (c.id ? c.id + ' · ' : '') + c.description
-          + ((c.requirements || []).length ? ' (verifies ' + c.requirements.join(', ') + ')' : ''));
-        if (own.length) {
-          return { items: own, note: '' };
-        }
-        const items = [];
-        s.screens.forEach((screen) => {
-          const required = screen.fields.filter((f) => f.mandatory === true).map((f) => f.label || f.name);
-          if (required.length) {
-            items.push(screen.name + ' requires ' + required.slice(0, 4).join(', ') + (required.length > 4 ? ' and ' + (required.length - 4) + ' more' : ''));
-          }
-          screen.actions.forEach((a) => items.push(screen.name + ': ' + a.name + (a.description ? ' – ' + a.description : '')));
+        const list = sourced(s.requirements, (r) => r.description || r.title);
+        list.items = list.items.map((r) => {
+          const priority = (r.priority || '').toLowerCase();
+          return {
+            id: r.id || '–', anchor: anchor('fr', r.id || ''), drafted: r.drafted,
+            // The title is left out when it only repeats the description
+            title: r.title && r.title !== r.description ? r.title : '',
+            description: r.description || '',
+            priority: r.priority ? pill(r.priority, priority === 'must' ? 'blue' : priority === 'should' ? 'amber' : 'grey') : null,
+            screens: (r.screens || []).join(', '),
+            criteria: s.acceptanceCriteria.filter((c) => c.id && c.requirements.indexOf(r.id) >= 0)
+              .map((c) => ({ id: c.id, go: goTo('ac', anchor('ac', c.id)) }))
+          };
         });
-        (s.messages || []).forEach((m) => items.push('Shows "' + m.text + '"' + (m.type ? ' (' + m.type + ')' : '')));
-        s.roles.filter((r) => r.access).forEach((r) => items.push(r.name + ': ' + r.access));
-        return {
-          items: items,
-          note: items.length ? 'Worked out from the screens, messages and roles: the specification has no acceptance criteria yet. Add them with Edit the specification (JSON) in the requirement actions menu.' : ''
-        };
+        return list;
       });
-      this.rules = ko.pureComputed(() => (this.spec() ? this.spec().businessRules.map((r) => Object.assign({}, r, {
-        text: (r.id ? r.id + ' · ' : '') + r.description
-      })) : []));
-      // Traceability: each functional requirement of the document with its priority, screens and the acceptance
-      // criteria that verify it
-      this.traceRows = ko.pureComputed(() => {
+      this.nfrRows = ko.pureComputed(() => {
+        const s = this.spec();
+        return s ? sourced(s.nonFunctional.filter((n) => n.description), (n) => n.description) : { items: [], note: '' };
+      });
+      this.acRows = ko.pureComputed(() => {
+        const s = this.spec();
+        if (!s) {
+          return { items: [], note: '' };
+        }
+        const ids = s.requirements.map((r) => r.id);
+        const list = sourced(s.acceptanceCriteria.filter((c) => c.description), (c) => c.description);
+        list.items = list.items.map((c) => Object.assign({}, c, {
+          id: c.id || '–', anchor: anchor('ac', c.id || ''),
+          verifies: c.requirements.map((id) => ({ id: id, go: ids.indexOf(id) >= 0 ? goTo('fr', anchor('fr', id)) : null }))
+        }));
+        return list;
+      });
+      this.ruleRows = ko.pureComputed(() => {
+        const s = this.spec();
+        if (!s) {
+          return { items: [], note: '' };
+        }
+        const list = sourced(s.businessRules, (r) => r.description);
+        list.items = list.items.map((r) => Object.assign({}, r, { id: r.id || '–', screens: (r.screens || []).join(', '), reference: r.reference || '' }));
+        return list;
+      });
+      this.messageRows = ko.pureComputed(() => (this.spec() ? sourced(this.spec().messages, (m) => m.text) : { items: [], note: '' }));
+      // APIs: whether the document names each one, or only an analyst's answer
+      this.apiRows = ko.pureComputed(() => {
         const s = this.spec();
         if (!s) {
           return [];
         }
-        const criteria = s.acceptanceCriteria || [];
-        return (s.requirements || []).map((r) => {
-          const verified = criteria.filter((c) => (c.requirements || []).indexOf(r.id) >= 0).map((c) => c.id).filter(Boolean);
-          const priority = (r.priority || '').toLowerCase();
-          return {
-            id: r.id || '–',
-            title: r.title || '',
-            description: r.description || '',
-            priority: r.priority ? pill(r.priority, priority === 'must' ? 'blue' : priority === 'should' ? 'amber' : 'grey') : null,
-            screens: (r.screens || []).join(', ') || '–',
-            criteria: verified.join(', ') || 'None',
-            untested: verified.length === 0
-          };
+        const answers = squash(s.decisions.map((x) => x.answer).join(' '));
+        return s.apis.map((a) => {
+          const path = (a.name || '').replace(/^(GET|POST|PUT|PATCH|DELETE)\s+/i, '');
+          const inDoc = fromDoc(a.name) || fromDoc(path);
+          const inAnswer = !inDoc && !!squash(path) && answers.indexOf(squash(path)) >= 0;
+          return Object.assign({}, a, {
+            named: inDoc ? 'The document' : inAnswer ? 'An answer' : 'Not found',
+            namedCss: inDoc || inAnswer ? '' : 'factory-rqd-none'
+          });
         });
       });
-      this.nonFunctional = ko.pureComputed(() => (this.spec() ? (this.spec().nonFunctional || []).map((n) => ({
-        text: [n.id, n.category].filter(Boolean).join(' · ') + (n.id || n.category ? ': ' : '') + n.description
-      })) : []));
       this.screens = ko.pureComputed(() => (this.spec() ? this.spec().screens.map((s) => Object.assign({}, s, {
         kind: s.changeType === 'new' ? pill('New', 'blue') : s.changeType === 'enhance' ? pill('Change', 'amber') : pill('Unknown', 'grey'),
-        fieldCount: s.fields.length + ' fields', actionNames: s.actions.map((a) => a.name).join(', '),
+        actionNames: s.actions.map((a) => a.name).join(', '),
         fieldRows: s.fields.map((f) => Object.assign({}, f, {
           mandatoryText: f.mandatory === true ? 'Yes' : f.mandatory === false ? 'No' : 'Not stated',
           rules: (f.validations || []).join('; ')
         }))
       })) : []));
-      this.apis = ko.pureComputed(() => (this.spec() ? this.spec().apis : []));
       this.hosts = ko.pureComputed(() => (this.spec() ? this.spec().hostInteractions : []));
       this.roles = ko.pureComputed(() => (this.spec() ? this.spec().roles : []));
-      this.messages = ko.pureComputed(() => (this.spec() ? this.spec().messages : []));
+      this.decisions = ko.pureComputed(() => (this.spec() ? this.spec().decisions : []));
+      this.questionsText = ko.pureComputed(() => {
+        const open = this.questions().filter((q) => !q.answered()).length;
+        const all = this.questions().length;
+        return open ? open + ' of ' + all + ' question' + (all === 1 ? '' : 's') + ' unanswered. The spec cannot be approved until they are resolved.'
+          : 'Every question has an answer. Update the spec with the answers to resolve them.';
+      });
+      this.goQuestions = goTo('questions', 'questionsOpen');
+
+      // Traceability: each functional requirement with the criteria that verify it and its screens
+      this.traceRows = ko.pureComputed(() => this.frRows().items.map((r) => ({
+        id: r.id, screens: r.screens || '–', criteria: r.criteria.map((c) => c.id).join(', ') || 'None', untested: r.criteria.length === 0
+      })));
+      this.trace = ko.pureComputed(() => {
+        const s = this.spec();
+        if (!s) {
+          return [];
+        }
+        return s.screens.map((screen) => {
+          const design = this.designs().find((d) => d.name === screen.name);
+          return {
+            screen: screen.name,
+            design: design ? DESIGN_WORDS[design.status] + ' v' + design.currentVersion : 'Not designed yet',
+            designStatus: design ? ui.status(design.status, DESIGN_WORDS[design.status]) : ui.status('NOT_STARTED', 'Not started'),
+            code: screen.relatedCode.slice(0, 3).join(', ') || 'No related code found',
+            change: this.changes().length ? this.changes().map((c) => c.title).join(', ') : 'No change yet'
+          };
+        });
+      });
+      this.changeRows = ko.pureComputed(() => this.changes().map((c) => ({
+        title: c.title, status: ui.status(c.status, CHANGE_WORDS[c.status]), files: c.files.length + ' files', updated: day(c.updatedAt),
+        open: dashboard.openRecord('changes', this.workspaceId(), 'change', c.id)
+      })));
+      this.designRows = ko.pureComputed(() => this.designs().map((d) => ({
+        name: d.name, status: ui.status(d.status, DESIGN_WORDS[d.status]), version: 'v' + d.currentVersion, updated: day(d.updatedAt),
+        open: () => { pageRequests.studio(this.detail() ? this.detail().id : null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); }
+      })));
+
+      // The source document: what the factory read, to download, copy or show
       this.attachment = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
           return [];
         }
         return d.fileName ? [{ name: d.fileName, type: fileType(d.fileName), size: size(d.sizeBytes), uploaded: day(d.createdAt) }]
-          : (d.documentText ? [{ name: 'Description', type: 'Text', size: size(d.sizeBytes || d.documentText.length), uploaded: day(d.createdAt) }] : []);
+          : (d.documentText ? [{ name: 'Typed description', type: 'Text', size: size(d.sizeBytes || d.documentText.length), uploaded: day(d.createdAt) }] : []);
       });
       this.showingText = ko.observable(false);
       this.downloadText = () => {
@@ -406,36 +480,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.showingText(!this.showingText());
         }
       };
-      this.stakeholders = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d) {
-          return [];
-        }
-        const list = d.approvedBy ? [{ name: d.approvedBy, role: 'Approver', department: 'Not recorded' }] : [];
-        return list.concat(this.roles().map((r) => ({ name: r.name, role: 'User role (spec)', department: 'Not recorded' })));
-      });
 
-      // Other requirements of the workspace, with what they share with this one
+      // Other requirements of the workspace that share a screen or code with this one
       const otherSpecs = ko.observable({});
       this.related = ko.pureComputed(() => {
         const d = this.detail();
-        if (!d) {
+        if (!d || !d.spec) {
           return [];
         }
-        const mine = d.spec ? d.spec.screens : [];
-        const myScreens = mine.map((x) => x.name);
-        const myCode = [].concat(...mine.map((x) => x.relatedCode || []));
-        return items().filter((r) => r.id !== d.id).map((r) => {
+        const myScreens = d.spec.screens.map((x) => x.name);
+        const myCode = [].concat(...d.spec.screens.map((x) => x.relatedCode || []));
+        return items().filter((r) => r.id !== d.id && otherSpecs()[r.id]).map((r) => {
           const spec = otherSpecs()[r.id];
-          const screens = spec ? spec.screens.filter((x) => myScreens.includes(x.name)).map((x) => x.name) : [];
-          const code = spec ? [].concat(...spec.screens.map((x) => x.relatedCode || [])).filter((c) => myCode.includes(c)) : [];
+          const screens = spec.screens.filter((x) => myScreens.includes(x.name)).map((x) => x.name);
+          const code = [].concat(...spec.screens.map((x) => x.relatedCode || [])).filter((c) => myCode.includes(c));
           return {
-            code: r.code, title: r.title, statusPill: r.statusPill, openAction: r.openAction,
+            code: r.code, title: r.title, openAction: r.openAction,
             relationship: screens.length ? 'Shares the screen ' + screens.join(', ')
-              : code.length ? 'Touches the same code: ' + code[0].split('/').pop() + (code.length > 1 ? ' and ' + (code.length - 1) + ' more' : '')
-                : 'Same workspace'
+              : code.length ? 'Touches the same code: ' + code[0].split('/').pop() + (code.length > 1 ? ' and ' + (code.length - 1) + ' more' : '') : ''
           };
-        });
+        }).filter((r) => r.relationship);
       });
       const loadOtherSpecs = (list) => {
         const known = otherSpecs();
@@ -449,46 +513,75 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             }
           });
       };
-      this.viewAll = () => {
-        this.search('');
-        this.statusFilter('');
-        this.typeFilter('');
-        ['reqSearch', 'reqStatusFilter', 'reqTypeFilter'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.value = '';
-          }
-        });
-        const list = document.querySelector('.factory-rq-listcard');
-        if (list) {
-          list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Revision history: the spec's versions (server) and its approval
+      const versions = ko.observableArray([]);
+      this.versionsError = ko.observable('');
+      let versionsOf = '';
+      const loadVersions = (d) => {
+        const key = d.id + ':' + d.currentVersion + ':' + d.status;
+        if (key === versionsOf) {
+          return;
         }
+        versionsOf = key;
+        api.get('requirements/' + d.id + '/versions')
+          .then((list) => { if (this.detail() && this.detail().id === d.id) { versions(list); this.versionsError(''); } })
+          .catch(() => { versionsOf = ''; versions([]); this.versionsError('Could not load the versions. Open the requirement again to retry.'); });
       };
-      this.showRules = () => this.part('rules');
-      this.trace = ko.pureComputed(() => {
-        const s = this.spec();
-        if (!s) {
+      const ORIGINS = {
+        DRAFTED: ['Drafted by the factory', ''],
+        ANSWERED: ['Answers saved', 'Answers to open questions'],
+        REFINED: ['Updated with the answers', 'The factory redrafted it with the answers'],
+        EDITED: ['Edited by hand', 'The specification JSON was edited']
+      };
+      this.history = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
           return [];
         }
-        return s.screens.map((screen) => {
-          const design = this.designs().find((d) => d.name === screen.name);
+        const when = (v) => new Date(v).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        const event = (title, text, at, tone, icon) => ({
+          title: title, text: text, at: at, when: at ? when(at) : '',
+          dot: 'fx-timeline-dot' + (tone ? ' fx-timeline-dot--' + tone : ''), icon: 'factory-nav-icon factory-ico-' + icon
+        });
+        const list = [];
+        if (d.approvedAt) {
+          list.push(event('Approved' + (d.approvedBy ? ' by ' + d.approvedBy : ''), d.currentVersion ? 'Spec v' + d.currentVersion + ' approved and locked' : '', d.approvedAt, 'success', 'check'));
+        }
+        versions().forEach((v) => {
+          const o = ORIGINS[v.origin] || [v.origin, ''];
+          list.push(event('v' + v.version + ' · ' + o[0], (v.version === d.currentVersion ? 'Current version. ' : '') + (v.origin === 'DRAFTED' ? 'From ' + docName() : o[1]),
+            v.createdAt, '', v.origin === 'EDITED' ? 'edit' : 'doc'));
+        });
+        list.push(event('Added', 'From ' + docName(), d.createdAt, '', 'plus'));
+        return list;
+      });
+
+      // The parts of the spec, each shown only when the spec has something for it, with how many items it holds
+      const PARTS = [
+        { value: 'overview', label: 'Overview', show: () => 1 },
+        { value: 'fr', label: 'Functional', title: 'Functional requirements', count: (s) => s.requirements.length, show: (s) => s.requirements.length + s.nonFunctional.length },
+        { value: 'ac', label: 'Acceptance', title: 'Acceptance criteria', count: (s) => s.acceptanceCriteria.length, show: (s) => s.acceptanceCriteria.length },
+        { value: 'rules', label: 'Rules', title: 'Business rules and messages', count: (s) => s.businessRules.length, show: (s) => s.businessRules.length + s.messages.length },
+        { value: 'apis', label: 'APIs and Hosts', title: 'APIs and host interfaces', count: (s) => s.apis.length + s.hostInteractions.length, show: (s) => s.apis.length + s.hostInteractions.length },
+        { value: 'data', label: 'Data', title: 'Screens and their fields', count: (s) => s.screens.length, show: (s) => s.screens.length },
+        { value: 'roles', label: 'Roles', title: 'Roles and access', count: (s) => s.roles.length, show: (s) => s.roles.length },
+        { value: 'questions', label: 'Questions', title: 'Open questions and decisions', count: (s) => s.openQuestions.length, show: (s) => s.openQuestions.length + s.decisions.length },
+        { value: 'trace', label: 'Traceability', show: (s) => s.requirements.length + s.screens.length },
+        { value: 'history', label: 'History', title: 'Versions and approval', show: () => 1 }
+      ];
+      this.shownParts = ko.pureComputed(() => {
+        const s = this.spec();
+        return !s ? [] : PARTS.filter((p) => p.show(s)).map((p) => {
+          const count = p.count ? p.count(s) : 0;
           return {
-            screen: screen.name,
-            design: design ? design.name + ' v' + design.currentVersion : 'Not designed yet',
-            designStatus: design ? ui.status(design.status, DESIGN_WORDS[design.status]) : ui.status('NOT_STARTED', 'Not started'),
-            code: screen.relatedCode.slice(0, 3).join(', ') || 'No related code found',
-            change: this.changes().length ? this.changes().map((c) => c.title).join(', ') : 'No change yet'
+            value: p.value, title: p.title || p.label, text: p.label + (count ? ' (' + count + ')' : ''),
+            selected: ko.pureComputed(() => this.partNow() === p.value), pick: () => this.part(p.value)
           };
         });
       });
-      this.changeRows = ko.pureComputed(() => this.changes().map((c) => ({
-        title: c.title, status: ui.status(c.status, CHANGE_WORDS[c.status]), files: c.files.length + ' files', updated: day(c.updatedAt),
-        open: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }))
-      })));
-      this.designRows = ko.pureComputed(() => this.designs().map((d) => ({
-        name: d.name, status: ui.status(d.status, DESIGN_WORDS[d.status]), version: 'v' + d.currentVersion, updated: day(d.updatedAt),
-        open: () => { pageRequests.studio(this.detail() ? this.detail().id : null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); }
-      })));
+      // A part the spec has nothing for falls back to the overview
+      this.partNow = ko.pureComputed(() => (this.shownParts().some((p) => p.value === this.part()) ? this.part() : 'overview'));
 
       let pollTimer = null;
       const showError = (error) => this.errorMessage(error.message);
@@ -543,6 +636,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           suggestedAnswer: q.suggestedAnswer || '',
           answerValue: answerValue,
           answered: ko.pureComputed(() => !!answerValue().trim()),
+          css: ko.pureComputed(() => 'factory-rq-question' + (answerValue().trim() ? '' : ' is-open')),
           options: options.map((option) => ({
             label: option === q.suggestedAnswer ? option + ' (usual)' : option,
             editable: editable,
@@ -580,6 +674,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const same = this.detail() && this.detail().id === detail.id;
         if (!same) {
           this.showingText(false);
+          this.part('overview');
         }
         // Drafting finished while the page was watching it
         if (same && this.detail().status === 'PROCESSING' && detail.status !== 'PROCESSING') {
@@ -592,6 +687,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.lastChecked(new Date().toLocaleTimeString());
         this.detail(detail);
         this.errorMessage('');
+        loadVersions(detail);
         this.questions(detail.spec ? detail.spec.openQuestions.map((q) => question(q, detail.status === 'READY' && this.canEdit())) : []);
         if (this.editingJson()) {
           this.specJson(detail.spec ? JSON.stringify(detail.spec, null, 2) : '');
@@ -711,7 +807,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.remove();
         }
       };
-      this.createdText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
       this.updatedText = ko.pureComputed(() => (this.detail() ? new Date(this.detail().updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''));
 
       let subscription = null;

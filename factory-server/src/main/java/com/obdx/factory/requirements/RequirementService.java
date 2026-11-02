@@ -128,6 +128,12 @@ public class RequirementService {
         return detail(find(id));
     }
 
+    /** The spec's versions, newest first: the revision history. */
+    @Transactional(readOnly = true)
+    public List<RequirementSpecRepository.Version> versions(UUID id) {
+        return specs.versions(find(id).getId());
+    }
+
     // --- review ---
 
     /** Saves answers to open questions (by position in the list) as a new spec version. */

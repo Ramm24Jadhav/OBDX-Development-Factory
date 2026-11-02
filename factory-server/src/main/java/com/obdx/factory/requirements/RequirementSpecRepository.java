@@ -6,6 +6,9 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +37,17 @@ public class RequirementSpecRepository {
         jdbc.update("INSERT INTO requirement_spec (requirement_id, version, origin, spec, created_at) VALUES (?, ?, ?, ?::jsonb, ?)",
                 requirementId, version, origin.name(), json.writeValueAsString(spec), Timestamp.from(Instant.now()));
         return version;
+    }
+
+    /** A stored version: its number, how it was made and when. */
+    public record Version(int version, Origin origin, OffsetDateTime createdAt) {
+    }
+
+    /** Every version of the requirement's spec, newest first. */
+    public List<Version> versions(UUID requirementId) {
+        return jdbc.query("SELECT version, origin, created_at FROM requirement_spec WHERE requirement_id = ? ORDER BY version DESC",
+                (rs, row) -> new Version(rs.getInt("version"), Origin.valueOf(rs.getString("origin")),
+                        rs.getTimestamp("created_at").toInstant().atOffset(ZoneOffset.UTC)), requirementId);
     }
 
     public Optional<RequirementSpec> find(UUID requirementId, int version) {
