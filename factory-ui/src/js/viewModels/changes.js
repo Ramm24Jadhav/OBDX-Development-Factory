@@ -1,12 +1,16 @@
 /*
- * Changes page, the implementation workbench: the change's lifecycle (requirement, impact analysis, code generation,
- * validation, review, apply), its files as a tree with the code and diff of the selected one, the plan, quick checks and
- * Jenkins builds, an assistant that answers from the change, and the actions: plan, approve, write again, edit, check,
- * build, deliver as a patch or an SVN branch, close and delete.
+ * Changes page, the implementation workbench, built around reviewing generated code and recovering from a generation
+ * that stopped. At the top: the change, its workspace and OBDX version, its status, how many files are created,
+ * modified, cut off, failed or not written, the validation state and the next action. Below, three resizable panels:
+ * the files as a tree (marked by their state), the selected file's diff or code with line numbers and highlighting, and
+ * a side panel with the file's details (requirement, reason, generation, checks), validation, the plan, the assistant
+ * and the history. The actions are those of before: plan, approve, continue generation, write again, edit, check,
+ * build, deliver as a patch or an SVN branch (asked first; an incomplete one with a warning), close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
-        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/busy', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService) {
+        '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/busy',
+        '../services/codeHighlight', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService, highlight) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
@@ -16,12 +20,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
       DELIVERED: 'delivered', FAILED: 'failed', CLOSED: 'closed'
     };
-    // The page's words for a file's state and its quick check; ui.status gives the colour and the icon
-    const FILE_WORDS = { PENDING: 'Not written', GENERATED: 'Written', UNCHANGED: 'Unchanged', FAILED: 'Failed' };
+    // The page's words for a quick check; ui.status gives the colour and the icon
     const CHECK_WORDS = { PASSED: 'Passed', WARNING: 'Warning', FAILED: 'Failed', NOT_CHECKED: 'Not checked' };
     // Jenkins results in the status categories ui.status knows
     const BUILD_RESULT = { SUCCESS: 'PASSED', FAILURE: 'FAILED', UNSTABLE: 'WARNING', ABORTED: 'CANCELLED', NOT_BUILT: 'CANCELLED' };
     const RUNNING = ['ANALYZING', 'GENERATING'];
+    // A file's state in the workbench, from its status, its plan action and its check message: the server marks a file
+    // the model's limit stopped part-way as FAILED with the message "Cut off: ..." (its part is kept), and a kept rewrite
+    // with "Rewrite in progress: ..." (ChangeService.recordPartial, withRewrite)
+    const CUT_OFF = 'Cut off:';
+    const REWRITE = 'Rewrite in progress:';
+    const stateOf = (f) => {
+      if (f.status === 'FAILED') {
+        return (f.checkMessage || '').indexOf(CUT_OFF) === 0 ? 'partial' : 'failed';
+      }
+      if (f.status === 'PENDING') {
+        return 'pending';
+      }
+      if (f.status === 'UNCHANGED') {
+        return 'unchanged';
+      }
+      return f.action === 'create' ? 'created' : 'modified';
+    };
+    const STATES = {
+      created: { label: 'Created', badge: 'A', tip: 'A new file, written' },
+      modified: { label: 'Modified', badge: 'M', tip: 'An existing file, changed' },
+      partial: { label: 'Cut off', badge: 'Cut off', tip: 'The model\'s limit stopped it part-way; its part is kept and Continue generation goes on from it' },
+      failed: { label: 'Failed', badge: 'Failed', tip: 'The model could not write it' },
+      pending: { label: 'Not written', badge: 'Not written', tip: 'Not written yet' },
+      unchanged: { label: 'Unchanged', badge: 'Unchanged', tip: 'Written, with no difference from the original' }
+    };
+    const STATE_ORDER = ['created', 'modified', 'partial', 'failed', 'pending', 'unchanged'];
+    // Requirement references in a plan item's text (FR-001, AC-002, BR-003)
+    const REFS = /\b(?:FR|AC|BR|NFR|US|REQ)-\d+\b/g;
 
     function ChangesViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
@@ -77,7 +108,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.hasCode = ko.pureComputed(() => !!this.detail() && this.detail().files.some((f) => f.status !== 'PENDING'));
       this.fileRows = ko.pureComputed(() => (this.detail() ? this.detail().files : []).map((f) => ({
         path: f.path,
-        status: ui.status(f.status, FILE_WORDS[f.status] + (f.edited ? ' (edited)' : '') + (f.attempts > 1 ? ', ' + f.attempts + ' attempts' : '')),
+        status: ui.status(stateOf(f) === 'partial' ? 'WARNING' : f.status, STATES[stateOf(f)].label + (f.edited ? ' (edited)' : '') + (f.attempts > 1 ? ', ' + f.attempts + ' attempts' : '')),
         checkState: ui.status(f.checkStatus || 'NOT_CHECKED', CHECK_WORDS[f.checkStatus || 'NOT_CHECKED']),
         checkMessage: f.checkMessage || '',
         added: '+' + f.linesAdded,
@@ -259,7 +290,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
           if (!keepMode) {
             this.fileMode('diff');
-            this.tab('files');
           }
         }).catch(showError);
       this.showDiff = () => this.fileMode('diff');
@@ -283,7 +313,144 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
       this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
-      this.statusPill = ko.pureComputed(() => (this.detail() ? ui.status(this.detail().status, STATUS_PILLS[this.detail().status].text) : ui.status('', '–')));
+      // A written change with planned files missing says so: it is only partly written, and is not delivered
+      this.statusPill = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return ui.status('', '–');
+        }
+        if (d.status === 'GENERATED' && this.unwritten().length) {
+          return ui.status('WARNING', 'Partly written');
+        }
+        return ui.status(d.status, STATUS_PILLS[d.status].text);
+      });
+
+      // ---- The summary at the top: counts, validation and the next action ----
+      this.workspaceInfo = ko.observable(null);
+      this.counts = ko.pureComputed(() => {
+        const files = this.detail() ? this.detail().files : [];
+        return STATE_ORDER.map((key) => {
+          const n = files.filter((f) => stateOf(f) === key).length;
+          return { key: key, label: STATES[key].label, n: n, title: STATES[key].tip,
+            css: 'factory-ch-count factory-ch-count-' + key + (n ? '' : ' factory-ch-count-zero'), pick: () => this.treeFilter(key) };
+        });
+      });
+      this.headerMeta = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return '';
+        }
+        const w = this.workspaceInfo();
+        return [w ? w.name + ' · OBDX ' + w.obdxVersion : workspaceName(), 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase(),
+          d.baseRevision ? 'code at r' + d.baseRevision : null, 'requested by ' + (d.createdBy || '?'),
+          d.branchUrl ? 'branch ' + d.branchUrl.split('/').slice(-2).join('/') : null].filter(Boolean).join(' · ');
+      });
+      // Partial generation: what is written, what the limit cut off, what is not written, and that delivery leaves them out
+      this.partial = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d || d.status !== 'GENERATED' || !this.unwritten().length) {
+          return null;
+        }
+        const n = (key) => d.files.filter((f) => stateOf(f) === key).length;
+        const written = d.files.length - this.unwritten().length;
+        return 'Partial generation: ' + written + ' of ' + d.files.length + ' planned files are written'
+          + (n('partial') ? '; ' + n('partial') + ' cut off by the model\'s limit (the part written is kept)' : '')
+          + (n('failed') ? '; ' + n('failed') + ' failed' : '') + (n('pending') ? '; ' + n('pending') + ' not written yet' : '')
+          + '. The files written are kept. Continue generation goes on from where it stopped; delivering now leaves the others out.';
+      });
+      /** What to do next, from the change's state; action names a function of this page and is shown only when allowed. */
+      this.nextAction = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return null;
+        }
+        const s = d.status;
+        const failedChecks = d.files.filter((f) => f.checkStatus === 'FAILED' && f.status === 'GENERATED').length;
+        if (s === 'ANALYZING') {
+          return { text: 'Wait for the impact analysis; the plan shows here when it is ready.' };
+        }
+        if (s === 'PLAN_READY') {
+          return { text: 'Review the plan and approve it; no code is written before.', label: 'Approve Plan', id: 'nextApprovePlan', run: this.approvePlan,
+            allowed: this.canApprove(), why: 'Someone with the right to approve does this.' };
+        }
+        if (s === 'GENERATING') {
+          return { text: 'The model is writing the code. The files already written stay if it stops.' };
+        }
+        if (s === 'FAILED') {
+          return { text: (d.message || 'The last step failed.') + ' Analyze again to make a new plan.', label: 'Analyze Again', id: 'nextAnalyze',
+            run: this.analyzeAgain, allowed: this.canManage(), why: 'You need the right to manage code.' };
+        }
+        if (s === 'GENERATED' && this.unwritten().length) {
+          return { text: 'Finish the code: Continue generation writes the files not written yet, going on from any part kept.',
+            label: 'Continue generation', id: 'nextContinue', run: this.continueGeneration, allowed: this.canManage(), why: 'You need the right to manage code.' };
+        }
+        if (s === 'GENERATED' && failedChecks) {
+          return { text: failedChecks + ' file(s) failed their quick checks: open them, then Write again or Edit, and Validate.' };
+        }
+        if (s === 'GENERATED') {
+          return { text: 'Review the code, then submit it to a new SVN branch for review (you are asked first).', label: 'Submit for Review',
+            id: 'nextDeliver', run: this.deliver, allowed: this.canManage() && !this.busy(), why: 'You need the right to manage code.' };
+        }
+        if (s === 'DELIVERED') {
+          return { text: 'Delivered to ' + (d.branchUrl || 'SVN') + '. Merge the branch in SVN, then Close as Merged (you are asked first).' };
+        }
+        return { text: d.closedReason === 'MERGED' ? 'Closed as merged.' : 'Closed.' };
+      });
+
+      // ---- The selected file's details: requirement, reason, generation, validation ----
+      this.fileDetail = ko.pureComputed(() => {
+        const file = this.file();
+        const d = this.detail();
+        if (!file || !d) {
+          return null;
+        }
+        const view = d.files.find((f) => f.path === file.path) || null;
+        const item = d.plan ? d.plan.items.find((i) => i.path === file.path) || null : null;
+        const text = item ? (item.purpose || '') + ' ' + (item.details || '') : '';
+        const refs = Array.from(new Set(text.match(REFS) || []));
+        const state = view ? stateOf(view) : null;
+        const message = view && view.checkMessage ? view.checkMessage : '';
+        const rewrite = message.indexOf(REWRITE) === 0 ? message.split('\n')[0] : '';
+        const checkText = rewrite ? message.split('\n').slice(1).join('\n') : message;
+        const name = file.path.split('/').pop();
+        const lastBuild = this.lastBuild();
+        return {
+          path: file.path,
+          state: state ? STATES[state].label : 'Not in the plan',
+          stateCss: 'factory-ch-badge factory-ch-badge-' + (state || 'pending'),
+          requirement: refs.length ? refs.join(', ') : 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase(),
+          requirementNote: refs.length ? 'Named in the plan for this file' : 'The change\'s requirement; the plan names no single item of it for this file',
+          reason: item ? item.purpose || '–' : 'Not in the plan',
+          details: item ? item.details || '' : '',
+          action: item ? (item.action === 'create' ? 'Create' : 'Modify') + ' · ' + item.layer : '',
+          follows: item && item.basedOn && item.basedOn.length ? item.basedOn.join(', ') : '',
+          generation: !view ? '' : (state === 'pending' ? 'Not written yet' : state === 'partial' ? 'Cut off part-way; the part written is kept'
+            : STATES[state].label) + (view.attempts ? ' · ' + view.attempts + (view.attempts === 1 ? ' attempt' : ' attempts') : '')
+            + (view.edited ? ' · edited by a reviewer' : ''),
+          rewrite: rewrite,
+          lines: view && (view.linesAdded || view.linesRemoved) ? '+' + view.linesAdded + ' / -' + view.linesRemoved + ' lines' : '',
+          check: ui.status((view && view.checkStatus) || 'NOT_CHECKED', CHECK_WORDS[(view && view.checkStatus) || 'NOT_CHECKED']),
+          checkMessage: state === 'partial' ? '' : checkText,
+          buildErrors: lastBuild ? (lastBuild.errors || []).filter((e) => e.indexOf(name) >= 0).slice(0, 5) : [],
+          buildNote: lastBuild ? 'Last Jenkins build: ' + (lastBuild.result || 'running') : 'No Jenkins build yet',
+          resumes: state === 'partial' || !!rewrite
+        };
+      });
+      // Write again and Edit, only where the server allows them: a written change, someone who may manage code
+      this.canWriteAgain = ko.pureComputed(() => !!this.detail() && this.detail().status === 'GENERATED' && this.canManage() && !this.busy());
+      this.canEditFile = ko.pureComputed(() => this.canWriteAgain() && !!this.file() && !!this.file().generated);
+      this.writeAgainTip = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d || d.status !== 'GENERATED') {
+          return d && d.status === 'GENERATING' ? 'Wait until the model has finished writing.' : 'Files can be written again while the code is being reviewed, before delivery.';
+        }
+        if (!this.canManage()) {
+          return 'You need the right to manage code.';
+        }
+        return this.fileDetail() && this.fileDetail().resumes
+          ? 'Without a note, Write again goes on from the part kept; with a note it starts the file afresh.'
+          : 'Write this file again, with your note to the model if you give one.';
+      });
       // Live progress of the background step, from the polled change: its files and its message
       this.running = ko.pureComputed(() => !!this.detail() && RUNNING.indexOf(this.detail().status) >= 0);
       this.progress = ko.pureComputed(() => {
@@ -326,73 +493,40 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         : 'Nothing to save: generated code is saved as it is written. Use Edit on a file to change it, then Save Draft.'));
       this.requirementTitle = ko.observable('');
 
-      // Lifecycle: requirement approved, impact analysis, code generation, validation, review, apply changes
-      this.stages = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d) {
-          return [];
-        }
-        const s = d.status;
-        const generated = ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(s) >= 0;
-        const validated = generated && (d.buildStatus === 'PASSED' || s === 'DELIVERED' || s === 'CLOSED');
-        const done = [true, ['PLAN_READY', 'GENERATING', 'GENERATED', 'DELIVERED', 'CLOSED'].indexOf(s) >= 0 && !!d.planApprovedAt || generated,
-          generated, validated, s === 'DELIVERED' || s === 'CLOSED', s === 'CLOSED' && d.closedReason === 'MERGED'];
-        const current = done.indexOf(false);
-        const names = ['Requirement Approved', 'Impact Analysis', 'Code Generation', 'Validation', 'Review', 'Apply Changes'];
-        return names.map((name, i) => ({
-          name: (i + 1) + '. ' + name, number: i + 1, check: done[i],
-          css: 'factory-' + (done[i] ? 'st-done' : (i === current ? (s === 'FAILED' ? 'st-failed' : 'st-now') : 'st-todo'))
-        }));
-      });
-      this.infoRows = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d) {
-          return [];
-        }
-        // After generation only the files written count as modified or new; the others are named as not written
-        const generated = ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(d.status) >= 0;
-        const counted = generated ? d.files.filter((f) => f.status !== 'PENDING' && f.status !== 'FAILED') : d.files;
-        const missing = d.files.length - counted.length;
-        const created = counted.filter((f) => f.action === 'create').length;
-        return [
-          { label: 'Requirement', value: 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase() },
-          { label: 'Created', value: new Date(d.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), title: ui.when(d.createdAt) },
-          { label: 'Files', value: (counted.length - created) + ' modified, ' + created + ' new' + (missing ? ', ' + missing + ' not written' : '') },
-          { label: 'Branch', value: d.branchUrl ? d.branchUrl.split('/').slice(-2).join('/') : 'Not delivered' },
-          { label: 'Code at', value: d.baseRevision ? 'r' + d.baseRevision : '–' },
-          { label: 'Requested by', value: d.createdBy || '–' }
-        ];
-      });
-
-      // Workbench tabs and the file tree of the change's files
-      this.tab = ko.observable('files');
+      // The side panel: the selected file, validation, the plan, the assistant and the history, one row of tabs
+      this.tab = ko.observable('file');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'files', label: 'Files', count: ko.pureComputed(() => (this.detail() ? this.detail().files.length : 0)) },
+        { value: 'file', label: 'File' },
+        { value: 'validation', label: 'Validation' },
         { value: 'plan', label: 'Plan' },
-        { value: 'impact', label: 'Impact Analysis' },
-        { value: 'build', label: 'Build & Test' },
-        { value: 'review', label: 'Review Comments' },
+        { value: 'assistant', label: 'Assistant' },
         { value: 'history', label: 'History' }
       ]);
-      // The assistant can take more room, or the whole width
-      this.aiWide = ko.observable(false);
-      this.aiMax = ko.observable(false);
-      this.toggleAiWide = () => { this.aiWide(!this.aiWide()); this.aiMax(false); };
-      this.toggleAiMax = () => { this.aiMax(!this.aiMax()); this.aiWide(false); };
-      this.aiSheetOpen = ko.observable(false);
-      this.openAiSheet = () => this.aiSheetOpen(true);
-      this.gridCss = ko.pureComputed(() => 'factory-ch-grid' + (this.aiWide() ? ' factory-ch-grid-wide' : '') + (this.aiMax() ? ' factory-ch-grid-max' : ''));
+      this.tabKey = (event) => {
+        const keys = this.tabs.map((t) => t.value);
+        const at = keys.indexOf(this.tab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.tab(keys[next]);
+        const button = document.getElementById('wb-' + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
       this.fileFilter = ko.observable('');
       this.fileFilterInput = ui.value(this.fileFilter);
-      const ACTION = { create: 'A', modify: 'M' };
-      // After generation a planned file the model did not write is marked as such, not as added or modified
-      const AFTER_GENERATION = ['GENERATED', 'DELIVERED', 'CLOSED'];
-      const notWritten = (f) => !!f && !!this.detail() && AFTER_GENERATION.indexOf(this.detail().status) >= 0
-        && (f.status === 'PENDING' || f.status === 'FAILED');
-      const badgeOf = (f, action) => (notWritten(f)
-        ? { badge: 'not written', badgeCss: 'factory-ch-badge factory-ch-badge-x' }
-        : { badge: ACTION[action] || 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (action === 'create' ? 'a' : 'm') });
+      // Every file is marked by its state: created (A), modified (M), cut off, failed, not written or unchanged
+      const badgeOf = (f) => {
+        const state = f ? stateOf(f) : 'pending';
+        return { badge: STATES[state].badge, badgeCss: 'factory-ch-badge factory-ch-badge-' + state, badgeTip: STATES[state].tip, state: state };
+      };
       this.treeFilter = ko.observable('all');
+      this.showAllFiles = () => this.treeFilter('all');
       this.collapsed = ko.observable({});
       const workspaceName = () => {
         const option = workspaceSelection.options().find((o) => o.value === this.workspaceId());
@@ -418,7 +552,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const text = this.fileFilter().trim().toLowerCase();
         const filter = this.treeFilter();
         return d.files.filter((f) => (!text || f.path.toLowerCase().indexOf(text) >= 0)
-          && (filter === 'all' || (filter === 'warn' ? (f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED') : f.action === filter)));
+          && (filter === 'all' || (filter === 'warn' ? (f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED') : stateOf(f) === filter)));
       };
       /** Files in the order the tree shows them. */
       const orderedFiles = (node) => Object.keys(node.folders).sort().reduce((list, key) => list.concat(orderedFiles(node.folders[key])), [])
@@ -447,7 +581,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             }
             const open = !collapsed[folder.path];
             rows.push({
-              folder: true, name: name, path: folder.path, open: open, toggle: toggle(folder.path),
+              folder: true, name: name, path: folder.path, open: open, toggle: toggle(folder.path), level: depth + 1,
               icon: 'factory-nav-icon factory-ico-folder-fill', style: { paddingLeft: (depth * 12 + 2) + 'px' }, css: 'factory-ch-node factory-ch-folder'
             });
             if (open) {
@@ -455,9 +589,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             }
           });
           node.files.slice().sort((a, b) => a.path.localeCompare(b.path)).forEach((f) => rows.push({
-            folder: false, name: f.path.split('/').pop(), style: { paddingLeft: (depth * 12 + 2) + 'px' }, path: f.path,
-            badge: badgeOf(f, f.action).badge, badgeCss: badgeOf(f, f.action).badgeCss,
-            css: ko.pureComputed(() => 'factory-ch-node factory-ch-file' + (this.file() && this.file().path === f.path ? ' factory-ch-file-on' : '')),
+            folder: false, name: f.path.split('/').pop(), style: { paddingLeft: (depth * 12 + 2) + 'px' }, path: f.path, level: depth + 1,
+            badge: badgeOf(f).badge, badgeCss: badgeOf(f).badgeCss, badgeTip: badgeOf(f).badgeTip,
+            selected: ko.pureComputed(() => (this.file() && this.file().path === f.path ? 'true' : 'false')),
+            css: ko.pureComputed(() => 'factory-ch-node factory-ch-file factory-ch-file-' + badgeOf(f).state
+              + (this.file() && this.file().path === f.path ? ' factory-ch-file-on' : '')),
             open: () => this.openFile(f.path)
           }));
         };
@@ -468,7 +604,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const root = folderTree(files);
         const rootOpen = !collapsed[''];
         rows.push({
-          folder: true, name: root.name, path: '', open: rootOpen, toggle: toggle(''), icon: 'factory-nav-icon factory-ico-bank',
+          folder: true, name: root.name, path: '', open: rootOpen, toggle: toggle(''), icon: 'factory-nav-icon factory-ico-bank', level: 1,
           style: { paddingLeft: '2px' }, css: 'factory-ch-node factory-ch-folder factory-ch-root'
         });
         if (rootOpen) {
@@ -476,10 +612,47 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return rows;
       });
-      const TREE_FILTERS = [
-        { value: 'all', label: 'All files' }, { value: 'create', label: 'New files (A)' }, { value: 'modify', label: 'Modified files (M)' },
-        { value: 'warn', label: 'With check warnings or failures' }
-      ];
+      const TREE_FILTERS = [{ value: 'all', label: 'All files' }]
+        .concat(STATE_ORDER.map((key) => ({ value: key, label: STATES[key].label + (STATES[key].badge.length === 1 ? ' (' + STATES[key].badge + ')' : '') })))
+        .concat([{ value: 'warn', label: 'With check warnings or failures' }]);
+      /**
+       * Keys in the file tree: up and down move between rows, Home and End to the ends, right opens a folder and left
+       * closes it, Enter or Space opens the file or folder.
+       */
+      this.treeKey = (event) => {
+        const rows = [...document.querySelectorAll('#fileTree [role=treeitem]')];
+        const at = rows.indexOf(document.activeElement);
+        const go = (i) => {
+          const row = rows[Math.min(Math.max(i, 0), rows.length - 1)];
+          if (row) {
+            row.focus();
+          }
+        };
+        const row = at >= 0 ? rows[at] : null;
+        const isFolder = !!row && row.hasAttribute('aria-expanded');
+        const keepFocus = () => {
+          const path = row.getAttribute('data-path');
+          setTimeout(() => {
+            const again = document.querySelector('#fileTree [role=treeitem][data-path="' + path.replace(/"/g, '\\"') + '"]');
+            if (again) {
+              again.focus();
+            }
+          }, 60);
+        };
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          go(at + (event.key === 'ArrowDown' ? 1 : -1));
+        } else if (event.key === 'Home' || event.key === 'End') {
+          go(event.key === 'Home' ? 0 : rows.length - 1);
+        } else if (row && (event.key === 'Enter' || event.key === ' ' || (isFolder && ((event.key === 'ArrowRight' && row.getAttribute('aria-expanded') === 'false')
+          || (event.key === 'ArrowLeft' && row.getAttribute('aria-expanded') === 'true'))))) {
+          row.click();
+          keepFocus();
+        } else {
+          return true;
+        }
+        event.preventDefault();
+        return false;
+      };
       this.treeFilterItems = ko.pureComputed(() => TREE_FILTERS.map((f) => ({ value: f.value, label: f.label, icon: this.treeFilter() === f.value ? 'check' : '' }))
         .concat([{ separator: true }, { value: 'expand', label: 'Expand all folders' }, { value: 'collapse', label: 'Collapse all folders' }]));
       this.treeFilterLabel = ko.pureComputed(() => (this.treeFilter() === 'all' ? 'Filter files'
@@ -505,18 +678,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!file) {
           return [];
         }
+        const lang = highlight.languageOf(file.path);
+        const state = highlight.start();
         if (this.fileMode() === 'full') {
-          return (file.generated || file.original || '').split('\n').map((line, i) => ({ n: i + 1, sign: '', text: line, css: 'factory-ch-line' }));
+          return (file.generated || file.original || '').split('\n').map((line, i) => ({ n: i + 1, sign: '', text: line, html: highlight.line(line, lang, state), css: 'factory-ch-line' }));
         }
         if (!file.diff) {
-          return [{ n: '', sign: '', text: file.generated === null ? '(not written yet)' : '(no changes)', css: 'factory-ch-line' }];
+          const empty = file.generated === null ? '(not written yet)' : '(no changes)';
+          return [{ n: '', sign: '', text: empty, html: highlight.escape(empty), css: 'factory-ch-line' }];
         }
+        // Removed lines are coloured with the old file's state, the others with the new file's
+        const oldState = highlight.start();
         let n = 0;
         return file.diff.replace(/\n$/, '').split('\n').filter((line) => !/^(Index:|====|\+\+\+|---)/.test(line)).map((line) => {
           const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)/);
           if (hunk) {
             n = Number(hunk[1]) - 1;
-            return { n: '', sign: '', text: line, css: 'factory-ch-line factory-ch-hunk' };
+            return { n: '', sign: '', text: line, html: highlight.escape(line), css: 'factory-ch-line factory-ch-hunk' };
           }
           const sign = line.charAt(0);
           if (sign !== '-') {
@@ -524,6 +702,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
           return {
             n: sign === '-' ? '' : n, sign: sign === '+' || sign === '-' ? sign : '', text: line.slice(1),
+            html: highlight.line(line.slice(1), lang, sign === '-' ? oldState : state),
             css: 'factory-ch-line' + (sign === '+' ? ' factory-ch-add' : sign === '-' ? ' factory-ch-del' : '')
           };
         });
@@ -532,19 +711,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.splitLines = ko.pureComputed(() => {
         const file = this.file();
         if (!file || !file.diff) {
-          return [{ css: 'factory-ch-srow', ln: '', lt: file && file.generated === null ? '(not written yet)' : '(no changes)', rn: '', rt: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' }];
+          const empty = file && file.generated === null ? '(not written yet)' : '(no changes)';
+          return [{ css: 'factory-ch-srow', ln: '', lt: empty, rn: '', rt: '', lhtml: highlight.escape(empty), rhtml: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' }];
         }
         const rows = [];
         let dels = [];
         let adds = [];
         let oldN = 0;
         let newN = 0;
+        const lang = highlight.languageOf(file.path);
+        const left = highlight.start();
+        const right = highlight.start();
         const flush = () => {
           for (let i = 0; i < Math.max(dels.length, adds.length); i++) {
             const l = dels[i];
             const r = adds[i];
             rows.push({
               css: 'factory-ch-srow', ln: l ? l.n : '', lt: l ? l.text : '', rn: r ? r.n : '', rt: r ? r.text : '',
+              lhtml: l ? highlight.line(l.text, lang, left) : '', rhtml: r ? highlight.line(r.text, lang, right) : '',
               lcss: 'factory-ch-sside' + (l ? ' factory-ch-del' : ' factory-ch-sempty'), rcss: 'factory-ch-sside' + (r ? ' factory-ch-add' : ' factory-ch-sempty')
             });
           }
@@ -557,7 +741,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             flush();
             oldN = Number(hunk[1]) - 1;
             newN = Number(hunk[2]) - 1;
-            rows.push({ css: 'factory-ch-srow factory-ch-hunk', ln: '', lt: line, rn: '', rt: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
+            rows.push({ css: 'factory-ch-srow factory-ch-hunk', ln: '', lt: line, rn: '', rt: '', lhtml: highlight.escape(line), rhtml: '', lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
             return;
           }
           const sign = line.charAt(0);
@@ -567,7 +751,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             adds.push({ n: ++newN, text: line.slice(1) });
           } else {
             flush();
-            rows.push({ css: 'factory-ch-srow', ln: ++oldN, lt: line.slice(1), rn: ++newN, rt: line.slice(1), lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
+            rows.push({ css: 'factory-ch-srow', ln: ++oldN, lt: line.slice(1), rn: ++newN, rt: line.slice(1), lhtml: highlight.line(line.slice(1), lang, left),
+              rhtml: highlight.line(line.slice(1), lang, right), lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
           }
         });
         flush();
@@ -576,7 +761,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const fileOf = (path) => (this.detail() ? this.detail().files.find((f) => f.path === path) : null);
       this.fileStatus = ko.pureComputed(() => {
         const f = this.file() ? fileOf(this.file().path) : null;
-        return f ? ui.status(f.status, FILE_WORDS[f.status] + (f.edited ? ' (edited)' : '')) : null;
+        return f ? ui.status(stateOf(f) === 'partial' ? 'WARNING' : f.status, STATES[stateOf(f)].label + (f.edited ? ' (edited)' : '')) : null;
       });
       this.fileTabs = ko.pureComputed(() => this.openTabs().map((path) => {
         const f = fileOf(path);
@@ -608,7 +793,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.viewDiff = () => {
         const target = this.file() || (this.proposed()[0] ? { path: this.proposed()[0].path } : null);
         if (target) {
-          this.tab('files');
           this.fileMode('diff');
           if (!this.file() || this.file().path !== target.path) {
             this.openFile(target.path);
@@ -758,6 +942,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'analyze', label: 'Analyze again', icon: 'refresh', disabled: !this.canManage() },
         { value: 'newchange', label: 'New change from a requirement…', icon: 'plus', disabled: !this.canManage() || this.requirementChoices().length === 0 },
         { value: 'patch', label: 'Download patch', icon: 'doc' },
+        { value: 'impact', label: 'Open Impact Analysis', icon: 'branch' },
+        { value: 'build', label: 'Open Build, Test & Review', icon: 'flask' },
         { separator: true },
         { value: 'close', label: 'Close as merged', icon: 'check', disabled: !this.canClose() },
         { value: 'abandon', label: 'Abandon', icon: 'x', disabled: !this.canClose() },
@@ -777,7 +963,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.choosingRequirement(true);
           return;
         }
-        ({ analyze: this.analyzeAgain, close: this.closeMerged, abandon: this.abandon, remove: this.remove })[action]();
+        ({ analyze: this.analyzeAgain, close: this.closeMerged, abandon: this.abandon, remove: this.remove, impact: this.openImpact, build: this.openBuild })[action]();
       };
       this.aiTab = ko.observable('chat');
       this.aiTabs = ui.tabs(this.aiTab, [
@@ -787,6 +973,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ]);
       this.analyseFile = () => {
         if (this.file()) {
+          this.tab('assistant');
           this.aiTab('chat');
           this.ai.ask('Review the open file ' + this.file().path + ': what could be wrong, and what would you change?');
         }
@@ -824,7 +1011,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.connected = () => {
         accUtils.announce('Changes page loaded.');
         document.title = 'Changes';
-        subscription = this.workspaceId.subscribe(() => { this.detail(null); this.file(null); loadList(); });
+        const loadWorkspace = () => {
+          this.workspaceInfo(null);
+          if (this.workspaceId()) {
+            api.get('workspaces/' + this.workspaceId()).then((w) => this.workspaceInfo(w)).catch(() => null);
+          }
+        };
+        subscription = this.workspaceId.subscribe(() => { this.detail(null); this.file(null); loadWorkspace(); loadList(); });
+        loadWorkspace();
         // A change asked for from another page (the command palette)
         workspaceSelection.load().then(loadList).then(() => {
           const wanted = pageRequests.change();
