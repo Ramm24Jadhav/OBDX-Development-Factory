@@ -184,6 +184,11 @@ public class KnowledgeRepository {
     }
 
     /** Where on Oracle's documentation site the documents fetched from there came from. */
+    /** The documents fetched from Oracle's documentation site. */
+    public List<UUID> oracleDocumentIds() {
+        return jdbc.queryForList("SELECT DISTINCT document_id FROM knowledge_oracle_file WHERE document_id IS NOT NULL", UUID.class);
+    }
+
     public Map<UUID, String> oracleUrls(List<UUID> documentIds) {
         Map<UUID, String> urls = new HashMap<>();
         if (documentIds.isEmpty()) {

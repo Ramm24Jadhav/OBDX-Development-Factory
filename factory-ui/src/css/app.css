@@ -8866,9 +8866,6 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 
 /* ---------- OBDX Library (knowledge base): ask, documents, notes ---------- */
 .factory-ico-book { --factory-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5z'/%3E%3Cpath d='M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5z'/%3E%3C/svg%3E"); }
-.factory-lb-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.factory-lb-kpitext { display: flex; flex-direction: column; min-width: 0; }
-.factory-lb-kpisub { font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
 .factory-lb-tabs { margin: var(--fx-gap) 0 12px; }
 .factory-lb .fx-card + .fx-card { margin-top: var(--fx-gap); }
 .factory-lb-askrow { display: flex; gap: 12px; align-items: flex-end; margin-top: 12px; }
@@ -8924,9 +8921,7 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-older { margin: var(--fx-gap) 0 0; }
 .factory-lb-table tr.is-older td { color: var(--fx-text-muted); }
 .factory-lb-notecheck { margin-top: 10px; }
-@media (max-width: 1100px) { .factory-lb-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 767px) {
-    .factory-lb-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .factory-lb-askrow, .factory-lb-summary { flex-direction: column; align-items: stretch; }
     .factory-lb-version { flex: 1 1 100%; }
     .factory-lb-save { margin-left: 0; }
@@ -9024,6 +9019,36 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 @media (max-width: 720px) { .factory-lb-asktools { align-items: stretch; } .factory-lb-style { width: 100%; } }
 .factory-ico-copy { --factory-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='11' height='11' rx='2'/%3E%3Cpath d='M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3'/%3E%3C/svg%3E"); }
 .factory-ico-wand { --factory-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20 15 9M13 7l4 4M17 3v3M20 6h-3M19.5 11.5v2M20.5 12.5h-2M9 3.5v2M10 4.5H8'/%3E%3C/svg%3E"); }
+/* OBDX Library as the documentation workspace: status line, document filters, citations, insufficient evidence (UI declutter step 16) */
+.factory-lb .factory-lb-intro { margin: 0 0 10px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-lb .factory-lb-health { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 12px; padding: 10px 14px; }
+.factory-lb .factory-lb-hpart { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--fx-border); border-radius: 999px; background: var(--fx-surface); color: var(--fx-text); font: inherit; font-size: var(--fx-text-sm); }
+.factory-lb button.factory-lb-hpart { cursor: pointer; transition: background var(--fx-dur-hover) var(--fx-ease-out); }
+.factory-lb button.factory-lb-hpart:hover { background: var(--fx-surface-2); }
+.factory-lb button.factory-lb-hpart:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 2px; }
+.factory-lb .factory-lb-hpart.is-succeeded { border-color: var(--fx-success-text); color: var(--fx-success-text); }
+.factory-lb .factory-lb-hpart.is-failed { border-color: var(--fx-danger-text); color: var(--fx-danger-text); }
+.factory-lb .factory-lb-hpart.is-running { border-color: var(--fx-primary-text); color: var(--fx-primary-text); }
+.factory-lb .factory-lb-hpart.is-warning { border-color: var(--fx-warning-text); color: var(--fx-warning-text); }
+.factory-lb .factory-lb-askversion { min-width: 200px; }
+.factory-lb .factory-lb-insufficient { margin-bottom: 10px; }
+.factory-lb .factory-lb-answertext.is-ungrounded { border-left: 3px dashed var(--fx-warning-text); padding-left: 10px; }
+.factory-lb .factory-lb-citations { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.factory-lb .factory-lb-citations > li { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); }
+.factory-lb .factory-lb-citebody { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; color: var(--fx-text); }
+.factory-lb .factory-lb-citemeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-lb .factory-lb-citeacts { display: flex; flex-wrap: wrap; gap: 6px; }
+.factory-lb .factory-lb-docfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; padding: 10px 14px; }
+.factory-lb .factory-lb-docsearch { flex: 1 1 220px; min-width: 180px; max-width: 360px; }
+.factory-lb .factory-lb-docpick { flex: 0 1 180px; min-width: 140px; }
+.factory-lb .factory-lb-shown { margin-left: auto; font-size: var(--fx-text-sm); }
+.factory-lb .factory-lb-docmsg { display: block; font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
+.factory-lb .factory-lb-docmsg.is-failed { color: var(--fx-danger-text); }
+.factory-lb .factory-lb-nowrap { white-space: nowrap; }
+@media (max-width: 600px) {
+  .factory-lb .factory-lb-docfilters > *, .factory-lb .factory-lb-askversion { flex: 1 1 100%; max-width: none; }
+  .factory-lb .factory-lb-shown { margin-left: 0; }
+}
 /* Requirements page: the document's requirements with what verifies them */
 .factory-rq-trace td { vertical-align: top; }
 .factory-rq-id { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
