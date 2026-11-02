@@ -339,7 +339,21 @@ public class ChangeService {
                 }
             }
 
-            crossCheck(id, workspace.getId());
+            Map<String, String> unfit = crossCheck(id, workspace.getId());
+            if (onlyPath == null && properties.fixAttempts() > 0 && !unfit.isEmpty()) {
+                // Certain errors only the other files show (a method the called class lacks): each such file is fixed once
+                for (Map.Entry<String, String> entry : unfit.entrySet()) {
+                    ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(entry.getKey())).findFirst().orElse(null);
+                    if (item != null) {
+                        change.status(ChangeRequest.Status.GENERATING, "Fixing " + item.path() + ", which does not fit the other files");
+                        change = changes.save(change);
+                        // (the file stays as written when the model's limit stops its fix: nothing of the fix is kept)
+                        writing = null;
+                        fitToOthers(id, context, plan, item, crossFileFixes(entry.getValue()));
+                    }
+                }
+                crossCheck(id, workspace.getId());
+            }
             // Says whether a version is still there: a file that had none has none after a failed Write again
             boolean versionKept = onlyPath != null && files.file(id, onlyPath).map(f -> f.generated() != null && !partial(f)).orElse(false);
             change.status(ChangeRequest.Status.GENERATED, (onlyPath == null ? ""
@@ -368,6 +382,30 @@ public class ChangeService {
                     "Code generation failed: " + Messages.reason(e));
         }
         changes.save(change);
+    }
+
+    /**
+     * Fixes a written file by what the cross-check found against the other files of the change: the model gets the file
+     * as written and the findings, as in the build's fix loop. A fix whose pieces do not join leaves the file as it was.
+     */
+    private void fitToOthers(UUID changeId, ChangeContext context, ChangePlan plan, ChangePlan.Item item, String note) {
+        ChangeFileStore.ChangeFile file = files.file(changeId, item.path()).orElse(null);
+        if (file == null || file.generated() == null || note.isEmpty()) {
+            return;
+        }
+        Map<String, String> others = new LinkedHashMap<>();
+        files.files(changeId).stream().filter(f -> f.generated() != null && !f.path().equals(item.path()) && !partial(f))
+                .forEach(f -> others.put(f.path(), f.generated()));
+        CodeGenerator.Result result;
+        try {
+            result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
+                    scaffold(context, file.path(), file.original()));
+        } catch (CodeGenerator.JoinFailed e) {
+            log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it is", item.path(), changeId);
+            return;
+        }
+        files.saveResult(changeId, item.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(), file.edited(),
+                result.check(), file.attempts() + result.attempts());
     }
 
     /**
@@ -683,30 +721,16 @@ public class ChangeService {
     }
 
     /**
-     * Whether a package folder under the bank's root with no indexed file still belongs to the bank: the change creates
-     * files in it, or a sibling package (same parent) is indexed and the folder is not generated code (generated, gen,
-     * stub). Otherwise it is taken for a library's package, as before.
+     * Whether a package folder under the bank's root with no indexed file belongs to the bank, so that an import from it
+     * of a class nobody has is wrong: the change creates files in it, or it is any package of the bank's own root
+     * (com.bank.obdx.payments.payments, a package the model made up) other than generated code (generated, gen, stub),
+     * which the build makes and the index does not have.
      */
-    private boolean bankFolder(UUID workspaceId, String folder, List<String> planned) {
-        return bankFolder(folder, planned, parent -> Boolean.TRUE.equals(jdbc.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path LIKE ?))", Boolean.class,
-                workspaceId, "%/" + like(parent) + "/%/%", like(parent) + "/%/%")));
-    }
-
-    /** @param siblingIndexed whether a package below the parent folder is indexed */
-    static boolean bankFolder(String folder, List<String> planned, Predicate<String> siblingIndexed) {
+    static boolean bankFolder(String folder, List<String> planned) {
         if (planned.stream().anyMatch(p -> inFolder(p, folder))) {
             return true;
         }
-        String name = folder.substring(folder.lastIndexOf('/') + 1);
-        if (name.matches("(?i)generated|gen|stubs?") || !folder.contains("/")) {
-            return false;
-        }
-        return siblingIndexed.test(folder.substring(0, folder.lastIndexOf('/')));
-    }
-
-    private static String like(String text) {
-        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return java.util.Arrays.stream(folder.split("/")).noneMatch(part -> part.matches("(?i)generated|gen|stubs?"));
     }
 
     /** The bank's root package by workspace, for the indexed revision it was read at. */
@@ -919,15 +943,19 @@ public class ChangeService {
                 }
             }
         }
-        crossCheck(change.getId(), change.getWorkspaceId());
+        // with the certain errors only other files show (a method the called class lacks), with the file's own findings
+        failing.putAll(crossCheck(change.getId(), change.getWorkspaceId()));
         return failing;
     }
 
     /**
-     * Checks that need more than one file, added to each written file's check as warnings: Java imports of the bank's
-     * classes that neither the code nor the change has, and JET views that bind names their view model lacks.
+     * Checks that need more than one file, added to each written file's check: Java imports of the bank's classes that
+     * neither the code nor the change has, and JET views that bind names their view model lacks, as warnings; what makes
+     * the file fail for certain (see {@link #CROSS_ERRORS}) as errors. Returns the files that fail, with their findings.
      */
-    private void crossCheck(UUID changeId, UUID workspaceId) {
+    private Map<String, String> crossCheck(UUID changeId, UUID workspaceId) {
+        Map<String, String> failing = new LinkedHashMap<>();
+        CheckScope scope = packs.scope(workspaceId);
         List<ChangeFileStore.ChangeFile> written = files.files(changeId).stream()
                 .filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
         Map<String, String> contents = new LinkedHashMap<>();
@@ -946,7 +974,7 @@ public class ChangeService {
             if (lower.endsWith(".java")) {
                 List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
                         || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
-                        || indexedFolder(workspaceId, folder), bankRoot, folder -> bankFolder(workspaceId, folder, paths));
+                        || indexedFolder(workspaceId, folder), bankRoot, folder -> bankFolder(folder, paths));
                 if (!missing.isEmpty()) {
                     problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
                             + ". Add them to the plan, or change the imports to classes that exist.");
@@ -954,29 +982,75 @@ public class ChangeService {
                 CrossFileJava.unwrittenClasses(file.path(), file.generated(), unwrittenJava).ifPresent(problems::add);
                 problems.addAll(CrossFileJava.missingMethods(file.generated(), classes));
                 CrossFileJava.unknownReceivers(file.generated()).ifPresent(problems::add);
-                CrossFileJava.missingJdkImports(file.generated()).ifPresent(problems::add);
+                Predicate<String> classExists = classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile)) || indexed(workspaceId, classFile);
+                CrossFileJava.missingJdkImports(file.generated(), classExists).ifPresent(problems::add);
                 if (javaIndexed) {
                     // Without imported Java code a class of the package could exist unseen
-                    CrossFileJava.unknownSamePackageClasses(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
-                            || indexed(workspaceId, classFile)).ifPresent(problems::add);
+                    CrossFileJava.unknownSamePackageClasses(file.generated(), classExists).ifPresent(problems::add);
                 }
             } else if (lower.endsWith(".html")) {
                 problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
             } else if (lower.endsWith(".js")) {
                 problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
+                problems.addAll(JsModuleChecks.defineProblems(file.generated(), module -> moduleSource(file.path(), module, contents)));
             }
-            FileChecks.Result check = withCrossChecks(file.checkStatus(), file.checkMessage(), problems);
+            FileChecks.Status own = file.checkStatus();
+            if (own == FileChecks.Status.FAILED && file.checkMessage() != null && file.checkMessage().lines().anyMatch(ChangeService::crossError)) {
+                // It may have failed only by an earlier cross-check: its own checks say whether it fails by itself
+                own = file.checkMessage().contains(CodeGenerator.CUT) ? FileChecks.Status.FAILED
+                        : localChecks.check(scope, file.path(), file.original(), file.generated()).status();
+            }
+            FileChecks.Result check = withCrossChecks(own, file.checkMessage(), problems);
             if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
                 files.saveCheck(changeId, file.path(), check);
             }
+            if (check.status() == FileChecks.Status.FAILED && problems.stream().anyMatch(ChangeService::crossError)) {
+                failing.put(file.path(), check.message());
+            }
         }
+        return failing;
+    }
+
+    /**
+     * The content of a module a view model loads, when this change writes it: './model' beside the file, or the resource
+     * bundle 'ojL10n!nls/quick-transfer' (a written file ending with nls/quick-transfer.js); null otherwise.
+     */
+    static String moduleSource(String path, String module, Map<String, String> written) {
+        String folder = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+        if (module.startsWith("./") || module.startsWith("../")) {
+            java.nio.file.Path resolved = java.nio.file.Path.of(folder.isEmpty() ? "." : folder).resolve(module).normalize();
+            String target = resolved.toString().replace('\\', '/') + (module.endsWith(".js") ? "" : ".js");
+            return written.get(target);
+        }
+        if (module.contains("!")) {
+            String name = module.substring(module.indexOf('!') + 1);
+            String suffix = "/" + (name.endsWith(".js") ? name : name + ".js");
+            return written.entrySet().stream().filter(e -> e.getKey().endsWith(suffix) || e.getKey().equals(suffix.substring(1)))
+                    .map(Map.Entry::getValue).findFirst().orElse(null);
+        }
+        return null;
     }
 
     /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
     static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds",
             CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS,
             CrossFileJava.MISSING_IMPORTS, CrossFileJava.UNKNOWN_CLASSES, JsModuleChecks.CALLED_BEFORE_SET,
-            JsModuleChecks.NEVER_SET, JsModuleChecks.UNKNOWN_MODULES);
+            JsModuleChecks.NEVER_SET, JsModuleChecks.UNKNOWN_MODULES, JsModuleChecks.WRONG_BINDING, JsModuleChecks.NOT_RECEIVED,
+            JsModuleChecks.BUNDLE_GET, JsModuleChecks.BUNDLE_KEYS);
+
+    /**
+     * The cross-file findings that are certain errors, which fail the file so that the fix loop writes it again: a Java
+     * call on a name the class never declares, a method or nested type the called class of the change lacks, a JDK class
+     * without its import (when no class of the package has its name), and a view model whose define list or resource
+     * bundle does not work as written. The others (a class of the codebase not found, a binding) may be wrong and stay
+     * warnings.
+     */
+    static final List<String> CROSS_ERRORS = java.util.stream.Stream.concat(java.util.stream.Stream.of(CrossFileJava.MISSING_METHODS,
+            CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS, CrossFileJava.MISSING_IMPORTS), JsModuleChecks.ERRORS.stream()).toList();
+
+    static boolean crossError(String line) {
+        return CROSS_ERRORS.stream().anyMatch(line::startsWith);
+    }
 
     /**
      * Whether the code base knows an AMD module: another file (indexed, or written in this change) names it in quotes,
@@ -1019,15 +1093,19 @@ public class ChangeService {
     }
 
     /**
-     * A file's check with this cross-check's findings in place of the previous ones: a warning while there are any,
-     * back to passed when they are gone and the file's own check found nothing.
+     * A file's check with this cross-check's findings in place of the previous ones: failed while there is a certain
+     * error among them, a warning while there are others, back to passed when they are gone and the file's own check
+     * found nothing.
+     *
+     * @param status the file's own status (without the cross-check's findings)
      */
     static FileChecks.Result withCrossChecks(FileChecks.Status status, String message, List<String> problems) {
         String own = message == null ? "" : message.lines().filter(line -> CROSS_CHECKS.stream().noneMatch(line::startsWith))
                 .collect(java.util.stream.Collectors.joining("\n")).strip();
         String added = String.join("\n", problems);
         String combined = own.isEmpty() ? added : added.isEmpty() ? own : own + "\n" + added;
-        FileChecks.Status result = status == FileChecks.Status.FAILED ? FileChecks.Status.FAILED
+        FileChecks.Status result = status == FileChecks.Status.FAILED || problems.stream().anyMatch(ChangeService::crossError)
+                ? FileChecks.Status.FAILED
                 : !problems.isEmpty() ? FileChecks.Status.WARNING
                 : status == FileChecks.Status.WARNING && own.isEmpty() ? FileChecks.Status.PASSED : status;
         return new FileChecks.Result(result, combined.isEmpty() ? null : combined);

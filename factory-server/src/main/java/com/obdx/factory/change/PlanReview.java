@@ -74,14 +74,15 @@ final class PlanReview {
                     + "why none is needed.");
         }
         boolean createsResource = plan.items().stream().anyMatch(i -> "create".equals(i.action()) && isResource(i.path()));
+        // A UI-only change calls existing services; a plan with Java code, or for a spec that asks for new REST endpoints,
+        // is expected to serve the APIs the existing code does not
+        boolean backend = plan.items().stream().anyMatch(i -> i.path().toLowerCase(Locale.ROOT).endsWith(".java")) || asksForEndpoints(spec);
         for (RequirementSpec.Api api : spec.apis()) {
             String path = pathOf(api);
             if (path == null) {
                 continue;
             }
             String label = (api.method() == null ? "" : api.method().toUpperCase(Locale.ROOT) + " ") + path;
-            // A UI-only change calls existing services; a plan with Java code is expected to serve the APIs it adds
-            boolean backend = plan.items().stream().anyMatch(i -> i.path().toLowerCase(Locale.ROOT).endsWith(".java"));
             // Served by a REST resource or controller whose name matches: a service or validator of the same name serves nothing
             if (backend && !served.containsKey(normalize(path))
                     && plan.items().stream().noneMatch(i -> isResource(i.path()) && serves(i.path(), path))) {
@@ -104,6 +105,42 @@ final class PlanReview {
             }
         }
         return new ChangePlan(plan.summary(), plan.items(), risks);
+    }
+
+    /**
+     * "A new REST service", "shall expose REST endpoints", "new API", "shall expose POST /x": the spec asks for
+     * endpoints of its own.
+     */
+    private static final Pattern NEW_ENDPOINTS = Pattern.compile(
+            "(?i)\\b(new|expose[sd]?|exposing)\\b[^.;\\n]{0,40}?\\b(rest|endpoints?|apis?|web ?services?)\\b"
+                    + "|\\b(expose[sd]?|exposing)\\s+(GET|POST|PUT|PATCH|DELETE)\\s+/");
+    /** "no new REST service", "without new endpoints": said right before it, it says the opposite. */
+    private static final Pattern DENIED = Pattern.compile("(?i)\\b(no|not|without|nor|never)\\s+(\\w+\\s+)?$");
+
+    /**
+     * Whether the spec's scope or functional requirements ask for new REST endpoints (its out-of-scope list is not
+     * read): then a plan without Java code still has to serve the spec's APIs that the existing code does not.
+     */
+    static boolean asksForEndpoints(RequirementSpec spec) {
+        List<String> texts = new ArrayList<>(spec.scope());
+        for (RequirementSpec.FunctionalRequirement requirement : spec.requirements()) {
+            texts.add(requirement.title());
+            texts.add(requirement.description());
+        }
+        for (String text : texts) {
+            if (text == null) {
+                continue;
+            }
+            String capped = text.length() > 2000 ? text.substring(0, 2000) : text;
+            Matcher m = NEW_ENDPOINTS.matcher(capped);
+            while (m.find()) {
+                String before = capped.substring(Math.max(0, m.start() - 20), m.start());
+                if (!DENIED.matcher(before).find()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** The path an API names, from its name or else its description; null when there is none. */

@@ -264,23 +264,65 @@ final class CrossFileJava {
         Map<String, String> jdk = new HashMap<>();
         for (String name : List.of("List", "ArrayList", "LinkedList", "Map", "HashMap", "LinkedHashMap", "TreeMap", "Set", "HashSet",
                 "LinkedHashSet", "TreeSet", "Optional", "Arrays", "Collections", "Objects", "UUID", "Collection", "Iterator", "Deque",
-                "ArrayDeque", "Queue", "Locale", "Date", "Calendar", "StringJoiner", "EnumMap", "EnumSet")) {
+                "ArrayDeque", "Queue", "Locale", "Date", "Calendar", "StringJoiner", "EnumMap", "EnumSet", "ResourceBundle",
+                "MissingResourceException", "Properties", "Random", "Base64", "Comparator", "NoSuchElementException", "TimeZone",
+                "Currency", "SortedMap", "NavigableMap", "ListIterator", "Hashtable", "Vector", "Stack", "TimerTask", "BitSet")) {
             jdk.put(name, "java.util");
         }
         for (String name : List.of("Collectors", "Stream", "IntStream", "LongStream")) {
             jdk.put(name, "java.util.stream");
         }
-        for (String name : List.of("BigDecimal", "BigInteger", "RoundingMode")) {
+        for (String name : List.of("ExecutorService", "Executors", "Future", "Callable", "CompletableFuture", "TimeUnit", "TimeoutException",
+                "ExecutionException", "ConcurrentHashMap", "ConcurrentMap", "CountDownLatch", "CopyOnWriteArrayList", "Semaphore",
+                "ScheduledExecutorService", "ThreadLocalRandom", "CompletionService", "ExecutorCompletionService")) {
+            jdk.put(name, "java.util.concurrent");
+        }
+        for (String name : List.of("AtomicInteger", "AtomicLong", "AtomicBoolean", "AtomicReference")) {
+            jdk.put(name, "java.util.concurrent.atomic");
+        }
+        for (String name : List.of("Function", "Supplier", "Consumer", "Predicate", "BiFunction", "BiConsumer", "UnaryOperator", "BinaryOperator")) {
+            jdk.put(name, "java.util.function");
+        }
+        for (String name : List.of("Pattern", "Matcher", "PatternSyntaxException")) {
+            jdk.put(name, "java.util.regex");
+        }
+        for (String name : List.of("BigDecimal", "BigInteger", "RoundingMode", "MathContext")) {
             jdk.put(name, "java.math");
         }
-        for (String name : List.of("LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "ZonedDateTime", "OffsetDateTime")) {
+        for (String name : List.of("LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "ZonedDateTime", "OffsetDateTime",
+                "Period", "ZoneId", "ZoneOffset", "Clock", "YearMonth", "DayOfWeek")) {
             jdk.put(name, "java.time");
+        }
+        for (String name : List.of("DateTimeFormatter", "DateTimeParseException")) {
+            jdk.put(name, "java.time.format");
+        }
+        jdk.put("ChronoUnit", "java.time.temporal");
+        for (String name : List.of("SimpleDateFormat", "DecimalFormat", "NumberFormat", "MessageFormat", "ParseException")) {
+            jdk.put(name, "java.text");
+        }
+        for (String name : List.of("IOException", "UncheckedIOException", "InputStream", "OutputStream", "Serializable", "BufferedReader",
+                "InputStreamReader", "Closeable")) {
+            jdk.put(name, "java.io");
+        }
+        jdk.put("StandardCharsets", "java.nio.charset");
+        for (String name : List.of("SQLException", "Timestamp", "PreparedStatement", "ResultSet")) {
+            jdk.put(name, "java.sql");
         }
         return Map.copyOf(jdk);
     }
 
     /** HashMap, List, Collectors ... used without their import (and without a wildcard import of their package). */
     static Optional<String> missingJdkImports(String content) {
+        return missingJdkImports(content, classFile -> false);
+    }
+
+    /**
+     * As above, leaving out names a class of the file's own package has (com/bank/x/Currency.java): the file then uses
+     * that class, which needs no import.
+     *
+     * @param classExists whether a class file (com/bank/x/Name.java) is planned, written or imported
+     */
+    static Optional<String> missingJdkImports(String content, java.util.function.Predicate<String> classExists) {
         CompilationUnit unit = parse(content);
         if (unit == null) {
             return Optional.empty();
@@ -297,9 +339,11 @@ final class CrossFileJava {
         });
         Set<String> declared = declaredTypes(unit);
         Set<String> missing = new java.util.TreeSet<>();
+        String folder = own.replace('.', '/');
         for (String name : usedTypes(unit)) {
             String pkg = JDK.get(name);
-            if (pkg != null && !imported.contains(name) && !wildcards.contains(pkg) && !pkg.equals(own) && !declared.contains(name)) {
+            if (pkg != null && !imported.contains(name) && !wildcards.contains(pkg) && !pkg.equals(own) && !declared.contains(name)
+                    && !classExists.test(folder + "/" + name + ".java")) {
                 missing.add(name + " (" + pkg + "." + name + ")");
             }
         }

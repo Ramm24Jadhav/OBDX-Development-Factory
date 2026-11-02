@@ -91,20 +91,24 @@ class ContextAndOutlineTest {
     }
 
     @Test
-    void aMissingPackageUnderTheBanksRootCountsOnlyWhenItIsTheBanks() {
-        List<String> planned = List.of("backend/src/com/bank/obdx/common/HostIntegrationException.java");
+    void aMissingPackageUnderTheBanksRootCountsUnlessItIsGeneratedCode() {
+        List<String> planned = List.of("backend/src/com/bank/obdx/generated/HostIntegrationException.java");
 
         // the change creates it
-        assertThat(ChangeService.bankFolder("com/bank/obdx/common", planned, parent -> false)).isTrue();
-        // a sibling package is indexed
-        assertThat(ChangeService.bankFolder("com/bank/obdx/audit", List.of(), parent -> parent.equals("com/bank/obdx"))).isTrue();
-        // generated code, or nothing of the bank beside it: a library's package
-        assertThat(ChangeService.bankFolder("com/bank/obdx/generated", List.of(), parent -> true)).isFalse();
-        assertThat(ChangeService.bankFolder("com/bank/obdx/stub", List.of(), parent -> true)).isFalse();
-        assertThat(ChangeService.bankFolder("com/bank/obdx/audit", List.of(), parent -> false)).isFalse();
+        assertThat(ChangeService.bankFolder("com/bank/obdx/generated", planned)).isTrue();
+        // a package of the bank's root that nobody has: the model made it up
+        assertThat(ChangeService.bankFolder("com/bank/obdx/audit", List.of())).isTrue();
+        assertThat(ChangeService.bankFolder("com/bank/obdx/payments/payments", List.of())).isTrue();
+        // generated code: the build makes it
+        assertThat(ChangeService.bankFolder("com/bank/obdx/generated", List.of())).isFalse();
+        assertThat(ChangeService.bankFolder("com/bank/obdx/stub/host", List.of())).isFalse();
 
         String service = "package com.bank.obdx.payments;\nimport com.bank.obdx.generated.HostClient;\nimport com.bank.obdx.audit.AuditTrail;\nclass S {}";
         assertThat(ChangeService.unresolvedImports(service, path -> false, folder -> false, "com.bank.obdx",
-                folder -> ChangeService.bankFolder(folder, List.of(), parent -> true))).containsExactly("com.bank.obdx.audit.AuditTrail");
+                folder -> ChangeService.bankFolder(folder, List.of()))).containsExactly("com.bank.obdx.audit.AuditTrail");
+        // BRD4's test: a package that exists nowhere, under the bank's root
+        String test = "package com.bank.obdx.payments;\nimport com.bank.obdx.payments.payments.PAYMENTCODES;\nimport org.junit.Test;\nclass T {}";
+        assertThat(ChangeService.unresolvedImports(test, path -> false, folder -> false, "com.bank.obdx",
+                folder -> ChangeService.bankFolder(folder, List.of()))).containsExactly("com.bank.obdx.payments.payments.PAYMENTCODES");
     }
 }

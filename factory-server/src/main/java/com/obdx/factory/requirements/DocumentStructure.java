@@ -24,13 +24,16 @@ final class DocumentStructure {
     record Structure(List<String> scope, List<String> outOfScope, List<String> assumptions,
                      List<RequirementSpec.FunctionalRequirement> requirements, List<RequirementSpec.AcceptanceCriterion> criteria,
                      List<RequirementSpec.NonFunctional> nonFunctional, List<RequirementSpec.BusinessRule> rules,
-                     List<RequirementSpec.OpenQuestion> questions) {
+                     List<RequirementSpec.OpenQuestion> questions, List<RequirementSpec.Message> messages) {
 
         boolean isEmpty() {
             return scope.isEmpty() && outOfScope.isEmpty() && assumptions.isEmpty() && requirements.isEmpty() && criteria.isEmpty()
-                    && nonFunctional.isEmpty() && rules.isEmpty() && questions.isEmpty();
+                    && nonFunctional.isEmpty() && rules.isEmpty() && questions.isEmpty() && messages.isEmpty();
         }
     }
+
+    /** DIGX_BV_001, ERR-004, E1023, PAY.LIMIT.01: a message code (capitals, digits and separators, with a digit). */
+    private static final Pattern CODE = Pattern.compile("^(?=[A-Z0-9_.-]*\\d)[A-Z][A-Z0-9]*(?:[_.-][A-Z0-9]+)*$");
 
     private static final Pattern ID = Pattern.compile("^([A-Z]{1,5})[-_ ]?(\\d{1,4})$");
     private static final Pattern ANY_ID = Pattern.compile("\\b([A-Z]{1,5}-\\d{1,4})\\b");
@@ -51,6 +54,7 @@ final class DocumentStructure {
         List<RequirementSpec.NonFunctional> nonFunctional = new ArrayList<>();
         List<RequirementSpec.BusinessRule> rules = new ArrayList<>();
         List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
+        List<RequirementSpec.Message> messages = new ArrayList<>();
         Map<String, Set<String>> criteriaOf = new LinkedHashMap<>();
         String heading = "";
         for (int i = 0; i < lines.size(); i++) {
@@ -70,6 +74,20 @@ final class DocumentStructure {
                 j++;
             }
             i = j - 1;
+            if (isMessageTable(header, heading, rows)) {
+                // Code | HTTP | Message: the codes and wording the code must return, exactly as the document has them
+                String says = (String.join(" ", header) + " " + heading).toLowerCase(Locale.ROOT);
+                for (List<String> row : rows) {
+                    String code = row.getFirst().strip();
+                    String wording = longest(header, row, "message", "text", "description", "meaning");
+                    if (CODE.matcher(code).matches() && wording != null && messages.stream().noneMatch(m -> code.equals(m.code()))) {
+                        String type = cell(header, row, "type", "severity", "level");
+                        messages.add(new RequirementSpec.Message(code, wording, type != null ? type.toLowerCase(Locale.ROOT)
+                                : says.contains("error") ? "error" : null));
+                    }
+                }
+                continue;
+            }
             String kind = kindOf(header, heading, rows);
             if (kind == null) {
                 continue;
@@ -126,7 +144,21 @@ final class DocumentStructure {
                 linked.stream().filter(c -> c.description() != null).toList(),
                 nonFunctional.stream().filter(n -> n.description() != null).toList(),
                 rules.stream().filter(r -> r.description() != null).toList(),
-                questions.stream().filter(q -> q.question() != null).toList());
+                questions.stream().filter(q -> q.question() != null).toList(), List.copyOf(messages));
+    }
+
+    /**
+     * A table of message or error codes: its first column is headed code (Code, Error code) and another column holds the
+     * message, and most of its rows start with a code (DIGX_BV_001).
+     */
+    private static boolean isMessageTable(List<String> header, String heading, List<List<String>> rows) {
+        if (header.size() < 2 || rows.isEmpty() || !header.getFirst().toLowerCase(Locale.ROOT).contains("code")) {
+            return false;
+        }
+        boolean messageColumn = header.subList(1, header.size()).stream().map(h -> h.toLowerCase(Locale.ROOT))
+                .anyMatch(h -> h.contains("message") || h.contains("text") || h.contains("description") || h.contains("meaning"));
+        long codes = rows.stream().filter(r -> CODE.matcher(r.getFirst().strip()).matches()).count();
+        return messageColumn && codes * 2 >= rows.size();
     }
 
     /**
@@ -169,8 +201,11 @@ final class DocumentStructure {
                 questions.add(q);
             }
         }
+        // The document's codes with its wording (the type the model gave when the document has none), then the model's others
+        List<RequirementSpec.Message> messages = merge(doc.messages(), spec.messages(), RequirementSpec.Message::code,
+                RequirementSpec.Message::text, (m, d) -> m.type() == null && d != null ? new RequirementSpec.Message(m.code(), m.text(), d.type()) : m);
         return new RequirementSpec(spec.title(), spec.summary(), spec.screens(), rules, spec.roles(), spec.apis(), spec.hostInteractions(),
-                spec.messages(), questions, spec.decisions(),
+                messages, questions, spec.decisions(),
                 doc.scope().isEmpty() ? spec.scope() : doc.scope(),
                 doc.outOfScope().isEmpty() ? spec.outOfScope() : doc.outOfScope(),
                 doc.assumptions().isEmpty() ? spec.assumptions() : doc.assumptions(),

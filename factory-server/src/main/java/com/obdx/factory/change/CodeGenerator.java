@@ -50,7 +50,7 @@ public class CodeGenerator {
               - Encode IDs put in UI URLs (encodeURIComponent), and call the exact service paths the server code defines.
             - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
               say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
-              test per criterion, named or commented with the criterion's ID.
+              short test per criterion and no others, named or commented with the criterion's ID.
             - Write no comments about the prompt, the instructions or your own reasoning; comments explain the code only.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
@@ -134,7 +134,7 @@ public class CodeGenerator {
         java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
         // A kept part that is a whole answer (kept when its fix was stopped) is checked, not continued
         Written written = partial != null && partialComplete ? new Written(partial, false, 1, List.of())
-                : write(item.path(), prompt, brief, partial, fit.scale());
+                : write(item.path(), prompt, brief, partial, fit.scale(), criteria(item));
         written = withoutReasoningComments(item.path(), original, written);
         String content = written.content();
         FileChecks.Result check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
@@ -208,7 +208,7 @@ public class CodeGenerator {
         String tail = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + findings + "\nWrite the complete corrected file.";
         int total = modelGateway.tokensPerMinute();
         if (total <= 0 || total >= SMALL_TOTAL) {
-            return write(item.path(), s -> prompt.apply(s) + tail, brief, null, scale);
+            return write(item.path(), s -> prompt.apply(s) + tail, brief, null, scale, criteria(item));
         }
         double perToken = modelGateway.charsPerToken();
         double room = total * 0.9 - content.length() / perToken;
@@ -239,7 +239,7 @@ public class CodeGenerator {
         }
         if (leanFits || regions.isEmpty()) {
             log.info("Fitted the fix of {}: only the file, its rules and the findings", item.path());
-            return write(item.path(), s -> lean, brief, null, 1);
+            return write(item.path(), s -> lean, brief, null, 1, criteria(item));
         }
         log.info("Fitted the fix of {}: only the method(s) with findings: {}", item.path(), String.join(", ", regions.keySet()));
         String ask = leanHeader(item, note, rules) + "\nThe file's outline:\n" + JavaOutline.of(content) + "\n\nThese methods of the file did not "
@@ -442,13 +442,16 @@ public class CodeGenerator {
         return result;
     }
 
+    /** How the check of a file still cut off after its continuations starts. */
+    static final String CUT = "The model stopped at its output limit";
+
     private FileChecks.Result checked(ChangeContext context, ChangePlan.Item item, String original, String content,
                                       ScreenScaffolder.Scaffold scaffold, boolean cutOff) {
         FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
         if (!cutOff) {
             return check;
         }
-        String cut = "The model stopped at its output limit, so the file is incomplete even after asking it to continue "
+        String cut = CUT + ", so the file is incomplete even after asking it to continue "
                 + continuations() + " times. Use a model or plan with a higher output limit, then write it again, or finish it by hand.";
         return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
@@ -833,11 +836,16 @@ public class CodeGenerator {
      * <li>The joined file must still parse (Java, JavaScript): a seam that lost text fails it, so it is written again.</li>
      * </ul>
      *
-     * @param partial what was written of the file before (continued from at once), or null
+     * <li>A test file that already has a test for each acceptance criterion its plan item names is asked only to finish
+     * the test being written and close the class; when that answer stops at the limit too, it is not continued again.</li>
+     * <li>A method a later piece wrote again with the same parameters is left out before the joined file is checked.</li>
+     *
+     * @param partial  what was written of the file before (continued from at once), or null
+     * @param criteria the acceptance criteria a test file covers (its plan item names them); empty for other files
      * @throws JoinFailed when the joined pieces do not parse
      */
     private Written write(String path, java.util.function.DoubleFunction<String> prompt, java.util.function.DoubleFunction<String> brief,
-                          String partial, double start) {
+                          String partial, double start, java.util.Set<String> criteria) {
         double scale = start;
         String sofar;
         if (partial == null) {
@@ -867,6 +875,7 @@ public class CodeGenerator {
         // The line where the last piece was joined on: a parse error before it lies in text the model wrote whole
         int lastSeam = 0;
         int continuations = continuations();
+        boolean finishAsked = false;
         for (int i = 0; cut && i < continuations; i++) {
             // A fresh line: the cut-off end of a line is left out, so the model writes that line whole
             sofar = completeLines(sofar);
@@ -874,6 +883,14 @@ public class CodeGenerator {
                 // and no blank lines after it, which the model would write again after repeating the last line
                 sofar = sofar.stripTrailing() + "\n";
             }
+            boolean enough = !criteria.isEmpty() && tests(sofar) >= criteria.size();
+            if (enough && finishAsked) {
+                // Asked to finish once already: more pieces would only repeat tests
+                log.info("{} has a test for each of its {} acceptance criteria and was asked to finish; it is not continued again", path,
+                        criteria.size());
+                break;
+            }
+            finishAsked |= enough;
             String last = lastLine(sofar);
             String end = sofar.length() > TAIL ? sofar.substring(sofar.length() - TAIL) : sofar;
             String more = "\n\nYou are writing " + path + " and your answer stopped at your output limit. The file so far ends with:\n"
@@ -884,6 +901,10 @@ public class CodeGenerator {
                     + (strict ? " Do not write notes to yourself or remarks about the prompt (no \"Wait\", \"Let's check\" or \"I already "
                     + "wrote\"); if a line is already written, simply go on after it." : "")
                     + (repeatAsked ? " Your answer MUST begin with that exact line, repeated in full, so the two parts join." : "")
+                    + (enough ? " The file already has a test for each acceptance criterion it covers (" + String.join(", ", criteria)
+                    + "): finish the test being written, then close the class. Write no more tests."
+                    : criteria.isEmpty() ? "" : " Write only the tests still missing, one short test per acceptance criterion ("
+                    + String.join(", ", criteria) + "), no others.")
                     + writtenSoFar(path, sofar);
             PromptFit.Fitted fitted;
             try {
@@ -965,6 +986,28 @@ public class CodeGenerator {
         }
         String content = sofar.strip() + "\n";
         List<String> notes = new java.util.ArrayList<>();
+        if (cut && !criteria.isEmpty() && tests(content) >= criteria.size()) {
+            // Every criterion has its test: the file is closed after its last whole test rather than left cut off
+            String closed = closedAfterLastMember(path, content);
+            if (closed != null && tests(closed) >= criteria.size()) {
+                log.info("Closed {} after its last whole test: it has a test for each of its {} acceptance criteria", path, criteria.size());
+                notes.add("The answer stopped at the output limit after a test for each acceptance criterion was written; the file was "
+                        + "closed after its last whole test.");
+                content = closed;
+                cut = false;
+                joined = true;
+            }
+        }
+        if ((joined || partial != null) && path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            // A piece that wrote methods again (the model lost track of what it wrote): the first of each is kept, before the
+            // parse check, which methods written twice inside an unclosed one would otherwise fail
+            String once = withoutRepeatedMethods(content, notes);
+            if (!once.equals(content)) {
+                content = once;
+                // the lines moved: an error is no longer told to be at a seam
+                lastSeam = 0;
+            }
+        }
         if ((joined || partial != null) && !cut) {
             String problem = brief(joinProblem(path, content));
             int errorLine = problem == null ? 0 : errorLine(path, content);
@@ -1062,6 +1105,194 @@ public class CodeGenerator {
     private static String indent(String members) {
         boolean flush = members.lines().filter(l -> !l.isBlank()).anyMatch(l -> !Character.isWhitespace(l.charAt(0)));
         return flush ? members.lines().map(l -> l.isBlank() ? "" : "    " + l).collect(Collectors.joining("\n")) : members;
+    }
+
+    private static final Pattern CRITERION = Pattern.compile("\\bAC-(\\d{1,4})\\b(?:\\s*(?:to|through|-|–)\\s*AC-(\\d{1,4})\\b)?");
+
+    /**
+     * The acceptance criteria a test file's plan item names (AC-001, AC-003; AC-001 to AC-004 is four of them); empty
+     * for a file that is no test.
+     */
+    static java.util.Set<String> criteria(ChangePlan.Item item) {
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        if (!"test".equals(item.layer()) && !PlanReview.isTest(item.path())) {
+            return ids;
+        }
+        Matcher m = CRITERION.matcher(nullToDash(item.purpose()) + " " + nullToDash(item.details()));
+        while (m.find()) {
+            int from = Integer.parseInt(m.group(1));
+            int to = m.group(2) == null ? from : Integer.parseInt(m.group(2));
+            String width = "%0" + m.group(1).length() + "d";
+            for (int n = from; n <= Math.min(to, from + 50); n++) {
+                ids.add("AC-" + String.format(width, n));
+            }
+        }
+        return ids;
+    }
+
+    private static final Pattern TEST_METHOD = Pattern.compile("@Test\\b|(?m)^\\s*(?:it|test)\\s*\\(");
+
+    /** How many tests a test file has (@Test methods, or it(...) and test(...) cases). */
+    static int tests(String content) {
+        int count = 0;
+        Matcher m = TEST_METHOD.matcher(content);
+        while (m.find()) {
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * A Java file cut off inside a member, closed after its last whole member: everything after the last brace that ends
+     * a member of the top-level class is left out and the class closed. Null when that does not give a file that parses.
+     */
+    static String closedAfterLastMember(String path, String content) {
+        if (!path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            return null;
+        }
+        com.obdx.factory.pack.SourceScan.Parts parts = com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE);
+        List<com.obdx.factory.pack.SourceScan.Range> literal = new java.util.ArrayList<>(parts.comments());
+        literal.addAll(parts.strings());
+        String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
+        int depth = 0;
+        int last = -1;
+        for (int i = 0; i < code.length(); i++) {
+            char c = code.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 1) {
+                    last = i;
+                }
+            }
+        }
+        if (last < 0) {
+            return null;
+        }
+        String closed = content.substring(0, last + 1).stripTrailing() + "\n}\n";
+        return joinProblem(path, closed) == null ? closed : null;
+    }
+
+    /** A method declaration starting a line: its return type (group 1), name (2) and parameters (3), up to its body's brace. */
+    private static final Pattern DECLARATION = Pattern.compile("(?m)^[ \\t]*+(?:(?:public|protected|private|static|final|synchronized|abstract)"
+            + "\\s++)*+(?:<[^>\\n]*+>\\s*+)?([\\w<>\\[\\],.?]++)(?:\\s*+<[^>\\n]*+>)?\\s++(\\w++)\\s*+\\(([^()\\n]*+)\\)\\s*+"
+            + "(?:throws\\s++[\\w.]++(?:\\s*+,\\s*+[\\w.]++)*+)?\\s*+\\{");
+    private static final java.util.Set<String> NOT_A_TYPE = java.util.Set.of("new", "return", "else", "throw", "case", "yield");
+    private static final java.util.Set<String> NOT_A_NAME = java.util.Set.of("if", "for", "while", "switch", "catch", "synchronized", "try");
+
+    /**
+     * The file without the second (and later) declarations of a method with the same name and parameter types in the
+     * same class, found by their text, so that a file that does not parse (a piece that started over inside an unclosed
+     * method) loses them too; the first is kept, with each one taken out noted in notes. Methods of different classes
+     * (two anonymous classes overriding the same method) are not compared.
+     */
+    static String withoutRepeatedMethods(String content, List<String> notes) {
+        com.obdx.factory.pack.SourceScan.Parts parts = com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE);
+        List<com.obdx.factory.pack.SourceScan.Range> literal = new java.util.ArrayList<>(parts.comments());
+        literal.addAll(parts.strings());
+        String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
+        // The class bodies open at each point: the brace of a class, interface, enum, record or anonymous class
+        java.util.Deque<int[]> open = new java.util.ArrayDeque<>();
+        int scanned = 0;
+        int boundary = 0;
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        List<Repeat> repeated = new java.util.ArrayList<>();
+        Matcher m = DECLARATION.matcher(code);
+        while (m.find()) {
+            for (; scanned < m.start(); scanned++) {
+                char c = code.charAt(scanned);
+                if (c == '{') {
+                    // (a declaration's head is short: at most its last 300 characters are read)
+                    String before = code.substring(Math.max(boundary, scanned - 300), scanned);
+                    boolean type = before.matches("(?s).*\\b(class|interface|enum|record)\\b[^=]*") || before.matches("(?s).*\\bnew\\s+[\\w.<>\\[\\], ?]+\\(.*\\)\\s*");
+                    open.push(new int[] {scanned, type ? 1 : 0});
+                }
+                if (c == '}' && !open.isEmpty()) {
+                    open.pop();
+                }
+                if (c == '{' || c == '}' || c == ';') {
+                    boundary = scanned + 1;
+                }
+            }
+            if (NOT_A_TYPE.contains(m.group(1)) || NOT_A_NAME.contains(m.group(2))) {
+                continue;
+            }
+            int container = open.stream().filter(o -> o[1] == 1).findFirst().map(o -> o[0]).orElse(-1);
+            String parameters = m.group(3).replaceAll("@\\w+(\\([^)]*\\))?", "").replaceAll("\\bfinal\\b", "")
+                    .replaceAll("\\s+\\w+\\s*(,|$)", "$1").replaceAll("\\s+", "");
+            String key = container + ":" + m.group(2) + "(" + parameters + ")";
+            int close = closingBrace(code, m.end() - 1);
+            if (close < 0) {
+                continue;
+            }
+            Integer first = seen.putIfAbsent(key, m.start());
+            if (first != null) {
+                int from = code.lastIndexOf('\n', m.start()) + 1;
+                // with its annotations (@Test, @Override) on the lines above
+                while (from > 0) {
+                    int previous = code.lastIndexOf('\n', from - 2) + 1;
+                    if (!code.substring(previous, from).strip().startsWith("@")) {
+                        break;
+                    }
+                    from = previous;
+                }
+                // and the blank line (not a comment) that separated it from the member before
+                if (from > 0) {
+                    int previous = content.lastIndexOf('\n', from - 2) + 1;
+                    if (content.substring(previous, from).isBlank()) {
+                        from = previous;
+                    }
+                }
+                int to = code.indexOf('\n', close);
+                repeated.add(new Repeat(from, to < 0 ? code.length() : to + 1, lineOf(code, m.start()), lineOf(code, first),
+                        m.group(2) + "(" + m.group(3).strip() + ")"));
+            }
+        }
+        if (repeated.isEmpty()) {
+            return content;
+        }
+        StringBuilder out = new StringBuilder(content);
+        int below = Integer.MAX_VALUE;
+        // from the bottom, so the offsets above stay right; one inside another already taken out is skipped
+        for (Repeat r : repeated.stream().sorted(java.util.Comparator.comparingInt(Repeat::from).reversed()).toList()) {
+            if (r.to() > below) {
+                continue;
+            }
+            out.delete(r.from(), r.to());
+            below = r.from();
+            notes.add("The method " + r.signature() + " was written again (line " + r.line() + ", first on line " + r.firstLine()
+                    + ") across the answer's pieces; the second one was left out.");
+        }
+        log.info("Left out {} method(s) written again in the pieces of a file", repeated.size());
+        return out.toString();
+    }
+
+    /** A method written again: the text to take out (from, to), its line, the line of the first one, and its signature. */
+    private record Repeat(int from, int to, int line, int firstLine, String signature) {
+    }
+
+    private static int closingBrace(String code, int open) {
+        int depth = 0;
+        for (int i = open; i < code.length(); i++) {
+            char c = code.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}' && --depth == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int lineOf(String text, int offset) {
+        int line = 1;
+        for (int i = 0; i < offset && i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                line++;
+            }
+        }
+        return line;
     }
 
     /** The file without the second (and later) declarations of a method with the same parameters, noted in notes. */
