@@ -20,10 +20,19 @@ public class ChangeFileStore {
      * @param rewrite a rewrite (Write again) the model's limit stopped part-way, kept beside generated (which stays the
      *                file's content) for the next Write again or Continue to go on from; null when there is none
      * @param rewriteComplete the rewrite is a whole answer whose fix was stopped (checked and fixed next time), not a part
+     * @param fitDue   written by a generation the model's limit stopped, so its fix by the cross-check's findings was not
+     *                 made: Continue makes it once (see ChangeService.toFit)
      */
     public record ChangeFile(int position, String path, String action, String layer, String purpose, Status status,
                              String original, String generated, boolean edited, FileChecks.Status checkStatus,
-                             String checkMessage, int attempts, String rewrite, boolean rewriteComplete) {
+                             String checkMessage, int attempts, String rewrite, boolean rewriteComplete, boolean fitDue) {
+
+        public ChangeFile(int position, String path, String action, String layer, String purpose, Status status, String original,
+                          String generated, boolean edited, FileChecks.Status checkStatus, String checkMessage, int attempts, String rewrite,
+                          boolean rewriteComplete) {
+            this(position, path, action, layer, purpose, status, original, generated, edited, checkStatus, checkMessage, attempts, rewrite,
+                    rewriteComplete, false);
+        }
 
         public ChangeFile(int position, String path, String action, String layer, String purpose, Status status, String original,
                           String generated, boolean edited, FileChecks.Status checkStatus, String checkMessage, int attempts, String rewrite) {
@@ -56,7 +65,8 @@ public class ChangeFileStore {
                 rs.getInt("position"), rs.getString("path"), rs.getString("action"), rs.getString("layer"), rs.getString("purpose"),
                 Status.valueOf(rs.getString("status")), rs.getString("original"), rs.getString("generated"), rs.getBoolean("edited"),
                 rs.getString("check_status") == null ? null : FileChecks.Status.valueOf(rs.getString("check_status")),
-                rs.getString("check_message"), rs.getInt("attempts"), rs.getString("rewrite"), rs.getBoolean("rewrite_complete")), changeId);
+                rs.getString("check_message"), rs.getInt("attempts"), rs.getString("rewrite"), rs.getBoolean("rewrite_complete"),
+                rs.getBoolean("fit_due")), changeId);
     }
 
     public Optional<ChangeFile> file(UUID changeId, String path) {
@@ -66,9 +76,25 @@ public class ChangeFileStore {
     public void saveResult(UUID changeId, String path, Status status, String original, String generated, boolean edited,
                            FileChecks.Result check, int attempts) {
         jdbc.update("UPDATE change_file SET status = ?, original = ?, generated = ?, edited = ?, check_status = ?, check_message = ?, "
-                        + "attempts = ?, rewrite = NULL, rewrite_complete = FALSE WHERE change_id = ? AND path = ?",
+                        + "attempts = ?, rewrite = NULL, rewrite_complete = FALSE, fit_due = FALSE WHERE change_id = ? AND path = ?",
                 status.name(), original, generated, edited, check == null ? null : check.status().name(),
                 check == null ? null : check.message(), attempts, changeId, path);
+    }
+
+    /**
+     * Marks the written files of a generation the model's limit stopped: their fix by the cross-check is due, for the
+     * next Continue. (A file written again or fixed loses the mark: see saveResult and fitTried.)
+     */
+    public void markFitDue(UUID changeId, java.util.Collection<String> paths) {
+        for (String path : paths) {
+            jdbc.update("UPDATE change_file SET fit_due = TRUE WHERE change_id = ? AND path = ? AND status = 'GENERATED' AND generated IS NOT NULL",
+                    changeId, path);
+        }
+    }
+
+    /** The fix by the cross-check was tried (kept or not): it is not due any more. */
+    public void fitTried(UUID changeId, String path) {
+        jdbc.update("UPDATE change_file SET fit_due = FALSE WHERE change_id = ? AND path = ?", changeId, path);
     }
 
     /** Keeps (or, with null, drops) the part of a rewrite the model's limit stopped; the file's content stays as it is. */

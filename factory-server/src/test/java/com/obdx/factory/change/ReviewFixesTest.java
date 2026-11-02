@@ -292,6 +292,45 @@ class ReviewFixesTest {
                 () -> CodeGenerator.withoutRepeatedMethods("class A {\n" + ") {\n".repeat(100_000) + "}\n", new java.util.ArrayList<>()));
     }
 
+    // --- QA18 VAPT V1: a view and its view model are read in linear time, each input on its own ---
+
+    @Test
+    void viewsAndViewModelsAreReadInLinearTime() {
+        String view = "<span>[[amount]]</span>";
+        String viewModel = "function VM() { this.amount = ko.observable(); this.rows = []; }";
+        // the view: unclosed bindings of each kind, comments and script tags that never close, a long binding
+        quickly("unclosed [[", () -> ViewBindings.problems(view, viewModel, true), () -> ViewBindings.problems("[[".repeat(50_000), viewModel, true));
+        quickly("unclosed {{a", () -> ViewBindings.problems(view, viewModel, true), () -> ViewBindings.problems("{{a".repeat(40_000), viewModel, true));
+        quickly("[[ then one ]] at the end", () -> ViewBindings.bound(view), () -> ViewBindings.bound("[[a ".repeat(40_000) + "]]"));
+        quickly("comments that never close", () -> ViewBindings.bound(view), () -> ViewBindings.bound("<!--".repeat(40_000) + view));
+        quickly("script tags", () -> ViewBindings.bound(view), () -> ViewBindings.bound("<script>".repeat(20_000) + view));
+        quickly("script tags without an end", () -> ViewBindings.bound(view), () -> ViewBindings.bound("<script".repeat(20_000)));
+        quickly("aliases", () -> ViewBindings.bound(view), () -> ViewBindings.bound("as=\"" + "a".repeat(100_000)));
+        quickly("hyphens in a binding", () -> ViewBindings.problems(view, null), () -> ViewBindings.problems(("[[." + "a-".repeat(900) + "]]")
+                .repeat(50), null));
+        // the view model: blank lines, spaces, static modifiers, receivers, brackets, classes, returned objects
+        quickly("blank lines", () -> ViewBindings.outline(viewModel), () -> ViewBindings.problems(view, "\n".repeat(100_000) + "1", true));
+        quickly("spaces and lines", () -> ViewBindings.outline(viewModel), () -> ViewBindings.problems(view, " \n".repeat(50_000) + "1", true));
+        quickly("static modifiers", () -> ViewBindings.outline(viewModel), () -> ViewBindings.problems(view, "static ".repeat(5_000), true));
+        quickly("static modifiers in a class", () -> ViewBindings.outline(viewModel),
+                () -> ViewBindings.outline("class A {\n" + "static ".repeat(5_000) + "x() {}\n}\n"));
+        quickly("identifiers and parentheses", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("a(".repeat(50_000)));
+        quickly("an open parenthesis", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("\na (" + "x".repeat(100_000)));
+        quickly("self. after self.", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("self.".repeat(40_000)));
+        quickly("a long receiver", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("self.a" + " ".repeat(100_000)));
+        quickly("brackets", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("self[".repeat(40_000)));
+        quickly("a long name", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("self.a" + "x".repeat(200_000) + " = 1"));
+        quickly("extend and spaces", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("extend" + " ".repeat(100_000)));
+        quickly("classes", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A {\n".repeat(20_000)));
+        quickly("returned objects", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("return {".repeat(20_000)));
+        quickly("strings that never close", () -> ViewBindings.outline(viewModel),
+                () -> ViewBindings.outline("class A {\n" + "'".repeat(50_000) + "\n" + "\"x".repeat(50_000)));
+        quickly("arrow values", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline(("self.a = (" + "b, ".repeat(60) + "\n")
+                .repeat(1_000)));
+        // a gap's table words
+        quickly("table words", () -> PlanReview.newTable("a new table"), () -> PlanReview.newTable(("new" + " ".repeat(50)).repeat(2_000)));
+    }
+
     /** Runs a small input first (so the code is compiled), then the large one, which must take under 2 seconds. */
     private static void quickly(String what, Runnable warmUp, Runnable large) {
         warmUp.run();

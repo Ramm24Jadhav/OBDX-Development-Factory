@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -583,8 +584,11 @@ public class CodeGenerator {
                     .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
         // (a view's view model is kept however far the prompt is trimmed: the view is written against its names)
-        Map<String, String> related = trim < TRIM_CONTEXT ? related(item, earlier, scale)
-                : named(item, related(item, earlier, scale), viewPartner(item.path(), earlier));
+        // (a file is known when the plan has it or the code does: a view's own view model is then not a model.js beside it)
+        Set<String> planned = plan.items().stream().map(ChangePlan.Item::path).collect(Collectors.toSet());
+        java.util.function.Predicate<String> known = path -> planned.contains(path) || context.fileExists().test(path);
+        Map<String, String> related = trim < TRIM_CONTEXT ? related(item, earlier, scale, known)
+                : named(item, related(item, earlier, scale, known), viewPartner(item.path(), earlier, known));
         if (!related.isEmpty()) {
             user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
             related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
@@ -704,7 +708,7 @@ public class CodeGenerator {
         if (current != null) {
             user.append("Current content of ").append(item.path()).append(" (keep what the change does not touch):\n").append(current).append("\n\n");
         }
-        Map<String, String> related = related(item, earlier, scale * 0.5);
+        Map<String, String> related = related(item, earlier, scale * 0.5, context.fileExists());
         if (!related.isEmpty()) {
             user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
             related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
@@ -721,6 +725,12 @@ public class CodeGenerator {
      * input limit then still sees every name it must use.
      */
     static Map<String, String> related(ChangePlan.Item item, Map<String, String> earlier, double scale) {
+        return related(item, earlier, scale, p -> false);
+    }
+
+    /** @param known whether a file is planned or in the code (see {@link #viewPartner(String, Map, java.util.function.Predicate)}) */
+    static Map<String, String> related(ChangePlan.Item item, Map<String, String> earlier, double scale,
+                                       java.util.function.Predicate<String> known) {
         String self = baseName(item.path());
         String said = (nullToDash(item.purpose()) + " " + nullToDash(item.details())).toLowerCase(java.util.Locale.ROOT);
         String folder = item.path().contains("/") ? item.path().substring(0, item.path().lastIndexOf('/')) : "";
@@ -731,11 +741,13 @@ public class CodeGenerator {
         Map<String, String> outline = new java.util.LinkedHashMap<>();
         // A JET view and its view model, written for each other: the view gets the view model's public names, the view
         // model the names its view binds (when the view came first)
-        String partner = viewPartner(item.path(), earlier);
+        String partner = viewPartner(item.path(), earlier, known);
         if (partner != null) {
             score.put(partner, 10);
             String names = partner.endsWith(".html") ? String.join(", ", ViewBindings.bound(earlier.get(partner)))
                     : ViewBindings.outline(earlier.get(partner));
+            // (both are capped by count and name length; the block by the budget below, at most MAX_PARTNER)
+            names = names.length() > MAX_PARTNER ? names.substring(0, MAX_PARTNER) + " ..." : names;
             if (!names.isEmpty()) {
                 outline.put(partner, partner.endsWith(".html") ? "Its view binds these names (define each of them): " + names
                         : "The view model's public names (bind only these, exactly as named): " + names);
@@ -797,31 +809,51 @@ public class CodeGenerator {
      * model x.js its view x.html. Null when it is not written yet.
      */
     static String viewPartner(String path, Map<String, String> earlier) {
+        return viewPartner(path, earlier, p -> false);
+    }
+
+    /**
+     * @param known whether a file is planned in the change or is in the code: a view whose own view model (x.js) is
+     *              either, but not written yet, has no partner (not a model.js beside it, which the cross-check would
+     *              not compare it with either)
+     */
+    static String viewPartner(String path, Map<String, String> earlier, java.util.function.Predicate<String> known) {
         String lower = path.toLowerCase(java.util.Locale.ROOT);
         String folder = path.contains("/") ? path.substring(0, path.lastIndexOf('/') + 1) : "";
         if (lower.endsWith(".html")) {
-            String base = path.substring(0, path.length() - ".html".length());
-            if (earlier.containsKey(base + ".js")) {
-                return base + ".js";
+            List<String> viewModels = ViewBindings.viewModelPaths(path);
+            for (String viewModel : viewModels) {
+                if (earlier.containsKey(viewModel)) {
+                    return viewModel;
+                }
+            }
+            if (viewModels.stream().anyMatch(known)) {
+                return null;
             }
             String model = earlier.get(folder + "model.js");
             return model != null && model.contains("ko.observable") ? folder + "model.js" : null;
         }
-        if (lower.endsWith(".js") && !bundle(path) && !lower.endsWith("/model.js")) {
-            String view = path.substring(0, path.length() - ".js".length()) + ".html";
-            return earlier.containsKey(view) ? view : null;
+        if ((lower.endsWith(".js") || lower.endsWith(".ts")) && !bundle(path) && !lower.endsWith("/model.js")) {
+            return ViewBindings.viewPaths(path).stream().filter(earlier::containsKey).findFirst().orElse(null);
         }
         return null;
     }
 
-    /** For a view, its view model (x.js beside x.html) when the plan has it but it is not written yet; else null. */
+    /** For a view, its view model (x.js beside x.html, or js/viewModels/x.js) when the plan has it but it is not written yet. */
     static String plannedViewModel(ChangePlan plan, ChangePlan.Item item, Map<String, String> earlier) {
-        if (!item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html") || viewPartner(item.path(), earlier) != null) {
+        if (!item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html")) {
             return null;
         }
-        String viewModel = item.path().substring(0, item.path().length() - ".html".length()) + ".js";
-        return plan.items().stream().anyMatch(i -> i.path().equals(viewModel)) ? viewModel : null;
+        Set<String> planned = plan.items().stream().map(ChangePlan.Item::path).collect(Collectors.toSet());
+        if (viewPartner(item.path(), earlier, planned::contains) != null) {
+            return null;
+        }
+        return ViewBindings.viewModelPaths(item.path()).stream().filter(p -> planned.contains(p) && !earlier.containsKey(p)).findFirst()
+                .orElse(null);
     }
+
+    /** The most characters of a view's or view model's names given to its partner's prompt. */
+    static final int MAX_PARTNER = 4_000;
 
     /** A resource bundle: an nls file or a .properties file. */
     private static boolean bundle(String path) {

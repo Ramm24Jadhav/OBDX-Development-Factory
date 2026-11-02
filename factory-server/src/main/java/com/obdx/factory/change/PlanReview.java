@@ -30,6 +30,8 @@ final class PlanReview {
      */
     static final Set<String> SHELL_NAMES = Set.of("dashboard", "index", "main", "app", "shell", "router", "registry", "menu",
             "navigation", "layout", "container", "loader", "home", "root", "header", "footer");
+    /** Of those, the names that are a shell whatever folder they are in: a new one where the code has one is a risk. */
+    static final Set<String> STRONG_SHELL_NAMES = Set.of("dashboard", "shell", "router", "registry", "menu", "navigation", "loader");
 
     /** /payments/standingInstructions/{id} in an API's name or description */
     private static final Pattern API_PATH = Pattern.compile("(?<![\\w/])(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+)*)");
@@ -60,6 +62,15 @@ final class PlanReview {
      *                 classes the plan creates: a new class of the same name elsewhere is often a parallel copy
      */
     static ChangePlan review(ChangePlan plan, RequirementSpec spec, Map<String, String> served, Map<String, List<String>> existing) {
+        return review(plan, spec, served, existing, path -> false);
+    }
+
+    /**
+     * @param inApp whether a file is in the workspace's React or React Native app (a target pack's), whose shell files
+     *              (index.js, App.js) are not OBDX's: no shell risk for them
+     */
+    static ChangePlan review(ChangePlan plan, RequirementSpec spec, Map<String, String> served, Map<String, List<String>> existing,
+                             java.util.function.Predicate<String> inApp) {
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks());
         risks.removeIf(r -> PREFIXES.stream().anyMatch(r::startsWith));
         for (ChangePlan.Item item : plan.items()) {
@@ -72,9 +83,12 @@ final class PlanReview {
                 risks.add(SAME_NAME + item.path() + " and " + String.join(", ", others) + ". Reuse the existing class, or give the new one "
                         + "a name of its own.");
             }
-            if ("create".equals(item.action()) && shellName(item.path())) {
-                List<String> shellOthers = existing.getOrDefault(item.path().substring(item.path().lastIndexOf('/') + 1), List.of()).stream()
-                        .filter(p -> !p.equals(item.path())).toList();
+            if ("create".equals(item.action()) && shellName(item.path()) && !inApp.test(item.path())) {
+                // A file of its name elsewhere only for the names that are a shell whatever the folder (a new index.js beside
+                // other index.js files is ordinary)
+                String fileName = item.path().substring(item.path().lastIndexOf('/') + 1);
+                List<String> shellOthers = !STRONG_SHELL_NAMES.contains(fileName.substring(0, fileName.indexOf('.')).toLowerCase(Locale.ROOT))
+                        ? List.of() : existing.getOrDefault(fileName, List.of()).stream().filter(p -> !p.equals(item.path())).toList();
                 List<String> loaded = plan.items().stream().filter(i -> "create".equals(i.action()) && !folder.isEmpty()
                         && i.path().startsWith(folder + "/") && i.path().indexOf('/', folder.length() + 1) > 0).map(ChangePlan.Item::path).toList();
                 if (!shellOthers.isEmpty() || !loaded.isEmpty()) {
@@ -87,7 +101,7 @@ final class PlanReview {
             }
         }
         if (spec == null) {
-            return new ChangePlan(plan.summary(), plan.items(), risks);
+            return plan.withRisks(risks);
         }
         if (!spec.acceptanceCriteria().isEmpty() && plan.items().stream().noneMatch(i -> "test".equals(i.layer()) || isTest(i.path()))) {
             risks.add(NO_TEST + " (" + spec.acceptanceCriteria().size() + " criteria). Add a test file that checks them, or say "
@@ -124,7 +138,7 @@ final class PlanReview {
                 }
             }
         }
-        return new ChangePlan(plan.summary(), plan.items(), risks);
+        return plan.withRisks(risks);
     }
 
     /**
@@ -213,15 +227,35 @@ final class PlanReview {
     static boolean shellName(String path) {
         String lower = path.toLowerCase(Locale.ROOT);
         String name = lower.substring(lower.lastIndexOf('/') + 1);
-        if (!name.matches("[^.]+\\.(js|html|ts|tsx|jsx)") || lower.contains("/nls/") || lower.contains("/resources/")) {
+        // OBDX's JET UI is JavaScript and HTML; a React or React Native app's index.ts or App.tsx is its own business
+        if (!name.matches("[^.]+\\.(js|html)") || lower.contains("/nls/") || lower.contains("/resources/")) {
             return false;
         }
         return SHELL_NAMES.contains(name.substring(0, name.indexOf('.')));
     }
 
-    /** "database table", "new tables", "table DIGX_PY_SI", "DIGX_PY_SI": the requirement needs a table of its own. */
-    private static final Pattern TABLE = Pattern.compile("(?i:\\b(?:database|db|new|audit|history)\\s++tables?\\b)"
-            + "|(?i:\\btable\\s++)[A-Z][A-Z0-9]*+_[A-Z0-9_]++|\\bDIGX_[A-Z0-9_]++");
+    /**
+     * "create table X", "a new table", "new audit table", "adds a history table": the text asks for a table of its own.
+     * Not a table it only reads ("read payees from DIGX_PY_PAYEE"), nor one it says not to make.
+     */
+    private static final Pattern TABLE = Pattern.compile("(?i)\\b(?:new|create|creates|add|adds)\\s++(?:(?:a|an|the)\\s++)?"
+            + "(?:(?:database|db|audit|history|staging)\\s++)?tables?\\b");
+    /** "not", "no", "without", "never": said before it in the same sentence, it says the opposite. */
+    private static final Pattern NEGATED = Pattern.compile("(?i)\\b(?:no|not|without|never|nor|don't|doesn't|won't|shall not|must not)\\b");
+
+    /** Whether the text asks for a new table, without denying it in the same sentence. */
+    static boolean newTable(String text) {
+        String capped = capped(text);
+        Matcher m = TABLE.matcher(capped);
+        while (m.find()) {
+            String before = capped.substring(Math.max(0, m.start() - 40), m.start());
+            int sentence = Math.max(before.lastIndexOf('.'), Math.max(before.lastIndexOf(';'), before.lastIndexOf('\n')));
+            if (!NEGATED.matcher(before.substring(sentence + 1)).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
     private static final Pattern REQUIREMENT_ID = Pattern.compile("\\bFR-\\d++\\b");
     /** The most requirement ids a gap names. */
     static final int MAX_GAP_IDS = 8;
@@ -237,12 +271,13 @@ final class PlanReview {
         if (spec != null && !spec.acceptanceCriteria().isEmpty() && plan.items().stream().noneMatch(i -> "test".equals(i.layer()) || isTest(i.path()))) {
             gaps.add("no test planned (" + spec.acceptanceCriteria().size() + " acceptance criteria)");
         }
-        boolean sql = plan.items().stream().anyMatch(i -> "data".equals(i.layer()) || i.path().toLowerCase(Locale.ROOT).endsWith(".sql"));
+        // (an SQL script by its name: a DTO the model put in the data layer is no SQL)
+        boolean sql = plan.items().stream().anyMatch(i -> i.path().toLowerCase(Locale.ROOT).endsWith(".sql"));
         if (!sql) {
             List<String> needTable = new ArrayList<>();
             if (spec != null) {
                 for (RequirementSpec.FunctionalRequirement requirement : spec.requirements()) {
-                    if (requirement.id() != null && TABLE.matcher(capped(nullToEmpty(requirement.title()) + " " + nullToEmpty(requirement.description()))).find()) {
+                    if (requirement.id() != null && newTable(nullToEmpty(requirement.title()) + " " + nullToEmpty(requirement.description()))) {
                         needTable.add(requirement.id());
                     }
                 }
@@ -250,7 +285,7 @@ final class PlanReview {
             if (!needTable.isEmpty()) {
                 gaps.add("no SQL script planned, though " + ids(needTable) + (needTable.size() == 1 ? " needs" : " need") + " a table");
             } else {
-                plan.items().stream().filter(i -> TABLE.matcher(capped(nullToEmpty(i.purpose()) + " " + nullToEmpty(i.details()))).find())
+                plan.items().stream().filter(i -> newTable(nullToEmpty(i.purpose()) + " " + nullToEmpty(i.details())))
                         .findFirst().ifPresent(i -> gaps.add("no SQL script planned, though " + i.path() + " works with a table"));
             }
         }
@@ -287,7 +322,10 @@ final class PlanReview {
 
     static boolean isTest(String path) {
         String lower = path.toLowerCase(Locale.ROOT);
-        return lower.contains("/test/") || lower.matches(".*(test|tests|it)\\.java") || lower.matches(".*\\.(spec|test)\\.(js|ts|jsx|tsx)");
+        String name = path.substring(path.lastIndexOf('/') + 1);
+        // FundTransferTest.java, PaymentsIT.java; not Limit.java or Audit.java
+        return lower.contains("/test/") || lower.startsWith("test/") || name.matches(".*(?:Test|Tests|IT)\\.java")
+                || lower.matches(".*\\.(spec|test)\\.(js|ts|jsx|tsx)");
     }
 
     static boolean isResource(String path) {

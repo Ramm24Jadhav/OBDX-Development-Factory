@@ -202,7 +202,10 @@ public final class PlanParser {
         // What others use first: SQL, then the back end's data types (DTOs) whatever layer they were given, adapters,
         // services, REST resources, configuration, the UI, the tests
         ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> stage(i.layer(), i.path())));
-        List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream().filter(r -> r != null && !r.isBlank()).toList());
+        // The risks that say the plan is incomplete are the server's own (see ChangePlan.incomplete): one written by the
+        // model, or by a reviewer's edit, is dropped, as is whether the plan is incomplete (a plan sent in never sets it)
+        List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream()
+                .filter(r -> r != null && !r.isBlank() && !ImpactAnalyzer.incompleteRisk(r)).toList());
         List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
         risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
         if (!buildFiles.isEmpty()) {
@@ -252,7 +255,15 @@ public final class PlanParser {
      */
     static int stage(String layer, String path) {
         int rank = dependencyRank(path);
-        boolean java = path.toLowerCase(Locale.ROOT).endsWith(".java");
+        String lower = path.toLowerCase(Locale.ROOT);
+        boolean java = lower.endsWith(".java");
+        // By what the file is, whatever layer the model gave it: a test last, an SQL script first
+        if (PlanReview.isTest(path)) {
+            return 20 + rank;
+        }
+        if (lower.endsWith(".sql")) {
+            return 0;
+        }
         return switch (layer == null ? "" : layer) {
             case "ui" -> 10 + rank;
             case "test" -> 20 + rank;

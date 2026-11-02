@@ -401,7 +401,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // --- risks, from the analysis only ---
 
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks || [] : []));
-      this.planIncomplete = ko.pureComputed(() => this.risks().some((r) => INCOMPLETE_RISKS.some((p) => r.indexOf(p) === 0)));
+      // Whether files may be missing is the server's own record (plan.incomplete), never a risk's wording
+      this.planIncomplete = ko.pureComputed(() => !!(this.detail() && this.detail().plan && this.detail().plan.incomplete));
+      this.planResumable = ko.pureComputed(() => this.planIncomplete() && this.detail().plan.incomplete.kind === 'LIMIT');
       this.riskGroups = ko.pureComputed(() => {
         const left = this.risks().slice();
         return RISK_KINDS.map((k) => {
@@ -519,7 +521,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.canAnalyze = ko.pureComputed(() => !!this.detail() && this.canManage() && ['PLAN_READY', 'FAILED'].indexOf(this.detail().status) >= 0);
       this.analyzeTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first' : (!this.canManage() ? 'You need the right to manage code'
         : (['PLAN_READY', 'FAILED'].indexOf(this.detail().status) < 0 ? 'Only a plan that is not approved yet can be analyzed again'
-          : (this.risks().some((r) => r.indexOf(INCOMPLETE_RISKS[0]) === 0) ? 'Plan the files the model\'s limit left out; the files planned so far are kept'
+          : (this.planResumable() ? 'Plan the files the model\'s limit left out; the files planned so far are kept (unless the code or the spec changed since)'
             : 'Run the impact analysis again; the result becomes the next revision')))));
       this.canApprovePlan = ko.pureComputed(() => !!this.detail() && this.detail().status === 'PLAN_READY' && this.canApprove());
       this.approveTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first'
@@ -534,15 +536,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return loadReview(d.id);
       };
       // A plan the analysis says may be missing files: the server refuses it with what looks missing, and only an
-      // explicit confirmation of that approves it (never by itself)
+      // explicit confirmation of that approves it (never by itself). The confirmation names the plan revision the refusal
+      // named, so a plan changed meanwhile is refused again rather than approved unseen.
       const approveIncomplete = (error) => {
         if (error.status !== 409 || String(error.message).indexOf(INCOMPLETE_PLAN) !== 0) {
           failed(error);
           return null;
         }
+        const revision = /\brevision (\d+) of the plan\b/.exec(error.message);
         return dialog.confirm({ title: 'Approve an incomplete plan?', message: error.message.substring(INCOMPLETE_PLAN.length)
           .replace(/^./, (c) => c.toUpperCase()), confirmLabel: 'Approve Incomplete Plan', danger: true }).then((ok) => (ok
-          ? api.post(base() + '/approve-plan?incomplete=true').then(approved).catch(failed) : null));
+          ? api.post(base() + '/approve-plan?incomplete=true' + (revision ? '&revision=' + revision[1] : ''))
+            .then(approved).catch(approveIncomplete) : null));
       };
       this.approvePlan = () => {
         const latest = this.latestRevision();

@@ -201,11 +201,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.analyzeAgain = () => api.post(base() + '/analyze').then(done('Impact analysis started again.')).catch(failed);
       // A plan the analysis says may be missing files is refused with what looks missing; only confirming that approves it
       const INCOMPLETE_PLAN = 'Incomplete plan: ';
-      const approveIncomplete = (error) => (error.status === 409 && String(error.message).indexOf(INCOMPLETE_PLAN) === 0
-        ? ask('Approve an incomplete plan?', error.message.substring(INCOMPLETE_PLAN.length).replace(/^./, (c) => c.toUpperCase()),
-          'Approve Incomplete Plan', true).then((ok) => (ok ? api.post(base() + '/approve-plan?incomplete=true')
-          .then(done('Plan approved although files may be missing. The model is writing the code.')).catch(failed) : null))
-        : failed(error));
+      // (the confirmation names the plan revision the refusal named: a plan changed meanwhile is refused again)
+      const approveIncomplete = (error) => {
+        if (error.status !== 409 || String(error.message).indexOf(INCOMPLETE_PLAN) !== 0) {
+          return failed(error);
+        }
+        const revision = /\brevision (\d+) of the plan\b/.exec(error.message);
+        return ask('Approve an incomplete plan?', error.message.substring(INCOMPLETE_PLAN.length).replace(/^./, (c) => c.toUpperCase()),
+          'Approve Incomplete Plan', true).then((ok) => (ok ? api.post(base() + '/approve-plan?incomplete=true'
+            + (revision ? '&revision=' + revision[1] : ''))
+          .then(done('Plan approved although files may be missing. The model is writing the code.')).catch(approveIncomplete) : null));
+      };
       this.approvePlan = () => ask('Approve this plan?', 'The model will write ' + this.detail().plan.items.length + ' file(s) for this change.', 'Approve Plan')
         .then((ok) => (ok ? api.post(base() + '/approve-plan').then(done('Plan approved. The model is writing the code.')).catch(approveIncomplete) : null));
       this.togglePlanJson = () => {

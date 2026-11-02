@@ -736,9 +736,9 @@ object: compute those in the view model.
 | `GET /api/workspaces/{id}/changes/details` | Every change of the workspace with its files and builds, in one request (dashboard, notifications) |
 | `POST /api/requirements/{id}/changes` | Start a change (impact analysis) for an approved requirement |
 | `GET /api/changes/{id}` | Change with plan, status and files |
-| `POST /api/changes/{id}/analyze` | Analyze again; a plan the model's limit stopped part-way is continued (its files kept, only the missing ones asked for) |
+| `POST /api/changes/{id}/analyze` | Analyze again; a plan the model's limit stopped part-way is continued (its files kept, only the missing ones asked for) while the code revision and the spec and designs are those it was made from; `fresh=true` starts over |
 | `PUT /api/changes/{id}/plan` | Replace the plan with edited JSON |
-| `POST /api/changes/{id}/approve-plan` | Approve the plan and write the code (Lead); 409 naming what looks missing while a risk says files may be missing from the plan, unless `incomplete=true` |
+| `POST /api/changes/{id}/approve-plan` | Approve the plan and write the code (Lead); 409 naming the plan revision and what looks missing while the server marked the plan incomplete (`plan.incomplete`, set only by the impact analysis, kept across edits that add no file; a risk's wording never counts), unless `incomplete=true&revision=N` names the latest revision |
 | `GET /api/changes/{id}/coverage` | Requirement coverage of a change from its written files: `criteria` and `requirements`, each with the `tests` and `code` paths that name it; `written` and `planned` file counts |
 | `GET /api/changes/{id}/plan-review` | The plan's revisions (`revision`, `origin` ANALYZED or EDITED, `createdBy`, `createdAt`, `plan`) and comments (`kind` COMMENT, CHANGES_REQUESTED or APPROVED, `author`, `text`, `revision`) |
 | `POST /api/changes/{id}/plan-comments` | `{kind, text}`: a comment (COMMENT right) or a request for changes while the plan waits (APPROVE right); approval stays `approve-plan` |
