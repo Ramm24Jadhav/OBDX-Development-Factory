@@ -146,6 +146,56 @@ class SecurityIntegrationTest {
         mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf())).andExpect(status().isNoContent());
     }
 
+    @Test
+    void showsEffectiveAccessAndRecordsPrivilegeChangesForAdministratorsOnly() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bank = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"p-" + suffix + "\", \"bankName\": \"Bank P\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID priya = UUID.fromString(create(admin, "/api/admin/users",
+                "{\"username\": \"priya-" + suffix + "\", \"password\": \"Priya-Password-1\"}").get("id").asString());
+        setRole(admin, bank, priya, "ANALYST");
+        setRole(admin, bank, priya, "LEAD");
+
+        // The matrix comes from the role definitions: an analyst may not manage code, a lead may approve
+        JsonNode matrix = json.readTree(mvc.perform(get("/api/admin/permissions").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertThat(matrix.toString()).contains("\"permission\":\"MANAGE_CODE\"");
+        for (JsonNode row : matrix) {
+            if (row.get("permission").asString().equals("MANAGE_CODE")) {
+                assertThat(row.get("allowed").get("ANALYST").asBoolean()).isFalse();
+                assertThat(row.get("allowed").get("ADMIN").asBoolean()).isTrue();
+            }
+            if (row.get("permission").asString().equals("APPROVE")) {
+                assertThat(row.get("allowed").get("LEAD").asBoolean()).isTrue();
+            }
+        }
+
+        // Effective access per workspace, and the history of the role changes with what they were
+        JsonNode access = json.readTree(mvc.perform(get("/api/admin/users/" + priya + "/access").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertThat(access.get("workspaces").get(0).get("role").asString()).isEqualTo("LEAD");
+        assertThat(access.get("workspaces").get(0).get("denied").size()).isZero();
+        assertThat(access.toString()).contains("LEAD (was ANALYST)", "ANALYST (new member)").doesNotContain("passwordHash", "Priya-Password-1");
+
+        mvc.perform(put("/api/admin/users/" + priya).session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"admin\": true}")).andExpect(status().isOk());
+        String history = mvc.perform(get("/api/admin/users/" + priya + "/access").session(admin)).andReturn().getResponse().getContentAsString();
+        assertThat(history).contains("ADMIN_GRANTED", "false -> true");
+
+        // Nobody else reads them
+        mvc.perform(put("/api/admin/users/" + priya).session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"admin\": false}")).andExpect(status().isOk());
+        MockHttpSession other = login("priya-" + suffix, "Priya-Password-1");
+        mvc.perform(get("/api/admin/permissions").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/users/" + priya + "/access").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/security").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/security").session(admin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxFailedLogins").value(3)).andExpect(jsonPath("$.minPasswordLength").value(12));
+
+        mvc.perform(delete("/api/workspaces/" + bank).session(admin).with(csrf())).andExpect(status().isNoContent());
+    }
+
     private MockHttpSession login(String username, String password) throws Exception {
         MvcResult result = mvc.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\": \"" + username + "\", \"password\": \"" + password + "\"}"))

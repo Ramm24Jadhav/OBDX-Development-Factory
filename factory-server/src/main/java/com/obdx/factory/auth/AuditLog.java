@@ -56,6 +56,20 @@ public class AuditLog {
                         + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
     }
 
+    /** Events of the given actions about any of the targets (a user's id or username), newest first, in every workspace. */
+    public List<Event> about(Collection<String> targets, Collection<String> actions, int limit) {
+        if (targets.isEmpty() || actions.isEmpty()) {
+            return List.of();
+        }
+        List<Object> args = new ArrayList<>(targets);
+        args.addAll(actions);
+        args.add(Math.clamp(limit, 1, 1000));
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE target IN ("
+                        + String.join(", ", Collections.nCopies(targets.size(), "?")) + ") AND action IN ("
+                        + String.join(", ", Collections.nCopies(actions.size(), "?")) + ") ORDER BY at DESC, id DESC LIMIT ?",
+                AuditLog::event, args.toArray());
+    }
+
     /** One workspace's events of the given actions, newest first. */
     public List<Event> recent(UUID workspaceId, Collection<String> actions, int limit) {
         if (actions.isEmpty()) {

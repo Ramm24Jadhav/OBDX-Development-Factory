@@ -2,6 +2,10 @@
  * Administration & Access Control: users with their roles, workspaces, status and last sign-in, adding users, the role
  * permission matrix, workspace access (members and roles), users who have not signed in yet, the audit log and the
  * sign-in settings. Only administrators see this page.
+ * The permission matrix comes from the server's role definitions (GET /api/admin/permissions), the same rules every
+ * request is checked against; a user's effective access per workspace and the history of their privilege changes come
+ * from GET /api/admin/users/{id}/access. Changes that widen or narrow access ask first. Hiding a control here is never
+ * the protection: the server checks every change.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', '../services/dialog',
         'ojs/ojknockout'],
@@ -25,8 +29,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       USER_CREATED: { title: 'User added', icon: 'user', tone: 'blue' }, USER_CHANGED: { title: 'User updated', icon: 'edit', tone: 'green' },
       MEMBER_SET: { title: 'Workspace access granted', icon: 'folder', tone: 'amber' }, MEMBER_REMOVED: { title: 'Workspace access removed', icon: 'x', tone: 'red' },
       PASSWORD_RESET: { title: 'Password reset', icon: 'shield', tone: 'violet' }, LOGIN_FAILED: { title: 'Failed sign-in', icon: 'alert', tone: 'red' },
-      LOGIN: { title: 'Signed in', icon: 'check', tone: 'green' }
+      LOGIN: { title: 'Signed in', icon: 'check', tone: 'green' },
+      ADMIN_GRANTED: { title: 'Made administrator', icon: 'shield', tone: 'amber' }, ADMIN_REVOKED: { title: 'Administrator removed', icon: 'shield', tone: 'red' },
+      USER_ACTIVATED: { title: 'User activated', icon: 'check', tone: 'green' }, USER_DEACTIVATED: { title: 'User deactivated', icon: 'x', tone: 'red' }
     };
+    // MEMBER_SET details are the role, then what it was: "LEAD (was ANALYST)", "ANALYST (new member)"
+    const roleIn = (detail) => String(detail || '').split(' ')[0];
+    const PERMISSION_NAME = { VIEW: 'View', COMMENT: 'Comment', MANAGE_CODE: 'Manage code', EDIT_REQUIREMENTS: 'Edit requirements', EDIT_DESIGNS: 'Edit designs', APPROVE: 'Approve' };
 
     const ROLE_NAME = { LEAD: 'Lead', DEVELOPER: 'Developer', ANALYST: 'Business Analyst' };
 
@@ -111,6 +120,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           },
           doPassword: () => { menu.close(); this.resetPassword(''); this.resetUser(u); },
           doAccess: () => { menu.close(); this.memberUserId(u.id); this.tab('access'); },
+          doView: () => { menu.close(); this.openAccess(u); },
           adminLabel: u.admin ? 'Remove administrator' : 'Make administrator',
           enabledLabel: u.enabled ? 'Deactivate' : 'Activate',
           isLocal: u.source === 'LOCAL',
@@ -175,6 +185,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           valueCss: k.valueCss || 'fx-kpi-value', css: k.css || 'factory-ad-kpisub'
         }));
       });
+      // Sign-in protection as configured on the server
+      this.security = ko.observable(null);
+      this.tabKey = (event) => {
+        const keys = this.tabs.map((t) => t.value);
+        const at = keys.indexOf(this.tab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.tab(keys[next]);
+        const button = document.getElementById('ad-' + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
       this.tabs = ui.tabs(this.tab, [
         { value: 'users', label: 'Users', icon: 'user' }, { value: 'roles', label: 'Roles & Permissions', icon: 'shield' },
         { value: 'access', label: 'Workspace Access', icon: 'folder' }, { value: 'invitations', label: 'Invitations', icon: 'plug' },
@@ -182,33 +210,61 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       ]);
 
       // The permission matrix of the roles (from the factory's role definitions)
-      const yes = { css: 'factory-ad-yes', text: 'Allowed' };
-      const no = { css: 'factory-ad-no', text: 'Not allowed' };
-      this.matrix = [
-        { permission: 'Access workspaces', cells: [yes, yes, yes, yes] },
-        { permission: 'View code and requirements', cells: [yes, yes, yes, yes] },
-        { permission: 'Comment', cells: [yes, yes, yes, yes] },
-        { permission: 'Edit requirements', cells: [yes, yes, no, yes] },
-        { permission: 'Edit designs', cells: [yes, yes, yes, yes] },
-        { permission: 'Import code, make changes', cells: [yes, yes, yes, no] },
-        { permission: 'Approve requirements, designs and plans', cells: [yes, yes, no, no] },
-        { permission: 'Create workspaces, manage users', cells: [yes, no, no, no] }
-      ];
+      const yes = { css: 'factory-ad-yes', text: 'Allowed', label: 'Allow' };
+      const no = { css: 'factory-ad-no', text: 'Denied', label: 'Deny' };
+      // Columns in this order; the rows come from the server's role definitions
+      const MATRIX_ROLES = ['ADMIN', 'LEAD', 'DEVELOPER', 'ANALYST'];
       this.matrixRoles = ['Administrator', 'Lead', 'Developer', 'Business Analyst'];
+      const rawMatrix = ko.observableArray([]);
+      this.matrix = ko.pureComputed(() => rawMatrix().map((row) => ({
+        permission: PERMISSION_NAME[row.permission] || row.permission, description: row.description,
+        cells: MATRIX_ROLES.map((r) => (row.allowed[r] ? yes : no))
+      })).concat([{ permission: 'Administration', description: 'Factory: create workspaces, manage users and roles, model and sign-in settings, the audit log', cells: [yes, no, no, no] }]));
+      // Effective access and privilege history of one user (a side sheet)
+      this.accessOpen = ko.observable(false);
+      this.accessUser = ko.observable(null);
+      this.accessData = ko.observable(null);
+      this.accessHeading = ko.pureComputed(() => (this.accessUser() ? 'Access: ' + (this.accessUser().displayName || this.accessUser().username) : 'Access'));
+      this.accessRows = ko.pureComputed(() => {
+        const d = this.accessData();
+        return d ? d.workspaces.map((w) => ({
+          workspace: w.workspace, rolePill: ROLE_PILL[w.role] || ROLE_PILL.NONE,
+          allowed: w.allowed.map((p) => PERMISSION_NAME[p] || p), denied: w.denied.map((p) => PERMISSION_NAME[p] || p)
+        })) : [];
+      });
+      this.accessHistory = ko.pureComputed(() => {
+        const d = this.accessData();
+        return d ? d.history.filter((e) => e.action !== 'USER_CHANGED').map((e) => ({
+          title: (ACTIVITY[e.action] || { title: e.action }).title, text: activityText(e), when: ui.when(e.at), by: e.username || ''
+        })) : [];
+      });
+      this.openAccess = (u) => {
+        this.accessUser(u);
+        this.accessData(null);
+        this.accessOpen(true);
+        api.get('admin/users/' + u.id + '/access').then(this.accessData).catch(actionError);
+      };
 
       // Recent administrative activity from the audit log, with user and workspace names instead of their IDs
       const userName = (id) => { const u = rawUsers().find((x) => x.id === id); return u ? (u.displayName || u.username) : id; };
       const workspaceName = (id) => { const w = rawWorkspaces().find((x) => x.id === id); return w ? w.name : 'a deleted workspace'; };
       const activityText = (e) => {
         if (e.action === 'MEMBER_SET') {
-          return userName(e.target) + ' added to ' + workspaceName(e.workspaceId) + ' as ' + (ROLE_NAME[e.detail] || e.detail);
+          const was = /\(was (\w+)\)/.exec(e.detail || '');
+          return userName(e.target) + (was ? ' changed in ' : ' added to ') + workspaceName(e.workspaceId) + (was ? ' to ' : ' as ') + (ROLE_NAME[roleIn(e.detail)] || roleIn(e.detail))
+            + (was ? ' (was ' + (ROLE_NAME[was[1]] || was[1]) + ')' : '');
         }
         if (e.action === 'MEMBER_REMOVED') {
-          return userName(e.target) + ' removed from ' + workspaceName(e.workspaceId);
+          const was = /^was (\w+)/.exec(e.detail || '');
+          return userName(e.target) + ' removed from ' + workspaceName(e.workspaceId) + (was ? ' (was ' + (ROLE_NAME[was[1]] || was[1]) + ')' : '');
+        }
+        if (e.action === 'ADMIN_GRANTED' || e.action === 'ADMIN_REVOKED' || e.action === 'USER_ACTIVATED' || e.action === 'USER_DEACTIVATED') {
+          return userName(e.target) + (e.username ? ' · by ' + e.username : '');
         }
         return [e.target ? userName(e.target) : '', e.detail].filter(Boolean).join(' · ') || e.username;
       };
-      this.activity = ko.pureComputed(() => rawAudit().filter((e) => ACTIVITY[e.action] && e.action !== 'LOGIN').slice(0, 6).map((e) => {
+      this.activityText = activityText;
+      this.activity = ko.pureComputed(() => rawAudit().filter((e) => ACTIVITY[e.action] && e.action !== 'LOGIN' && e.action !== 'USER_CHANGED').slice(0, 6).map((e) => {
         const a = ACTIVITY[e.action];
         return {
           title: a.title, text: activityText(e), when: ui.when(e.at),
@@ -290,7 +346,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const updateUser = (id, change, done) => api.put('admin/users/' + id, change)
         .then(() => { toast.success(done); loadUsers(); loadAudit(); })
         .catch(actionError);
-      this.addUser = () => run(api.post('admin/users', {
+      this.addUser = () => (this.newAdmin()
+        ? dialog.confirm({ title: 'Add ' + this.newUsername() + ' as an administrator?', message: 'Administrators see every workspace, manage users and roles, and change the factory\'s settings.', confirmLabel: 'Add administrator', danger: true })
+        : Promise.resolve(true)).then((ok) => ok && createUser());
+      const createUser = () => run(api.post('admin/users', {
         username: this.newUsername(), displayName: this.newDisplayName() || null, email: this.newEmail() || null,
         password: this.localMode() ? this.newPassword() : null, admin: this.newAdmin()
       })).then((user) => {
@@ -302,10 +361,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       }).catch(actionError);
       this.setMember = () => {
         const user = rawUsers().find((u) => u.id === this.memberUserId());
-        return run(api.put('workspaces/' + this.memberWorkspaceId() + '/members/' + this.memberUserId(), { role: this.memberRole() }))
+        const current = rawMembers().find((m) => m.userId === this.memberUserId());
+        const role = this.memberRole();
+        const name = user ? user.username : 'this user';
+        const workspace = workspaces().find((w) => w.value === this.memberWorkspaceId());
+        // Changing a role, or giving Lead (approvals), asks first
+        const ask = current && current.role !== role
+          ? { title: 'Change ' + name + '\'s role?', message: ROLE_NAME[current.role] + ' → ' + ROLE_NAME[role] + ' in ' + (workspace ? workspace.label : 'this workspace') + '. They can then: ' + PERMISSIONS[role] + '.', confirmLabel: 'Change role', danger: RANK[role] < RANK[current.role] }
+          : !current && role === 'LEAD' ? { title: 'Give ' + name + ' the Lead role?', message: 'A Lead can do everything in ' + (workspace ? workspace.label : 'this workspace') + ', including approving requirements, designs and change plans.', confirmLabel: 'Give Lead' }
+            : null;
+        if (current && current.role === role) {
+          toast.info(name + ' already has this role.');
+          return Promise.resolve();
+        }
+        return (ask ? dialog.confirm(ask) : Promise.resolve(true)).then((ok) => ok && grant(user, role));
+      };
+      const grant = (user, role) => {
+        return run(api.put('workspaces/' + this.memberWorkspaceId() + '/members/' + this.memberUserId(), { role: role }))
           .then((members) => {
             rawMembers(members); this.memberUserId(null); loadAudit(); loadAllMembers();
-            toast.success((user ? user.username : 'The user') + ' now has access as ' + ROLE_NAME[this.memberRole()] + '.');
+            toast.success((user ? user.username : 'The user') + ' now has access as ' + ROLE_NAME[role] + '.');
           })
           .catch(actionError);
       };
@@ -315,7 +390,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         document.title = 'Administration';
         loadUsers();
         api.get('workspaces').then((list) => rawWorkspaces(list) && workspaces(list.map((w) => ({ value: w.id, label: w.name + ' (' + w.bankName + ')' }))))
-          .then(() => Promise.all([loadAudit(), loadAllMembers()]))
+          .then(() => Promise.all([loadAudit(), loadAllMembers(), api.get('admin/permissions').then(rawMatrix), api.get('admin/security').then(this.security).catch(() => null)]))
           .then(() => { if (!this.memberWorkspaceId() && workspaces().length) { this.memberWorkspaceId(workspaces()[0].value); } })
           .catch(showError);
       };
