@@ -176,6 +176,7 @@ public class ChangeService {
             throw new BadRequestException("Approve the screen designs first: " + String.join(", ", unapproved));
         }
         Workspace workspace = workspace(requirement.workspaceId());
+        locks.requireFree(workspace.getId());
         if (workspace.getIndexedRevision() == null) {
             throw new BadRequestException("Import the workspace's code first; the change is planned against it");
         }
@@ -199,6 +200,7 @@ public class ChangeService {
     public ChangeDetail analyzeAgain(UUID id, boolean fresh) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY, ChangeRequest.Status.FAILED);
+        locks.requireFree(change.getWorkspaceId());
         change.status(ChangeRequest.Status.ANALYZING, "Analyzing the impact on the codebase...");
         changes.save(change);
         startAfterCommit(() -> runAnalysis(id, fresh));
@@ -236,9 +238,9 @@ public class ChangeService {
                     sameNamed(workspace.getId(), analyzed), inApp(workspace.getId()));
             String planJson = json.writeValueAsString(plan);
             change.plan(planJson, workspace.getIndexedRevision());
-            planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
+            int analyzedRevision = planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
             // a new analysis answers the requests for changes, also when it gives the same plan
-            planReviews.answerRequests(id);
+            planReviews.answerRequestsByAnalysis(id, analyzedRevision, "Impact analysis");
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
             String added = resumed ? " The incomplete plan was continued: " + Math.max(0, plan.items().size() - before.items().size())
                     + " file(s) added to the " + before.items().size() + " planned before" + (ImpactAnalyzer.resumable(plan)
@@ -368,9 +370,9 @@ public class ChangeService {
                 sameNamed(change.getWorkspaceId(), carried), inApp(change.getWorkspaceId()));
         String edited = json.writeValueAsString(plan);
         change.plan(edited, change.getBaseRevision());
-        planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
-        // a saved edit answers the requests for changes, also when it leaves the plan as it was
-        planReviews.answerRequests(id);
+        int editedRevision = planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
+        // a saved edit answers the requests made on another plan; saving the plan unchanged answers none
+        planReviews.answerRequestsByEdit(id, edited, editedRevision, by);
         change.status(ChangeRequest.Status.PLAN_READY, "Plan edited: " + plan.items().size() + " file(s).");
         return detail(changes.save(change));
     }
@@ -531,6 +533,7 @@ public class ChangeService {
         String failedAgain = null;
         String writing = null;
         Set<String> writtenNow = new LinkedHashSet<>();
+        List<String> rejected = new ArrayList<>();
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
@@ -578,6 +581,9 @@ public class ChangeService {
                 writtenNow.add(item.path());
                 String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial,
                         onlyPath != null);
+                if (onlyPath == null && error != null && error.startsWith(REJECTED)) {
+                    rejected.add(item.path());
+                }
                 if (onlyPath != null) {
                     failedAgain = error;
                 }
@@ -625,7 +631,9 @@ public class ChangeService {
                     : onlyPath + " written again. ";
             outcome = onlyPath == null ? null : CUT_OFF_FIRST.equals(failedAgain) ? "cut off at the output limit, the part written is kept"
                     : failedAgain != null ? (versionKept ? "kept the previous version: " : "not written: ") + failedAgain : "written again";
-            change.status(ChangeRequest.Status.GENERATED, said + summary(files.files(id)) + revisionNote + fixesStopped);
+            String keptNote = rejected.isEmpty() ? "" : " The earlier version of " + String.join(", ", rejected) + " is kept: the version "
+                    + "written now failed its checks.";
+            change.status(ChangeRequest.Status.GENERATED, said + summary(files.files(id)) + revisionNote + fixesStopped + keptNote);
         } catch (ModelLimitReachedException e) {
             // Every further file would fail the same way: stop, and leave the rest to Continue generation
             log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
@@ -962,8 +970,11 @@ public class ChangeService {
                 && check.message().startsWith(CodeGenerator.CUT);
     }
 
+    /** How the reason a version written now is not used starts. */
+    static final String REJECTED = "the new version fails its checks";
+
     /**
-     * Why a version written again is not kept: the file's version before passed its checks (or had only warnings) and
+     * Why a version written now is not kept: the file's version before passed its checks (or had only warnings) and
      * the new one fails them. Null when the new one may replace it (it passes, or the one before failed too or was none).
      */
     static String worseThanBefore(ChangeFileStore.ChangeFile previous, FileChecks.Result now) {
@@ -972,7 +983,7 @@ public class ChangeService {
             return null;
         }
         String reason = now.message() == null ? "" : now.message().lines().findFirst().orElse("").strip();
-        return "the new version fails its checks" + (reason.isEmpty() ? "" : ": " + Messages.reason(new IllegalStateException(reason)))
+        return REJECTED + (reason.isEmpty() ? "" : ": " + Messages.reason(new IllegalStateException(reason)))
                 + "; it is not used";
     }
 

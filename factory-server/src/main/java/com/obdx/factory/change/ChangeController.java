@@ -144,8 +144,11 @@ public class ChangeController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail regenerate(@PathVariable UUID id, @RequestBody RegenerateRequest request) {
         var user = guard.requireForChange(id, Permission.MANAGE_CODE);
-        // (the outcome is audited when the file has been written: ChangeService.runGeneration)
-        return service.regenerate(id, request.path(), request.note(), user.getUsername());
+        ChangeService.ChangeDetail change = service.regenerate(id, request.path(), request.note(), user.getUsername());
+        // the request now, its outcome when the file has been written (ChangeService.runGeneration)
+        audit.record(WRITTEN_AGAIN, change.workspaceId(), id.toString(), request.path()
+                + (request.note() == null || request.note().isBlank() ? "" : " (with a note)") + ": requested");
+        return change;
     }
 
     @PutMapping("/api/changes/{id}/file")

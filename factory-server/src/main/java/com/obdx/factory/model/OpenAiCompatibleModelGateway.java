@@ -824,9 +824,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         StringBuilder text = new StringBuilder();
         for (Throwable t = e; t != null && text.length() < MAX_ERROR_TEXT; t = t.getCause()) {
             if (t.getMessage() != null) {
-                // hidden before the text is cut (each message is read at most to the limit)
+                // hidden first, then cut: no part of a secret is left at a cut (the scan is linear in the length)
                 String m = t.getMessage();
-                text.append(com.obdx.factory.common.Messages.redacted(m.length() > 2 * MAX_ERROR_TEXT ? m.substring(0, 2 * MAX_ERROR_TEXT) : m)).append('\n');
+                String hidden = com.obdx.factory.common.Messages.redacted(m);
+                text.append(hidden.length() > 2 * MAX_ERROR_TEXT ? hidden.substring(0, 2 * MAX_ERROR_TEXT) : hidden).append('\n');
             }
         }
         return text.length() > MAX_ERROR_TEXT ? text.substring(0, MAX_ERROR_TEXT) : text.toString();

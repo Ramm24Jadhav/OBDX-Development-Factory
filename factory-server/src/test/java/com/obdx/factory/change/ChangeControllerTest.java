@@ -151,8 +151,8 @@ class ChangeControllerTest {
         mvc.perform(post("/api/changes/" + ID + "/regenerate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"path\": \"a/b.js\", \"note\": \"use oj-select-single\"}")).andExpect(status().isAccepted());
         verify(service).regenerate(ID, "a/b.js", "use oj-select-single", "dev");
-        // (the outcome is recorded by the generation, when it is known)
-        verify(audit, never()).record(eq(ChangeController.WRITTEN_AGAIN), eq(WORKSPACE), anyString(), anyString());
+        // the request now (the outcome is recorded by the generation, when it is known)
+        verify(audit).record(ChangeController.WRITTEN_AGAIN, WORKSPACE, ID.toString(), "a/b.js (with a note): requested");
     }
 
     @Test

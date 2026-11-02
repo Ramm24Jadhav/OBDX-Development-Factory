@@ -71,8 +71,11 @@ public class DesignFlowService {
     }
 
     /** What approving changed, for the audit log, and the flow after it. */
-    /** @param unsupported the screens approved with elements the version pack forbids (confirmed): name to "oj-x, oj-y" */
-    public record Approval(List<String> approved, DesignFlow flow, Map<String, String> unsupported) {
+    /**
+     * @param approvedIds the ids of the approved screens, in the order of their names in approved
+     * @param unsupported the screens approved with elements the version pack forbids (confirmed): id to "oj-x, oj-y"
+     */
+    public record Approval(List<String> approved, DesignFlow flow, List<UUID> approvedIds, Map<UUID, String> unsupported) {
     }
 
     @Transactional(readOnly = true)
@@ -134,25 +137,29 @@ public class DesignFlowService {
         }
         List<ScreenDesign> toApprove = all.stream().filter(design -> (wanted == null || wanted.contains(design.getId()))
                 && design.getStatus() != ScreenDesign.Status.APPROVED).toList();
-        Map<String, String> forbidden = new java.util.LinkedHashMap<>();
+        Map<UUID, String> forbidden = new java.util.LinkedHashMap<>();
+        Map<UUID, String> names = new java.util.HashMap<>();
         for (ScreenDesign design : toApprove) {
             List<ComponentCompatibility.Entry> found = compatibility == null ? List.of()
                     : compatibility.unsupported(design.getWorkspaceId(), store.model(design.getId(), design.getCurrentVersion()).orElse(null));
             if (!found.isEmpty()) {
-                forbidden.put(design.getName(), String.join(", ", found.stream().map(ComponentCompatibility.Entry::element).toList()));
+                names.put(design.getId(), design.getName());
+                forbidden.put(design.getId(), String.join(", ", found.stream().map(ComponentCompatibility.Entry::element).toList()));
             }
         }
         if (!forbidden.isEmpty() && !unsupported) {
             throw new com.obdx.factory.common.ConflictException(ScreenDesignService.UNSUPPORTED + "the workspace's version pack forbids elements of "
-                    + String.join("; ", forbidden.entrySet().stream().map(f -> f.getKey() + " (" + f.getValue() + ")").toList()) + ". Replace them in the designer, or approve the screens as they are if you have "
+                    + String.join("; ", forbidden.entrySet().stream().map(f -> names.get(f.getKey()) + " (" + f.getValue() + ")").toList()) + ". Replace them in the designer, or approve the screens as they are if you have "
                     + "checked that they work in this OBDX version.");
         }
         List<String> approved = new ArrayList<>();
+        List<UUID> approvedIds = new ArrayList<>();
         for (ScreenDesign design : toApprove) {
             design.approve(by.trim());
             designs.save(design);
             approved.add(design.getName());
+            approvedIds.add(design.getId());
         }
-        return new Approval(approved, flow(requirementId), unsupported ? forbidden : Map.of());
+        return new Approval(approved, flow(requirementId), approvedIds, unsupported ? forbidden : Map.of());
     }
 }

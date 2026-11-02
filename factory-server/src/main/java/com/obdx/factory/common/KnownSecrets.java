@@ -23,7 +23,7 @@ public final class KnownSecrets {
     /** Values shorter than this are masked only as a whole word, so a short password does not cut words in two. */
     static final int WHOLE_WORD_BELOW = 8;
 
-    /** Values of letters only shorter than this are taken for a plain word ("Failing", "revision"), not a secret. */
+    /** Values of letters only shorter than this are masked as whole words only, as a short value is. */
     static final int PLAIN_WORD_BELOW = 12;
 
     /** Longer values are not kept (no secret the factory stores is this long), so a scan stays short. */
@@ -92,11 +92,30 @@ public final class KnownSecrets {
         if (secret.length() < MIN_LENGTH || secret.length() > MAX_LENGTH || DUMMIES.contains(secret.toLowerCase(java.util.Locale.ROOT))) {
             return null;
         }
-        // a short plain word ("Failing", "revision") would hide that word in every message
-        if (secret.length() < PLAIN_WORD_BELOW && secret.chars().allMatch(Character::isLetter)) {
+        // The words the UI reads in a refusal ("Failing checks: ...", "Unsupported components: ...", "revision 3 of the
+        // plan") are never masked: a password that happens to be one of them would otherwise turn a 409 the page asks to
+        // confirm into one it only shows. A plain word that is a secret is masked as a whole word (see masked)
+        if (CONTRACT_WORDS.contains(secret.toLowerCase(java.util.Locale.ROOT))) {
             return null;
         }
         return secret;
+    }
+
+    /** Words of the refusals the UI matches (ChangeService, ScreenDesignService): never masked. */
+    static final Set<String> CONTRACT_WORDS = Set.of("failing", "checks", "unsupported", "components", "incomplete", "change", "plan",
+            "revision", "changes", "requested");
+
+    /** Masked only where it stands as a word of its own: a short value, or a plain word (letters only, "Winterfell"). */
+    static boolean wholeWordOnly(String secret) {
+        return secret.length() < WHOLE_WORD_BELOW || secret.length() < PLAIN_WORD_BELOW && secret.chars().allMatch(Character::isLetter);
+    }
+
+    /** Forgets the values used at run time and keeps the settings' (for tests: a Spring context registers those once). */
+    public static void clearUsed() {
+        synchronized (used) {
+            used.clear();
+            rebuild();
+        }
     }
 
     private static void rebuild() {
@@ -146,7 +165,7 @@ public final class KnownSecrets {
         if (at < 0) {
             return text;
         }
-        boolean wholeWord = secret.length() < WHOLE_WORD_BELOW;
+        boolean wholeWord = wholeWordOnly(secret);
         StringBuilder out = new StringBuilder(text.length());
         int from = 0;
         while (at >= 0) {

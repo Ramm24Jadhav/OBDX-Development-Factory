@@ -53,6 +53,57 @@ class WorkingCopyRecoveryTest {
         assertThat(kept.toFile().canWrite()).as("what the link points to is not made writable").isFalse();
     }
 
+    // --- verification of f4c835e: the swap never leaves a workspace without its code ---
+
+    @Test
+    void theNewWorkingCopyTakesThePlaceOfTheOld(@TempDir Path temp) throws Exception {
+        Path wc = Files.createDirectories(temp.resolve("checkout"));
+        Files.writeString(wc.resolve("old.txt"), "old");
+        Path fresh = Files.createDirectories(temp.resolve("checkout.new"));
+        Files.writeString(fresh.resolve("new.txt"), "new");
+
+        ImportService.swapIn(fresh, wc);
+
+        assertThat(wc.resolve("new.txt")).hasContent("new");
+        assertThat(wc.resolve("old.txt")).doesNotExist();
+        assertThat(temp.resolve("checkout.old")).doesNotExist();
+        assertThat(fresh).doesNotExist();
+    }
+
+    @Test
+    void aWorkingCopyInUseIsKeptAndTheSwapRefused(@TempDir Path temp) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("win"),
+                "only Windows refuses to rename a folder with an open file");
+        Path wc = Files.createDirectories(temp.resolve("checkout"));
+        Path open = Files.writeString(wc.resolve("old.txt"), "old");
+        Path fresh = Files.createDirectories(temp.resolve("checkout.new"));
+        try (var held = Files.newInputStream(open)) {
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> ImportService.swapIn(fresh, wc)).isInstanceOf(java.io.IOException.class)
+                    .hasMessageContaining("Could not set the old working copy aside");
+        }
+        assertThat(wc.resolve("old.txt")).hasContent("old");
+    }
+
+    @Test
+    void aSwapStoppedHalfWayIsPutRight(@TempDir Path temp) throws Exception {
+        Path wc = temp.resolve("checkout");
+        Path old = Files.createDirectories(temp.resolve("checkout.old"));
+        Files.writeString(old.resolve("old.txt"), "old");
+        Files.createDirectories(temp.resolve("checkout.new"));
+
+        ImportService.recoverWorkingCopy(wc);
+
+        assertThat(wc.resolve("old.txt")).hasContent("old");
+        assertThat(temp.resolve("checkout.old")).doesNotExist();
+        assertThat(temp.resolve("checkout.new")).doesNotExist();
+
+        // with the working copy there, a stale .old is only removed
+        Files.createDirectories(temp.resolve("checkout.old"));
+        ImportService.recoverWorkingCopy(wc);
+        assertThat(wc.resolve("old.txt")).hasContent("old");
+        assertThat(temp.resolve("checkout.old")).doesNotExist();
+    }
+
     @Test
     void aMissingWorkingCopyIsNothingToRemove(@TempDir Path temp) {
         assertThatCode(() -> ImportService.deleteWorkingCopy(temp.resolve("none"))).doesNotThrowAnyException();

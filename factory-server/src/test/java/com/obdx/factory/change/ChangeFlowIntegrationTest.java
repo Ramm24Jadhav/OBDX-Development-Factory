@@ -199,6 +199,9 @@ class ChangeFlowIntegrationTest {
     private PlanReviewStore planReviewStore;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private tools.jackson.databind.ObjectMapper json;
 
     @Autowired
@@ -340,11 +343,17 @@ class ChangeFlowIntegrationTest {
                 .hasMessageContaining("Say what has to change");
         assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.APPROVED, "ok", "Lead"))
                 .hasMessageContaining("Approve Plan");
-        // The request holds the plan; saving it unchanged (same JSON, same revision) answers the request and frees it
+        // The request holds the plan; saving it unchanged (same JSON, same revision) answers nothing
         assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
         changes.updatePlan(changeId, json.writeValueAsString(changes.get(changeId).plan()), "dev1");
         assertThat(changes.planReview(changeId).revisions()).hasSize(1);
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
+        assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
+        // a new analysis answers it, also one that gives the same plan, and says who and at which revision
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 1, "Impact analysis")).isEqualTo(1);
         assertThat(planReviewStore.changesRequested(changeId, 1)).isFalse();
+        assertThat(jdbcTemplate.queryForList("SELECT answered_by || ' at ' || answered_revision FROM change_plan_comment WHERE change_id = ? "
+                + "AND kind = 'CHANGES_REQUESTED'", String.class, changeId)).containsExactly("Impact analysis at 1");
         changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, "Add a test for the remarks", "Lead");
         assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
         // An edit is the next revision; saving the same plan again adds none

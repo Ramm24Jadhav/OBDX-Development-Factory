@@ -63,13 +63,38 @@ class SecretMaskingTest {
     }
 
     @Test
-    void placeholderKeysAndShortPlainWordsAreNeverMasked() {
-        for (String dummy : List.of("ollama", "EMPTY", "lm-studio", "test", "not-needed", "none", "dummy", "Failing", "revision")) {
+    void placeholderKeysAreNeverMasked() {
+        for (String dummy : List.of("ollama", "EMPTY", "lm-studio", "test", "not-needed", "none", "dummy")) {
             KnownSecrets.used(dummy);
             KnownSecrets.setting("model.apiKey", dummy);
         }
-        String text = "Failing checks: revision 3; ollama none dummy test EMPTY lm-studio not-needed";
+        String text = "ollama none dummy test EMPTY lm-studio not-needed";
         assertThat(KnownSecrets.masked(text)).isEqualTo(text);
+    }
+
+    @Test
+    void aPlainWordSecretIsMaskedAsAWholeWordWithItsCase() {
+        KnownSecrets.used("Winterfell");
+        assertThat(KnownSecrets.masked("login svc:Winterfell refused; Winterfells and winterfell are other words"))
+                .isEqualTo("login svc:[hidden] refused; Winterfells and winterfell are other words");
+    }
+
+    /**
+     * The refusals the UI asks to confirm are matched by their first words ("Failing checks: ", "Unsupported components:
+     * ", "Incomplete plan: ") and the plan revision they name: a secret that is one of those words is never masked.
+     */
+    @Test
+    void theRefusalsTheUiConfirmsCannotBeBroken() {
+        for (String word : List.of("Failing", "Unsupported", "Incomplete", "revision", "checks", "components", "change", "plan")) {
+            KnownSecrets.used(word);
+            KnownSecrets.setting("setting:x", word);
+        }
+        for (String refusal : List.of("Failing checks: 1 file(s) fail their checks: a/b.js.",
+                "Unsupported components: the workspace's version pack forbids oj-select-one.",
+                "Incomplete plan: revision 3 of the plan may be missing files.",
+                "Incomplete change: 2 planned file(s) are not written: a, b.")) {
+            assertThat(ApiExceptionHandler.problem(HttpStatus.CONFLICT, refusal).getDetail()).isEqualTo(refusal);
+        }
     }
 
     @Test

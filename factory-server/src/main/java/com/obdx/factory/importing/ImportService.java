@@ -97,18 +97,76 @@ public class ImportService {
         if (jobs.existsByWorkspaceIdAndStatusIn(workspaceId, EnumSet.of(ImportJob.Status.QUEUED, ImportJob.Status.RUNNING))) {
             throw new ConflictException("An import is already running for this workspace");
         }
+        WorkingCopyHold hold = new WorkingCopyHold(locks, workspaceId);
         if (fresh) {
-            locks.requireFree(workspaceId);
-            Integer running = jdbc.queryForObject("SELECT count(*) FROM change_request WHERE workspace_id = ? AND (status IN ('ANALYZING', "
-                    + "'GENERATING') OR build_status = 'BUILDING')", Integer.class, workspaceId);
-            if (running != null && running > 0) {
-                throw new ConflictException("A change of this workspace is being analyzed, written or built, and it reads the working "
-                        + "copy. Wait for it to finish, then check out again.");
-            }
+            requireNoChangeRunning(workspaceId);
+            // taken here, in the same synchronized step as the checks, so nothing can start in between
+            hold.take("checked out again");
         }
         ImportJob job = jobs.save(new ImportJob(workspaceId, workspace.getIndexedRevision()));
-        executor.execute(() -> run(job.getId(), fresh, by));
+        try {
+            executor.execute(() -> run(job.getId(), fresh, by, hold));
+        } catch (RuntimeException e) {
+            // the job never runs: the working copy is free again
+            hold.release();
+            job.start();
+            job.fail("The import could not be started: " + com.obdx.factory.common.Messages.reason(e) + ". Try again.");
+            jobs.save(job);
+            throw e;
+        }
         return ImportJobResponse.from(job);
+    }
+
+    /** Refuses while a change of the workspace is being analyzed, written or built: those read the working copy. */
+    private void requireNoChangeRunning(UUID workspaceId) {
+        Integer running = jdbc.queryForObject("SELECT count(*) FROM change_request WHERE workspace_id = ? AND (status IN ('ANALYZING', "
+                + "'GENERATING') OR build_status = 'BUILDING')", Integer.class, workspaceId);
+        if (running != null && running > 0) {
+            throw new ConflictException("A change of this workspace is being analyzed, written or built, and it reads the working "
+                    + "copy. Wait for it to finish, then check out again.");
+        }
+    }
+
+    /**
+     * The workspace's working copy lock as one job holds it: taken (or refused) once, given back once, at the latest
+     * when the job ends.
+     */
+    static final class WorkingCopyHold {
+
+        private final WorkingCopyLocks locks;
+        private final UUID workspaceId;
+        private boolean held;
+
+        WorkingCopyHold(WorkingCopyLocks locks, UUID workspaceId) {
+            this.locks = locks;
+            this.workspaceId = workspaceId;
+        }
+
+        synchronized void take(String what) {
+            if (held) {
+                return;
+            }
+            if (!locks.hold(workspaceId, what)) {
+                locks.requireFree(workspaceId);
+                throw new ConflictException("The workspace's code was busy. Try again.");
+            }
+            held = true;
+        }
+
+        synchronized boolean held() {
+            return held;
+        }
+
+        UUID workspaceId() {
+            return workspaceId;
+        }
+
+        synchronized void release() {
+            if (held) {
+                held = false;
+                locks.release(workspaceId);
+            }
+        }
     }
 
     /** How the audit names a check-out-again that failed (the job's message says why). */
@@ -149,25 +207,27 @@ public class ImportService {
     }
 
     void run(UUID jobId, boolean fresh) {
-        run(jobId, fresh, null);
+        ImportJob job = jobs.findById(jobId).orElseThrow();
+        WorkingCopyHold hold = new WorkingCopyHold(locks, job.getWorkspaceId());
+        if (fresh) {
+            hold.take("checked out again");
+        }
+        run(jobId, fresh, null, hold);
     }
 
-    void run(UUID jobId, boolean fresh, String by) {
+    /** @param hold the working copy lock (taken by start for check out again; taken here when the SVN URL changed) */
+    void run(UUID jobId, boolean fresh, String by, WorkingCopyHold hold) {
         ImportJob job = jobs.findById(jobId).orElseThrow();
         job.start();
         jobs.save(job);
-        // Check out again holds the working copy from start to end: a delivery or a change's writing waits
-        boolean held = fresh && locks.hold(job.getWorkspaceId(), "checked out again");
         try {
-            if (fresh && !held) {
-                throw new ConflictException("The workspace's code is being " + locks.holder(job.getWorkspaceId())
-                        + " right now. Wait for it to finish, then check out again.");
-            }
             Workspace workspace = findWorkspace(job.getWorkspaceId());
             SvnCredentials credentials = workspaceService.credentials(workspace);
             Path workingCopy = storage.workingCopy(workspace.getId());
+            // a check-out-again stopped half-way (the factory stopped) is put right first
+            recoverWorkingCopy(workingCopy);
 
-            long revision = checkoutOrUpdate(workspace.getSvnUrl(), workingCopy, credentials, fresh);
+            long revision = checkoutOrUpdate(workspace.getSvnUrl(), workingCopy, credentials, fresh, hold);
             job.setToRevision(revision);
             jobs.save(job);
 
@@ -197,11 +257,21 @@ public class ImportService {
                 }
             }
         } finally {
-            if (held) {
-                locks.release(job.getWorkspaceId());
-            }
+            hold.release();
         }
         jobs.save(job);
+    }
+
+    /** On start: a check-out-again the factory stopped half-way leaves no workspace without its code. */
+    @EventListener(ApplicationReadyEvent.class)
+    public void recoverWorkingCopies() {
+        for (Workspace workspace : workspaces.findAll()) {
+            try {
+                recoverWorkingCopy(storage.workingCopy(workspace.getId()));
+            } catch (IOException | RuntimeException e) {
+                log.warn("Could not put right the working copy of workspace {}", workspace.getId(), e);
+            }
+        }
     }
 
     /** The profile follows the code, so it is re-detected after every import. A failure here does not fail the import. */
@@ -226,41 +296,118 @@ public class ImportService {
         }
     }
 
-    private long checkoutOrUpdate(String url, Path workingCopy, SvnCredentials credentials, boolean fresh) throws IOException {
+    private long checkoutOrUpdate(String url, Path workingCopy, SvnCredentials credentials, boolean fresh, WorkingCopyHold hold)
+            throws IOException {
         if (fresh) {
-            log.info("Discarding the working copy {} to check it out again", workingCopy);
+            log.info("Checking out {} again", workingCopy);
         } else if (Files.isDirectory(workingCopy.resolve(".svn"))) {
             String checkedOutUrl = svnClient.info(workingCopy.toString(), credentials).url();
             if (checkedOutUrl.equals(url.replaceAll("/+$", ""))) {
                 return svnClient.update(workingCopy, credentials);
             }
             log.info("SVN URL changed from {} to {}; checking out again", checkedOutUrl, url);
+            // the working copy is replaced: nothing may read it meanwhile
+            hold.take("checked out again");
         }
-        return checkOutInPlace(url, workingCopy, credentials);
-    }
-
-    /**
-     * Checks the code out next to the working copy and puts it in its place only once the check-out succeeded: a server
-     * that cannot be reached leaves the old working copy (and the code the factory reads) as it was.
-     */
-    private long checkOutInPlace(String url, Path workingCopy, SvnCredentials credentials) throws IOException {
-        Path fresh = workingCopy.resolveSibling(workingCopy.getFileName() + ".new");
-        deleteWorkingCopy(fresh);
+        Path fresh2 = sibling(workingCopy, ".new");
+        deleteWorkingCopy(fresh2);
         Files.createDirectories(workingCopy.getParent());
         long revision;
         try {
-            revision = svnClient.checkout(url, fresh, credentials);
+            revision = svnClient.checkout(url, fresh2, credentials);
         } catch (RuntimeException e) {
             try {
-                deleteWorkingCopy(fresh);
+                deleteWorkingCopy(fresh2);
             } catch (IOException cleanup) {
                 e.addSuppressed(cleanup);
             }
             throw e;
         }
-        deleteWorkingCopy(workingCopy);
-        Files.move(fresh, workingCopy);
+        if (hold.held()) {
+            // checked again right before the old copy goes: a change may have started while svn was checking out
+            requireNoChangeRunning(hold.workspaceId());
+        }
+        swapIn(fresh2, workingCopy);
+        // the new working copy is in place: indexing it does not keep deliveries and changes waiting
+        hold.release();
         return revision;
+    }
+
+    private static Path sibling(Path workingCopy, String suffix) {
+        return workingCopy.resolveSibling(workingCopy.getFileName() + suffix);
+    }
+
+    /** How many times moving the new working copy into place is tried (a virus scan or the indexer can hold it briefly). */
+    static final int MOVE_TRIES = 5;
+
+    /**
+     * Puts the new working copy in place of the old one without a moment with neither: the old one is renamed to
+     * .old (which fails cleanly if a program holds a file in it), the new one moved in with a few tries, and on failure
+     * .old is renamed back. The old copy is removed last, if it can be.
+     */
+    static void swapIn(Path fresh, Path workingCopy) throws IOException {
+        Path old = sibling(workingCopy, ".old");
+        deleteWorkingCopy(old);
+        boolean had = Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS);
+        if (had) {
+            try {
+                Files.move(workingCopy, old);
+            } catch (IOException e) {
+                throw new IOException("Could not set the old working copy aside (" + e.getMessage() + "). Close any program that uses "
+                        + "its files (an editor, TortoiseSVN), then check out again.", e);
+            }
+        }
+        try {
+            moveWithTries(fresh, workingCopy);
+        } catch (IOException e) {
+            if (had) {
+                try {
+                    Files.move(old, workingCopy);
+                } catch (IOException back) {
+                    e.addSuppressed(back);
+                }
+            }
+            throw e;
+        }
+        try {
+            deleteWorkingCopy(old);
+        } catch (IOException e) {
+            log.warn("Could not remove the old working copy {}; it is removed with the next import", old, e);
+        }
+    }
+
+    private static void moveWithTries(Path from, Path to) throws IOException {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                Files.move(from, to);
+                return;
+            } catch (IOException e) {
+                if (attempt >= MOVE_TRIES) {
+                    throw e;
+                }
+                try {
+                    Thread.sleep(200L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+    }
+
+    /**
+     * Puts right what a check-out-again stopped half-way left: the old copy back when there is no working copy, and a
+     * stale .new or .old removed.
+     */
+    static void recoverWorkingCopy(Path workingCopy) throws IOException {
+        Path old = sibling(workingCopy, ".old");
+        Path fresh = sibling(workingCopy, ".new");
+        if (!Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(old, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            log.warn("Restoring the working copy {} from {}, set aside by a check-out that did not finish", workingCopy, old);
+            Files.move(old, workingCopy);
+        }
+        deleteWorkingCopy(fresh);
+        deleteWorkingCopy(old);
     }
 
     /**

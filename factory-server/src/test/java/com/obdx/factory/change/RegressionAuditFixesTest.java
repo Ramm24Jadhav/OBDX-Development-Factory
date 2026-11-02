@@ -271,7 +271,7 @@ class RegressionAuditFixesTest {
     // --- review of 57735c6: an answered request for changes no longer holds the plan ---
 
     @Test
-    void savingThePlanAnswersTheRequestEvenWhenItIsTheSame() {
+    void savingThePlanAsksTheStoreToAnswerOnlyRequestsMadeOnAnotherPlan() {
         ChangeRequest change = change(ChangeRequest.Status.PLAN_READY);
         when(planReviews.latest(id)).thenReturn(3);
         when(planReviews.record(any(), anyString(), any(), any())).thenReturn(3);
@@ -281,7 +281,8 @@ class RegressionAuditFixesTest {
         when(storage.workingCopy(any())).thenReturn(java.nio.file.Path.of("target", "no-working-copy"));
         service.updatePlan(id, change.getPlan(), "Lead");
 
-        verify(planReviews).answerRequests(id);
+        verify(planReviews).answerRequestsByEdit(eq(id), anyString(), eq(3), eq("Lead"));
+        verify(planReviews, never()).answerRequestsByAnalysis(any(), org.mockito.ArgumentMatchers.anyInt(), any());
     }
 
     // --- review of 57735c6: nothing reads the working copy while it is checked out again ---
