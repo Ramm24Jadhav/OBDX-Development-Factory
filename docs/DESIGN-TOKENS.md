@@ -117,6 +117,25 @@ strong colour for fills and icons, `-text` for text (WCAG AA on surfaces and tin
 | `--fx-control-height-sm` | `30px` | same |  |
 | `--fx-control-height-lg` | `42px` | same |  |
 
+## Borders, elevation, semantic status
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--fx-border-width` | `1px` | same | Card, field and table lines |
+| `--fx-border-width-strong` | `2px` | same | Focus outlines, the active tab, status edges |
+| `--fx-elevation-1` | `var(--fx-shadow-sm)` | follows | Cards at rest |
+| `--fx-elevation-2` | `var(--fx-shadow)` | follows | Cards on hover, popovers |
+| `--fx-elevation-3` | `var(--fx-shadow-lg)` | follows | Menus, dialogs, sheets |
+| `--fx-status-progress`, `-soft` | `var(--fx-primary-text)`, `var(--fx-primary-soft)` | follows | In progress |
+| `--fx-status-review`, `-soft` | `var(--fx-warning-text)`, `var(--fx-warning-soft)` | follows | Needs review, warning |
+| `--fx-status-done`, `-soft` | `var(--fx-success-text)`, `var(--fx-success-soft)` | follows | Done |
+| `--fx-status-failed`, `-soft` | `var(--fx-danger-text)`, `var(--fx-danger-soft)` | follows | Failed |
+| `--fx-status-neutral`, `-soft` | `var(--fx-text-body)`, `var(--fx-surface-2)` | follows | Draft, queued, closed |
+
+Grid and motion tokens (`--fx-gutter`, `--fx-gap`, `--fx-card-pad`, `--fx-touch`, `--fx-dur-*`, `--fx-ease-*`) are
+in `DESIGN-SYSTEM.md` (Motion and interaction, Responsive design). The Design System page lists every token with
+both values and copy buttons.
+
 ## Modes
 
 - **Light / Dark / System**: `preferences.theme` (Account & Preferences, the top bar, the command palette).
