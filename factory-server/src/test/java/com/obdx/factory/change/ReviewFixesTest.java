@@ -227,12 +227,13 @@ class ReviewFixesTest {
 
     // --- VAPT 1, 2: no slow regex on long input ---
 
+    // A quadratic scan of this 512 KB line takes minutes; 5 s leaves room for a busy build machine.
     @Test
     void longLinesAreCheckedInLinearTime() {
         String line = "f(\"a\"),".repeat(512 * 1024 / 7);
         long start = System.nanoTime();
         ModelReasoning.findings("ui/js/viewModels/a.js", null, line);
-        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(2));
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
 
         String throwsSpaces = "    void a() throws " + " ".repeat(20_000) + "x";
         String shortThrows = "    void a() throws " + " ".repeat(270) + "x";

@@ -5,11 +5,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,10 +53,26 @@ public class AuditLog {
         }
         args.add(Math.clamp(limit, 1, 1000));
         return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event " + where
-                        + "ORDER BY at DESC, id DESC LIMIT ?",
-                (rs, row) -> new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant().atOffset(ZoneOffset.UTC),
-                        rs.getString("username"), rs.getString("action"), rs.getObject("workspace_id", UUID.class),
-                        rs.getString("target"), rs.getString("detail")),
-                args.toArray());
+                        + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
+    }
+
+    /** One workspace's events of the given actions, newest first. */
+    public List<Event> recent(UUID workspaceId, Collection<String> actions, int limit) {
+        if (actions.isEmpty()) {
+            return List.of();
+        }
+        List<Object> args = new ArrayList<>();
+        args.add(workspaceId);
+        args.addAll(actions);
+        args.add(Math.clamp(limit, 1, 1000));
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE workspace_id = ? "
+                        + "AND action IN (" + String.join(", ", Collections.nCopies(actions.size(), "?")) + ") "
+                        + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
+    }
+
+    private static Event event(ResultSet rs, int row) throws SQLException {
+        return new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant().atOffset(ZoneOffset.UTC),
+                rs.getString("username"), rs.getString("action"), rs.getObject("workspace_id", UUID.class),
+                rs.getString("target"), rs.getString("detail"));
     }
 }

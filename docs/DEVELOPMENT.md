@@ -176,7 +176,7 @@ After every successful import the factory scans the working copy and records fac
 | Integration | Host systems (FLEXCUBE, OBPM and others), adapter classes |
 | Bank conventions | Bank Java packages, customization folders, class name suffixes, error code format, exception base classes, indentation |
 
-On the **Profile** page a developer can **Confirm** a detected value, **Correct** it (or **Enter** one that was not found), and **Reset** back to the detected value. Confirmed and corrected values are stored separately and survive later scans. If the detected OBDX version disagrees with the workspace's version, the page shows a warning. To add a fact, add it to the matching detector; every detector returns all of its facts, with "not found" where nothing was detected, so the profile doubles as a checklist.
+On the **Profile** page a developer can **Confirm** a detected value, **Correct** it (or **Enter** one that was not found), and **Reset** back to the detected value. Confirmed and corrected values are stored separately and survive later scans. If the detected OBDX version disagrees with the workspace's version, the page shows a warning. The page groups the facts by area, marks each Detected (high confidence: declared in a file), Inferred (medium or low), Confirmed, Corrected or not found, lists each fact's evidence files and its changes (from the audit log), and names the facts code generation reads (`ui.jetVersion`, `ui.moduleSystem`, `backend.eeNamespace`, `backend.javaVersion`, `conventions.customizationFolders`) when they are missing; keep that list in `viewModels/profile.js` in step with the version packs and `pack/CheckScope`. To add a fact, add it to the matching detector; every detector returns all of its facts, with "not found" where nothing was detected, so the profile doubles as a checklist.
 
 ## Requirements (document ingestion)
 
@@ -586,6 +586,12 @@ repository settings), the index figures against the server, the stale-index chec
 revision (read only), that a search result opens its file at the matching line in the viewer, result and rule filters,
 the top-bar search request, the offline message and the link to the workspace's details sheet.
 
+`node scripts/check-profile.js --url ...` checks the Project Profile page: every fact once in its area, each marked from
+its status and confidence (Detected only for high confidence, Inferred otherwise), the facts code generation reads and
+the missing ones named at the top, the scan revision, a fact opened from the keyboard with its evidence files, the
+filters, and the phone width. With `--write 1` it also saves a correction and a reset and checks the correction history;
+use that only on a factory whose data is a copy.
+
 `npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
 drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
 - the page transition runs (or is off with reduced motion);
@@ -733,6 +739,7 @@ object: compute those in the view model.
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |
 | `DELETE /api/workspaces/{id}/profile/facts/{key}` | Go back to the detected value |
+| `GET /api/workspaces/{id}/profile/history` | Who confirmed, corrected or reset which fact, newest first (the profile's audit log entries; view permission) |
 | `GET /api/model/status` | The model server and models in use, and whether they were chosen on the Models page |
 | `GET /api/model/servers/local` | Model servers on the factory's computer (Ollama, vLLM, LM Studio) with their models (administrators) |
 | `POST /api/model/servers/models` | The models of a server (`baseUrl`, optional `apiKey`; without it the stored key of that server) (administrators) |
