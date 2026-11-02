@@ -43,6 +43,10 @@ public class ImpactAnalyzer {
               a request DTO and its response DTO are separate files.
             - Reuse the existing classes that do the job (for example an existing accounts.HostAccountAdapter) instead of
               creating a parallel one with the same purpose in another package.
+            - A new UI component (a widget, a screen) is hooked into an existing one: name in its details the existing
+              component or file that loads or shows it (for example the dashboard that loads widgets, or the menu), and
+              plan a modify of that file when it must change. Do not create a new dashboard, shell, router or registry
+              file when the code already has one.
             - Use "modify" only for paths shown in the existing code or folder structure. Paths are relative, with
               forward slashes, exactly as shown.
             - basedOn lists existing files whose patterns the new or changed code should follow.
@@ -116,6 +120,39 @@ public class ImpactAnalyzer {
      * answer is whole, adds no file, or the plan has as many files as one change may have; a plan still cut off after
      * that says so in its risks.
      */
+    /**
+     * A plan the model's limit stopped (see {@link #LIMIT_STOPPED}), completed: its planned files are kept and the model
+     * is asked, as when an answer is cut off, for only the files still missing; nothing is planned again. Analyze again
+     * does this instead of starting over, so the files already planned (and paid for) are not asked for twice.
+     */
+    public ChangePlan resume(ChangeContext context, List<Candidate> candidates, Predicate<String> fileExists, ChangePlan incomplete) {
+        int cap = modelGateway.outputLimit();
+        String shortly = cap > 0 && cap < SMALL_OUTPUT ? "\nYour answers are limited to about " + cap + " tokens: keep purpose and "
+                + "details to one short sentence each." : "";
+        List<String> risks = new ArrayList<>(incomplete.risks() == null ? List.of() : incomplete.risks());
+        risks.removeIf(ImpactAnalyzer::incompleteRisk);
+        log.info("Resuming the incomplete change plan: {} file(s) planned so far", incomplete.items().size());
+        return continued(context, candidates, fileExists, new ChangePlan(incomplete.summary(), incomplete.items(), risks), shortly);
+    }
+
+    /** How the risk of a plan the model's limit (a daily or per-minute limit) stopped part-way starts. */
+    static final String LIMIT_STOPPED = "The model's limit stopped the plan before it was complete";
+    /** How the risk of a plan still cut off at the output limit after its continuations starts. */
+    static final String CUT_OFF = "The model's answer was cut off at its output limit";
+    /** How the risk of a plan whose last files were left out (more than one change may have) starts. */
+    static final String TOO_MANY = "The plan had more files than one change may have";
+
+    /** Whether a risk says files may be missing from the plan: approving such a plan needs the reviewer's confirmation. */
+    static boolean incompleteRisk(String risk) {
+        return risk != null && (risk.startsWith(LIMIT_STOPPED) || risk.startsWith(CUT_OFF) || risk.startsWith(TOO_MANY));
+    }
+
+    /** Whether Analyze again resumes the plan rather than starting over: the model's limit stopped it part-way. */
+    static boolean resumable(ChangePlan plan) {
+        return plan != null && plan.items() != null && !plan.items().isEmpty() && plan.risks() != null
+                && plan.risks().stream().anyMatch(r -> r != null && r.startsWith(LIMIT_STOPPED));
+    }
+
     private ChangePlan continued(ChangeContext context, List<Candidate> candidates, Predicate<String> fileExists, ChangePlan first,
                                  String note) {
         int maxItems = properties.maxPlanItems();
@@ -156,14 +193,15 @@ public class ImpactAnalyzer {
         if (items.size() > maxItems) {
             List<String> paths = new ArrayList<>(items.keySet());
             paths.subList(maxItems, paths.size()).forEach(items::remove);
-            risks.add(0, "The plan had more files than one change may have (" + maxItems + "); the last ones were left out. Split the "
+            risks.add(0, TOO_MANY + " (" + maxItems + "); the last ones were left out. Split the "
                     + "requirement into smaller changes, or add the missing files by hand.");
         } else if (limited != null) {
-            risks.add(0, "The model's limit stopped the plan before it was complete (" + limited + "), so files may be missing from "
-                    + "this plan. Add them before approving, or analyze again later.");
+            risks.add(0, LIMIT_STOPPED + " (" + limited + "), so files may be missing from "
+                    + "this plan. Add them before approving, or analyze again later: the files planned so far are kept and only the "
+                    + "missing ones are asked for.");
         } else if (cut) {
             int cap = modelGateway.outputLimit();
-            risks.add(0, "The model's answer was cut off at its output limit" + (cap > 0 ? " (its server writes at most " + cap
+            risks.add(0, CUT_OFF + (cap > 0 ? " (its server writes at most " + cap
                     + " tokens per answer)" : "") + ", so files may be missing from this plan. Add them before approving, or analyze "
                     + "again with a model or plan with a higher output limit.");
         }

@@ -582,10 +582,17 @@ public class CodeGenerator {
             user.append("Example file to follow, ").append(example.getKey()).append(":\n")
                     .append(ChangeContext.cap(example.getValue(), PromptFit.size(12000, scale))).append("\n\n");
         }
-        Map<String, String> related = trim < TRIM_CONTEXT ? related(item, earlier, scale) : named(item, related(item, earlier, scale));
+        // (a view's view model is kept however far the prompt is trimmed: the view is written against its names)
+        Map<String, String> related = trim < TRIM_CONTEXT ? related(item, earlier, scale)
+                : named(item, related(item, earlier, scale), viewPartner(item.path(), earlier));
         if (!related.isEmpty()) {
             user.append("Files already written in this change that this file uses (Java as signatures; use these names exactly):\n");
             related.forEach((path, outline) -> user.append("--- ").append(path).append('\n').append(outline).append('\n'));
+        }
+        String later = plannedViewModel(plan, item, earlier);
+        if (later != null) {
+            user.append("Its view model ").append(later).append(" is planned in this change but not written yet; it will be given the")
+                    .append(" names this view binds, so bind plain names (observables and functions named after what they hold or do).\n");
         }
         if (scaffold != null) {
             user.append(scaffold.kind().equals("texts")
@@ -665,11 +672,11 @@ public class CodeGenerator {
     }
 
     /** The change's files the plan item names (by file name), out of those related to it. */
-    private static Map<String, String> named(ChangePlan.Item item, Map<String, String> related) {
+    private static Map<String, String> named(ChangePlan.Item item, Map<String, String> related, String partner) {
         String said = (nullToDash(item.purpose()) + " " + nullToDash(item.details())).toLowerCase(java.util.Locale.ROOT);
         Map<String, String> named = new java.util.LinkedHashMap<>();
         related.forEach((path, outline) -> {
-            if (said.contains(baseName(path).toLowerCase(java.util.Locale.ROOT))) {
+            if (path.equals(partner) || said.contains(baseName(path).toLowerCase(java.util.Locale.ROOT))) {
                 named.put(path, outline);
             }
         });
@@ -722,7 +729,22 @@ public class CodeGenerator {
         boolean resource = isJava && PlanReview.isResource(item.path());
         Map<String, Integer> score = new java.util.LinkedHashMap<>();
         Map<String, String> outline = new java.util.LinkedHashMap<>();
+        // A JET view and its view model, written for each other: the view gets the view model's public names, the view
+        // model the names its view binds (when the view came first)
+        String partner = viewPartner(item.path(), earlier);
+        if (partner != null) {
+            score.put(partner, 10);
+            String names = partner.endsWith(".html") ? String.join(", ", ViewBindings.bound(earlier.get(partner)))
+                    : ViewBindings.outline(earlier.get(partner));
+            if (!names.isEmpty()) {
+                outline.put(partner, partner.endsWith(".html") ? "Its view binds these names (define each of them): " + names
+                        : "The view model's public names (bind only these, exactly as named): " + names);
+            }
+        }
         for (String path : earlier.keySet()) {
+            if (path.equals(partner)) {
+                continue;
+            }
             String name = baseName(path);
             boolean named = said.contains(name.toLowerCase(java.util.Locale.ROOT)) || said.contains(path.toLowerCase(java.util.Locale.ROOT));
             boolean otherJava = path.endsWith(".java");
@@ -767,6 +789,38 @@ public class CodeGenerator {
             budget -= capped.length();
         }
         return related;
+    }
+
+    /**
+     * The other half of a JET view and its view model among the files already written: for a view (x.html) its view
+     * model x.js beside it, else a model.js beside it that holds observables (as the cross-check finds it); for a view
+     * model x.js its view x.html. Null when it is not written yet.
+     */
+    static String viewPartner(String path, Map<String, String> earlier) {
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        String folder = path.contains("/") ? path.substring(0, path.lastIndexOf('/') + 1) : "";
+        if (lower.endsWith(".html")) {
+            String base = path.substring(0, path.length() - ".html".length());
+            if (earlier.containsKey(base + ".js")) {
+                return base + ".js";
+            }
+            String model = earlier.get(folder + "model.js");
+            return model != null && model.contains("ko.observable") ? folder + "model.js" : null;
+        }
+        if (lower.endsWith(".js") && !bundle(path) && !lower.endsWith("/model.js")) {
+            String view = path.substring(0, path.length() - ".js".length()) + ".html";
+            return earlier.containsKey(view) ? view : null;
+        }
+        return null;
+    }
+
+    /** For a view, its view model (x.js beside x.html) when the plan has it but it is not written yet; else null. */
+    static String plannedViewModel(ChangePlan plan, ChangePlan.Item item, Map<String, String> earlier) {
+        if (!item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html") || viewPartner(item.path(), earlier) != null) {
+            return null;
+        }
+        String viewModel = item.path().substring(0, item.path().length() - ".html".length()) + ".js";
+        return plan.items().stream().anyMatch(i -> i.path().equals(viewModel)) ? viewModel : null;
     }
 
     /** A resource bundle: an nls file or a .properties file. */

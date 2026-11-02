@@ -199,8 +199,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .then((detail) => { this.requirementId(null); show(detail); toast.success('Change created. The impact analysis is running.'); })
         .catch(failed);
       this.analyzeAgain = () => api.post(base() + '/analyze').then(done('Impact analysis started again.')).catch(failed);
+      // A plan the analysis says may be missing files is refused with what looks missing; only confirming that approves it
+      const INCOMPLETE_PLAN = 'Incomplete plan: ';
+      const approveIncomplete = (error) => (error.status === 409 && String(error.message).indexOf(INCOMPLETE_PLAN) === 0
+        ? ask('Approve an incomplete plan?', error.message.substring(INCOMPLETE_PLAN.length).replace(/^./, (c) => c.toUpperCase()),
+          'Approve Incomplete Plan', true).then((ok) => (ok ? api.post(base() + '/approve-plan?incomplete=true')
+          .then(done('Plan approved although files may be missing. The model is writing the code.')).catch(failed) : null))
+        : failed(error));
       this.approvePlan = () => ask('Approve this plan?', 'The model will write ' + this.detail().plan.items.length + ' file(s) for this change.', 'Approve Plan')
-        .then((ok) => (ok ? api.post(base() + '/approve-plan').then(done('Plan approved. The model is writing the code.')).catch(failed) : null));
+        .then((ok) => (ok ? api.post(base() + '/approve-plan').then(done('Plan approved. The model is writing the code.')).catch(approveIncomplete) : null));
       this.togglePlanJson = () => {
         this.editingPlan(!this.editingPlan());
         this.planJson(this.editingPlan() ? JSON.stringify(this.detail().plan, null, 2) : '');

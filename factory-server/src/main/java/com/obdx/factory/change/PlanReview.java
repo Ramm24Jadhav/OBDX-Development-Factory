@@ -22,7 +22,14 @@ final class PlanReview {
     static final String UNSERVED_API = "No planned file serves the API ";
     static final String SERVED_PATH = "A new REST resource for ";
     static final String SAME_NAME = "A new class has the name of an existing one in another package: ";
-    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH, SAME_NAME);
+    static final String NEW_SHELL = "A new UI file looks like glue for a shell the code already has: ";
+    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH, SAME_NAME, NEW_SHELL);
+    /**
+     * Names of the files that load, register or lay out other components (a dashboard, the app's entry point, a router,
+     * a menu): OBDX already has them, and a new component is hooked into the existing one rather than given a new one.
+     */
+    static final Set<String> SHELL_NAMES = Set.of("dashboard", "index", "main", "app", "shell", "router", "registry", "menu",
+            "navigation", "layout", "container", "loader", "home", "root", "header", "footer");
 
     /** /payments/standingInstructions/{id} in an API's name or description */
     private static final Pattern API_PATH = Pattern.compile("(?<![\\w/])(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+)*)");
@@ -64,6 +71,19 @@ final class PlanReview {
             if ("create".equals(item.action()) && item.path().endsWith(".java") && !name.equals("package-info") && !others.isEmpty()) {
                 risks.add(SAME_NAME + item.path() + " and " + String.join(", ", others) + ". Reuse the existing class, or give the new one "
                         + "a name of its own.");
+            }
+            if ("create".equals(item.action()) && shellName(item.path())) {
+                List<String> shellOthers = existing.getOrDefault(item.path().substring(item.path().lastIndexOf('/') + 1), List.of()).stream()
+                        .filter(p -> !p.equals(item.path())).toList();
+                List<String> loaded = plan.items().stream().filter(i -> "create".equals(i.action()) && !folder.isEmpty()
+                        && i.path().startsWith(folder + "/") && i.path().indexOf('/', folder.length() + 1) > 0).map(ChangePlan.Item::path).toList();
+                if (!shellOthers.isEmpty() || !loaded.isEmpty()) {
+                    risks.add(NEW_SHELL + item.path() + (shellOthers.isEmpty() ? " would load the new files under it ("
+                            + String.join(", ", loaded.stream().limit(3).toList()) + (loaded.size() > 3 ? ", ..." : "") + ")"
+                            : ", and the code already has " + String.join(", ", shellOthers)) + ". OBDX loads components through its "
+                            + "existing shell (for example a dashboard's loadComponent): hook the new component into the existing file "
+                            + "that loads it (modify it), or say why a new one is needed.");
+                }
             }
         }
         if (spec == null) {
@@ -184,6 +204,85 @@ final class PlanReview {
         String last = fixed.getLast();
         String singular = last.endsWith("ies") ? last.substring(0, last.length() - 3) + "y" : last.endsWith("s") ? last.substring(0, last.length() - 1) : last;
         return name.contains(singular);
+    }
+
+    /**
+     * A UI script or view named like a file that loads or lays out other components (dashboard.js, index.html, see
+     * {@link #SHELL_NAMES}); not a resource bundle.
+     */
+    static boolean shellName(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        String name = lower.substring(lower.lastIndexOf('/') + 1);
+        if (!name.matches("[^.]+\\.(js|html|ts|tsx|jsx)") || lower.contains("/nls/") || lower.contains("/resources/")) {
+            return false;
+        }
+        return SHELL_NAMES.contains(name.substring(0, name.indexOf('.')));
+    }
+
+    /** "database table", "new tables", "table DIGX_PY_SI", "DIGX_PY_SI": the requirement needs a table of its own. */
+    private static final Pattern TABLE = Pattern.compile("(?i:\\b(?:database|db|new|audit|history)\\s++tables?\\b)"
+            + "|(?i:\\btable\\s++)[A-Z][A-Z0-9]*+_[A-Z0-9_]++|\\bDIGX_[A-Z0-9_]++");
+    private static final Pattern REQUIREMENT_ID = Pattern.compile("\\bFR-\\d++\\b");
+    /** The most requirement ids a gap names. */
+    static final int MAX_GAP_IDS = 8;
+
+    /**
+     * What looks missing from a plan, as far as the plan and the spec tell (for a reviewer asked to approve a plan that
+     * may be incomplete): no test for the spec's acceptance criteria; no SQL script although a requirement (or a planned
+     * file) works with a table of its own; functional requirements no planned file names, when the plan names them
+     * at all. Empty when nothing can be told.
+     */
+    static List<String> gaps(ChangePlan plan, RequirementSpec spec) {
+        List<String> gaps = new ArrayList<>();
+        if (spec != null && !spec.acceptanceCriteria().isEmpty() && plan.items().stream().noneMatch(i -> "test".equals(i.layer()) || isTest(i.path()))) {
+            gaps.add("no test planned (" + spec.acceptanceCriteria().size() + " acceptance criteria)");
+        }
+        boolean sql = plan.items().stream().anyMatch(i -> "data".equals(i.layer()) || i.path().toLowerCase(Locale.ROOT).endsWith(".sql"));
+        if (!sql) {
+            List<String> needTable = new ArrayList<>();
+            if (spec != null) {
+                for (RequirementSpec.FunctionalRequirement requirement : spec.requirements()) {
+                    if (requirement.id() != null && TABLE.matcher(capped(nullToEmpty(requirement.title()) + " " + nullToEmpty(requirement.description()))).find()) {
+                        needTable.add(requirement.id());
+                    }
+                }
+            }
+            if (!needTable.isEmpty()) {
+                gaps.add("no SQL script planned, though " + ids(needTable) + (needTable.size() == 1 ? " needs" : " need") + " a table");
+            } else {
+                plan.items().stream().filter(i -> TABLE.matcher(capped(nullToEmpty(i.purpose()) + " " + nullToEmpty(i.details()))).find())
+                        .findFirst().ifPresent(i -> gaps.add("no SQL script planned, though " + i.path() + " works with a table"));
+            }
+        }
+        if (spec != null && !spec.requirements().isEmpty()) {
+            Set<String> named = new LinkedHashSet<>();
+            for (ChangePlan.Item item : plan.items()) {
+                Matcher m = REQUIREMENT_ID.matcher(capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())));
+                while (m.find()) {
+                    named.add(m.group());
+                }
+            }
+            List<String> unnamed = spec.requirements().stream().map(RequirementSpec.FunctionalRequirement::id)
+                    .filter(id -> id != null && id.matches("FR-\\d+") && !named.contains(id)).toList();
+            // Only when the plan names requirements at all: otherwise every one would be listed
+            if (!named.isEmpty() && !unnamed.isEmpty()) {
+                gaps.add(ids(unnamed) + " not named by any planned file");
+            }
+        }
+        return gaps;
+    }
+
+    private static String ids(List<String> ids) {
+        return String.join(", ", ids.stream().limit(MAX_GAP_IDS).toList()) + (ids.size() > MAX_GAP_IDS ? " and " + (ids.size() - MAX_GAP_IDS)
+                + " more" : "");
+    }
+
+    private static String capped(String text) {
+        return text.length() > 2000 ? text.substring(0, 2000) : text;
+    }
+
+    private static String nullToEmpty(String text) {
+        return text == null ? "" : text;
     }
 
     static boolean isTest(String path) {

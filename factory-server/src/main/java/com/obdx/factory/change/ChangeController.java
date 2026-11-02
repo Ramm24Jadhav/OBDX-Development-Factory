@@ -119,10 +119,13 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/approve-plan")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id,
+                                                  @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
         var user = guard.requireForChange(id, Permission.APPROVE);
-        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName());
-        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)");
+        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName(), incomplete);
+        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)"
+                + (incomplete && change.plan().risks() != null && change.plan().risks().stream().anyMatch(ImpactAnalyzer::incompleteRisk)
+                ? ", approved although files may be missing (confirmed)" : ""));
         return change;
     }
 

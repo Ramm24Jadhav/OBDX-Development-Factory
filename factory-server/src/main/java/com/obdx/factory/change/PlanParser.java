@@ -21,8 +21,6 @@ import java.util.function.Predicate;
 public final class PlanParser {
 
     static final Set<String> LAYERS = Set.of("data", "integration", "service", "ui", "test", "config");
-    /** Order in which files are generated: what other files depend on comes first. */
-    static final List<String> LAYER_ORDER = List.of("data", "integration", "service", "config", "ui", "test");
 
     private static final JsonMapper LENIENT = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS, JsonReadFeature.ALLOW_TRAILING_COMMA,
@@ -201,9 +199,9 @@ public final class PlanParser {
             throw new BadRequestException("The plan has " + items.size() + " files; at most " + maxItems + " are allowed in one change");
         }
         List<ChangePlan.Item> ordered = new ArrayList<>(items.values());
-        // By layer, and within a layer what others use first: DTOs and models, then services, then REST resources
-        ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> LAYER_ORDER.indexOf(i.layer()))
-                .thenComparingInt(i -> dependencyRank(i.path())));
+        // What others use first: SQL, then the back end's data types (DTOs) whatever layer they were given, adapters,
+        // services, REST resources, configuration, the UI, the tests
+        ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> stage(i.layer(), i.path())));
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream().filter(r -> r != null && !r.isBlank()).toList());
         List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
         risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
@@ -246,6 +244,26 @@ public final class PlanParser {
     }
 
     /**
+     * Where a file is written in the plan's order, so that a file written later sees the names of those it uses: SQL
+     * scripts 0; the back end's data types (DTOs, models, requests, exceptions) 1, whatever layer the model gave them;
+     * integration adapters, data access and mappers 2; services and other classes 3; REST resources 4; configuration 5;
+     * the UI from 10 (resource bundles, models, view models, views); tests from 20. A host adapter is so written after
+     * the DTOs it maps to, not before them because the model called it "integration".
+     */
+    static int stage(String layer, String path) {
+        int rank = dependencyRank(path);
+        boolean java = path.toLowerCase(Locale.ROOT).endsWith(".java");
+        return switch (layer == null ? "" : layer) {
+            case "ui" -> 10 + rank;
+            case "test" -> 20 + rank;
+            case "config" -> 5;
+            case "data" -> java ? 1 + Math.min(rank, 1) : 0;
+            case "integration" -> java && rank == 0 ? 1 : 2;
+            default -> java ? 1 + rank : 3;
+        };
+    }
+
+    /**
      * Where a file stands among those it depends on: data types (DTOs, models, entities, requests, responses) 0, data
      * access and adapters 1, services and other classes 2, REST resources and controllers 3; in a UI, resource bundles
      * 0, models 1, view models 2, views 3. Files the model writes later see the earlier ones' names.
@@ -254,7 +272,8 @@ public final class PlanParser {
         String lower = path.toLowerCase(Locale.ROOT);
         String name = lower.substring(lower.lastIndexOf('/') + 1);
         if (lower.endsWith(".java")) {
-            if (name.matches(".*(dto|model|entity|request|response|vo|enum|constants)\\.java") || lower.contains("/dto/") || lower.contains("/model/")) {
+            if (name.matches(".*(dto|model|entity|request|response|vo|enum|constants|exception)\\.java") || lower.contains("/dto/")
+                    || lower.contains("/model/")) {
                 return 0;
             }
             if (name.matches(".*(dao|repository|assembler|adapter|mapper)\\.java")) {
