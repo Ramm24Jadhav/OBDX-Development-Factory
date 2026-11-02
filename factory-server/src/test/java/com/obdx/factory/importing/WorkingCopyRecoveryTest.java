@@ -104,6 +104,31 @@ class WorkingCopyRecoveryTest {
         assertThat(temp.resolve("checkout.old")).doesNotExist();
     }
 
+    /** Final check of 647f1d4: a leftover that cannot be removed yet never fails an import while the working copy is fine. */
+    @Test
+    void aLeftoverInUseDoesNotFailTheImportOrTheSwap(@TempDir Path temp) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeTrue(System.getProperty("os.name").toLowerCase().contains("win"),
+                "only Windows refuses to delete a file that is open");
+        Path wc = Files.createDirectories(temp.resolve("checkout"));
+        Files.writeString(wc.resolve("old.txt"), "old");
+        Path stale = Files.createDirectories(temp.resolve("checkout.old"));
+        Path open = Files.writeString(stale.resolve("held.txt"), "x");
+        try (var held = Files.newInputStream(open)) {
+            assertThatCode(() -> ImportService.recoverWorkingCopy(wc)).doesNotThrowAnyException();
+            assertThat(wc.resolve("old.txt")).hasContent("old");
+
+            Path fresh = Files.createDirectories(temp.resolve("checkout.new"));
+            Files.writeString(fresh.resolve("new.txt"), "new");
+            ImportService.swapIn(fresh, wc);
+            assertThat(wc.resolve("new.txt")).hasContent("new");
+        }
+        // once nothing holds them, the leftovers are swept by the next import
+        ImportService.recoverWorkingCopy(wc);
+        try (var left = Files.list(temp)) {
+            assertThat(left.map(p -> p.getFileName().toString()).toList()).containsExactly("checkout");
+        }
+    }
+
     @Test
     void aMissingWorkingCopyIsNothingToRemove(@TempDir Path temp) {
         assertThatCode(() -> ImportService.deleteWorkingCopy(temp.resolve("none"))).doesNotThrowAnyException();

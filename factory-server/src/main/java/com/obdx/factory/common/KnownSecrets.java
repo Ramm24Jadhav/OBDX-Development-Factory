@@ -110,6 +110,22 @@ public final class KnownSecrets {
         return secret.length() < WHOLE_WORD_BELOW || secret.length() < PLAIN_WORD_BELOW && secret.chars().allMatch(Character::isLetter);
     }
 
+    /**
+     * Says in the log when a secret being saved is one the factory never masks (a placeholder such as "ollama", or a word
+     * of the refusals the UI confirms, such as "Failing"): it is stored and used as it is, but a server that echoes it
+     * shows it in messages. The value itself is not written.
+     */
+    public static void warnIfNotMasked(String what, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        String lower = value.strip().toLowerCase(java.util.Locale.ROOT);
+        if (DUMMIES.contains(lower) || CONTRACT_WORDS.contains(lower)) {
+            org.slf4j.LoggerFactory.getLogger(KnownSecrets.class).warn("The {} saved is a common word or placeholder, so messages do not hide "
+                    + "it if a server echoes it. Use a real secret if it is one.", what);
+        }
+    }
+
     /** Forgets the values used at run time and keeps the settings' (for tests: a Spring context registers those once). */
     public static void clearUsed() {
         synchronized (used) {

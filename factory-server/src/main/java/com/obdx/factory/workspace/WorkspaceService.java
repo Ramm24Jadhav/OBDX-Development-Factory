@@ -77,6 +77,7 @@ public class WorkspaceService {
         workspace.setSvnUrl(url);
         workspace.setSvnUsername(blankToNull(request.svnUsername()));
         if (request.svnPassword() != null) {
+            com.obdx.factory.common.KnownSecrets.warnIfNotMasked("SVN password", request.svnPassword());
             workspace.setSvnPasswordEncrypted(request.svnPassword().isEmpty() ? null : secretCipher.encrypt(request.svnPassword()));
         }
         return WorkspaceResponse.from(workspace);

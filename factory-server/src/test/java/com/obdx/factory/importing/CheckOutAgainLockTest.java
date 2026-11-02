@@ -65,6 +65,28 @@ class CheckOutAgainLockTest {
     }
 
     @Test
+    void aJobThatCannotBeSavedGivesTheLockBack() {
+        ImportService service = service(queued::add);
+        when(jobs.save(any())).thenThrow(new IllegalStateException("database gone"));
+
+        assertThatThrownBy(() -> service.start(workspace.getId(), true, "dev")).isInstanceOf(IllegalStateException.class);
+
+        assertThat(locks.holder(workspace.getId())).isNull();
+        assertThat(queued).isEmpty();
+    }
+
+    @Test
+    void aJobThatCannotBeReadGivesTheLockBack() {
+        ImportService service = service(queued::add);
+        service.start(workspace.getId(), true, "dev");
+        when(jobs.findById(any())).thenThrow(new IllegalStateException("database gone"));
+
+        assertThatThrownBy(() -> queued.getFirst().run()).isInstanceOf(IllegalStateException.class);
+
+        assertThat(locks.holder(workspace.getId())).isNull();
+    }
+
+    @Test
     void aChangeBeingWrittenRefusesCheckOutAgain() {
         ImportService service = service(queued::add);
         when(jdbc.queryForObject(anyString(), eq(Integer.class), eq(workspace.getId()))).thenReturn(1);

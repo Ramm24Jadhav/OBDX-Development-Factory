@@ -370,6 +370,12 @@ class ChangeFlowIntegrationTest {
                         org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
                         org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
                         org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.APPROVED, "Lead", 2));
+        // A request made before any revision was recorded (revision null) is answered by a new analysis only, never by a Save
+        PlanReviewStore.Comment early = planReviewStore.comment(changeId, null, PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", "Before revisions");
+        assertThat(planReviewStore.answerRequestsByEdit(changeId, "{\"summary\": \"other\"}", 2, "dev1")).isZero();
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 2, "Impact analysis")).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT answered_by FROM change_plan_comment WHERE id = ?", String.class, early.id()))
+                .isEqualTo("Impact analysis");
         waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "generation");
         ChangeService.ChangeDetail generated = changes.get(changeId);
         assertThat(generated.planApprovedBy()).isEqualTo("Lead");

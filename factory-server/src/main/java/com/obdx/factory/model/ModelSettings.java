@@ -211,6 +211,9 @@ public class ModelSettings {
     /** The encrypted key to store: null in the update keeps the key stored for this server, empty removes it. */
     private String keyToStore(String requested, String url) {
         String apiKey = requested == null ? storedKeyFor(url) : requested.isBlank() ? null : requested.strip();
+        if (requested != null) {
+            com.obdx.factory.common.KnownSecrets.warnIfNotMasked("model API key", apiKey);
+        }
         try {
             return apiKey == null || apiKey.equals("not-needed") ? null : cipher.encrypt(apiKey);
         } catch (SecretCipher.MissingSecretKeyException e) {

@@ -83,11 +83,12 @@ public class PlanReviewStore {
 
     /**
      * Marks answered the open requests for changes made on a plan that differs from the saved one: a Save that leaves the
-     * plan as it was when the request was made answers nothing. Returns how many were answered.
+     * plan as it was when the request was made answers nothing, and a request made before any revision was recorded
+     * (revision null) is answered only by a new analysis. Returns how many were answered.
      */
     public int answerRequestsByEdit(UUID changeId, String planJson, int revision, String by) {
         return jdbc.update("UPDATE change_plan_comment c SET answered_at = ?, answered_by = ?, answered_revision = ? WHERE c.change_id = ? "
-                        + "AND c.kind = ? AND c.answered_at IS NULL AND NOT EXISTS (SELECT 1 FROM change_plan_revision r "
+                        + "AND c.kind = ? AND c.answered_at IS NULL AND c.revision IS NOT NULL AND NOT EXISTS (SELECT 1 FROM change_plan_revision r "
                         + "WHERE r.change_id = c.change_id AND r.revision = c.revision AND r.plan = ?::jsonb)",
                 Timestamp.from(Instant.now()), by, revision, changeId, Kind.CHANGES_REQUESTED.name(), planJson);
     }

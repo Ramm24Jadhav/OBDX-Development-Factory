@@ -103,15 +103,23 @@ public class ImportService {
             // taken here, in the same synchronized step as the checks, so nothing can start in between
             hold.take("checked out again");
         }
-        ImportJob job = jobs.save(new ImportJob(workspaceId, workspace.getIndexedRevision()));
+        ImportJob job = null;
         try {
-            executor.execute(() -> run(job.getId(), fresh, by, hold));
+            job = jobs.save(new ImportJob(workspaceId, workspace.getIndexedRevision()));
+            UUID jobId = job.getId();
+            executor.execute(() -> run(jobId, fresh, by, hold));
         } catch (RuntimeException e) {
             // the job never runs: the working copy is free again
             hold.release();
-            job.start();
-            job.fail("The import could not be started: " + com.obdx.factory.common.Messages.reason(e) + ". Try again.");
-            jobs.save(job);
+            if (job != null) {
+                try {
+                    job.start();
+                    job.fail("The import could not be started: " + com.obdx.factory.common.Messages.reason(e) + ". Try again.");
+                    jobs.save(job);
+                } catch (RuntimeException saveFailed) {
+                    e.addSuppressed(saveFailed);
+                }
+            }
             throw e;
         }
         return ImportJobResponse.from(job);
@@ -217,6 +225,15 @@ public class ImportService {
 
     /** @param hold the working copy lock (taken by start for check out again; taken here when the SVN URL changed) */
     void run(UUID jobId, boolean fresh, String by, WorkingCopyHold hold) {
+        // the lock is given back whatever happens, also when the job cannot even be read or saved
+        try {
+            runJob(jobId, fresh, by, hold);
+        } finally {
+            hold.release();
+        }
+    }
+
+    private void runJob(UUID jobId, boolean fresh, String by, WorkingCopyHold hold) {
         ImportJob job = jobs.findById(jobId).orElseThrow();
         job.start();
         jobs.save(job);
@@ -262,18 +279,6 @@ public class ImportService {
         jobs.save(job);
     }
 
-    /** On start: a check-out-again the factory stopped half-way leaves no workspace without its code. */
-    @EventListener(ApplicationReadyEvent.class)
-    public void recoverWorkingCopies() {
-        for (Workspace workspace : workspaces.findAll()) {
-            try {
-                recoverWorkingCopy(storage.workingCopy(workspace.getId()));
-            } catch (IOException | RuntimeException e) {
-                log.warn("Could not put right the working copy of workspace {}", workspace.getId(), e);
-            }
-        }
-    }
-
     /** The profile follows the code, so it is re-detected after every import. A failure here does not fail the import. */
     private String refreshProfile(UUID workspaceId) {
         try {
@@ -306,21 +311,23 @@ public class ImportService {
                 return svnClient.update(workingCopy, credentials);
             }
             log.info("SVN URL changed from {} to {}; checking out again", checkedOutUrl, url);
-            // the working copy is replaced: nothing may read it meanwhile
+        }
+        if (Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            // a folder that is there (a working copy of another URL, or one without .svn) is replaced: nothing may read it
+            // meanwhile, and the changes are checked again before it goes
             hold.take("checked out again");
         }
         Path fresh2 = sibling(workingCopy, ".new");
-        deleteWorkingCopy(fresh2);
+        if (!removeLeftover(fresh2)) {
+            fresh2 = sibling(workingCopy, ".new-" + System.currentTimeMillis());
+        }
         Files.createDirectories(workingCopy.getParent());
         long revision;
         try {
             revision = svnClient.checkout(url, fresh2, credentials);
         } catch (RuntimeException e) {
-            try {
-                deleteWorkingCopy(fresh2);
-            } catch (IOException cleanup) {
-                e.addSuppressed(cleanup);
-            }
+            // (what svn left is removed if it can be; the error is svn's)
+            removeLeftover(fresh2);
             throw e;
         }
         if (hold.held()) {
@@ -347,7 +354,10 @@ public class ImportService {
      */
     static void swapIn(Path fresh, Path workingCopy) throws IOException {
         Path old = sibling(workingCopy, ".old");
-        deleteWorkingCopy(old);
+        if (!removeLeftover(old)) {
+            // a leftover that cannot go yet does not stop the swap: this one sets the copy aside under its own name
+            old = sibling(workingCopy, ".old-" + System.currentTimeMillis());
+        }
         boolean had = Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS);
         if (had) {
             try {
@@ -401,13 +411,75 @@ public class ImportService {
      */
     static void recoverWorkingCopy(Path workingCopy) throws IOException {
         Path old = sibling(workingCopy, ".old");
-        Path fresh = sibling(workingCopy, ".new");
-        if (!Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(old, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
-            log.warn("Restoring the working copy {} from {}, set aside by a check-out that did not finish", workingCopy, old);
-            Files.move(old, workingCopy);
+        if (!Files.exists(workingCopy, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            Path setAside = Files.isDirectory(old, java.nio.file.LinkOption.NOFOLLOW_LINKS) ? old : newestAside(workingCopy);
+            if (setAside != null) {
+                log.warn("Restoring the working copy {} from {}, set aside by a check-out that did not finish", workingCopy, setAside);
+                Files.move(setAside, workingCopy);
+            }
         }
-        deleteWorkingCopy(fresh);
-        deleteWorkingCopy(old);
+        // with the working copy in place, what is left over is removed if it can be; it never fails the import
+        removeLeftover(sibling(workingCopy, ".new"));
+        removeLeftover(old);
+        sweep(workingCopy);
+    }
+
+    /**
+     * Removes a leftover .new or .old. One that cannot be removed now (a program holds a file in it) is renamed aside
+     * (".old-1730591400000") to be swept by a later import. False only when it is still in the way under its own name.
+     */
+    static boolean removeLeftover(Path leftover) {
+        if (!Files.exists(leftover, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            return true;
+        }
+        try {
+            deleteWorkingCopy(leftover);
+            return true;
+        } catch (IOException e) {
+            Path aside = leftover.resolveSibling(leftover.getFileName() + "-" + System.currentTimeMillis());
+            try {
+                Files.move(leftover, aside);
+                log.warn("Could not remove {} ({}); set aside as {} to be removed later", leftover, e.getMessage(), aside);
+                return true;
+            } catch (IOException moveFailed) {
+                log.warn("Could not remove or set aside {} ({}); it is tried again with the next import", leftover, e.getMessage());
+                return false;
+            }
+        }
+    }
+
+    /** The leftovers set aside earlier (checkout.old-..., checkout.new-...), removed if they can be now. */
+    private static void sweep(Path workingCopy) {
+        Path parent = workingCopy.getParent();
+        if (parent == null || !Files.isDirectory(parent)) {
+            return;
+        }
+        String name = workingCopy.getFileName().toString();
+        try (var entries = Files.list(parent)) {
+            for (Path p : entries.filter(p -> p.getFileName().toString().startsWith(name + ".old-")
+                    || p.getFileName().toString().startsWith(name + ".new-")).toList()) {
+                try {
+                    deleteWorkingCopy(p);
+                } catch (IOException e) {
+                    log.warn("Could not remove the leftover {} yet ({})", p, e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            log.warn("Could not look for leftovers next to {}", workingCopy, e);
+        }
+    }
+
+    /** The newest working copy set aside under its own name (checkout.old-<time>), or null. */
+    private static Path newestAside(Path workingCopy) throws IOException {
+        Path parent = workingCopy.getParent();
+        if (parent == null || !Files.isDirectory(parent)) {
+            return null;
+        }
+        String prefix = workingCopy.getFileName() + ".old-";
+        try (var entries = Files.list(parent)) {
+            return entries.filter(p -> p.getFileName().toString().startsWith(prefix) && Files.isDirectory(p, java.nio.file.LinkOption.NOFOLLOW_LINKS))
+                    .max(java.util.Comparator.comparing(p -> p.getFileName().toString())).orElse(null);
+        }
     }
 
     /**
