@@ -149,7 +149,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               : 'Every document is already embedded with the current model.');
             return this.load();
           })
-          .catch((e) => toast.error(e.message))
+          .catch((e) => toast.error(ui.errorText(e)))
           .finally(() => this.embedAllBusy(false));
       };
       // Older revisions are kept as history; they are listed only on request
@@ -206,7 +206,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.privacy = ko.pureComputed(() => (this.overview() || {}).privacy || "");
 
       this.load = () => api.get('knowledge').then((o) => { this.overview(o); this.errorMessage(''); })
-        .catch((e) => this.errorMessage('Could not load the library: ' + e.message));
+        .catch((e) => this.errorMessage('Could not load the library: ' + ui.errorText(e)));
       let timer = null;
       const poll = () => {
         window.clearTimeout(timer);
@@ -244,7 +244,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.oracleVersions(list.map((v) => ({ value: v, label: 'OBDX ' + v })));
           if (!this.oracleVersion() && list.length) { this.oracleVersion(list[0]); }
           this.oracleNote('');
-        }).catch((e) => { versionsLoaded = false; this.oracleNote(e.message); });
+        }).catch((e) => { versionsLoaded = false; this.oracleNote(ui.errorText(e)); });
       };
       this.followOracle = () => {
         if (!this.oracleVersion()) { return; }
@@ -254,15 +254,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             toast.success('Checking Oracle’s site for the OBDX ' + f.obdxVersion + ' manuals. New and changed ones are imported in the background.');
             return this.loadOracle().then(poll);
           })
-          .catch((e) => toast.error(e.message)).finally(() => this.oracleBusy(false));
+          .catch((e) => toast.error(ui.errorText(e))).finally(() => this.oracleBusy(false));
       };
       this.checkOracle = (version) => api.post('knowledge/oracle/' + version + '/check')
         .then(() => { toast.info('Checking Oracle’s site for changed OBDX ' + version + ' manuals.'); return this.loadOracle().then(poll); })
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
       this.stopOracle = (version) => dialog.confirm({ title: 'Stop following OBDX ' + version + '?',
         message: 'The manuals already imported stay in the library; Oracle’s new patchsets and fixes are no longer picked up.', confirmLabel: 'Stop following' })
         .then((ok) => (ok ? api.del('knowledge/oracle/' + version).then(() => { toast.success('No longer following OBDX ' + version); return this.loadOracle(); }) : null))
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
       this.tab.subscribe((t) => { if (t === 'documents') { this.loadOracleVersions(); } });
 
       // --- import ---
@@ -283,7 +283,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.importBusy(true);
         api.post('knowledge/import', { folder: this.importFolder(), obdxVersion: this.importVersion(), patchset: this.importPatchset() || null,
           workspaceId: this.forBank() ? this.workspaceId() : null })
-          .then(reportImport).catch((e) => toast.error(e.message)).finally(() => this.importBusy(false));
+          .then(reportImport).catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
       };
       this.upload = (event) => {
         const files = Array.from(event.target.files || []);
@@ -297,22 +297,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           if (this.importPatchset()) { form.append('patchset', this.importPatchset()); }
           if (this.forBank() && this.workspaceId()) { form.append('workspaceId', this.workspaceId()); }
           return api.upload('knowledge/documents', form).then(reportImport);
-        }), Promise.resolve()).catch((e) => toast.error(e.message)).finally(() => this.importBusy(false));
+        }), Promise.resolve()).catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
       };
       this.checkFolder = (f) => {
         f.busy(true);
         return api.post('knowledge/folders/' + f.id + '/check')
           .then((r) => { if (!r.queued.length) { toast.info('No new or changed documents in ' + f.folder + '.'); return this.load(); } return reportImport(r); })
-          .catch((e) => toast.error(e.message)).finally(() => f.busy(false));
+          .catch((e) => toast.error(ui.errorText(e))).finally(() => f.busy(false));
       };
       this.stopFolder = (f) => dialog.confirm({ title: 'Stop watching this folder?', message: f.folder + '\nIts documents stay in the library; new and changed files there are no longer picked up.', confirmLabel: 'Stop watching' })
         .then((ok) => (ok ? api.del('knowledge/folders/' + f.id).then(() => { toast.success('No longer watching ' + f.folder); return this.load(); }) : null))
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
       this.chooseFiles = () => { const input = document.getElementById('libraryUpload'); if (input) { input.click(); } };
-      this.embedAgain = (d) => api.post('knowledge/documents/' + d.id + '/embed').then(() => { toast.info('Embedding again: ' + d.title); return this.load(); }).catch((e) => toast.error(e.message));
+      this.embedAgain = (d) => api.post('knowledge/documents/' + d.id + '/embed').then(() => { toast.info('Embedding again: ' + d.title); return this.load(); }).catch((e) => toast.error(ui.errorText(e)));
       this.removeDocument = (d) => dialog.confirm({ title: 'Remove "' + d.title + '"?', message: 'Its sections leave the knowledge base. Notes stay.', confirmLabel: 'Remove', danger: true })
         .then((ok) => (ok ? api.del('knowledge/documents/' + d.id).then(() => { toast.success('Removed ' + d.title); return this.load(); }) : null))
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
 
       // --- ask ---
       this.question = ko.observable('');
@@ -383,7 +383,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               made: r.byModel ? '' : 'Improved without the model (none available or its reply could not be used).'
             }));
           })
-          .catch((e) => toast.error('Not improved: ' + e.message))
+          .catch((e) => toast.error('Not improved: ' + ui.errorText(e)))
           .finally(() => this.improving(false));
       };
       this.cancelImprove = () => { this.improvement(null); this.improvedText(''); };
@@ -482,11 +482,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         })
           .then(() => {
             if (failed) {
-              toast.error('Not answered: ' + failed);
+              toast.error('Not answered: ' + ui.errorText(failed));
               if (!this.answerText()) { this.answer(null); }
             }
           })
-          .catch((e) => { this.answer(null); toast.error('Not answered: ' + e.message); })
+          .catch((e) => { this.answer(null); toast.error('Not answered: ' + ui.errorText(e)); })
           .finally(() => this.asking(false));
       };
       this.rate = (helpful) => () => {
@@ -494,13 +494,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         if (!a || this.rated() !== null) { return; }
         api.post('knowledge/feedback', { workspaceId: this.workspaceId() || null, question: a.question, answer: this.answerText(), helpful: helpful, sources: a.sources,
           comment: a.report ? 'quality ' + a.report.quality.status + (a.improved ? '; improved question: ' + a.improved : '') : null })
-          .then(() => { this.rated(helpful); toast.success('Thank you. Feedback shows which answers need better knowledge.'); }).catch((e) => toast.error(e.message));
+          .then(() => { this.rated(helpful); toast.success('Thank you. Feedback shows which answers need better knowledge.'); }).catch((e) => toast.error(ui.errorText(e)));
       };
       this.saveAnswer = () => {
         const a = this.answer();
         if (!a) { return; }
         api.post('knowledge/notes', { workspaceId: null, versionLine: a.versionLine, topic: null, title: a.question.slice(0, 280), body: this.answerText(), sources: a.sources })
-          .then(() => { toast.success('Saved as a suggested note. A reviewer approves it on the Notes tab.'); return this.load(); }).catch((e) => toast.error(e.message));
+          .then(() => { toast.success('Saved as a suggested note. A reviewer approves it on the Notes tab.'); return this.load(); }).catch((e) => toast.error(ui.errorText(e)));
       };
 
       // --- notes ---
@@ -527,13 +527,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
       }));
       this.loadNotes = () => api.get('knowledge/notes' + (this.noteFilter() && this.noteFilter() !== 'CHECK' ? '?status=' + this.noteFilter() : '')).then((list) => this.notesRaw(list))
-        .catch((e) => toast.error('Could not load the notes: ' + e.message));
+        .catch((e) => toast.error('Could not load the notes: ' + ui.errorText(e)));
       this.noteFilter.subscribe(() => this.loadNotes());
       this.review = (n, status) => () => api.post('knowledge/notes/' + n.id + '/review', { status: status })
         .then(() => { toast.success(status === 'TRUSTED' ? 'Approved: code generation uses it now.' : status === 'REJECTED' ? 'Rejected.' : 'Back to suggested.'); this.loadNotes(); this.load(); })
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
       this.removeNote = (n) => () => dialog.confirm({ title: 'Delete the note "' + n.title + '"?', message: 'It leaves the knowledge base.', confirmLabel: 'Delete', danger: true })
-        .then((ok) => (ok ? api.del('knowledge/notes/' + n.id).then(() => { this.loadNotes(); this.load(); }) : null)).catch((e) => toast.error(e.message));
+        .then((ok) => (ok ? api.del('knowledge/notes/' + n.id).then(() => { this.loadNotes(); this.load(); }) : null)).catch((e) => toast.error(ui.errorText(e)));
 
       this.newOpen = ko.observable(false);
       this.newTitle = ko.observable('');
@@ -543,7 +543,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.toggleNew = () => this.newOpen(!this.newOpen());
       this.saveNew = () => api.post('knowledge/notes', { workspaceId: this.newForBank() ? this.workspaceId() : null, versionLine: null, topic: this.newTopic(), title: this.newTitle(), body: this.newBody(), sources: [] })
         .then(() => { toast.success('Saved as a suggested note.'); this.newTitle(''); this.newTopic(''); this.newBody(''); this.newOpen(false); this.loadNotes(); this.load(); })
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(ui.errorText(e)));
 
       this.summaryTopic = ko.observable('');
       this.summarising = ko.observable(false);
@@ -552,7 +552,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.summarising(true);
         api.post('knowledge/summaries', { topic: this.summaryTopic(), workspaceId: this.workspaceId() || null })
           .then(() => { toast.success('Drafted a note from the manuals. Review it below.'); this.summaryTopic(''); this.noteFilter('SUGGESTED'); this.loadNotes(); this.load(); })
-          .catch((e) => toast.error(e.message)).finally(() => this.summarising(false));
+          .catch((e) => toast.error(ui.errorText(e))).finally(() => this.summarising(false));
       };
 
       this.connected = () => {

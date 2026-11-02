@@ -4,7 +4,7 @@
  * workspace's OBDX version, and the approved and suggested notes) and answers with numbered citations, listed under the
  * answer. The answer appears as the model writes it. The page context is built from data the page already shows.
  */
-define(['knockout', './api', './workspaceSelection'], function (ko, api, workspaceSelection) {
+define(['knockout', './api', './workspaceSelection', './ui'], function (ko, api, workspaceSelection, ui) {
   const MAX_PROMPT = 19000;
 
   /**
@@ -74,10 +74,11 @@ define(['knockout', './api', './workspaceSelection'], function (ko, api, workspa
         })
         .catch((error) => {
           if (waiting()) {
-            messages.push({ mine: false, text: error.message, meta: 'Not answered', css: 'factory-ai-msg factory-ai-error' });
+            // Nothing from the model: the factory's own message (a refusal or a failure), not an answer
+            messages.push({ mine: false, text: ui.shortError(error.message).text, meta: 'Not answered', css: 'factory-ai-msg factory-ai-error', failed: true });
           } else {
             // Part of the answer was written: keep it, and say why it stopped
-            reply.meta('Not finished: ' + error.message);
+            reply.meta('Not finished: ' + ui.shortError(error.message).text);
             reply.css('factory-ai-msg factory-ai-error');
           }
         })

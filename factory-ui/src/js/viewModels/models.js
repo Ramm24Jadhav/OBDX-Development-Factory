@@ -29,8 +29,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.errorMessage = ko.observable('');
       this.busy = ko.observable(false);
       // Loading problems stay on the page; the result of an action is a toast
-      const showError = (error) => this.errorMessage(error.message);
-      const actionError = (error) => toast.error(error.message);
+      const showError = (error) => this.errorMessage(ui.errorText(error));
+      const actionError = (error) => toast.error(ui.errorText(error));
 
       // Choosing the server
       this.serverKind = ko.observable('local');
@@ -356,7 +356,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         // The last test of this server: one run here, else the one the server remembers
         p.lastCheck = ko.pureComputed(() => this.serverChecks()[norm(p.baseUrl())] || null);
         p.result = ko.pureComputed(() => (p.state() ? p.state() : p.lastCheck() ? (p.lastCheck().ok ? 'ok' : 'failed') : ''));
-        p.lastError = ko.pureComputed(() => (p.state() === 'failed' ? p.error : p.lastCheck() && !p.lastCheck().ok ? p.lastCheck().lastError : ''));
+        p.lastError = ko.pureComputed(() => (p.state() === 'failed' ? p.error : p.lastCheck() && !p.lastCheck().ok && p.lastCheck().lastError ? ui.errorText(p.lastCheck().lastError) : ''));
         p.lastOkText = ko.pureComputed(() => (p.state() === 'ok' ? 'Just now' : p.lastCheck() && p.lastCheck().lastOk ? ui.when(p.lastCheck().lastOk) : 'Never since the factory started'));
         // The server in use says so, coloured by its test (the Status row says tested or not); others say their test
         p.pill = ko.pureComputed(() => (p.testing() ? TESTING : p.active() ? ui.status(p.result() === 'ok' ? 'PASSED' : p.result() === 'failed' ? 'FAILED' : 'DRAFT', 'In use')
@@ -404,7 +404,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const key = p.key() || null;
           api.post('model/servers/models', { baseUrl: p.baseUrl(), apiKey: key })
             .then((models) => { p.models(models); p.state('ok'); if (loud) { toast.success(p.name + ' is reachable: ' + models.length + ' model' + (models.length === 1 ? '' : 's') + '.'); } })
-            .catch((error) => { p.error = error.message; p.state('failed'); if (loud) { toast.error(p.name + ' is not reachable: ' + error.message); } })
+            .catch((error) => { p.error = ui.errorText(error); p.state('failed'); if (loud) { toast.error(p.name + ' is not reachable: ' + p.error); } })
             .finally(() => { p.latency(Date.now() - start); p.checked(new Date().toLocaleTimeString()); p.testing(false); loadChecks(); });
         };
         p.use = () => {
@@ -544,7 +544,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return Object.keys(this.serverChecks()).map((k) => this.serverChecks()[k]).map((c) => ({
           name: names[norm(c.baseUrl)] || c.baseUrl, server: c.baseUrl,
           pill: c.ok ? ui.status('PASSED', 'Healthy') : ui.status('FAILED', 'Unavailable'),
-          latency: c.latencyMs + ' ms', checked: ui.when(c.lastAt), lastOk: c.lastOk ? ui.when(c.lastOk) : 'Never', error: c.ok ? '' : (c.lastError || 'No reason given')
+          latency: c.latencyMs + ' ms', checked: ui.when(c.lastAt), lastOk: c.lastOk ? ui.when(c.lastOk) : 'Never', error: c.ok ? '' : (c.lastError ? ui.errorText(c.lastError) : 'No reason given')
         }));
       });
       this.routing = ko.pureComputed(() => {

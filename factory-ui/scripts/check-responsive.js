@@ -166,11 +166,12 @@ async function popupsInWindow() {
   for (const size of SIZES) {
     await cdp('Emulation.setDeviceMetricsOverride', { width: size.w, height: size.h, deviceScaleFactor: size.scale, mobile: size.w < 768 });
     await open(BASE + '/?ojr=overview');
-    await run((opts) => new Promise((r) => window.require(['services/preferences', 'services/workspaceSelection'], (prefs, sel) => {
+    await run((opts) => new Promise((r) => window.require(['services/preferences'], (prefs) => {
       if (opts.theme) { prefs.theme(opts.theme); }
-      if (opts.workspace) { sel.selectedId(opts.workspace); }
       r(1);
-    })), { theme: args.theme || 'light', workspace: args.workspace || null });
+    })), { theme: args.theme || 'light' });
+    // The load started the app with the default workspace: choose the asked one again, once the list is in
+    await session.selectWorkspace(args.workspace || null);
     fs.mkdirSync(path.join(OUT, size.name), { recursive: true });
     for (const page of PAGES) {
       errors.length = 0;

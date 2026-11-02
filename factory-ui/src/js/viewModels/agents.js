@@ -243,9 +243,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // Agent takes several values (fx-multiselect); none chosen means all
       this.agentFilter = ko.observableArray([]);
       this.agentOptions = Object.keys(AGENTS).map((k) => ({ value: k, label: AGENTS[k].name + ' (' + AGENTS[k].task.toLowerCase() + ')' }));
-      // Workspace: the one chosen in the top bar when the page opens, or all of them
+      // Workspace: follows the top bar (choosing one here switches the top bar too), or all of them until the top bar
+      // changes or the page opens again
       this.workspaceFilter = ko.observable(workspaceSelection.selectedId() || '');
-      this.workspaceChange = ui.value(this.workspaceFilter);
+      this.workspaceChange = (event) => {
+        const id = event.target.value;
+        this.workspaceFilter(id);
+        if (id && id !== workspaceSelection.selectedId()) {
+          workspaceSelection.selectedId(id);
+        }
+      };
       this.workspaceOptions = ko.pureComputed(() => dashboard.data().map((d) => ({ id: d.workspace.id, name: d.workspace.name })));
       this.requirementFilter = ko.observable('');
       this.requirementChange = ui.value(this.requirementFilter);
@@ -510,9 +517,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         document.title = 'Agent Runs';
         attached = true;
         lastOutcome = null;
-        if (!this.workspaceFilter() && workspaceSelection.selectedId()) {
-          this.workspaceFilter(workspaceSelection.selectedId());
-        }
+        this.workspaceFilter(workspaceSelection.selectedId() || '');
+        subscriptions.push(workspaceSelection.selectedId.subscribe((id) => this.workspaceFilter(id || '')));
         subscriptions.push(this.runs.subscribe(watchFinished));
         subscriptions.push(this.anyBusy.subscribe((value) => { if (value && !timer) { schedule(); } }));
         dashboard.load().then(() => { watchFinished(this.runs()); schedule(); });

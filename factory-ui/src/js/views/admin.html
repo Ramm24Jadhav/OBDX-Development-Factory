@@ -1,5 +1,11 @@
 <div class="factory-pg factory-ad">
   <h1 class="fx-visually-hidden">Administration &amp; Access Control</h1>
+  <!-- Opened by URL without the right: a plain notice, none of the page (the server refuses its data anyway) -->
+  <oj-bind-if test="[[!isAdmin()]]">
+    <div class="fx-empty" id="adminOnly"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>
+      <strong>Only administrators can open Administration</strong>Ask an administrator of this factory if you need a user added or a role changed.</div>
+  </oj-bind-if>
+  <oj-bind-if test="[[isAdmin()]]">
   <p class="factory-ad-intro">Users, their roles in each workspace and what those roles allow. Every change is checked on the server and recorded in the audit log.</p>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-ad-alert" id="adminError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
@@ -237,4 +243,5 @@
       </oj-bind-if>
     </div>
   </fx-sheet>
+  </oj-bind-if>
 </div>

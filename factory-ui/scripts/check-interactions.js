@@ -100,7 +100,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   for (const size of SIZES) {
     await cdp('Emulation.setDeviceMetricsOverride', { width: size.w, height: size.h, deviceScaleFactor: 1, mobile: size.w < 768 });
     await open(BASE + '/?ojr=overview');
-    if (args.workspace) { await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace); await sleep(1500); }
+    if (args.workspace) { await s.selectWorkspace(args.workspace); await sleep(1500); }
     for (const page of PAGES) {
       const scope = size.name + ' ' + page;
       s.errors.length = 0;
@@ -177,7 +177,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   for (const size of [{ w: 1440, h: 900, name: '1440x900' }, { w: 375, h: 667, name: '375x667' }]) {
     await cdp('Emulation.setDeviceMetricsOverride', { width: size.w, height: size.h, deviceScaleFactor: 1, mobile: size.w < 768 });
     await open(BASE + '/?ojr=overview');
-    if (args.workspace) { await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace); }
+    if (args.workspace) { await s.selectWorkspace(args.workspace); }
     await sleep(2500);
     const scope = size.name + ' shell';
     if (size.w >= 768) {
@@ -288,7 +288,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   // ---------- Read-only operations: success on a slow network, failure offline ----------
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await open(BASE + '/?ojr=overview');
-  if (args.workspace) { await run((id) => { window.require('services/workspaceSelection').selectedId(id); return 1; }, args.workspace); }
+  if (args.workspace) { await s.selectWorkspace(args.workspace); }
   await sleep(2500);
   const operations = [
     { name: 'Workspaces refresh', page: 'workspaces', prepare: null, button: '#refreshWorkspaces' },
@@ -322,8 +322,32 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   await go('packs');
   await sleep(3500);
   await click('#pk-components');
-  await sleep(800);
-  await run(() => { const t = document.querySelector('.factory-pk-carousel .fx-carousel-track'); t.scrollLeft = 0; t.focus(); return 1; });
+  // The cards load after the tab opens: a key pressed before they are laid out scrolls by a card of no width (and snaps
+  // back). Wait, up to 8 seconds, until the cards are drawn and the track scrolls, the same for three looks in a row.
+  let ready = 0;
+  for (let i = 0; i < 40 && ready < 3; i++) {
+    await sleep(200);
+    const ok = await run(() => {
+      const t = document.querySelector('.factory-pk-carousel .fx-carousel-track');
+      const card = t && t.firstElementChild;
+      return !!card && t.children.length > 1 && card.getBoundingClientRect().width > 100 && t.scrollWidth > t.clientWidth + 100
+        && document.querySelectorAll('.factory-pk-carousel .fx-carousel-dot').length > 1;
+    });
+    ready = ok ? ready + 1 : 0;
+  }
+  // Nothing left open by the checks before (a menu or popup that takes the arrow keys), then the track has focus; a
+  // listener records whether the key reached the track and whether something else took it
+  // After the long run before, keys sent through DevTools can stop reaching the page (keySeen stayed empty): the tab is
+  // brought to the front with focus emulated, so the page takes the keys as a focused window would
+  await cdp('Page.bringToFront');
+  await cdp('Emulation.setFocusEmulationEnabled', { enabled: true });
+  await key('Escape'); await key('Escape');
+  await run(() => {
+    const t = document.querySelector('.factory-pk-carousel .fx-carousel-track'); t.scrollLeft = 0; t.focus();
+    window.fxKeySeen = [];
+    if (!window.fxKeyWatch) { window.fxKeyWatch = true; document.addEventListener('keydown', (e) => (window.fxKeySeen || []).push((e.target.id || e.target.tagName) + (e.defaultPrevented ? ' (taken)' : '')), true); }
+    return 1;
+  });
   await sleep(500);
   // What has focus when the key goes in (for a failure: the track, something inert, an overlay)
   const pre = await run(() => ({ focus: document.activeElement.className, inert: !!document.querySelector('[inert]'), overlay: !!document.querySelector('.fx-overlay, .fx-dialog, .fx-cmd') }));
@@ -339,6 +363,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
     }
   }
   car.before = pre;
+  car.keySeen = await run(() => window.fxKeySeen || []);
   await record('1440x900 packs', 'carousel moves with the arrow key', car.left > 100 && car.current === 1 && car.prevEnabled, car);
 
   // ---------- Approved assets ----------

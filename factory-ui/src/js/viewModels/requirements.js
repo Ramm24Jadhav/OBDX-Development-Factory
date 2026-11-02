@@ -234,7 +234,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.lastChecked = ko.observable('');
       this.draftingText = ko.pureComputed(() => 'Drafting the specification. The page checks every ' + (POLL_MS / 1000)
         + ' seconds' + (this.lastChecked() ? ', last at ' + this.lastChecked() : '') + ', and tells you when it is ready.');
-      this.canMakeScreens = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && this.canEdit());
+      // The server's warnings about the spec (duplicate FR, AC or NFR IDs); none from an older server
+      this.specWarnings = ko.pureComputed(() => (this.detail() && Array.isArray(this.detail().warnings) ? this.detail().warnings : []));
+      // An approved spec's next steps, each with what the server checks: screens EDIT_DESIGNS, a change MANAGE_CODE
+      this.canMakeScreens = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && session.can(this.workspaceId(), 'EDIT_DESIGNS'));
+      this.canPlanChange = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && session.can(this.workspaceId(), 'MANAGE_CODE'));
       this.canEditSpec = ko.pureComputed(() => !!this.spec() && this.canEdit() && this.detail().status !== 'APPROVED');
       this.editBlockedReason = ko.pureComputed(() => {
         const d = this.detail();
@@ -296,7 +300,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         const mine = !f.perm || session.can(this.workspaceId(), f.perm);
         const kind = !mine ? '' : f.step === 2 && !f.designs.length ? (this.canMakeScreens() ? 'screens' : '')
-          : f.step === 3 && !f.change ? (this.canEdit() ? 'plan' : '') : 'open';
+          : f.step === 3 && !f.change ? (this.canPlanChange() ? 'plan' : '') : 'open';
         return Object.assign(step(kind, f.status.text, approval + f.next + (mine ? '' : ' Waiting for ' + f.who + '.'), 'success'), { act: f.act });
       });
       this.openNext = () => {
@@ -781,16 +785,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .catch(failed);
       this.detailMenuItems = ko.pureComputed(() => {
         const d = this.detail();
-        const approved = !!d && d.status === 'APPROVED' && this.canEdit();
+        const approved = !!d && d.status === 'APPROVED';
+        const tip = (allowed, who) => (!approved ? 'Approve the specification first' : allowed ? null : 'Only ' + who + ' can do this');
         // Editing the JSON is rarely needed, so it waits here rather than beside Approve
         return [
-          { value: 'screens', label: 'Make screens in the designer', disabled: !approved },
-          { value: 'change', label: 'Plan the change', disabled: !approved },
+          { value: 'screens', label: 'Make screens in the designer', disabled: !this.canMakeScreens(), title: tip(this.canMakeScreens(), 'analysts, developers and leads') },
+          { value: 'change', label: 'Plan the change', disabled: !this.canPlanChange(), title: tip(this.canPlanChange(), 'developers and leads') },
           { separator: true },
           { value: 'json', label: this.editingJson() ? 'Close the JSON editor' : 'Edit the specification (JSON)', id: 'editJsonButton',
             disabled: !this.canEditSpec() && !this.editingJson(), title: this.canEditSpec() ? null : this.editBlockedReason() },
           { value: 'copy', label: 'Copy the specification (JSON)' },
-          { value: 'delete', label: 'Delete', disabled: !this.canEdit(), danger: true }
+          { value: 'delete', label: 'Delete', disabled: !this.canEdit(), danger: true, title: this.canEdit() ? null : 'Only analysts and leads can do this' }
         ];
       });
       this.detailMenu = (event) => {

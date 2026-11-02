@@ -70,7 +70,36 @@ for (const [name, message, expected, details] of cases) {
       + '\n  details:  ' + result.details);
   }
 }
+// errorText: what every page shows for a failed request
+const errorCases = [
+  ['a network failure', new Error('Failed to fetch'), 'Could not reach the factory. Check your connection, then try again.'],
+  ['nothing said', new Error(''), 'Something went wrong. Try again.'],
+  ['an SVN server that refuses', "svn info failed: svn: E170013: Unable to connect to a repository at URL 'svn://127.0.0.1:1/none' svn: "
+    + "E730061: Can't connect to host '127.0.0.1': No connection could be made because the target machine actively refused it.",
+  "Could not reach the repository at svn://127.0.0.1:1/none: Can't connect to host '127.0.0.1': No connection could be made because the "
+    + 'target machine actively refused it. Check the repository URL, the user name and password, and that the SVN server is running, then try again.'],
+  ['an SVN path that is missing', "Import failed: svn: E170013: Unable to connect to a repository at URL 'file:///C:/x/trunk' svn: E180001: "
+    + "Unable to open repository 'file:///C:/x/trunk'", "Import failed: Could not reach the repository at file:///C:/x/trunk: Unable to open "
+    + "repository 'file:///C:/x/trunk'. Check the repository URL, the user name and password, and that the SVN server is running, then try again."],
+  ['a Java exception name', 'Impact analysis failed: ' + server + ' failed: java.net.ConnectException. Check that the model server is running.',
+    'Impact analysis failed: The model server failed: the server refused the connection. Check that the model server is running.'],
+  ['only an exception name', 'java.net.ConnectException', 'The server refused the connection. Check that the server is running, then try again.'],
+  ['only an unknown exception name', 'org.example.ProviderException', 'The request failed. Check that the server is running, then try again.'],
+  ['an exception name alone', 'Could not get the models of http://127.0.0.1:9/v1: ConnectException. Check the address (it usually ends '
+    + 'with /v1) and that the server is running.', 'Could not get the models of http://127.0.0.1:9/v1: the server refused the connection. '
+    + 'Check the address (it usually ends with /v1) and that the server is running.'],
+  ['an exception class before its message', 'Test failed: org.example.http.ProviderException: the server closed the connection',
+    'Test failed: the server closed the connection'],
+  ['a plain message stays', 'Plan ready: 3 file(s).', 'Plan ready: 3 file(s).']
+];
+for (const [name, error, expected] of errorCases) {
+  const text = ui.errorText(error);
+  if (text !== expected) {
+    failed++;
+    console.error('Error text check failed: ' + name + '\n  got:      ' + text + '\n  expected: ' + expected);
+  }
+}
 if (failed) {
   process.exit(1);
 }
-console.log('Messages: ' + cases.length + ' cases as expected.');
+console.log('Messages: ' + (cases.length + errorCases.length) + ' cases as expected.');

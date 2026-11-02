@@ -53,7 +53,8 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
         { group: 'Actions', label: 'Keyboard shortcuts', hint: 'Show every shortcut', icon: 'help', keys: '?', run: () => helpOpen(true) },
         { group: 'Actions', label: 'Sign out', hint: 'End this session', icon: 'arrow', run: () => session.logout() }
       );
-      pages.forEach((p) => items.push({ group: 'Pages', label: p.label, hint: 'Go to page', icon: p.icon || 'arrow', keys: goKey[p.path] ? 'G ' + goKey[p.path].toUpperCase() : '', run: go(p.path) }));
+      // Administration only for administrators, as in the sidebar
+      pages.filter((p) => !p.adminOnly || session.isAdmin()).forEach((p) => items.push({ group: 'Pages', label: p.label, hint: 'Go to page', icon: p.icon || 'arrow', keys: goKey[p.path] ? 'G ' + goKey[p.path].toUpperCase() : '', run: go(p.path) }));
       workspaceSelection.options().forEach((o) => items.push({
         group: 'Workspaces', label: o.label, hint: o.value === workspaceSelection.selectedId() ? 'Current workspace' : 'Switch to this workspace', icon: 'bank',
         run: () => workspaceSelection.selectedId(o.value)

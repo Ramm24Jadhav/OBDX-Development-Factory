@@ -57,7 +57,8 @@ internal classes. Inter is used when installed; there is no web font download (b
 - **Services**: `ui.pages(list, size, sizes)` (numbered pager), `ui.menu()` (split-button and menu state, keyboard,
   outside click), `ui.carousel()` (`attach(track)` in `connected`), `ui.badge(text, tone)`, `ui.avatarTone(name)`,
   `ui.copy(text)`; `toast.success|info|warning|error(message, {action})`; `dialog.confirm({title, message,
-  confirmLabel, danger})` in place of `window.confirm`.
+  confirmLabel, danger})` in place of `window.confirm`; `ui.errorText(error)` for any failed request shown to people
+  (network failure, SVN codes and Java exception names in words, a model server's raw answer shortened by `ui.shortError`).
 - **Pages**: each page's own rules are scoped under its root class (`.factory-<prefix>`); the "Pages on the design
   system" section of `app.css` holds them. Phones: under 768 px the page grids become one column and toolbars wrap.
 

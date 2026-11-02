@@ -158,15 +158,24 @@
           <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="Insight kinds" on-keydown="[[insightKey]]">
             <oj-bind-for-each data="[[insightTabs]]"><template><button type="button" role="tab" :id="[['kni-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
           </div>
-          <oj-bind-if test="[[insight()]]">
+          <!-- Not answered (a refusal such as the privacy policy, or a failure): the factory's notice, not an AI answer -->
+          <oj-bind-if test="[[insight() && insight().failed]]">
+            <div class="fx-alert fx-alert--warning" id="insightNotice" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+              <span class="fx-alert-text"><strong>Not answered.</strong> <oj-bind-text value="[[insight().text]]"></oj-bind-text></span></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[insight() && !insight().failed]]">
             <div class="factory-kn-aiblock" id="insightBlock" role="note" aria-label="AI-generated answer">
               <p class="factory-kn-ailabel"><span class="fx-badge fx-badge--violet">AI-generated</span> <span>Not a source fact: check it against the code.</span></p>
               <div :class="[[insight().css]]" id="insightText"><oj-bind-text value="[[insight().text]]"></oj-bind-text>
                 <oj-bind-if test="[[insight().meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[insight().meta]]"></oj-bind-text></span></oj-bind-if></div>
               <h3 class="factory-kn-h3">Cited lines</h3>
               <ul class="factory-kn-cites" id="insightCitations"><oj-bind-for-each data="[[citations]]" as="ci"><template><li>
-                <button type="button" class="factory-link-sm factory-mono" on-click="[[ci.data.show]]"><oj-bind-text value="[[ci.data.label]]"></oj-bind-text></button>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ci.data.open]]" :aria-label="[['Open ' + ci.data.label + ' in the Code page']]">Open in Code</button></li></template></oj-bind-for-each></ul>
+                <oj-bind-if test="[[!ci.data.outside]]">
+                  <button type="button" class="factory-link-sm factory-mono" on-click="[[ci.data.show]]"><oj-bind-text value="[[ci.data.label]]"></oj-bind-text></button>
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ci.data.open]]" :aria-label="[['Open ' + ci.data.label + ' in the Code page']]">Open in Code</button></oj-bind-if>
+                <oj-bind-if test="[[ci.data.outside]]"><span class="factory-mono"><oj-bind-text value="[[ci.data.label]]"></oj-bind-text></span>
+                  <span class="fx-badge fx-badge--warning">Not in the file</span></oj-bind-if>
+                <oj-bind-if test="[[ci.data.note]]"><span class="factory-ov-subtle"><oj-bind-text value="[[ci.data.note]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ul>
               <oj-bind-if test="[[citations().length === 0]]"><p class="factory-kn-none">The answer cites no lines of the file.</p></oj-bind-if>
               <oj-bind-if test="[[manualSources().length > 0]]">
                 <h3 class="factory-kn-h3">Also from the knowledge base (not this code)</h3>
@@ -251,7 +260,7 @@
         <div class="factory-kn-cardhead"><h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>Logic of the open file</span></h2>
           <button type="button" :class="[[ai.busy() ? 'fx-btn fx-btn--primary fx-btn--sm is-loading' : 'fx-btn fx-btn--primary fx-btn--sm']]" on-click="[[explainLogic]]" :disabled="[[!file() || ai.busy()]]"><oj-bind-text value="[[ai.busy() ? 'Generating...' : 'Explain']]"></oj-bind-text></button></div>
         <p class="factory-card-sub"><oj-bind-text value="[[file() ? file().path : 'Open a file in the Code Explorer first.']]"></oj-bind-text></p>
-        <oj-bind-if test="[[insightTab() === 'explain' && insight()]]"><div class="factory-kn-aiblock" role="note" aria-label="AI-generated answer"><p class="factory-kn-ailabel"><span class="fx-badge fx-badge--violet">AI-generated</span> <span>Not a source fact. Its cited lines and sources are under AI Code Insights on the Code tab.</span></p>
+        <oj-bind-if test="[[insightTab() === 'explain' && insight() && !insight().failed]]"><div class="factory-kn-aiblock" role="note" aria-label="AI-generated answer"><p class="factory-kn-ailabel"><span class="fx-badge fx-badge--violet">AI-generated</span> <span>Not a source fact. Its cited lines and sources are under AI Code Insights on the Code tab.</span></p>
           <div :class="[[insight().css]]"><oj-bind-text value="[[insight().text]]"></oj-bind-text></div></div></oj-bind-if>
       </section>
     </div>

@@ -48,6 +48,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.busyCss = ko.pureComputed(() => 'fx-btn fx-btn--primary' + (this.busy() ? ' is-loading' : ''));
       const run = (promise) => { this.busy(true); return promise.finally(() => this.busy(false)); };
       this.tab = ko.observable('users');
+      // Only administrators see the page; anyone else opening it by URL gets a notice and no admin requests
+      this.isAdmin = session.isAdmin;
 
       this.localMode = ko.pureComputed(() => !session.config() || session.config().mode === 'local');
       this.authMode = ko.pureComputed(() => (session.config() ? session.config().mode : 'local'));
@@ -388,6 +390,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.connected = () => {
         accUtils.announce('Administration page loaded.');
         document.title = 'Administration';
+        if (!session.isAdmin()) {
+          return;
+        }
         loadUsers();
         api.get('workspaces').then((list) => rawWorkspaces(list) && workspaces(list.map((w) => ({ value: w.id, label: w.name + ' (' + w.bankName + ')' }))))
           .then(() => Promise.all([loadAudit(), loadAllMembers(), api.get('admin/permissions').then(rawMatrix), api.get('admin/security').then(this.security).catch(() => null)]))

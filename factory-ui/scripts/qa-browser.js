@@ -134,8 +134,14 @@ async function start(options) {
     return !!session.user();
   }, { user: user, password: password });
   if (!signedIn) { console.error('Could not sign in as ' + user + '.'); proc.kill(); process.exit(2); }
+  // A page load starts the app again with the account's default workspace: after each open() a check that needs a
+  // workspace chooses it again. Waits for the workspace list (a selection made before it loads can be replaced).
+  const selectWorkspace = (workspaceId) => (workspaceId ? run((wid) => new Promise((r) => window.require(['services/workspaceSelection'],
+    (w) => w.load().then(() => { w.selectedId(wid); r(w.selectedId()); }, () => { w.selectedId(wid); r(w.selectedId()); }))), workspaceId)
+    .then((got) => { if (got !== workspaceId) { throw new Error('Could not choose workspace ' + workspaceId + ' (selected: ' + got + ').'); } return got; })
+    : Promise.resolve(null));
   return {
-    cdp: cdp, run: run, open: open, errors: errors, ws: ws, proc: proc, profile: profile,
+    cdp: cdp, run: run, open: open, errors: errors, ws: ws, proc: proc, profile: profile, selectWorkspace: selectWorkspace,
     /** Calls fn with every DevTools event (for checks that wait for one) */
     onEvent: (fn) => listeners.push(fn),
     close: () => { ws.close(); proc.kill(); try { fs.rmSync(profile, { recursive: true, force: true }); } catch (e) { /* still held */ } }

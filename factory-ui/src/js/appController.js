@@ -288,7 +288,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
       // Search and jump: the command palette (Ctrl K, '/', or the top bar search button)
       this.palette = palette;
-      palette.init(navData.slice(1).filter((r) => r.detail && !r.detail.hidden).map((r) => ({ path: r.path, label: r.detail.label, icon: r.detail.icon })),
+      palette.init(navData.slice(1).filter((r) => r.detail && !r.detail.hidden).map((r) => ({ path: r.path, label: r.detail.label, icon: r.detail.icon, adminOnly: !!r.detail.adminOnly })),
         (path) => router.go({ path: path }));
       this.openPalette = () => palette.show('');
       this.closeShortcutsBackdrop = (event) => { if (event.target === event.currentTarget) { palette.closeHelp(); } };
