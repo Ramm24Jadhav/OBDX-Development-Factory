@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 public final class PlanParser {
 
     static final Set<String> LAYERS = Set.of("data", "integration", "service", "ui", "test", "config");
+    private static final Set<String> BACK_END_LAYERS = Set.of("data", "integration", "service");
 
     private static final JsonMapper LENIENT = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS, JsonReadFeature.ALLOW_TRAILING_COMMA,
@@ -179,6 +180,10 @@ public final class PlanParser {
             if (!LAYERS.contains(layer)) {
                 layer = guessLayer(path);
             }
+            // A view, resource bundle or JET script the model put in a back-end layer is the UI's (see stage)
+            if (BACK_END_LAYERS.contains(layer) && !PlanReview.isTest(path) && uiPath(path.toLowerCase(Locale.ROOT))) {
+                layer = "ui";
+            }
             List<String> basedOn = new ArrayList<>();
             for (String reference : item.basedOn() == null ? List.<String>of() : item.basedOn()) {
                 String clean = cleanPath(reference);
@@ -186,11 +191,11 @@ public final class PlanParser {
                     basedOn.add(clean);
                 }
             }
-            String purpose = blankToNull(item.purpose());
+            String purpose = blankToNull(withoutReasoning(item.purpose()));
             if (isBuildFile(path) && (purpose == null || !purpose.startsWith(BUILD_FILE_MARK))) {
                 purpose = BUILD_FILE_MARK + (purpose == null ? "" : " " + purpose);
             }
-            items.put(path, new ChangePlan.Item(path, action, layer, purpose, basedOn, blankToNull(item.details())));
+            items.put(path, new ChangePlan.Item(path, action, layer, purpose, basedOn, blankToNull(withoutReasoning(item.details()))));
         }
         if (items.isEmpty()) {
             throw new BadRequestException("The plan has no files to change");
@@ -204,8 +209,10 @@ public final class PlanParser {
         ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> stage(i.layer(), i.path())));
         // The risks that say the plan is incomplete are the server's own (see ChangePlan.incomplete): one written by the
         // model, or by a reviewer's edit, is dropped, as is whether the plan is incomplete (a plan sent in never sets it)
+        // and the model's talk about its input or its earlier answers ("The JSON provided was truncated ...") is no risk
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream()
-                .filter(r -> r != null && !r.isBlank() && !ImpactAnalyzer.incompleteRisk(r)).toList());
+                .filter(r -> r != null && !r.isBlank() && !ImpactAnalyzer.incompleteRisk(r)).map(PlanParser::withoutReasoning)
+                .filter(r -> !r.isBlank()).toList());
         List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
         risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
         if (!buildFiles.isEmpty()) {
@@ -251,7 +258,8 @@ public final class PlanParser {
      * scripts 0; the back end's data types (DTOs, models, requests, exceptions) 1, whatever layer the model gave them;
      * integration adapters, data access and mappers 2; services and other classes 3; REST resources 4; configuration 5;
      * the UI from 10 (resource bundles, models, view models, views); tests from 20. A host adapter is so written after
-     * the DTOs it maps to, not before them because the model called it "integration".
+     * the DTOs it maps to, not before them because the model called it "integration". What a file is by its path comes
+     * first (a test, an SQL script, a UI file, see {@link #uiPath}); the layer only where the path does not tell.
      */
     static int stage(String layer, String path) {
         int rank = dependencyRank(path);
@@ -264,6 +272,11 @@ public final class PlanParser {
         if (lower.endsWith(".sql")) {
             return 0;
         }
+        // A UI file by its path, whatever layer the model gave it (a model.js or a resource bundle it called "service"
+        // would otherwise be written before the back end's resource)
+        if (uiPath(lower)) {
+            return 10 + rank;
+        }
         return switch (layer == null ? "" : layer) {
             case "ui" -> 10 + rank;
             case "test" -> 20 + rank;
@@ -272,6 +285,19 @@ public final class PlanParser {
             case "integration" -> java && rank == 0 ? 1 : 2;
             default -> java ? 1 + rank : 3;
         };
+    }
+
+    /**
+     * Whether a path (lower case) is a UI file whatever layer it was given: a view (.html), a resource bundle (an nls
+     * folder), or a script under a channel or components folder (OBDX's JET UI). Never a Java file.
+     */
+    static boolean uiPath(String lower) {
+        if (lower.endsWith(".java")) {
+            return false;
+        }
+        String slashed = "/" + lower;
+        return lower.endsWith(".html") || slashed.contains("/nls/")
+                || (slashed.contains("/channel/") || slashed.contains("/components/")) && lower.matches(".*\\.(js|ts|jsx|tsx|json|css|scss)");
     }
 
     /**
@@ -322,6 +348,11 @@ public final class PlanParser {
             return "ui";
         }
         return "config";
+    }
+
+    /** A plan's text without the sentences in which the model talks about its input or its own answers (see ModelReasoning). */
+    static String withoutReasoning(String text) {
+        return com.obdx.factory.pack.ModelReasoning.withoutReasoningSentences(text);
     }
 
     private static String blankToNull(String value) {

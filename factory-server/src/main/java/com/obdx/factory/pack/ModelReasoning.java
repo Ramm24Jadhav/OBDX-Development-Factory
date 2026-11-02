@@ -119,6 +119,60 @@ public final class ModelReasoning {
         return found.stream().mapToInt(LocalChecks.Finding::line).min().orElse(0);
     }
 
+    /**
+     * The model talking about its input or its own answers in prose (a plan's risks, purposes and details): "The JSON
+     * provided was truncated ...", "The previous answer likely created ...", "The prompt says ...", "Let's assume ...",
+     * "Wait, ...", "I already planned ...". Not a real risk such as "the spec does not say how long rows are kept" or
+     * "the spec provided is incomplete about the host's error codes".
+     */
+    private static final Pattern PROSE = Pattern.compile("(?i)\\b(?:the|this) (?:json|input|text|context|prompt)"
+            + " (?:provided|given|above|you (?:provided|gave|sent)|in the prompt) (?:was|is|got|has been|seems|appears)(?: to be)?"
+            + " (?:truncated|cut off|cut)\\b"
+            // (not "the last response of the host": a host's responses are a real risk's words)
+            + "|\\b(?:my|your|our) (?:previous|earlier|last) (?:answer|response|reply|output|attempt)\\b"
+            + "|\\bthe (?:previous|earlier) (?:answer|reply|output)\\b"
+            + "|\\b(?:the|your) prompt (?:says|said|asks|asked|wants|requires|gives|shows|mentions|does not|doesn'?t)\\b"
+            + "|\\blet'?s (?:assume|check|see|re-?check|re-?read)\\b|\\blet us assume\\b|\\bas an ai\\b"
+            + "|\\bin this (?:response|answer)\\b|\\bthe user (?:wants|asked|asks)\\b"
+            + "|\\bi (?:already|previously) (?:wrote|planned|listed|created|answered)\\b"
+            + "|^\\W{0,3}(?:but |hmm,? |ok(?:ay)?,? )?wait\\b");
+    /** The most of a text that is read for such sentences; the rest is kept as it is. */
+    static final int MAX_PROSE = 4000;
+
+    /**
+     * The text without its sentences in which the model talks about its input or its own answers (see {@link #PROSE});
+     * empty when every sentence was such. A sentence ends at . ! or ? before a space or the end, or at a line break; a
+     * dot inside a word (model.js) ends none. Linear in the text's length.
+     */
+    public static String withoutReasoningSentences(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String read = text.length() > MAX_PROSE ? text.substring(0, MAX_PROSE) : text;
+        StringBuilder kept = new StringBuilder();
+        boolean dropped = false;
+        int start = 0;
+        for (int i = 0; i <= read.length(); i++) {
+            boolean end = i == read.length() || read.charAt(i) == '\n'
+                    || ".!?".indexOf(read.charAt(i)) >= 0 && (i + 1 == read.length() || Character.isWhitespace(read.charAt(i + 1)));
+            if (!end) {
+                continue;
+            }
+            int stop = Math.min(read.length(), i + 1);
+            String sentence = read.substring(start, stop);
+            if (PROSE.matcher(sentence.strip()).find()) {
+                dropped = true;
+            } else {
+                kept.append(sentence);
+            }
+            start = stop;
+        }
+        if (!dropped) {
+            return text;
+        }
+        return (kept + text.substring(read.length())).strip().replaceAll("[ \\t]{2,}", " ");
+    }
+
     /** A comment longer than this many lines is not taken out (it may be code the scan misread). */
     static final int MAX_REMOVED_LINES = 10;
 

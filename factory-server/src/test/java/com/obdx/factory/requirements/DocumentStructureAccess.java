@@ -10,4 +10,9 @@ public final class DocumentStructureAccess {
     public static java.util.List<RequirementSpec.Message> read(String text) {
         return DocumentStructure.read(text).messages();
     }
+
+    /** The open questions once each, as a draft merges them (SpecMerger.questions). */
+    public static java.util.List<RequirementSpec.OpenQuestion> questions(java.util.List<RequirementSpec.OpenQuestion> all) {
+        return SpecMerger.questions(all);
+    }
 }

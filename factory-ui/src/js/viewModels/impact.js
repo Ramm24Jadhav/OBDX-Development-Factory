@@ -25,10 +25,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     // The plan can only create or modify files (ChangePlan.Item.action)
     const OPERATIONS = { create: 'Create', modify: 'Modify' };
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
+    // Folders that say what kind of file is in them, not which module: a module is the folder above them
+    const KIND_FOLDERS = /^(src|main|java|com|org|net|service|services|controller|controllers|dao|dto|dtos|model|models|impl|rest|resource|resources|adapter|adapters|api|ui|js|test|tests)$/i;
+    /** The module of a planned file, from its folders only (never its name): the folder after the last modules or components
+     * folder of a JET UI (payments in channel/components/modules/payments/x/x.js), else the deepest folder that is not a kind
+     * of file (payments in backend/src/com/bank/obdx/payments/service/X.java); a file at the top has none. */
     const moduleOf = (path) => {
-      const parts = path.split('/').filter(Boolean);
-      const known = parts.findIndex((p) => /^(modules|components|service|services|controller|dao|ui|api)$/i.test(p));
-      return known >= 0 && parts[known + 1] ? parts[known + 1] : (parts.length > 1 ? parts[parts.length - 2] : parts[0]);
+      const folders = path.split('/').filter(Boolean).slice(0, -1);
+      if (!folders.length) {
+        return '(top folder)';
+      }
+      let ui = -1;
+      folders.forEach((p, i) => { if (/^(modules|components)$/i.test(p) && i + 1 < folders.length) { ui = i; } });
+      if (ui >= 0) {
+        return folders[ui + 1];
+      }
+      for (let i = folders.length - 1; i >= 0; i--) {
+        if (!KIND_FOLDERS.test(folders[i])) {
+          return folders[i];
+        }
+      }
+      return folders[folders.length - 1];
     };
     const fileName = (path) => path.split('/').pop() || path;
     // Requirement references a planned file names in its purpose or details (FR-001, AC-002, BR-003)
@@ -100,7 +117,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.requirement = ko.observable(null);
       this.workspace = ko.observable(null);
       this.review = ko.observable({ revisions: [], comments: [] });
-      this.changeChange = (event) => this.changeId(event.target.value);
+      // The change picker (fx-select, searchable like the top bar's workspace picker)
+      this.changeOptions = ko.pureComputed(() => this.changes().map((c) => ({ value: c.id, label: c.label })));
       const showError = (error) => this.errorMessage(error.message);
       const failed = (error) => { showError(error); toast.error(error.message); };
 
@@ -168,10 +186,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (d.status === 'ANALYZING') {
           return { css: 'fx-alert fx-alert--info factory-im-gate', icon: 'clock', text: 'The impact analysis is running. The plan shows here when it is ready.' };
         }
+        // A model server's raw error (its JSON, the model's address, the account) as one plain line; the whole text under Details
+        const said = ui.shortError(d.message || (d.status === 'FAILED' ? 'The impact analysis failed.' : ''));
         if (d.status === 'FAILED') {
-          return { css: 'fx-alert fx-alert--danger factory-im-gate', icon: 'alert', text: (d.message || 'The impact analysis failed.') + ' Analyze again to make a plan.' };
+          return { css: 'fx-alert fx-alert--danger factory-im-gate', icon: 'alert', text: said.text + ' Analyze again to make a plan.', details: said.details };
         }
-        return { css: 'fx-alert fx-alert--info factory-im-gate', icon: 'info', text: d.message || '' };
+        return { css: 'fx-alert fx-alert--info factory-im-gate', icon: 'info', text: said.text, details: said.details };
       });
 
       // Editing the plan's description; only possible while the plan waits for approval

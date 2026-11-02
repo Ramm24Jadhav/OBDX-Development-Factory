@@ -11,12 +11,8 @@
   <oj-bind-if test="[[changes().length > 0]]">
     <section class="factory-card factory-im-summary" id="planSummary" aria-labelledby="impactChangeTitle">
       <div class="factory-im-sumhead">
-        <label class="factory-im-pick" for="impactChange"><span class="fx-label">Change</span>
-          <select class="fx-select" id="impactChange" on-change="[[changeChange]]">
-            <oj-bind-for-each data="[[changes]]">
-              <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
-            </oj-bind-for-each>
-          </select></label>
+        <div class="factory-im-pick">
+          <fx-select id="impactChange" label="Change" searchable options="[[changeOptions]]" value="{{changeId}}" placeholder="Choose a change"></fx-select></div>
         <span class="factory-im-spacer"></span>
         <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="analyzeAgainButton" on-click="[[analyzeAgain]]" :disabled="[[!canAnalyze()]]" :data-fx-tip="[[analyzeTip]]">
           <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Analyze Again</button>
@@ -32,6 +28,8 @@
             <span :title="[[summary().requirement]]"><oj-bind-text value="[[summary().reqCode + (summary().requirement ? ' · ' + summary().requirement : '')]]"></oj-bind-text></span>
           </div>
           <div :class="[[gate().css]]" role="status" id="planGate"><span :class="[['factory-nav-icon factory-ico-' + gate().icon]]" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[gate().text]]"></oj-bind-text></span></div>
+          <oj-bind-if test="[[gate().details]]"><details class="fx-disclosure factory-err-details" id="planGateDetails"><summary>Details</summary>
+            <div class="fx-disclosure-body"><p class="fx-help"><oj-bind-text value="[[gate().details]]"></oj-bind-text></p></div></details></oj-bind-if>
           <oj-bind-if test="[[openRequest()]]">
             <div class="fx-alert fx-alert--danger factory-im-request" id="openRequest" role="note"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
               <span class="fx-alert-text"><strong>Changes requested by <oj-bind-text value="[[openRequest().author]]"></oj-bind-text></strong> (<oj-bind-text value="[[openRequest().when]]"></oj-bind-text>):

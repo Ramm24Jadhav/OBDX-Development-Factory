@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -106,7 +107,7 @@ public final class SpecMerger {
             boolean same = false;
             for (int i = 0; i < kept.size() && !same; i++) {
                 RequirementSpec.OpenQuestion k = kept.get(i);
-                if (normalize(k.question()).equals(normalize(q.question())) || DocumentStructure.sameQuestion(k.question(), q.question())) {
+                if (sameQuestion(k, q)) {
                     same = true;
                     if (k.options().isEmpty() && !q.options().isEmpty()) {
                         kept.set(i, new RequirementSpec.OpenQuestion(k.question(), first(k.reason(), q.reason()), first(k.reference(), q.reference()),
@@ -119,6 +120,52 @@ public final class SpecMerger {
             }
         }
         return kept;
+    }
+
+    /**
+     * Whether two open questions ask the same thing: the same words, the same question as DocumentStructure tells it, or
+     * most of the same words with their options ("Should a NONE name match be VALID with a warning or INVALID?" and "How
+     * should a 'NONE' name match be treated?" with the options "VALID with warning" and "INVALID"): of the words of the
+     * one with fewer (at least four), at least {@link #SAME_WORDS} are the other's.
+     */
+    static boolean sameQuestion(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
+        if (normalize(a.question()).equals(normalize(b.question())) || DocumentStructure.sameQuestion(a.question(), b.question())) {
+            return true;
+        }
+        Set<String> x = questionWords(a);
+        Set<String> y = questionWords(b);
+        Set<String> small = x.size() <= y.size() ? x : y;
+        Set<String> large = small == x ? y : x;
+        if (small.size() < 4) {
+            return false;
+        }
+        long shared = small.stream().filter(large::contains).count();
+        return shared >= SAME_WORDS * small.size();
+    }
+
+    /** The share of words two questions have in common to be the same question (see sameQuestion). */
+    static final double SAME_WORDS = 0.8;
+    /** The longest text of a question (with its options) read for its words. */
+    static final int MAX_QUESTION = 2000;
+    private static final Set<String> FILLER = Set.of("a", "an", "the", "be", "is", "are", "was", "were", "been", "should", "would", "could",
+            "can", "will", "shall", "must", "may", "do", "does", "did", "how", "what", "which", "when", "where", "who", "why", "or", "and",
+            "as", "with", "for", "of", "to", "in", "on", "at", "by", "from", "it", "its", "this", "that", "these", "those", "there", "if",
+            "any", "yes", "no", "not", "we", "our", "you", "your", "they", "their", "than", "then", "into", "per", "each", "every", "all");
+
+    /** The words of a question and its options, in lower case, without filler words and a plural s. */
+    private static Set<String> questionWords(RequirementSpec.OpenQuestion q) {
+        StringBuilder text = new StringBuilder(q.question() == null ? "" : q.question());
+        for (String option : q.options()) {
+            text.append(' ').append(option);
+        }
+        String capped = text.length() > MAX_QUESTION ? text.substring(0, MAX_QUESTION) : text.toString();
+        Set<String> words = new java.util.LinkedHashSet<>();
+        for (String w : capped.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (!w.isEmpty() && !FILLER.contains(w)) {
+                words.add(w.length() > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.substring(0, w.length() - 1) : w);
+            }
+        }
+        return words;
     }
 
     /** An ID the document gave (BR-001, BR-12): letters, a dash or none, and a number. */

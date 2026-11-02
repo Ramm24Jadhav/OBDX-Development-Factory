@@ -81,6 +81,8 @@
         <div class="factory-ch-next" id="nextAction">
           <span class="factory-ch-nextlabel">Next</span>
           <span class="factory-ch-nexttext"><oj-bind-text value="[[nextAction().text]]"></oj-bind-text></span>
+          <oj-bind-if test="[[nextAction().details]]"><details class="fx-disclosure factory-err-details" id="nextDetails"><summary>Details</summary>
+            <div class="fx-disclosure-body"><p class="fx-help"><oj-bind-text value="[[nextAction().details]]"></oj-bind-text></p></div></details></oj-bind-if>
           <oj-bind-if test="[[nextAction().label]]">
             <span class="fx-tip-wrap" :tabindex="[[nextAction().allowed ? null : '0']]" :data-fx-tip="[[nextAction().allowed ? null : nextAction().why]]">
               <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" :id="[[nextAction().id]]" on-click="[[nextAction().run]]" :disabled="[[!nextAction().allowed]]">
@@ -101,7 +103,9 @@
           <span class="factory-ov-subtle"><oj-bind-text value="[[progress().note]]"></oj-bind-text></span>
         </div>
       </oj-bind-if>
-      <oj-bind-if test="[[detail().message && !running()]]"><p class="factory-ov-subtle factory-ch-message" id="changeMessage"><oj-bind-text value="[[detail().message]]"></oj-bind-text></p></oj-bind-if>
+      <oj-bind-if test="[[lastMessage()]]"><p class="factory-ov-subtle factory-ch-message" id="changeMessage"><oj-bind-text value="[[lastMessage().text]]"></oj-bind-text></p>
+        <oj-bind-if test="[[lastMessage().details]]"><details class="fx-disclosure factory-err-details" id="changeMessageDetails"><summary>Details</summary>
+          <div class="fx-disclosure-body"><p class="fx-help"><oj-bind-text value="[[lastMessage().details]]"></oj-bind-text></p></div></details></oj-bind-if></oj-bind-if>
     </section>
 
     <!-- Three panels: the files, the selected file's code, and the side panel; both dividers can be dragged -->

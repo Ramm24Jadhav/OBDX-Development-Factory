@@ -209,8 +209,13 @@ public class ChangeService {
             List<ImpactAnalyzer.Candidate> candidates = candidates(workspace.getId(), requirement.spec());
             String print = contextPrint(context);
             // A plan the model's limit stopped part-way is completed: its files are kept and only the missing ones asked for
-            ChangePlan before = change.getPlan() == null ? null : plan(change);
-            boolean resumed = !fresh && resumes(before, workspace.getIndexedRevision(), print);
+            ChangePlan before = change.getPlan() == null ? null : storedPlan(change, requirement, print);
+            String notResumed = fresh ? "a fresh analysis was asked for" : whyNotResumed(before, workspace.getIndexedRevision(), print);
+            boolean resumed = notResumed == null;
+            if (before != null) {
+                log.info(resumed ? "Change {}: continuing the incomplete plan ({} file(s) planned)" : "Change {}: analyzing afresh, not continuing "
+                        + "the plan: {}", id, resumed ? before.items().size() : notResumed);
+            }
             ChangePlan analyzed = resumed ? analyzer.resume(context, candidates, existsIn(workspace.getId()), before)
                     : analyzer.analyze(context, candidates, existsIn(workspace.getId()));
             if (analyzed.incomplete() != null) {
@@ -243,8 +248,49 @@ public class ChangeService {
      * before may not fit, and the analysis starts afresh.
      */
     static boolean resumes(ChangePlan before, Long indexedRevision, String contextPrint) {
-        return ImpactAnalyzer.resumable(before) && before.incomplete().revision() != null
-                && before.incomplete().revision().equals(indexedRevision) && contextPrint.equals(before.incomplete().context());
+        return whyNotResumed(before, indexedRevision, contextPrint) == null;
+    }
+
+    /** Why Analyze again does not continue the plan (see {@link #resumes}), in plain words for the log; null when it does. */
+    static String whyNotResumed(ChangePlan before, Long indexedRevision, String contextPrint) {
+        if (before == null || before.items() == null || before.items().isEmpty()) {
+            return "there is no plan to continue";
+        }
+        if (before.incomplete() == null) {
+            return "the plan has no record of being incomplete";
+        }
+        if (!ImpactAnalyzer.resumable(before)) {
+            return "the plan is incomplete for another reason than the model's limit (" + before.incomplete().kind() + ")";
+        }
+        if (before.incomplete().revision() == null || !before.incomplete().revision().equals(indexedRevision)) {
+            return "the code revision changed (planned at r" + before.incomplete().revision() + ", now r" + indexedRevision + ")";
+        }
+        if (!contextPrint.equals(before.incomplete().context())) {
+            return "the spec or the screen designs changed since the plan was made";
+        }
+        return null;
+    }
+
+    /**
+     * The change's stored plan. One stored before the server kept the record of an incomplete plan gets it from the
+     * server's own risk (see ImpactAnalyzer.legacyIncomplete), with the spec and designs taken as those it was made from
+     * only when none of them was approved after the plan was stored.
+     */
+    private ChangePlan storedPlan(ChangeRequest change, RequirementService.RequirementDetail requirement, String contextPrint) {
+        ChangePlan stored = plan(change);
+        if (stored.incomplete() != null || ImpactAnalyzer.legacyIncomplete(stored, null, null) == stored) {
+            return stored;
+        }
+        List<OffsetDateTime> approvals = new ArrayList<>();
+        approvals.add(requirement.approvedAt());
+        designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId()).forEach(d -> approvals.add(d.getApprovedAt()));
+        boolean unchanged = madeAfter(planReviews.latestAt(change.getId()), approvals);
+        return ImpactAnalyzer.legacyIncomplete(stored, change.getBaseRevision(), unchanged ? contextPrint : null);
+    }
+
+    /** Whether a plan stored at {@code stored} was made after every approval (none missing): then from what they approved. */
+    static boolean madeAfter(OffsetDateTime stored, List<OffsetDateTime> approvals) {
+        return stored != null && approvals.stream().allMatch(a -> a != null && !a.isAfter(stored));
     }
 
     /** A fingerprint of what a plan is made from: the spec and the designs as the model gets them. */
@@ -317,7 +363,8 @@ public class ChangeService {
         lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
-        ChangePlan plan = plan(change);
+        // (a plan stored before the server kept its incomplete record is confirmed as incomplete too)
+        ChangePlan plan = ImpactAnalyzer.legacyIncomplete(plan(change), change.getBaseRevision(), null);
         Integer latest = planReviews.latest(id);
         if (!incomplete || !java.util.Objects.equals(revision, latest)) {
             requireCompletePlan(plan, requirements.get(change.getRequirementId()).spec(), latest, incomplete);
@@ -473,8 +520,10 @@ public class ChangeService {
             Map<String, String> unfit = crossCheck(id, workspace.getId());
             String fixesStopped = "";
             // (also when Continue finished the files the model's limit stopped: the run it stopped fixed none of them)
-            List<String> toFit = onlyPath == null && properties.fixAttempts() > 0
-                    ? toFit(unfit, writtenNow, files.files(id), resume) : List.of();
+            // Write again too: the reviewer asked for that file to be written again, so fixing what the checks find in it is
+            // asked for as well (once, as for any file written now; a failed Write again keeps the earlier version unfixed)
+            List<String> toFit = properties.fixAttempts() > 0
+                    ? toFit(unfit, fitNow(onlyPath, failedAgain, writtenNow), files.files(id), resume && onlyPath == null) : List.of();
             if (!toFit.isEmpty()) {
                 // Certain errors only the other files show (a method the called class lacks): each file written now is fixed once
                 CheckScope scope = packs.scope(workspace.getId());
@@ -538,6 +587,18 @@ public class ChangeService {
     static String fixesStopped(List<String> skipped, RuntimeException limit) {
         return " The model's limit (" + Messages.reason(limit) + ") stopped the fixes of what the cross-checks found; not fixed: "
                 + String.join(", ", skipped) + ". Every file is written: Write again a file to fix it.";
+    }
+
+    /**
+     * The files a generation may fix by what the cross-check found: those it wrote; for Write again (onlyPath) that one
+     * file, unless writing it failed (then its earlier version stays as it was). toFit still leaves out a reviewer's
+     * edit and applies the limit.
+     */
+    static Set<String> fitNow(String onlyPath, String failedAgain, Set<String> writtenNow) {
+        if (onlyPath == null) {
+            return writtenNow;
+        }
+        return failedAgain == null && writtenNow.contains(onlyPath) ? Set.of(onlyPath) : Set.of();
     }
 
     /** The most files of one generation fixed by what the cross-check found, so their model calls stay bounded. */

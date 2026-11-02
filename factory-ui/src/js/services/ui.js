@@ -333,8 +333,44 @@ define(['knockout', './preferences'], function (ko, preferences) {
     return value ? new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: preferences.hour12() }) : '';
   }
 
+  /** "31m49.872s", "1h2m", "45s" (a model server's wait) as "about 32 minutes"; '' when it cannot be read. */
+  function waitWords(text) {
+    const m = /^(?:(\d+)h)?(?:(\d+)m(?!s))?(?:([\d.]+)s)?$/.exec(text || '');
+    if (!m || !(m[1] || m[2] || m[3])) {
+      return '';
+    }
+    const minutes = Math.ceil((Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0)) / 60);
+    return minutes >= 120 ? 'about ' + Math.round(minutes / 60) + ' hours' : 'about ' + minutes + (minutes === 1 ? ' minute' : ' minutes');
+  }
+
+  /**
+   * A message that carries a model server's raw error (its JSON answer, the model's name and address, the account,
+   * the token counts) as one plain line, with the wait when the server gave one: {text, details}, details being the
+   * full message (empty when nothing was shortened). Other messages are returned as they are.
+   */
+  function shortError(message) {
+    const full = String(message || '');
+    const raw = full.indexOf('{"error"') >= 0 || /\bChat model '[^']*' at https?:\/\//.test(full) || /\borg_[a-z0-9]{8,}/i.test(full);
+    if (!raw) {
+      return { text: full, details: '' };
+    }
+    // What the factory said before the server's words ("Impact analysis failed: ")
+    const cut = full.search(/\bChat model '|\{"error"/);
+    const before = cut > 0 ? full.substring(0, cut).trim() : '';
+    const daily = /tokens per day|requests per day|\(TPD\)|\(RPD\)|daily limit/i.test(full);
+    const rate = !daily && /rate.limit|per minute|\(TPM\)|\(RPM\)|\(ITPM\)|\(OTPM\)/i.test(full);
+    const waitMatch = /try again in (?:about )?([\dhms.]+)/i.exec(full);
+    const said = /try again in (about \d+ (?:minutes?|hours?|seconds?))/i.exec(full);
+    const wait = said ? said[1] : waitMatch ? waitWords(waitMatch[1].replace(/\.+$/, '')) : '';
+    const what = daily ? "The model's daily limit is used up." : rate ? "The model's server is at its rate limit."
+      : 'The model server returned an error.';
+    const next = daily || rate ? (wait ? ' Try again in ' + wait + '.' : ' Try again later.') : ' Check the Models page, then try again.';
+    return { text: (before ? before.replace(/[:\s]+$/, '') + ': ' : '') + what + next, details: full };
+  }
+
   return {
     tabs: tabs, pill: pill, initials: initials, value: value, checked: checked, pager: pager, when: when,
-    badge: pill, status: status, tableKeys: tableKeys, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy
+    badge: pill, status: status, tableKeys: tableKeys, pages: pages, menu: menu, carousel: carousel, avatarTone: avatarTone, copy: copy,
+    shortError: shortError
   };
 });

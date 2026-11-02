@@ -119,9 +119,9 @@ final class PlanReview {
             String label = (api.method() == null ? "" : api.method().toUpperCase(Locale.ROOT) + " ") + path;
             // Served by a REST resource or controller whose name matches: a service or validator of the same name serves nothing
             if (backend && !served.containsKey(normalize(path))
-                    && plan.items().stream().noneMatch(i -> isResource(i.path()) && serves(i.path(), path))) {
-                risks.add(UNSERVED_API + label + ": no file name matches its path. Add the resource and service that "
-                        + "implement it, or say which planned file does.");
+                    && plan.items().stream().noneMatch(i -> isResource(i.path()) && serves(i, path))) {
+                risks.add(UNSERVED_API + label + ": no planned resource names its path. Add the resource and service that "
+                        + "implement it, or say in its details which path a planned resource serves.");
             }
             if (createsResource) {
                 String normalized = normalize(path);
@@ -218,6 +218,94 @@ final class PlanReview {
         String last = fixed.getLast();
         String singular = last.endsWith("ies") ? last.substring(0, last.length() - 3) + "y" : last.endsWith("s") ? last.substring(0, last.length() - 1) : last;
         return name.contains(singular);
+    }
+
+    /** Words of a resource's name that say what it is, not what it serves. */
+    private static final Set<String> RESOURCE_WORDS = Set.of("resource", "rest", "api", "controller", "endpoint", "service", "impl",
+            "java");
+
+    /**
+     * Whether a planned file serves the path: its name holds the path's last fixed segment (see {@link #serves(String,
+     * String)}); or its purpose or details name the path ("@Path('/payments/standingInstructions')"), or its last
+     * segment as such (a compound one, "standingInstructions", also without its slash); or each word of the last
+     * segment is a word of the file's name or one shortened ("StandInstructionResource" or "StandInstrResource" for
+     * standingInstructions: stand, instr; a word of at least three letters).
+     */
+    static boolean serves(ChangePlan.Item item, String path) {
+        if (serves(item.path(), path)) {
+            return true;
+        }
+        String last = null;
+        for (String segment : path.split("/")) {
+            if (!segment.isBlank() && !segment.startsWith("{") && !segment.matches("(?i)v\\d+")) {
+                last = segment.strip();
+            }
+        }
+        if (last == null) {
+            return true;
+        }
+        String text = capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())).toLowerCase(Locale.ROOT);
+        String lastLower = last.toLowerCase(Locale.ROOT);
+        List<String> wanted = words(last);
+        // (a single-word segment such as "validation" is named only with its slash: as a word it says too little)
+        if (contains(text, "/" + lastLower) || wanted.size() > 1 && contains(text, lastLower)) {
+            return true;
+        }
+        String file = item.path().substring(item.path().lastIndexOf('/') + 1).replaceAll("\\.[A-Za-z]+$", "");
+        List<String> have = words(file).stream().filter(w -> !RESOURCE_WORDS.contains(w)).toList();
+        return !wanted.isEmpty() && wanted.stream().allMatch(w -> have.stream().anyMatch(h -> shortened(h, w)));
+    }
+
+    /**
+     * Whether the text holds the word (or "/segment") as a whole: nothing alphanumeric right after it, nor right before a
+     * word (a "/segment" may end a longer path). The text is capped, so the search stays bounded.
+     */
+    private static boolean contains(String text, String word) {
+        boolean slash = word.startsWith("/");
+        for (int at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + 1)) {
+            int end = at + word.length();
+            boolean before = slash || at == 0 || !Character.isLetterOrDigit(text.charAt(at - 1));
+            boolean after = end >= text.length() || !Character.isLetterOrDigit(text.charAt(end));
+            if (before && after) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The lower-case words of a camel-case, kebab-case or snake-case name, without a plural s: standing, instruction. */
+    static List<String> words(String name) {
+        List<String> words = new ArrayList<>();
+        StringBuilder word = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            boolean boundary = !Character.isLetterOrDigit(c)
+                    || Character.isUpperCase(c) && i > 0 && (Character.isLowerCase(name.charAt(i - 1)) || Character.isDigit(name.charAt(i - 1))
+                    || i + 1 < name.length() && Character.isUpperCase(name.charAt(i - 1)) && Character.isLowerCase(name.charAt(i + 1)));
+            if (boundary && !word.isEmpty()) {
+                words.add(singular(word.toString().toLowerCase(Locale.ROOT)));
+                word.setLength(0);
+            }
+            if (Character.isLetterOrDigit(c)) {
+                word.append(c);
+            }
+        }
+        if (!word.isEmpty()) {
+            words.add(singular(word.toString().toLowerCase(Locale.ROOT)));
+        }
+        return words;
+    }
+
+    private static String singular(String word) {
+        return word.length() > 4 && word.endsWith("ies") ? word.substring(0, word.length() - 3) + "y"
+                : word.length() > 3 && word.endsWith("s") && !word.endsWith("ss") ? word.substring(0, word.length() - 1) : word;
+    }
+
+    /** One word the other or a shortening of it (instr, instruction), of at least three letters. */
+    private static boolean shortened(String a, String b) {
+        String shorter = a.length() <= b.length() ? a : b;
+        String longer = shorter == a ? b : a;
+        return shorter.length() >= 3 && longer.startsWith(shorter);
     }
 
     /**

@@ -63,6 +63,13 @@ public class PlanReviewStore {
         return jdbc.queryForObject("SELECT MAX(revision) FROM change_plan_revision WHERE change_id = ?", Integer.class, changeId);
     }
 
+    /** When the latest revision was stored, or null before the first plan. */
+    public OffsetDateTime latestAt(UUID changeId) {
+        List<OffsetDateTime> at = jdbc.query("SELECT created_at FROM change_plan_revision WHERE change_id = ? ORDER BY revision DESC LIMIT 1",
+                (rs, n) -> rs.getTimestamp("created_at").toInstant().atOffset(ZoneOffset.UTC), changeId);
+        return at.isEmpty() ? null : at.getFirst();
+    }
+
     public Comment comment(UUID changeId, Integer revision, Kind kind, String author, String text) {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();

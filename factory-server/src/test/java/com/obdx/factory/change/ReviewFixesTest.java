@@ -339,6 +339,31 @@ class ReviewFixesTest {
         quickly("gaps with abbreviations", () -> PlanReview.newTable("a new table"), () -> PlanReview.newTable("e.g. ".repeat(300) + "new table"));
         // a gap's table words
         quickly("table words", () -> PlanReview.newTable("a new table"), () -> PlanReview.newTable(("new" + " ".repeat(50)).repeat(2_000)));
+        // QA 19: the model's reasoning in a plan's text, what a resource serves, where a file is written, questions asked twice
+        quickly("reasoning sentences", () -> ModelReasoning.withoutReasoningSentences("Wait, no. Fine."),
+                () -> ModelReasoning.withoutReasoningSentences("The JSON provided was ".repeat(20_000)));
+        quickly("many short sentences", () -> ModelReasoning.withoutReasoningSentences("Wait, no. Fine."),
+                () -> ModelReasoning.withoutReasoningSentences(". ".repeat(200_000)));
+        quickly("one long sentence", () -> ModelReasoning.withoutReasoningSentences("Wait, no. Fine."),
+                () -> ModelReasoning.withoutReasoningSentences("my previous " + "a ".repeat(200_000) + "answer"));
+        ChangePlan.Item resource = new ChangePlan.Item("backend/SiResource.java", "create", "service", "x", List.of(), "y");
+        quickly("details naming a path", () -> PlanReview.serves(resource, "/payments/standingInstructions"),
+                () -> PlanReview.serves(new ChangePlan.Item("backend/SiResource.java", "create", "service", "/a".repeat(100_000), List.of(),
+                        "/standinginstruction".repeat(10_000)), "/payments/standingInstructions"));
+        quickly("long segments", () -> PlanReview.serves(resource, "/payments/standingInstructions"),
+                () -> PlanReview.serves(resource, "/" + "aB".repeat(100_000)));
+        quickly("long resource names", () -> PlanReview.words("StandInstructionResource"),
+                () -> PlanReview.serves(new ChangePlan.Item("backend/" + "StandX".repeat(50_000) + "Resource.java", "create", "service", null,
+                        List.of(), null), "/payments/standingInstructions"));
+        quickly("stage of long paths", () -> PlanParser.stage("service", "channel/a/model.js"),
+                () -> PlanParser.stage("service", "channel/".repeat(50_000) + "nls/x.js"));
+        List<com.obdx.factory.requirements.RequirementSpec.OpenQuestion> questions = new ArrayList<>();
+        for (int i = 0; i < 60; i++) {
+            questions.add(new com.obdx.factory.requirements.RequirementSpec.OpenQuestion("Question " + i + " " + "word ".repeat(400), null,
+                    null, List.of("option ".repeat(400)), null, null));
+        }
+        quickly("many long questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(questions.subList(0, 2)),
+                () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(questions));
     }
 
     /** Runs a small input first (so the code is compiled), then the large one, which must take under 2 seconds. */

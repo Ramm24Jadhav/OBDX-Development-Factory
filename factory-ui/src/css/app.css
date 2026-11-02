@@ -6132,6 +6132,9 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-ch .factory-ch-nextlabel { font-size: var(--fx-text-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fx-primary-text); }
 .factory-ch .factory-ch-nexttext { flex: 1 1 260px; color: var(--fx-text); font-size: var(--fx-text-sm); }
 .factory-ch .factory-ch-partial, .factory-ch .factory-ch-message { margin: 0; }
+/* A model server's full error, folded under a shortened one (Changes and Impact Analysis) */
+.factory-err-details { flex-basis: 100%; margin-top: var(--fx-space-2); }
+.factory-err-details .fx-help { margin: 0; overflow-wrap: anywhere; }
 
 /* Three panels; --fx-pane is the tree's width (outer), --ch-code the code's width (inner), the details take the rest */
 .factory-ch .factory-ch-panes { display: grid; grid-template-columns: var(--fx-pane, 260px) 10px minmax(0, 1fr); column-gap: 2px; align-items: stretch; margin-bottom: 14px; }

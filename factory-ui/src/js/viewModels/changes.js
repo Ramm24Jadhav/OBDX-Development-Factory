@@ -371,6 +371,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           + (n('failed') ? '; ' + n('failed') + ' failed' : '') + (n('pending') ? '; ' + n('pending') + ' not written yet' : '')
           + '. The files written are kept. Continue generation goes on from where it stopped; delivering now leaves the others out.';
       });
+      /** The change's last message below the summary, shortened like the Next box's; not when the Next box shows it (a failure). */
+      this.lastMessage = ko.pureComputed(() => {
+        const d = this.detail();
+        return d && d.message && !this.running() && d.status !== 'FAILED' ? ui.shortError(d.message) : null;
+      });
       /** What to do next, from the change's state; action names a function of this page and is shown only when allowed. */
       this.nextAction = ko.pureComputed(() => {
         const d = this.detail();
@@ -390,7 +395,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return { text: 'The model is writing the code. The files already written stay if it stops.' };
         }
         if (s === 'FAILED') {
-          return { text: (d.message || 'The last step failed.') + ' Analyze again to make a new plan.', label: 'Analyze Again', id: 'nextAnalyze',
+          // A model server's raw error (its JSON, the model's address, the account) as one plain line; the whole text under Details
+          const said = ui.shortError(d.message || 'The last step failed.');
+          return { text: said.text + ' Analyze again to make a new plan.', details: said.details, label: 'Analyze Again', id: 'nextAnalyze',
             run: this.analyzeAgain, allowed: this.canManage(), why: 'You need the right to manage code.' };
         }
         if (s === 'GENERATED' && this.unwritten().length) {

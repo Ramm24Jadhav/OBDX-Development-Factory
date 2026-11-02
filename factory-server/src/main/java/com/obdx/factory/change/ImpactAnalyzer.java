@@ -51,8 +51,13 @@ public class ImpactAnalyzer {
               forward slashes, exactly as shown.
             - basedOn lists existing files whose patterns the new or changed code should follow.
             - details says precisely what to add or change in the file.
-            - When the spec has acceptance criteria, plan the tests that check them (layer test) and name in details the
-              criteria (AC-001) each covers; name in each item's details the requirements (FR-001) it implements.
+            - For each REST resource, name in its details the API paths it serves with their methods (for example
+              "POST /payments/standingInstructions, GET /payments/standingInstructions/{id}").
+            - When the spec has acceptance criteria, plan the tests that check them (layer test): at least one test file
+              for each REST resource or service the plan creates or changes, and one for each view model, next to the
+              codebase's or the UI target's existing tests and in their framework. Name in details the criteria (AC-001)
+              each covers. Only when the codebase and the UI target have no tests of a kind, plan none of it and say so
+              in risks. Name in each item's details the requirements (FR-001) it implements.
             - Put anything uncertain (missing information, assumptions, risky changes) in risks.
 
             Answer with one JSON object in exactly this format, and nothing else:
@@ -152,6 +157,30 @@ public class ImpactAnalyzer {
                 && ChangePlan.Incomplete.LIMIT.equals(plan.incomplete().kind());
     }
 
+    /**
+     * A plan as stored before the server kept the record of an incomplete plan (see {@link ChangePlan#incomplete()}):
+     * then only the server's risk said the model's limit stopped it. Only for a plan read from the change's own row,
+     * which the server wrote (a model's answer or an edit never gets here: PlanParser drops such a risk from them), the
+     * risk is read once more and the plan given the record it would have had. A plan with a record, or without that
+     * risk, is returned as it is.
+     *
+     * @param revision the code revision the plan was made at (the change's base revision)
+     * @param context  the fingerprint of the spec and designs, when they are known to be those the plan was made from;
+     *                 null otherwise (then the plan is not continued, see ChangeService.resumes)
+     */
+    static ChangePlan legacyIncomplete(ChangePlan stored, Long revision, String context) {
+        if (stored == null || stored.incomplete() != null || stored.risks() == null) {
+            return stored;
+        }
+        // The server's risk names the limit's message in parentheses after its fixed start
+        String risk = stored.risks().stream().filter(r -> r != null && r.startsWith(LIMIT_STOPPED + " (")).findFirst().orElse(null);
+        if (risk == null) {
+            return stored;
+        }
+        return new ChangePlan(stored.summary(), stored.items(), stored.risks(),
+                new ChangePlan.Incomplete(ChangePlan.Incomplete.LIMIT, risk, revision, context));
+    }
+
     /** How a continuation starts when the model's answer stopped at its output limit. */
     static final String CUT_ANSWER = "\nYour previous answer stopped at your output limit. ";
     /** How a continuation starts when the plan is resumed after the model's usage limit stopped it. */
@@ -226,9 +255,21 @@ public class ImpactAnalyzer {
         if (kind == null) {
             return plan;
         }
+        // Tests are planned last: a plan stopped part-way often has none yet, which the record says
+        risk += testsMissing(context, plan);
         List<String> withRisk = new ArrayList<>(plan.risks());
         withRisk.add(0, risk);
         return new ChangePlan(plan.summary(), plan.items(), withRisk, new ChangePlan.Incomplete(kind, risk, null, null));
+    }
+
+    /** What an incomplete plan's risk adds when the spec has acceptance criteria and no test is planned yet; else "". */
+    static final String TESTS_MISSING = " No test is planned yet for the spec's acceptance criteria.";
+
+    static String testsMissing(ChangeContext context, ChangePlan plan) {
+        // (the spec as the model gets it leaves out empty parts: the key is there only when there are criteria)
+        boolean criteria = context.specJson() != null && context.specJson().contains("\"acceptanceCriteria\"");
+        boolean tests = plan.items().stream().anyMatch(i -> "test".equals(i.layer()) || PlanReview.isTest(i.path()));
+        return criteria && !tests ? TESTS_MISSING : "";
     }
 
     /** Adds a piece's files not planned yet and its new risks; whether it added a file. */

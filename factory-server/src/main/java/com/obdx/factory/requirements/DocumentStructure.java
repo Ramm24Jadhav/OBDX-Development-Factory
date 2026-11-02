@@ -219,17 +219,19 @@ final class DocumentStructure {
             if (spec.decisions().stream().anyMatch(x -> sameQuestion(x.question(), d.question()))) {
                 continue;
             }
-            RequirementSpec.OpenQuestion drafted = spec.openQuestions().stream().filter(q -> sameQuestion(d.question(), q.question()))
+            RequirementSpec.OpenQuestion drafted = spec.openQuestions().stream().filter(q -> SpecMerger.sameQuestion(d, q))
                     .findFirst().orElse(null);
             questions.add(drafted == null || !d.options().isEmpty() ? d : new RequirementSpec.OpenQuestion(d.question(),
                     d.reason() != null ? d.reason() : drafted.reason(), d.reference(), drafted.options(),
                     d.suggestedAnswer() != null ? d.suggestedAnswer() : drafted.suggestedAnswer(), d.answer()));
         }
         for (RequirementSpec.OpenQuestion q : spec.openQuestions()) {
-            if (doc.questions().stream().noneMatch(d -> sameQuestion(d.question(), q.question()))) {
+            if (doc.questions().stream().noneMatch(d -> SpecMerger.sameQuestion(d, q))) {
                 questions.add(q);
             }
         }
+        // and the same question asked twice in other words (the model's own, or one of them and the document's): the first kept
+        questions = SpecMerger.questions(questions);
         // The document's codes with its wording (the type the model gave when the document has none), then the model's others
         List<RequirementSpec.Message> messages = merge(doc.messages(), spec.messages(), RequirementSpec.Message::code,
                 RequirementSpec.Message::text, (m, d) -> m.type() == null && d != null ? new RequirementSpec.Message(m.code(), m.text(), d.type()) : m);
