@@ -289,6 +289,99 @@ class DocumentStructureTest {
     }
 
     @Test
+    void anErrorCodeTableIsReadIntoTheMessagesWithItsCodesAndWording() {
+        // BRD4: the model drafted two of the seven codes, one of them in its own words
+        String brd = """
+                # 7. Error Codes
+
+                | Code | HTTP | Message |
+                | --- | --- | --- |
+                | DIGX_BV_001 | 400 | The request must contain between 1 and 100 beneficiaries. |
+                | DIGX_BV_005 | 200 (per entry) | The client reference is repeated in this request. |
+                | DIGX_BV_006 | 200 (per entry) | The bank's system did not answer in time; try again. |
+                # 8. Codes of frequency
+
+                | Code | Description |
+                | --- | --- |
+                | DAILY | Every day |
+                """;
+        RequirementSpec drafted = SpecParser.parse("""
+                {"title": "x", "messages": [{"code": "DIGX_BV_005", "text": "clientRef is duplicated in the request.", "type": "error"},
+                 {"code": null, "text": "Name match is NONE; please verify account holder name.", "type": "warning"}]}
+                """, "x");
+
+        DocumentStructure.Structure s = DocumentStructure.read(brd);
+        RequirementSpec spec = DocumentStructure.apply(drafted, s);
+
+        assertThat(s.messages()).extracting(RequirementSpec.Message::code).containsExactly("DIGX_BV_001", "DIGX_BV_005", "DIGX_BV_006");
+        assertThat(spec.messages()).extracting(RequirementSpec.Message::code, RequirementSpec.Message::text, RequirementSpec.Message::type)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("DIGX_BV_001", "The request must contain between 1 and 100 beneficiaries.", "error"),
+                        org.assertj.core.groups.Tuple.tuple("DIGX_BV_005", "The client reference is repeated in this request.", "error"),
+                        org.assertj.core.groups.Tuple.tuple("DIGX_BV_006", "The bank's system did not answer in time; try again.", "error"),
+                        org.assertj.core.groups.Tuple.tuple(null, "Name match is NONE; please verify account holder name.", "warning"));
+    }
+
+    @Test
+    void tablesOfRulesAndOtherCodesAreNoMessages() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 6. Business Rules
+
+                | Rule Code | Rule Description |
+                | --- | --- |
+                | BR-001 | accountNumber: 9 to 18 digits. |
+                | BR-002 | ifsc is not required for INTERNAL. |
+                # 9. Product codes
+
+                | Code | Description |
+                | --- | --- |
+                | SAV01 | Savings account |
+                | CUR02 | Current account |
+                # 10. Requirement codes
+
+                | Code | Message |
+                | --- | --- |
+                | FR-001 | not a message |
+                """);
+
+        assertThat(s.messages()).isEmpty();
+        assertThat(s.rules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("BR-001", "BR-002");
+    }
+
+    @Test
+    void codeTablesUnderOtherHeadingsAndWithOtherPrefixesAreMessages() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 5. Validation rules
+
+                | Code | Text |
+                | --- | --- |
+                | DIGX_BV_002 | The account number must be 9 to 18 digits. |
+                # 7. Response codes
+
+                | Code | Description |
+                | --- | --- |
+                | F1001 | The payee is blocked. |
+                | R-01 | Try again later. |
+                """);
+
+        assertThat(s.messages()).extracting(RequirementSpec.Message::code).containsExactly("DIGX_BV_002", "F1001", "R-01");
+    }
+
+    @Test
+    void aDocumentGivesAtMostItsShareOfMessages() {
+        StringBuilder brd = new StringBuilder("# Error codes\n\n| Code | Message |\n| --- | --- |\n");
+        for (int i = 0; i < DocumentStructure.MAX_MESSAGES + 50; i++) {
+            brd.append("| ERR_").append(i).append(" | Message ").append(i).append(" |\n");
+        }
+        brd.append("| ERR_1 | Repeated |\n");
+
+        List<RequirementSpec.Message> messages = DocumentStructure.read(brd.toString()).messages();
+
+        assertThat(messages).hasSize(DocumentStructure.MAX_MESSAGES);
+        assertThat(messages.get(1).text()).isEqualTo("Message 1");
+    }
+
+    @Test
     void aShortRequestWithoutTablesKeepsTheDraft() {
         RequirementSpec drafted = SpecParser.parse("{\"title\": \"x\", \"businessRules\": [{\"id\": \"BR-1\", \"description\": \"r\"}]}", "x");
         assertThat(DocumentStructure.apply(drafted, DocumentStructure.read("Add a remarks field to the transfer screen."))).isSameAs(drafted);

@@ -243,6 +243,61 @@ class ReviewFixesTest {
         JavaCompileChecks.outline("class A {\n" + throwsSpaces + "\n" + shortThrows + "\n}\n");
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(1));
         assertThat(CodeGenerator.methodStart("    public Response read(@PathParam(\"id\") String id) throws IOException, X {")).isTrue();
+
+        // QA round 17's checks, each on input built to make it slow, after a small warm-up run of the same check
+        java.util.function.Function<String, String> none = module -> null;
+        quickly("define lists that never close", () -> JsModuleChecks.defineProblems("define([\n])\n", none),
+                () -> JsModuleChecks.defineProblems("define([\n".repeat(16_000) + "])\n".repeat(16_000), none));
+        String identifier = "a".repeat(3_900);
+        quickly("a bundle alias on long names", () -> JsModuleChecks.defineProblems("define(['ojL10n!nls/x'], function (nls) {\n});\n", none),
+                () -> JsModuleChecks.defineProblems("define(['ojL10n!nls/x'], function (nls) {\n" + ("  var " + identifier + " = nlsx;\n").repeat(40)
+                        + "  " + identifier + ".x = nls.y;\n});\n", module -> "define({ root: { y: 'x' } });"));
+        quickly("a parameter after a whitespace run", () -> JsModuleChecks.defineProblems("define(['a'], function (x) {\n});\n", none),
+                () -> JsModuleChecks.defineProblems("define(['a'], function (" + " ".repeat(3_900) + "x = 1) {\n});\n", none));
+        quickly("many parameters", () -> JsModuleChecks.defineProblems("define(['a'], function (p, q) {\n});\n", none),
+                () -> JsModuleChecks.defineProblems("define(['a'], function (" + "p, ".repeat(1_000) + "q) {\n});\n", none));
+        // 64 modules of the change after the last parameter, each with 200 functions, in a 100 KB view model
+        StringBuilder list = new StringBuilder();
+        java.util.Map<String, String> models = new java.util.HashMap<>();
+        for (int i = 0; i < 64; i++) {
+            list.append("'./m").append(i).append("', ");
+            StringBuilder model = new StringBuilder("define([], function () {\n  return {\n");
+            for (int f = 0; f < 200; f++) {
+                model.append("    fn").append(i).append('_').append(f).append(": function () { return 1; },\n");
+            }
+            models.put("./m" + i, model.append("  };\n});\n").toString());
+        }
+        String calls = "  this.x.fn0_1(); this.y.call" + "a".repeat(10) + "();\n";
+        String viewModel = "define([" + list + "'knockout'], function () {\n  return function VM() {\n" + calls.repeat(100_000 / calls.length())
+                + "  };\n});\n";
+        quickly("modules no parameter receives", () -> JsModuleChecks.defineProblems("define(['./m0'], function () {\n});\n", models::get),
+                () -> JsModuleChecks.defineProblems(viewModel, models::get));
+        // a cut-off plan with a long summary, and a BRD with many message rows
+        quickly("a long summary", () -> PlanParser.partial("{\"summary\": \"x\""),
+                () -> PlanParser.partial("{\"summary\": \"" + "x".repeat(20_000) + "\", \"items\": [{\"path\": \"a\"}, {\"pa"));
+        StringBuilder brd = new StringBuilder("# Error codes\n\n| Code | Message |\n| --- | --- |\n");
+        for (int i = 0; i < 60_000; i++) {
+            brd.append("| ERR_").append(i).append(" | Message ").append(i).append(" |\n");
+        }
+        quickly("many message rows", () -> com.obdx.factory.requirements.DocumentStructureAccess.read("| Code | Message |\n| --- | --- |\n| E_1 | x |\n"),
+                () -> com.obdx.factory.requirements.DocumentStructureAccess.read(brd.toString()));
+        // repeated methods with long parameter lists of spaces, and braces after parentheses that never open, in large files
+        StringBuilder java = new StringBuilder("class A {\n");
+        for (int i = 0; i < 2_000; i++) {
+            java.append("    void m(int a,").append(" ".repeat(500)).append("int b) { }\n");
+        }
+        quickly("repeated methods", () -> CodeGenerator.withoutRepeatedMethods("class A { void m() { } }\n", new java.util.ArrayList<>()),
+                () -> CodeGenerator.withoutRepeatedMethods(java.append("}\n").toString(), new java.util.ArrayList<>()));
+        quickly("braces after parentheses", () -> CodeGenerator.withoutRepeatedMethods("class A { }\n", new java.util.ArrayList<>()),
+                () -> CodeGenerator.withoutRepeatedMethods("class A {\n" + ") {\n".repeat(100_000) + "}\n", new java.util.ArrayList<>()));
+    }
+
+    /** Runs a small input first (so the code is compiled), then the large one, which must take under 2 seconds. */
+    private static void quickly(String what, Runnable warmUp, Runnable large) {
+        warmUp.run();
+        long start = System.nanoTime();
+        large.run();
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).as(what).isLessThan(Duration.ofSeconds(2));
     }
 
     // --- VAPT 6: removing comments never changes strings or cuts the file ---

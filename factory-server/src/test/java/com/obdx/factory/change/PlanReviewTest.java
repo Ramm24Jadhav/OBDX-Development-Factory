@@ -63,6 +63,46 @@ class PlanReviewTest {
     }
 
     @Test
+    void aUiOnlyPlanForASpecThatAsksForNewEndpointsIsFlagged() {
+        // BRD1: FR-008 asks for REST endpoints; the plan the model wrote had only screens
+        RequirementSpec spec = SpecParser.parse("""
+                {"title": "Standing instructions",
+                 "apis": [{"name": "/payments/standingInstructions", "method": "POST"}, {"name": "/payments/transfers", "method": "POST"}],
+                 "scope": ["Create a standing instruction.", "A new REST service in the OBDX payments module, request and response DTOs."],
+                 "requirements": [{"id": "FR-008", "description": "The system shall expose REST endpoints under /payments/standingInstructions."}]}
+                """, "x");
+        ChangePlan plan = new ChangePlan("x", List.of(item("channel/components/modules/payments/create-si/create-si.js", "create", "ui"),
+                item("channel/components/modules/payments/create-si/model.js", "create", "ui")), List.of());
+
+        List<String> risks = PlanReview.review(plan, spec, Map.of("payments/transfers", "backend/src/TransferResource.java")).risks();
+
+        assertThat(risks).singleElement().asString().startsWith(PlanReview.UNSERVED_API + "POST /payments/standingInstructions");
+    }
+
+    @Test
+    void readsWhetherTheSpecAsksForNewEndpoints() {
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse("{\"scope\": [\"A new REST endpoint POST /x in the backend.\"]}", "x"))).isTrue();
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse(
+                "{\"requirements\": [{\"id\": \"FR-001\", \"description\": \"The system shall expose POST /payments/x accepting a list.\"}]}", "x")))
+                .isTrue();
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse(
+                "{\"requirements\": [{\"id\": \"FR-001\", \"description\": \"The widget shall call the existing payments/payees service.\"}]}",
+                "x"))).isFalse();
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse(
+                "{\"requirements\": [{\"id\": \"FR-001\", \"description\": \"The system shall expose an API for the list.\"}]}", "x"))).isTrue();
+        // BRD3: UI only, and saying so
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse("""
+                {"scope": ["A new Quick Transfer dashboard widget (UI component, view model, resource bundle).", "Uses no new REST service."],
+                 "outOfScope": ["Any backend change: no new or changed REST service, Java class, DTO."]}
+                """, "x"))).isFalse();
+        // "new" that is not said of an endpoint, and existing services
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse("""
+                {"scope": ["Show the new balance using the existing REST API.", "Add a new payee via the payee API.",
+                           "A new service charge on transfers."]}
+                """, "x"))).isFalse();
+    }
+
+    @Test
     void readsTheRestPathsOfExistingCode() {
         assertThat(PlanReview.pathsIn("""
                 @Path("/v1/payments/standingInstructions")

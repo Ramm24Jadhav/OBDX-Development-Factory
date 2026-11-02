@@ -50,7 +50,7 @@ public class CodeGenerator {
               - Encode IDs put in UI URLs (encodeURIComponent), and call the exact service paths the server code defines.
             - Traceability: where the code implements a requirement or business rule the spec numbers (FR-001, BR-003),
               say so in a short comment there. A test checks the acceptance criteria (AC-001) of what it tests, one
-              test per criterion, named or commented with the criterion's ID.
+              short test per criterion and no others, with the criterion's ID in its name (or its DisplayName).
             - Write no comments about the prompt, the instructions or your own reasoning; comments explain the code only.
             - Answer with only the file content: no explanations, no markdown code fences.
             """;
@@ -134,7 +134,7 @@ public class CodeGenerator {
         java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, current, earlier, note, rules, scale);
         // A kept part that is a whole answer (kept when its fix was stopped) is checked, not continued
         Written written = partial != null && partialComplete ? new Written(partial, false, 1, List.of())
-                : write(item.path(), prompt, brief, partial, fit.scale());
+                : write(item.path(), prompt, brief, partial, fit.scale(), criteria(item));
         written = withoutReasoningComments(item.path(), original, written);
         String content = written.content();
         FileChecks.Result check = withNotes(checked(context, item, original, content, scaffold, written.cutOff()), written.notes());
@@ -174,6 +174,30 @@ public class CodeGenerator {
     }
 
     /**
+     * One fix of a written file by findings its own checks do not make (what the other files of the change show): the
+     * model gets the file and the findings, the way a failed check is fixed, and is asked once. Null when the answer is
+     * still cut off at the output limit, so the file as written stays.
+     *
+     * @throws JoinFailed when the answer's pieces do not join
+     */
+    public Result fixFindings(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String content, String original,
+                              Map<String, String> earlier, String findings, ScreenScaffolder.Scaffold scaffold) {
+        Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
+        String rules = checks.describeRules(context.checks(), item.path());
+        String guidance = checks.targetGuidance(context.checks(), item.path());
+        java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, original, Map.of(), earlier, null, rules, recipe,
+                guidance, scaffold, 0, scale);
+        java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, original, earlier, null, rules, scale);
+        Written fixed = withoutReasoningComments(item.path(), original, fix(item, null, rules, content,
+                new FileChecks.Result(FileChecks.Status.FAILED, findings), prompt, brief, 1));
+        if (fixed.cutOff()) {
+            log.info("The fix of {} by the other files' findings was cut off; the file stays as written", item.path());
+            return null;
+        }
+        return new Result(fixed.content(), withNotes(checked(context, item, original, fixed.content(), scaffold, false), fixed.notes()), 1);
+    }
+
+    /**
      * A whole answer without the comments that carry the model's reasoning: they fail the file on their own, and asking
      * the model again for the whole file costs far more than taking them out.
      */
@@ -208,7 +232,7 @@ public class CodeGenerator {
         String tail = "\n\nYou wrote this content:\n" + content + "\n\nIt did not pass the checks:\n" + findings + "\nWrite the complete corrected file.";
         int total = modelGateway.tokensPerMinute();
         if (total <= 0 || total >= SMALL_TOTAL) {
-            return write(item.path(), s -> prompt.apply(s) + tail, brief, null, scale);
+            return write(item.path(), s -> prompt.apply(s) + tail, brief, null, scale, criteria(item));
         }
         double perToken = modelGateway.charsPerToken();
         double room = total * 0.9 - content.length() / perToken;
@@ -239,7 +263,7 @@ public class CodeGenerator {
         }
         if (leanFits || regions.isEmpty()) {
             log.info("Fitted the fix of {}: only the file, its rules and the findings", item.path());
-            return write(item.path(), s -> lean, brief, null, 1);
+            return write(item.path(), s -> lean, brief, null, 1, criteria(item));
         }
         log.info("Fitted the fix of {}: only the method(s) with findings: {}", item.path(), String.join(", ", regions.keySet()));
         String ask = leanHeader(item, note, rules) + "\nThe file's outline:\n" + JavaOutline.of(content) + "\n\nThese methods of the file did not "
@@ -442,13 +466,16 @@ public class CodeGenerator {
         return result;
     }
 
+    /** How the check of a file still cut off after its continuations starts. */
+    static final String CUT = "The model stopped at its output limit";
+
     private FileChecks.Result checked(ChangeContext context, ChangePlan.Item item, String original, String content,
                                       ScreenScaffolder.Scaffold scaffold, boolean cutOff) {
         FileChecks.Result check = withParity(checks.check(context.checks(), item.path(), original, content), content, scaffold);
         if (!cutOff) {
             return check;
         }
-        String cut = "The model stopped at its output limit, so the file is incomplete even after asking it to continue "
+        String cut = CUT + ", so the file is incomplete even after asking it to continue "
                 + continuations() + " times. Use a model or plan with a higher output limit, then write it again, or finish it by hand.";
         return new FileChecks.Result(FileChecks.Status.FAILED, check.message() == null ? cut : cut + "\n" + check.message());
     }
@@ -750,11 +777,16 @@ public class CodeGenerator {
 
     private static final Pattern BUNDLE_KEY = Pattern.compile("(?m)(?:^|[{,])\\s*[\"']?([A-Za-z_][\\w.-]*)[\"']?\\s*[:=]");
 
-    /** The keys a bundle defines (label: 'Amount', amount.label=Amount), at most 100. */
+    /** The keys a bundle defines (label: 'Amount', amount.label=Amount), at most 100 (for a prompt). */
     static List<String> bundleKeys(String content) {
+        return bundleKeys(content, 100);
+    }
+
+    /** The keys a bundle defines, at most max. */
+    static List<String> bundleKeys(String content, int max) {
         java.util.Set<String> keys = new java.util.LinkedHashSet<>();
         Matcher m = BUNDLE_KEY.matcher(content == null ? "" : content);
-        while (m.find() && keys.size() < 100) {
+        while (m.find() && keys.size() < max) {
             if (!m.group(1).equals("root")) {
                 keys.add(m.group(1));
             }
@@ -833,11 +865,16 @@ public class CodeGenerator {
      * <li>The joined file must still parse (Java, JavaScript): a seam that lost text fails it, so it is written again.</li>
      * </ul>
      *
-     * @param partial what was written of the file before (continued from at once), or null
+     * <li>A test file that already has a test for each acceptance criterion its plan item names is asked only to finish
+     * the test being written and close the class; when that answer stops at the limit too, it is not continued again.</li>
+     * <li>A method a later piece wrote again with the same parameters is left out before the joined file is checked.</li>
+     *
+     * @param partial  what was written of the file before (continued from at once), or null
+     * @param criteria the acceptance criteria a test file covers (its plan item names them); empty for other files
      * @throws JoinFailed when the joined pieces do not parse
      */
     private Written write(String path, java.util.function.DoubleFunction<String> prompt, java.util.function.DoubleFunction<String> brief,
-                          String partial, double start) {
+                          String partial, double start, java.util.Set<String> criteria) {
         double scale = start;
         String sofar;
         if (partial == null) {
@@ -867,6 +904,7 @@ public class CodeGenerator {
         // The line where the last piece was joined on: a parse error before it lies in text the model wrote whole
         int lastSeam = 0;
         int continuations = continuations();
+        boolean finishAsked = false;
         for (int i = 0; cut && i < continuations; i++) {
             // A fresh line: the cut-off end of a line is left out, so the model writes that line whole
             sofar = completeLines(sofar);
@@ -874,6 +912,14 @@ public class CodeGenerator {
                 // and no blank lines after it, which the model would write again after repeating the last line
                 sofar = sofar.stripTrailing() + "\n";
             }
+            boolean enough = !criteria.isEmpty() && covered(sofar, criteria);
+            if (enough && finishAsked) {
+                // Asked to finish once already: more pieces would only repeat tests
+                log.info("{} has a test for each of its {} acceptance criteria and was asked to finish; it is not continued again", path,
+                        criteria.size());
+                break;
+            }
+            finishAsked |= enough;
             String last = lastLine(sofar);
             String end = sofar.length() > TAIL ? sofar.substring(sofar.length() - TAIL) : sofar;
             String more = "\n\nYou are writing " + path + " and your answer stopped at your output limit. The file so far ends with:\n"
@@ -884,6 +930,10 @@ public class CodeGenerator {
                     + (strict ? " Do not write notes to yourself or remarks about the prompt (no \"Wait\", \"Let's check\" or \"I already "
                     + "wrote\"); if a line is already written, simply go on after it." : "")
                     + (repeatAsked ? " Your answer MUST begin with that exact line, repeated in full, so the two parts join." : "")
+                    + (enough ? " The file already has a test for each acceptance criterion it covers (" + String.join(", ", criteria)
+                    + "): finish the test being written, then close the class. Write no more tests."
+                    : criteria.isEmpty() ? "" : " Write only the tests still missing, one short test per acceptance criterion ("
+                    + String.join(", ", criteria) + "), no others.")
                     + writtenSoFar(path, sofar);
             PromptFit.Fitted fitted;
             try {
@@ -965,6 +1015,28 @@ public class CodeGenerator {
         }
         String content = sofar.strip() + "\n";
         List<String> notes = new java.util.ArrayList<>();
+        if (cut && !criteria.isEmpty() && covered(content, criteria)) {
+            // Every criterion has its test: the file is closed after its last whole test rather than left cut off
+            String closed = closedAfterLastMember(path, content);
+            if (closed != null && covered(closed, criteria)) {
+                log.info("Closed {} after its last whole test: it has a test for each of its {} acceptance criteria", path, criteria.size());
+                notes.add("The answer stopped at the output limit after a test for each acceptance criterion was written; the file was "
+                        + "closed after its last whole test.");
+                content = closed;
+                cut = false;
+                joined = true;
+            }
+        }
+        if ((joined || partial != null) && path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            // A piece that wrote methods again (the model lost track of what it wrote): the first of each is kept, before the
+            // parse check, which methods written twice inside an unclosed one would otherwise fail
+            String once = withoutRepeatedMethods(content, notes);
+            if (!once.equals(content)) {
+                content = once;
+                // the lines moved: an error is no longer told to be at a seam
+                lastSeam = 0;
+            }
+        }
         if ((joined || partial != null) && !cut) {
             String problem = brief(joinProblem(path, content));
             int errorLine = problem == null ? 0 : errorLine(path, content);
@@ -1062,6 +1134,336 @@ public class CodeGenerator {
     private static String indent(String members) {
         boolean flush = members.lines().filter(l -> !l.isBlank()).anyMatch(l -> !Character.isWhitespace(l.charAt(0)));
         return flush ? members.lines().map(l -> l.isBlank() ? "" : "    " + l).collect(Collectors.joining("\n")) : members;
+    }
+
+    private static final Pattern CRITERION = Pattern.compile("\\bAC-(\\d{1,4})\\b(?:\\s*(?:to|through|-|–)\\s*AC-(\\d{1,4})\\b)?");
+
+    /**
+     * The acceptance criteria a test file's plan item names (AC-001, AC-003; AC-001 to AC-004 is four of them); empty
+     * for a file that is no test, and when it names more than {@link #MAX_CRITERIA} (such a list is no plan of tests).
+     */
+    static java.util.Set<String> criteria(ChangePlan.Item item) {
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        if (!"test".equals(item.layer()) && !PlanReview.isTest(item.path())) {
+            return ids;
+        }
+        Matcher m = CRITERION.matcher(nullToDash(item.purpose()) + " " + nullToDash(item.details()));
+        while (m.find()) {
+            int from = Integer.parseInt(m.group(1));
+            int to = m.group(2) == null ? from : Integer.parseInt(m.group(2));
+            if (to - from >= MAX_CRITERIA) {
+                return new java.util.LinkedHashSet<>();
+            }
+            String width = "%0" + m.group(1).length() + "d";
+            for (int n = from; n <= to; n++) {
+                ids.add("AC-" + String.format(width, n));
+            }
+            if (ids.size() > MAX_CRITERIA) {
+                return new java.util.LinkedHashSet<>();
+            }
+        }
+        return ids;
+    }
+
+    /** The most acceptance criteria one test file is followed by. */
+    static final int MAX_CRITERIA = 100;
+
+    /**
+     * Whether a test file names each of the criteria in its code (AC-001 as AC_001 or ac001 in a test's name, in a
+     * DisplayName or in a test's body; not in comments, where a header may list them all before any test is written):
+     * then every one has its test, however many tests the file has.
+     */
+    static boolean covered(String content, java.util.Set<String> criteria) {
+        String code = com.obdx.factory.pack.SourceScan.blank(content,
+                com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE).comments());
+        String flat = code.toUpperCase(java.util.Locale.ROOT).replaceAll("[-_ ]", "");
+        return !criteria.isEmpty() && criteria.stream().allMatch(id -> flat.contains(id.replace("-", "")));
+    }
+
+    private static final Pattern TEST_METHOD = Pattern.compile("@Test\\b|(?m)^\\s*(?:it|test)\\s*\\(");
+
+    /** How many tests a test file has (@Test methods, or it(...) and test(...) cases). */
+    static int tests(String content) {
+        int count = 0;
+        Matcher m = TEST_METHOD.matcher(content);
+        while (m.find()) {
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * A Java file cut off inside a member, closed after its last whole member: everything after the last brace that ends
+     * a member of the top-level class is left out and the class closed. Null when that does not give a file that parses.
+     */
+    static String closedAfterLastMember(String path, String content) {
+        if (!path.toLowerCase(java.util.Locale.ROOT).endsWith(".java")) {
+            return null;
+        }
+        com.obdx.factory.pack.SourceScan.Parts parts = com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE);
+        List<com.obdx.factory.pack.SourceScan.Range> literal = new java.util.ArrayList<>(parts.comments());
+        literal.addAll(parts.strings());
+        String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
+        int depth = 0;
+        int last = -1;
+        for (int i = 0; i < code.length(); i++) {
+            char c = code.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 1) {
+                    last = i;
+                }
+            }
+        }
+        if (last < 0) {
+            return null;
+        }
+        String closed = content.substring(0, last + 1).stripTrailing() + "\n}\n";
+        return joinProblem(path, closed) == null ? closed : null;
+    }
+
+    /** A method declaration starting a line: its return type (group 1), name (2) and parameters (3), up to its body's brace. */
+    private static final Pattern DECLARATION = Pattern.compile("(?m)^[ \\t]*+(?:(?:public|protected|private|static|final|synchronized|abstract)"
+            + "\\s++)*+(?:<[^>\\n]*+>\\s*+)?([\\w<>\\[\\],.?]++)(?:\\s*+<[^>\\n]*+>)?\\s++(\\w++)\\s*+\\(([^()\\n]*+)\\)\\s*+"
+            + "(?:throws\\s++[\\w.]++(?:\\s*+,\\s*+[\\w.]++)*+)?\\s*+\\{");
+    private static final java.util.Set<String> NOT_A_TYPE = java.util.Set.of("new", "return", "else", "throw", "case", "yield");
+    private static final java.util.Set<String> NOT_A_NAME = java.util.Set.of("if", "for", "while", "switch", "catch", "synchronized", "try");
+
+    /**
+     * The file without the second (and later) declarations of a method with the same name and parameter types in the
+     * same class, found by their text, so that a file that does not parse (a piece that started over inside an unclosed
+     * method) loses them too; the first is kept, with each one taken out noted in notes. Methods of different classes
+     * (two anonymous classes overriding the same method) are not compared.
+     */
+    static String withoutRepeatedMethods(String content, List<String> notes) {
+        com.obdx.factory.pack.SourceScan.Parts parts = com.obdx.factory.pack.SourceScan.scan(content, com.obdx.factory.pack.SourceScan.Syntax.CODE);
+        List<com.obdx.factory.pack.SourceScan.Range> literal = new java.util.ArrayList<>(parts.comments());
+        literal.addAll(parts.strings());
+        String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
+        Braces braces = Braces.of(code);
+        int[] lineStarts = lineStarts(code);
+        // Every method declaration, in order: where its text starts and ends (to is -1 when it never closes), its class body
+        List<Member> members = new java.util.ArrayList<>();
+        Matcher m = DECLARATION.matcher(code);
+        while (m.find() && members.size() < 20_000) {
+            if (NOT_A_TYPE.contains(m.group(1)) || NOT_A_NAME.contains(m.group(2)) || m.group(3).length() > 1_000) {
+                continue;
+            }
+            int container = braces.typeBodyAt(m.start());
+            String parameters = m.group(3).replaceAll("@\\w++(\\([^)]*+\\))?", "").replaceAll("\\bfinal\\b", "")
+                    .replaceAll("(?<!\\s)\\s++\\w++\\s*+(,|$)", "$1").replaceAll("\\s++", "");
+            int close = braces.close(m.end() - 1);
+            int to = close < 0 ? -1 : (code.indexOf('\n', close) < 0 ? code.length() : code.indexOf('\n', close) + 1);
+            members.add(new Member(memberStart(content, code, m.start()), to, m.start(), container,
+                    container + ":" + m.group(2) + "(" + parameters + ")", m.group(2) + "(" + m.group(3).strip() + ")"));
+        }
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        List<Repeat> repeated = new java.util.ArrayList<>();
+        for (int k = 0; k < members.size() && repeated.size() < MAX_REPEATS; k++) {
+            Member member = members.get(k);
+            Integer index = seen.get(member.key());
+            if (index == null) {
+                seen.put(member.key(), k);
+                continue;
+            }
+            Member first = members.get(index);
+            if (first.to() < 0 || first.to() > member.start()) {
+                // The first copy never closes before this one starts (a piece cut off in it): the first goes, up to the next
+                // member of its class (a method written between them stays), and the whole second one stays
+                if (member.to() < 0) {
+                    continue;
+                }
+                int next = member.from();
+                for (int n = index + 1; n < k; n++) {
+                    if (members.get(n).container() == first.container()) {
+                        next = members.get(n).from();
+                        break;
+                    }
+                }
+                repeated.add(new Repeat(first.from(), next, lineOf(lineStarts, first.start()), lineOf(lineStarts, member.start()),
+                        member.signature(), true));
+                seen.put(member.key(), k);
+            } else if (member.to() >= 0) {
+                repeated.add(new Repeat(member.from(), member.to(), lineOf(lineStarts, member.start()), lineOf(lineStarts, first.start()),
+                        member.signature(), false));
+            }
+        }
+        if (repeated.isEmpty()) {
+            return content;
+        }
+        StringBuilder out = new StringBuilder(content.length());
+        int kept = 0;
+        // in one pass, in order; a range inside or across one already taken out is skipped
+        for (Repeat r : repeated.stream().sorted(java.util.Comparator.comparingInt(Repeat::from)).toList()) {
+            if (r.from() < kept) {
+                continue;
+            }
+            out.append(content, kept, r.from());
+            kept = r.to();
+            notes.add(r.firstBroken() ? "The method " + r.signature() + " was written again (line " + r.firstLine() + ") after a first "
+                    + "copy that was never closed (line " + r.line() + "); the unclosed first copy was left out."
+                    : "The method " + r.signature() + " was written again (line " + r.line() + ", first on line " + r.firstLine()
+                    + ") across the answer's pieces; the second one was left out.");
+        }
+        out.append(content, kept, content.length());
+        log.info("Left out {} method(s) written again in the pieces of a file", repeated.size());
+        return out.toString();
+    }
+
+    /** The most repeated methods taken out of one file. */
+    static final int MAX_REPEATS = 200;
+
+    /** Where a member's text starts: its line, with its annotations on the lines above and one blank line (not a comment) before them. */
+    private static int memberStart(String content, String code, int start) {
+        int from = code.lastIndexOf('\n', start) + 1;
+        for (int k = 0; k < 20 && from > 0; k++) {
+            int previous = code.lastIndexOf('\n', from - 2) + 1;
+            if (!code.substring(previous, from).strip().startsWith("@")) {
+                break;
+            }
+            from = previous;
+        }
+        if (from > 0) {
+            int previous = content.lastIndexOf('\n', from - 2) + 1;
+            if (content.substring(previous, from).isBlank()) {
+                from = previous;
+            }
+        }
+        return from;
+    }
+
+    /**
+     * A method declaration: its text (to is -1 when it never closes), where its declaration starts, its class body,
+     * its key (class body, name and parameter types) and its signature as written.
+     */
+    private record Member(int from, int to, int start, int container, String key, String signature) {
+    }
+
+    /**
+     * A method written again: the text to take out (from, to), the line of the copy taken out and of the one kept, its
+     * signature, and whether the copy taken out is the first (it never closed).
+     */
+    private record Repeat(int from, int to, int line, int firstLine, String signature, boolean firstBroken) {
+    }
+
+    /**
+     * The braces of a text without comments and strings, matched in one pass: where each closes, and for each the
+     * nearest enclosing type body (a class, interface, enum or record, an anonymous class, or an enum constant's body).
+     */
+    private record Braces(int[] close, int[] typeBody) {
+
+        private static final Pattern TYPE_KEYWORD = Pattern.compile("\\b(class|interface|enum|record)\\b");
+        /** new Base(, new @Ann("x") Base( : what comes before an anonymous class's arguments */
+        private static final Pattern NEW_TYPE = Pattern.compile("\\bnew\\s++(?:@[\\w.]++(?:\\s*+\\([^()]*+\\))?\\s*+)*+[\\w.<>\\[\\], ?]++$");
+        /** ADD, @Deprecated ADD, @SuppressWarnings("x") SUB : an enum constant, before its arguments or its body */
+        private static final Pattern ENUM_CONSTANT = Pattern.compile("^\\s*+(?:@[\\w.]++(?:\\s*+\\([^()]*+\\))?\\s*+)*+[A-Za-z_$][\\w$]*+\\s*+$");
+
+        static Braces of(String code) {
+            int n = code.length();
+            int[] close = new int[n];
+            int[] typeBody = new int[n];
+            java.util.Arrays.fill(close, -1);
+            int[] stack = new int[n + 1];
+            int[] typeStack = new int[n + 1];
+            boolean[] enumBody = new boolean[n + 1];
+            int depth = 0;
+            int boundary = 0;
+            for (int i = 0; i < n; i++) {
+                char c = code.charAt(i);
+                if (c == '{') {
+                    int enclosing = depth == 0 ? -1 : typeStack[depth - 1];
+                    boolean inEnum = depth > 0 && enumBody[depth - 1];
+                    String before = code.substring(Math.max(boundary, i - 300), i);
+                    boolean type = false;
+                    boolean isEnum = false;
+                    Matcher keyword = TYPE_KEYWORD.matcher(before);
+                    String last = null;
+                    int lastEnd = 0;
+                    while (keyword.find()) {
+                        last = keyword.group(1);
+                        lastEnd = keyword.end();
+                    }
+                    String head = before.stripTrailing();
+                    if (last != null && before.indexOf('=', lastEnd) < 0) {
+                        type = true;
+                        isEnum = last.equals("enum");
+                    } else if (head.endsWith(")")) {
+                        // new Type(args) { (its arguments perhaps lambdas with braces of their own), or an enum constant ADD(1) {
+                        int open = openingParen(code, i - (before.length() - head.length()) - 1);
+                        if (open >= 0) {
+                            type = NEW_TYPE.matcher(code.substring(Math.max(0, open - 300), open).stripTrailing()).find()
+                                    || inEnum && ENUM_CONSTANT.matcher(afterLastComma(code.substring(Math.max(boundary, open - 300), open))).matches();
+                        }
+                    } else if (inEnum) {
+                        // an enum constant's body: ADD { ... }
+                        type = ENUM_CONSTANT.matcher(afterLastComma(before)).matches();
+                    }
+                    stack[depth] = i;
+                    typeStack[depth] = type ? i : enclosing;
+                    enumBody[depth] = isEnum;
+                    depth++;
+                    boundary = i + 1;
+                } else if (c == '}') {
+                    if (depth > 0) {
+                        depth--;
+                        close[stack[depth]] = i;
+                    }
+                    boundary = i + 1;
+                } else if (c == ';') {
+                    boundary = i + 1;
+                }
+                typeBody[i] = depth == 0 ? -1 : typeStack[depth - 1];
+            }
+            return new Braces(close, typeBody);
+        }
+
+        private static String afterLastComma(String text) {
+            return text.substring(text.lastIndexOf(',') + 1);
+        }
+
+        /** The innermost type body open at a position (its brace's offset), or -1. */
+        int typeBodyAt(int position) {
+            return position < typeBody.length ? typeBody[position] : -1;
+        }
+
+        /** Where the brace at open closes, or -1. */
+        int close(int open) {
+            return open >= 0 && open < close.length ? close[open] : -1;
+        }
+
+        /** The ( that the ) at close matches, looking back at most 1,000 characters (an argument list); -1 when not found. */
+        private static int openingParen(String code, int close) {
+            int depth = 0;
+            for (int i = close; i >= 0 && close - i < 1_000; i--) {
+                char c = code.charAt(i);
+                if (c == ')') {
+                    depth++;
+                } else if (c == '(' && --depth == 0) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+    }
+
+    /** The offset each line starts at. */
+    private static int[] lineStarts(String text) {
+        List<Integer> starts = new java.util.ArrayList<>();
+        starts.add(0);
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                starts.add(i + 1);
+            }
+        }
+        return starts.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    /** The line (from 1) of an offset. */
+    private static int lineOf(int[] lineStarts, int offset) {
+        int found = java.util.Arrays.binarySearch(lineStarts, offset);
+        return found >= 0 ? found + 1 : -found - 1;
     }
 
     /** The file without the second (and later) declarations of a method with the same parameters, noted in notes. */

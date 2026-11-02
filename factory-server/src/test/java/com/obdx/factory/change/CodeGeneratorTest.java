@@ -371,7 +371,7 @@ class CodeGeneratorTest {
                 .endsWith("}\n");
         assertThat(com.obdx.factory.pack.JavaCompileChecks.undeclaredCalls(result.content())).containsOnlyKeys("assertFalse");
         // what joining changed is in the file's check, and the one call still undeclared fails it
-        assertThat(result.check().message()).contains("testDuplicateClientRef() was written twice across the answer's pieces",
+        assertThat(result.check().message()).contains("testDuplicateClientRef() was written again (line 73, first on line 51) across the answer's pieces",
                 "were asked for and added: createValidEntry, hasErrorCode, assertFalse", "Calls assertFalse(...)");
         assertThat(result.check().status()).isEqualTo(FileChecks.Status.FAILED);
     }

@@ -48,6 +48,127 @@ public final class PlanParser {
         return normalize(raw, fileExists, maxItems);
     }
 
+    private static final java.util.regex.Pattern ITEMS = java.util.regex.Pattern.compile("[\"']?items[\"']?\\s*:\\s*\\[");
+    private static final java.util.regex.Pattern RISKS = java.util.regex.Pattern.compile("[\"']?risks[\"']?\\s*:\\s*\\[");
+    private static final java.util.regex.Pattern SUMMARY = java.util.regex.Pattern.compile("[\"']?summary[\"']?\\s*+:\\s*+\"");
+    /** The longest summary read from a cut-off plan. */
+    static final int MAX_SUMMARY = 2_000;
+
+    /**
+     * What can be used of a plan the model's output limit stopped part-way, not yet made safe (see normalize): its
+     * summary, the files it planned whole (an item cut off in the middle is left out) and its complete risks. A whole
+     * answer is read as it is; an answer with nothing usable gives an empty plan.
+     */
+    static ChangePlan partial(String text) {
+        if (text == null) {
+            return new ChangePlan(null, List.of(), List.of());
+        }
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            try {
+                ChangePlan whole = LENIENT.readValue(text.substring(start, end + 1), ChangePlan.class);
+                return new ChangePlan(whole.summary(), whole.items() == null ? List.of() : whole.items(),
+                        whole.risks() == null ? List.of() : whole.risks());
+            } catch (JacksonException e) {
+                // cut off: read it piece by piece below
+            }
+        }
+        java.util.regex.Matcher summary = SUMMARY.matcher(text);
+        String summaryText = null;
+        if (summary.find()) {
+            // read by hand up to its closing quote (a regular expression recurses per character and overflows on a long one)
+            int stop = summary.end();
+            while (stop < text.length() && text.charAt(stop) != '"' && stop - summary.end() < MAX_SUMMARY) {
+                stop += text.charAt(stop) == '\\' ? 2 : 1;
+            }
+            String raw = text.substring(summary.end(), Math.min(stop, text.length()));
+            // the text ends in the middle of an escape (its backslash is the last character): the backslash goes; a summary
+            // that closes, or stops at the cap (always after a whole escape), keeps all it has
+            if (stop > text.length() && raw.endsWith("\\")) {
+                raw = raw.substring(0, raw.length() - 1);
+            }
+            try {
+                summaryText = LENIENT.readValue("\"" + raw + "\"", String.class);
+            } catch (JacksonException e) {
+                summaryText = raw;
+            }
+        }
+        List<ChangePlan.Item> items = new ArrayList<>();
+        java.util.regex.Matcher list = ITEMS.matcher(text);
+        if (list.find()) {
+            for (String element : wholeElements(text, list.end())) {
+                try {
+                    items.add(LENIENT.readValue(element, ChangePlan.Item.class));
+                } catch (JacksonException e) {
+                    // not an item: left out
+                }
+            }
+        }
+        List<String> risks = new ArrayList<>();
+        java.util.regex.Matcher riskList = RISKS.matcher(text);
+        if (riskList.find()) {
+            for (String element : wholeElements(text, riskList.end())) {
+                try {
+                    risks.add(LENIENT.readValue(element, String.class));
+                } catch (JacksonException e) {
+                    // not a risk: left out
+                }
+            }
+        }
+        return new ChangePlan(summaryText, items, risks);
+    }
+
+    /**
+     * The complete elements (objects or strings) of the JSON array that starts at {@code from}, up to where the array
+     * ends or the text stops; an element the text stops inside is left out.
+     */
+    static List<String> wholeElements(String text, int from) {
+        List<String> elements = new ArrayList<>();
+        int depth = 0;
+        int begin = -1;
+        boolean inString = false;
+        char quote = 0;
+        for (int i = from; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (c == '\\') {
+                    i++;
+                } else if (c == quote) {
+                    inString = false;
+                    if (depth == 0 && begin >= 0) {
+                        elements.add(text.substring(begin, i + 1));
+                        begin = -1;
+                    }
+                }
+                continue;
+            }
+            if (c == '"' || c == '\'') {
+                inString = true;
+                quote = c;
+                if (depth == 0) {
+                    begin = i;
+                }
+            } else if (c == '{' || c == '[') {
+                if (depth == 0) {
+                    begin = i;
+                }
+                depth++;
+            } else if (c == '}' || c == ']') {
+                if (depth == 0) {
+                    // the array's own end
+                    break;
+                }
+                depth--;
+                if (depth == 0 && begin >= 0) {
+                    elements.add(text.substring(begin, i + 1));
+                    begin = -1;
+                }
+            }
+        }
+        return elements;
+    }
+
     public static ChangePlan normalize(ChangePlan plan, Predicate<String> fileExists, int maxItems) {
         Map<String, ChangePlan.Item> items = new LinkedHashMap<>();
         for (ChangePlan.Item item : plan.items() == null ? List.<ChangePlan.Item>of() : plan.items()) {

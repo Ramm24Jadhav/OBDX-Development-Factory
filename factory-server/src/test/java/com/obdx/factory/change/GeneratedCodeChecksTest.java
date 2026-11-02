@@ -91,7 +91,7 @@ class GeneratedCodeChecksTest {
 
         assertThat(CrossFileJava.missingMethods(resource, classes)).isEmpty();
         // a record has no accessor it does not declare
-        assertThat(CrossFileJava.missingMethods("class R { Object a(SiView v) { return v.rate(); } }", classes))
+        assertThat(CrossFileJava.missingMethods("package com.bank.si;\nclass R { Object a(SiView v) { return v.rate(); } }", classes))
                 .singleElement().asString().contains("rate()");
     }
 

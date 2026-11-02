@@ -83,9 +83,9 @@ final class CrossFileJava {
         }
         // Fields, parameters and variables whose type is a class of the change
         Map<String, String> typeOf = new HashMap<>();
-        unit.findAll(FieldDeclaration.class).forEach(f -> f.getVariables().forEach(v -> note(typeOf, v.getNameAsString(), v.getTypeAsString(), classes)));
-        unit.findAll(VariableDeclarator.class).forEach(v -> note(typeOf, v.getNameAsString(), v.getTypeAsString(), classes));
-        unit.findAll(Parameter.class).forEach(p -> note(typeOf, p.getNameAsString(), p.getTypeAsString(), classes));
+        unit.findAll(FieldDeclaration.class).forEach(f -> f.getVariables().forEach(v -> note(typeOf, v.getNameAsString(), v.getTypeAsString(), classes, unit)));
+        unit.findAll(VariableDeclarator.class).forEach(v -> note(typeOf, v.getNameAsString(), v.getTypeAsString(), classes, unit));
+        unit.findAll(Parameter.class).forEach(p -> note(typeOf, p.getNameAsString(), p.getTypeAsString(), classes, unit));
         Map<String, Map<String, Set<Integer>>> declared = new HashMap<>();
         List<String> problems = new ArrayList<>();
         Map<String, Set<String>> missing = new java.util.LinkedHashMap<>();
@@ -106,7 +106,7 @@ final class CrossFileJava {
                     : s instanceof FieldAccessExpr f && f.getScope().isThisExpr() ? f.getNameAsString() : null).orElse(null);
             String type = variable == null ? null : typeOf.get(variable);
             if (type == null && variable != null && !variables.contains(variable) && classes.containsKey(variable)
-                    && call.getScope().orElse(null) instanceof NameExpr) {
+                    && call.getScope().orElse(null) instanceof NameExpr && resolvesTo(variable, variable, unit, classes)) {
                 // A static call on a class of the change
                 type = variable;
             }
@@ -146,14 +146,14 @@ final class CrossFileJava {
         };
         for (com.github.javaparser.ast.type.ClassOrInterfaceType type : unit.findAll(com.github.javaparser.ast.type.ClassOrInterfaceType.class)) {
             type.getScope().ifPresent(scope -> {
-                if (scope.getScope().isEmpty() && classes.containsKey(scope.getNameAsString())
+                if (scope.getScope().isEmpty() && classes.containsKey(scope.getNameAsString()) && resolvesTo(scope.getNameAsString(), scope.getNameAsString(), unit, classes)
                         && !variables.contains(scope.getNameAsString())) {
                     check.accept(scope.getNameAsString(), type.getNameAsString());
                 }
             });
         }
         for (FieldAccessExpr access : unit.findAll(FieldAccessExpr.class)) {
-            if (access.getScope() instanceof NameExpr n && classes.containsKey(n.getNameAsString()) && !variables.contains(n.getNameAsString())
+            if (access.getScope() instanceof NameExpr n && classes.containsKey(n.getNameAsString()) && !variables.contains(n.getNameAsString()) && resolvesTo(n.getNameAsString(), n.getNameAsString(), unit, classes)
                     && access.getNameAsString().matches("[A-Z][a-z]\\w*")) {
                 // Outer.Inner (a CamelCase name: a nested type); Outer.CONSTANT is a field and is not checked here
                 check.accept(n.getNameAsString(), access.getNameAsString());
@@ -182,11 +182,35 @@ final class CrossFileJava {
         return names;
     }
 
-    private static void note(Map<String, String> typeOf, String variable, String type, Map<String, String> classes) {
-        String simple = type.replaceAll("<.*>", "").replaceAll(".*\\.", "");
-        if (classes.containsKey(simple)) {
+    private static void note(Map<String, String> typeOf, String variable, String type, Map<String, String> classes, CompilationUnit unit) {
+        String raw = type.replaceAll("<.*>", "");
+        String simple = raw.replaceAll(".*\\.", "");
+        if (classes.containsKey(simple) && resolvesTo(raw, simple, unit, classes)) {
             typeOf.put(variable, simple);
+        } else {
+            // a variable of another class with the name (javax.validation.Validator): not one of the change's
+            typeOf.remove(variable);
         }
+    }
+
+    /**
+     * Whether a type as the file writes it (Validator, com.bank.x.Validator) is the change's class of that name: written
+     * with its package, imported from its package, or used without an import from the file's own package (or a wildcard
+     * import of the class's package).
+     */
+    static boolean resolvesTo(String raw, String simple, CompilationUnit unit, Map<String, String> classes) {
+        String classPackage = packageOf(classes.get(simple));
+        if (raw.contains(".")) {
+            return raw.substring(0, raw.lastIndexOf('.')).equals(classPackage);
+        }
+        for (com.github.javaparser.ast.ImportDeclaration i : unit.getImports()) {
+            if (!i.isAsterisk() && !i.isStatic() && i.getName().getIdentifier().equals(simple)) {
+                return i.getName().getQualifier().map(Object::toString).orElse("").equals(classPackage);
+            }
+        }
+        String own = unit.getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
+        return own.equals(classPackage) || unit.getImports().stream().anyMatch(i -> i.isAsterisk() && !i.isStatic()
+                && i.getNameAsString().equals(classPackage));
     }
 
     /** Method name to its numbers of parameters (-1: takes varargs); null when the class does not parse. */
@@ -248,13 +272,30 @@ final class CrossFileJava {
         for (MethodCallExpr call : unit.findAll(MethodCallExpr.class)) {
             if (call.getScope().orElse(null) instanceof NameExpr scope) {
                 String name = scope.getNameAsString();
-                if (Character.isLowerCase(name.charAt(0)) && !declared.contains(name)) {
+                if (Character.isLowerCase(name.charAt(0)) && !declared.contains(name) && !inInheritingClass(unit, call)) {
                     unknown.add(name);
                 }
             }
         }
         return unknown.isEmpty() ? Optional.empty() : Optional.of(UNKNOWN_RECEIVERS + ": " + String.join(", ", unknown)
                 + ". Declare them (a field, a parameter or a local variable), or call an object the class has.");
+    }
+
+    /**
+     * Whether a node lies in an anonymous class of a type not the JDK's (new AbstractHandler() { ... }), or a nested class
+     * extending one: that class may inherit fields the file does not show.
+     */
+    private static boolean inInheritingClass(CompilationUnit unit, com.github.javaparser.ast.Node node) {
+        for (com.github.javaparser.ast.Node n = node.getParentNode().orElse(null); n != null; n = n.getParentNode().orElse(null)) {
+            if (n instanceof com.github.javaparser.ast.expr.ObjectCreationExpr o && o.getAnonymousClassBody().isPresent() && !jdkType(unit, o.getType())) {
+                return true;
+            }
+            if (n instanceof com.github.javaparser.ast.body.ClassOrInterfaceDeclaration c && !c.isInterface()
+                    && c.getExtendedTypes().stream().anyMatch(s -> !jdkType(unit, s))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Common JDK classes outside java.lang, by simple name: a file using one needs its import. */
@@ -264,25 +305,69 @@ final class CrossFileJava {
         Map<String, String> jdk = new HashMap<>();
         for (String name : List.of("List", "ArrayList", "LinkedList", "Map", "HashMap", "LinkedHashMap", "TreeMap", "Set", "HashSet",
                 "LinkedHashSet", "TreeSet", "Optional", "Arrays", "Collections", "Objects", "UUID", "Collection", "Iterator", "Deque",
-                "ArrayDeque", "Queue", "Locale", "Date", "Calendar", "StringJoiner", "EnumMap", "EnumSet")) {
+                "ArrayDeque", "Queue", "Locale", "Date", "Calendar", "StringJoiner", "EnumMap", "EnumSet", "ResourceBundle",
+                "MissingResourceException", "Properties", "Random", "Base64", "Comparator", "NoSuchElementException", "TimeZone",
+                "Currency", "SortedMap", "NavigableMap", "ListIterator", "Hashtable", "Vector", "Stack", "TimerTask", "BitSet")) {
             jdk.put(name, "java.util");
         }
         for (String name : List.of("Collectors", "Stream", "IntStream", "LongStream")) {
             jdk.put(name, "java.util.stream");
         }
-        for (String name : List.of("BigDecimal", "BigInteger", "RoundingMode")) {
+        for (String name : List.of("ExecutorService", "Executors", "Future", "Callable", "CompletableFuture", "TimeUnit", "TimeoutException",
+                "ExecutionException", "ConcurrentHashMap", "ConcurrentMap", "CountDownLatch", "CopyOnWriteArrayList", "Semaphore",
+                "ScheduledExecutorService", "ThreadLocalRandom", "CompletionService", "ExecutorCompletionService")) {
+            jdk.put(name, "java.util.concurrent");
+        }
+        for (String name : List.of("AtomicInteger", "AtomicLong", "AtomicBoolean", "AtomicReference")) {
+            jdk.put(name, "java.util.concurrent.atomic");
+        }
+        for (String name : List.of("Function", "Supplier", "Consumer", "Predicate", "BiFunction", "BiConsumer", "UnaryOperator", "BinaryOperator")) {
+            jdk.put(name, "java.util.function");
+        }
+        for (String name : List.of("Pattern", "Matcher", "PatternSyntaxException")) {
+            jdk.put(name, "java.util.regex");
+        }
+        for (String name : List.of("BigDecimal", "BigInteger", "RoundingMode", "MathContext")) {
             jdk.put(name, "java.math");
         }
-        for (String name : List.of("LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "ZonedDateTime", "OffsetDateTime")) {
+        for (String name : List.of("LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "ZonedDateTime", "OffsetDateTime",
+                "Period", "ZoneId", "ZoneOffset", "Clock", "YearMonth", "DayOfWeek")) {
             jdk.put(name, "java.time");
+        }
+        for (String name : List.of("DateTimeFormatter", "DateTimeParseException")) {
+            jdk.put(name, "java.time.format");
+        }
+        jdk.put("ChronoUnit", "java.time.temporal");
+        for (String name : List.of("SimpleDateFormat", "DecimalFormat", "NumberFormat", "MessageFormat", "ParseException")) {
+            jdk.put(name, "java.text");
+        }
+        for (String name : List.of("IOException", "UncheckedIOException", "InputStream", "OutputStream", "Serializable", "BufferedReader",
+                "InputStreamReader", "Closeable")) {
+            jdk.put(name, "java.io");
+        }
+        jdk.put("StandardCharsets", "java.nio.charset");
+        for (String name : List.of("SQLException", "Timestamp", "PreparedStatement", "ResultSet")) {
+            jdk.put(name, "java.sql");
         }
         return Map.copyOf(jdk);
     }
 
     /** HashMap, List, Collectors ... used without their import (and without a wildcard import of their package). */
     static Optional<String> missingJdkImports(String content) {
+        return missingJdkImports(content, classFile -> false);
+    }
+
+    /**
+     * As above, leaving out names a class of the file's own package has (com/bank/x/Currency.java): the file then uses
+     * that class, which needs no import.
+     *
+     * @param classExists whether a class file (com/bank/x/Name.java) is planned, written or imported
+     */
+    static Optional<String> missingJdkImports(String content, java.util.function.Predicate<String> classExists) {
         CompilationUnit unit = parse(content);
-        if (unit == null) {
+        // A wildcard import of another package (com.ofss.fc.datatype.*, java.sql.*) may bring a class of the name (OBDX's own
+        // Date), and a supertype not of the JDK may declare a nested one: either way the name may not be the JDK's
+        if (unit == null || unit.findAll(com.github.javaparser.ast.body.TypeDeclaration.class).stream().anyMatch(t -> inheritsFromOutsideTheJdk(unit, t))) {
             return Optional.empty();
         }
         String own = unit.getPackageDeclaration().map(p -> p.getNameAsString()).orElse("");
@@ -297,9 +382,12 @@ final class CrossFileJava {
         });
         Set<String> declared = declaredTypes(unit);
         Set<String> missing = new java.util.TreeSet<>();
+        String folder = own.replace('.', '/');
         for (String name : usedTypes(unit)) {
             String pkg = JDK.get(name);
-            if (pkg != null && !imported.contains(name) && !wildcards.contains(pkg) && !pkg.equals(own) && !declared.contains(name)) {
+            if (pkg != null && !imported.contains(name) && !wildcards.contains(pkg) && !pkg.equals(own) && !declared.contains(name)
+                    && !classExists.test(folder + "/" + name + ".java")
+                    && wildcards.stream().noneMatch(w -> !JDK.containsValue(w) || w.equals("java.sql") && name.equals("Date"))) {
                 missing.add(name + " (" + pkg + "." + name + ")");
             }
         }
