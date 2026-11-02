@@ -8329,6 +8329,91 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-ch .factory-ch-sheetai .factory-ch-pill .factory-nav-icon { width: 14px; height: 14px; flex-basis: 14px; color: var(--fx-primary-text); }
 .factory-ch .factory-ch-sheetai .factory-ai-input { display: flex; gap: 8px; align-items: center; }
 
+/* Changes workbench: the change first, then files, code and details in three resizable panels (UI declutter step 12) */
+.factory-ch .factory-ch-startactions { justify-content: flex-end; margin-bottom: 12px; }
+.factory-ch .factory-ch-summary { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.factory-ch .factory-ch-sumtop { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.factory-ch .factory-ch-sumname { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; min-width: 0; flex: 1 1 320px; }
+.factory-ch .factory-ch-code { color: var(--fx-text-muted); font-family: var(--fx-font-mono); font-size: var(--fx-text-sm); font-weight: 600; }
+.factory-ch .factory-ch-summary .factory-ch-title { margin: 0; font-size: var(--fx-text-h3); line-height: 1.3; overflow-wrap: normal; word-break: normal; }
+.factory-ch .factory-ch-actions { flex-wrap: wrap; justify-content: flex-end; }
+.factory-ch .factory-ch-meta { margin: 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-sumrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; }
+.factory-ch .factory-ch-counts { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; }
+.factory-ch .factory-ch-count { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border: 1px solid var(--fx-border-strong); border-radius: 999px;
+    background: var(--fx-surface); color: var(--fx-text-body); font: inherit; font-size: var(--fx-text-sm); cursor: pointer; transition: background var(--fx-dur-hover); }
+.factory-ch .factory-ch-count:hover { background: var(--fx-surface-2); }
+.factory-ch .factory-ch-count strong { color: var(--fx-text); }
+.factory-ch .factory-ch-count-zero { color: var(--fx-text-muted); border-color: var(--fx-border); }
+.factory-ch .factory-ch-count-zero strong { color: var(--fx-text-muted); }
+.factory-ch .factory-ch-count-partial:not(.factory-ch-count-zero), .factory-ch .factory-ch-count-pending:not(.factory-ch-count-zero) { border-color: var(--fx-warning-text); background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-ch .factory-ch-count-failed:not(.factory-ch-count-zero) { border-color: var(--fx-danger-text); background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-ch .factory-ch-valstate { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-valstate > span:last-child { display: flex; flex-direction: column; }
+.factory-ch .factory-ch-next { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--fx-primary-border, var(--fx-border));
+    border-radius: var(--fx-radius); background: var(--fx-primary-soft); }
+.factory-ch .factory-ch-nextlabel { font-size: var(--fx-text-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fx-primary-text); }
+.factory-ch .factory-ch-nexttext { flex: 1 1 260px; color: var(--fx-text); font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-partial, .factory-ch .factory-ch-message { margin: 0; }
+
+/* Three panels; --fx-pane is the tree's width (outer), --ch-code the code's width (inner), the details take the rest */
+.factory-ch .factory-ch-panes { display: grid; grid-template-columns: var(--fx-pane, 260px) 10px minmax(0, 1fr); column-gap: 2px; align-items: stretch; margin-bottom: 14px; }
+.factory-ch .factory-ch-inner { display: grid; grid-template-columns: var(--ch-code, minmax(0, 1.9fr)) 10px minmax(300px, 1fr); column-gap: 2px; min-width: 0; }
+.factory-ch .factory-ch-panes > fx-resizer, .factory-ch .factory-ch-inner > fx-resizer { align-self: stretch; }
+.factory-ch .factory-ch-treepanel, .factory-ch .factory-ch-codepanel, .factory-ch .factory-ch-side { min-width: 0; margin: 0; }
+.factory-ch .factory-ch-treepanel .factory-ch-tree { border-right: 0; padding-right: 0; }
+.factory-ch .factory-ch-treepanel .factory-ch-tree ul { max-height: 560px; }
+.factory-ch .factory-ch-codepanel .factory-ch-lines { max-height: 600px; }
+.factory-ch .factory-ch-pathrow { flex-wrap: wrap; }
+.factory-ch .factory-ch-sidebody { max-height: 720px; overflow: auto; padding-top: 10px; }
+.factory-ch .factory-ch-side .factory-ch-tabs { gap: 0; }
+.factory-ch .factory-ch-side .factory-ch-tabs > button { padding-left: 7px; padding-right: 7px; font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-filternote { margin: 0 0 6px; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-ch .factory-ch-legend { margin: 10px 0 0; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-ch .factory-ch-node[role=treeitem] { cursor: pointer; }
+.factory-ch .factory-ch-node[role=treeitem]:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: -2px; }
+.factory-ch .factory-ch-lines:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 2px; }
+
+/* File states in the tree, the tabs and the details */
+.factory-ch .factory-ch-badge-created { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
+.factory-ch .factory-ch-badge-modified { background: var(--fx-success-soft); color: var(--fx-success-text); }
+.factory-ch .factory-ch-badge-partial, .factory-ch .factory-ch-badge-pending { background: var(--fx-warning-soft); color: var(--fx-warning-text); white-space: nowrap; }
+.factory-ch .factory-ch-badge-failed { background: var(--fx-danger-soft); color: var(--fx-danger-text); white-space: nowrap; }
+.factory-ch .factory-ch-badge-unchanged { background: var(--fx-surface-2); color: var(--fx-text-muted); white-space: nowrap; }
+.factory-ch .factory-ch-file-pending .factory-ch-fname, .factory-ch .factory-ch-file-failed .factory-ch-fname { color: var(--fx-text-muted); }
+
+/* The selected file's details */
+.factory-ch .factory-ch-fdpath { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; overflow-wrap: anywhere; font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-fd { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: var(--fx-text-sm); }
+.factory-ch .factory-ch-fd dt { color: var(--fx-text-muted); }
+.factory-ch .factory-ch-fd dd { margin: 0; display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; color: var(--fx-text); }
+.factory-ch .factory-ch-fd dd > .fx-status { align-self: flex-start; }
+.factory-ch .factory-ch-fdmsg { white-space: pre-wrap; color: var(--fx-text-body); }
+.factory-ch .factory-ch-fdnote { padding: 4px 8px; border-radius: 6px; background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-ch .factory-ch-vsec { margin-top: 10px; }
+.factory-ch .factory-ch-vsec > summary { cursor: pointer; font-weight: 600; color: var(--fx-text); padding: 4px 0; }
+
+/* Syntax colours on the code's dark background (the same in both themes) */
+.factory-ch .factory-hl-keyword { color: #c4b5fd; }
+.factory-ch .factory-hl-string { color: #86efac; }
+.factory-ch .factory-hl-comment { color: #94a3b8; font-style: italic; }
+.factory-ch .factory-hl-number { color: #fcd34d; }
+.factory-ch .factory-hl-tag { color: #93c5fd; }
+.factory-ch .factory-hl-attr { color: #f9a8d4; }
+
+@media (max-width: 1250px) {
+    .factory-ch .factory-ch-inner { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
+    .factory-ch .factory-ch-inner > fx-resizer { display: none; }
+    .factory-ch .factory-ch-sidebody { max-height: none; }
+}
+@media (max-width: 900px) {
+    .factory-ch .factory-ch-panes { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
+    .factory-ch .factory-ch-panes > fx-resizer { display: none; }
+    .factory-ch .factory-ch-treepanel .factory-ch-tree ul { max-height: 280px; }
+    .factory-ch .factory-ch-actions { justify-content: flex-start; }
+    .factory-ch .factory-ch-approval { flex-wrap: wrap; row-gap: 6px; max-width: 100%; }
+}
+
 /* ---------- Impact page, workflow ---------- */
 /* Three columns as designed; the graph-and-files column and the side column share a resizable grid.
    --fx-pane is the graph column's width; the side column takes the rest. */
