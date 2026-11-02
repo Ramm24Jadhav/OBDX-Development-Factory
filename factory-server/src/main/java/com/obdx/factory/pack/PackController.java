@@ -36,10 +36,11 @@ public class PackController {
         this.audit = audit;
     }
 
+    /** The workspace's check rules; with version (22.x or 25.x), the rules its code would meet on that OBDX version. */
     @GetMapping("/api/workspaces/{workspaceId}/checks")
-    public PackService.WorkspaceChecks get(@PathVariable UUID workspaceId) {
+    public PackService.WorkspaceChecks get(@PathVariable UUID workspaceId, @RequestParam(required = false) String version) {
         guard.require(workspaceId, Permission.VIEW);
-        return service.get(workspaceId);
+        return service.get(workspaceId, version);
     }
 
     @PutMapping("/api/workspaces/{workspaceId}/checks/{ruleId}")

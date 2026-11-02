@@ -489,6 +489,8 @@ The **Modernization** page shows the migration map of a workspace's OBDX applica
 
 The new app's folder (a React Native or React target) is left out. Navigation built from variables, and services called through helpers the patterns do not know, are not found; the counts are a starting point to check with the team.
 
+The page puts the source (OBDX version, UI technology and Java from the Project Profile) beside the target (the newest version pack, its Java level, and the workspace's target channel), each with where the value comes from. Tabs: **Overview** (opportunities, each detected and opening to its evidence: rule ids, files at lines with Open in Code, screens, services; migration phases by screen size as an estimate; risks), **Findings** (compatibility of the current and target version packs, and usage of what their rules forbid, found with code search and checked against each rule's pattern; for a 22.x workspace the 25.x rules are searched too, through `GET /checks?version=25.x`), **Dependencies** (impact per module, services, roles), **Plan** (prerequisites, validation gates, phases with their screens, user flows to retest, rollback) and **History**. Model-written text is only in the assistant panel (Ask the assistant), marked as AI. The factory does not record a migration as complete or track migrated screens; the plan says so and shows which gates pass.
+
 ## Recipes, templates and reference examples
 
 The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
@@ -753,7 +755,7 @@ object: compute those in the view model.
 | `DELETE /api/changes/{id}` | Delete a change |
 | `POST /api/changes/{id}/check` | Run the quick checks again on all files |
 | `GET /api/version-packs/{version}/recipes` | A version pack's own recipes (22.x or 25.x), without reference examples, for anyone who can see a workspace (to compare a recipe between versions) |
-| `GET /api/workspaces/{id}/checks` | The workspace's version pack rules, with on/off and Java level; each rule's `origin` (VERSION_PACK: the factory's pack files, BANK: a file of the bank's pack folder `FACTORY_PACKS_DIR`, TARGET: the UI target pack), `source` (the file name) and, when off, `disabledBy` and `disabledAt` |
+| `GET /api/workspaces/{id}/checks` | The workspace's version pack rules, with on/off and Java level (`?version=25.x`: the rules its code would meet on that OBDX version, with its own profile, target pack and turned-off rules); each rule's `origin` (VERSION_PACK: the factory's pack files, BANK: a file of the bank's pack folder `FACTORY_PACKS_DIR`, TARGET: the UI target pack), `source` (the file name) and, when off, `disabledBy` and `disabledAt` |
 | `PUT /api/workspaces/{id}/checks/{ruleId}` | Turn a rule on or off for the workspace (`enabled`) |
 | `GET /api/workspaces/{id}/recipes` | The version pack's recipes with templates and the workspace's reference examples |
 | `POST /api/workspaces/{id}/recipes/{recipeId}/parts/{partId}/examples` | Pin a file as a reference example (`path`) |

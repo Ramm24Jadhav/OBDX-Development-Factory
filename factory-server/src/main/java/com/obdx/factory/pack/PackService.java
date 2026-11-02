@@ -69,7 +69,17 @@ public class PackService {
     }
 
     public WorkspaceChecks get(UUID workspaceId) {
-        CheckScope scope = scope(workspaceId);
+        return get(workspaceId, null);
+    }
+
+    /**
+     * The rules this workspace's code would be checked with on another OBDX version (null: its own), for example the
+     * newer pack an upgrade moves to. The workspace's profile, target pack and disabled rules apply as they are.
+     */
+    public WorkspaceChecks get(UUID workspaceId, String version) {
+        CheckScope own = scope(workspaceId);
+        CheckScope scope = version == null || version.isBlank() ? own
+                : new CheckScope(version.strip(), own.facts(), own.disabled(), own.target(), own.appFolder());
         VersionPack pack = packs.find(scope.version())
                 .orElseThrow(() -> new NotFoundException("No version pack for OBDX " + scope.version()));
         Integer jet = scope.jetMajor();
