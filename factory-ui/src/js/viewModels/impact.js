@@ -7,8 +7,8 @@
  * view are inferred from the layers, not read from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
+        '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast, pageRequests) {
     const LAYERS = [
       { key: 'ui', label: 'UI', color: '#6366f1', icon: 'monitor' },
       { key: 'service', label: 'Service', color: '#16a34a', icon: 'cog' },
@@ -567,8 +567,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.get('workspaces/' + id).then((w) => this.workspace(w)).catch(() => null);
         api.get('workspaces/' + id + '/changes').then((list) => {
           this.changes(list.map((c) => ({ id: c.id, label: code('CHG', c.id, 3) + ' – ' + c.title })));
+          // A change another page asked to open (Agent Runs), else the newest
+          const wanted = list.find((c) => c.id === pageRequests.change());
+          pageRequests.change(null);
           if (list.length) {
-            this.changeId(list[0].id);
+            this.changeId((wanted || list[0]).id);
           }
         }).catch(showError);
       };

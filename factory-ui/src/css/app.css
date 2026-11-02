@@ -8552,6 +8552,52 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-ag-notrec { margin-top: 16px; }
 .factory-ag-sheet .fx-log { border: 1px solid var(--fx-border); }
 
+/* Agent Runs as an auditable execution monitor: filters in one row, outcome tabs, a timeline per run (UI declutter step 14) */
+.factory-ag .factory-ag-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 14px; }
+.factory-ag .factory-ag-top .factory-ag-search { flex: 1 1 260px; min-width: 200px; max-width: 420px; }
+.factory-ag .factory-ag-top .factory-ag-pick { flex: 0 1 200px; min-width: 140px; }
+.factory-ag .factory-ag-spacer { flex: 1 1 0; }
+.factory-ag .factory-ag-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); align-items: start; }
+.factory-ag .factory-ag-list { padding-top: 4px; }
+.factory-ag .factory-ag-tabs { margin-bottom: 8px; overflow-x: auto; }
+.factory-ag .factory-ag-detail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.factory-ag .factory-ag-dmeta { margin: 2px 0 8px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
+.factory-ag .factory-ag-reason { margin: 0 0 10px; overflow-wrap: anywhere; }
+.factory-ag .factory-ag-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.factory-ag .factory-ag-actions .factory-ag-more { margin-left: auto; }
+.factory-ag .factory-ag-subtabs { margin-bottom: 10px; overflow-x: auto; }
+.factory-ag .factory-ag-src { margin-right: 4px; font-size: var(--fx-text-2xs); }
+.factory-ag .fx-timeline-dot.factory-ag-dot-audit { background: var(--fx-surface-3); border-color: var(--fx-primary); }
+.factory-ag .factory-ag-h3 { margin: 12px 0 6px; font-size: var(--fx-text-sm); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+.factory-ag .factory-ag-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.factory-ag .factory-ag-links li { display: grid; grid-template-columns: minmax(90px, 30%) minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: var(--fx-text-sm); }
+.factory-ag .factory-ag-kind { color: var(--fx-text-muted); text-transform: capitalize; }
+.factory-ag .factory-ag-plain { overflow-wrap: anywhere; color: var(--fx-text); }
+.factory-ag .factory-ag-linkbtn { justify-self: start; padding: 0; min-height: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.factory-ag .factory-ag-related { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.factory-ag .factory-ag-relbtn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface); color: var(--fx-text); font: inherit; font-size: var(--fx-text-sm); text-align: left; cursor: pointer; transition: background var(--fx-dur-hover) var(--fx-ease-out); }
+.factory-ag .factory-ag-relbtn:hover { background: var(--fx-surface-2); }
+.factory-ag .factory-ag-relbtn:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 1px; }
+.factory-ag .factory-ag-relbtn .factory-ag-ell { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 1200px) {
+  .factory-ag .factory-ag-layout { grid-template-columns: 1fr; }
+  .factory-ag .factory-ag-detail { position: static; max-height: none; }
+}
+@media (max-width: 600px) {
+  .factory-ag .factory-ag-top > * { flex: 1 1 100%; max-width: none; }
+  .factory-ag .factory-ag-spacer { display: none; }
+}
+.factory-ag .factory-ag-table th:nth-child(1) { width: 38px; }
+.factory-ag .factory-ag-table th:nth-child(2) { width: 100px; }
+.factory-ag .factory-ag-table th:nth-child(3) { width: auto; }
+.factory-ag .factory-ag-table th:nth-child(4) { width: 40px; }
+.factory-ag .factory-ag-table th:nth-child(5) { width: 150px; }
+.factory-ag .factory-ag-table th:nth-child(6) { width: 104px; }
+.factory-ag .factory-ag-table th:nth-child(7) { width: 76px; }
+.factory-ag .factory-ag-table th:nth-child(8) { width: 44px; }
+.factory-ag .factory-ag-table { min-width: 560px; }
+.factory-ag .factory-ag-sub { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
 /* ---------- Build page, workflow ---------- */
 /* Live state next to the headline and on the stage cards */
 .factory-bt .factory-bt-head strong + .fx-live { margin-left: 8px; vertical-align: middle; }

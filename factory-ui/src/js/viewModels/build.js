@@ -8,8 +8,8 @@
  * when the server allows them.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/assistant', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, dialog) {
+        '../services/assistant', '../services/toast', '../services/dialog', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, toast, dialog, pageRequests) {
     const POLL_MS = 3000;
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
     const httpUrl = (url) => (url && /^https?:\/\//i.test(url) ? url : '');
@@ -780,8 +780,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             pairs.forEach((p) => { map[p[0]] = p[1]; });
             this.changeRequirement(map);
           });
+          // A change another page asked to open (Agent Runs), else the newest
+          const wanted = list.find((c) => c.id === pageRequests.change());
+          pageRequests.change(null);
           if (list.length) {
-            this.changeId(list[0].id);
+            this.changeId((wanted || list[0]).id);
           }
         }).catch(showError);
       };
