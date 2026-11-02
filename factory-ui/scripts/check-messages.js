@@ -83,6 +83,8 @@ const errorCases = [
     + "repository 'file:///C:/x/trunk'. Check the repository URL, the user name and password, and that the SVN server is running, then try again."],
   ['a Java exception name', 'Impact analysis failed: ' + server + ' failed: java.net.ConnectException. Check that the model server is running.',
     'Impact analysis failed: The model server failed: the server refused the connection. Check that the model server is running.'],
+  ['only an exception name', 'java.net.ConnectException', 'The server refused the connection. Check that the server is running, then try again.'],
+  ['only an unknown exception name', 'org.example.ProviderException', 'The request failed. Check that the server is running, then try again.'],
   ['an exception name alone', 'Could not get the models of http://127.0.0.1:9/v1: ConnectException. Check the address (it usually ends '
     + 'with /v1) and that the server is running.', 'Could not get the models of http://127.0.0.1:9/v1: the server refused the connection. '
     + 'Check the address (it usually ends with /v1) and that the server is running.'],

@@ -539,9 +539,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const m = Object.assign({}, replies());
           const f = this.file();
           // failed: the factory's own message (a refusal such as the privacy policy, or a failure), shown as a notice, not an answer.
-          // lineCount: the file's lines when known (cited lines past it are flagged)
+          // lineCount: the file's lines when known (cited lines past it are flagged); 0 for indexed pieces and for a file
+          // shown only in part (its first 512 KB), whose lines are never flagged or clipped
           m[pending] = { text: last.text, meta: last.meta, sources: last.sources || ko.observable([]), path: f ? f.path : '', failed: !!last.failed,
-            lineCount: f && !f.partial ? (f.lines || (f.truncated ? 0 : f.content.split('\n').length)) : 0,
+            lineCount: f && !f.partial && !f.truncated ? (f.lines || f.content.split('\n').length) : 0,
             css: ko.unwrap(last.css).indexOf('error') >= 0 ? 'factory-kn-insight factory-kn-insight-bad' : 'factory-kn-insight' };
           replies(m);
           pending = null;

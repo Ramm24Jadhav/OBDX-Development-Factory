@@ -464,6 +464,14 @@ define(['knockout', './preferences'], function (ko, preferences) {
     if (!message) {
       return 'Something went wrong. Try again.';
     }
+    // Only an exception's name: a whole sentence with what to do next
+    const bare = /^\s*(?:[a-z][\w$]*\.)*[A-Z][\w$]*(?:Exception|Error)\s*$/.exec(String(message));
+    if (bare) {
+      let words = String(message).trim();
+      JAVA_WORDS.slice(0, -1).forEach(([pattern, said]) => { words = words.replace(pattern, said); });
+      words = words === String(message).trim() ? 'the request failed' : words;
+      return words.charAt(0).toUpperCase() + words.substring(1) + '. Check that the server is running, then try again.';
+    }
     let text = svnWords(String(message));
     JAVA_WORDS.forEach(([pattern, words]) => { text = text.replace(pattern, words); });
     text = text.replace(/:\s*$/, '.').replace(/\s{2,}/g, ' ').trim();

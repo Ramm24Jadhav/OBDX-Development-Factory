@@ -62,8 +62,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const data = dashboard.data;
       this.errorMessage = ko.observable('');
       const showError = (error) => this.errorMessage(ui.errorText(error));
-      // A failure in plain words (ui.errorText) with what to do next, unless the words already say it
-      const said = (error, next) => { const t = ui.errorText(error); return /try again\.?$/i.test(t) ? t : t + ' ' + next; };
+      // A failure in plain words (ui.errorText), always with this page's next step (a bare "Try again." gives way to it)
+      const said = (error, next) => ui.errorText(error).replace(/(^|[.!?]\s+)Try again\.$/, '$1').trim() + ' ' + next;
       this.go = (page) => dashboard.open(page);
 
       // Per workspace, read on demand: project profile, modernization inventory and members. A workspace whose code
