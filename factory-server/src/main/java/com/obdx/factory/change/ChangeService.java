@@ -94,6 +94,7 @@ public class ChangeService {
     private final TargetPacks targetPacks;
     private final TaskExecutor executor;
     private final KnowledgeService knowledge;
+    private final PlanReviewStore planReviews;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
@@ -101,7 +102,8 @@ public class ChangeService {
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
-                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge) {
+                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge,
+                         PlanReviewStore planReviews) {
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -126,6 +128,7 @@ public class ChangeService {
         this.targetPacks = targetPacks;
         this.executor = executor;
         this.knowledge = knowledge;
+        this.planReviews = planReviews;
     }
 
     public record FileView(String path, String action, String layer, String purpose, ChangeFileStore.Status status,
@@ -194,7 +197,9 @@ public class ChangeService {
             ChangePlan analyzed = analyzer.analyze(context, candidates, existsIn(workspace.getId()));
             ChangePlan plan = PlanReview.review(analyzed, requirement.spec(), servedPaths(workspace.getId()),
                     sameNamed(workspace.getId(), analyzed));
-            change.plan(json.writeValueAsString(plan), workspace.getIndexedRevision());
+            String planJson = json.writeValueAsString(plan);
+            change.plan(planJson, workspace.getIndexedRevision());
+            planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
             change.status(ChangeRequest.Status.PLAN_READY, "Plan ready: " + plan.items().size() + " file(s), " + creates
                     + " new and " + (plan.items().size() - creates) + " changed. Review and approve it to generate the code.");
@@ -209,13 +214,15 @@ public class ChangeService {
     // --- plan review ---
 
     @Transactional
-    public ChangeDetail updatePlan(UUID id, String planJson) {
+    public ChangeDetail updatePlan(UUID id, String planJson, String by) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan parsed = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
         ChangePlan plan = PlanReview.review(parsed, requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()),
                 sameNamed(change.getWorkspaceId(), parsed));
-        change.plan(json.writeValueAsString(plan), change.getBaseRevision());
+        String edited = json.writeValueAsString(plan);
+        change.plan(edited, change.getBaseRevision());
+        planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
         change.status(ChangeRequest.Status.PLAN_READY, "Plan edited: " + plan.items().size() + " file(s).");
         return detail(changes.save(change));
     }
@@ -227,11 +234,44 @@ public class ChangeService {
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan plan = plan(change);
         change.approvePlan(by);
+        planReviews.comment(id, planReviews.record(id, change.getPlan(), PlanReviewStore.Origin.EDITED, by), PlanReviewStore.Kind.APPROVED, by, "");
         files.replaceAll(id, plan.items());
         change.status(ChangeRequest.Status.GENERATING, "Writing " + plan.items().size() + " file(s)...");
         changes.save(change);
         startAfterCommit(() -> runGeneration(id, null, null));
         return detail(change);
+    }
+
+    /** The plan's revisions and what reviewers said about them. */
+    @Transactional(readOnly = true)
+    public PlanReviewStore.Review planReview(UUID id) {
+        find(id);
+        return planReviews.review(id);
+    }
+
+    /**
+     * A comment on the current plan, or a request for changes (with its reason) while the plan waits for approval. A
+     * request for changes does not change the status: the plan stays unapproved, so no code is generated, until it is
+     * edited or analyzed again and approved.
+     */
+    @Transactional
+    public PlanReviewStore.Comment commentOnPlan(UUID id, PlanReviewStore.Kind kind, String text, String by) {
+        ChangeRequest change = find(id);
+        String body = text == null ? "" : text.strip();
+        if (kind == PlanReviewStore.Kind.APPROVED) {
+            throw new BadRequestException("Approve the plan with Approve Plan.");
+        }
+        if (body.isEmpty()) {
+            throw new BadRequestException(kind == PlanReviewStore.Kind.CHANGES_REQUESTED
+                    ? "Say what has to change in the plan." : "Write the comment first.");
+        }
+        if (body.length() > 4000) {
+            throw new BadRequestException("Keep the comment under 4,000 characters.");
+        }
+        if (kind == PlanReviewStore.Kind.CHANGES_REQUESTED) {
+            requireStatus(change, ChangeRequest.Status.PLAN_READY);
+        }
+        return planReviews.comment(id, planReviews.latest(id), kind, by, body);
     }
 
     // --- generation ---

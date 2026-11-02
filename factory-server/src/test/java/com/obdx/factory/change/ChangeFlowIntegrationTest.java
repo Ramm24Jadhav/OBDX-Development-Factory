@@ -195,6 +195,9 @@ class ChangeFlowIntegrationTest {
     private WorkspaceService workspaces;
 
     @Autowired
+    private tools.jackson.databind.ObjectMapper json;
+
+    @Autowired
     private ImportService imports;
 
     @Autowired
@@ -318,7 +321,31 @@ class ChangeFlowIntegrationTest {
                 .hasMessageContaining("No file backend/Missing.java");
         assertThat(planned.plan().risks()).containsExactly("Host narrative length is assumed to be 35");
 
+        // The plan is revision 1; a request for changes is recorded but leaves it unapproved, and code is not written
+        assertThat(changes.planReview(changeId).revisions()).extracting(PlanReviewStore.Revision::revision, PlanReviewStore.Revision::origin)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1, PlanReviewStore.Origin.ANALYZED));
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.COMMENT, "Check the remarks length", "dev1");
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, "Add a test for the remarks", "Lead");
+        assertThat(changes.get(changeId).status()).isEqualTo(ChangeRequest.Status.PLAN_READY);
+        assertThat(changes.get(changeId).planApprovedAt()).isNull();
+        assertThatThrownBy(() -> changes.continueGeneration(changeId)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, " ", "Lead"))
+                .hasMessageContaining("Say what has to change");
+        assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.APPROVED, "ok", "Lead"))
+                .hasMessageContaining("Approve Plan");
+        // An edit is the next revision; saving the same plan again adds none
+        String edited = json.writeValueAsString(new ChangePlan("Edited: " + planned.plan().summary(), planned.plan().items(), planned.plan().risks()));
+        changes.updatePlan(changeId, edited, "dev1");
+        changes.updatePlan(changeId, edited, "dev1");
+        assertThat(changes.planReview(changeId).revisions()).extracting(PlanReviewStore.Revision::revision, PlanReviewStore.Revision::origin, PlanReviewStore.Revision::createdBy)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1, PlanReviewStore.Origin.ANALYZED, "Impact analysis"),
+                        org.assertj.core.groups.Tuple.tuple(2, PlanReviewStore.Origin.EDITED, "dev1"));
+
         changes.approvePlan(changeId, "Lead");
+        assertThat(changes.planReview(changeId).comments()).extracting(PlanReviewStore.Comment::kind, PlanReviewStore.Comment::author, PlanReviewStore.Comment::revision)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.COMMENT, "dev1", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.APPROVED, "Lead", 2));
         waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "generation");
         ChangeService.ChangeDetail generated = changes.get(changeId);
         assertThat(generated.planApprovedBy()).isEqualTo("Lead");
