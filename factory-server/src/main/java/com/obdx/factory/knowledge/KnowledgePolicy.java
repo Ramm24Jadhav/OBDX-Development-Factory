@@ -47,6 +47,21 @@ public class KnowledgePolicy {
         return allowed(settings.current().embeddingUrl());
     }
 
+    /**
+     * Where the knowledge may go, for the Models page: the chat and embedding servers' hosts, whether each is on the
+     * bank's network, whether factory.knowledge.external-models lets it go outside, and whether it goes to each now.
+     */
+    public record Summary(String chatHost, boolean chatInside, String embeddingHost, boolean embeddingInside, boolean externalAllowed,
+                          boolean chatAllowed, boolean embeddingAllowed) {
+    }
+
+    public Summary summary() {
+        String chatHost = host(settings.current().baseUrl());
+        String embeddingHost = host(settings.current().embeddingUrl());
+        return new Summary(chatHost, !chatHost.isEmpty() && internal(chatHost), embeddingHost, !embeddingHost.isEmpty() && internal(embeddingHost),
+                properties.externalModels(), chatAllowed(), embeddingAllowed());
+    }
+
     /** What to tell users when the knowledge cannot go to the chat model; null when it can. */
     public String chatProblem() {
         return chatAllowed() ? null : outside("chat", settings.current().baseUrl());

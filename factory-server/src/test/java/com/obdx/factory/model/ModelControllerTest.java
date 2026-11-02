@@ -34,7 +34,7 @@ class ModelControllerTest {
                 return texts.stream().map(this::embed).toList();
             }
         };
-        return new ModelController(gateway, null, null, null, null);
+        return new ModelController(gateway, null, null, null, null, null, null);
     }
 
     private static ModelSettings.Current settings(String embeddingModel) {
@@ -78,7 +78,7 @@ class ModelControllerTest {
             public List<float[]> embedAll(List<String> texts) {
                 return List.of();
             }
-        }, null, null, guard, null);
+        }, null, null, guard, null, null, null);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.chat(new ModelController.ChatRequest("hello")))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);

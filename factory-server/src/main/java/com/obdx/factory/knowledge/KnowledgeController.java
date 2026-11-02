@@ -87,6 +87,13 @@ public class KnowledgeController {
                            String privacy, List<KnowledgeRepository.Source> folders, List<UUID> fromOracleSite) {
     }
 
+    /** Where the knowledge base may go (signed-in users): the Models page shows it beside the providers. */
+    @GetMapping("/api/knowledge/policy")
+    public KnowledgePolicy.Summary policy() {
+        guard.current();
+        return policy.summary();
+    }
+
     @GetMapping("/api/knowledge")
     public Overview overview() {
         AppUser user = guard.current();

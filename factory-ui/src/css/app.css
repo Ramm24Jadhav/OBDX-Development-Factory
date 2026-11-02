@@ -8470,6 +8470,15 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-md .factory-md-advanced .factory-md-form { margin-top: 0; }
 .factory-md .factory-md-advanced .factory-md-toggle { margin-bottom: 0; }
 
+/* Models governance: health from tests, learned limits, routing, fallback, data classification, key rotation (UI declutter step 19) */
+.factory-md .factory-md-top { align-items: center; }
+.factory-md .factory-md-intro { flex: 1 1 380px; margin: 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
+.factory-md .factory-md-intro strong { color: var(--fx-text); }
+.factory-md .factory-md-err { color: var(--fx-danger-text); overflow-wrap: anywhere; }
+.factory-md .factory-md-errline { display: block; font-size: var(--fx-text-caption); white-space: normal; overflow-wrap: anywhere; }
+.factory-md .factory-md-wrap { white-space: normal; overflow-wrap: anywhere; }
+.factory-md .factory-md-steps { list-style: decimal; padding-left: 1.4em; }
+
 /* ---------- Integrations page, workflow ---------- */
 .factory-in .fx-bulkbar .fx-btn + .fx-btn { margin-left: 0; }
 

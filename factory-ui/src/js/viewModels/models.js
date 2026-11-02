@@ -2,6 +2,10 @@
  * Models & AI Providers page: provider cards (OpenAI, xAI, Groq and servers found on this computer) with connection
  * tests, the models they offer, the model server and models in use, choosing them (administrators: a server on this computer, found
  * automatically, or another one by URL, then its chat and embedding models), and a test prompt. Through /api/model.
+ * A provider shows as connected only after a test of it succeeded (tests are remembered on the server since it started,
+ * GET /api/model/checks); the limits learned from the provider, the routing of each task (one chat model for all), the
+ * fallback behaviour and where the bank's content may go (GET /api/knowledge/policy) are shown as they are. Keys are
+ * never sent back to the browser.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/ui', '../services/toast', 'ojs/ojknockout'],
   function (ko, accUtils, api, session, ui, toast) {
@@ -178,6 +182,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             label: s.name + ' (' + s.baseUrl + '), ' + s.models.length + ' model' + (s.models.length === 1 ? '' : 's'),
             server: s
           })));
+          // Finding them was a test of each: the server remembers it
+          loadChecks();
           const current = this.status() && this.status().baseUrl;
           const preferred = servers.find((s) => s.baseUrl === current) || servers[0];
           this.localServerUrl(null);
@@ -234,6 +240,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.apiKey('');
           this.embeddingApiKey('');
           const s = result.status;
+          loadPolicy();
+          loadLimits();
           toast.success('Saved: the factory now uses ' + s.chatModel + ' and ' + s.embeddingModel
             + (s.embeddingBaseUrl ? ' at ' + s.embeddingBaseUrl : '') + '.'
             + (result.embeddingsRemoved ? ' The embedding model changed, so import the code of each workspace again (Code page) to search it by meaning.' : ''),
@@ -261,17 +269,77 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // The token limits the factory learned from the model's server (a plan changed, or one was learned wrongly)
       this.forgetLimits = () => {
         api.post('model/limits/forget')
-          .then(() => toast.success('The learned limits are forgotten. They are learned again from the model server\'s answers.'))
+          .then(() => { loadLimits(); toast.success('The learned limits are forgotten. They are learned again from the model server\'s answers.'); })
           .catch(actionError);
       };
+
+      // ---- Connection tests remembered by the server (administrators), learned limits, the privacy policy ----
+      const norm = (url) => String(url || '').trim().replace(/\/+$/, '');
+      this.serverChecks = ko.observable({});
+      const loadChecks = () => (session.isAdmin() ? api.get('model/checks').then((list) => {
+        const map = {};
+        (list || []).forEach((c) => { map[norm(c.baseUrl)] = c; });
+        this.serverChecks(map);
+      }).catch(() => null) : Promise.resolve());
+      this.limits = ko.observableArray([]);
+      const loadLimits = () => api.get('model/limits').then((list) => this.limits((list || []).map((l) => {
+        const n = (v) => (v > 0 ? v.toLocaleString() : 'Not learned');
+        const s = this.status();
+        return {
+          model: l.model, server: l.baseUrl, inUse: !!s && norm(s.baseUrl) === norm(l.baseUrl) && s.chatModel === l.model,
+          input: n(l.limits.input), total: n(l.limits.total), outputPerMinute: n(l.limits.outputPerMinute), answerMax: n(l.limits.answerMax),
+          charsPerToken: l.limits.charsPerToken > 0 ? l.limits.charsPerToken.toFixed(1) : 'Not learned',
+          learned: ui.when(l.updatedAt), expires: ui.when(new Date(new Date(l.updatedAt).getTime() + 7 * 86400000))
+        };
+      }))).catch(() => null);
+      this.inUseLimit = ko.pureComputed(() => this.limits().find((l) => l.inUse) || null);
+      this.policy = ko.observable(null);
+      const loadPolicy = () => api.get('knowledge/policy').then(this.policy).catch(() => null);
+      // Where each kind of content goes, from the settings and the knowledge policy
+      this.classification = ko.pureComputed(() => {
+        const p = this.policy();
+        const s = this.status();
+        if (!p || !s) {
+          return [];
+        }
+        const where = (host, inside) => host + (inside ? ' (inside the bank\'s network)' : ' (outside the bank\'s network)');
+        return [
+          { kind: 'Restricted: the OBDX Library (bank documents, notes, manual excerpts) and its questions',
+            rule: p.externalAllowed ? 'Allowed outside the bank: FACTORY_KNOWLEDGE_EXTERNAL_MODELS is on' : 'Inside the bank only (enforced)',
+            now: (p.chatAllowed ? 'Sent to the chat model at ' : 'Not sent: the chat model is at ') + where(p.chatHost, p.chatInside)
+              + '; ' + (p.embeddingAllowed ? 'embedded at ' : 'not embedded: the embedding model is at ') + where(p.embeddingHost, p.embeddingInside),
+            pill: p.externalAllowed ? ui.status('WARNING', 'Not enforced') : ui.status('SUCCEEDED', 'Enforced') },
+          { kind: 'Bank code, specifications and screen designs (analysis, generation, designer, assistant panels)',
+            rule: 'Sent to the configured chat model wherever it is; the factory does not block an outside server for code',
+            now: 'Chat model at ' + where(p.chatHost, p.chatInside) + '; code search embeddings at ' + where(p.embeddingHost, p.embeddingInside),
+            pill: p.chatInside && p.embeddingInside ? ui.status('SUCCEEDED', 'Inside the bank') : ui.status('WARNING', 'Goes outside') }
+        ];
+      });
 
       // ---- Provider cards: known cloud providers and the servers found on this computer ----
       this.tab = ko.observable('providers');
       this.tabs = ui.tabs(this.tab, [
         { value: 'providers', label: 'Providers' }, { value: 'routing', label: 'Model Routing' }, { value: 'usage', label: 'Usage & Cost' },
-        { value: 'prompts', label: 'Prompts & Templates' }, { value: 'policies', label: 'Policies' }, { value: 'evaluation', label: 'Model Evaluation' }
+        { value: 'prompts', label: 'Prompts & Templates' }, { value: 'policies', label: 'Privacy & Policies' }, { value: 'evaluation', label: 'Model Evaluation' }
       ]);
       const same = (a, b) => !!a && !!b && a.replace(/\/+$/, '') === b.replace(/\/+$/, '');
+      // Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern)
+      this.tabKey = (event) => {
+        const keys = this.tabs.map((t) => t.value);
+        const at = keys.indexOf(this.tab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.tab(keys[next]);
+        const button = document.getElementById('md-' + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
       const copy = (text) => ui.copy(text).then(() => toast.success('Copied ' + text), () => toast.error('Could not copy. Select the text and copy it instead.'));
       const scrollTo = (id) => window.setTimeout(() => { const el = document.getElementById(id); if (el) { el.scrollIntoView({ behavior: 'smooth' }); } }, 100);
       const provider = (id, name, description, baseUrl, local) => {
@@ -285,15 +353,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           testing: ko.observable(false), admin: session.isAdmin
         };
         p.active = ko.pureComputed(() => !!this.status() && same(this.status().baseUrl, p.baseUrl()));
-        p.pill = ko.pureComputed(() => (p.testing() ? TESTING : p.active() ? ui.status('APPROVED', 'In use') : p.state() === 'ok' ? ui.status('PASSED', 'Connected')
-          : p.state() === 'failed' ? ui.status('FAILED', 'Not reachable') : ui.status('NOT_CHECKED', 'Not tested')));
-        p.statusText = ko.pureComputed(() => (p.state() === 'ok' ? p.models().length + ' models available' : p.state() === 'failed' ? 'Failed: ' + p.error : (p.active() ? 'In use' : 'Not tested')));
+        // The last test of this server: one run here, else the one the server remembers
+        p.lastCheck = ko.pureComputed(() => this.serverChecks()[norm(p.baseUrl())] || null);
+        p.result = ko.pureComputed(() => (p.state() ? p.state() : p.lastCheck() ? (p.lastCheck().ok ? 'ok' : 'failed') : ''));
+        p.lastError = ko.pureComputed(() => (p.state() === 'failed' ? p.error : p.lastCheck() && !p.lastCheck().ok ? p.lastCheck().lastError : ''));
+        p.lastOkText = ko.pureComputed(() => (p.state() === 'ok' ? 'Just now' : p.lastCheck() && p.lastCheck().lastOk ? ui.when(p.lastCheck().lastOk) : 'Never since the factory started'));
+        // The server in use says so, coloured by its test (the Status row says tested or not); others say their test
+        p.pill = ko.pureComputed(() => (p.testing() ? TESTING : p.active() ? ui.status(p.result() === 'ok' ? 'PASSED' : p.result() === 'failed' ? 'FAILED' : 'DRAFT', 'In use')
+          : p.result() === 'ok' ? ui.status('PASSED', 'Connected') : p.result() === 'failed' ? ui.status('FAILED', 'Not reachable') : ui.status('NOT_CHECKED', 'Not tested')));
+        p.statusText = ko.pureComputed(() => (p.result() === 'ok' ? (p.models().length || (p.lastCheck() || {}).models || 0) + ' models available' : p.result() === 'failed' ? 'Failed: ' + p.lastError() : (p.active() ? 'In use, not tested' : 'Not tested')));
         p.chatModels = ko.pureComputed(() => p.models().filter((m) => !m.embedding).map((m) => m.id));
         p.defaultModel = ko.pureComputed(() => p.selectedModel()
           || (p.active() ? find(p.models(), this.status().chatModel) || this.status().chatModel : (p.chatModels()[0] || '–')));
         p.modelChange = (event) => p.selectedModel(event.target.value);
-        p.statusPill = ko.pureComputed(() => (p.testing() ? TESTING : p.state() === 'failed' ? ui.status('FAILED', 'Not reachable')
-          : (p.state() === 'ok' || p.active()) ? ui.status('PASSED', 'Available') : ui.status('NOT_CHECKED', 'Not tested')));
+        p.statusPill = ko.pureComputed(() => (p.testing() ? TESTING : p.result() === 'failed' ? ui.status('FAILED', 'Not reachable')
+          : p.result() === 'ok' ? ui.status('PASSED', 'Available') : ui.status('NOT_CHECKED', 'Not tested')));
         p.selectedAsDefault = ko.pureComputed(() => same(this.modelsUrl() || (this.status() || {}).baseUrl, p.baseUrl()));
         // What the listed models can do: chat models write specs and code, embedding models search code
         p.caps = ko.pureComputed(() => [
@@ -331,7 +405,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           api.post('model/servers/models', { baseUrl: p.baseUrl(), apiKey: key })
             .then((models) => { p.models(models); p.state('ok'); if (loud) { toast.success(p.name + ' is reachable: ' + models.length + ' model' + (models.length === 1 ? '' : 's') + '.'); } })
             .catch((error) => { p.error = error.message; p.state('failed'); if (loud) { toast.error(p.name + ' is not reachable: ' + error.message); } })
-            .finally(() => { p.latency(Date.now() - start); p.checked(new Date().toLocaleTimeString()); p.testing(false); });
+            .finally(() => { p.latency(Date.now() - start); p.checked(new Date().toLocaleTimeString()); p.testing(false); loadChecks(); });
         };
         p.use = () => {
           this.tab('providers');
@@ -464,22 +538,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .concat([{ label: 'Models listed', cells: this.providers().map((p) => (!p.state() && !p.models().length ? { kind: 'unknown', text: '–', css: 'factory-md-cell factory-md-cell-unknown', title: 'Not tested' }
             : { kind: 'count', text: String(p.models().length), css: 'factory-md-cell', title: p.models().map((m) => m.id).join(', ') })) }]);
       });
-      this.health = ko.pureComputed(() => this.providers().filter((p) => p.state()).map((p) => ({
-        name: p.short, pill: p.state() === 'ok' ? ui.status('PASSED', 'Healthy') : ui.status('FAILED', 'Unavailable'),
-        latency: p.latency() !== null ? p.latency() + ' ms' : '–', checked: p.checked() || '–'
-      })));
+      this.health = ko.pureComputed(() => {
+        const names = {};
+        this.providers().forEach((p) => { names[norm(p.baseUrl())] = p.short; });
+        return Object.keys(this.serverChecks()).map((k) => this.serverChecks()[k]).map((c) => ({
+          name: names[norm(c.baseUrl)] || c.baseUrl, server: c.baseUrl,
+          pill: c.ok ? ui.status('PASSED', 'Healthy') : ui.status('FAILED', 'Unavailable'),
+          latency: c.latencyMs + ' ms', checked: ui.when(c.lastAt), lastOk: c.lastOk ? ui.when(c.lastOk) : 'Never', error: c.ok ? '' : (c.lastError || 'No reason given')
+        }));
+      });
       this.routing = ko.pureComputed(() => {
         const s = this.status();
         if (!s) {
           return [];
         }
         return [
-          { task: 'Drafting specifications from BRD/FSD', model: s.chatModel, server: s.baseUrl },
-          { task: 'Impact analysis and change plans', model: s.chatModel, server: s.baseUrl },
-          { task: 'Code generation and fixes', model: s.chatModel, server: s.baseUrl },
-          { task: 'Screen design changes and imports', model: s.chatModel, server: s.baseUrl },
-          { task: 'Assistant answers on every page', model: s.chatModel, server: s.baseUrl },
-          { task: 'Code search by meaning (embeddings)', model: s.embeddingModel, server: s.embeddingBaseUrl || s.baseUrl }
+          { task: 'BRD and FSD analysis (specification drafts)', model: s.chatModel, server: s.baseUrl, note: '' },
+          { task: 'Query enhancement (Improve My Question)', model: s.chatModel, server: s.baseUrl, note: '' },
+          { task: 'UI design (screen changes, imports, custom components)', model: s.chatModel, server: s.baseUrl, note: '' },
+          { task: 'Impact analysis and change plans', model: s.chatModel, server: s.baseUrl, note: '' },
+          { task: 'Code generation and build fixes', model: s.chatModel, server: s.baseUrl, note: '' },
+          { task: 'Code review', model: 'No model', server: '–', note: 'Quick checks and Jenkins check the code; External Review is done by people' },
+          { task: 'Knowledge Q&A (OBDX Library, assistant panels)', model: s.chatModel, server: s.baseUrl, note: this.policy() && !this.policy().chatAllowed ? 'The knowledge is not sent to this server (outside the bank)' : '' },
+          { task: 'Code and knowledge search by meaning (embeddings)', model: s.embeddingModel, server: s.embeddingBaseUrl || s.baseUrl, note: '' }
         ];
       });
       this.openPrompts = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'prompts' }));
@@ -490,6 +571,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         api.get('model/status')
           .then((data) => {
             this.status(data);
+            loadLimits();
+            loadPolicy();
+            loadChecks();
             if (!session.isAdmin()) {
               return null;
             }

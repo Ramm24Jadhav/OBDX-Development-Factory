@@ -31,13 +31,18 @@ public class ModelController {
     private final ModelServers servers;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final ProviderChecks checks;
+    private final ModelLimitsStore limits;
 
-    public ModelController(ModelGateway gateway, ModelSettings settings, ModelServers servers, AccessGuard guard, AuditLog audit) {
+    public ModelController(ModelGateway gateway, ModelSettings settings, ModelServers servers, AccessGuard guard, AuditLog audit,
+                           ProviderChecks checks, ModelLimitsStore limits) {
         this.gateway = gateway;
         this.settings = settings;
         this.servers = servers;
         this.guard = guard;
         this.audit = audit;
+        this.checks = checks;
+        this.limits = limits;
     }
 
     @GetMapping("/status")
@@ -65,7 +70,11 @@ public class ModelController {
     @GetMapping("/servers/local")
     public List<ModelServers.Server> localServers() {
         guard.requireAdmin();
-        return servers.local();
+        long start = System.currentTimeMillis();
+        List<ModelServers.Server> found = servers.local();
+        // Finding a server lists its models, so it counts as a test that succeeded
+        found.forEach(s -> checks.succeeded(s.baseUrl(), System.currentTimeMillis() - start, s.models().size()));
+        return found;
     }
 
     /** The models of a server; without an API key, the stored one is used if it is the current server. */
@@ -73,7 +82,29 @@ public class ModelController {
     public List<ModelServers.Model> models(@RequestBody ServerRequest request) {
         guard.requireAdmin();
         String apiKey = request.apiKey() == null || request.apiKey().isBlank() ? settings.storedKeyFor(request.baseUrl()) : request.apiKey();
-        return servers.models(request.baseUrl(), apiKey);
+        long start = System.currentTimeMillis();
+        try {
+            List<ModelServers.Model> found = servers.models(request.baseUrl(), apiKey);
+            checks.succeeded(request.baseUrl(), System.currentTimeMillis() - start, found.size());
+            return found;
+        } catch (RuntimeException e) {
+            checks.failed(request.baseUrl(), System.currentTimeMillis() - start, e.getMessage());
+            throw e;
+        }
+    }
+
+    /** The connection tests run since the factory started (administrators): last test, last success, last error. */
+    @GetMapping("/checks")
+    public List<ProviderChecks.Check> checks() {
+        guard.requireAdmin();
+        return checks.all();
+    }
+
+    /** The limits learned from model servers' refusals, still in force (signed-in users): shown, never changed here. */
+    @GetMapping("/limits")
+    public List<ModelLimitsStore.Learned> learnedLimits() {
+        guard.current();
+        return limits.all();
     }
 
     @PutMapping("/settings")
