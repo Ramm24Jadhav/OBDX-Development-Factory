@@ -3,6 +3,7 @@ package com.obdx.factory.target;
 import com.obdx.factory.pack.PackRule;
 import com.obdx.factory.pack.Recipe;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +38,10 @@ public record TargetPack(String id, String title, String description, String pre
     public TargetPack {
         structure = Map.copyOf(structure);
         components = Map.copyOf(components);
-        templates = Map.copyOf(templates);
+        // Templates checked out or written on Windows end lines with \r\n; the scaffolder reads \n
+        Map<String, String> unixLines = new LinkedHashMap<>();
+        templates.forEach((name, text) -> unixLines.put(name, text.replace("\r\n", "\n")));
+        templates = Map.copyOf(unixLines);
         rules = List.copyOf(rules);
         recipes = List.copyOf(recipes);
         starter = Map.copyOf(starter);
