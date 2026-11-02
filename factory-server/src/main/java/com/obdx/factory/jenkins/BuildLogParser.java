@@ -23,7 +23,8 @@ public final class BuildLogParser {
             // javac and Ant: backend/src/com/bank/A.java:12: error: cannot find symbol
             Pattern.compile("^(?:\\s*\\[javac]\\s+)?(?<file>\\S+\\.java):(?<line>\\d+):\\s*error:\\s*(?<msg>.*)$"),
             // ESLint, TypeScript and similar: ui/js/a.js:10:5: error message   or   ui/js/a.ts(10,5): error TS...
-            Pattern.compile("^(?<file>\\S+\\.(?:js|ts|tsx|html|json|xml)):(?<line>\\d+):\\d+:?\\s*(?<msg>.*)$"),
+            // (also without the column and after Maven's [ERROR]: [ERROR] ui/js/a.js:12: ESLint: no-undef 'x')
+            Pattern.compile("^(?:\\[(?:ERROR|WARNING)]\\s++)?(?<file>[^\\s\\[]\\S*\\.(?:js|jsx|ts|tsx|html|json|xml)):(?<line>\\d++)(?::\\d++)?:?\\s*(?<msg>.*)$"),
             Pattern.compile("^(?<file>\\S+\\.(?:ts|tsx|js))\\((?<line>\\d+),\\d+\\):\\s*(?<msg>.*)$"));
 
     private BuildLogParser() {
@@ -55,6 +56,29 @@ public final class BuildLogParser {
         }
         for (String path : changedPaths) {
             if (path.endsWith("/" + normalized)) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The test file of the change a JUnit class name stands for when it is no Java file of that name: a JavaScript test
+     * reports its suite as a class (QuickTransferTest for quick-transfer.spec.js or quickTransfer.test.js). Null if none.
+     */
+    public static String testFile(String className, List<String> changedPaths) {
+        String simple = className.substring(className.lastIndexOf('.') + 1).toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9]", "").replaceAll("(?:tests?|spec)$", "");
+        if (simple.isEmpty()) {
+            return null;
+        }
+        for (String path : changedPaths) {
+            String name = path.substring(path.lastIndexOf('/') + 1).toLowerCase(java.util.Locale.ROOT);
+            if (!name.matches(".*[._-](?:spec|test)\\.(?:js|jsx|ts|tsx)") && !name.matches(".*(?:spec|test)s?\\.(?:js|jsx|ts|tsx|java)")) {
+                continue;
+            }
+            String base = name.replaceAll("\\.(?:js|jsx|ts|tsx|java)$", "").replaceAll("[^a-z0-9]", "").replaceAll("(?:tests?|spec)$", "");
+            if (base.equals(simple)) {
                 return path;
             }
         }

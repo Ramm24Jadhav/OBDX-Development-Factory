@@ -56,7 +56,8 @@ class PlanLockTest {
             mock(CodeSearchService.class), mock(ImpactAnalyzer.class), mock(CodeGenerator.class), mock(SvnClient.class),
             mock(StorageProperties.class), new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"), jdbc, json,
             mock(ChangeBuildStore.class), mock(PackService.class), mock(LocalChecks.class), mock(RecipeService.class), mock(TargetService.class),
-            mock(TargetPacks.class), mock(TaskExecutor.class), mock(KnowledgeService.class), planReviews);
+            mock(TargetPacks.class), mock(TaskExecutor.class), mock(KnowledgeService.class), planReviews,
+            new com.obdx.factory.importing.WorkingCopyLocks(), mock(com.obdx.factory.auth.AuditLog.class));
 
     private final UUID id = UUID.randomUUID();
 

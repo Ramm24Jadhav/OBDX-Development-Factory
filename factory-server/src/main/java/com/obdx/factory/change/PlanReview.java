@@ -23,7 +23,8 @@ final class PlanReview {
     static final String SERVED_PATH = "A new REST resource for ";
     static final String SAME_NAME = "A new class has the name of an existing one in another package: ";
     static final String NEW_SHELL = "A new UI file looks like glue for a shell the code already has: ";
-    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH, SAME_NAME, NEW_SHELL);
+    static final String UNCOVERED_MUST = "No planned file names the Must requirement(s) ";
+    private static final List<String> PREFIXES = List.of(NO_TEST, UNSERVED_API, SERVED_PATH, SAME_NAME, NEW_SHELL, UNCOVERED_MUST);
     /**
      * Names of the files that load, register or lay out other components (a dashboard, the app's entry point, a router,
      * a menu): OBDX already has them, and a new component is hooked into the existing one rather than given a new one.
@@ -108,6 +109,11 @@ final class PlanReview {
         if (!spec.acceptanceCriteria().isEmpty() && plan.items().stream().noneMatch(i -> "test".equals(i.layer()) || isTest(i.path()))) {
             risks.add(NO_TEST + " (" + spec.acceptanceCriteria().size() + " criteria). Add a test file that checks them, or say "
                     + "why none is needed.");
+        }
+        List<String> must = uncoveredMust(plan, spec);
+        if (!must.isEmpty()) {
+            risks.add(UNCOVERED_MUST + ids(must) + ". Check that the plan covers " + (must.size() == 1 ? "it" : "them")
+                    + " before approving, or say in a file's details which one does.");
         }
         boolean createsResource = plan.items().stream().anyMatch(i -> "create".equals(i.action()) && isResource(i.path()));
         // A UI-only change calls existing services; a plan with Java code, or for a spec that asks for new REST endpoints,
@@ -455,13 +461,7 @@ final class PlanReview {
             }
         }
         if (spec != null && !spec.requirements().isEmpty()) {
-            Set<String> named = new LinkedHashSet<>();
-            for (ChangePlan.Item item : plan.items()) {
-                Matcher m = REQUIREMENT_ID.matcher(capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())));
-                while (m.find()) {
-                    named.add(m.group());
-                }
-            }
+            Set<String> named = namedRequirements(plan);
             List<String> unnamed = spec.requirements().stream().map(RequirementSpec.FunctionalRequirement::id)
                     .filter(id -> id != null && id.matches("FR-\\d+") && !named.contains(id)).toList();
             // Only when the plan names requirements at all: otherwise every one would be listed
@@ -470,6 +470,36 @@ final class PlanReview {
             }
         }
         return gaps;
+    }
+
+    /** The requirement IDs (FR-001) the planned files name in their purpose or details. */
+    static Set<String> namedRequirements(ChangePlan plan) {
+        Set<String> named = new LinkedHashSet<>();
+        for (ChangePlan.Item item : plan.items()) {
+            Matcher m = REQUIREMENT_ID.matcher(capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())));
+            while (m.find()) {
+                named.add(m.group());
+            }
+        }
+        return named;
+    }
+
+    /**
+     * The Must requirements (priority Must, Must have or Mandatory) that no planned file names,
+     * when the plan names requirements at all (otherwise every one would be listed).
+     */
+    static List<String> uncoveredMust(ChangePlan plan, RequirementSpec spec) {
+        if (spec == null || spec.requirements().isEmpty()) {
+            return List.of();
+        }
+        Set<String> named = namedRequirements(plan);
+        if (named.isEmpty()) {
+            return List.of();
+        }
+        return spec.requirements().stream()
+                .filter(r -> r.id() != null && r.id().matches("FR-\\d+") && !named.contains(r.id()) && r.priority() != null
+                        && r.priority().strip().toLowerCase(Locale.ROOT).matches("must( have)?|mandatory"))
+                .map(RequirementSpec.FunctionalRequirement::id).distinct().toList();
     }
 
     private static String ids(List<String> ids) {

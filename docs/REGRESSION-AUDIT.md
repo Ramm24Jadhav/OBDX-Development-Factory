@@ -131,3 +131,26 @@ HTTPS SVN (svn:// and file:// were used); Jenkins BRANCH mode; the build-fix rou
 positive-path mutating actions for non-admin roles (checked by code and state checks only, to avoid commits); quota exhaustion
 during impact analysis; approving an analyzer-marked incomplete plan; "Open at page N" in the Library UI; one keyboard path
 (requirement row by Tab).
+
+## Server fixes (branch audit-server-fixes)
+
+Re-run against a factory of their own (8151) with the stubs; "before" is the audit above.
+
+| ID | Fix | After |
+|---|---|---|
+| C1, C2 | Secret values the factory holds are masked by value (`common/KnownSecrets`: SVN passwords, Jenkins tokens, model keys, LDAP/OIDC secrets from the settings) in `Messages.redacted`, the SVN, Jenkins and model exceptions, problem details, audit details and import messages | svn/test 502, import message, SVN_TEST_FAILED row, activity: "login svcx:[hidden]"; a 500 echoing an unprefixed key: not in the detail |
+| C4 | Every log line, stack traces included, is redacted (`common/RedactedLog`) | neither the SVN password nor the key in factory.log |
+| C7 | MODEL_SETTINGS_CHANGED says "API key set / changed / removed" | as stated |
+| C8 | Reviewers get no custom component html, css or script (the preview draws a placeholder) | GET api/review/{token} without them |
+| A1 | Approving a screen with an element the version pack forbids: 409 "Unsupported components: ..." unless `?unsupported=true` (audited), also Approve all; listed in the designer's Checks. The pack rule jet-no-select-one stays a warning in code: the pack defines it as deprecated, not forbidden | 409, then 200 with "(confirmed)" in the audit |
+| A2 | Write again keeps a version that passed its checks when the new one fails them; audited (CHANGE_FILE_WRITTEN_AGAIN) and in the change's history | file PASSED, content kept, the message says why |
+| A3 | Every failed JUnit case is recorded ("Test failed: ..."), JavaScript suites matched to the change's test file; "[ERROR] file.js:12: ..." read with its file and line | Unit tests gate Failed with the test; the ESLint line links to the file |
+| A4 | Delivering files that fail their checks: 409 "Failing checks: ..." unless `?failedChecks=true` (audited) | 409 naming the files, then r11 with "(confirmed)" |
+| A5 | approve-plan refused while changes were requested on the latest revision | 409, then 202 after an edit |
+| A6 | `POST .../imports/checkout-again` (MANAGE_CODE) and "Check out again" on the Workspaces sheet; the error says to use it (read-only pristine files are removed on Windows) | E155016 message points to it; check out again succeeds, requirements kept |
+| A7 | Plain messages: svn connect, login, path and working copy errors; model server refused or 5xx (the server's sentence, no JSON); the approved spec | as stated |
+| A8 | Failed deliveries audited (CHANGE_DELIVERY_FAILED); a Figma import checks approval first | pre-commit hook refusal audited; 409 before any call |
+| C9 | Duplicate FR, AC and NFR IDs listed in the requirement's `warnings` (the spec is not changed) | in the API; the UI does not show it yet |
+| O1b, O3, O4 | Plan risk for Must requirements no planned file names; a file still cut off at the output limit is kept as cut off (Continue goes on from it); an edit refreshes the change's message | as stated |
+
+Left out: C3 (citations are computed in the UI), O1 and O2 (policy decisions).

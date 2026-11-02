@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -34,12 +35,18 @@ public class DesignFlowController {
 
     /** Approves the listed screens of the requirement, or all of them when none are listed. */
     @PostMapping("/api/requirements/{requirementId}/designs/approve")
-    public DesignFlowService.DesignFlow approve(@PathVariable UUID requirementId, @RequestBody(required = false) ApproveRequest request) {
+    public DesignFlowService.DesignFlow approve(@PathVariable UUID requirementId, @RequestBody(required = false) ApproveRequest request,
+                                                @RequestParam(value = "unsupported", defaultValue = "false") boolean unsupported) {
         var user = guard.requireForRequirement(requirementId, Permission.APPROVE);
         DesignFlowService.Approval approval = service.approve(requirementId, request == null || request.designIds() == null ? null
-                : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName());
+                : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName(), unsupported);
         DesignFlowService.DesignFlow flow = approval.flow();
-        approval.approved().forEach(name -> audit.record("DESIGN_APPROVED", flow.workspaceId(), name, "with the requirement's other screens"));
+        for (int i = 0; i < approval.approved().size(); i++) {
+            // (by the screen's id: two screens can have the same name)
+            String forbidden = approval.unsupported().get(approval.approvedIds().get(i));
+            audit.record("DESIGN_APPROVED", flow.workspaceId(), approval.approved().get(i), "with the requirement's other screens"
+                    + (forbidden == null ? "" : ", with " + forbidden + " that the version pack forbids (confirmed)"));
+        }
         return flow;
     }
 

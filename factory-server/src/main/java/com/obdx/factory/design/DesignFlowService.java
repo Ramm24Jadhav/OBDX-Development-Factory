@@ -24,7 +24,11 @@ public class DesignFlowService {
     private final DesignStore store;
     private final RequirementService requirements;
 
-    public DesignFlowService(ScreenDesignRepository designs, DesignStore store, RequirementService requirements) {
+    private final ComponentCompatibility compatibility;
+
+    public DesignFlowService(ScreenDesignRepository designs, DesignStore store, RequirementService requirements,
+                             ComponentCompatibility compatibility) {
+        this.compatibility = compatibility;
         this.designs = designs;
         this.store = store;
         this.requirements = requirements;
@@ -67,7 +71,11 @@ public class DesignFlowService {
     }
 
     /** What approving changed, for the audit log, and the flow after it. */
-    public record Approval(List<String> approved, DesignFlow flow) {
+    /**
+     * @param approvedIds the ids of the approved screens, in the order of their names in approved
+     * @param unsupported the screens approved with elements the version pack forbids (confirmed): id to "oj-x, oj-y"
+     */
+    public record Approval(List<String> approved, DesignFlow flow, List<UUID> approvedIds, Map<UUID, String> unsupported) {
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +115,15 @@ public class DesignFlowService {
      */
     @Transactional
     public Approval approve(UUID requirementId, List<UUID> ids, String by) {
+        return approve(requirementId, ids, by, false);
+    }
+
+    /**
+     * @param unsupported true: the approver confirmed approving screens with elements the workspace's version pack
+     *                    forbids; without it the approval is refused (nothing approved), naming the screens and elements
+     */
+    @Transactional
+    public Approval approve(UUID requirementId, List<UUID> ids, String by, boolean unsupported) {
         if (by == null || by.isBlank()) {
             throw new BadRequestException("Enter your name");
         }
@@ -118,14 +135,31 @@ public class DesignFlowService {
         if (wanted != null && !all.stream().map(ScreenDesign::getId).toList().containsAll(wanted)) {
             throw new BadRequestException("Some of these screens are not part of this requirement. Reload the page and try again.");
         }
-        List<String> approved = new ArrayList<>();
-        for (ScreenDesign design : all) {
-            if ((wanted == null || wanted.contains(design.getId())) && design.getStatus() != ScreenDesign.Status.APPROVED) {
-                design.approve(by.trim());
-                designs.save(design);
-                approved.add(design.getName());
+        List<ScreenDesign> toApprove = all.stream().filter(design -> (wanted == null || wanted.contains(design.getId()))
+                && design.getStatus() != ScreenDesign.Status.APPROVED).toList();
+        Map<UUID, String> forbidden = new java.util.LinkedHashMap<>();
+        Map<UUID, String> names = new java.util.HashMap<>();
+        for (ScreenDesign design : toApprove) {
+            List<ComponentCompatibility.Entry> found = compatibility == null ? List.of()
+                    : compatibility.unsupported(design.getWorkspaceId(), store.model(design.getId(), design.getCurrentVersion()).orElse(null));
+            if (!found.isEmpty()) {
+                names.put(design.getId(), design.getName());
+                forbidden.put(design.getId(), String.join(", ", found.stream().map(ComponentCompatibility.Entry::element).toList()));
             }
         }
-        return new Approval(approved, flow(requirementId));
+        if (!forbidden.isEmpty() && !unsupported) {
+            throw new com.obdx.factory.common.ConflictException(ScreenDesignService.UNSUPPORTED + "the workspace's version pack forbids elements of "
+                    + String.join("; ", forbidden.entrySet().stream().map(f -> names.get(f.getKey()) + " (" + f.getValue() + ")").toList()) + ". Replace them in the designer, or approve the screens as they are if you have "
+                    + "checked that they work in this OBDX version.");
+        }
+        List<String> approved = new ArrayList<>();
+        List<UUID> approvedIds = new ArrayList<>();
+        for (ScreenDesign design : toApprove) {
+            design.approve(by.trim());
+            designs.save(design);
+            approved.add(design.getName());
+            approvedIds.add(design.getId());
+        }
+        return new Approval(approved, flow(requirementId), approvedIds, unsupported ? forbidden : Map.of());
     }
 }

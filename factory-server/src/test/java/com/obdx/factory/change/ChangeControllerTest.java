@@ -57,7 +57,7 @@ class ChangeControllerTest {
 
     private static ChangeService.ChangeDetail detail(ChangePlan plan) {
         return new ChangeService.ChangeDetail(ID, WORKSPACE, null, "Standing instructions", ChangeRequest.Status.GENERATING, null, null, plan,
-                "Lead", null, null, null, null, null, null, List.of(), null, null, List.of(), null, null, null, null);
+                "Lead", null, null, null, null, null, null, List.of(), null, null, List.of(), null, null, null, null, List.of());
     }
 
     private void signedIn() {
@@ -112,5 +112,62 @@ class ChangeControllerTest {
 
         mvc.perform(post("/api/changes/" + ID + "/analyze?fresh=true").with(csrf())).andExpect(status().isAccepted());
         verify(service).analyzeAgain(ID, true);
+    }
+
+    // Regression audit A4, A8
+
+    @Test
+    void deliveringFilesThatFailTheirChecksIsConfirmedAndRecorded() throws Exception {
+        signedIn();
+        when(service.deliverToBranch(ID, false, false)).thenThrow(new ConflictException(ChangeService.FAILED_CHECKS + "1 file(s) fail their checks: a/b.js."));
+        mvc.perform(post("/api/changes/" + ID + "/deliver").with(csrf())).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail", startsWith(ChangeService.FAILED_CHECKS)));
+        verify(audit, never()).record(anyString(), eq(WORKSPACE), anyString(), anyString());
+
+        ChangeService.FileView failing = new ChangeService.FileView("a/b.js", "create", "ui", null, ChangeFileStore.Status.GENERATED, false,
+                FileChecks.Status.FAILED, "x", 1, 1, 0);
+        ChangeService.ChangeDetail delivered = new ChangeService.ChangeDetail(ID, WORKSPACE, null, "Standing instructions",
+                ChangeRequest.Status.DELIVERED, null, null, null, "Lead", null, "svn://h/branches/factory/cr-1", 10L, null, null, null,
+                List.of(failing), null, null, List.of(), null, null, null, null, List.of());
+        when(service.deliverToBranch(ID, false, true)).thenReturn(delivered);
+        mvc.perform(post("/api/changes/" + ID + "/deliver?failedChecks=true").with(csrf())).andExpect(status().isOk());
+        verify(audit).record("CHANGE_DELIVERED", WORKSPACE, "svn://h/branches/factory/cr-1",
+                "revision 10, 1 file(s) committed, 1 file(s) failing their checks delivered (confirmed)");
+    }
+
+    @Test
+    void aFailedDeliveryIsRecordedWithItsReason() throws Exception {
+        signedIn();
+        when(service.deliverToBranch(ID, false, false)).thenThrow(new com.obdx.factory.svn.SvnException("svnmucc failed: pre-commit hook refused"));
+        when(service.get(ID)).thenReturn(detail(null));
+        mvc.perform(post("/api/changes/" + ID + "/deliver").with(csrf())).andExpect(status().isBadGateway());
+        verify(audit).record(ChangeController.DELIVERY_FAILED, WORKSPACE, ID.toString(), "Standing instructions: svnmucc failed: pre-commit hook refused");
+    }
+
+    @Test
+    void writeAgainPassesWhoAskedAndIsRecordedWithItsOutcomeLater() throws Exception {
+        signedIn();
+        when(service.regenerate(ID, "a/b.js", "use oj-select-single", "dev")).thenReturn(detail(null));
+        mvc.perform(post("/api/changes/" + ID + "/regenerate").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"path\": \"a/b.js\", \"note\": \"use oj-select-single\"}")).andExpect(status().isAccepted());
+        verify(service).regenerate(ID, "a/b.js", "use oj-select-single", "dev");
+        // the request now (the outcome is recorded by the generation, when it is known)
+        verify(audit).record(ChangeController.WRITTEN_AGAIN, WORKSPACE, ID.toString(), "a/b.js (with a note): requested");
+    }
+
+    @Test
+    void aDeliveryCommittedAfterAllIsNotRecordedAsFailed() throws Exception {
+        signedIn();
+        when(service.deliverToBranch(ID, false, false)).thenThrow(new IllegalStateException("after the commit"));
+        ChangeService.ChangeDetail delivered = new ChangeService.ChangeDetail(ID, WORKSPACE, null, "Standing instructions",
+                ChangeRequest.Status.DELIVERED, null, null, null, "Lead", null, "svn://h/b", 10L, null, null, null,
+                List.of(), null, null, List.of(), null, null, null, null, List.of());
+        when(service.get(ID)).thenReturn(delivered);
+        try {
+            mvc.perform(post("/api/changes/" + ID + "/deliver").with(csrf()));
+        } catch (Exception thrown) {
+            // the error goes on as it was
+        }
+        verify(audit, never()).record(eq(ChangeController.DELIVERY_FAILED), eq(WORKSPACE), anyString(), anyString());
     }
 }

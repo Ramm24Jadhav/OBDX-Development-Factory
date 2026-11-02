@@ -39,6 +39,12 @@ public class JenkinsClient {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.authorization = username == null || username.isBlank() ? null
                 : "Basic " + Base64.getEncoder().encodeToString((username + ":" + (token == null ? "" : token)).getBytes(StandardCharsets.UTF_8));
+        // a server's error or the build's console can echo the token (or the header it came in): masked wherever messages
+        // are built. A client is made only for a workspace's stored settings, after its permission checks
+        com.obdx.factory.common.KnownSecrets.used(token);
+        if (authorization != null && token != null && !token.isBlank()) {
+            com.obdx.factory.common.KnownSecrets.used(authorization.substring("Basic ".length()));
+        }
         this.properties = properties;
         this.http = HttpClient.newBuilder().cookieHandler(new CookieManager()).connectTimeout(properties.requestTimeout())
                 .followRedirects(HttpClient.Redirect.NORMAL).build();
@@ -129,7 +135,7 @@ public class JenkinsClient {
         if (response.statusCode() != 200) {
             return "";
         }
-        String text = response.body();
+        String text = com.obdx.factory.common.KnownSecrets.masked(response.body());
         int max = (int) properties.maxLogSize().toBytes();
         return text.length() <= max ? text : text.substring(text.length() - max);
     }

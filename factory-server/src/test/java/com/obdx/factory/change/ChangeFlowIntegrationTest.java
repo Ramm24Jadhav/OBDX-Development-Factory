@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class ChangeFlowIntegrationTest {
 
     @TempDir
@@ -193,6 +194,12 @@ class ChangeFlowIntegrationTest {
 
     @Autowired
     private WorkspaceService workspaces;
+
+    @Autowired
+    private PlanReviewStore planReviewStore;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Autowired
     private tools.jackson.databind.ObjectMapper json;
@@ -336,6 +343,19 @@ class ChangeFlowIntegrationTest {
                 .hasMessageContaining("Say what has to change");
         assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.APPROVED, "ok", "Lead"))
                 .hasMessageContaining("Approve Plan");
+        // The request holds the plan; saving it unchanged (same JSON, same revision) answers nothing
+        assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
+        changes.updatePlan(changeId, json.writeValueAsString(changes.get(changeId).plan()), "dev1");
+        assertThat(changes.planReview(changeId).revisions()).hasSize(1);
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
+        assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
+        // a new analysis answers it, also one that gives the same plan, and says who and at which revision
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 1, "Impact analysis")).isEqualTo(1);
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isFalse();
+        assertThat(jdbcTemplate.queryForList("SELECT answered_by || ' at ' || answered_revision FROM change_plan_comment WHERE change_id = ? "
+                + "AND kind = 'CHANGES_REQUESTED'", String.class, changeId)).containsExactly("Impact analysis at 1");
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, "Add a test for the remarks", "Lead");
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
         // An edit is the next revision; saving the same plan again adds none
         String edited = json.writeValueAsString(new ChangePlan("Edited: " + planned.plan().summary(), planned.plan().items(), planned.plan().risks()));
         changes.updatePlan(changeId, edited, "dev1");
@@ -348,7 +368,14 @@ class ChangeFlowIntegrationTest {
         assertThat(changes.planReview(changeId).comments()).extracting(PlanReviewStore.Comment::kind, PlanReviewStore.Comment::author, PlanReviewStore.Comment::revision)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.COMMENT, "dev1", 1),
                         org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
                         org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.APPROVED, "Lead", 2));
+        // A request made before any revision was recorded (revision null) is answered by a new analysis only, never by a Save
+        PlanReviewStore.Comment early = planReviewStore.comment(changeId, null, PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", "Before revisions");
+        assertThat(planReviewStore.answerRequestsByEdit(changeId, "{\"summary\": \"other\"}", 2, "dev1")).isZero();
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 2, "Impact analysis")).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT answered_by FROM change_plan_comment WHERE id = ?", String.class, early.id()))
+                .isEqualTo("Impact analysis");
         waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "generation");
         ChangeService.ChangeDetail generated = changes.get(changeId);
         assertThat(generated.planApprovedBy()).isEqualTo("Lead");

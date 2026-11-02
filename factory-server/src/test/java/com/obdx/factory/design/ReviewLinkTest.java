@@ -71,7 +71,7 @@ class ReviewLinkTest {
 
     @Test
     void linksCannotBeGuessed() {
-        ScreenDesignService service = new ScreenDesignService(mock(ScreenDesignRepository.class), null, null, null, null, null, null);
+        ScreenDesignService service = new ScreenDesignService(mock(ScreenDesignRepository.class), null, null, null, null, null, null, null);
         Set<String> tokens = new HashSet<>();
         for (int i = 0; i < 1000; i++) {
             String token = service.newToken();

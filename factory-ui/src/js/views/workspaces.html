@@ -280,6 +280,9 @@
             <span class="factory-wsp-tipwrap" :tabindex="[[sheet().canManage ? null : '0']]" :data-fx-tip="[[sheet().manageTip]]">
               <button type="button" id="updateCodeButton" class="fx-btn fx-btn--primary" :disabled="[[!sheet().canUpdate]]" on-click="[[updateCode]]">
                 <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[sheet().updateLabel]]"></oj-bind-text></button></span>
+            <oj-bind-if test="[[sheet().canCheckOutAgain]]">
+              <button type="button" id="checkOutAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkOutAgain]]">Check out again</button>
+            </oj-bind-if>
             <a href="?ojr=code" class="fx-btn fx-btn--tertiary" on-click="[[sheetGo('code')]]">Open the code</a>
           </div>
           <p class="factory-wsp-muted"><oj-bind-text value="[[sheet().updateHelp]]"></oj-bind-text></p>

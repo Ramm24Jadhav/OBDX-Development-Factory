@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "factory.auth.ldap.manager-dn=cn=reader,dc=bank,dc=local", "factory.auth.ldap.manager-password=reader-pass"})
 @AutoConfigureMockMvc
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class LdapLoginIntegrationTest {
 
     @TempDir

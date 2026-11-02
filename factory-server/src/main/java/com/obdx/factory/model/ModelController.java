@@ -82,6 +82,8 @@ public class ModelController {
     public List<ModelServers.Model> models(@RequestBody ServerRequest request) {
         guard.requireAdmin();
         String apiKey = request.apiKey() == null || request.apiKey().isBlank() ? settings.storedKeyFor(request.baseUrl()) : request.apiKey();
+        // sent to the server (an administrator's request): masked if the server echoes it
+        com.obdx.factory.common.KnownSecrets.used(apiKey);
         long start = System.currentTimeMillis();
         try {
             List<ModelServers.Model> found = servers.models(request.baseUrl(), apiKey);
@@ -110,11 +112,25 @@ public class ModelController {
     @PutMapping("/settings")
     public SaveResponse save(@RequestBody ModelSettings.Update request) {
         String username = guard.requireAdmin().getUsername();
+        ModelSettings.Current before = settings.current();
         boolean embeddingsRemoved = settings.save(request, username);
         ModelSettings.Current current = settings.current();
         audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel()
-                + (current.embeddingBaseUrl() != null ? " at " + current.embeddingBaseUrl() : ""));
+                + (current.embeddingBaseUrl() != null ? " at " + current.embeddingBaseUrl() : "")
+                + keyChange("API key", before.apiKey(), current.apiKey())
+                + keyChange("code search server API key", before.embeddingBaseUrl() == null ? null : before.embeddingApiKey(),
+                current.embeddingBaseUrl() == null ? null : current.embeddingApiKey()));
         return new SaveResponse(status(), embeddingsRemoved, embeddingProblem(current));
+    }
+
+    /** "; API key changed" (set, removed) when the key is not the one before; the key itself is never written. */
+    static String keyChange(String what, String before, String after) {
+        boolean had = isSet(before);
+        boolean has = isSet(after);
+        if (!had && !has || had && has && before.equals(after)) {
+            return "";
+        }
+        return "; " + what + (!had ? " set" : !has ? " removed" : " changed");
     }
 
     /**

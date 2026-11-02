@@ -54,6 +54,46 @@ public class ComponentCompatibility {
         return new Report(scope.version(), imported, assess(elements, checks.rulesFor(scope, VIEW_PATH), found.items(), imported));
     }
 
+    /** The elements of a screen that a rule of the workspace's version pack forbids (empty when none does). */
+    public List<Entry> unsupported(UUID workspaceId, ScreenModel model) {
+        List<String> elements = elements(model);
+        if (elements.isEmpty()) {
+            return List.of();
+        }
+        CheckScope scope = packs.scope(workspaceId);
+        // (no palette needed: a forbidding rule decides on its own)
+        return assess(elements, checks.rulesFor(scope, VIEW_PATH), List.of(), true).stream()
+                .filter(e -> e.status() == Status.UNSUPPORTED).toList();
+    }
+
+    /**
+     * The elements code generation uses for a screen, as the designer names them: a bank component's name, or the JET
+     * element of a catalog type (oj-select-single for a dropdown), and oj-button when it has buttons.
+     */
+    static List<String> elements(ScreenModel model) {
+        Set<String> names = new LinkedHashSet<>();
+        if (model == null || model.sections() == null) {
+            return List.of();
+        }
+        for (ScreenModel.Section section : model.sections()) {
+            for (ScreenModel.Component c : section.components() == null ? List.<ScreenModel.Component>of() : section.components()) {
+                if ("component".equals(c.type())) {
+                    if (c.component() != null && !c.component().isBlank()) {
+                        names.add(c.component().strip().toLowerCase(Locale.ROOT));
+                    }
+                } else {
+                    ComponentCatalog.find(c.type()).map(ComponentCatalog.ComponentType::jetComponent)
+                            .map(jet -> jet.replaceAll("[^a-z0-9-].*$", "")).filter(jet -> ELEMENT.matcher(jet).matches())
+                            .ifPresent(names::add);
+                }
+            }
+        }
+        if (model.actions() != null && !model.actions().isEmpty()) {
+            names.add("oj-button");
+        }
+        return List.copyOf(names);
+    }
+
     /** The status of each distinct element name (lower case, like "oj-input-text"); other names are left out. */
     static List<Entry> assess(List<String> elements, List<PackRule> rules, List<ComponentPalette.Item> items, boolean imported) {
         Set<String> names = new LinkedHashSet<>();

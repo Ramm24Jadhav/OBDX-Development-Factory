@@ -63,6 +63,36 @@ public class PlanReviewStore {
         return jdbc.queryForObject("SELECT MAX(revision) FROM change_plan_revision WHERE change_id = ?", Integer.class, changeId);
     }
 
+    /**
+     * Whether a reviewer requested changes on this revision that no new analysis or saved edit has answered yet (the
+     * plan then waits for one).
+     */
+    public boolean changesRequested(UUID changeId, int revision) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM change_plan_comment WHERE change_id = ? AND revision = ? "
+                + "AND kind = ? AND answered_at IS NULL)", Boolean.class, changeId, revision, Kind.CHANGES_REQUESTED.name()));
+    }
+
+    /**
+     * Marks the open requests for changes answered by a new analysis, also one that gave the same plan (and so kept its
+     * revision): the plan was looked at again. Returns how many were open.
+     */
+    public int answerRequestsByAnalysis(UUID changeId, int revision, String by) {
+        return jdbc.update("UPDATE change_plan_comment SET answered_at = ?, answered_by = ?, answered_revision = ? WHERE change_id = ? "
+                + "AND kind = ? AND answered_at IS NULL", Timestamp.from(Instant.now()), by, revision, changeId, Kind.CHANGES_REQUESTED.name());
+    }
+
+    /**
+     * Marks answered the open requests for changes made on a plan that differs from the saved one: a Save that leaves the
+     * plan as it was when the request was made answers nothing, and a request made before any revision was recorded
+     * (revision null) is answered only by a new analysis. Returns how many were answered.
+     */
+    public int answerRequestsByEdit(UUID changeId, String planJson, int revision, String by) {
+        return jdbc.update("UPDATE change_plan_comment c SET answered_at = ?, answered_by = ?, answered_revision = ? WHERE c.change_id = ? "
+                        + "AND c.kind = ? AND c.answered_at IS NULL AND c.revision IS NOT NULL AND NOT EXISTS (SELECT 1 FROM change_plan_revision r "
+                        + "WHERE r.change_id = c.change_id AND r.revision = c.revision AND r.plan = ?::jsonb)",
+                Timestamp.from(Instant.now()), by, revision, changeId, Kind.CHANGES_REQUESTED.name(), planJson);
+    }
+
     public Comment comment(UUID changeId, Integer revision, Kind kind, String author, String text) {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();

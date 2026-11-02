@@ -63,6 +63,7 @@ public class JenkinsSettingsService {
         // The stored token goes only to the server it was entered for: a URL to another server needs it entered again
         String tokenEncrypted = keepsToken(stored[0], request.url()) ? stored[1] : null;
         if (request.token() != null) {
+            com.obdx.factory.common.KnownSecrets.warnIfNotMasked("Jenkins API token", request.token());
             tokenEncrypted = request.token().isEmpty() ? null : cipher.encrypt(request.token());
         }
         jdbc.update("INSERT INTO jenkins_settings (workspace_id, url, jobs, mode, branch_parameter, branch_value, patch_parameter, "

@@ -674,7 +674,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.generate = () => api.post('requirements/' + this.requirementId() + '/designs')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens generated. Review them below.')))
         .catch(actionError);
-      const approve = (ids) => api.post('requirements/' + this.requirementId() + '/designs/approve', { designIds: ids })
+      // Screens with elements the version pack forbids are refused (409 "Unsupported components: ..."): approving them is confirmed
+      const UNSUPPORTED = 'Unsupported components: ';
+      const approve = (ids, confirmed) => api.post('requirements/' + this.requirementId() + '/designs/approve' + (confirmed ? '?unsupported=true' : ''), { designIds: ids })
         .then((flow) => {
           const before = this.screens().filter((s) => s.status === 'APPROVED').length;
           setFlow(flow);
@@ -682,7 +684,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           toast.success((now - before) + (now - before === 1 ? ' screen' : ' screens') + ' approved.'
             + (now === flow.screens.length ? ' Every screen is approved: you can generate the code.' : ''));
         })
-        .catch(actionError);
+        .catch((error) => (!confirmed && error.status === 409 && String(error.message).indexOf(UNSUPPORTED) === 0
+          ? dialog.confirm({ title: 'Approve unsupported components?', message: error.message.substring(UNSUPPORTED.length).replace(/^./, (c) => c.toUpperCase()),
+            confirmLabel: 'Approve Anyway', danger: true }).then((ok) => ok && approve(ids, true))
+          : actionError(error)));
       this.approveGroup = () => approve(this.groupUnapproved());
       this.approveAll = () => dialog.confirm({
         title: 'Approve every screen?',
