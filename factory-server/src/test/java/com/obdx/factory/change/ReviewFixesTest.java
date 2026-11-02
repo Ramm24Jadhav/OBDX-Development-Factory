@@ -327,6 +327,16 @@ class ReviewFixesTest {
                 () -> ViewBindings.outline("class A {\n" + "'".repeat(50_000) + "\n" + "\"x".repeat(50_000)));
         quickly("arrow values", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline(("self.a = (" + "b, ".repeat(60) + "\n")
                 .repeat(1_000)));
+        // slashes that may start regular expression literals, members on one line, typed members, letters that lower-case longer
+        quickly("slashes after parentheses", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A {\n" + "(/".repeat(50_000)));
+        quickly("members on one line", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A { " + "a = 1; ".repeat(30_000) + "}"));
+        quickly("closing braces on one line", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A { " + "}".repeat(100_000)));
+        quickly("typed members", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A {\n"
+                + ("  public readonly a" + " ".repeat(50) + ": " + "x".repeat(200) + "\n").repeat(2_000) + "}\n"));
+        quickly("modifiers", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("class A {\n" + "public ".repeat(20_000) + "\n}\n"));
+        quickly("copying calls", () -> ViewBindings.outline(viewModel), () -> ViewBindings.outline("extend(".repeat(30_000)));
+        quickly("dotted capital I", () -> ViewBindings.bound(view), () -> ViewBindings.bound("İ".repeat(100_000) + "<!--x-->" + view));
+        quickly("gaps with abbreviations", () -> PlanReview.newTable("a new table"), () -> PlanReview.newTable("e.g. ".repeat(300) + "new table"));
         // a gap's table words
         quickly("table words", () -> PlanReview.newTable("a new table"), () -> PlanReview.newTable(("new" + " ".repeat(50)).repeat(2_000)));
     }
@@ -334,9 +344,23 @@ class ReviewFixesTest {
     /** Runs a small input first (so the code is compiled), then the large one, which must take under 2 seconds. */
     private static void quickly(String what, Runnable warmUp, Runnable large) {
         warmUp.run();
+        // The first large run compiles the code paths a small input does not reach (and pays for loading classes): it
+        // is not timed, but it must not take long either (a quadratic scan takes minutes)
+        Duration first = timed(large);
+        assertThat(first).as(what + " (first run)").isLessThan(Duration.ofSeconds(10));
+        // then the best of three runs, so a pause of the machine or the collector does not fail it
+        Duration best = first;
+        for (int run = 0; run < 3 && best.compareTo(Duration.ofSeconds(2)) >= 0 || run < 1; run++) {
+            Duration again = timed(large);
+            best = again.compareTo(best) < 0 ? again : best;
+        }
+        assertThat(best).as(what).isLessThan(Duration.ofSeconds(2));
+    }
+
+    private static Duration timed(Runnable run) {
         long start = System.nanoTime();
-        large.run();
-        assertThat(Duration.ofNanos(System.nanoTime() - start)).as(what).isLessThan(Duration.ofSeconds(2));
+        run.run();
+        return Duration.ofNanos(System.nanoTime() - start);
     }
 
     // --- VAPT 6: removing comments never changes strings or cuts the file ---

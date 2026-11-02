@@ -48,9 +48,21 @@ final class ViewBindings {
     private static final Pattern HYPHENATED = Pattern.compile("\\.[A-Za-z_$][\\w$]*+(?<=[A-Za-z])-[A-Za-z]");
     /** as="row", as='row', data-oj-as="item", and knockout's foreach: { data: rows, as: 'r' } */
     private static final Pattern ALIAS = Pattern.compile("\\bas[ \\t]*+[=:][ \\t]*+[\"']([A-Za-z_$][\\w$]{0,63}+)[\"']");
-    /** View models that copy names in from elsewhere (OBDX's rootModel, params, a mapping) cannot be checked by name. */
-    private static final Pattern COPIES_NAMES = Pattern.compile("\\b(?:ko\\.utils\\.extend|ko\\.mapping\\.fromJS|Object\\.(?:assign|"
-            + "defineProperty|defineProperties)|_\\.(?:assign|merge|extend|defaults)|\\$\\.extend|extend)[ \\t]*+\\(");
+    /**
+     * A call that may copy names into an object (OBDX's rootModel, params, a mapping), with the start of its arguments:
+     * it copies them into the view model only when its target argument is the view model (see {@link #copiesInto}).
+     */
+    private static final Pattern COPY_CALL = Pattern.compile("\\b(ko\\.utils\\.extend|ko\\.mapping\\.fromJS|Object\\.(?:assign|"
+            + "defineProperties)|_\\.(?:assign|merge|extend|defaults)|\\$\\.extend|extend)[ \\t]*+\\(([^()\\n]{0,300}+)");
+    /** Object.defineProperty(this, 'total', ...): a name of its own. */
+    private static final Pattern DEFINE_PROPERTY = Pattern.compile("\\bObject\\.defineProperty[ \\t]*+\\([ \\t]*+([A-Za-z_$][\\w$]{0,63}+)"
+            + "[ \\t]*+,[ \\t]*+['\"]([A-Za-z_$][\\w$]{0,63}+)['\"]");
+    /**
+     * The modifiers a class member may have, JavaScript's and TypeScript's, each followed by more of the member (so a
+     * field named get or async is a name, not a modifier).
+     */
+    private static final String MODIFIERS = "(?:(?:static|async|get|set|public|private|protected|readonly|override|declare|abstract|accessor)"
+            + "[ \\t]++(?=[A-Za-z_$#*]))";
     /** var that = this; */
     private static final Pattern THIS_ALIAS = Pattern.compile("\\b(?:var|let|const)[ \\t]++([A-Za-z_$][\\w$]{0,63}+)[ \\t]*+=[ \\t]*+this\\b");
     /**
@@ -61,18 +73,24 @@ final class ViewBindings {
             + "|\\[[ \\t]*+(?:'([A-Za-z_$][\\w$]{0,63}+)'|\"([A-Za-z_$][\\w$]{0,63}+)\"|([^\\]\\n]{1,80}+))[ \\t]*+])[ \\t]*+=(?![=>])"
             + "[ \\t]*+([^\\n;]{0,80}+)");
     private static final Pattern CLASS = Pattern.compile("\\bclass\\b[^{\\n]{0,200}+\\{");
-    /** A class member at the start of its line: name(...) {, get name() {, name = value, static name = value */
-    private static final Pattern MEMBER = Pattern.compile("((?:(?:static|async|get|set)[ \\t]++){0,4}+)(?:\\*[ \\t]*+)?#?"
-            + "([A-Za-z_$][\\w$]{0,63}+)[ \\t]*+(\\(|=(?![=>])[ \\t]*+([^\\n;]{0,80}+))");
+    /**
+     * A class member where it starts: name(...) {, get name() {, name = value, static name = value, and TypeScript's
+     * public send(): void {, private get total(): number {, readonly amount: ko.Observable&lt;number&gt; = ko.observable(0),
+     * total!: number. Groups: modifiers, name, the rest's start, a plain field's value, a typed field's value.
+     */
+    private static final Pattern MEMBER = Pattern.compile("(" + MODIFIERS + "{0,6}+)(?:\\*[ \\t]*+)?#?([A-Za-z_$][\\w$]{0,63}+)[?!]?[ \\t]*+"
+            + "(\\(|<|=(?![=>])[ \\t]*+([^\\n;]{0,80}+)|:[^=;\\n]{0,120}+(?:=(?![=>])[ \\t]*+([^\\n;]{0,80}+))?)");
     private static final Pattern RETURN_OBJECT = Pattern.compile("\\breturn[ \\t\\r\\n]*+\\{");
+    /** VM.prototype = { send: function () {}, total: 1 }: the members of a view model's prototype. */
+    private static final Pattern PROTOTYPE_OBJECT = Pattern.compile("\\b[A-Za-z_$][\\w$]{0,63}+\\.prototype[ \\t]*+=[ \\t\\r\\n]*+\\{");
     /** An entry of an object literal: name: value, 'name': value, name(...) { }, async name() { }, or name alone */
-    private static final Pattern ENTRY = Pattern.compile("(?:(?:async|get|set)[ \\t]++){0,3}+['\"]?([A-Za-z_$][\\w$]{0,63}+)['\"]?[ \\t]*+"
-            + "(:|\\(|$)");
+    private static final Pattern ENTRY = Pattern.compile("(?:(?:async|get|set)[ \\t]++(?=[A-Za-z_$'\"]))?+(?:(?:async|get|set)[ \\t]++"
+            + "(?=[A-Za-z_$'\"]))?+['\"]?([A-Za-z_$][\\w$]{0,63}+)['\"]?[ \\t]*+(:|\\(|$)");
     /** The names a view model may define, read leniently (only for not reporting a name it may have). */
     private static final Pattern OBJECT_KEY = Pattern.compile("^[ \\t]*+['\"]?([A-Za-z_$][\\w$]{0,63}+)['\"]?[ \\t]*+:", Pattern.MULTILINE);
     private static final Pattern FUNCTION = Pattern.compile("\\bfunction[ \\t]++([A-Za-z_$][\\w$]{0,63}+)");
-    private static final Pattern LINE_MEMBER = Pattern.compile("^[ \\t]*+(?:(?:static|async|get|set)[ \\t]++){0,4}+#?([A-Za-z_$][\\w$]{0,63}+)"
-            + "[ \\t]*+(?:\\([^()\\n]{0,300}+\\)[ \\t]*+\\{|=(?![=>]))", Pattern.MULTILINE);
+    private static final Pattern LINE_MEMBER = Pattern.compile("^[ \\t]*+" + MODIFIERS + "{0,6}+#?([A-Za-z_$][\\w$]{0,63}+)[?!]?[ \\t]*+"
+            + "(?:\\([^()\\n]{0,300}+\\)[ \\t]*+(?::[^{;\\n]{0,120}+)?\\{|=(?![=>])|:)", Pattern.MULTILINE);
     private static final Pattern ARROW = Pattern.compile("^(?:async[ \\t]++)?(?:\\([^()]{0,200}+\\)|[A-Za-z_$][\\w$]*+)[ \\t]*+=>");
     /** Globals and keywords a binding may start with. */
     private static final Set<String> KNOWN = Set.of("true", "false", "null", "undefined", "oj", "Math", "JSON", "Number", "String",
@@ -115,9 +133,6 @@ final class ViewBindings {
             return problems;
         }
         Shape shape = shape(viewModel);
-        if (shape.copies()) {
-            return problems;
-        }
         List<String> missing = missing(view, shape);
         if (missing.isEmpty()) {
             return problems;
@@ -126,19 +141,22 @@ final class ViewBindings {
             String names = outline(shape);
             problems.add(UNDEFINED_IN_CHANGE + ": " + String.join(", ", missing) + ". Use the view model's names"
                     + (names.isEmpty() ? "" : " (" + names + ")") + ", or add the missing ones to the view model.");
+        } else if (shape.copies()) {
+            // The names may come with what it copies in: said, but only as a warning
+            problems.add(UNDEFINED + ": " + String.join(", ", missing) + ". The view model copies names in from elsewhere, so they may "
+                    + "be there; check them, or define them in the view model.");
         } else {
             problems.add(UNDEFINED + ": " + String.join(", ", missing) + ". Use the view model's names, or add them to it.");
         }
         return problems;
     }
 
-    /** The names the view binds that the view model does not define; empty when it copies names in from elsewhere. */
+    /** The names the view binds that the view model does not define itself (it may copy some in from elsewhere). */
     static List<String> missing(String view, String viewModel) {
         if (view == null || viewModel == null) {
             return List.of();
         }
-        Shape shape = shape(viewModel);
-        return shape.copies() ? List.of() : missing(view, shape);
+        return missing(view, shape(viewModel));
     }
 
     private static List<String> missing(String view, Shape shape) {
@@ -265,7 +283,9 @@ final class ViewBindings {
      * a template's own data, or to nothing. Read by hand, each kind of tag looked for once per position.
      */
     static String withoutTemplates(String view) {
-        String lower = view.toLowerCase(Locale.ROOT);
+        // (lower-cased letter by letter in ASCII only, so that every index is the view's own: Java's lower case of
+        // some letters, such as the Turkish dotted I, is longer than the letter)
+        String lower = asciiLower(view);
         StringBuilder out = new StringBuilder(view.length());
         int n = view.length();
         int i = 0;
@@ -296,7 +316,8 @@ final class ViewBindings {
                 String tag = lower.substring(script, Math.min(tagEnd, script + 500));
                 if (tag.contains("text/html") || tag.contains("text/x-")) {
                     int end = lower.indexOf("</script", tagEnd);
-                    i = end < 0 ? n : end + "</script".length();
+                    int endTag = end < 0 ? -1 : lower.indexOf('>', end);
+                    i = endTag < 0 ? n : endTag + 1;
                 } else {
                     out.append(view, script, tagEnd + 1);
                     i = tagEnd + 1;
@@ -306,6 +327,17 @@ final class ViewBindings {
         return out.toString();
     }
 
+    /** The text with A to Z lower-cased and every other character as it is: the same length, so indexes carry over. */
+    static String asciiLower(String text) {
+        char[] chars = text.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            if (chars[i] >= 'A' && chars[i] <= 'Z') {
+                chars[i] = (char) (chars[i] + ('a' - 'A'));
+            }
+        }
+        return new String(chars);
+    }
+
     // --- the view model ---
 
     /**
@@ -313,9 +345,10 @@ final class ViewBindings {
      *
      * @param defined every name it may define, read leniently (object keys, function names and the like too): a name
      *                bound in the view that is not among them is missing
-     * @param names   its public names (self.x =, this.x =, a class's members, or the object it returns) with their kind,
-     *                for prompts and findings
-     * @param copies  it copies names in from elsewhere, so it cannot be checked by name
+     * @param names   its public names (self.x =, this.x =, a class's members, its prototype's or the object it returns)
+     *                with their kind, for prompts and findings
+     * @param copies  it copies names into itself from elsewhere (ko.utils.extend(self, ...)), so a name it lacks may be
+     *                there: a warning, never an error
      * @param dynamic it sets names made at run time (self[key] =)
      */
     record Shape(Set<String> defined, Map<String, String> names, boolean copies, boolean dynamic) {
@@ -332,11 +365,15 @@ final class ViewBindings {
         if (viewModel == null) {
             return new Shape(defined, names, false, false);
         }
-        boolean copies = COPIES_NAMES.matcher(viewModel).find();
         Set<String> receivers = new LinkedHashSet<>(RECEIVERS);
         Matcher alias = THIS_ALIAS.matcher(viewModel);
         while (alias.find()) {
             receivers.add(alias.group(1));
+        }
+        boolean copies = false;
+        Matcher copy = COPY_CALL.matcher(viewModel);
+        while (!copies && copy.find()) {
+            copies = copiesInto(copy.group(1), copy.group(2), receivers);
         }
         boolean dynamic = false;
         Matcher m = ASSIGNED.matcher(viewModel);
@@ -355,10 +392,25 @@ final class ViewBindings {
                 names.putIfAbsent(name, kind(m.group(6).strip()));
             }
         }
-        classMembers(viewModel, defined, names);
-        Map<String, String> returned = returnedObject(viewModel, defined);
+        Matcher property = DEFINE_PROPERTY.matcher(viewModel);
+        while (property.find()) {
+            if (receivers.contains(property.group(1))) {
+                defined.add(property.group(2));
+                if (names.size() < MAX_NAMES) {
+                    names.putIfAbsent(property.group(2), "Other values");
+                }
+            }
+        }
+        int[] depth = depths(viewModel);
+        classMembers(viewModel, depth, defined, names);
+        // the members of its prototype are the view model's own; the object a module returns only when it has no others
+        objectEntries(viewModel, PROTOTYPE_OBJECT, defined).forEach((name, kind) -> {
+            if (names.size() < MAX_NAMES) {
+                names.putIfAbsent(name, kind);
+            }
+        });
+        Map<String, String> returned = objectEntries(viewModel, RETURN_OBJECT, defined);
         if (names.isEmpty()) {
-            // a view model that is the object its module returns
             returned.forEach(names::putIfAbsent);
         }
         for (Pattern lenient : List.of(OBJECT_KEY, FUNCTION, LINE_MEMBER)) {
@@ -371,13 +423,33 @@ final class ViewBindings {
         return new Shape(defined, names, copies, dynamic);
     }
 
-    /** The members of the view model's classes (methods, getters, fields), each at the start of its line in the class body. */
-    private static void classMembers(String code, Set<String> defined, Map<String, String> names) {
+    /**
+     * Whether a copying call copies into the view model: its target argument (the first; ko.mapping.fromJS's third;
+     * after $.extend's deep flag) is the view model (self, this or an alias of this). ko.observable(...).extend({...})
+     * copies nothing into it.
+     */
+    static boolean copiesInto(String call, String arguments, Set<String> receivers) {
+        List<String> args = new ArrayList<>();
+        for (String arg : arguments.split(",", 8)) {
+            args.add(arg.strip());
+        }
+        // ($.extend(true, self, ...) copies deeply: its target follows the flag; "$." itself is not matched, as $ starts no word)
+        if (call.endsWith("extend") && !args.isEmpty() && (args.getFirst().equals("true") || args.getFirst().equals("false"))) {
+            args.removeFirst();
+        }
+        int target = call.equals("ko.mapping.fromJS") ? 2 : 0;
+        return args.size() > target && receivers.contains(args.get(target));
+    }
+
+    /**
+     * The members of the view model's classes (methods, getters, fields), each where it starts in the class body: at
+     * the start of a line, or after a ; or } that ends a member on the same line (class A { send() {} total = 1; }).
+     */
+    private static void classMembers(String code, int[] depth, Set<String> defined, Map<String, String> names) {
         Matcher header = CLASS.matcher(code);
         if (!header.find()) {
             return;
         }
-        int[] depth = depths(code);
         do {
             int open = header.end() - 1;
             int body = depth[open] + 1;
@@ -385,20 +457,11 @@ final class ViewBindings {
             while (i < code.length() && depth[i] >= body) {
                 int lineEnd = code.indexOf('\n', i);
                 lineEnd = lineEnd < 0 ? code.length() : lineEnd;
-                int first = i;
-                while (first < lineEnd && (code.charAt(first) == ' ' || code.charAt(first) == '\t')) {
-                    first++;
-                }
-                if (first < lineEnd && depth[first] == body) {
-                    Matcher member = MEMBER.matcher(code).region(first, lineEnd);
-                    if (member.lookingAt() && !NOT_NAMES.contains(member.group(2))) {
-                        String name = member.group(2);
-                        defined.add(name);
-                        String kind = member.group(3).startsWith("(")
-                                ? (member.group(1).contains("get") ? "Computed" : "Functions") : kind(member.group(4).strip());
-                        if (names.size() < MAX_NAMES) {
-                            names.putIfAbsent(name, kind);
-                        }
+                member(code, depth, body, blanksAfter(code, i, lineEnd), lineEnd, defined, names);
+                for (int k = i; k < lineEnd; k++) {
+                    char c = code.charAt(k);
+                    if ((c == ';' || c == '}') && k + 1 < lineEnd && depth[k + 1] == body) {
+                        member(code, depth, body, blanksAfter(code, k + 1, lineEnd), lineEnd, defined, names);
                     }
                 }
                 i = lineEnd + 1;
@@ -408,9 +471,56 @@ final class ViewBindings {
         } while (header.find());
     }
 
+    private static int blanksAfter(String code, int from, int end) {
+        int i = from;
+        while (i < end && (code.charAt(i) == ' ' || code.charAt(i) == '\t')) {
+            i++;
+        }
+        return i;
+    }
+
+    /** The class member that starts at first, if one does at the class body's depth. */
+    private static void member(String code, int[] depth, int body, int first, int lineEnd, Set<String> defined, Map<String, String> names) {
+        if (first >= lineEnd || depth[first] != body) {
+            return;
+        }
+        Matcher member = MEMBER.matcher(code).region(first, lineEnd);
+        if (!member.lookingAt() || NOT_NAMES.contains(member.group(2))) {
+            return;
+        }
+        String name = member.group(2);
+        defined.add(name);
+        String rest = member.group(3);
+        String kind;
+        if (rest.startsWith("(") || rest.startsWith("<")) {
+            kind = member.group(1).contains("get ") ? "Computed" : "Functions";
+        } else if (rest.startsWith("=")) {
+            kind = kind(member.group(4).strip());
+        } else if (member.group(5) != null) {
+            kind = kind(member.group(5).strip());
+        } else {
+            // a typed field without a value: what its type says
+            kind = code.startsWith("=>", member.end()) || rest.contains("=>") ? "Functions" : typeKind(rest);
+        }
+        if (names.size() < MAX_NAMES) {
+            names.putIfAbsent(name, kind);
+        }
+    }
+
+    /** The kind a TypeScript type gives a field: ko.Observable&lt;number&gt;, ko.PureComputed, ArrayDataProvider ... */
+    private static String typeKind(String type) {
+        if (type.contains("Observable")) {
+            return "Observables";
+        }
+        if (type.contains("Computed")) {
+            return "Computed";
+        }
+        return type.contains("DataProvider") ? "Data providers" : "Other values";
+    }
+
     /**
-     * The brace depth at each character of the code (the depth before it), strings, template literals and comments
-     * skipped. One pass.
+     * The brace depth at each character of the code (the depth before it), strings, template literals, comments and
+     * regular expression literals skipped. One pass.
      */
     static int[] depths(String code) {
         int n = code.length();
@@ -439,7 +549,10 @@ final class ViewBindings {
         return depth;
     }
 
-    /** The end of the string, template literal or comment that starts at i, or i when none does. */
+    /** The longest regular expression literal read as one: a longer "literal" is a division. */
+    static final int MAX_REGEX = 500;
+
+    /** The end of the string, template literal, comment or regular expression literal that starts at i, or i when none does. */
     private static int skipped(String code, int i) {
         char c = code.charAt(i);
         int n = code.length();
@@ -451,6 +564,9 @@ final class ViewBindings {
             int end = code.indexOf("*/", i + 2);
             return end < 0 ? n : end + 2;
         }
+        if (c == '/') {
+            return regexEnd(code, i);
+        }
         if (c == '\'' || c == '"' || c == '`') {
             int k = i + 1;
             while (k < n && code.charAt(k) != c && (c == '`' || code.charAt(k) != '\n')) {
@@ -461,10 +577,53 @@ final class ViewBindings {
         return i;
     }
 
-    /** The entries of the objects the code returns (return { amount, send, total: ko.observable() }), with their kind. */
-    private static Map<String, String> returnedObject(String code, Set<String> defined) {
+    /**
+     * The end of a regular expression literal at i (/\{/, /[/*]/), or i when the slash is a division. A slash starts one
+     * after an operator or punctuation that cannot end a value (( , = : [ ! &amp; | ? { } ; and the like), at the start, or
+     * after return and typeof; it ends at the next slash outside a character class, on the same line, within
+     * {@link #MAX_REGEX} characters.
+     */
+    private static int regexEnd(String code, int i) {
+        int k = i - 1;
+        while (k >= 0 && Character.isWhitespace(code.charAt(k))) {
+            k--;
+        }
+        boolean starts = k < 0 || "(,=:[!&|?{};+-*%<>~^".indexOf(code.charAt(k)) >= 0 || word(code, k, "return") || word(code, k, "typeof");
+        if (!starts) {
+            return i;
+        }
+        boolean inClass = false;
+        int end = Math.min(code.length(), i + MAX_REGEX);
+        for (int j = i + 1; j < end; j++) {
+            char ch = code.charAt(j);
+            if (ch == '\\') {
+                j++;
+            } else if (ch == '\n') {
+                return i;
+            } else if (ch == '[') {
+                inClass = true;
+            } else if (ch == ']') {
+                inClass = false;
+            } else if (ch == '/' && !inClass) {
+                return j + 1;
+            }
+        }
+        return i;
+    }
+
+    /** Whether the word ends at k (and is a whole word). */
+    private static boolean word(String code, int k, String word) {
+        int start = k - word.length() + 1;
+        return start >= 0 && code.startsWith(word, start) && (start == 0 || !Character.isJavaIdentifierPart(code.charAt(start - 1)));
+    }
+
+    /**
+     * The entries of the object literals that start where the pattern ends (return { amount, send, total: ... },
+     * VM.prototype = { send: function () {} }), with their kind.
+     */
+    private static Map<String, String> objectEntries(String code, Pattern start, Set<String> defined) {
         Map<String, String> names = new LinkedHashMap<>();
-        Matcher m = RETURN_OBJECT.matcher(code);
+        Matcher m = start.matcher(code);
         int from = 0;
         while (from < code.length() && m.find(from)) {
             int i = m.end();
@@ -488,7 +647,7 @@ final class ViewBindings {
                 }
                 i++;
             }
-            // (an object returned inside it was read with it)
+            // (an object inside it was read with it)
             from = Math.max(i, m.end());
         }
         return names;

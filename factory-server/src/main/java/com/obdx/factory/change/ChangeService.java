@@ -270,6 +270,7 @@ public class ChangeService {
 
     @Transactional
     public ChangeDetail updatePlan(UUID id, String planJson, String by) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan parsed = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
@@ -286,15 +287,12 @@ public class ChangeService {
 
     /**
      * An edited plan keeps what the server recorded about the plan before it: whether files may be missing (an edit
-     * cannot say so or take it away, see PlanParser), with its risk, unless the edit adds files; the reviewer then
-     * planned the missing ones.
+     * cannot say so or take it away, see PlanParser), with its risk, whatever the edit changes. Only Analyze again
+     * clears it; until then the approver confirms the plan as incomplete, even when the edit added the missing files
+     * (an edit that adds a file and a later one that takes it out again must not make it complete).
      */
     static ChangePlan carryIncomplete(ChangePlan previous, ChangePlan edited) {
         if (previous == null || previous.incomplete() == null) {
-            return edited;
-        }
-        Set<String> before = previous.items().stream().map(ChangePlan.Item::path).collect(java.util.stream.Collectors.toSet());
-        if (edited.items().stream().anyMatch(i -> !before.contains(i.path()))) {
             return edited;
         }
         List<String> risks = new ArrayList<>(edited.risks() == null ? List.of() : edited.risks());
@@ -316,6 +314,7 @@ public class ChangeService {
      */
     @Transactional
     public ChangeDetail approvePlan(UUID id, String by, boolean incomplete, Integer revision) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan plan = plan(change);
@@ -330,6 +329,18 @@ public class ChangeService {
         changes.save(change);
         startAfterCommit(() -> runGeneration(id, null, null));
         return detail(change);
+    }
+
+    /**
+     * Holds the change's row until the transaction ends (SELECT ... FOR UPDATE), before the change and its latest plan
+     * revision are read: an edit and an approval of the same plan then run one after the other, so an approval never
+     * approves a plan edited after it read the revision, and two edits never take the same revision number.
+     */
+    private void lockForPlan(UUID id) {
+        List<UUID> locked = jdbc.queryForList("SELECT id FROM change_request WHERE id = ? FOR UPDATE", UUID.class, id);
+        if (locked.isEmpty()) {
+            throw new NotFoundException("Change not found: " + id);
+        }
     }
 
     /** How a refused approval of an incomplete plan starts, so the UI can ask the reviewer to confirm it. */
@@ -600,7 +611,8 @@ public class ChangeService {
             return false;
         }
         // A view's own checks do not see its bindings: its fix is kept only when it binds fewer names its view model lacks
-        ViewModel viewModel = item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html") ? viewModel(item.path(), others, null) : null;
+        ViewModel viewModel = item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html")
+                ? viewModel(item.path(), others, null, p -> plan.items().stream().anyMatch(i -> i.path().equals(p))) : null;
         if (viewModel != null && ViewBindings.missing(result.content(), viewModel.content()).size()
                 >= ViewBindings.missing(file.generated(), viewModel.content()).size()) {
             log.info("The fix of {} in change {} does not bind fewer names its view model lacks; the file is kept as it is", item.path(),
@@ -1198,7 +1210,7 @@ public class ChangeService {
                     CrossFileJava.unknownSamePackageClasses(file.generated(), classExists).ifPresent(problems::add);
                 }
             } else if (lower.endsWith(".html")) {
-                ViewModel model = viewModel(file.path(), contents, workingCopy);
+                ViewModel model = viewModel(file.path(), contents, workingCopy, paths::contains);
                 problems.addAll(ViewBindings.problems(file.generated(), model == null ? null : model.content(), model != null && model.inChange()));
             } else if (lower.endsWith(".js")) {
                 problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
@@ -1350,11 +1362,21 @@ public class ChangeService {
      * else a model.js beside it that holds observables; null when there is none.
      */
     static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
+        return viewModel(viewPath, written, workingCopy, path -> false);
+    }
+
+    /**
+     * @param planned whether a file is planned in the change: a view whose own view model is planned but not written
+     *                yet has none to compare with (not a model.js beside it), as its prompt had none either
+     */
+    static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy, Predicate<String> planned) {
         String folder = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/') + 1) : "";
         // x.js or x.ts beside it, or in js/viewModels for js/views/x.html; only then a model.js with observables beside it
         List<String> named = ViewBindings.viewModelPaths(viewPath);
         List<String> candidates = new ArrayList<>(named);
-        candidates.add(folder + "model.js");
+        if (named.stream().noneMatch(planned)) {
+            candidates.add(folder + "model.js");
+        }
         for (String candidate : candidates) {
             String content = written.get(candidate);
             boolean own = named.contains(candidate);
@@ -1563,7 +1585,7 @@ public class ChangeService {
     /** The requirement's screen designs: the approved version of each (the current one if not approved). */
     private List<ScreenModel> designModels(ChangeRequest change) {
         List<ScreenModel> models = new ArrayList<>();
-        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId())) {
+        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAtAscIdAsc(change.getRequirementId())) {
             int version = design.getApprovedVersion() != null ? design.getApprovedVersion() : design.getCurrentVersion();
             designStore.model(design.getId(), version).ifPresent(models::add);
         }

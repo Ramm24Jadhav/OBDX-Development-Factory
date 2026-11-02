@@ -140,6 +140,9 @@ class PlanAndViewFixesTest {
                 null);
         assertThat(model.inChange()).isFalse();
         assertThat(ChangeService.viewModel(FOLDER + "quick-transfer.html", Map.of(), null)).isNull();
+        // but not when the view's own view model is planned and not written yet: as for its prompt, it has none
+        assertThat(ChangeService.viewModel(FOLDER + "quick-transfer.html", Map.of(FOLDER + "model.js", "self.x = ko.observable();"), null,
+                (FOLDER + "quick-transfer.js")::equals)).isNull();
     }
 
     @Test
@@ -362,11 +365,14 @@ class PlanAndViewFixesTest {
         ChangePlan carried = ChangeService.carryIncomplete(before, sameFiles);
         assertThat(carried.incomplete()).isEqualTo(before.incomplete());
         assertThat(carried.risks()).containsExactly(LIMIT_RISK);
-        // the reviewer planned the missing files
+        // an edit that adds a file keeps it too, and so does a later one that takes the file out again: only Analyze
+        // again clears it
         ChangePlan added = PlanParser.parse("""
                 {"items": [{"path": "backend/src/com/bank/si/StandingInstructionDao.java"}, {"path": "db/si.sql"}]}
                 """, path -> false, 10);
-        assertThat(ChangeService.carryIncomplete(before, added).incomplete()).isNull();
+        ChangePlan afterAdding = ChangeService.carryIncomplete(before, added);
+        assertThat(afterAdding.incomplete()).isEqualTo(before.incomplete());
+        assertThat(ChangeService.carryIncomplete(afterAdding, sameFiles).incomplete()).isEqualTo(before.incomplete());
         // a complete plan stays complete
         assertThat(ChangeService.carryIncomplete(new ChangePlan("x", before.items(), List.of()), sameFiles).incomplete()).isNull();
     }
@@ -411,6 +417,16 @@ class PlanAndViewFixesTest {
         assertThat(PlanReview.newTable("No new table is needed.")).isFalse();
         assertThat(PlanReview.newTable("Keep history. Create table DIGX_SI_AUDIT for it.")).isTrue();
         assertThat(PlanReview.newTable("It adds a history table.")).isTrue();
+        // an abbreviation's full stop ends no sentence; a remark in parentheses and "not only" deny nothing
+        assertThat(PlanReview.newTable("Do not, e.g. create a new table for it.")).isFalse();
+        assertThat(PlanReview.newTable("Do not (i.e. never) create a new table.")).isFalse();
+        assertThat(PlanReview.newTable("Store the instruction (no approval needed) in a new table.")).isTrue();
+        assertThat(PlanReview.newTable("It must not only store the instruction but also add a history table.")).isTrue();
+        // a named table
+        assertThat(PlanReview.newTable("Create DIGX_PY_SI table with these columns.")).isTrue();
+        assertThat(PlanReview.newTable("Rows go to the new DIGX_PY_SI table.")).isTrue();
+        assertThat(PlanReview.newTable("Keep them in a separate table DIGX_PY_SI.")).isTrue();
+        assertThat(PlanReview.newTable("Read them from the DIGX_PY_SI table.")).isFalse();
     }
     /** Plans with queued JSON answers and records the prompts. */
     static final class Planner implements ModelGateway {
@@ -570,6 +586,17 @@ class PlanAndViewFixesTest {
         // Limit.java and Audit.java are no tests
         assertThat(PlanReview.isTest("backend/src/com/bank/si/Limit.java")).isFalse();
         assertThat(PlanReview.isTest("backend/src/com/bank/si/PaymentsIT.java")).isTrue();
+        for (String test : List.of("backend/src/com/bank/si/TestPayments.java", "backend/src/com/bank/si/PaymentsTestCase.java",
+                "channel/components/__tests__/si.js", "backend/tests/Payments.java", "backend/src/payments_test.java",
+                "backend/src/paymentstest.java", "ui/js/specs/transferSpec.js", "ui/js/transfer-spec.js", "ui/js/transfer.test.ts")) {
+            assertThat(PlanReview.isTest(test)).as(test).isTrue();
+        }
+        for (String code : List.of("backend/src/com/bank/si/Latest.java", "backend/src/com/bank/si/Testimony.java", "ui/js/contest.js")) {
+            assertThat(PlanReview.isTest(code)).as(code).isFalse();
+        }
+        // the coverage reads tests the same way
+        assertThat(ChangeCoverage.isTest(new ChangeFileStore.ChangeFile(0, "backend/src/com/bank/si/Latest.java", "create", "service", null,
+                ChangeFileStore.Status.GENERATED, null, "x", false, null, null, 1))).isFalse();
     }
     @Test
     void theImpactPromptAsksWhichExistingComponentANewOneHooksInto() {

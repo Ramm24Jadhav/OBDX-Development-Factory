@@ -238,23 +238,66 @@ final class PlanReview {
      * "create table X", "a new table", "new audit table", "adds a history table": the text asks for a table of its own.
      * Not a table it only reads ("read payees from DIGX_PY_PAYEE"), nor one it says not to make.
      */
-    private static final Pattern TABLE = Pattern.compile("(?i)\\b(?:new|create|creates|add|adds)\\s++(?:(?:a|an|the)\\s++)?"
-            + "(?:(?:database|db|audit|history|staging)\\s++)?tables?\\b");
+    private static final Pattern TABLE = Pattern.compile("(?i)\\b(?:new|create|creates|add|adds|separate|dedicated)\\s++(?:(?:a|an|the)\\s++)?"
+            + "(?:(?:new|database|db|audit|history|staging)\\s++)?(?:(?-i:[A-Z][A-Z0-9]*+_[A-Z0-9_]++)\\s++)?tables?\\b");
     /** "not", "no", "without", "never": said before it in the same sentence, it says the opposite. */
     private static final Pattern NEGATED = Pattern.compile("(?i)\\b(?:no|not|without|never|nor|don't|doesn't|won't|shall not|must not)\\b");
+    /** "not only ... but also": no negation. */
+    private static final Pattern NOT_ONLY = Pattern.compile("(?i)\\bnot\\s++only\\b");
+    /** A remark in parentheses: its negation is its own ("(no approval needed)"). */
+    private static final Pattern PARENTHESES = Pattern.compile("\\([^()]{0,200}+\\)");
+    /** Words whose full stop ends no sentence ("e.g.", "etc."). */
+    private static final Set<String> ABBREVIATIONS = Set.of("eg", "ie", "etc", "vs", "approx", "incl", "cf", "viz", "no", "nos", "fig", "sec",
+            "mr", "mrs", "ms", "dr");
+    /** How much of the text before a table is read for a negation. */
+    static final int NEGATION_WINDOW = 60;
 
     /** Whether the text asks for a new table, without denying it in the same sentence. */
     static boolean newTable(String text) {
         String capped = capped(text);
         Matcher m = TABLE.matcher(capped);
         while (m.find()) {
-            String before = capped.substring(Math.max(0, m.start() - 40), m.start());
-            int sentence = Math.max(before.lastIndexOf('.'), Math.max(before.lastIndexOf(';'), before.lastIndexOf('\n')));
-            if (!NEGATED.matcher(before.substring(sentence + 1)).find()) {
+            if (!negated(capped.substring(Math.max(0, m.start() - NEGATION_WINDOW), m.start()))) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Whether the text before a phrase denies it: a negation in the same sentence (a full stop after an abbreviation or
+     * a single letter ends no sentence), not inside parentheses, and not "not only".
+     */
+    static boolean negated(String before) {
+        String sentence = before.substring(sentenceStart(before));
+        int closing = sentence.lastIndexOf(')');
+        if (closing >= 0 && sentence.lastIndexOf('(') < 0) {
+            // a remark whose opening is before the window
+            sentence = sentence.substring(closing + 1);
+        }
+        sentence = NOT_ONLY.matcher(PARENTHESES.matcher(sentence).replaceAll(" ")).replaceAll(" ");
+        return NEGATED.matcher(sentence).find();
+    }
+
+    /** Where the last sentence of the text starts: after its last ; or line break, or a full stop that ends a sentence. */
+    private static int sentenceStart(String text) {
+        for (int i = text.length() - 1; i >= 0; i--) {
+            char c = text.charAt(i);
+            if (c == ';' || c == '\n') {
+                return i + 1;
+            }
+            if (c == '.') {
+                int word = i;
+                while (word > 0 && (Character.isLetter(text.charAt(word - 1)) || text.charAt(word - 1) == '.')) {
+                    word--;
+                }
+                String token = text.substring(word, i).replace(".", "").toLowerCase(Locale.ROOT);
+                if (token.length() > 1 && !ABBREVIATIONS.contains(token)) {
+                    return i + 1;
+                }
+            }
+        }
+        return 0;
     }
     private static final Pattern REQUIREMENT_ID = Pattern.compile("\\bFR-\\d++\\b");
     /** The most requirement ids a gap names. */
@@ -323,9 +366,12 @@ final class PlanReview {
     static boolean isTest(String path) {
         String lower = path.toLowerCase(Locale.ROOT);
         String name = path.substring(path.lastIndexOf('/') + 1);
-        // FundTransferTest.java, PaymentsIT.java; not Limit.java or Audit.java
-        return lower.contains("/test/") || lower.startsWith("test/") || name.matches(".*(?:Test|Tests|IT)\\.java")
-                || lower.matches(".*\\.(spec|test)\\.(js|ts|jsx|tsx)");
+        // FundTransferTest.java, PaymentsIT.java, TestPayments.java, PaymentsTestCase.java, payments_test.java,
+        // paymentstest.java; not Limit.java, Latest.java or Audit.java (a test's name has Test or IT as a word of it)
+        return lower.contains("/test/") || lower.contains("/tests/") || lower.contains("/__tests__/") || lower.startsWith("test/")
+                || lower.startsWith("tests/") || name.matches(".*(?:Test|Tests|IT|TestCase)\\.java") || name.matches("Test[A-Z0-9_].*\\.java")
+                || name.matches("[a-z0-9_]*(?:_test|test)\\.java") || lower.matches(".*[._-](spec|test)\\.(js|ts|jsx|tsx)")
+                || name.matches(".*(?:Spec|Test)\\.(js|ts|jsx|tsx)") || lower.contains("/specs/") || lower.contains("/spec/");
     }
 
     static boolean isResource(String path) {

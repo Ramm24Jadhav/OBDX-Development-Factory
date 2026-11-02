@@ -15,4 +15,7 @@ public interface ScreenDesignRepository extends JpaRepository<ScreenDesign, UUID
     boolean existsByRequirementId(UUID requirementId);
 
     List<ScreenDesign> findByRequirementIdOrderByCreatedAt(UUID requirementId);
+
+    /** The same, in an order that never changes between calls (designs created at the same moment by their id). */
+    List<ScreenDesign> findByRequirementIdOrderByCreatedAtAscIdAsc(UUID requirementId);
 }

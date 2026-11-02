@@ -88,11 +88,112 @@ class ViewModelShapeTest {
     }
 
     @Test
-    void viewModelsThatCopyNamesInAreNotCheckedByName() {
+    void viewModelsThatCopyNamesIntoThemselvesGiveOnlyAWarning() {
         for (String copies : List.of("ko.mapping.fromJS(data, {}, self);", "_.assign(self, params);", "_.merge(self, defaults);",
-                "Object.defineProperty(this, 'total', { get: function () { return 1; } });", "Object.assign(this, params);")) {
-            noProblem("[[total]] [[remarks]]", "function VM(params) { var self = this; self.amount = ko.observable(); self.x = 1; " + copies + " }");
+                "Object.assign(this, params);", "$.extend(true, self, params);", "ko.utils.extend(self, params.rootModel);")) {
+            List<String> problems = inChange("[[amount]] [[remarks]]",
+                    "function VM(params) { var self = this; self.amount = ko.observable(); self.x = 1; " + copies + " }");
+            assertThat(problems).as(copies).singleElement().asString().startsWith(ViewBindings.UNDEFINED).contains("remarks", "copies names in");
         }
+    }
+
+    @Test
+    void aCopyIntoAnotherObjectIsNoCopyInAndDefinePropertyDefinesAName() {
+        String viewModel = """
+                function VM(params) {
+                  var self = this;
+                  self.amount = ko.observable().extend({ required: true });
+                  self.options = $.extend({}, params.options);
+                  self.rows = ko.observableArray();
+                  Object.defineProperty(this, 'total', { get: function () { return 1; } });
+                }
+                """;
+        // a typo is still found: neither .extend(...) nor a copy into another object copies names into the view model
+        assertThat(inChange("[[amonut]] [[total]] [[rows]]", viewModel)).singleElement().asString()
+                .startsWith(ViewBindings.UNDEFINED_IN_CHANGE).contains("amonut").doesNotContain(": total");
+        assertThat(ViewBindings.outline(viewModel)).contains("Other values: options, total");
+        assertThat(ViewBindings.copiesInto("ko.mapping.fromJS", "data, {}, self", java.util.Set.of("self"))).isTrue();
+        assertThat(ViewBindings.copiesInto("ko.mapping.fromJS", "data, self", java.util.Set.of("self"))).isFalse();
+        assertThat(ViewBindings.copiesInto("extend", "{ required: true }", java.util.Set.of("self"))).isFalse();
+    }
+
+    @Test
+    void aTypeScriptViewModelsMembersAreItsNames() {
+        String viewModel = """
+                import * as ko from 'knockout';
+                import ArrayDataProvider = require('ojs/ojarraydataprovider');
+
+                class QuickTransferViewModel {
+                  public readonly amount: ko.Observable<number> = ko.observable(0);
+                  private payees: ko.ObservableArray<Payee>;
+                  protected accountsProvider!: ArrayDataProvider<string, Account>;
+                  declare selected?: string;
+                  static override pageSize: number = 5;
+                  onSend: (event: Event) => void;
+
+                  constructor(params: Params) {
+                    this.payees = ko.observableArray([]);
+                  }
+
+                  public send(event: Event): void {
+                    console.log(event);
+                  }
+
+                  private get total(): number {
+                    return this.amount();
+                  }
+
+                  public async load<T>(): Promise<void> {
+                  }
+                }
+                export = QuickTransferViewModel;
+                """;
+
+        String outline = ViewBindings.outline(viewModel);
+
+        assertThat(outline).contains("Observables: payees, amount", "Computed: total", "Functions: onSend, send, load",
+                "Data providers: accountsProvider", "Other values: selected, pageSize");
+        noProblem("[[amount]] [[payees]] [[accountsProvider]] [[selected]] [[pageSize]] [[onSend]] [[send]] [[total]] [[load]]", viewModel);
+        // and a name it lacks is still found, so a fix that drops a correct binding is no better
+        assertThat(ViewBindings.missing("[[amount]] [[remarks]]", viewModel)).containsExactly("remarks");
+    }
+
+    @Test
+    void membersOnOneLineFieldsNamedLikeModifiersAndPrototypeObjectsAreNames() {
+        noProblem("[[send]] [[total]] [[reset]]", "class VM { send() { return 1; } total = 1; reset() {} }");
+        noProblem("[[get]] [[async]] [[amount]]", "class VM {\n  get = 1;\n  async = ko.observable();\n  amount = 2;\n}");
+        String prototype = "function VM() {}\nVM.prototype = { send: function () {}, total: 1, reset() {} };\n";
+        noProblem("[[send]] [[total]] [[reset]]", prototype);
+        assertThat(ViewBindings.outline(prototype)).isEqualTo("Functions: send, reset; Other values: total");
+    }
+
+    @Test
+    void regularExpressionLiteralsDoNotHideLaterMembers() {
+        String viewModel = """
+                class VM {
+                  amount = ko.observable();
+                  clean(text) {
+                    return text.replace(/\\{/g, '').replace(/}/g, '').split(/[/*]/);
+                  }
+                  total() {
+                    const half = 4 / 2;
+                    return half / 1;
+                  }
+                  reset() {}
+                }
+                """;
+
+        assertThat(ViewBindings.outline(viewModel)).isEqualTo("Observables: amount; Functions: clean, total, reset");
+    }
+
+    @Test
+    void lettersWhoseLowerCaseIsLongerKeepTheViewsPlaces() {
+        String viewModel = "function VM() { this.amount = 1; this.b = 2; }";
+        // the dotted capital I lower-cases to two characters in Java: the comment is still found where it is
+        assertThat(ViewBindings.bound("İİİİİİİİİİ<!--x-->")).isEmpty();
+        noProblem("<h1>İşlem İptal İade İleri</h1><!-- old: [[oldName]] -->\n<span>[[amount]]</span>\n", viewModel);
+        noProblem("<h1>İşlem</h1><span>[[amount]]</span><!-- end -->", viewModel);
+        assertThat(ViewBindings.withoutTemplates("İ<SCRIPT type='text/html'>[[x]]</SCRIPT>[[amount]]")).isEqualTo("İ[[amount]]");
     }
 
     @Test
