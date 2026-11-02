@@ -61,11 +61,25 @@ public class ScreenDesignService {
                                Integer approvedVersion, String approvedBy, OffsetDateTime approvedAt) {
     }
 
-    /** preview: which renderer shows the screen (jet, react-native or react), from the workspace's UI target. */
+    /**
+     * What a review link shows: the one shared screen (its current version, without where its values are loaded from),
+     * the comments and approval made through review links, and nothing else of the workspace. No ids, no team comments,
+     * no names of the team.
+     *
+     * @param preview which renderer shows the screen (jet, react-native or react), from the workspace's UI target
+     */
     public record ReviewView(String name, ScreenDesign.Status status, int version, ScreenModel model,
-                             List<DesignStore.Comment> comments, OffsetDateTime expiresAt, String approvedBy,
+                             List<ReviewComment> comments, OffsetDateTime expiresAt, String approvedBy,
                              OffsetDateTime approvedAt, String preview) {
     }
+
+    /** A comment as reviewers see it: resolved says the team has dealt with it, not who did. */
+    public record ReviewComment(int version, String componentId, String author, String text, OffsetDateTime createdAt,
+                                DesignStore.Kind kind, boolean resolved) {
+    }
+
+    /** The longest comment a reviewer can send. */
+    static final int MAX_COMMENT = 4000;
 
     // --- create ---
 
@@ -329,7 +343,17 @@ public class ScreenDesignService {
     @Transactional
     public DesignDetail comment(UUID id, String author, String text, String componentId) {
         ScreenDesign design = find(id);
-        store.addComment(id, design.getCurrentVersion(), blankToNull(componentId), requireAuthor(author), false, requireText(text));
+        store.addComment(id, design.getCurrentVersion(), target(design, componentId), requireAuthor(author), false, requireText(text));
+        return detail(design);
+    }
+
+    /** Marks a comment resolved (by the team member who dealt with it) or open again. */
+    @Transactional
+    public DesignDetail resolveComment(UUID id, UUID commentId, boolean resolved, String by) {
+        ScreenDesign design = find(id);
+        if (!store.setResolved(id, commentId, resolved ? requireAuthor(by) : null)) {
+            throw new NotFoundException("This comment is no longer there. Reload the page.");
+        }
         return detail(design);
     }
 
@@ -339,11 +363,16 @@ public class ScreenDesignService {
     @Transactional
     public DesignDetail openReview(UUID id, Integer days) {
         ScreenDesign design = editable(find(id));
+        Duration period = days == null ? DEFAULT_REVIEW_PERIOD : Duration.ofDays(Math.clamp(days, 1, 90));
+        design.openReview(newToken(), OffsetDateTime.now().plus(period));
+        return detail(designs.save(design));
+    }
+
+    /** 192 random bits, URL-safe: a link cannot be guessed, only shared. */
+    String newToken() {
         byte[] bytes = new byte[24];
         random.nextBytes(bytes);
-        Duration period = days == null ? DEFAULT_REVIEW_PERIOD : Duration.ofDays(Math.clamp(days, 1, 90));
-        design.openReview(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes), OffsetDateTime.now().plus(period));
-        return detail(designs.save(design));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     @Transactional
@@ -379,8 +408,30 @@ public class ScreenDesignService {
     @Transactional(readOnly = true)
     public ReviewView review(String token) {
         ScreenDesign design = byToken(token);
-        return new ReviewView(design.getName(), design.getStatus(), design.getCurrentVersion(), currentModel(design),
-                store.comments(design.getId()), design.getReviewExpiresAt(), design.getApprovedBy(), design.getApprovedAt(), preview(design));
+        return reviewView(design, design.getReviewExpiresAt());
+    }
+
+    private ReviewView reviewView(ScreenDesign design, OffsetDateTime expiresAt) {
+        ScreenModel model = currentModel(design);
+        return new ReviewView(design.getName(), design.getStatus(), design.getCurrentVersion(), model == null ? null : forReviewer(model),
+                forReviewer(store.comments(design.getId())), expiresAt, design.getApprovedBy(), design.getApprovedAt(), preview(design));
+    }
+
+    /** The screen as reviewers see it: where values are loaded from (the bank's API paths) stays internal. */
+    static ScreenModel forReviewer(ScreenModel model) {
+        List<ScreenModel.Section> sections = model.sections().stream().map(s -> new ScreenModel.Section(s.id(), s.title(), s.columns(),
+                s.components().stream().map(c -> c.dataSource() == null ? c : new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(),
+                        c.required(), c.helpText(), c.placeholder(), c.maxLength(), c.defaultValue(), c.options(), c.validations(), c.readonly(),
+                        c.component(), c.params(), c.html(), c.css(), c.script(), null, c.visibleWhen(), c.requiredWhen())).toList())).toList();
+        return new ScreenModel(model.name(), model.title(), model.description(), model.changeType(), sections, model.actions(),
+                model.stage(), model.channels());
+    }
+
+    /** Only what was said through review links; the team's own comments and who resolved what stay internal. */
+    static List<ReviewComment> forReviewer(List<DesignStore.Comment> comments) {
+        return comments.stream().filter(DesignStore.Comment::fromReview)
+                .map(c -> new ReviewComment(c.version(), c.componentId(), c.author(), c.text(), c.createdAt(), c.kind(),
+                        c.resolvedAt() != null)).toList();
     }
 
     /** The workspace a review link belongs to, for the audit log. */
@@ -392,7 +443,11 @@ public class ScreenDesignService {
     @Transactional
     public ReviewView reviewComment(String token, String author, String text, String componentId) {
         ScreenDesign design = byToken(token);
-        store.addComment(design.getId(), design.getCurrentVersion(), blankToNull(componentId), requireAuthor(author), true, requireText(text));
+        String body = requireText(text);
+        if (body.length() > MAX_COMMENT) {
+            throw new BadRequestException("The comment is too long. Keep it under " + MAX_COMMENT + " characters, or send it in parts.");
+        }
+        store.addComment(design.getId(), design.getCurrentVersion(), target(design, componentId), requireAuthor(author), true, body);
         return review(token);
     }
 
@@ -401,11 +456,10 @@ public class ScreenDesignService {
         ScreenDesign design = byToken(token);
         String name = requireAuthor(author);
         store.addComment(design.getId(), design.getCurrentVersion(), null, name, true,
-                "Approved version " + design.getCurrentVersion() + ".");
+                "Approved version " + design.getCurrentVersion() + ".", DesignStore.Kind.APPROVAL);
         design.approve(name);
         designs.save(design);
-        return new ReviewView(design.getName(), design.getStatus(), design.getCurrentVersion(), currentModel(design),
-                store.comments(design.getId()), null, design.getApprovedBy(), design.getApprovedAt(), preview(design));
+        return reviewView(design, null);
     }
 
     // --- helpers ---
@@ -423,6 +477,16 @@ public class ScreenDesignService {
             throw new NotFoundException("This review link has expired. Ask the team for a new one.");
         }
         return design;
+    }
+
+    /** The field, section or button a comment is about: one of the screen's current version, or null for the whole screen. */
+    private String target(ScreenDesign design, String componentId) {
+        String id = blankToNull(componentId);
+        ScreenModel model = currentModel(design);
+        if (id != null && (model == null || !ScreenModels.contains(model, id))) {
+            throw new BadRequestException("That part of the screen is no longer there. Pick it again, or comment on the whole screen.");
+        }
+        return id;
     }
 
     private ScreenDesign editable(ScreenDesign design) {

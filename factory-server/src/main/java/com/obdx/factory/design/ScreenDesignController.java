@@ -133,6 +133,27 @@ public class ScreenDesignController {
         return service.comment(id, user.getDisplayName(), request.text(), request.componentId());
     }
 
+    /** Marks a comment resolved once the team has dealt with it, or open again. Reviewers see only that it is resolved. */
+    @PutMapping("/api/designs/{id}/comments/{commentId}/resolved")
+    public ScreenDesignService.DesignDetail resolveComment(@PathVariable UUID id, @PathVariable UUID commentId,
+                                                           @RequestBody ResolveRequest request) {
+        var user = guard.requireForDesign(id, Permission.COMMENT);
+        ScreenDesignService.DesignDetail detail = service.resolveComment(id, commentId, request.resolved(), user.getDisplayName());
+        audit.record(request.resolved() ? "REVIEW_COMMENT_RESOLVED" : "REVIEW_COMMENT_REOPENED", detail.workspaceId(), detail.name(),
+                "comment " + commentId);
+        return detail;
+    }
+
+    /** Review links created and revoked, and approvals and reopenings of the workspace's designs, newest first. */
+    @GetMapping("/api/workspaces/{workspaceId}/review-history")
+    public List<AuditLog.Event> reviewHistory(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return audit.recent(workspaceId, REVIEW_EVENTS, 300);
+    }
+
+    static final List<String> REVIEW_EVENTS = List.of("REVIEW_LINK_CREATED", "REVIEW_LINK_CLOSED", "DESIGN_APPROVED",
+            "DESIGN_APPROVED_BY_REVIEWER", "DESIGN_REOPENED", "REVIEW_COMMENT_RESOLVED", "REVIEW_COMMENT_REOPENED");
+
     @PostMapping("/api/designs/{id}/review-link")
     public ScreenDesignService.DesignDetail openReview(@PathVariable UUID id, @RequestBody(required = false) ReviewLinkRequest request) {
         guard.requireForDesign(id, Permission.EDIT_DESIGNS);
@@ -216,6 +237,9 @@ public class ScreenDesignController {
     }
 
     public record ReviewLinkRequest(Integer days) {
+    }
+
+    public record ResolveRequest(boolean resolved) {
     }
 
     public record ApproveRequest(String by) {

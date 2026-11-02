@@ -363,7 +363,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
       // 15 seconds, so a slow or failed check still shows the page and its message.
       this.markReady = () => {
         const showPage = () => document.body.classList.add('fx-ready');
-        if (session.checked()) { window.setTimeout(showPage, 0); } else {
+        // Embedded pages (preview frames, review links) do not check the session, so they show at once
+        if (session.checked() || this.embedded) { window.setTimeout(showPage, 0); } else {
           const sub = session.checked.subscribe((v) => { if (v) { sub.dispose(); window.setTimeout(showPage, 0); } });
           window.setTimeout(showPage, 15000);
         }

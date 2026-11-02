@@ -727,11 +727,13 @@ object: compute those in the view model.
 | `GET /api/designs/{id}/versions/{version}` | An earlier version's model |
 | `PUT /api/designs/{id}/model` | Save the model as a new version (`model`, optional `note`) |
 | `POST /api/designs/{id}/ai-change` | Apply a change described in words (`instruction`; `targetId` limits it to one component, section or button) |
-| `POST /api/designs/{id}/comments` | Add a team comment (`author`, `text`, optional `componentId`) |
-| `POST` / `DELETE /api/designs/{id}/review-link` | Create (optional `days`) or close the customer review link |
+| `POST /api/designs/{id}/comments` | Add a team comment (`text`, optional `componentId`: a field, section or button of the current version); team comments are never shown on review links |
+| `PUT /api/designs/{id}/comments/{commentId}/resolved` | Mark a comment resolved (`resolved: true`) or open again (`false`); COMMENT permission, audited |
+| `POST` / `DELETE /api/designs/{id}/review-link` | Create (optional `days`, 1 to 90; replaces the old address) or revoke the customer review link (ends it at once) |
+| `GET /api/workspaces/{id}/review-history` | Review links created and revoked, approvals, reopenings and resolved comments of the workspace (from the audit log) |
 | `POST /api/designs/{id}/approve` / `reopen` | Approve (`by`) or reopen for changes |
-| `GET /api/review/{token}` | Customer review: the design by review link |
-| `POST /api/review/{token}/comments` / `approve` | Customer comment or approval |
+| `GET /api/review/{token}` | Customer review, no sign-in: the shared screen only (current version, without data sources), comments and approvals made through review links (no ids, no team comments); 404 once revoked, expired or approved |
+| `POST /api/review/{token}/comments` / `approve` | Customer comment (`author`, `text` up to 4000 characters, optional `componentId` of the current screen) or approval (`by`) |
 | `GET /api/workspaces/{id}/changes` | List changes |
 | `GET /api/workspaces/{id}/changes/details` | Every change of the workspace with its files and builds, in one request (dashboard, notifications) |
 | `POST /api/requirements/{id}/changes` | Start a change (impact analysis) for an approved requirement |

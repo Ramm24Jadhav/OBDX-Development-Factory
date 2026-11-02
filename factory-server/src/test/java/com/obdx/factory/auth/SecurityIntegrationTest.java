@@ -146,6 +146,61 @@ class SecurityIntegrationTest {
         mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf())).andExpect(status().isNoContent());
     }
 
+    /**
+     * Review links over HTTP: the link opens without a session and shows nothing of the workspace but the screen; managing
+     * links, resolving comments and the review history need the workspace's permissions; revoking ends the link at once;
+     * the audit log records the link without its address.
+     */
+    @Test
+    void reviewLinksShowOnlyTheirScreenAndAreManagedWithWorkspacePermissions() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bankA = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"ra-" + suffix + "\", \"bankName\": \"Bank A\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID bankB = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"rb-" + suffix + "\", \"bankName\": \"Bank B\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID outsider = UUID.fromString(create(admin, "/api/admin/users",
+                "{\"username\": \"outsider-" + suffix + "\", \"password\": \"Outsider-Password-1\"}").get("id").asString());
+        setRole(admin, bankB, outsider, "LEAD");
+
+        String designId = create(admin, "/api/workspaces/" + bankA + "/designs", "{\"name\": \"Transfer\"}").get("id").asString();
+        mvc.perform(post("/api/designs/" + designId + "/comments").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"text\": \"Internal note for the team\"}")).andExpect(status().isOk());
+        String token = json.readTree(mvc.perform(post("/api/designs/" + designId + "/review-link").session(admin).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"days\": 3}")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("reviewToken").asString();
+
+        // Without a session: the screen and nothing else
+        String review = mvc.perform(get("/api/review/" + token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Transfer")).andExpect(jsonPath("$.comments.length()").value(0))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(review).doesNotContain(bankA.toString(), designId, "reviewToken", "Internal note", "Administrator", "workspaceId");
+        mvc.perform(get("/api/workspaces/" + bankA + "/review-history")).andExpect(status().isUnauthorized());
+
+        // A member of another workspace can do nothing with this one's links
+        MockHttpSession other = login("outsider-" + suffix, "Outsider-Password-1");
+        mvc.perform(get("/api/workspaces/" + bankA + "/review-history").session(other)).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/designs/" + designId + "/review-link").session(other).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/designs/" + designId + "/review-link").session(other).with(csrf())).andExpect(status().isForbidden());
+        String commentId = json.readTree(mvc.perform(get("/api/designs/" + designId).session(admin)).andReturn().getResponse().getContentAsString())
+                .get("comments").get(0).get("id").asString();
+        mvc.perform(put("/api/designs/" + designId + "/comments/" + commentId + "/resolved").session(other).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"resolved\": true}")).andExpect(status().isForbidden());
+        mvc.perform(put("/api/designs/" + designId + "/comments/" + commentId + "/resolved").session(admin).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"resolved\": true}")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.comments[0].resolvedBy").isNotEmpty());
+
+        // Revoked: gone at once, and recorded without the address
+        mvc.perform(delete("/api/designs/" + designId + "/review-link").session(admin).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/review/" + token)).andExpect(status().isNotFound());
+        String history = mvc.perform(get("/api/workspaces/" + bankA + "/review-history").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(history).contains("REVIEW_LINK_CREATED", "REVIEW_LINK_CLOSED", "REVIEW_COMMENT_RESOLVED").doesNotContain(token);
+
+        mvc.perform(delete("/api/workspaces/" + bankA).session(admin).with(csrf())).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf())).andExpect(status().isNoContent());
+    }
+
     @Test
     void showsEffectiveAccessAndRecordsPrivilegeChangesForAdministratorsOnly() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
