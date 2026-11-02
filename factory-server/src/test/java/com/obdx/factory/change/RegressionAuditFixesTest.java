@@ -55,12 +55,18 @@ class RegressionAuditFixesTest {
     private final RequirementService requirements = mock(RequirementService.class);
     private final LocalChecks localChecks = mock(LocalChecks.class);
     private final JsonMapper json = JsonMapper.builder().build();
+    private final CodeGenerator generator = mock(CodeGenerator.class);
+    private final PackService packs = mock(PackService.class);
+    private final StorageProperties storage = mock(StorageProperties.class);
+    private final com.obdx.factory.importing.WorkingCopyLocks locks = new com.obdx.factory.importing.WorkingCopyLocks();
+    private final com.obdx.factory.auth.AuditLog audit = mock(com.obdx.factory.auth.AuditLog.class);
     private final ChangeService service = new ChangeService(changes, files, mock(WorkspaceRepository.class), mock(WorkspaceService.class),
             requirements, mock(ScreenDesignRepository.class), mock(DesignStore.class), mock(ProjectProfileService.class),
-            mock(CodeSearchService.class), mock(ImpactAnalyzer.class), mock(CodeGenerator.class), mock(SvnClient.class),
-            mock(StorageProperties.class), new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"), jdbc, json,
-            mock(ChangeBuildStore.class), mock(PackService.class), localChecks, mock(RecipeService.class), mock(TargetService.class),
-            mock(TargetPacks.class), mock(TaskExecutor.class), mock(KnowledgeService.class), planReviews);
+            mock(CodeSearchService.class), mock(ImpactAnalyzer.class), generator, mock(SvnClient.class),
+            storage, new ChangeProperties(30, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"), jdbc, json,
+            mock(ChangeBuildStore.class), packs, localChecks, mock(RecipeService.class), mock(TargetService.class),
+            mock(TargetPacks.class), mock(TaskExecutor.class), mock(KnowledgeService.class), planReviews,
+            locks, audit);
 
     private final UUID id = UUID.randomUUID();
 
@@ -107,7 +113,8 @@ class RegressionAuditFixesTest {
 
     @Test
     void writeAgainAndFailedDeliveriesAreInTheChangesHistory() {
-        assertThat(ChangeService.historyText(ChangeController.WRITTEN_AGAIN, "a/b.js (with a note)")).isEqualTo("Wrote a/b.js (with a note) again");
+        assertThat(ChangeService.historyText(ChangeController.WRITTEN_AGAIN, "a/b.js (with a note): kept the previous version: x"))
+                .isEqualTo("Write again of a/b.js (with a note): kept the previous version: x");
         assertThat(ChangeService.historyText(ChangeController.DELIVERY_FAILED, "Quick transfer: pre-commit hook refused"))
                 .isEqualTo("Delivery failed: Quick transfer: pre-commit hook refused");
     }
@@ -195,7 +202,8 @@ class RegressionAuditFixesTest {
     @Test
     void anEditSaysHowTheFilesStandNow() {
         ChangeRequest change = change(ChangeRequest.Status.GENERATED);
-        change.status(ChangeRequest.Status.GENERATED, "1 file(s) written, 1 with problems, 0 with warnings.");
+        change.status(ChangeRequest.Status.GENERATED, "1 file(s) written, 1 with problems, 0 with warnings. Review the changes before "
+                + "delivering them. The code was updated since the analysis (r7 to r8).");
         ChangeFileStore.ChangeFile before = file("a/b.js", ChangeFileStore.Status.GENERATED, "bad(", FileChecks.Status.FAILED, "x");
         when(files.file(id, "a/b.js")).thenReturn(Optional.of(before));
         when(localChecks.check(any(), anyString(), any(), anyString())).thenReturn(new FileChecks.Result(FileChecks.Status.PASSED, null));
@@ -203,8 +211,96 @@ class RegressionAuditFixesTest {
 
         service.editFile(id, "a/b.js", "ok();");
 
+        // the counts are the new ones, the earlier note stays
         assertThat(change.getMessage()).isEqualTo("a/b.js edited. 1 file(s) written, 0 with problems, 0 with warnings. Review the changes "
-                + "before delivering them.");
+                + "before delivering them. The code was updated since the analysis (r7 to r8).");
+        // edited again: named once
+        service.editFile(id, "a/b.js", "ok();");
+        assertThat(change.getMessage()).startsWith("a/b.js edited. 1 file(s)").doesNotContain("edited. a/b.js edited");
+    }
+
+    @Test
+    void earlierNotesWithoutCountsAreKept() {
+        assertThat(ChangeService.edited("Writing a/b.js again failed (x); the previous version is kept. 2 file(s) written, 1 with problems, "
+                + "0 with warnings. Review the changes before delivering them.", "a/c.js", "2 file(s) written, 0 with problems, 0 with warnings. "
+                + "Review the changes before delivering them."))
+                .isEqualTo("a/c.js edited. Writing a/b.js again failed (x); the previous version is kept. 2 file(s) written, 0 with problems, "
+                        + "0 with warnings. Review the changes before delivering them.");
+        assertThat(ChangeService.edited("Plan approved.", "a/c.js", "S.")).isEqualTo("a/c.js edited. S. Plan approved.");
+        assertThat(ChangeService.edited(null, "a/c.js", "S.")).isEqualTo("a/c.js edited. S.");
+    }
+
+    // --- review of 57735c6: Continue never replaces a passing version, through generateFile ---
+
+    @Test
+    void continuingARewriteThatFailsItsChecksKeepsThePassingVersionAndDropsTheRewrite(@org.junit.jupiter.api.io.TempDir java.nio.file.Path wc) {
+        ChangeFileStore.ChangeFile passed = new ChangeFileStore.ChangeFile(0, "a/b.js", "create", "ui", null, ChangeFileStore.Status.GENERATED,
+                null, "ok();\n", false, FileChecks.Status.PASSED, null, 1, "part of a rewrite", false);
+        when(files.file(id, "a/b.js")).thenReturn(Optional.of(passed));
+        ChangeContext context = mock(ChangeContext.class);
+        when(context.checks()).thenReturn(mock(com.obdx.factory.pack.CheckScope.class));
+        when(generator.generate(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
+                .thenReturn(new CodeGenerator.Result("broken(", new FileChecks.Result(FileChecks.Status.FAILED, "JavaScript does not parse"), 1));
+        ChangePlan.Item item = new ChangePlan.Item("a/b.js", "create", "ui", null, List.of(), null);
+
+        // as Continue calls it (not Write again), going on from the kept rewrite
+        String reason = service.generateFile(id, UUID.randomUUID(), context, new ChangePlan("x", List.of(item), List.of()), item, wc,
+                new java.util.LinkedHashMap<>(), null, new ChangeService.Kept("part of a rewrite", false), false);
+
+        assertThat(reason).startsWith("the new version fails its checks");
+        verify(files, never()).saveResult(any(), anyString(), any(), any(), anyString(), org.mockito.ArgumentMatchers.anyBoolean(), any(),
+                org.mockito.ArgumentMatchers.anyInt());
+        verify(files).saveRewrite(id, "a/b.js", null);
+    }
+
+    @Test
+    void aFirstWriteThatFailsItsChecksIsSaved(@org.junit.jupiter.api.io.TempDir java.nio.file.Path wc) {
+        when(files.file(id, "a/b.js")).thenReturn(Optional.of(file("a/b.js", ChangeFileStore.Status.PENDING, null, null, null)));
+        ChangeContext context = mock(ChangeContext.class);
+        when(context.checks()).thenReturn(mock(com.obdx.factory.pack.CheckScope.class));
+        FileChecks.Result failed = new FileChecks.Result(FileChecks.Status.FAILED, "JavaScript does not parse");
+        when(generator.generate(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
+                .thenReturn(new CodeGenerator.Result("broken(", failed, 1));
+        ChangePlan.Item item = new ChangePlan.Item("a/b.js", "create", "ui", null, List.of(), null);
+
+        assertThat(service.generateFile(id, UUID.randomUUID(), context, new ChangePlan("x", List.of(item), List.of()), item, wc,
+                new java.util.LinkedHashMap<>(), null, null, false)).isNull();
+        verify(files).saveResult(id, "a/b.js", ChangeFileStore.Status.GENERATED, null, "broken(", false, failed, 1);
+    }
+
+    // --- review of 57735c6: an answered request for changes no longer holds the plan ---
+
+    @Test
+    void savingThePlanAnswersTheRequestEvenWhenItIsTheSame() {
+        ChangeRequest change = change(ChangeRequest.Status.PLAN_READY);
+        when(planReviews.latest(id)).thenReturn(3);
+        when(planReviews.record(any(), anyString(), any(), any())).thenReturn(3);
+        when(requirements.get(any())).thenReturn(mock(RequirementService.RequirementDetail.class));
+
+        when(packs.scope(any())).thenReturn(mock(com.obdx.factory.pack.CheckScope.class));
+        when(storage.workingCopy(any())).thenReturn(java.nio.file.Path.of("target", "no-working-copy"));
+        service.updatePlan(id, change.getPlan(), "Lead");
+
+        verify(planReviews).answerRequests(id);
+    }
+
+    // --- review of 57735c6: nothing reads the working copy while it is checked out again ---
+
+    @Test
+    void deliveryWaitsWhileTheWorkingCopyIsCheckedOutAgain() {
+        ChangeRequest change = change(ChangeRequest.Status.GENERATED);
+        when(files.files(id)).thenReturn(List.of(file("a/b.js", ChangeFileStore.Status.GENERATED, "ok();", FileChecks.Status.PASSED, null)));
+        assertThat(locks.hold(change.getWorkspaceId(), "checked out again")).isTrue();
+        try {
+            assertThatThrownBy(() -> service.deliverToBranch(id, false)).isInstanceOf(ConflictException.class)
+                    .hasMessageContaining("being checked out again");
+            assertThatThrownBy(() -> service.regenerate(id, "a/b.js", null)).isInstanceOf(ConflictException.class);
+        } finally {
+            locks.release(change.getWorkspaceId());
+        }
+        // free again: on to the workspace (not found in this test), and the lock is given back
+        assertThatThrownBy(() -> service.deliverToBranch(id, false)).isInstanceOf(NotFoundException.class);
+        assertThat(locks.holder(change.getWorkspaceId())).isNull();
     }
 
     // --- O1b: a Must requirement no planned file names ---

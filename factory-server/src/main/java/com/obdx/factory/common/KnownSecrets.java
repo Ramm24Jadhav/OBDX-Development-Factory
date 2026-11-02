@@ -23,13 +23,27 @@ public final class KnownSecrets {
     /** Values shorter than this are masked only as a whole word, so a short password does not cut words in two. */
     static final int WHOLE_WORD_BELOW = 8;
 
+    /** Values of letters only shorter than this are taken for a plain word ("Failing", "revision"), not a secret. */
+    static final int PLAIN_WORD_BELOW = 12;
+
     /** Longer values are not kept (no secret the factory stores is this long), so a scan stays short. */
     static final int MAX_LENGTH = 1024;
 
-    /** The most values kept; the oldest go first (a changed password keeps the old one masked for a while). */
+    /** The most values used at run time kept (SVN passwords, Jenkins tokens); the oldest go first. Settings are not counted. */
     static final int MAX_KEPT = 256;
 
-    private static final Set<String> values = new LinkedHashSet<>();
+    /**
+     * Keys that are no secret: what local model servers and examples take as a placeholder. Masking them would hide
+     * ordinary words in messages.
+     */
+    static final Set<String> DUMMIES = Set.of("ollama", "empty", "lm-studio", "lmstudio", "test", "not-needed", "none", "dummy", "null",
+            "changeme", "password", "secret", "token", "apikey", "api-key", "sk-no-key-required");
+
+    /** The secrets of the settings, one slot per source (replaced when the setting changes, never dropped otherwise). */
+    private static final java.util.Map<String, String> settings = new java.util.LinkedHashMap<>();
+
+    /** Values used at run time, after the request was authorized (at most MAX_KEPT, oldest first). */
+    private static final Set<String> used = new LinkedHashSet<>();
 
     /** The values and their encoded forms, longest first; rebuilt when a value is added. */
     private static volatile List<String> forms = List.of();
@@ -37,39 +51,76 @@ public final class KnownSecrets {
     private KnownSecrets() {
     }
 
-    /** Masks this value in messages and in the log from now on. Null, blank and very short or long values are ignored. */
-    public static void remember(String value) {
-        if (value == null) {
-            return;
+    /**
+     * The secret of a setting, under its source ("model.apiKey", "env:FACTORY_LDAP_MANAGER_PASSWORD"): it replaces the
+     * value the source had (which is no longer masked); null or blank removes it. Kept for the life of the process.
+     */
+    public static void setting(String source, String value) {
+        synchronized (used) {
+            String secret = maskable(value);
+            String before = secret == null ? settings.remove(source) : settings.put(source, secret);
+            if (!java.util.Objects.equals(before, secret)) {
+                rebuild();
+            }
         }
-        String secret = value.strip();
-        if (secret.length() < MIN_LENGTH || secret.length() > MAX_LENGTH || secret.equals("not-needed")) {
-            return;
-        }
-        synchronized (values) {
-            if (!values.add(secret)) {
+    }
+
+    /**
+     * A secret the factory has just used for an authorized request (an SVN password sent to the server, a Jenkins token,
+     * a key a test connection sends). Call it only after the request's permission checks: a value registered here is
+     * masked everywhere.
+     */
+    public static void used(String value) {
+        synchronized (used) {
+            String secret = maskable(value);
+            if (secret == null || settings.containsValue(secret) || !used.add(secret)) {
                 return;
             }
-            while (values.size() > MAX_KEPT) {
-                values.remove(values.iterator().next());
+            while (used.size() > MAX_KEPT) {
+                used.remove(used.iterator().next());
             }
-            Set<String> all = new LinkedHashSet<>();
-            for (String v : values) {
-                all.add(v);
-                // as a server can echo it: in a URL (user:p%40ss@host), in JSON ("p\"ss")
-                all.add(URLEncoder.encode(v, StandardCharsets.UTF_8));
-                all.add(v.replace("\\", "\\\\").replace("\"", "\\\""));
-            }
-            List<String> sorted = new ArrayList<>(all);
-            sorted.sort(Comparator.comparingInt(String::length).reversed());
-            forms = List.copyOf(sorted);
+            rebuild();
         }
+    }
+
+    /** What would be masked, or null for a value that is no secret worth masking (see DUMMIES). */
+    static String maskable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String secret = value.strip();
+        if (secret.length() < MIN_LENGTH || secret.length() > MAX_LENGTH || DUMMIES.contains(secret.toLowerCase(java.util.Locale.ROOT))) {
+            return null;
+        }
+        // a short plain word ("Failing", "revision") would hide that word in every message
+        if (secret.length() < PLAIN_WORD_BELOW && secret.chars().allMatch(Character::isLetter)) {
+            return null;
+        }
+        return secret;
+    }
+
+    private static void rebuild() {
+        Set<String> all = new LinkedHashSet<>();
+        List<String> values = new ArrayList<>(settings.values());
+        values.addAll(used);
+        for (String v : values) {
+            all.add(v);
+            // as a server can echo it: in a URL (user:p%40ss@host), in JSON ("p\"ss"), in XML or HTML (p&amp;ss)
+            all.add(URLEncoder.encode(v, StandardCharsets.UTF_8));
+            all.add(v.replace("\\", "\\\\").replace("\"", "\\\""));
+            all.add(v.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;"));
+            all.add(v.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;"));
+        }
+        List<String> sorted = new ArrayList<>(all);
+        sorted.sort(Comparator.comparingInt(String::length).reversed());
+        forms = List.copyOf(sorted);
     }
 
     /** Forgets every value (for tests: the values are kept for the life of the process otherwise). */
     public static void clear() {
-        synchronized (values) {
-            values.clear();
+        synchronized (used) {
+            settings.clear();
+            used.clear();
             forms = List.of();
         }
     }

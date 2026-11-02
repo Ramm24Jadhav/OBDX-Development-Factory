@@ -63,10 +63,22 @@ public class PlanReviewStore {
         return jdbc.queryForObject("SELECT MAX(revision) FROM change_plan_revision WHERE change_id = ?", Integer.class, changeId);
     }
 
-    /** Whether a reviewer requested changes on this revision (it then waits for an edit or a new analysis). */
+    /**
+     * Whether a reviewer requested changes on this revision that no new analysis or saved edit has answered yet (the
+     * plan then waits for one).
+     */
     public boolean changesRequested(UUID changeId, int revision) {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM change_plan_comment WHERE change_id = ? AND revision = ? "
-                + "AND kind = ?)", Boolean.class, changeId, revision, Kind.CHANGES_REQUESTED.name()));
+                + "AND kind = ? AND answered_at IS NULL)", Boolean.class, changeId, revision, Kind.CHANGES_REQUESTED.name()));
+    }
+
+    /**
+     * Marks the open requests for changes answered: the plan was analyzed again or an edit was saved, also when the plan
+     * came out the same (and so kept its revision). Returns how many were open.
+     */
+    public int answerRequests(UUID changeId) {
+        return jdbc.update("UPDATE change_plan_comment SET answered_at = ? WHERE change_id = ? AND kind = ? AND answered_at IS NULL",
+                Timestamp.from(Instant.now()), changeId, Kind.CHANGES_REQUESTED.name());
     }
 
     public Comment comment(UUID changeId, Integer revision, Kind kind, String author, String text) {

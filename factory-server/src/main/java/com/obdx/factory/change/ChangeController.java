@@ -143,11 +143,9 @@ public class ChangeController {
     @PostMapping("/api/changes/{id}/regenerate")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail regenerate(@PathVariable UUID id, @RequestBody RegenerateRequest request) {
-        guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = service.regenerate(id, request.path(), request.note());
-        audit.record(WRITTEN_AGAIN, change.workspaceId(), id.toString(), request.path()
-                + (request.note() == null || request.note().isBlank() ? "" : " (with a note)"));
-        return change;
+        var user = guard.requireForChange(id, Permission.MANAGE_CODE);
+        // (the outcome is audited when the file has been written: ChangeService.runGeneration)
+        return service.regenerate(id, request.path(), request.note(), user.getUsername());
     }
 
     @PutMapping("/api/changes/{id}/file")
@@ -179,9 +177,16 @@ public class ChangeController {
             // refused before anything was committed (the UI asks to confirm, or says what to do first)
             throw e;
         } catch (RuntimeException e) {
-            // The commit failed (a pre-commit hook, the server, a conflict): recorded, as a delivery is
-            ChangeService.ChangeDetail failed = service.get(id);
-            audit.record(DELIVERY_FAILED, failed.workspaceId(), id.toString(), failed.title() + ": " + Messages.reason(e));
+            // The commit failed (a pre-commit hook, the server, a conflict): recorded, as a delivery is. The recording never
+            // replaces the error, and a change that was committed after all is not recorded as failed
+            try {
+                ChangeService.ChangeDetail failed = service.get(id);
+                if (failed.status() != ChangeRequest.Status.DELIVERED) {
+                    audit.record(DELIVERY_FAILED, failed.workspaceId(), id.toString(), Messages.redacted(failed.title() + ": " + Messages.reason(e)));
+                }
+            } catch (RuntimeException auditFailed) {
+                e.addSuppressed(auditFailed);
+            }
             throw e;
         }
         long written = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();

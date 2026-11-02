@@ -71,8 +71,8 @@ public class DesignFlowService {
     }
 
     /** What approving changed, for the audit log, and the flow after it. */
-    /** @param unsupported the screens approved with elements the version pack forbids (confirmed), as "Name: oj-x" */
-    public record Approval(List<String> approved, DesignFlow flow, List<String> unsupported) {
+    /** @param unsupported the screens approved with elements the version pack forbids (confirmed): name to "oj-x, oj-y" */
+    public record Approval(List<String> approved, DesignFlow flow, Map<String, String> unsupported) {
     }
 
     @Transactional(readOnly = true)
@@ -134,17 +134,17 @@ public class DesignFlowService {
         }
         List<ScreenDesign> toApprove = all.stream().filter(design -> (wanted == null || wanted.contains(design.getId()))
                 && design.getStatus() != ScreenDesign.Status.APPROVED).toList();
-        List<String> forbidden = new ArrayList<>();
+        Map<String, String> forbidden = new java.util.LinkedHashMap<>();
         for (ScreenDesign design : toApprove) {
             List<ComponentCompatibility.Entry> found = compatibility == null ? List.of()
                     : compatibility.unsupported(design.getWorkspaceId(), store.model(design.getId(), design.getCurrentVersion()).orElse(null));
             if (!found.isEmpty()) {
-                forbidden.add(design.getName() + ": " + String.join(", ", found.stream().map(ComponentCompatibility.Entry::element).toList()));
+                forbidden.put(design.getName(), String.join(", ", found.stream().map(ComponentCompatibility.Entry::element).toList()));
             }
         }
         if (!forbidden.isEmpty() && !unsupported) {
             throw new com.obdx.factory.common.ConflictException(ScreenDesignService.UNSUPPORTED + "the workspace's version pack forbids elements of "
-                    + String.join("; ", forbidden.stream().map(f -> f.replaceFirst(": ", " (") + ")").toList()) + ". Replace them in the designer, or approve the screens as they are if you have "
+                    + String.join("; ", forbidden.entrySet().stream().map(f -> f.getKey() + " (" + f.getValue() + ")").toList()) + ". Replace them in the designer, or approve the screens as they are if you have "
                     + "checked that they work in this OBDX version.");
         }
         List<String> approved = new ArrayList<>();
@@ -153,6 +153,6 @@ public class DesignFlowService {
             designs.save(design);
             approved.add(design.getName());
         }
-        return new Approval(approved, flow(requirementId), unsupported ? forbidden : List.of());
+        return new Approval(approved, flow(requirementId), unsupported ? forbidden : Map.of());
     }
 }

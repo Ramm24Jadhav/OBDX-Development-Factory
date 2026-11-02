@@ -95,6 +95,8 @@ public class ChangeService {
     private final TaskExecutor executor;
     private final KnowledgeService knowledge;
     private final PlanReviewStore planReviews;
+    private final com.obdx.factory.importing.WorkingCopyLocks locks;
+    private final com.obdx.factory.auth.AuditLog audit;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
@@ -103,7 +105,10 @@ public class ChangeService {
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
                          TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge,
-                         PlanReviewStore planReviews) {
+                         PlanReviewStore planReviews, com.obdx.factory.importing.WorkingCopyLocks locks,
+                         com.obdx.factory.auth.AuditLog audit) {
+        this.locks = locks;
+        this.audit = audit;
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -232,6 +237,8 @@ public class ChangeService {
             String planJson = json.writeValueAsString(plan);
             change.plan(planJson, workspace.getIndexedRevision());
             planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
+            // a new analysis answers the requests for changes, also when it gives the same plan
+            planReviews.answerRequests(id);
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
             String added = resumed ? " The incomplete plan was continued: " + Math.max(0, plan.items().size() - before.items().size())
                     + " file(s) added to the " + before.items().size() + " planned before" + (ImpactAnalyzer.resumable(plan)
@@ -362,6 +369,8 @@ public class ChangeService {
         String edited = json.writeValueAsString(plan);
         change.plan(edited, change.getBaseRevision());
         planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
+        // a saved edit answers the requests for changes, also when it leaves the plan as it was
+        planReviews.answerRequests(id);
         change.status(ChangeRequest.Status.PLAN_READY, "Plan edited: " + plan.items().size() + " file(s).");
         return detail(changes.save(change));
     }
@@ -405,6 +414,7 @@ public class ChangeService {
         lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
+        locks.requireFree(change.getWorkspaceId());
         ChangePlan plan = plan(change);
         Integer latest = planReviews.latest(id);
         // A request for changes holds the plan: the revision it was made on is not approved, confirmed or not
@@ -511,7 +521,13 @@ public class ChangeService {
      *               others as they are
      */
     void runGeneration(UUID id, String onlyPath, String note, boolean resume) {
+        runGeneration(id, onlyPath, note, resume, null);
+    }
+
+    /** @param by who asked to write onlyPath again (for the audit log of its outcome) */
+    void runGeneration(UUID id, String onlyPath, String note, boolean resume, String by) {
         ChangeRequest change = find(id);
+        String outcome = null;
         String failedAgain = null;
         String writing = null;
         Set<String> writtenNow = new LinkedHashSet<>();
@@ -601,10 +617,15 @@ public class ChangeService {
             }
             // Says whether a version is still there: a file that had none has none after a failed Write again
             boolean versionKept = onlyPath != null && files.file(id, onlyPath).map(f -> f.generated() != null && !partial(f)).orElse(false);
-            change.status(ChangeRequest.Status.GENERATED, (onlyPath == null ? ""
+            String said = onlyPath == null ? ""
+                    : CUT_OFF_FIRST.equals(failedAgain) ? onlyPath + " was cut off at the model's output limit: the part written is kept, "
+                    + "and Continue generation (or Write again) goes on from it. "
                     : failedAgain != null ? "Writing " + onlyPath + " again failed (" + failedAgain + "); "
                     + (versionKept ? "the previous version is kept. " : "it is not written yet. ")
-                    : onlyPath + " written again. ") + summary(files.files(id)) + revisionNote + fixesStopped);
+                    : onlyPath + " written again. ";
+            outcome = onlyPath == null ? null : CUT_OFF_FIRST.equals(failedAgain) ? "cut off at the output limit, the part written is kept"
+                    : failedAgain != null ? (versionKept ? "kept the previous version: " : "not written: ") + failedAgain : "written again";
+            change.status(ChangeRequest.Status.GENERATED, said + summary(files.files(id)) + revisionNote + fixesStopped);
         } catch (ModelLimitReachedException e) {
             // Every further file would fail the same way: stop, and leave the rest to Continue generation
             log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
@@ -623,14 +644,25 @@ public class ChangeService {
                     || f.status() == ChangeFileStore.Status.UNCHANGED).count();
             String kept = e instanceof CodeGenerator.Partial p && p.check() == null ? writing : null;
             change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size(), kept));
+            outcome = "kept the previous version: " + limitReason(e);
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the change must not stay "generating"
             log.error("Code generation for change {} failed", id, e);
             // Writing one file again, or the rest of them, leaves the files already written to review
             change.status(onlyPath != null || resume ? ChangeRequest.Status.GENERATED : ChangeRequest.Status.FAILED,
                     "Code generation failed: " + Messages.reason(e));
+            outcome = "failed: " + Messages.reason(e);
         }
         changes.save(change);
+        if (onlyPath != null) {
+            // What came of the Write again, in the audit log and the change's history
+            try {
+                audit.recordAs(by, ChangeController.WRITTEN_AGAIN, change.getWorkspaceId(), id.toString(), onlyPath
+                        + (note == null || note.isBlank() ? "" : " (with a note)") + ": " + (outcome == null ? "written again" : outcome));
+            } catch (RuntimeException e) {
+                log.warn("Could not record writing {} again in change {}", onlyPath, id, e);
+            }
+        }
     }
 
     /** What the change says when the model's limit stopped the cross-check fixes: every file is written, these were not fixed. */
@@ -785,6 +817,28 @@ public class ChangeService {
                 + "fit them. Analyze the change again, or write the files that need it with Write again.";
     }
 
+    private static final String SUMMARY_END = "Review the changes before delivering them.";
+
+    /**
+     * The change's message after a reviewer's edit: the earlier notes stay (the code was updated since the analysis, the
+     * fixes the limit stopped ...), the counts are the new ones and the edit is named once.
+     */
+    static String edited(String before, String path, String summary) {
+        String note = path + " edited. ";
+        String text = before == null ? "" : before;
+        int end = text.indexOf(SUMMARY_END);
+        int start = end < 0 ? -1 : text.lastIndexOf(" file(s) written, ", end);
+        if (start >= 0) {
+            // back to the count's first digit
+            while (start > 0 && Character.isDigit(text.charAt(start - 1))) {
+                start--;
+            }
+            String head = text.substring(0, start).replace(note, "");
+            return note + head + summary + text.substring(end + SUMMARY_END.length());
+        }
+        return note + summary + (text.isBlank() ? "" : " " + text.replace(note, "").strip());
+    }
+
     /** "8 file(s) written, 1 with problems, 2 with warnings, 3 not written yet. Review ..." */
     static String summary(List<ChangeFileStore.ChangeFile> result) {
         // a file cut off part-way is not a problem of its code: it is counted as cut off, for Continue to finish
@@ -839,7 +893,11 @@ public class ChangeService {
      *
      * @return why the file could not be written, or null
      */
-    private String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
+    /** Why Write again of a file without a version gave none: it was cut off (its part is kept, Continue goes on). */
+    static final String CUT_OFF_FIRST = "it was cut off at the model's output limit; the part written is kept, and Continue "
+            + "generation (or Write again) goes on from it";
+
+    String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
                                 Path workingCopy, Map<String, String> earlier, String note, Kept partial, boolean again) {
         boolean modify = "modify".equals(item.action());
         String current = null;
@@ -870,17 +928,19 @@ public class ChangeService {
                     files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, result.content(), false,
                             new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " " + result.check().message()
                                     + "\nContinue generation goes on from here, or write it again."), result.attempts());
-                    return null;
+                    return again ? CUT_OFF_FIRST : null;
                 }
-                // Write again of a written file: that version stays; the new part is kept beside it to go on from
+                // A file written before: that version stays; the new part is kept beside it to go on from
                 files.saveRewrite(changeId, item.path(), result.content(), false);
                 return "it was cut off at the model's output limit; the part written is kept beside it, and Write again (or Continue) "
                         + "goes on from it";
             }
-            String worse = again ? worseThanBefore(files.file(changeId, item.path()).orElse(null), result.check()) : null;
+            // Neither Write again nor Continue (going on from a kept rewrite) replaces a version that passed its checks with
+            // one that fails them: the earlier one stays, and the rejected rewrite is dropped
+            String worse = worseThanBefore(files.file(changeId, item.path()).orElse(null), result.check());
             if (worse != null) {
-                // Write again never replaces a version that passed its checks with one that fails them: the earlier one stays
-                log.info("Writing {} again in change {} gave a version that fails its checks; the previous version is kept", item.path(), changeId);
+                log.info("Writing {} in change {} gave a version that fails its checks; the previous version is kept", item.path(), changeId);
+                files.saveRewrite(changeId, item.path(), null);
                 return worse;
             }
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
@@ -1245,6 +1305,7 @@ public class ChangeService {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
+        locks.requireFree(change.getWorkspaceId());
         String moved = resumeProblem(change.getBaseRevision(), workspace(change.getWorkspaceId()).getIndexedRevision());
         if (moved != null) {
             throw new BadRequestException(moved);
@@ -1270,15 +1331,22 @@ public class ChangeService {
     /** Writes one file again, with an optional instruction from the reviewer. */
     @Transactional
     public ChangeDetail regenerate(UUID id, String path, String note) {
+        return regenerate(id, path, note, null);
+    }
+
+    /** @param by who asked (the outcome is audited with that name when the file is written) */
+    @Transactional
+    public ChangeDetail regenerate(UUID id, String path, String note, String by) {
         RequestText.requirePath(path);
         RequestText.requireText(note);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
+        locks.requireFree(change.getWorkspaceId());
         files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         change.status(ChangeRequest.Status.GENERATING, "Writing " + path + " again...");
         changes.save(change);
-        startAfterCommit(() -> runGeneration(id, path, note));
+        startAfterCommit(() -> runGeneration(id, path, note, false, by));
         return detail(change);
     }
 
@@ -1297,7 +1365,7 @@ public class ChangeService {
                 file.original(), text, true, localChecks.check(packs.scope(change.getWorkspaceId()), path, file.original(), text),
                 file.attempts());
         // The message counted the files with problems before the edit: it says how they stand now
-        change.status(ChangeRequest.Status.GENERATED, path + " edited. " + summary(files.files(id)));
+        change.status(ChangeRequest.Status.GENERATED, edited(change.getMessage(), path, summary(files.files(id))));
         changes.save(change);
         return detail(change);
     }
@@ -1619,6 +1687,19 @@ public class ChangeService {
         if (!failedChecks) {
             requireChecksPassed(files.files(id));
         }
+        // the working copy is read while delivering: not while it is checked out again
+        if (!locks.hold(change.getWorkspaceId(), "delivered")) {
+            locks.requireFree(change.getWorkspaceId());
+            throw new ConflictException("The workspace's code was busy. Try again.");
+        }
+        try {
+            return deliver(change, id);
+        } finally {
+            locks.release(change.getWorkspaceId());
+        }
+    }
+
+    private ChangeDetail deliver(ChangeRequest change, UUID id) {
         List<ChangeFileStore.ChangeFile> deliverable = deliverable(id);
         if (deliverable.isEmpty()) {
             throw new BadRequestException("There are no changed files to deliver");
@@ -1675,9 +1756,14 @@ public class ChangeService {
                     all.stream().filter(f -> f.status() != ChangeFileStore.Status.UNCHANGED).count(), unwritten(all)));
             ChangeDetail delivered = detail(changes.save(change));
             // What this change touched becomes a suggested knowledge note, for the next similar change
-            ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
-            knowledge.learnFromChange(change.getWorkspaceId(), change.getTitle(), plan == null ? null : plan.summary(),
-                    deliverable.stream().map(ChangeFileStore.ChangeFile::path).toList());
+            // (the commit is made: a note that cannot be written does not make the delivery fail)
+            try {
+                ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
+                knowledge.learnFromChange(change.getWorkspaceId(), change.getTitle(), plan == null ? null : plan.summary(),
+                        deliverable.stream().map(ChangeFileStore.ChangeFile::path).toList());
+            } catch (RuntimeException e) {
+                log.warn("Could not suggest a knowledge note for delivered change {}", id, e);
+            }
             return delivered;
         } catch (IOException e) {
             throw new UncheckedIOException("Could not prepare the files for delivery", e);
@@ -1989,7 +2075,7 @@ public class ChangeService {
 
     static String historyText(String action, String detail) {
         String text = detail == null ? "" : detail;
-        return ChangeController.WRITTEN_AGAIN.equals(action) ? "Wrote " + text + " again" : "Delivery failed: " + text;
+        return ChangeController.WRITTEN_AGAIN.equals(action) ? "Write again of " + text : "Delivery failed: " + text;
     }
 
     static void requireNotBuilding(ChangeRequest change) {

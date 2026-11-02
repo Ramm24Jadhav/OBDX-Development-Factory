@@ -25,12 +25,6 @@ public class ModelSettings {
     public record Current(String baseUrl, String apiKey, String chatModel, String embeddingModel, String embeddingBaseUrl,
                           String embeddingApiKey, boolean saved, OffsetDateTime updatedAt, String updatedBy) {
 
-        public Current {
-            // a provider's error can echo the key, whatever it looks like: masked by its value
-            com.obdx.factory.common.KnownSecrets.remember(apiKey);
-            com.obdx.factory.common.KnownSecrets.remember(embeddingApiKey);
-        }
-
         /** Where the embedding model runs. */
         public String embeddingUrl() {
             return embeddingBaseUrl == null ? baseUrl : embeddingBaseUrl;
@@ -52,11 +46,6 @@ public class ModelSettings {
      */
     public record Update(String baseUrl, String apiKey, String chatModel, String embeddingModel, String embeddingBaseUrl,
                          String embeddingApiKey) {
-
-        public Update {
-            com.obdx.factory.common.KnownSecrets.remember(apiKey);
-            com.obdx.factory.common.KnownSecrets.remember(embeddingApiKey);
-        }
 
         public Update(String baseUrl, String apiKey, String chatModel, String embeddingModel) {
             this(baseUrl, apiKey, chatModel, embeddingModel, null, null);
@@ -89,12 +78,17 @@ public class ModelSettings {
                         FROM model_settings WHERE id = 1""",
                 (rs, i) -> new Current(rs.getString(1), decrypt(rs.getString(2)), rs.getString(3), rs.getString(4),
                         rs.getString(5), decrypt(rs.getString(6)), true, rs.getObject(7, OffsetDateTime.class), rs.getString(8)));
-        return saved.isEmpty()
+        Current current = saved.isEmpty()
                 ? new Current(defaults.baseUrl(), defaults.apiKey(), defaults.chatModel(), defaults.embeddingModel(),
                         blank(defaults.embeddingBaseUrl()) ? null : normalize(defaults.embeddingBaseUrl()),
                         blank(defaults.embeddingApiKey()) ? null : defaults.embeddingApiKey(),
                         false, null, null)
                 : saved.getFirst();
+        // a provider's error can echo the key, whatever it looks like: masked by its value. One slot each, so a changed or
+        // removed key replaces the one before
+        com.obdx.factory.common.KnownSecrets.setting("model.apiKey", current.apiKey());
+        com.obdx.factory.common.KnownSecrets.setting("model.embeddingApiKey", current.embeddingBaseUrl() == null ? null : current.embeddingApiKey());
+        return current;
     }
 
     /** The API key stored for this server (chat or embedding), for listing its models without typing the key again; null if none. */

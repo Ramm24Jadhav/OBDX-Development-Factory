@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {"factory.auth.initial-admin-password=Admin-Password-1", "factory.auth.max-failed-logins=3"})
 @AutoConfigureMockMvc
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class SecurityIntegrationTest {
 
     @TempDir

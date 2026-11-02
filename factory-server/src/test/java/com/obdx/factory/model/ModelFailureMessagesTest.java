@@ -39,6 +39,29 @@ class ModelFailureMessagesTest {
                 .isEqualTo("Invalid model");
     }
 
+    @org.junit.jupiter.api.BeforeEach
+    @org.junit.jupiter.api.AfterEach
+    void forget() {
+        com.obdx.factory.common.KnownSecrets.clear();
+    }
+
+    /** Review of 57735c6: a request that is not allowed registers nothing (a word like "Unsupported" would then be hidden). */
+    @Test
+    void anUnauthorisedRequestRegistersNothing() {
+        com.obdx.factory.auth.AccessGuard guard = org.mockito.Mockito.mock(com.obdx.factory.auth.AccessGuard.class);
+        org.mockito.Mockito.when(guard.requireAdmin()).thenThrow(new org.springframework.security.access.AccessDeniedException("Only administrators"));
+        ModelController controller = new ModelController(null, org.mockito.Mockito.mock(ModelSettings.class), null, guard, null, null, null);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.models(new ModelController.ServerRequest("http://x/v1", "Unsupported-components")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.save(new ModelSettings.Update("http://x/v1", "Failing-checks", "m", "e")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        new com.obdx.factory.svn.SvnCredentials("u", "Incomplete-change");
+
+        assertThat(com.obdx.factory.common.KnownSecrets.masked("Unsupported-components; Failing-checks; Incomplete-change"))
+                .isEqualTo("Unsupported-components; Failing-checks; Incomplete-change");
+    }
+
     @Test
     void theAuditSaysWhetherTheKeyChangedNeverTheKey() {
         assertThat(ModelController.keyChange("API key", null, "AzureKey7c1e")).isEqualTo("; API key set");

@@ -396,10 +396,11 @@ class ReviewFixesTest {
                 () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(longRows.toString(), drafted));
         // Regression audit fixes: secret values masked by value (one indexOf pass per value, short values as whole words
         // that almost match everywhere), build log lines with a file and line, Must requirements against a long plan
-        com.obdx.factory.common.KnownSecrets.remember("aaaaaab");
-        com.obdx.factory.common.KnownSecrets.remember("aaaa");
-        quickly("known secret values", () -> com.obdx.factory.common.KnownSecrets.masked("aaaa x"),
-                () -> com.obdx.factory.common.KnownSecrets.masked("a".repeat(400_000)));
+        com.obdx.factory.common.KnownSecrets.clear();
+        com.obdx.factory.common.KnownSecrets.used("aaaaaa1b");
+        com.obdx.factory.common.KnownSecrets.used("aaa1");
+        quickly("known secret values", () -> com.obdx.factory.common.KnownSecrets.masked("aaa1 x"),
+                () -> com.obdx.factory.common.KnownSecrets.masked("aaa1".repeat(100_000) + "aaaaaa1".repeat(50_000)));
         com.obdx.factory.common.KnownSecrets.clear();
         quickly("log lines like a file", () -> com.obdx.factory.jenkins.BuildLogParser.errors("a.js:1: x"),
                 () -> com.obdx.factory.jenkins.BuildLogParser.errors("[ERROR] " + "a.js".repeat(50_000) + "\n" + ".js:".repeat(50_000)));

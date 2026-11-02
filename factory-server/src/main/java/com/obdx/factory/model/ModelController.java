@@ -82,6 +82,8 @@ public class ModelController {
     public List<ModelServers.Model> models(@RequestBody ServerRequest request) {
         guard.requireAdmin();
         String apiKey = request.apiKey() == null || request.apiKey().isBlank() ? settings.storedKeyFor(request.baseUrl()) : request.apiKey();
+        // sent to the server (an administrator's request): masked if the server echoes it
+        com.obdx.factory.common.KnownSecrets.used(apiKey);
         long start = System.currentTimeMillis();
         try {
             List<ModelServers.Model> found = servers.models(request.baseUrl(), apiKey);
@@ -182,10 +184,6 @@ public class ModelController {
     }
 
     public record ServerRequest(String baseUrl, String apiKey) {
-
-        public ServerRequest {
-            com.obdx.factory.common.KnownSecrets.remember(apiKey);
-        }
     }
 
     /**

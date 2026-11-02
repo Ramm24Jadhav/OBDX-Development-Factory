@@ -698,9 +698,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           confirmLabel: 'Submit Without Them', danger: true })
         : dialog.confirm({ title: 'Submit for review?', message: 'Commit the reviewed code to a new SVN branch? Trunk is not changed.', confirmLabel: 'Commit to a branch' })).then((ok) => {
         if (ok) {
-          api.post(base() + '/deliver' + (unwritten().length ? '?incomplete=true' : '')).then((d) => { show(d); toast.success('Delivered to a new SVN branch for review.'); }).catch(actionError);
+          commit(unwritten().length ? ['incomplete=true'] : []);
         }
       });
+      // Files that fail their checks are refused by the server (409 "Failing checks: ..."): delivering them is confirmed
+      const FAILED_CHECKS = 'Failing checks: ';
+      const commit = (query) => api.post(base() + '/deliver' + (query.length ? '?' + query.join('&') : ''))
+        .then((d) => { show(d); toast.success('Delivered to a new SVN branch for review.'); })
+        .catch((error) => (error.status === 409 && String(error.message).indexOf(FAILED_CHECKS) === 0 && query.indexOf('failedChecks=true') < 0
+          ? dialog.confirm({ title: 'Submit files that fail their checks?', message: error.message.substring(FAILED_CHECKS.length).replace(/^./, (c) => c.toUpperCase()),
+            confirmLabel: 'Submit Anyway', danger: true }).then((yes) => (yes ? commit(query.concat('failedChecks=true')) : null))
+          : actionError(error)));
 
       // --- the assistant ---
 

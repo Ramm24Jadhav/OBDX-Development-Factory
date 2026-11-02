@@ -160,6 +160,13 @@ public class SvnClient {
             command.add("--trust-server-cert-failures=unknown-ca");
         }
         boolean sendPassword = credentials.present() && credentials.password() != null;
+        if (sendPassword) {
+            // sent to the server now (callers have checked the request's permissions): masked wherever the server echoes it,
+            // also as the Basic authorization svn sends over HTTP
+            com.obdx.factory.common.KnownSecrets.used(credentials.password());
+            com.obdx.factory.common.KnownSecrets.used(java.util.Base64.getEncoder().encodeToString(
+                    (credentials.username() + ":" + credentials.password()).getBytes(StandardCharsets.UTF_8)));
+        }
         if (credentials.present()) {
             command.add("--username");
             command.add(credentials.username());
@@ -236,7 +243,8 @@ public class SvnClient {
                     + "discards the working copy and checks the code out again; requirements, designs and changes are kept.";
         }
         if (summary.matches("(?s).*\\bE(170001|215004)\\b.*")) {
-            return "The SVN server refused the user name or password. Check them in the workspace's SVN settings, then try again.";
+            return "The SVN server refused the user name or password, or the user cannot write to this path. Check them in the "
+                    + "workspace's SVN settings (and the account's access to the branches folder), then try again.";
         }
         if (summary.contains("E170013") && summary.matches("(?s).*(\\bE(730061|000111|731001|670002|670008|000110|730060|120108|730010)\\b"
                 + "|refused|timed out|[Uu]nknown host|No such host|Can't connect).*")) {

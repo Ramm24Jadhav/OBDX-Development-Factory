@@ -45,9 +45,9 @@ public class ImportController {
     @PostMapping("/imports/checkout-again")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ImportJobResponse checkOutAgain(@PathVariable UUID workspaceId) {
-        guard.require(workspaceId, Permission.MANAGE_CODE);
-        ImportJobResponse job = service.start(workspaceId, true);
-        audit.record("WORKING_COPY_CHECKED_OUT_AGAIN", workspaceId, job.id().toString(), "working copy discarded and checked out again");
+        var user = guard.require(workspaceId, Permission.MANAGE_CODE);
+        ImportJobResponse job = service.start(workspaceId, true, user.getUsername());
+        audit.record("WORKING_COPY_CHECKED_OUT_AGAIN", workspaceId, job.id().toString(), "check out again started (the old working copy is replaced when it succeeds)");
         return job;
     }
 

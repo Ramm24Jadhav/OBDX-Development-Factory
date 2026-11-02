@@ -41,7 +41,7 @@ public class AuditLog {
 
     public void recordAs(String username, String action, UUID workspaceId, String target, String detail) {
         // a detail can quote a server's error (SVN_TEST_FAILED), which can echo a password or key: never stored
-        target = com.obdx.factory.common.KnownSecrets.masked(target);
+        // (the target names what was acted on, kept as it is so the audit can be searched by it)
         detail = com.obdx.factory.common.KnownSecrets.masked(detail);
         jdbc.update("INSERT INTO audit_event (at, username, action, workspace_id, target, detail) VALUES (?, ?, ?, ?, ?, ?)",
                 Timestamp.from(Instant.now()), username, action, workspaceId,

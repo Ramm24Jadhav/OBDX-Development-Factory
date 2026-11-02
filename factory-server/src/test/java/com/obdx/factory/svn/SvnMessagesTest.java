@@ -1,11 +1,25 @@
 package com.obdx.factory.svn;
 
+import com.obdx.factory.common.KnownSecrets;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Regression audit A6 and A7: svn's errors in plain words, with what to do next. */
 class SvnMessagesTest {
+
+    @BeforeEach
+    @AfterEach
+    void forget() {
+        KnownSecrets.clear();
+    }
+
+    @Test
+    void aRefusedCommitCanAlsoBeMissingWriteAccess() {
+        assertThat(SvnClient.plain("svnmucc: E170001: Authorization failed")).contains("or the user cannot write to this path");
+    }
 
     @Test
     void aServerThatCannotBeReachedSaysToCheckTheUrlAndServer() {
@@ -42,7 +56,7 @@ class SvnMessagesTest {
 
     @Test
     void anEchoedPasswordNeverReachesTheMessage() {
-        new SvnCredentials("svcx", "Echoed-Pass-91");
+        KnownSecrets.used("Echoed-Pass-91");
         SvnException e = new SvnException("svn info failed: svn: E175002: Repository broken for login svcx:Echoed-Pass-91");
         assertThat(e.getMessage()).doesNotContain("Echoed-Pass-91").contains("login svcx:[hidden]");
     }

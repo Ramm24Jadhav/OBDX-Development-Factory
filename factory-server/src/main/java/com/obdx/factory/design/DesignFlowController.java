@@ -42,8 +42,8 @@ public class DesignFlowController {
                 : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName(), unsupported);
         DesignFlowService.DesignFlow flow = approval.flow();
         approval.approved().forEach(name -> audit.record("DESIGN_APPROVED", flow.workspaceId(), name, "with the requirement's other screens"
-                + approval.unsupported().stream().filter(u -> u.startsWith(name + ": ")).findFirst()
-                .map(u -> ", with " + u.substring(name.length() + 2) + " that the version pack forbids (confirmed)").orElse("")));
+                + java.util.Optional.ofNullable(approval.unsupported().get(name))
+                .map(u -> ", with " + u + " that the version pack forbids (confirmed)").orElse("")));
         return flow;
     }
 

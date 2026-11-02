@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Choosing the model server on the Models page takes effect at once. Runs when FACTORY_TEST_DB_URL is set. */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class ModelSettingsIntegrationTest {
 
     @DynamicPropertySource

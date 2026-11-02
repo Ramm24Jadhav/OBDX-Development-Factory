@@ -813,8 +813,10 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         String message = m.find() ? m.group(1) : text.strip();
         // patterns that start with their words, not with spaces, so a long run of spaces costs nothing
         message = message.replaceAll("in organization `[^`]{0,200}` ?", "").replaceAll("service tier `[^`]{0,200}` ?", "").replaceAll(" {2,}", " ");
+        // hidden before it is cut, so a cut never leaves part of a secret behind
+        message = com.obdx.factory.common.Messages.redacted(message);
         int end = message.indexOf(". ");
-        return com.obdx.factory.common.Messages.redacted(end > 0 ? message.substring(0, end) : message.length() > 200 ? message.substring(0, 200) : message);
+        return end > 0 ? message.substring(0, end) : message.length() > 200 ? message.substring(0, 200) : message;
     }
 
     /** The messages of an error and its causes, at most 4 KB: the patterns read only the start of what a server sent. */
@@ -822,7 +824,9 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         StringBuilder text = new StringBuilder();
         for (Throwable t = e; t != null && text.length() < MAX_ERROR_TEXT; t = t.getCause()) {
             if (t.getMessage() != null) {
-                text.append(t.getMessage()).append('\n');
+                // hidden before the text is cut (each message is read at most to the limit)
+                String m = t.getMessage();
+                text.append(com.obdx.factory.common.Messages.redacted(m.length() > 2 * MAX_ERROR_TEXT ? m.substring(0, 2 * MAX_ERROR_TEXT) : m)).append('\n');
             }
         }
         return text.length() > MAX_ERROR_TEXT ? text.substring(0, MAX_ERROR_TEXT) : text.toString();

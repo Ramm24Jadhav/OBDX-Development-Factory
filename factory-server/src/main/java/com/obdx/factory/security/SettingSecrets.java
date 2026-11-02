@@ -19,11 +19,12 @@ class SettingSecrets {
 
     /**
      * Setting names whose values are secrets: factory.auth.ldap.manager-password, ...registration.sso.client-secret,
-     * factory.model.api-key, FACTORY_SECRET_KEY and their environment variable forms. Not the database password: the
-     * trial database's "factory" would hide the word everywhere.
+     * factory.model.api-key, FACTORY_SECRET_KEY, the first administrator's password (FACTORY_ADMIN_PASSWORD,
+     * factory.auth.initial-admin-password) and their environment variable forms. Not the database password: the trial
+     * database's "factory" would hide the word everywhere.
      */
     static final Pattern SECRET_SETTING = Pattern.compile(
-            "(?i).*(?:manager[-_.]?password|client[-_.]?secret|api[-_.]?key|secret[-_.]?key|private[-_.]?key|[-_.]token)$");
+            "(?i).*(?:manager[-_.]?password|admin[-_.]?password|client[-_.]?secret|api[-_.]?key|secret[-_.]?key|private[-_.]?key|[-_.]token)$");
 
     SettingSecrets(ConfigurableEnvironment environment) {
         for (PropertySource<?> source : environment.getPropertySources()) {
@@ -32,7 +33,7 @@ class SettingSecrets {
                     if (SECRET_SETTING.matcher(name).matches()) {
                         try {
                             // resolved: a value written as ${FACTORY_...} is masked as what it stands for
-                            KnownSecrets.remember(environment.getProperty(name));
+                            KnownSecrets.setting("setting:" + name, environment.getProperty(name));
                         } catch (RuntimeException e) {
                             // not resolvable: nothing to mask
                         }

@@ -29,7 +29,7 @@ public final class RedactedLog {
      * Marks the one line that must show a secret as it is: the first administrator's random password, written once to
      * the log so that someone can sign in. Nothing else uses it.
      */
-    public static final org.slf4j.Marker SHOWN_ONCE = org.slf4j.MarkerFactory.getMarker("SHOWN_ONCE");
+    public static final org.slf4j.Marker SHOWN_ONCE = org.slf4j.MarkerFactory.getDetachedMarker("SHOWN_ONCE");
 
     private RedactedLog() {
     }
@@ -43,7 +43,7 @@ public final class RedactedLog {
             for (Iterator<Appender<ILoggingEvent>> it = logger.iteratorForAppenders(); it.hasNext(); ) {
                 if (it.next() instanceof OutputStreamAppender<ILoggingEvent> appender
                         && !(appender.getEncoder() instanceof RedactingEncoder) && appender.getEncoder() != null) {
-                    RedactingEncoder encoder = new RedactingEncoder(appender.getEncoder());
+                    RedactingEncoder encoder = new RedactingEncoder(appender.getEncoder(), appender instanceof ch.qos.logback.core.ConsoleAppender);
                     encoder.start();
                     appender.setEncoder(encoder);
                 }
@@ -55,9 +55,12 @@ public final class RedactedLog {
     static final class RedactingEncoder extends EncoderBase<ILoggingEvent> {
 
         private final Encoder<ILoggingEvent> inner;
+        /** Whether it writes to the console, where the line marked SHOWN_ONCE stays readable (a log file never has it). */
+        private final boolean console;
         private final Charset charset;
 
-        RedactingEncoder(Encoder<ILoggingEvent> inner) {
+        RedactingEncoder(Encoder<ILoggingEvent> inner, boolean console) {
+            this.console = console;
             this.inner = inner;
             Charset set = inner instanceof LayoutWrappingEncoder<ILoggingEvent> layout ? layout.getCharset() : null;
             this.charset = set == null ? StandardCharsets.UTF_8 : set;
@@ -72,12 +75,25 @@ public final class RedactedLog {
         @Override
         public byte[] encode(ILoggingEvent event) {
             byte[] bytes = inner.encode(event);
-            if (bytes == null || bytes.length == 0 || event.getMarkerList() != null && event.getMarkerList().contains(SHOWN_ONCE)) {
+            if (bytes == null || bytes.length == 0 || console && shownOnce(event)) {
                 return bytes;
             }
             String text = new String(bytes, charset);
             String redacted = Messages.redacted(text);
             return redacted.equals(text) ? bytes : redacted.getBytes(charset);
+        }
+
+        /** Marked with this class's own SHOWN_ONCE instance (a marker of the same name made elsewhere does not count). */
+        private static boolean shownOnce(ILoggingEvent event) {
+            if (event.getMarkerList() == null) {
+                return false;
+            }
+            for (org.slf4j.Marker marker : event.getMarkerList()) {
+                if (marker == SHOWN_ONCE) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override

@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.tuple;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class RequirementFlowIntegrationTest {
 
     @TempDir

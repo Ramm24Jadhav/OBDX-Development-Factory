@@ -65,6 +65,19 @@ class UnsupportedComponentApprovalTest {
     }
 
     @Test
+    void aReviewerCannotApproveAScreenWithUnsupportedElements() {
+        ScreenDesign design = design(model(component("payee", "component", "oj-select-one", null, null)));
+        when(designs.findByReviewToken("tok")).thenReturn(Optional.of(design));
+        when(compatibility.unsupported(any(), any())).thenReturn(List.of(SELECT_ONE));
+
+        assertThatThrownBy(() -> service.reviewApprove("tok", "Customer")).isInstanceOf(ConflictException.class)
+                .hasMessageStartingWith(ScreenDesignService.UNSUPPORTED).hasMessageContaining("bank's team")
+                .hasMessageNotContaining("Version pack rule");
+        assertThat(design.getStatus()).isNotEqualTo(ScreenDesign.Status.APPROVED);
+        verify(store, never()).addComment(any(), anyInt(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), any(), any());
+    }
+
+    @Test
     void aScreenWithSupportedElementsIsApprovedAtOnce() {
         ScreenDesign design = design(model(component("amount", "amount", null, null, null)));
         when(compatibility.unsupported(any(), any())).thenReturn(List.of());

@@ -499,6 +499,11 @@ public class ScreenDesignService {
     public ReviewView reviewApprove(String token, String author) {
         ScreenDesign design = byToken(token);
         String name = requireAuthor(author);
+        // A reviewer cannot confirm elements the version pack forbids: the team approves such a screen (and confirms them)
+        if (compatibility != null && !compatibility.unsupported(design.getWorkspaceId(), currentModel(design)).isEmpty()) {
+            throw new ConflictException(UNSUPPORTED + "this screen uses components that this OBDX version does not support, so the "
+                    + "bank's team has to check and approve it. Add a comment for them, or ask them to approve it.");
+        }
         store.addComment(design.getId(), design.getCurrentVersion(), null, name, true,
                 "Approved version " + design.getCurrentVersion() + ".", DesignStore.Kind.APPROVAL);
         design.approve(name);
