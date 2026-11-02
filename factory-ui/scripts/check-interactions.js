@@ -335,7 +335,19 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
     });
     ready = ok ? ready + 1 : 0;
   }
-  await run(() => { const t = document.querySelector('.factory-pk-carousel .fx-carousel-track'); t.scrollLeft = 0; t.focus(); return 1; });
+  // Nothing left open by the checks before (a menu or popup that takes the arrow keys), then the track has focus; a
+  // listener records whether the key reached the track and whether something else took it
+  // After the long run before, keys sent through DevTools can stop reaching the page (keySeen stayed empty): the tab is
+  // brought to the front with focus emulated, so the page takes the keys as a focused window would
+  await cdp('Page.bringToFront');
+  await cdp('Emulation.setFocusEmulationEnabled', { enabled: true });
+  await key('Escape'); await key('Escape');
+  await run(() => {
+    const t = document.querySelector('.factory-pk-carousel .fx-carousel-track'); t.scrollLeft = 0; t.focus();
+    window.fxKeySeen = [];
+    if (!window.fxKeyWatch) { window.fxKeyWatch = true; document.addEventListener('keydown', (e) => (window.fxKeySeen || []).push((e.target.id || e.target.tagName) + (e.defaultPrevented ? ' (taken)' : '')), true); }
+    return 1;
+  });
   await sleep(500);
   // What has focus when the key goes in (for a failure: the track, something inert, an overlay)
   const pre = await run(() => ({ focus: document.activeElement.className, inert: !!document.querySelector('[inert]'), overlay: !!document.querySelector('.fx-overlay, .fx-dialog, .fx-cmd') }));
@@ -351,6 +363,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
     }
   }
   car.before = pre;
+  car.keySeen = await run(() => window.fxKeySeen || []);
   await record('1440x900 packs', 'carousel moves with the arrow key', car.left > 100 && car.current === 1 && car.prevEnabled, car);
 
   // ---------- Approved assets ----------

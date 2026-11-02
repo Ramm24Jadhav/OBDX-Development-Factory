@@ -234,6 +234,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.lastChecked = ko.observable('');
       this.draftingText = ko.pureComputed(() => 'Drafting the specification. The page checks every ' + (POLL_MS / 1000)
         + ' seconds' + (this.lastChecked() ? ', last at ' + this.lastChecked() : '') + ', and tells you when it is ready.');
+      // The server's warnings about the spec (duplicate FR, AC or NFR IDs); none from an older server
+      this.specWarnings = ko.pureComputed(() => (this.detail() && Array.isArray(this.detail().warnings) ? this.detail().warnings : []));
       // An approved spec's next steps, each with what the server checks: screens EDIT_DESIGNS, a change MANAGE_CODE
       this.canMakeScreens = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && session.can(this.workspaceId(), 'EDIT_DESIGNS'));
       this.canPlanChange = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED' && session.can(this.workspaceId(), 'MANAGE_CODE'));

@@ -178,6 +178,11 @@
                 </oj-bind-for-each>
               </span>
             </div>
+            <!-- What the server found wrong in the spec (duplicate IDs): a plain warning, nothing when there is none -->
+            <oj-bind-if test="[[specWarnings().length > 0]]">
+              <div class="fx-alert fx-alert--warning" id="specWarnings" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+                <span class="fx-alert-text"><oj-bind-text value="[[specWarnings().join(' ')]]"></oj-bind-text></span></div>
+            </oj-bind-if>
 
             <!-- The next valid step, and who takes it -->
             <div :class="[[nextStep().css]]" id="requirementNext" role="group" aria-labelledby="requirementNextTitle">
