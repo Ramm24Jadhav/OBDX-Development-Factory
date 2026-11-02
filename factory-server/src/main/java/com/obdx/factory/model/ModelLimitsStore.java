@@ -53,6 +53,18 @@ public class ModelLimitsStore {
                 limits.answerMax());
     }
 
+    /** One server and model's learned limits with when they were learned (they are kept 7 days). */
+    public record Learned(String baseUrl, String model, Stored limits, java.time.OffsetDateTime updatedAt) {
+    }
+
+    /** Every limit still in force (learned in the last 7 days), newest first: to show, not to change. */
+    public java.util.List<Learned> all() {
+        return jdbc.query("SELECT base_url, model, input_tokens, chars_per_token, output_tokens, total_tokens, output_per_minute, answer_max, updated_at "
+                        + "FROM model_limits WHERE updated_at > now() - interval '7 days' ORDER BY updated_at DESC",
+                (rs, row) -> new Learned(rs.getString(1), rs.getString(2), new Stored(rs.getInt(3), rs.getDouble(4), rs.getInt(5), rs.getInt(6),
+                        rs.getInt(7), rs.getInt(8)), rs.getObject(9, java.time.OffsetDateTime.class)));
+    }
+
     /** Forgets what one server and model showed (the settings moved to another, or its plan may have changed). */
     public void clear(String baseUrl, String model) {
         jdbc.update("DELETE FROM model_limits WHERE base_url = ? AND model = ?", key(baseUrl), key(model));

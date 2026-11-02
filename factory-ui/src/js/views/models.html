@@ -1,9 +1,8 @@
 <div class="factory-pg factory-md">
-  <div class="factory-pg-head">
-    <div>
-      <h1>Models &amp; AI Provider Configuration</h1>
-      <p>Configure and manage AI providers, models and usage policies for OBDX development</p>
-    </div>
+  <h1 class="fx-visually-hidden">Models &amp; AI Provider Configuration</h1>
+  <div class="factory-pg-head factory-md-top">
+    <p class="factory-md-intro" id="modelsInUse"><oj-bind-if test="[[status()]]"><span>In use: chat <strong class="factory-mono"><oj-bind-text value="[[status().chatModel]]"></oj-bind-text></strong>, search <strong class="factory-mono"><oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></strong>.</span></oj-bind-if>
+      A provider shows as connected only after its connection test succeeds. Keys stay on the server, encrypted, and are never shown.</p>
     <oj-bind-if test="[[isAdmin()]]">
       <div class="factory-pg-actions">
         <button type="button" id="testAllButton" class="fx-btn fx-btn--secondary" on-click="[[testAll]]">
@@ -18,9 +17,9 @@
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-md-alert" role="alert" id="modelError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
 
-  <div class="factory-tabbar" role="tablist" aria-label="Model settings">
+  <div class="factory-tabbar" role="tablist" aria-label="Model settings" on-keydown="[[tabKey]]">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['md-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+      <template><button type="button" role="tab" :id="[['md-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
 
@@ -50,7 +49,9 @@
                 <oj-bind-for-each data="[[p.data.chatModels]]" as="m"><template><option :value="[[m.data]]" :selected="[[m.data === p.data.defaultModel()]]"><oj-bind-text value="[[m.data]]"></oj-bind-text></option></template></oj-bind-for-each>
               </select></dd>
               <dt>Status</dt><dd><span :class="[[p.data.statusPill().css]]" :title="[[p.data.statusText]]"><span :class="[[p.data.statusPill().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[p.data.statusPill().text]]"></oj-bind-text></span></dd>
-              <dt>Last Checked</dt><dd><oj-bind-text value="[[p.data.checked() || '–']]"></oj-bind-text></dd>
+              <dt>Last Checked</dt><dd><oj-bind-text value="[[p.data.checked() || (p.data.lastCheck() ? 'Earlier: see Provider Health' : 'Not tested')]]"></oj-bind-text></dd>
+              <dt>Last success</dt><dd><oj-bind-text value="[[p.data.lastOkText]]"></oj-bind-text></dd>
+              <oj-bind-if test="[[p.data.lastError()]]"><dt>Error</dt><dd class="factory-md-err"><oj-bind-text value="[[p.data.lastError]]"></oj-bind-text></dd></oj-bind-if>
               <oj-bind-if test="[[p.data.local]]">
                 <dt>Supported Capabilities</dt>
                 <dd><ul class="factory-md-caps"><oj-bind-for-each data="[[p.data.caps]]" as="c"><template><li :class="[[c.data.on ? 'factory-md-cap-on' : '']]"><span class="factory-md-capbox" aria-hidden="true"></span><oj-bind-text value="[[c.data.label]]"></oj-bind-text></li></template></oj-bind-for-each></ul></dd>
@@ -203,6 +204,7 @@
             <p class="factory-card-sub">Choose a provider above, or use Settings on a card, to choose its models here.</p>
           </oj-bind-if>
           <p class="factory-md-source"><oj-bind-text value="[[statusSource]]"></oj-bind-text></p>
+          <p class="factory-md-source" id="inUseLimit"><oj-bind-text value="[[inUseLimit() ? 'Limits learned from the provider for the model in use: ' + inUseLimit().input + ' input tokens a request, ' + inUseLimit().total + ' tokens a minute (Model Routing lists them).' : 'Context length: model servers do not report it; no limit learned from the provider for the model in use.']]"></oj-bind-text></p>
 
         </oj-bind-if>
       </section>
@@ -249,12 +251,13 @@
           <oj-bind-if test="[[isAdmin()]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[testAll]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Refresh</button></oj-bind-if></h2>
         <div class="fx-table-wrap">
           <table class="fx-table factory-md-health">
-            <thead><tr><th>Provider</th><th>Status</th><th>Latency</th><th>Last Checked</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[health]]"><template><tr><td :title="[[$current.data.name]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></td>
+            <thead><tr><th>Provider</th><th>Status</th><th>Latency</th><th>Last test</th><th>Last success</th></tr></thead>
+            <tbody id="providerHealth"><oj-bind-for-each data="[[health]]"><template><tr><td :title="[[$current.data.server]]"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text>
+                <oj-bind-if test="[[$current.data.error]]"><span class="factory-md-err factory-md-errline"><oj-bind-text value="[[$current.data.error]]"></oj-bind-text></span></oj-bind-if></td>
               <td><span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td>
-              <td><oj-bind-text value="[[$current.data.latency]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+              <td><oj-bind-text value="[[$current.data.latency]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.checked]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.lastOk]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
           </table>
-          <oj-bind-if test="[[health().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>Test the providers to see their health.</div></oj-bind-if>
+          <oj-bind-if test="[[health().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span><oj-bind-text value="[[isAdmin() ? 'No provider tested since the factory started. Test them to see their health.' : 'Administrators test the providers.']]"></oj-bind-text></div></oj-bind-if>
         </div>
       </section>
     </div>
@@ -263,12 +266,34 @@
   <oj-bind-if test="[[tab() === 'routing']]">
     <section class="factory-card">
       <h2>Model Routing</h2>
-      <p class="factory-card-sub">Which model does each kind of work. The factory uses the default model for all writing and the code search model for embeddings.</p>
+      <p class="factory-card-sub">Which model does each kind of work. The factory routes every writing task to the one default chat model, and search to the code search model.</p>
+      <p class="fx-alert fx-alert--info factory-md-note2" id="taskRoutingNote"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text">Choosing a model per task is not supported: the factory's routing has one chat model and one embedding model for all tasks.</span></p>
       <div class="fx-table-wrap">
-        <table class="fx-table"><thead><tr><th>Task</th><th>Model</th><th>Server</th></tr></thead>
+        <table class="fx-table" id="routingTable"><thead><tr><th>Task</th><th>Model</th><th>Server</th><th>Note</th></tr></thead>
           <tbody><oj-bind-for-each data="[[routing]]"><template><tr><td><oj-bind-text value="[[$current.data.task]]"></oj-bind-text></td><td class="factory-mono"><oj-bind-text value="[[$current.data.model]]"></oj-bind-text></td>
-            <td class="factory-mono factory-ov-subtle"><oj-bind-text value="[[$current.data.server]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+            <td class="factory-mono factory-ov-subtle factory-md-wrap"><oj-bind-text value="[[$current.data.server]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.note || '–']]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
       </div>
+    </section>
+    <section class="factory-card" aria-labelledby="fallbackTitle">
+      <h2 id="fallbackTitle">Fallback and provider errors</h2>
+      <ul class="factory-md-policies" id="fallbackFacts">
+        <li>There is no fallback provider: when the model server fails, the task stops and shows the provider's error (Agent Runs and the page of the work list it).</li>
+        <li>At a rate limit the factory waits and tries again within a time budget; at a daily limit it stops with "quota exhausted". Code generation keeps the files already written, and Continue generation goes on later.</li>
+        <li>A prompt too large for the limits learned below is built again with less context until it fits, instead of failing.</li>
+      </ul>
+    </section>
+    <section class="factory-card" aria-labelledby="limitsTitle">
+      <h2 id="limitsTitle">Limits learned from the provider</h2>
+      <p class="factory-card-sub">When a model server refuses a request for its size or rate, the factory learns the limit from the answer and keeps it 7 days, so it does not ask too much again. Model servers do not report context lengths otherwise.</p>
+      <div class="fx-table-wrap">
+        <table class="fx-table" id="limitsTable"><thead><tr><th>Model</th><th>Input tokens a request</th><th>Tokens a minute</th><th>Output tokens a minute</th><th>Largest answer</th><th>Characters a token</th><th>Learned</th><th>Kept until</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[limits]]" as="l"><template><tr><td><span class="factory-mono"><oj-bind-text value="[[l.data.model]]"></oj-bind-text></span><oj-bind-if test="[[l.data.inUse]]"> <span class="fx-badge fx-badge--primary">In use</span></oj-bind-if>
+            <span class="factory-ov-subtle factory-md-errline factory-mono"><oj-bind-text value="[[l.data.server]]"></oj-bind-text></span></td>
+            <td><oj-bind-text value="[[l.data.input]]"></oj-bind-text></td><td><oj-bind-text value="[[l.data.total]]"></oj-bind-text></td><td><oj-bind-text value="[[l.data.outputPerMinute]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[l.data.answerMax]]"></oj-bind-text></td><td><oj-bind-text value="[[l.data.charsPerToken]]"></oj-bind-text></td><td><oj-bind-text value="[[l.data.learned]]"></oj-bind-text></td><td><oj-bind-text value="[[l.data.expires]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+        <oj-bind-if test="[[limits().length === 0]]"><div class="fx-empty">No limits learned: no model server has refused a request in the last 7 days.</div></oj-bind-if>
+      </div>
+      <oj-bind-if test="[[isAdmin()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="forgetLimitsRouting" on-click="[[forgetLimits]]">Forget the learned limits of the model in use</button></oj-bind-if>
     </section>
   </oj-bind-if>
 
@@ -284,6 +309,20 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[tab() === 'policies']]">
+    <section class="factory-card" aria-labelledby="privacyTitle"><h2 id="privacyTitle">Data classification</h2>
+      <p class="factory-card-sub">Where each kind of the bank's content may go, and where it goes with the models in use. A server is inside the bank when it is this computer, a private address, or listed in factory.knowledge.internal-hosts.</p>
+      <div class="fx-table-wrap"><table class="fx-table" id="classificationTable"><thead><tr><th>Content</th><th>Rule</th><th>Now</th><th>State</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[classification]]" as="c"><template><tr><td><oj-bind-text value="[[c.data.kind]]"></oj-bind-text></td><td><oj-bind-text value="[[c.data.rule]]"></oj-bind-text></td>
+          <td class="factory-md-wrap"><oj-bind-text value="[[c.data.now]]"></oj-bind-text></td><td><span :class="[[c.data.pill.css]]"><span :class="[[c.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[c.data.pill.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+      <p class="fx-help">Keep restricted content local: leave FACTORY_KNOWLEDGE_EXTERNAL_MODELS off (the default). The factory does not block an outside server for code; to keep code inside the bank, choose a model server on this computer or the bank's network.</p>
+    </section>
+    <section class="factory-card" aria-labelledby="rotationTitle"><h2 id="rotationTitle">Rotating an API key</h2>
+      <ol class="factory-md-policies factory-md-steps" id="rotationSteps">
+        <li>Enter the new key on the provider's card and press Test Connection: the test uses the new key; the stored one stays in use.</li>
+        <li>When the test succeeds, choose Settings on the card, then Save Settings: the new key replaces the old one, encrypted on the server.</li>
+        <li>Revoke the old key at the provider. Every change is in the audit log (Administration).</li>
+      </ol>
+    </section>
     <section class="factory-card"><h2>Policies</h2>
       <ul class="factory-md-policies">
         <li>API keys are stored on the factory server, encrypted, and never sent back to the browser.</li>
