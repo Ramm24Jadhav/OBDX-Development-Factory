@@ -179,30 +179,56 @@ public class ChangeService {
 
     @Transactional
     public ChangeDetail analyzeAgain(UUID id) {
+        return analyzeAgain(id, false);
+    }
+
+    /**
+     * @param fresh true: analyze afresh even when the model's limit stopped the plan part-way (by default such a plan is
+     *              continued, when the code and the spec are those it was made from)
+     */
+    @Transactional
+    public ChangeDetail analyzeAgain(UUID id, boolean fresh) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY, ChangeRequest.Status.FAILED);
         change.status(ChangeRequest.Status.ANALYZING, "Analyzing the impact on the codebase...");
         changes.save(change);
-        startAfterCommit(() -> runAnalysis(id));
+        startAfterCommit(() -> runAnalysis(id, fresh));
         return detail(change);
     }
 
     void runAnalysis(UUID id) {
+        runAnalysis(id, false);
+    }
+
+    void runAnalysis(UUID id, boolean fresh) {
         ChangeRequest change = find(id);
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
             ChangeContext context = context(change, requirement);
             List<ImpactAnalyzer.Candidate> candidates = candidates(workspace.getId(), requirement.spec());
-            ChangePlan analyzed = analyzer.analyze(context, candidates, existsIn(workspace.getId()));
+            String print = contextPrint(context);
+            // A plan the model's limit stopped part-way is completed: its files are kept and only the missing ones asked for
+            ChangePlan before = change.getPlan() == null ? null : plan(change);
+            boolean resumed = !fresh && resumes(before, workspace.getIndexedRevision(), print);
+            ChangePlan analyzed = resumed ? analyzer.resume(context, candidates, existsIn(workspace.getId()), before)
+                    : analyzer.analyze(context, candidates, existsIn(workspace.getId()));
+            if (analyzed.incomplete() != null) {
+                // what a later continuation needs to be the same
+                analyzed = new ChangePlan(analyzed.summary(), analyzed.items(), analyzed.risks(),
+                        analyzed.incomplete().at(workspace.getIndexedRevision(), print));
+            }
             ChangePlan plan = PlanReview.review(analyzed, requirement.spec(), servedPaths(workspace.getId()),
-                    sameNamed(workspace.getId(), analyzed));
+                    sameNamed(workspace.getId(), analyzed), inApp(workspace.getId()));
             String planJson = json.writeValueAsString(plan);
             change.plan(planJson, workspace.getIndexedRevision());
             planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
+            String added = resumed ? " The incomplete plan was continued: " + Math.max(0, plan.items().size() - before.items().size())
+                    + " file(s) added to the " + before.items().size() + " planned before" + (ImpactAnalyzer.resumable(plan)
+                    ? "; the model's limit stopped it again, so files may still be missing." : ".") : "";
             change.status(ChangeRequest.Status.PLAN_READY, "Plan ready: " + plan.items().size() + " file(s), " + creates
-                    + " new and " + (plan.items().size() - creates) + " changed. Review and approve it to generate the code.");
+                    + " new and " + (plan.items().size() - creates) + " changed." + added + " Review and approve it to generate the code.");
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the change must not stay "analyzing"
             log.error("Impact analysis of change {} failed", id, e);
@@ -211,15 +237,47 @@ public class ChangeService {
         changes.save(change);
     }
 
+    /**
+     * Whether Analyze again continues the plan rather than starting over: the model's limit stopped it part-way, and the
+     * code (its revision) and the approved spec and designs are those it was made from. Otherwise the files planned
+     * before may not fit, and the analysis starts afresh.
+     */
+    static boolean resumes(ChangePlan before, Long indexedRevision, String contextPrint) {
+        return ImpactAnalyzer.resumable(before) && before.incomplete().revision() != null
+                && before.incomplete().revision().equals(indexedRevision) && contextPrint.equals(before.incomplete().context());
+    }
+
+    /** A fingerprint of what a plan is made from: the spec and the designs as the model gets them. */
+    static String contextPrint(ChangeContext context) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            digest.update(String.valueOf(context.specJson()).getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(String.valueOf(context.designsJson()).getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Whether a file is in the workspace's React or React Native app (see PlanReview's shell risk). */
+    private Predicate<String> inApp(UUID workspaceId) {
+        CheckScope scope = packs.scope(workspaceId);
+        return scope::inApp;
+    }
+
     // --- plan review ---
 
     @Transactional
     public ChangeDetail updatePlan(UUID id, String planJson, String by) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan parsed = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
-        ChangePlan plan = PlanReview.review(parsed, requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()),
-                sameNamed(change.getWorkspaceId(), parsed));
+        ChangePlan previous = change.getPlan() == null ? null : plan(change);
+        ChangePlan carried = carryIncomplete(previous, parsed);
+        ChangePlan plan = PlanReview.review(carried, requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()),
+                sameNamed(change.getWorkspaceId(), carried), inApp(change.getWorkspaceId()));
         String edited = json.writeValueAsString(plan);
         change.plan(edited, change.getBaseRevision());
         planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
@@ -227,12 +285,43 @@ public class ChangeService {
         return detail(changes.save(change));
     }
 
+    /**
+     * An edited plan keeps what the server recorded about the plan before it: whether files may be missing (an edit
+     * cannot say so or take it away, see PlanParser), with its risk, whatever the edit changes. Only Analyze again
+     * clears it; until then the approver confirms the plan as incomplete, even when the edit added the missing files
+     * (an edit that adds a file and a later one that takes it out again must not make it complete).
+     */
+    static ChangePlan carryIncomplete(ChangePlan previous, ChangePlan edited) {
+        if (previous == null || previous.incomplete() == null) {
+            return edited;
+        }
+        List<String> risks = new ArrayList<>(edited.risks() == null ? List.of() : edited.risks());
+        risks.add(0, previous.incomplete().risk());
+        return new ChangePlan(edited.summary(), edited.items(), risks, previous.incomplete());
+    }
+
     /** Approves the plan and starts writing the code in the background. */
     @Transactional
     public ChangeDetail approvePlan(UUID id, String by) {
+        return approvePlan(id, by, false, null);
+    }
+
+    /**
+     * @param incomplete true: the reviewer confirmed approving a plan that may be missing files (see
+     *                   {@link ChangePlan#incomplete()}); without it such a plan is refused with what looks missing
+     * @param revision   the plan revision the reviewer confirmed (named in the refusal): a plan changed since is refused
+     *                   again, so a confirmation never approves a plan the reviewer did not see
+     */
+    @Transactional
+    public ChangeDetail approvePlan(UUID id, String by, boolean incomplete, Integer revision) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan plan = plan(change);
+        Integer latest = planReviews.latest(id);
+        if (!incomplete || !java.util.Objects.equals(revision, latest)) {
+            requireCompletePlan(plan, requirements.get(change.getRequirementId()).spec(), latest, incomplete);
+        }
         change.approvePlan(by);
         planReviews.comment(id, planReviews.record(id, change.getPlan(), PlanReviewStore.Origin.EDITED, by), PlanReviewStore.Kind.APPROVED, by, "");
         files.replaceAll(id, plan.items());
@@ -240,6 +329,46 @@ public class ChangeService {
         changes.save(change);
         startAfterCommit(() -> runGeneration(id, null, null));
         return detail(change);
+    }
+
+    /**
+     * Holds the change's row until the transaction ends (SELECT ... FOR UPDATE), before the change and its latest plan
+     * revision are read: an edit and an approval of the same plan then run one after the other, so an approval never
+     * approves a plan edited after it read the revision, and two edits never take the same revision number.
+     */
+    private void lockForPlan(UUID id) {
+        List<UUID> locked = jdbc.queryForList("SELECT id FROM change_request WHERE id = ? FOR UPDATE", UUID.class, id);
+        if (locked.isEmpty()) {
+            throw new NotFoundException("Change not found: " + id);
+        }
+    }
+
+    /** How a refused approval of an incomplete plan starts, so the UI can ask the reviewer to confirm it. */
+    static final String INCOMPLETE_PLAN = "Incomplete plan: ";
+    /** How the refusal names the plan revision to confirm ("revision 3 of the plan"), for the UI to send back. */
+    static final String REVISION_NAMED = "revision ";
+
+    static void requireCompletePlan(ChangePlan plan, RequirementSpec spec) {
+        requireCompletePlan(plan, spec, null, false);
+    }
+
+    /**
+     * Refuses a plan the server marked incomplete (see {@link ChangePlan#incomplete()}; never by a risk's text, which a
+     * model or an edit could write), naming the plan revision and what looks missing as far as the plan and the spec
+     * tell (see {@link PlanReview#gaps}).
+     *
+     * @param confirmed the reviewer confirmed an incomplete plan, but another revision than the latest
+     */
+    static void requireCompletePlan(ChangePlan plan, RequirementSpec spec, Integer revision, boolean confirmed) {
+        if (plan.incomplete() == null) {
+            return;
+        }
+        List<String> gaps = PlanReview.gaps(plan, spec);
+        throw new ConflictException(INCOMPLETE_PLAN + (confirmed ? "the plan changed since you confirmed it. " : "")
+                + (revision == null ? "the plan" : REVISION_NAMED + revision + " of the plan") + " may be missing files ("
+                + plan.items().size() + " planned): the analysis stopped before it was complete. " + (gaps.isEmpty()
+                ? "The factory cannot tell which ones." : "Missing as far as the factory can tell: " + String.join("; ", gaps) + ".")
+                + " Analyze again to plan the rest, add them by editing the plan, or approve it as it is.");
     }
 
     /** The plan's revisions and what reviewers said about them. */
@@ -289,6 +418,7 @@ public class ChangeService {
         ChangeRequest change = find(id);
         String failedAgain = null;
         String writing = null;
+        Set<String> writtenNow = new LinkedHashSet<>();
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
@@ -314,7 +444,6 @@ public class ChangeService {
                 }
             }
             Set<String> toWrite = resume ? continued(files.files(id)) : null;
-            Set<String> writtenNow = new LinkedHashSet<>();
             for (int i = 0; i < plan.items().size(); i++) {
                 ChangePlan.Item item = plan.items().get(i);
                 if ((onlyPath != null && !item.path().equals(onlyPath)) || (toWrite != null && !toWrite.contains(item.path()))) {
@@ -343,8 +472,9 @@ public class ChangeService {
 
             Map<String, String> unfit = crossCheck(id, workspace.getId());
             String fixesStopped = "";
-            List<String> toFit = onlyPath == null && !resume && properties.fixAttempts() > 0
-                    ? toFit(unfit, writtenNow, files.files(id)) : List.of();
+            // (also when Continue finished the files the model's limit stopped: the run it stopped fixed none of them)
+            List<String> toFit = onlyPath == null && properties.fixAttempts() > 0
+                    ? toFit(unfit, writtenNow, files.files(id), resume) : List.of();
             if (!toFit.isEmpty()) {
                 // Certain errors only the other files show (a method the called class lacks): each file written now is fixed once
                 CheckScope scope = packs.scope(workspace.getId());
@@ -364,6 +494,7 @@ public class ChangeService {
                         // Every file is written; only these fixes wait for the model
                         log.warn("Fixing the files of change {} by the other files stopped at the model's limit: {}", id, e.getMessage());
                         fixesStopped = fixesStopped(toFit.subList(k, toFit.size()), e);
+                        files.markFitDue(id, toFit.subList(k, toFit.size()));
                         break;
                     }
                 }
@@ -378,6 +509,10 @@ public class ChangeService {
         } catch (ModelLimitReachedException e) {
             // Every further file would fail the same way: stop, and leave the rest to Continue generation
             log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
+            if (onlyPath == null) {
+                // The files this run wrote get their fix by the cross-check when Continue finishes the rest
+                files.markFitDue(id, writtenNow);
+            }
             try {
                 crossCheck(id, change.getWorkspaceId());
             } catch (RuntimeException | StackOverflowError checkFailed) {
@@ -413,9 +548,31 @@ public class ChangeService {
      * model (a reviewer's edit is never rewritten), at most {@link #MAX_CROSS_FIXES}.
      */
     static List<String> toFit(Map<String, String> unfit, Set<String> writtenNow, List<ChangeFileStore.ChangeFile> all) {
-        return all.stream().filter(f -> unfit.containsKey(f.path()) && writtenNow.contains(f.path()) && !f.edited()
-                && f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).map(ChangeFileStore.ChangeFile::path)
-                .limit(MAX_CROSS_FIXES).toList();
+        return toFit(unfit, writtenNow, all, false);
+    }
+
+    /**
+     * @param resume the generation is Continue's: the files an earlier run wrote whose fix is still due (that run was
+     *               stopped by the model's limit before it could fix them, see {@link ChangeFileStore.ChangeFile#fitDue()})
+     *               are fixed too, after those written now. Never a file whose fix was tried already, nor one written
+     *               again since (both clear the mark). Certain errors in the code (a method the called class lacks, a
+     *               define list that binds the wrong modules) come before a view's bindings, within the same limit of
+     *               {@link #MAX_CROSS_FIXES}.
+     */
+    static List<String> toFit(Map<String, String> unfit, Set<String> writtenNow, List<ChangeFileStore.ChangeFile> all, boolean resume) {
+        List<ChangeFileStore.ChangeFile> fixable = all.stream().filter(f -> unfit.containsKey(f.path()) && !f.edited()
+                && f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null
+                && (writtenNow.contains(f.path()) || resume && f.fitDue())).toList();
+        java.util.Comparator<ChangeFileStore.ChangeFile> order = java.util.Comparator
+                .comparingInt((ChangeFileStore.ChangeFile f) -> onlyBindings(unfit.get(f.path())) ? 1 : 0)
+                .thenComparingInt(f -> writtenNow.contains(f.path()) ? 0 : 1);
+        return fixable.stream().sorted(order).map(ChangeFileStore.ChangeFile::path).limit(MAX_CROSS_FIXES).toList();
+    }
+
+    /** Whether the certain errors of a file's findings are only a view's bindings (less sure than the code's errors). */
+    static boolean onlyBindings(String findings) {
+        return findings != null && findings.lines().filter(ChangeService::crossError)
+                .allMatch(line -> line.startsWith(ViewBindings.UNDEFINED_IN_CHANGE));
     }
 
     /**
@@ -438,8 +595,11 @@ public class ChangeService {
             result = generator.fixFindings(context, plan, item, file.generated(), file.original(), others, note, scaffold);
         } catch (CodeGenerator.JoinFailed e) {
             log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it is", item.path(), changeId);
+            files.fitTried(changeId, item.path());
             return false;
         }
+        // Tried once, whatever comes of it (a later Continue does not ask again)
+        files.fitTried(changeId, item.path());
         if (result == null || result.content().equals(file.generated())) {
             return false;
         }
@@ -448,6 +608,15 @@ public class ChangeService {
         if (severity(result.check().status()) > severity(before)) {
             log.info("The fix of {} in change {} made its own checks worse ({} after {}); the file is kept as it is", item.path(), changeId,
                     result.check().status(), before);
+            return false;
+        }
+        // A view's own checks do not see its bindings: its fix is kept only when it binds fewer names its view model lacks
+        ViewModel viewModel = item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html")
+                ? viewModel(item.path(), others, null, p -> plan.items().stream().anyMatch(i -> i.path().equals(p))) : null;
+        if (viewModel != null && ViewBindings.missing(result.content(), viewModel.content()).size()
+                >= ViewBindings.missing(file.generated(), viewModel.content()).size()) {
+            log.info("The fix of {} in change {} does not bind fewer names its view model lacks; the file is kept as it is", item.path(),
+                    changeId);
             return false;
         }
         files.saveResult(changeId, item.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(), false,
@@ -759,7 +928,8 @@ public class ChangeService {
     private Map<String, List<String>> sameNamed(UUID workspaceId, ChangePlan plan) {
         Map<String, List<String>> found = new LinkedHashMap<>();
         for (ChangePlan.Item item : plan.items()) {
-            if ("create".equals(item.action()) && item.path().endsWith(".java")) {
+            // (and the UI's shell files, by their whole file name: a new dashboard.js beside an existing one is glue)
+            if ("create".equals(item.action()) && (item.path().endsWith(".java") || PlanReview.shellName(item.path()))) {
                 String file = item.path().substring(item.path().lastIndexOf('/') + 1);
                 List<String> paths = jdbc.queryForList("SELECT path FROM code_file WHERE workspace_id = ? AND (path = ? OR path LIKE ?) LIMIT 5",
                         String.class, workspaceId, file, "%/" + file.replace("_", "\\_").replace("%", "\\%"));
@@ -1040,7 +1210,8 @@ public class ChangeService {
                     CrossFileJava.unknownSamePackageClasses(file.generated(), classExists).ifPresent(problems::add);
                 }
             } else if (lower.endsWith(".html")) {
-                problems.addAll(ViewBindings.problems(file.generated(), viewModel(file.path(), contents, workingCopy)));
+                ViewModel model = viewModel(file.path(), contents, workingCopy, paths::contains);
+                problems.addAll(ViewBindings.problems(file.generated(), model == null ? null : model.content(), model != null && model.inChange()));
             } else if (lower.endsWith(".js")) {
                 problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
                 problems.addAll(JsModuleChecks.defineProblems(file.generated(), module -> moduleSource(file.path(), module, contents)));
@@ -1108,11 +1279,13 @@ public class ChangeService {
      * The cross-file findings that are certain errors, which fail the file so that the fix loop writes it again: a Java
      * call on a name the class never declares, a method or nested type the called class of the change lacks, a JDK class
      * without its import (when no class of the package has its name), and a view model whose define list or resource
-     * bundle does not work as written. The others (a class of the codebase not found, a binding) may be wrong and stay
-     * warnings.
+     * bundle does not work as written, and a view that binds names the view model written in the same change lacks.
+     * The others (a class of the codebase not found, a binding against a view model of the codebase) may be wrong and
+     * stay warnings.
      */
     static final List<String> CROSS_ERRORS = java.util.stream.Stream.concat(java.util.stream.Stream.of(CrossFileJava.MISSING_METHODS,
-            CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS, CrossFileJava.MISSING_IMPORTS), JsModuleChecks.ERRORS.stream()).toList();
+            CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS, CrossFileJava.MISSING_IMPORTS, ViewBindings.UNDEFINED_IN_CHANGE),
+            JsModuleChecks.ERRORS.stream()).toList();
 
     static boolean crossError(String line) {
         return CROSS_ERRORS.stream().anyMatch(line::startsWith);
@@ -1178,15 +1351,37 @@ public class ChangeService {
     }
 
     /**
+     * A view's view model and whether it is the .js file of the view's name written in this same change (then the two
+     * were written for each other, and a name the view binds that it lacks is an error).
+     */
+    record ViewModel(String content, boolean inChange) {
+    }
+
+    /**
      * The view model of a JET view: the .js file of the same name next to it (written in this change or existing),
      * else a model.js beside it that holds observables; null when there is none.
      */
-    private static String viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
-        String base = viewPath.substring(0, viewPath.length() - ".html".length());
+    static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
+        return viewModel(viewPath, written, workingCopy, path -> false);
+    }
+
+    /**
+     * @param planned whether a file is planned in the change: a view whose own view model is planned but not written
+     *                yet has none to compare with (not a model.js beside it), as its prompt had none either
+     */
+    static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy, Predicate<String> planned) {
         String folder = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/') + 1) : "";
-        for (String candidate : List.of(base + ".js", folder + "model.js")) {
+        // x.js or x.ts beside it, or in js/viewModels for js/views/x.html; only then a model.js with observables beside it
+        List<String> named = ViewBindings.viewModelPaths(viewPath);
+        List<String> candidates = new ArrayList<>(named);
+        if (named.stream().noneMatch(planned)) {
+            candidates.add(folder + "model.js");
+        }
+        for (String candidate : candidates) {
             String content = written.get(candidate);
-            if (content == null) {
+            boolean own = named.contains(candidate);
+            boolean inChange = content != null && own;
+            if (content == null && workingCopy != null) {
                 try {
                     Path file = workingCopy.resolve(candidate);
                     content = Files.isRegularFile(file) && within(workingCopy, file) ? read(file) : null;
@@ -1194,8 +1389,8 @@ public class ChangeService {
                     content = null;
                 }
             }
-            if (content != null && (candidate.endsWith(base + ".js") || content.contains("ko.observable"))) {
-                return content;
+            if (content != null && (own || content.contains("ko.observable"))) {
+                return new ViewModel(content, inChange);
             }
         }
         return null;
@@ -1390,7 +1585,7 @@ public class ChangeService {
     /** The requirement's screen designs: the approved version of each (the current one if not approved). */
     private List<ScreenModel> designModels(ChangeRequest change) {
         List<ScreenModel> models = new ArrayList<>();
-        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId())) {
+        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAtAscIdAsc(change.getRequirementId())) {
             int version = design.getApprovedVersion() != null ? design.getApprovedVersion() : design.getCurrentVersion();
             designStore.model(design.getId(), version).ifPresent(models::add);
         }
@@ -1414,7 +1609,8 @@ public class ChangeService {
         return new ChangeContext(change.getTitle(), specJson, designsJson, profile,
                 structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
                 targets.planGuide(change.getWorkspaceId()), models,
-                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(specJson, 1500), 5000));
+                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(specJson, 1500), 5000),
+                existsIn(change.getWorkspaceId()));
     }
 
     /** The spec's parts in the order the model needs them most: a prompt that shortens the spec cuts the background lists. */

@@ -81,9 +81,9 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/analyze")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail analyze(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail analyze(@PathVariable UUID id, @RequestParam(value = "fresh", defaultValue = "false") boolean fresh) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.analyzeAgain(id);
+        return service.analyzeAgain(id, fresh);
     }
 
     /** The body is the edited plan as JSON. */
@@ -119,10 +119,13 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/approve-plan")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id,
+                                                  @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete,
+                                                  @RequestParam(value = "revision", required = false) Integer revision) {
         var user = guard.requireForChange(id, Permission.APPROVE);
-        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName());
-        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)");
+        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName(), incomplete, revision);
+        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)"
+                + (change.plan().incomplete() != null ? ", revision " + revision + " approved although files may be missing (confirmed)" : ""));
         return change;
     }
 

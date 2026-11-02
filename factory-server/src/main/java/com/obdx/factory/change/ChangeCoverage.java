@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -89,7 +88,7 @@ public class ChangeCoverage {
 
     /** A test file: planned in the test layer, or named like one. */
     static boolean isTest(ChangeFileStore.ChangeFile f) {
-        String path = f.path().toLowerCase(Locale.ROOT);
-        return "test".equals(f.layer()) || path.contains("/test/") || path.contains("/tests/") || path.matches(".*(test|spec)\\.[a-z]+$");
+        // (named as the plan's review tells tests: Latest.java is no test)
+        return "test".equals(f.layer()) || PlanReview.isTest(f.path());
     }
 }

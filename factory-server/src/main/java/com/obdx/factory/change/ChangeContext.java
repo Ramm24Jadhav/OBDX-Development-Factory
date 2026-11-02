@@ -4,6 +4,7 @@ import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.pack.CheckScope;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * What the model needs to know about a change, prepared as text: the approved spec and designs, the bank's
@@ -13,11 +14,19 @@ import java.util.List;
  * and approved notes for the workspace's OBDX version) says about the change.
  */
 public record ChangeContext(String title, String specJson, String designsJson, String profile, String structure,
-                            CheckScope checks, String recipes, String target, List<ScreenModel> models, String knowledge) {
+                            CheckScope checks, String recipes, String target, List<ScreenModel> models, String knowledge,
+                            Predicate<String> fileExists) {
 
+    /** @param fileExists whether a path is a file of the workspace's code (its working copy) */
     public ChangeContext {
         models = models == null ? List.of() : List.copyOf(models);
         knowledge = knowledge == null ? "" : knowledge;
+        fileExists = fileExists == null ? path -> false : fileExists;
+    }
+
+    public ChangeContext(String title, String specJson, String designsJson, String profile, String structure, CheckScope checks,
+                         String recipes, String target, List<ScreenModel> models, String knowledge) {
+        this(title, specJson, designsJson, profile, structure, checks, recipes, target, models, knowledge, null);
     }
 
     public ChangeContext(String title, String specJson, String designsJson, String profile, String structure) {

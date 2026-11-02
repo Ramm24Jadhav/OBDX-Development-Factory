@@ -43,6 +43,10 @@ public class ImpactAnalyzer {
               a request DTO and its response DTO are separate files.
             - Reuse the existing classes that do the job (for example an existing accounts.HostAccountAdapter) instead of
               creating a parallel one with the same purpose in another package.
+            - A new UI component (a widget, a screen) is hooked into an existing one: name in its details the existing
+              component or file that loads or shows it (for example the dashboard that loads widgets, or the menu), and
+              plan a modify of that file when it must change. Do not create a new dashboard, shell, router or registry
+              file when the code already has one.
             - Use "modify" only for paths shown in the existing code or folder structure. Paths are relative, with
               forward slashes, exactly as shown.
             - basedOn lists existing files whose patterns the new or changed code should follow.
@@ -100,7 +104,7 @@ public class ImpactAnalyzer {
                 continue;
             }
             try {
-                return continued(context, candidates, fileExists, PlanParser.partial(result.reply()), shortly);
+                return continued(context, candidates, fileExists, PlanParser.partial(result.reply()), shortly, CUT_ANSWER);
             } catch (BadRequestException e) {
                 // Continued and still unusable (no file at all, too many): not asked for all over again, which would cost as much again
                 throw new IllegalStateException("The model did not return a usable change plan: " + e.getMessage());
@@ -110,14 +114,60 @@ public class ImpactAnalyzer {
     }
 
     /**
+     * A plan the model's limit stopped (see {@link ChangePlan.Incomplete#LIMIT}), completed: its planned files are kept
+     * and the model is asked for only the files still missing; nothing is planned again. Analyze again does this instead
+     * of starting over, so the files already planned (and paid for) are not asked for twice. The caller checks that the
+     * code and the spec are those the plan was made from (see ChangeService).
+     */
+    public ChangePlan resume(ChangeContext context, List<Candidate> candidates, Predicate<String> fileExists, ChangePlan incomplete) {
+        int cap = modelGateway.outputLimit();
+        String shortly = cap > 0 && cap < SMALL_OUTPUT ? "\nYour answers are limited to about " + cap + " tokens: keep purpose and "
+                + "details to one short sentence each." : "";
+        List<String> risks = new ArrayList<>(incomplete.risks() == null ? List.of() : incomplete.risks());
+        risks.removeIf(ImpactAnalyzer::incompleteRisk);
+        log.info("Resuming the incomplete change plan: {} file(s) planned so far", incomplete.items().size());
+        return continued(context, candidates, fileExists, new ChangePlan(incomplete.summary(), incomplete.items(), risks), shortly,
+                RESUMED);
+    }
+
+    /** How the risk of a plan the model's limit (a daily or per-minute limit) stopped part-way starts. */
+    static final String LIMIT_STOPPED = "The model's limit stopped the plan before it was complete";
+    /** How the risk of a plan still cut off at the output limit after its continuations starts. */
+    static final String CUT_OFF = "The model's answer was cut off at its output limit";
+    /** How the risk of a plan whose last files were left out (more than one change may have) starts. */
+    static final String TOO_MANY = "The plan had more files than one change may have";
+
+    /**
+     * Whether a risk's text is one of those the server writes when files may be missing from the plan. Only the server
+     * writes them: one in a model's answer or a reviewer's edit is dropped (PlanParser.normalize), and the approval gate
+     * reads {@link ChangePlan#incomplete()}, never the text.
+     */
+    static boolean incompleteRisk(String risk) {
+        return risk != null && (risk.startsWith(LIMIT_STOPPED) || risk.startsWith(CUT_OFF) || risk.startsWith(TOO_MANY));
+    }
+
+    /** Whether the model's limit stopped the plan part-way, so that Analyze again can continue it. */
+    static boolean resumable(ChangePlan plan) {
+        return plan != null && plan.items() != null && !plan.items().isEmpty() && plan.incomplete() != null
+                && ChangePlan.Incomplete.LIMIT.equals(plan.incomplete().kind());
+    }
+
+    /** How a continuation starts when the model's answer stopped at its output limit. */
+    static final String CUT_ANSWER = "\nYour previous answer stopped at your output limit. ";
+    /** How a continuation starts when the plan is resumed after the model's usage limit stopped it. */
+    static final String RESUMED = "\nThe planning was stopped by a usage limit before the plan was complete. ";
+
+    /**
      * A plan the model's output limit stopped part-way, completed: while an answer stops at the limit (a server that
      * writes little per request, such as a free cloud tier), the model is asked, with the same context, for only the
      * files not planned yet, and the pieces are joined (a file planned twice is kept as first planned). It stops when an
      * answer is whole, adds no file, or the plan has as many files as one change may have; a plan still cut off after
-     * that says so in its risks.
+     * that says so in its risks and is marked incomplete.
+     *
+     * @param why how the first continuation says why it is asked ({@link #CUT_ANSWER} or {@link #RESUMED})
      */
     private ChangePlan continued(ChangeContext context, List<Candidate> candidates, Predicate<String> fileExists, ChangePlan first,
-                                 String note) {
+                                 String note, String why) {
         int maxItems = properties.maxPlanItems();
         Map<String, ChangePlan.Item> items = new LinkedHashMap<>();
         List<String> risks = new ArrayList<>();
@@ -127,7 +177,7 @@ public class ImpactAnalyzer {
         String limited = null;
         int continuations = modelGateway.local() ? LOCAL_CONTINUATIONS : MAX_CONTINUATIONS;
         for (int i = 0; cut && i < continuations && items.size() < maxItems; i++) {
-            String more = note + continuation(items.keySet());
+            String more = note + continuation(items.keySet(), i == 0 ? why : CUT_ANSWER);
             log.info("Continuing the change plan (continuation {} of at most {}): {} file(s) planned so far", i + 1, continuations,
                     items.size());
             ModelGateway.ChatResult next;
@@ -153,21 +203,32 @@ public class ImpactAnalyzer {
                 break;
             }
         }
+        String kind = null;
+        String risk = null;
         if (items.size() > maxItems) {
             List<String> paths = new ArrayList<>(items.keySet());
             paths.subList(maxItems, paths.size()).forEach(items::remove);
-            risks.add(0, "The plan had more files than one change may have (" + maxItems + "); the last ones were left out. Split the "
-                    + "requirement into smaller changes, or add the missing files by hand.");
+            kind = ChangePlan.Incomplete.TOO_MANY;
+            risk = TOO_MANY + " (" + maxItems + "); the last ones were left out. Split the requirement into smaller changes, or add the "
+                    + "missing files by hand.";
         } else if (limited != null) {
-            risks.add(0, "The model's limit stopped the plan before it was complete (" + limited + "), so files may be missing from "
-                    + "this plan. Add them before approving, or analyze again later.");
+            kind = ChangePlan.Incomplete.LIMIT;
+            risk = LIMIT_STOPPED + " (" + limited + "), so files may be missing from this plan. Add them before approving, or analyze "
+                    + "again later: the files planned so far are kept and only the missing ones are asked for.";
         } else if (cut) {
             int cap = modelGateway.outputLimit();
-            risks.add(0, "The model's answer was cut off at its output limit" + (cap > 0 ? " (its server writes at most " + cap
-                    + " tokens per answer)" : "") + ", so files may be missing from this plan. Add them before approving, or analyze "
-                    + "again with a model or plan with a higher output limit.");
+            kind = ChangePlan.Incomplete.CUT_OFF;
+            risk = CUT_OFF + (cap > 0 ? " (its server writes at most " + cap + " tokens per answer)" : "") + ", so files may be missing "
+                    + "from this plan. Add them before approving, or analyze again with a model or plan with a higher output limit.";
         }
-        return PlanParser.normalize(new ChangePlan(summary, new ArrayList<>(items.values()), risks), fileExists, maxItems);
+        // (normalize drops any such risk the model wrote itself; the server's own is added after it)
+        ChangePlan plan = PlanParser.normalize(new ChangePlan(summary, new ArrayList<>(items.values()), risks), fileExists, maxItems);
+        if (kind == null) {
+            return plan;
+        }
+        List<String> withRisk = new ArrayList<>(plan.risks());
+        withRisk.add(0, risk);
+        return new ChangePlan(plan.summary(), plan.items(), withRisk, new ChangePlan.Incomplete(kind, risk, null, null));
     }
 
     /** Adds a piece's files not planned yet and its new risks; whether it added a file. */
@@ -190,7 +251,12 @@ public class ImpactAnalyzer {
 
     /** What a continuation asks for after the usual prompt: the files not planned yet, and only those. */
     static String continuation(java.util.Collection<String> planned) {
-        StringBuilder more = new StringBuilder("\nYour previous answer stopped at your output limit. ");
+        return continuation(planned, CUT_ANSWER);
+    }
+
+    /** @param why why the continuation is asked ({@link #CUT_ANSWER} or {@link #RESUMED}) */
+    static String continuation(java.util.Collection<String> planned, String why) {
+        StringBuilder more = new StringBuilder(why);
         if (planned.isEmpty()) {
             more.append("It planned no file completely.\n");
         } else {

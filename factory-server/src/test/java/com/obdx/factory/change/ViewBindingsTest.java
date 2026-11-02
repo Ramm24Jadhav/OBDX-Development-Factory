@@ -107,7 +107,9 @@ class ViewBindingsTest {
         String view = "<oj-input-text value=\"{{remarks}}\"></oj-input-text><span>[[nls.labels['remarks']]]</span>";
 
         assertThat(ViewBindings.problems(view, "self.remarks = ko.observable(); self.nls = bundle;")).isEmpty();
-        assertThat(ViewBindings.problems(view, "ko.utils.extend(self, params.rootModel);")).isEmpty();
+        // a view model that copies names in may have them: a warning that says so, never an error
+        assertThat(ViewBindings.problems(view, "ko.utils.extend(self, params.rootModel);", true)).singleElement().asString()
+                .startsWith(ViewBindings.UNDEFINED).contains("copies names in");
         assertThat(ViewBindings.problems(view, null)).isEmpty();
     }
 }

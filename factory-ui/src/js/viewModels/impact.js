@@ -33,6 +33,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const fileName = (path) => path.split('/').pop() || path;
     // Requirement references a planned file names in its purpose or details (FR-001, AC-002, BR-003)
     const REFS = /\b(?:FR|AC|BR|NFR|US|REQ)-\d+\b/g;
+    /** How the risks start that say files may be missing from the plan (change/ImpactAnalyzer.java). */
+    const INCOMPLETE_RISKS = ["The model's limit stopped the plan before it was complete", "The model's answer was cut off at its output limit",
+      'The plan had more files than one change may have'];
+    /** How the server's refusal to approve such a plan without confirmation starts (ChangeService.INCOMPLETE_PLAN). */
+    const INCOMPLETE_PLAN = 'Incomplete plan: ';
     /**
      * The analysis's risks by kind, from the wording PlanReview gives them (change/PlanReview.java); anything else is a
      * risk the impact analysis itself named.
@@ -43,6 +48,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       { key: 'product', title: 'New REST resource under an OBDX product path', test: (r) => r.indexOf('A new REST resource for ') === 0 && r.indexOf("OBDX's own services") >= 0 },
       { key: 'served', title: 'New REST resource on a path the bank\'s code already serves', test: (r) => r.indexOf('A new REST resource for ') === 0 },
       { key: 'name', title: 'New class with the name of an existing one', test: (r) => r.indexOf('A new class has the name of an existing one') === 0 },
+      { key: 'shell', title: 'New file where the code already has a shell', test: (r) => r.indexOf('A new UI file looks like glue for a shell') === 0 },
+      { key: 'incomplete', title: 'Plan may be missing files', test: (r) => INCOMPLETE_RISKS.some((p) => r.indexOf(p) === 0) },
       { key: 'other', title: 'Named by the impact analysis', test: () => true }
     ];
 
@@ -394,6 +401,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // --- risks, from the analysis only ---
 
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks || [] : []));
+      // Whether files may be missing is the server's own record (plan.incomplete), never a risk's wording
+      this.planIncomplete = ko.pureComputed(() => !!(this.detail() && this.detail().plan && this.detail().plan.incomplete));
+      this.planResumable = ko.pureComputed(() => this.planIncomplete() && this.detail().plan.incomplete.kind === 'LIMIT');
       this.riskGroups = ko.pureComputed(() => {
         const left = this.risks().slice();
         return RISK_KINDS.map((k) => {
@@ -510,24 +520,45 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.canAnalyze = ko.pureComputed(() => !!this.detail() && this.canManage() && ['PLAN_READY', 'FAILED'].indexOf(this.detail().status) >= 0);
       this.analyzeTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first' : (!this.canManage() ? 'You need the right to manage code'
-        : (['PLAN_READY', 'FAILED'].indexOf(this.detail().status) < 0 ? 'Only a plan that is not approved yet can be analyzed again' : 'Run the impact analysis again; the result becomes the next revision'))));
+        : (['PLAN_READY', 'FAILED'].indexOf(this.detail().status) < 0 ? 'Only a plan that is not approved yet can be analyzed again'
+          : (this.planResumable() ? 'Plan the files the model\'s limit left out; the files planned so far are kept (unless the code or the spec changed since)'
+            : 'Run the impact analysis again; the result becomes the next revision')))));
       this.canApprovePlan = ko.pureComputed(() => !!this.detail() && this.detail().status === 'PLAN_READY' && this.canApprove());
       this.approveTip = ko.pureComputed(() => (!this.detail() ? 'Choose a change first'
         : (this.detail().status !== 'PLAN_READY' ? (this.detail().planApprovedAt ? 'This plan is already approved' : 'There is no plan to approve yet')
-          : (this.canApprove() ? 'Approve the plan; the model then writes the code' : 'Only someone with the right to approve can approve the plan'))));
+          : (!this.canApprove() ? 'Only someone with the right to approve can approve the plan'
+            : (this.planIncomplete() ? 'Files may be missing from this plan: approving it asks you to confirm that'
+              : 'Approve the plan; the model then writes the code')))));
+      const approved = (d) => {
+        this.detail(d);
+        this.errorMessage('');
+        toast.success('Plan approved. The model is writing the code.');
+        return loadReview(d.id);
+      };
+      // A plan the analysis says may be missing files: the server refuses it with what looks missing, and only an
+      // explicit confirmation of that approves it (never by itself). The confirmation names the plan revision the refusal
+      // named, so a plan changed meanwhile is refused again rather than approved unseen.
+      const approveIncomplete = (error) => {
+        if (error.status !== 409 || String(error.message).indexOf(INCOMPLETE_PLAN) !== 0) {
+          failed(error);
+          return null;
+        }
+        const revision = /\brevision (\d+) of the plan\b/.exec(error.message);
+        return dialog.confirm({ title: 'Approve an incomplete plan?', message: error.message.substring(INCOMPLETE_PLAN.length)
+          .replace(/^./, (c) => c.toUpperCase()), confirmLabel: 'Approve Incomplete Plan', danger: true }).then((ok) => (ok
+          ? api.post(base() + '/approve-plan?incomplete=true' + (revision ? '&revision=' + revision[1] : ''))
+            .then(approved).catch(approveIncomplete) : null));
+      };
       this.approvePlan = () => {
         const latest = this.latestRevision();
+        // (a plan that may be missing files is then refused by the server, and its warning names what is missing)
         dialog.confirm({ title: 'Approve this plan?', message: 'The model will write ' + items().length + ' file(s) for this change'
-          + (latest ? ' from revision ' + latest.revision : '') + '.', confirmLabel: 'Approve Plan' }).then((ok) => {
+          + (latest ? ' from revision ' + latest.revision : '') + '.' + (this.planIncomplete() ? ' The analysis says files may be missing from it.' : ''),
+        confirmLabel: 'Approve Plan' }).then((ok) => {
           if (!ok) {
             return;
           }
-          api.post(base() + '/approve-plan').then((d) => {
-            this.detail(d);
-            this.errorMessage('');
-            toast.success('Plan approved. The model is writing the code.');
-            return loadReview(d.id);
-          }).catch(failed);
+          api.post(base() + '/approve-plan').then(approved).catch(approveIncomplete);
         });
       };
       this.analyzeAgain = () => api.post(base() + '/analyze').then((d) => { this.detail(d); this.errorMessage(''); toast.info('Impact analysis started again.'); }).catch(failed);
