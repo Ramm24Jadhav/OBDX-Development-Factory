@@ -32,6 +32,9 @@ const cases = [
   ['app/src/components/Payments.tsx', 'Payments'],
   ['app/src/services/payees.ts', 'payees'],
   ['app/src/screens/payments/SiList.tsx', 'payments'],
+  // a file right under the top folder: that folder, not the file's name
+  ['db/01_create.sql', 'db'],
+  ['backend/pom.xml', 'backend'],
   ['README.md', 'README']
 ];
 

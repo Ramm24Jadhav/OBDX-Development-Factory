@@ -160,8 +160,12 @@ class QaRound19Test {
     void aResourceServesByTheWordsOfItsNameOrThePathsItDeclares() {
         String path = "/payments/standingInstructions/{instructionId}";
         assertThat(PlanReview.serves(resource("backend/SiResource.java", "GET /payments/standingInstructions/{id}"), path)).isTrue();
-        // a base path serves the paths under it; OBDX's /digx/v1 base and a version are left out
-        assertThat(PlanReview.serves(resource("backend/SiResource.java", "@Path(\"/digx/v1/payments/standingInstructions\")"), path)).isTrue();
+        // the class's @Path joined with a method's path, as JAX-RS joins them; OBDX's /digx/v1 base and a version left out
+        assertThat(PlanReview.serves(resource("backend/SiResource.java", "@Path(\"/digx/v1/payments/standingInstructions\"), GET /{id}"), path))
+                .isTrue();
+        assertThat(PlanReview.serves(resource("backend/SiResource.java", "@Path(\"/payments/standingInstructions\") @Path(\"/{id}\")"), path))
+                .isTrue();
+        assertThat(PlanReview.serves(resource("backend/SiResource.java", "@Path(\"/digx/v1/payments/standingInstructions\")"), path)).isFalse();
         assertThat(PlanReview.serves(resource("backend/FooResource.java", "GET /payments/v2"), "/payments/v2")).isTrue();
         assertThat(PlanReview.serves(resource("backend/StandInstructionResource.java", null), path)).isTrue();
         assertThat(PlanReview.serves(resource("backend/StandInstrResource.java", null), path)).isTrue();
@@ -188,6 +192,14 @@ class QaRound19Test {
         assertThat(PlanReview.serves(resource("x/FooResource.java", "handles standingInstructions"), si)).isFalse();
         assertThat(PlanReview.serves(resource("x/FooResource.java", "POST /payments/transfers"), "/payments/transferLimits")).isFalse();
         assertThat(PlanReview.serves(resource("x/PayeeResource.java", "See GET /payments/standingInstructionsArchive."), si)).isFalse();
+        // the verification's probes: prose, a parent path, a denial
+        assertThat(PlanReview.serves(resource("x/FooResource.java", "Unlike the path /payments/standingInstructions, it serves bills."), si))
+                .isFalse();
+        assertThat(PlanReview.serves(resource("x/FooResource.java", "Other paths /payments/standingInstructions are unchanged."), si)).isFalse();
+        assertThat(PlanReview.serves(resource("x/FooResource.java", "Does not GET /payments/standingInstructions (existing)."), si)).isFalse();
+        assertThat(PlanReview.serves(resource("x/FooResource.java", "GET /payments/standingInstructions (existing)."), si)).isFalse();
+        assertThat(PlanReview.serves(resource("x/AccountResource.java", "GET /accounts"), "/accounts/{id}/limits")).isFalse();
+        assertThat(PlanReview.serves(resource("x/FooResource.java", "GET /payments/standingInstructions"), si + "/{id}")).isFalse();
         assertThat(PlanReview.abbreviates("bill", "biller")).isFalse();
         assertThat(PlanReview.abbreviates("instr", "instruction")).isTrue();
 
@@ -349,6 +361,47 @@ class QaRound19Test {
         assertThat(com.obdx.factory.model.ModelSettings.shown("https://user:secret@api.example.com:8443/openai/v1?api-key=x#f"))
                 .isEqualTo("https://api.example.com:8443/openai/v1");
         assertThat(com.obdx.factory.model.ModelSettings.shown("http://localhost:11434/v1")).isEqualTo("http://localhost:11434/v1");
+    }
+
+    // --- the verification of 9317541 ---
+
+    @Test
+    void aRemovedSentenceNeverTakesItsNeighbours() {
+        assertThat(ModelReasoning.withoutReasoningSentences("The answer is no. The prompt says to keep limits.")).isEqualTo("The answer is no.");
+        assertThat(ModelReasoning.withoutReasoningSentences("Call the host at No. 5 St. The prompt says so.")).isEqualTo("Call the host at No. 5 St.");
+        assertThat(ModelReasoning.withoutReasoningSentences("Supports cards, accounts etc. The prompt says monthly only. Keep the DTO."))
+                .isEqualTo("Supports cards, accounts etc. Keep the DTO.");
+        assertThat(ModelReasoning.withoutReasoningSentences("Use the format of Mr. Smith. The prompt says so.")).isEqualTo("Use the format of Mr. Smith.");
+        for (String kept : List.of("Our previous response to the host was rejected with 409.", "Validate it, e.g. the user wants to pay 0.",
+                "My previous reply to the bank was late.")) {
+            assertThat(ModelReasoning.withoutReasoningSentences(kept)).isEqualTo(kept);
+        }
+        assertThat(ModelReasoning.withoutReasoningSentences("Add the DTO. My previous answer missed it.")).isEqualTo("Add the DTO.");
+    }
+
+    @Test
+    void moreSecretsAreHidden() {
+        assertThat(com.obdx.factory.common.Messages.redacted("401 Incorrect API key provided: gsk_abcdefghijklmnopqrstuvwx"))
+                .isEqualTo("401 Incorrect API key provided: [hidden]");
+        assertThat(com.obdx.factory.common.Messages.redacted("GET https://host/v1/chat?key=SECRET123&x=1 and ?token=T0KEN failed"))
+                .isEqualTo("GET https://host/v1/chat?key=[hidden]&x=1 and ?token=[hidden] failed");
+        assertThat(com.obdx.factory.common.Messages.redacted("GET https://user:p@ss@host/v1 failed")).isEqualTo("GET https://[hidden]@host/v1 failed");
+        assertThat(com.obdx.factory.common.Messages.redacted("hf_abcdefghijklmnopqrstuvwxyz and AIzaSyA-abcdefghijklmnopqrstuvwxyz12345"))
+                .isEqualTo("[hidden] and [hidden]");
+        assertThat(com.obdx.factory.common.Messages.redacted("Ocp-Apim-Subscription-Key: abcdef1234")).isEqualTo("Ocp-Apim-Subscription-Key: [hidden]");
+        // a plain sentence or an e-mail address stays
+        assertThat(com.obdx.factory.common.Messages.redacted("The password must be at least 8 characters; write to ops@bank.example"))
+                .isEqualTo("The password must be at least 8 characters; write to ops@bank.example");
+        assertThat(com.obdx.factory.model.ModelSettings.shown("http://user:p@ss@host:8080/v1")).isEqualTo("http://host:8080/v1");
+        assertThatThrownBy(() -> com.obdx.factory.model.ModelSettingsAccess.plainServerUrl("http://user:p@ss@host:8080/v1"))
+                .hasMessageContaining("without a user name");
+    }
+
+    @Test
+    void aJetComponentsTemplatesAreTheUis() {
+        assertThat(PlanParser.uiPath("channel/components/modules/payments/si/templates/row.html")).isTrue();
+        assertThat(PlanParser.uiPath("server/src/main/resources/templates/mail.html")).isFalse();
+        assertThat(PlanParser.uiPath("backend/templates/mail.html")).isFalse();
     }
 
     // --- R19-6: tests in an incomplete plan ---

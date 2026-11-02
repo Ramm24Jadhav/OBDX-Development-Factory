@@ -77,16 +77,74 @@ class QuestionDuplicatesTest {
     }
 
     @Test
-    void anAnswerOfTheQuestionLeftOutIsKept() {
+    void anAnswerIsCarriedOnlyForTheSameWordsOrTheSameDocumentId() {
+        // the same words: the answer of the one left out is kept
         List<RequirementSpec.OpenQuestion> merged = SpecMerger.questions(List.of(q("How long should audit rows be kept?"),
-                answered("How long should the audit rows be kept?", "1 year")));
+                answered("How long should audit rows be KEPT", "1 year")));
         assertThat(merged).singleElement().satisfies(k -> assertThat(k.answer()).isEqualTo("1 year"));
-
+        // the same question in other words: one question, but the answer to the other words is not carried
+        assertThat(SpecMerger.questions(List.of(q("How long should audit rows be kept?"),
+                answered("What is the required retention period for audit rows?", "1 year")))).singleElement()
+                .satisfies(k -> assertThat(k.answer()).isNull());
+        // the same ID of the document
         RequirementSpec.OpenQuestion answered = new RequirementSpec.OpenQuestion("Which channel sends the OTP?", null, "OQ-002", List.of(),
                 null, "SMS");
         RequirementSpec spec = DocumentStructure.apply(drafted(List.of(answered)), document(List.of(new RequirementSpec.OpenQuestion(
                 "Which channel should send the one-time password?", null, "OQ-002", List.of(), null, null))));
         assertThat(spec.openQuestions()).singleElement().satisfies(k -> assertThat(k.answer()).isEqualTo("SMS"));
+    }
+
+    /** The seven pairs the verification of 9317541 found merged: each asks about something else. */
+    private static final List<List<RequirementSpec.OpenQuestion>> DIFFERENT = List.of(
+            List.of(q("Should the standing instruction amount field be mandatory?", "Mandatory", "Optional"),
+                    q("Should the standing instruction remarks field be mandatory?", "Mandatory", "Optional")),
+            List.of(q("What is the maximum amount per transaction for retail users?"), q("What is the maximum amount per transaction for corporate users?")),
+            List.of(q("What is the daily limit for domestic transfers?"), q("What is the daily limit for international transfers?")),
+            List.of(q("Should the beneficiary be notified by SMS on creation?", "Yes", "No"),
+                    q("Should the beneficiary be notified by email on creation?", "Yes", "No")),
+            List.of(q("Which channel sends the OTP?", "SMS", "Email", "Push notification"), q("Which channel sends the alert?", "SMS", "Email", "Push notification")),
+            List.of(q("Which frequencies are allowed when creating a standing instruction?", "Daily", "Weekly"),
+                    q("Which frequencies are allowed when modifying a standing instruction?", "Daily", "Weekly")),
+            List.of(q("Can a standing instruction be cancelled after its first execution?"),
+                    q("Can a standing instruction be cancelled before its first execution?")),
+            List.of(q("Is SMS needed?"), q("Is email needed?")));
+
+    @Test
+    void questionsThatEachNameSomethingTheOtherDoesNotAreDifferent() {
+        for (List<RequirementSpec.OpenQuestion> pair : DIFFERENT) {
+            RequirementSpec.OpenQuestion a = pair.get(0);
+            RequirementSpec.OpenQuestion b = pair.get(1);
+            assertThat(SpecMerger.sameQuestion(a, b)).as(a.question()).isFalse();
+            assertThat(SpecMerger.sameQuestion(b, a)).as(b.question()).isFalse();
+            assertThat(SpecMerger.restates(a, b)).as(a.question()).isFalse();
+            assertThat(SpecMerger.restates(b, a)).as(b.question()).isFalse();
+            assertThat(SpecMerger.questions(List.of(a, answered(b.question(), "INR 50 lakh")))).hasSize(2).first()
+                    .satisfies(k -> assertThat(k.answer()).isNull());
+        }
+        // the same question in other words still is one
+        assertThat(DocumentStructure.sameQuestion("How long should audit rows be kept?", "What is the required retention period for audit rows?"))
+                .isTrue();
+    }
+
+    @Test
+    void aDraftedQuestionRestatesOnlyTheDocumentQuestionItMatchesBest() {
+        // the verification's document: retail, corporate, SMS; the model's: email (no ID), retail by its ID with an answer
+        List<RequirementSpec.OpenQuestion> asked = List.of(
+                new RequirementSpec.OpenQuestion("What is the maximum amount per transaction for retail users?", null, "OQ-001", List.of(), null, null),
+                new RequirementSpec.OpenQuestion("What is the maximum amount per transaction for corporate users?", null, "OQ-002", List.of(), null, null),
+                new RequirementSpec.OpenQuestion("Should the beneficiary be notified by SMS on creation?", null, "OQ-003", List.of("Yes", "No"), null, null));
+        List<RequirementSpec.OpenQuestion> model = List.of(answered("Should the beneficiary be notified by email on creation?", "Yes", "Yes", "No"),
+                new RequirementSpec.OpenQuestion("What's the cap per transaction for retail users?", null, "OQ-001", List.of(), null, "INR 10 lakh"),
+                q("Which currency is used?"));
+
+        List<RequirementSpec.OpenQuestion> out = DocumentStructure.apply(drafted(model), document(asked)).openQuestions();
+
+        assertThat(out).extracting(RequirementSpec.OpenQuestion::question).containsExactly(asked.get(0).question(), asked.get(1).question(),
+                asked.get(2).question(), model.get(0).question(), model.get(2).question());
+        assertThat(out).extracting(RequirementSpec.OpenQuestion::answer).containsExactly("INR 10 lakh", null, null, "Yes", null);
+        // a requirement's ID named by two questions makes them no one question
+        assertThat(SpecMerger.restates(new RequirementSpec.OpenQuestion("Is SMS needed?", null, "FR-001", List.of(), null, null),
+                new RequirementSpec.OpenQuestion("Which currency is used?", null, "FR-001", List.of(), null, "INR"))).isFalse();
     }
 
     @Test

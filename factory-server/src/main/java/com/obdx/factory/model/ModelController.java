@@ -129,7 +129,8 @@ public class ModelController {
                 return "The embedding model '" + model + "' returned no vector. Choose an embedding model, for example nomic-embed-text on Ollama.";
             }
         } catch (ModelGatewayException e) {
-            return "The embedding model '" + model + "' at " + current.embeddingUrl() + " cannot embed (" + e.getMessage() + "). Choose an "
+            return "The embedding model '" + model + "' at " + ModelSettings.shown(current.embeddingUrl()) + " cannot embed ("
+                    + com.obdx.factory.common.Messages.redacted(e.getMessage()) + "). Choose an "
                     + "embedding model, for example nomic-embed-text on Ollama: chat models do not embed, and some servers (Groq) have "
                     + "no embedding models, so set a code search server (an Ollama on this computer) for embeddings.";
         }

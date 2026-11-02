@@ -115,7 +115,9 @@ public class ModelSettings {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("The model server URL is not a valid address. Enter it as http(s)://host:port/v1.");
         }
-        if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null) {
+        // (an address with two @ is read as a registry name, without user info: its authority still holds it)
+        if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null
+                || uri.getRawAuthority() != null && uri.getRawAuthority().contains("@")) {
             throw new BadRequestException("Enter the model server URL without a user name, password or query (http(s)://host:port/v1); "
                     + "put the API key in its own field.");
         }
@@ -141,11 +143,12 @@ public class ModelSettings {
         }
         try {
             java.net.URI uri = java.net.URI.create(url);
-            if (uri.getRawUserInfo() == null && uri.getRawQuery() == null && uri.getRawFragment() == null) {
+            String authority = uri.getRawAuthority() == null ? "" : uri.getRawAuthority();
+            if (uri.getRawUserInfo() == null && uri.getRawQuery() == null && uri.getRawFragment() == null && !authority.contains("@")) {
                 return url;
             }
-            return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "")
-                    + (uri.getRawPath() == null ? "" : uri.getRawPath());
+            // the host and port after the last @ (user:p@ss@host is read as one registry name)
+            return uri.getScheme() + "://" + authority.substring(authority.lastIndexOf('@') + 1) + (uri.getRawPath() == null ? "" : uri.getRawPath());
         } catch (IllegalArgumentException e) {
             return origin(url);
         }

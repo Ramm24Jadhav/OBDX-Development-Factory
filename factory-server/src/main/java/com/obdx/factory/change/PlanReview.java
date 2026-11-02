@@ -243,33 +243,61 @@ final class PlanReview {
         return !wanted.isEmpty() && wanted.stream().allMatch(w -> have.stream().anyMatch(h -> h.equals(w) || abbreviates(h, w)));
     }
 
+
     /**
-     * A path the details or purpose of a resource declare it serves: after an HTTP method or @Path ("GET /payments/x",
-     * "@Path('/payments/x')", "path /payments/x"), not a path the text only mentions ("Unlike /payments/x, ...").
+     * A path the details or purpose of a resource declare, as code would: right after an HTTP method ("GET
+     * /payments/x", "GET/{id}") or in @Path ("@Path('/payments/x')"). Group 1 is the method (none for @Path), group 2
+     * the path. A path the text only names ("Unlike the path /payments/x") is no declaration.
      */
     private static final Pattern DECLARED_PATH = Pattern.compile(
-            "(?i)(?:\\b(?:GET|POST|PUT|PATCH|DELETE)\\b|@Path\\s*+\\(\\s*+(?:value\\s*+=\\s*+)?[\"']?|\\bpaths?\\b\\s*+[:=]?)\\s*+[\"']?"
-                    + "(/[A-Za-z][\\w.\\-]*+(?:/[\\w{}.\\-]++)*+)");
+            "(?i)(?:\\b(GET|POST|PUT|PATCH|DELETE)\\b\\s*+|@Path\\s*+\\(\\s*+(?:value\\s*+=\\s*+)?)[\"']?(/[\\w{}.\\-]++(?:/[\\w{}.\\-]++)*+)");
+    /** Words that say a path named after them is not served: "Does not GET /x", "unlike", "other", "except". */
+    private static final Pattern NOT_SERVED = Pattern.compile("(?i)\\b(?:not|no|never|without|unlike|other|except|instead of|rather than)\\b"
+            + "|n't\\b");
+    /** Words that say so after the path: "GET /x (existing)", "/x is unchanged". */
+    private static final Pattern SERVED_ELSEWHERE = Pattern.compile("(?i)^[^.;\\n]{0,40}?\\b(?:existing|unchanged|already served|elsewhere)\\b");
+    /** How much of the sentence before a declared path is read for a negation. */
+    static final int DECLARED_WINDOW = 60;
 
     /**
      * Whether a planned file serves the path: by its name (see {@link #serves(String, String)}), or because its purpose
-     * or details declare the path (see DECLARED_PATH), or a path above it (a resource's base path serves its
-     * sub-resources), compared whole after normalising (a version segment and OBDX's /digx base left out). A path
-     * below it, or one the text only mentions, does not count.
+     * or details declare that very path (see DECLARED_PATH): compared whole after normalising (a version segment and
+     * OBDX's /digx base left out). The first @Path is the resource's base: a later @Path or a method's path that starts
+     * with a parameter ("GET/{instructionId}") is joined to it, as JAX-RS joins a method's @Path to its class's. A path
+     * above or below the wanted one does not count (GET /accounts serves no /accounts/{id}/limits), nor one declared in a
+     * sentence that denies it ("Does not GET /x", "GET /x (existing)").
      */
     static boolean serves(ChangePlan.Item item, String path) {
         if (serves(item.path(), path)) {
             return true;
         }
         String wanted = base(normalize(path));
-        Matcher m = DECLARED_PATH.matcher(capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())));
+        String text = capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details()));
+        Matcher m = DECLARED_PATH.matcher(text);
+        String classPath = null;
         while (m.find()) {
-            String declared = base(normalize(m.group(1).replaceAll("[.,;:]+$", "")));
-            if (!declared.isEmpty() && (wanted.equals(declared) || wanted.startsWith(declared + "/"))) {
+            String declared = base(normalize(m.group(2).replaceAll("[.,;:]+$", "")));
+            boolean annotation = m.group(1) == null;
+            boolean relative = classPath != null && (annotation || declared.startsWith("{"));
+            if (annotation && classPath == null) {
+                classPath = declared;
+            } else if (relative) {
+                declared = declared.isEmpty() ? classPath : classPath + "/" + declared;
+            }
+            if (!declared.isEmpty() && wanted.equals(declared) && !denied(text, m.start(), m.end())) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** Whether the sentence around a declared path denies that it is served (see NOT_SERVED, SERVED_ELSEWHERE). */
+    private static boolean denied(String text, int start, int end) {
+        String before = text.substring(Math.max(0, start - DECLARED_WINDOW), start);
+        int stop = Math.max(before.lastIndexOf('.'), Math.max(before.lastIndexOf(';'), before.lastIndexOf('\n')));
+        String sentence = stop >= 0 ? before.substring(stop + 1) : before;
+        return NOT_SERVED.matcher(sentence).find()
+                || SERVED_ELSEWHERE.matcher(text.substring(end, Math.min(text.length(), end + 60))).find();
     }
 
     /** A normalised path without OBDX's base (digx/v1/): payments/x for digx/v1/payments/x. */

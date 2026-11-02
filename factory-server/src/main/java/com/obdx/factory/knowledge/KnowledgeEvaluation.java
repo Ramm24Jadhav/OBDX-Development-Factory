@@ -92,7 +92,8 @@ public class KnowledgeEvaluation {
     /** Starts a run in the background; one at a time. */
     public synchronized Report start(Mode mode) {
         var current = settings.current();
-        String model = current.chatModel() + " at " + current.baseUrl() + ", embeddings " + current.embeddingModel();
+        String model = current.chatModel() + " at " + com.obdx.factory.model.ModelSettings.shown(current.baseUrl()) + ", embeddings "
+                + current.embeddingModel();
         if (last != null && last.running()) {
             throw new BadRequestException("An evaluation is already running. Wait until it finishes.");
         }

@@ -300,7 +300,9 @@ public final class PlanParser {
      */
     static boolean uiPath(String lower) {
         String slashed = "/" + lower;
-        if (lower.endsWith(".java") || isBuildFile(lower) || slashed.contains("/src/main/resources/") || slashed.contains("/templates/")
+        // (a templates folder of a JET component, channel/components/x/templates/y.html, is the UI's)
+        boolean jet = slashed.contains("/channel/") || slashed.contains("/components/");
+        if (lower.endsWith(".java") || isBuildFile(lower) || slashed.contains("/src/main/resources/") || !jet && slashed.contains("/templates/")
                 || slashed.contains("/docs/") || slashed.contains("/doc/") || slashed.contains("/server/")) {
             return false;
         }

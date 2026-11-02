@@ -26,12 +26,17 @@ public final class Messages {
     /** The most of a message read for its reason (it is cut to MAX after). */
     static final int MAX_READ = 4096;
 
-    /** "Bearer abc", "sk-abc...", "api_key=abc", "Authorization: abc", "password": "abc" */
+    /**
+     * "Bearer abc", an API key (sk-..., gsk_..., hf_..., AIza...), "api_key=abc", "?key=abc", "Authorization: abc",
+     * "password": "abc", and the user and password in an address (https://user:pass@host). Group 1 or 2 is what stays
+     * before the hidden part.
+     */
     private static final java.util.regex.Pattern SECRET = java.util.regex.Pattern.compile(
             "(?i)(\\bbearer\\s++)[^\\s\"',;)]++"
-                    + "|\\b(?:sk|pk|rk|gsk|xai)-[A-Za-z0-9_-]{8,}+"
-                    + "|((?:api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret|secret|password|passwd|authorization)\"?\\s{0,3}+[=:]"
-                    + "\\s{0,3}+\"?(?:bearer\\s++)?)[^\\s\"',;&)]++");
+                    + "|\\b(?:sk|pk|rk|xai)-[A-Za-z0-9_-]{8,}+|\\b(?:gsk|hf|ghp|gho|glpat|xoxb|xoxp)_[A-Za-z0-9_-]{8,}+|\\bAIza[A-Za-z0-9_-]{20,}+"
+                    + "|((?:api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret|subscription[-_]?key|secret|password|passwd"
+                    + "|authorization)\"?\\s{0,3}+[=:]\\s{0,3}+\"?(?:bearer\\s++)?|[?&](?:key|token|sig|signature|code)=)[^\\s\"',;&)]++"
+                    + "|(\\b[a-z][a-z0-9+.-]{0,15}+://)[^\\s/?#]{1,200}@");
 
     /**
      * The text with what looks like a secret replaced by "[hidden]": a bearer token, an API key (sk-..., gsk_...), a
@@ -46,7 +51,9 @@ public final class Messages {
         StringBuilder out = new StringBuilder();
         while (m.find()) {
             String keep = m.group(1) != null ? m.group(1) : m.group(2) != null ? m.group(2) : "";
-            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(keep + "[hidden]"));
+            // an address keeps its scheme and host: https://[hidden]@host
+            String hidden = m.group(3) != null ? m.group(3) + "[hidden]@" : keep + "[hidden]";
+            m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(hidden));
         }
         m.appendTail(out);
         return out.toString();

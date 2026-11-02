@@ -165,6 +165,8 @@ public class ImpactAnalyzer {
      * own ({@code latestOrigin} ANALYZED: an edit never carries such a risk), without a record, and with the risk as the
      * server wrote it (its fixed start, then its reason in parentheses). Null otherwise. The record names no revision
      * or context, as none was kept: such a plan is analyzed afresh, never continued (see ChangeService.whyNotResumed).
+     * A plan without any revision (no origin) is left alone: V29 gave every plan stored before it its first revision and
+     * every save since records one, so such a plan cannot be told to be the analysis's own rather than an edit's.
      */
     static ChangePlan.Incomplete legacyRecord(ChangePlan stored, String latestOrigin) {
         if (stored == null || stored.incomplete() != null || stored.risks() == null || stored.items() == null || stored.items().isEmpty()

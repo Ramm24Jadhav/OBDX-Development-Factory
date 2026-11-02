@@ -388,6 +388,8 @@ class ReviewFixesTest {
         }
         quickly("thousands of questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(drafted.subList(0, 2)),
                 () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(drafted));
+        // and none of them taken for another (each names something the others do not)
+        assertThat(com.obdx.factory.requirements.DocumentStructureAccess.questions(drafted)).hasSize(3_000);
         quickly("thousands of document questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith("", drafted.subList(0, 2)),
                 () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(rows.toString(), drafted));
         quickly("long question rows", () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith("", drafted.subList(0, 2)),

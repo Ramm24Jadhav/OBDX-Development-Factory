@@ -178,6 +178,20 @@ final class DocumentStructure {
     static final int MAX_MESSAGES = 2_000;
     /** The most of the document's open questions kept, and of the model's compared with them (each with each). */
     static final int MAX_DOCUMENT_QUESTIONS = 200;
+
+    /**
+     * What a requirement's status says when the document has more open questions than are kept (see apply): " N of the
+     * document's open questions were left out ...", or "" when none was.
+     */
+    static String questionsLeftOut(Structure doc) {
+        Set<String> distinct = new HashSet<>();
+        for (RequirementSpec.OpenQuestion q : doc.questions()) {
+            distinct.add(SpecMerger.normalize(q.question()));
+        }
+        int left = distinct.size() - MAX_DOCUMENT_QUESTIONS;
+        return left <= 0 ? "" : " " + left + " of the document's open questions were left out (the spec takes at most "
+                + MAX_DOCUMENT_QUESTIONS + "): ask them separately.";
+    }
     /**
      * ID prefixes the document's ID tables are read by, whatever their header says, which are never message codes; F1001,
      * R-01 or Q12 can be (those prefixes count as IDs only where a header or heading says so).
@@ -231,7 +245,20 @@ final class DocumentStructure {
                 ? spec.openQuestions().subList(0, MAX_DOCUMENT_QUESTIONS) : spec.openQuestions();
         List<Prepared> draftWords = drafts.stream().map(q -> prepare(q.question())).toList();
         List<Prepared> decisionWords = spec.decisions().stream().limit(MAX_DOCUMENT_QUESTIONS).map(x -> prepare(x.question())).toList();
-        boolean[] restated = new boolean[drafts.size()];
+        // Each drafted question restates at most one of the document's: the one it matches best (its ID, then its words,
+        // then the same question), the first of equals
+        int[] restated = new int[drafts.size()];
+        for (int j = 0; j < drafts.size(); j++) {
+            int best = 0;
+            restated[j] = -1;
+            for (int i = 0; i < documented.size() && best < 3; i++) {
+                int how = SpecMerger.restatement(documented.get(i), documentWords.get(i), drafts.get(j), draftWords.get(j));
+                if (how > best) {
+                    best = how;
+                    restated[j] = i;
+                }
+            }
+        }
         List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
         for (int i = 0; i < documented.size(); i++) {
             RequirementSpec.OpenQuestion d = documented.get(i);
@@ -240,10 +267,9 @@ final class DocumentStructure {
                 continue;
             }
             RequirementSpec.OpenQuestion drafted = null;
-            for (int j = 0; j < drafts.size(); j++) {
-                if (SpecMerger.restates(d, dw, drafts.get(j), draftWords.get(j))) {
-                    restated[j] = true;
-                    drafted = drafted == null ? drafts.get(j) : drafted;
+            for (int j = 0; j < drafts.size() && drafted == null; j++) {
+                if (restated[j] == i) {
+                    drafted = drafts.get(j);
                 }
             }
             RequirementSpec.OpenQuestion asked = drafted == null ? d : SpecMerger.joined(d, drafted);
@@ -252,7 +278,7 @@ final class DocumentStructure {
                     d.options(), d.suggestedAnswer(), asked.answer()) : asked);
         }
         for (int j = 0; j < drafts.size(); j++) {
-            if (!restated[j]) {
+            if (restated[j] < 0) {
                 questions.add(drafts.get(j));
             }
         }
@@ -511,27 +537,38 @@ final class DocumentStructure {
         return shared * 10 >= small.size() * 7L;
     }
 
-    /** Words a question asks with, which say nothing about what it asks. */
+    /**
+     * Words that say nothing about what a question asks: how it asks (should, which, is), articles, pronouns,
+     * prepositions and the like (cut to six letters, as the words are).
+     */
     private static final Set<String> QUESTION_WORDS = Set.of("should", "would", "could", "which", "where", "what", "when", "will",
-            "does", "there", "shown", "displa", "this", "that", "with", "from", "have", "need", "needs", "screen", "custom", "user");
-    /** Words that ask about the same thing: where something is placed. */
+            "does", "there", "shown", "displa", "this", "that", "with", "from", "have", "need", "needs", "needed", "screen", "custom", "user",
+            "users", "is", "are", "was", "were", "be", "been", "being", "do", "did", "done", "can", "may", "must", "shall", "how", "who",
+            "whom", "whose", "why", "the", "a", "an", "of", "to", "in", "on", "at", "by", "for", "or", "and", "as", "it", "its", "if", "any",
+            "into", "than", "then", "these", "those", "they", "their", "them", "we", "our", "you", "your", "so", "such", "also",
+            "used", "use", "using", "requir", "allowe", "allow", "suppor", "applie", "apply", "per", "each", "every", "all", "some", "yes",
+            "no", "not");
+    /** Words that ask about the same thing: where something is placed (above or below, not before or after: that is when). */
     private static final Set<String> PLACEMENT = Set.of("positi", "placed", "placem", "place", "locati", "locate", "above", "below",
-            "before", "after", "top", "bottom");
+            "top", "bottom");
     /** Words that ask about the same thing: how long something is kept. */
     private static final Set<String> RETENTION = Set.of("long", "kept", "keep", "retain", "retent", "period", "durati", "purge", "purged");
 
     /**
-     * The same question in other words: {@link #similar}, or, conservatively, all the words that carry the meaning of the
-     * shorter one in the other, at least three or half of the longer one's, placement words counted as one ("above or
-     * below the account summary" and "Where should the widget be positioned"), and so are retention words ("How long should
-     * audit rows be kept?" and "What is the required retention period for audit rows?").
+     * The same question in other words: every word that carries the meaning of one is in the other (the shorter one's
+     * words in the longer one), at least three of them or two that are half of the longer one's. Placement words count
+     * as one ("above or below the account summary" and "Where should the widget be positioned"), and so do retention
+     * words ("How long should audit rows be kept?" and "What is the required retention period for audit rows?"). Two
+     * questions that each have a word the other lacks ask about different things ("the amount field" and "the remarks
+     * field", "by SMS" and "by email", "retail users" and "corporate users"): never the same. Short words count too
+     * (SMS, OTP).
      */
     static boolean sameQuestion(String a, String b) {
         return sameQuestion(prepare(a), prepare(b));
     }
 
-    /** A question's words, read once for comparing it with many others (see sameQuestion). */
-    record Prepared(Set<String> words, Set<String> meaning) {
+    /** A question's words that carry its meaning, read once for comparing it with many others (see sameQuestion). */
+    record Prepared(Set<String> meaning) {
     }
 
     /** The most of a question's text read for its words. */
@@ -539,41 +576,42 @@ final class DocumentStructure {
 
     static Prepared prepare(String question) {
         String text = question == null ? "" : question.length() > MAX_QUESTION_TEXT ? question.substring(0, MAX_QUESTION_TEXT) : question;
-        return new Prepared(words(text), meaning(text));
+        return new Prepared(meaning(text));
     }
 
     /** {@link #sameQuestion(String, String)} of two questions whose words were read before. */
     static boolean sameQuestion(Prepared a, Prepared b) {
-        if (!a.words().isEmpty() && !b.words().isEmpty()) {
-            Set<String> small = a.words().size() <= b.words().size() ? a.words() : b.words();
-            Set<String> large = small == a.words() ? b.words() : a.words();
-            if (small.stream().filter(large::contains).count() * 10 >= small.size() * 7L) {
-                return true;
-            }
-        }
         Set<String> x = a.meaning();
         Set<String> y = b.meaning();
+        if (x.isEmpty() || y.isEmpty()) {
+            return false;
+        }
         Set<String> small = x.size() <= y.size() ? x : y;
         Set<String> large = small == x ? y : x;
-        long shared = small.stream().filter(large::contains).count();
-        // Every meaningful word of the shorter one, and either three of them or half of the longer one's
-        return shared == small.size() && (shared >= 3 || (shared >= 2 && shared * 2 >= large.size()));
+        // a word only the shorter one has: each asks about something the other does not
+        if (!large.containsAll(small)) {
+            return false;
+        }
+        int shared = small.size();
+        return shared >= 3 || (shared >= 2 && shared * 2 >= large.size());
     }
 
+    /** The words of a question that carry its meaning: two letters or more, cut to six, without a plural s. */
     private static Set<String> meaning(String s) {
         Set<String> words = new LinkedHashSet<>();
-        for (String w : words(s)) {
-            if (PLACEMENT.contains(w)) {
-                words.add("place");
-            } else if (RETENTION.contains(w)) {
-                words.add("retain");
-            } else if (!QUESTION_WORDS.contains(w)) {
-                words.add(w);
+        for (String raw : (s == null ? "" : s).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (raw.length() < 2) {
+                continue;
             }
-        }
-        for (String w : (s == null ? "" : s).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
-            if (PLACEMENT.contains(w)) {
+            String w = raw.length() > 3 && raw.endsWith("s") && !raw.endsWith("ss") ? raw.substring(0, raw.length() - 1) : raw;
+            w = w.length() > 6 ? w.substring(0, 6) : w;
+            String whole = raw.length() > 6 ? raw.substring(0, 6) : raw;
+            if (PLACEMENT.contains(w) || PLACEMENT.contains(whole)) {
                 words.add("place");
+            } else if (RETENTION.contains(w) || RETENTION.contains(whole)) {
+                words.add("retain");
+            } else if (!QUESTION_WORDS.contains(w) && !QUESTION_WORDS.contains(whole)) {
+                words.add(w);
             }
         }
         return words;

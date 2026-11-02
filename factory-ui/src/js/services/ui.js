@@ -345,16 +345,17 @@ define(['knockout', './preferences'], function (ko, preferences) {
 
   /** A model server's own words in an error: its JSON answer, or the limit it reports with the account and the counts. */
   const LIMIT_REPORT = /Rate limit reached|\borg_[A-Za-z0-9]{6,}|\bin organization\b|\b(?:tokens|requests) per (?:day|minute)\b|\((?:TPD|RPD|TPM|RPM|ITPM|OTPM)\)/i;
-  const RAW = new RegExp('\\{"error"|' + LIMIT_REPORT.source, 'i');
+  // (a group of only "(TPD)" is no report of its own: removing it would leave "per day : Limit")
+  const RAW = /\{"error"|Rate limit reached|\borg_[A-Za-z0-9]{6,}|\bin organization\b|\b(?:tokens|requests) per (?:day|minute)\b/i;
   /** A model named with its server's address, as the factory's messages start: "Chat model 'x' at https://host/v1". */
   const NAMED = /\b(Chat|Embedding) model '[^']{0,200}' at [^\s()]+/g;
   /** What looks like a secret (a bearer token, an API key, key=value): hidden, also under Details. */
-  const SECRET = /(\bbearer\s+)[^\s"',;)]+|\b(?:sk|pk|rk|gsk|xai)-[A-Za-z0-9_-]{8,}|((?:api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret|secret|password|passwd|authorization)"?\s{0,3}[=:]\s{0,3}"?(?:bearer\s+)?)[^\s"',;&)]+/gi;
+  const SECRET = /(\bbearer\s+)[^\s"',;)]+|\b(?:sk|pk|rk|xai)-[A-Za-z0-9_-]{8,}|\b(?:gsk|hf|ghp|gho|glpat|xoxb|xoxp)_[A-Za-z0-9_-]{8,}|\bAIza[A-Za-z0-9_-]{20,}|((?:api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret|subscription[-_]?key|secret|password|passwd|authorization)"?\s{0,3}[=:]\s{0,3}"?(?:bearer\s+)?|[?&](?:key|token|sig|signature|code)=)[^\s"',;&)]+|(\b[a-z][a-z0-9+.-]{0,15}:\/\/)[^\s/?#]{1,200}@/gi;
   /** The most of a message that is shortened (the factory's messages are far shorter). */
   const MAX_SHORTENED = 4000;
 
   function redact(text) {
-    return text.replace(SECRET, (m, bearer, name) => (bearer || name || '') + '[hidden]');
+    return text.replace(SECRET, (m, bearer, name, scheme) => (scheme ? scheme + '[hidden]@' : (bearer || name || '') + '[hidden]'));
   }
 
   /**
@@ -413,10 +414,15 @@ define(['knockout', './preferences'], function (ko, preferences) {
         + (wait && !/try again/i.test(text) ? '; try again in ' + wait : '');
       // the colon the answer followed ("failed: {...}") ends the sentence, or says what the answer said
       text = text.replace(/:\s*(?=$|[;.)])/, hint ? ': ' + hint : '');
-      text = text.replace(/\s+([.,;)])/g, '$1').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+      text = text.replace(/\s+([.,;:)])/g, '$1').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
       if (!/[.!?)]$/.test(text)) {
         text += '.';
       }
+    }
+    // a refused key: say where to fix it
+    if (text !== full && (/\b(?:answered|returned|status) 40[13]\b/.test(text) || /api key|unauthori[sz]ed|invalid_api_key|authenticat/i.test(removed))
+        && !/Models page/.test(text)) {
+      text += (/[.!?)]$/.test(text) ? '' : '.') + ' Check the API key on the Models page.';
     }
     return text === full ? { text: full, details: '' } : { text: text, details: full };
   }

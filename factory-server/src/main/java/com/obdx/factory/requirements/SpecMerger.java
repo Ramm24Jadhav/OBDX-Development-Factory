@@ -137,18 +137,46 @@ public final class SpecMerger {
         return kept;
     }
 
-    /** The first question with what a later one of the same adds: its options when it has none, its reason, its answer. */
+    /**
+     * The first question with what a later one of the same adds: its options when it has none, its reason; its answer
+     * only when it is surely the same question (the same words, or the same ID of the document), as an answer given to
+     * other words may answer something else.
+     */
     static RequirementSpec.OpenQuestion joined(RequirementSpec.OpenQuestion k, RequirementSpec.OpenQuestion q) {
         boolean options = k.options().isEmpty() && !q.options().isEmpty();
+        boolean surely = sameWords(k, q) || sameId(k, q);
         return new RequirementSpec.OpenQuestion(k.question(), first(k.reason(), q.reason()), first(k.reference(), q.reference()),
                 options ? q.options() : k.options(), first(k.suggestedAnswer(), options ? q.suggestedAnswer() : null),
-                first(k.answer(), q.answer()));
+                surely ? first(k.answer(), q.answer()) : k.answer());
     }
 
     /** Whether two open questions ask the same thing: the same words, or the same question as DocumentStructure tells it. */
     static boolean sameQuestion(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
-        return normalize(capped(a.question())).equals(normalize(capped(b.question())))
-                || DocumentStructure.sameQuestion(DocumentStructure.prepare(a.question()), DocumentStructure.prepare(b.question()));
+        return sameWords(a, b) || DocumentStructure.sameQuestion(DocumentStructure.prepare(a.question()), DocumentStructure.prepare(b.question()));
+    }
+
+    /** The same words, case and punctuation aside. */
+    static boolean sameWords(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
+        return normalize(capped(a.question())).equals(normalize(capped(b.question())));
+    }
+
+    /** Both name the same ID of the document (OQ-001) as their reference. */
+    static boolean sameId(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
+        return a.reference() != null && b.reference() != null && documentId(a.reference()) && !REQUIREMENT_ID.matcher(a.reference().strip()).matches()
+                && normalize(a.reference()).equals(normalize(b.reference()));
+    }
+
+    /** A requirement's or criterion's ID (FR-001, AC-2): many questions may name the same one, so it says no two are one. */
+    private static final java.util.regex.Pattern REQUIREMENT_ID = java.util.regex.Pattern.compile("(?i)(?:FR|BR|AC|NFR|REQ|US|UC)[-_ ]?\\d{1,4}");
+
+    /**
+     * How surely the model's question restates one of the document's: 3 the same ID of the document, 2 the same words,
+     * 1 the same question (see DocumentStructure.sameQuestion), 0 not at all. A drafted question restates the one it
+     * matches best (see DocumentStructure.apply).
+     */
+    static int restatement(RequirementSpec.OpenQuestion document, DocumentStructure.Prepared documentWords,
+                           RequirementSpec.OpenQuestion drafted, DocumentStructure.Prepared draftedWords) {
+        return sameId(document, drafted) ? 3 : sameWords(document, drafted) ? 2 : DocumentStructure.sameQuestion(documentWords, draftedWords) ? 1 : 0;
     }
 
     /**
@@ -164,10 +192,7 @@ public final class SpecMerger {
     /** {@link #restates(RequirementSpec.OpenQuestion, RequirementSpec.OpenQuestion)} with the words read before. */
     static boolean restates(RequirementSpec.OpenQuestion document, DocumentStructure.Prepared documentWords, RequirementSpec.OpenQuestion drafted,
                             DocumentStructure.Prepared draftedWords) {
-        return document.reference() != null && documentId(document.reference()) && drafted.reference() != null
-                && normalize(document.reference()).equals(normalize(drafted.reference()))
-                || normalize(capped(document.question())).equals(normalize(capped(drafted.question())))
-                || DocumentStructure.sameQuestion(documentWords, draftedWords);
+        return restatement(document, documentWords, drafted, draftedWords) > 0;
     }
 
     /** The most of a question's text read to compare it. */

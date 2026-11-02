@@ -47,6 +47,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       if (ui >= 0) {
         return folders[ui + 1];
       }
+      // a file right under the top folder belongs to it (db for db/01_create.sql, backend for backend/pom.xml)
+      if (folders.length === 1) {
+        return folders[0];
+      }
       for (let i = folders.length - 1; i >= 1; i--) {
         if (!KIND_FOLDERS.test(folders[i])) {
           return folders[i];

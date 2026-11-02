@@ -132,7 +132,9 @@ public final class ModelReasoning {
             + " (?:provided|given|above|you (?:provided|gave|sent)|in the prompt) (?:was|is|got|has been|seems|appears)(?: to be)?"
             + " (?:truncated|cut off|cut)\\b"
             + "|^\\W{0,3}the (?:previous|earlier) (?:answer|reply)\\b(?! (?:from|of|by|for|to|in|on|at|with)\\b)"
-            + "|\\b(?:my|our) (?:previous|earlier|last) (?:answer|reply|response)\\b"
+            // (not "Our previous response to the host was rejected": a response to someone is the code's)
+            + "|\\bmy (?:previous|earlier|last) (?:answer|reply|response)\\b(?! (?:to|from|of|for)\\b)"
+            + "|\\bour (?:previous|earlier|last) (?:answer|reply)\\b(?! (?:to|from|of|for)\\b)"
             + "|\\b(?:the|your) prompt (?:says|said|asks|asked|wants|requires|gives|shows|mentions)\\b(?! nothing\\b)"
             + "|\\blet'?s (?:check|see|re-?check|re-?read)\\b|\\bas an ai\\b"
             + "|\\bin this (?:response|answer),? (?:i|we)\\b|\\bthe user (?:wants|asks|asked) (?:me|us)\\b"
@@ -140,9 +142,13 @@ public final class ModelReasoning {
             + "|^\\W{0,3}(?:but |hmm,? |ok(?:ay)?,? )?wait\\s{0,3}[,.!\\u2026\\u2014-]");
     /** The most of a text that is read for such sentences; the rest is kept as it is. */
     static final int MAX_PROSE = 4000;
-    /** Words whose full stop ends no sentence ("e.g.", "Mr."), without their dots. */
-    private static final Set<String> NO_STOP = Set.of("eg", "ie", "etc", "vs", "approx", "incl", "cf", "viz", "no", "nos", "fig", "sec",
-            "mr", "mrs", "ms", "dr", "st", "ltd", "inc", "jr", "sr");
+    /** Abbreviations whose full stop ends no sentence when a lower-case word or a number follows ("e.g. the", "etc. and"). */
+    private static final Set<String> NO_STOP = Set.of("eg", "ie", "etc", "vs", "approx", "incl", "cf", "viz", "fig", "sec", "st", "ltd", "inc",
+            "jr", "sr");
+    /** Titles: their full stop ends no sentence before a name either ("Mr. Smith"). */
+    private static final Set<String> TITLES = Set.of("mr", "mrs", "ms", "dr");
+    /** "No." ends no sentence only before a number ("No. 5"): "The answer is no. The ..." are two. */
+    private static final Set<String> NUMBER_WORDS = Set.of("no", "nos");
 
     /**
      * The text without its sentences in which the model talks about its input or its own answers (see {@link #PROSE});
@@ -184,7 +190,11 @@ public final class ModelReasoning {
         return out.stripTrailing();
     }
 
-    /** Whether the full stop at {@code dot} ends a single letter or an abbreviation (read back at most 8 characters). */
+    /**
+     * Whether the full stop at {@code dot} is an abbreviation's rather than a sentence's end (read back at most 8
+     * characters, ahead at most 4): a title's always; "No." before a number; a single letter or another abbreviation
+     * before a lower-case word or a number ("e.g. the", "etc. and"), but not before a capital ("etc. The ...").
+     */
     private static boolean abbreviation(String text, int dot) {
         int from = dot;
         while (from > 0 && dot - from < 8 && (Character.isLetter(text.charAt(from - 1)) || text.charAt(from - 1) == '.')) {
@@ -194,7 +204,18 @@ public final class ModelReasoning {
             return false;
         }
         String word = text.substring(from, dot).replace(".", "").toLowerCase(Locale.ROOT);
-        return word.length() == 1 || NO_STOP.contains(word);
+        if (TITLES.contains(word)) {
+            return true;
+        }
+        int next = dot + 1;
+        while (next < text.length() && next - dot <= 4 && (text.charAt(next) == ' ' || text.charAt(next) == '\t')) {
+            next++;
+        }
+        char following = next < text.length() ? text.charAt(next) : 'A';
+        if (NUMBER_WORDS.contains(word)) {
+            return Character.isDigit(following);
+        }
+        return (word.length() == 1 || NO_STOP.contains(word)) && (Character.isLowerCase(following) || Character.isDigit(following));
     }
 
     /** A comment longer than this many lines is not taken out (it may be code the scan misread). */

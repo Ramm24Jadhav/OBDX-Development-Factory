@@ -49,14 +49,21 @@ const cases = [
   ['another server\'s JSON stays', 'Delivery failed: the build server answered {"error":"Unauthorized"}. Check the Jenkins credentials.',
     'Delivery failed: the build server answered {"error":"Unauthorized"}. Check the Jenkins credentials.', false],
   ['a plain message stays', 'Plan ready: 3 file(s).', 'Plan ready: 3 file(s).', false],
+  ['a report outside brackets keeps its words whole', 'Impact analysis failed: ' + server + ' failed: Rate limit reached on tokens per day '
+    + '(TPD): Limit 100, Used 99. Please try again in 5m.', 'Impact analysis failed: The model server failed: Rate limit reached on tokens '
+    + 'per day (TPD): Limit 100, Used 99. Please try again in 5m.', true],
+  ['other keys, a key in the address and a user in it are hidden', 'Impact analysis failed: ' + server + ' answered 401 for '
+    + 'gsk_abcdefghijklmnop at https://user:p@ss@host/v1?key=SECRET123 (token=x).',
+    'Impact analysis failed: The model server answered 401 for [hidden] at https://[hidden]@host/v1?key=[hidden] (token=x). Check the '
+    + 'API key on the Models page.', true],
   ['secrets are hidden, details too', 'Impact analysis failed: ' + server + ' answered 401: {"error":{"message":"Incorrect API key '
-    + 'sk-abcdefghijklmnop; Authorization: Bearer abc.def"}}', 'Impact analysis failed: The model server answered 401.', true]
+    + 'sk-abcdefghijklmnop; Authorization: Bearer abc.def"}}', 'Impact analysis failed: The model server answered 401. Check the API key on the Models page.', true]
 ];
 
 let failed = 0;
 for (const [name, message, expected, details] of cases) {
   const result = ui.shortError(message);
-  const ok = result.text === expected && !!result.details === details && !/sk-abcdefghijklmnop|Bearer abc/.test(result.details);
+  const ok = result.text === expected && !!result.details === details && !/sk-abcdefghijklmnop|Bearer abc|gsk_abc|SECRET123|p@ss/.test(result.details + result.text);
   if (!ok) {
     failed++;
     console.error('Message check failed: ' + name + '\n  got:      ' + result.text + '\n  expected: ' + expected

@@ -289,12 +289,13 @@ public class RequirementService {
                         requirements.save(requirement);
                     });
             // The document's own tables and lists (requirements, rules, criteria, questions) exactly as written
-            spec = DocumentStructure.apply(spec, DocumentStructure.read(requirement.getDocumentText()));
+            DocumentStructure.Structure structure = DocumentStructure.read(requirement.getDocumentText());
+            spec = DocumentStructure.apply(spec, structure);
             spec = SpecGrounding.apply(spec, requirement.getDocumentText());
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
-                    + spec.openQuestions().size() + " open question(s)." + noFieldsNote(spec));
+                    + spec.openQuestions().size() + " open question(s)." + DocumentStructure.questionsLeftOut(structure) + noFieldsNote(spec));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow): the requirement must not stay "processing"
             log.error("Drafting the spec for requirement {} failed", id, e);
@@ -317,11 +318,13 @@ public class RequirementService {
                     .collect(Collectors.toMap(s -> SpecMerger.normalize(s.name()), RequirementSpec.Screen::relatedCode, (a, b) -> a));
             RequirementSpec result = linkRelatedCode(requirement.getWorkspaceId(),
                     withQuestions(refined, stillOpen, withDecisions.decisions()), previousCode);
-            result = DocumentStructure.apply(result, DocumentStructure.read(requirement.getDocumentText()));
+            DocumentStructure.Structure structure = DocumentStructure.read(requirement.getDocumentText());
+            result = DocumentStructure.apply(result, structure);
             // Not the APIs the document names: one the analyst removed must not come back with the answers
             result = SpecGrounding.apply(result, requirement.getDocumentText(), false);
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
             requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left."
+                    + DocumentStructure.questionsLeftOut(structure)
                     + noFieldsNote(result));
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow): the requirement must not stay "updating"

@@ -35,12 +35,21 @@ const WRITE = args.write === 'yes';
     (o.method === 'get' ? api.get(o.path) : api[o.method](o.path, o.body)).then((r) => resolve({ ok: true, r: r })).catch((e) => resolve({ ok: false, e: e.message }));
   })), { method: method, path: path, body: body });
 
+  // A page load starts the app afresh, which selects the default workspace: --workspace is selected again after each
+  const openPage = async (url) => {
+    await open(url);
+    if (args.workspace) {
+      await sleep(1500);
+      await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace);
+    }
+  };
+
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await open(BASE + '/?ojr=overview');
   if (args.workspace) {
     await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace);
   }
-  await open(BASE + '/?ojr=impact');
+  await openPage(BASE + '/?ojr=impact');
   await sleep(4500);
   const top = await run(() => {
     const summary = document.getElementById('planSummary');
@@ -129,7 +138,7 @@ const WRITE = args.write === 'yes';
         const c = (await call('get', 'changes/' + id)).r;
         if (c.status !== 'ANALYZING') { break; }
       }
-      await open(BASE + '/?ojr=impact');
+      await openPage(BASE + '/?ojr=impact');
       await sleep(4500);
       await tab('revisions');
       const diff = await run(() => ({ note: (document.querySelector('#revisionCompare [role=status]') || {}).textContent || '',
@@ -144,7 +153,7 @@ const WRITE = args.write === 'yes';
 
   // Phone: the title wraps between words, not inside one
   await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await open(BASE + '/?ojr=impact');
+  await openPage(BASE + '/?ojr=impact');
   await sleep(4500);
   const phone = await run(() => {
     const title = document.getElementById('impactChangeTitle');

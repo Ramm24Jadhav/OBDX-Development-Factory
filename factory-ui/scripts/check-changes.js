@@ -33,12 +33,21 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   const cancelDialog = () => run(() => { const d = document.querySelector('.fx-dialog'); const t = d ? d.querySelector('.fx-dialog-title').textContent : null;
     if (d) { d.querySelector('.fx-btn--secondary').click(); } return t; });
 
+  // A page load starts the app afresh, which selects the default workspace: --workspace is selected again after each
+  const openPage = async (url) => {
+    await open(url);
+    if (args.workspace) {
+      await sleep(1500);
+      await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace);
+    }
+  };
+
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await open(BASE + '/?ojr=overview');
   if (args.workspace) {
     await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace);
   }
-  await open(BASE + '/?ojr=changes');
+  await openPage(BASE + '/?ojr=changes');
   await sleep(6000);
   const top = await run(() => {
     const summary = document.getElementById('changeSummary');
