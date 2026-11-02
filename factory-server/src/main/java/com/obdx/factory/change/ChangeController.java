@@ -4,6 +4,9 @@ import com.obdx.factory.auth.AccessGuard;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.common.BadRequestException;
+import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
+import com.obdx.factory.common.NotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -141,7 +144,10 @@ public class ChangeController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail regenerate(@PathVariable UUID id, @RequestBody RegenerateRequest request) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.regenerate(id, request.path(), request.note());
+        ChangeService.ChangeDetail change = service.regenerate(id, request.path(), request.note());
+        audit.record(WRITTEN_AGAIN, change.workspaceId(), id.toString(), request.path()
+                + (request.note() == null || request.note().isBlank() ? "" : " (with a note)"));
+        return change;
     }
 
     @PutMapping("/api/changes/{id}/file")
@@ -163,16 +169,36 @@ public class ChangeController {
     }
 
     @PostMapping("/api/changes/{id}/deliver")
-    public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
+    public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete,
+                                              @RequestParam(value = "failedChecks", defaultValue = "false") boolean failedChecks) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = service.deliverToBranch(id, incomplete);
+        ChangeService.ChangeDetail change;
+        try {
+            change = service.deliverToBranch(id, incomplete, failedChecks);
+        } catch (ConflictException | BadRequestException | NotFoundException e) {
+            // refused before anything was committed (the UI asks to confirm, or says what to do first)
+            throw e;
+        } catch (RuntimeException e) {
+            // The commit failed (a pre-commit hook, the server, a conflict): recorded, as a delivery is
+            ChangeService.ChangeDetail failed = service.get(id);
+            audit.record(DELIVERY_FAILED, failed.workspaceId(), id.toString(), failed.title() + ": " + Messages.reason(e));
+            throw e;
+        }
         long written = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
         long notWritten = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING
                 || f.status() == ChangeFileStore.Status.FAILED).count();
+        long failing = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
+                && f.checkStatus() == FileChecks.Status.FAILED).count();
         audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision() + ", "
-                + written + " file(s) committed" + (incomplete ? ", " + notWritten + " planned file(s) not written left out (confirmed)" : ""));
+                + written + " file(s) committed" + (incomplete ? ", " + notWritten + " planned file(s) not written left out (confirmed)" : "")
+                + (failedChecks && failing > 0 ? ", " + failing + " file(s) failing their checks delivered (confirmed)" : ""));
         return change;
     }
+
+    /** A delivery whose commit failed (audited with the reason). */
+    static final String DELIVERY_FAILED = "CHANGE_DELIVERY_FAILED";
+    /** A file written again (audited, and shown in the change's history). */
+    static final String WRITTEN_AGAIN = "CHANGE_FILE_WRITTEN_AGAIN";
 
     /** Builds the change with the workspace's Jenkins jobs, fixing build errors in its files a limited number of times. */
     public record CloseRequest(ChangeRequest.CloseReason reason, Boolean force) {

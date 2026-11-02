@@ -1138,7 +1138,36 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     + "finishes. If it keeps happening, use a faster model server (one with a GPU) or a longer FACTORY_MODEL_TIMEOUT.", e);
         }
         return new ModelGatewayException(
-                "Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " failed: " + com.obdx.factory.common.Messages.redacted(e.getMessage()), e);
+                "Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " failed: " + failureReason(e), e);
+    }
+
+    /**
+     * Why a call failed, in plain words with what to do: a server that refused the connection or cannot be found, a
+     * server error (5xx) with the server's own sentence instead of its JSON, else the error's message. Secrets hidden.
+     */
+    static String failureReason(Throwable e) {
+        int status = 0;
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.ConnectException || t instanceof java.nio.channels.UnresolvedAddressException
+                    || t.getMessage() != null && t.getMessage().contains("Connection refused")) {
+                return "the model server is not reachable (it refused the connection). Start it, or check its address on the Models "
+                        + "page, then try again.";
+            }
+            if (t instanceof java.net.UnknownHostException) {
+                return "the model server's host cannot be found. Check its address on the Models page, then try again.";
+            }
+            if (status == 0 && t instanceof dev.langchain4j.exception.HttpException h) {
+                status = h.statusCode();
+            }
+        }
+        String text = messages(e);
+        if (status >= 500 || status == 0 && e instanceof dev.langchain4j.exception.InternalServerException) {
+            return "the model server answered with an error" + (status > 0 ? " (HTTP " + status + ")" : "") + ": "
+                    + serverMessage(text).replaceAll("\\.$", "") + ". Try again in a few minutes; if it keeps failing, check the model server.";
+        }
+        String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+        // a server's JSON error body: its own sentence
+        return message.stripLeading().startsWith("{") ? serverMessage(text) : com.obdx.factory.common.Messages.redacted(message);
     }
 
     @Override
@@ -1271,6 +1300,6 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private static ModelGatewayException embeddingFailure(Connection current, RuntimeException e) {
         return new ModelGatewayException(
-                "Embedding model '" + current.embeddingModelName() + "' at " + ModelSettings.shown(current.embeddingUrl()) + " failed: " + com.obdx.factory.common.Messages.redacted(e.getMessage()), e);
+                "Embedding model '" + current.embeddingModelName() + "' at " + ModelSettings.shown(current.embeddingUrl()) + " failed: " + failureReason(e), e);
     }
 }

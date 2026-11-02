@@ -38,6 +38,19 @@ public class ImportController {
         return job;
     }
 
+    /**
+     * Discards the working copy and checks the code out again, for a working copy svn cannot use any more (damaged or
+     * locked: E155016 and the like). Requirements, designs and changes are kept; the index is brought up to date.
+     */
+    @PostMapping("/imports/checkout-again")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ImportJobResponse checkOutAgain(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.MANAGE_CODE);
+        ImportJobResponse job = service.start(workspaceId, true);
+        audit.record("WORKING_COPY_CHECKED_OUT_AGAIN", workspaceId, job.id().toString(), "working copy discarded and checked out again");
+        return job;
+    }
+
     @GetMapping("/imports")
     public List<ImportJobResponse> recent(@PathVariable UUID workspaceId, @RequestParam(defaultValue = "10") int limit) {
         guard.require(workspaceId, Permission.VIEW);

@@ -122,6 +122,8 @@ public class ScreenDesignController {
     @PostMapping("/api/designs/{id}/import-figma")
     public ScreenDesignService.DesignDetail importFigma(@PathVariable UUID id, @RequestBody FigmaRequest request) {
         guard.requireForDesign(id, Permission.EDIT_DESIGNS);
+        // an approved design is refused before figma.com is called with the user's token
+        service.requireEditable(id);
         ScreenDesignService.DesignDetail detail = service.importDesign(id, importer.fromFigma(request.link(), request.token()));
         audit.record("DESIGN_IMPORTED", detail.workspaceId(), detail.name(), "Figma " + request.link());
         return detail;
@@ -171,10 +173,14 @@ public class ScreenDesignController {
     }
 
     @PostMapping("/api/designs/{id}/approve")
-    public ScreenDesignService.DesignDetail approve(@PathVariable UUID id) {
+    public ScreenDesignService.DesignDetail approve(@PathVariable UUID id,
+                                                    @RequestParam(value = "unsupported", defaultValue = "false") boolean unsupported) {
         var user = guard.requireForDesign(id, Permission.APPROVE);
-        ScreenDesignService.DesignDetail detail = service.approve(id, user.getDisplayName());
-        audit.record("DESIGN_APPROVED", detail.workspaceId(), detail.name(), "version " + detail.approvedVersion());
+        ScreenDesignService.Approved approved = service.approve(id, user.getDisplayName(), unsupported);
+        ScreenDesignService.DesignDetail detail = approved.detail();
+        audit.record("DESIGN_APPROVED", detail.workspaceId(), detail.name(), "version " + detail.approvedVersion()
+                + (approved.unsupported().isEmpty() ? "" : ", with " + String.join(", ", approved.unsupported())
+                + " that the version pack forbids (confirmed)"));
         return detail;
     }
 

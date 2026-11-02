@@ -70,6 +70,11 @@ public class ImportService {
     }
 
     public synchronized ImportJobResponse start(UUID workspaceId) {
+        return start(workspaceId, false);
+    }
+
+    /** @param fresh discard the working copy and check out again (a working copy svn cannot use any more) */
+    public synchronized ImportJobResponse start(UUID workspaceId, boolean fresh) {
         Workspace workspace = findWorkspace(workspaceId);
         if (workspace.getSvnUrl() == null) {
             throw new BadRequestException("Set the workspace's SVN URL before importing code");
@@ -78,7 +83,7 @@ public class ImportService {
             throw new ConflictException("An import is already running for this workspace");
         }
         ImportJob job = jobs.save(new ImportJob(workspaceId, workspace.getIndexedRevision()));
-        executor.execute(() -> run(job.getId()));
+        executor.execute(() -> run(job.getId(), fresh));
         return ImportJobResponse.from(job);
     }
 
@@ -113,6 +118,10 @@ public class ImportService {
     }
 
     void run(UUID jobId) {
+        run(jobId, false);
+    }
+
+    void run(UUID jobId, boolean fresh) {
         ImportJob job = jobs.findById(jobId).orElseThrow();
         job.start();
         jobs.save(job);
@@ -121,7 +130,7 @@ public class ImportService {
             SvnCredentials credentials = workspaceService.credentials(workspace);
             Path workingCopy = storage.workingCopy(workspace.getId());
 
-            long revision = checkoutOrUpdate(workspace.getSvnUrl(), workingCopy, credentials);
+            long revision = checkoutOrUpdate(workspace.getSvnUrl(), workingCopy, credentials, fresh);
             job.setToRevision(revision);
             jobs.save(job);
 
@@ -142,7 +151,7 @@ public class ImportService {
             job.succeed(summary);
         } catch (Exception e) {
             log.error("Import job {} failed", jobId, e);
-            job.fail(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+            job.fail(e.getMessage() != null ? com.obdx.factory.common.Messages.redacted(e.getMessage()) : e.getClass().getSimpleName());
         }
         jobs.save(job);
     }
@@ -169,17 +178,38 @@ public class ImportService {
         }
     }
 
-    private long checkoutOrUpdate(String url, Path workingCopy, SvnCredentials credentials) throws IOException {
-        if (Files.isDirectory(workingCopy.resolve(".svn"))) {
+    private long checkoutOrUpdate(String url, Path workingCopy, SvnCredentials credentials, boolean fresh) throws IOException {
+        if (fresh) {
+            log.info("Discarding the working copy {} to check it out again", workingCopy);
+        } else if (Files.isDirectory(workingCopy.resolve(".svn"))) {
             String checkedOutUrl = svnClient.info(workingCopy.toString(), credentials).url();
             if (checkedOutUrl.equals(url.replaceAll("/+$", ""))) {
                 return svnClient.update(workingCopy, credentials);
             }
             log.info("SVN URL changed from {} to {}; checking out again", checkedOutUrl, url);
         }
-        FileSystemUtils.deleteRecursively(workingCopy);
+        deleteWorkingCopy(workingCopy);
         Files.createDirectories(workingCopy.getParent());
         return svnClient.checkout(url, workingCopy, credentials);
+    }
+
+    /**
+     * Removes a working copy. svn keeps its pristine copies read-only, which Windows refuses to delete, so each file
+     * is made writable first; a file another program holds open is named in the error.
+     */
+    static void deleteWorkingCopy(Path workingCopy) throws IOException {
+        if (!Files.exists(workingCopy)) {
+            return;
+        }
+        try (var paths = Files.walk(workingCopy)) {
+            paths.forEach(p -> p.toFile().setWritable(true));
+        }
+        try {
+            FileSystemUtils.deleteRecursively(workingCopy);
+        } catch (IOException e) {
+            throw new IOException("Could not remove the old working copy (" + e.getMessage() + "). Close any program that uses its "
+                    + "files (an editor, TortoiseSVN, a virus scan), then try again.", e);
+        }
     }
 
     private void saveProgress(ImportJob job, CodeIndexer.Progress progress) {

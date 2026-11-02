@@ -159,7 +159,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             .finally(poll);
         }, POLL_MS);
       };
-      const startImport = (id) => api.post('workspaces/' + id + '/imports').then((job) => {
+      const WORKING_COPY_DAMAGED = 'The workspace\'s working copy is damaged or locked';
+      const startImport = (id, again) => api.post('workspaces/' + id + '/imports' + (again ? '/checkout-again' : '')).then((job) => {
         const m = Object.assign({}, liveJobs());
         m[id] = job;
         liveJobs(m);
@@ -270,6 +271,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           jobMessage: job && !running ? job.message || '' : '',
           jobFailed: !!job && job.status === 'FAILED',
           canManage: canManage, canUpdate: canManage && !running && !!w.svnUrl,
+          // A working copy svn cannot use any more (SvnClient.WORKING_COPY_DAMAGED): offered to discard and check out again
+          canCheckOutAgain: canManage && !running && !!w.svnUrl && !!job && job.status === 'FAILED'
+            && String(job.message || '').indexOf(WORKING_COPY_DAMAGED) === 0,
           updateLabel: indexed ? 'Update code' : 'Import code',
           updateHelp: !w.svnUrl ? 'Set the SVN URL on the Code page first.'
             : (indexed ? 'Fetches what changed in SVN since r' + w.indexedRevision + ' and indexes again only the files whose content changed.'
@@ -306,6 +310,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         startImport(s.id).then(() => toast.success((s.updateLabel === 'Update code' ? 'Updating ' : 'Importing ') + s.name + '. Progress shows here and in the list.'))
           .catch((error) => toast.error(error.message));
+      };
+      this.checkOutAgain = () => {
+        const s = this.sheet();
+        if (!s) {
+          return;
+        }
+        dialog.confirm({ title: 'Check out again?', message: 'The working copy of ' + s.name + ' is discarded and the code is checked out '
+          + 'from SVN again, then indexed. Requirements, designs and changes are kept.', confirmLabel: 'Check Out Again', danger: true })
+          .then((ok) => (ok ? startImport(s.id, true).then(() => toast.success('Checking out ' + s.name + ' again. Progress shows here and in the list.'))
+            .catch((error) => toast.error(error.message)) : null));
       };
       this.confirmVersion = () => {
         const s = this.sheet();

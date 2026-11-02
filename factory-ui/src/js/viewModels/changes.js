@@ -233,9 +233,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.busy(true);
-        busyService.block(api.post(base() + '/deliver' + (this.unwritten().length ? '?incomplete=true' : '')), 'Committing the change to a new SVN branch…')
-          .then(done('Committed to a new SVN branch for review.')).catch(failed).finally(() => this.busy(false));
+        commit(this.unwritten().length ? ['incomplete=true'] : []).finally(() => this.busy(false));
       });
+      // Files that fail their checks are refused by the server (409 "Failing checks: ..."): delivering them is confirmed
+      const FAILED_CHECKS = 'Failing checks: ';
+      const commit = (query) => busyService.block(api.post(base() + '/deliver' + (query.length ? '?' + query.join('&') : '')),
+        'Committing the change to a new SVN branch…')
+        .then(done('Committed to a new SVN branch for review.'))
+        .catch((error) => (error.status === 409 && String(error.message).indexOf(FAILED_CHECKS) === 0 && query.indexOf('failedChecks=true') < 0
+          ? ask('Submit files that fail their checks?', error.message.substring(FAILED_CHECKS.length).replace(/^./, (c) => c.toUpperCase()),
+            'Submit Anyway', true).then((ok) => (ok ? commit(query.concat('failedChecks=true')) : null))
+          : failed(error)));
       this.continueGeneration = () => api.post(base() + '/continue').then(done('The model is writing the files not written yet.')).catch(failed);
       // The patch link: an incomplete change is confirmed first, and only the confirmed download asks for it
       // (the link itself never carries the flag, so opening it in a new tab is refused, not downloaded)
@@ -947,6 +955,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           items.push({ text: 'Plan approved by ' + d.planApprovedBy, at: d.planApprovedAt });
         }
         d.builds.forEach((b) => items.push({ text: 'Round ' + b.round + ': ' + b.job + ' ' + (b.result || '') + (b.fixedFiles.length ? ', fixed ' + b.fixedFiles.length + ' files' : ''), at: b.startedAt }));
+        // Files written again and failed deliveries, from the audit log (ChangeService.events)
+        (d.events || []).forEach((e) => items.push({ text: e.text + (e.by ? ' by ' + e.by : ''), at: e.at }));
         if (d.deliveredRevision) {
           items.push({ text: 'Delivered to ' + (d.branchUrl || 'SVN') + ' at r' + d.deliveredRevision, at: d.updatedAt });
         }

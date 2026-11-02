@@ -394,6 +394,25 @@ class ReviewFixesTest {
                 () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(rows.toString(), drafted));
         quickly("long question rows", () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith("", drafted.subList(0, 2)),
                 () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(longRows.toString(), drafted));
+        // Regression audit fixes: secret values masked by value (one indexOf pass per value, short values as whole words
+        // that almost match everywhere), build log lines with a file and line, Must requirements against a long plan
+        com.obdx.factory.common.KnownSecrets.remember("aaaaaab");
+        com.obdx.factory.common.KnownSecrets.remember("aaaa");
+        quickly("known secret values", () -> com.obdx.factory.common.KnownSecrets.masked("aaaa x"),
+                () -> com.obdx.factory.common.KnownSecrets.masked("a".repeat(400_000)));
+        com.obdx.factory.common.KnownSecrets.clear();
+        quickly("log lines like a file", () -> com.obdx.factory.jenkins.BuildLogParser.errors("a.js:1: x"),
+                () -> com.obdx.factory.jenkins.BuildLogParser.errors("[ERROR] " + "a.js".repeat(50_000) + "\n" + ".js:".repeat(50_000)));
+        List<com.obdx.factory.requirements.RequirementSpec.FunctionalRequirement> must = new ArrayList<>();
+        List<ChangePlan.Item> items = new ArrayList<>();
+        for (int i = 0; i < 5_000; i++) {
+            must.add(new com.obdx.factory.requirements.RequirementSpec.FunctionalRequirement("FR-" + i, "r", null, "Must", List.of()));
+            items.add(new ChangePlan.Item("a/f" + i + ".js", "create", "ui", "FR-" + (i * 2), List.of(), "FR-1 ".repeat(400)));
+        }
+        com.obdx.factory.requirements.RequirementSpec many = new com.obdx.factory.requirements.RequirementSpec("t", "s", List.of(), List.of(),
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), must, List.of(), List.of());
+        quickly("Must requirements", () -> PlanReview.uncoveredMust(new ChangePlan("x", items.subList(0, 2), List.of()), many),
+                () -> PlanReview.uncoveredMust(new ChangePlan("x", items, List.of()), many));
     }
 
     /** A five-letter word of its own for each number: aaaaa, aaaab, ... */

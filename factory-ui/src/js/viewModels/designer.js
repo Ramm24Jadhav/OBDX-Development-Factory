@@ -1467,6 +1467,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         } else {
           add('ok', 'One main button: ' + primaries[0].label);
         }
+        // Elements the workspace's version pack forbids: approval asks to confirm them
+        screenElements().forEach((element) => {
+          const entry = this.compatibilityOf(element);
+          if (entry && entry.status === 'UNSUPPORTED') {
+            add('warn', element + ' is not supported in OBDX ' + this.obdxVersion() + ': ' + entry.evidence);
+          }
+        });
         return list;
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
@@ -2194,7 +2201,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!ok) {
           return;
         }
-        api.post(base() + '/approve').then((detail) => { show(detail, true); showInfo('Screen approved for development.'); }).catch(showError);
+        // Elements the version pack forbids are refused (409 "Unsupported components: ..."): approving them is confirmed
+        const UNSUPPORTED = 'Unsupported components: ';
+        const post = (confirmed) => api.post(base() + '/approve' + (confirmed ? '?unsupported=true' : ''))
+          .then((detail) => { show(detail, true); showInfo('Screen approved for development.'); })
+          .catch((error) => (!confirmed && error.status === 409 && String(error.message).indexOf(UNSUPPORTED) === 0
+            ? ask('Approve unsupported components?', error.message.substring(UNSUPPORTED.length).replace(/^./, (c) => c.toUpperCase()),
+              'Approve Anyway', true).then((yes) => (yes ? post(true) : null))
+            : showError(error)));
+        post(false);
       });
       this.reopen = () => api.post(base() + '/reopen').then((detail) => { show(detail, true); showInfo('Screen reopened for changes.'); }).catch(showError);
       this.remove = () => ask('Delete this screen?', 'The screen, all its versions and its comments are deleted. This cannot be undone.', 'Delete', true).then((ok) => {

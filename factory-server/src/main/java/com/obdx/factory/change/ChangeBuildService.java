@@ -156,7 +156,7 @@ public class ChangeBuildService {
         } catch (RuntimeException | Error e) {
             // An Error too (a stack overflow in a check): the build must not stay BUILDING
             log.error("Jenkins build of change {} failed", changeId, e);
-            finish(changeId, "FAILED", "Could not build with Jenkins: " + e.getMessage());
+            finish(changeId, "FAILED", "Could not build with Jenkins: " + com.obdx.factory.common.Messages.redacted(e.getMessage()));
         }
     }
 
@@ -220,19 +220,26 @@ public class ChangeBuildService {
         List<String> tests = client.failedTests(build);
         List<String> changed = files.files(change.getId()).stream().filter(f -> f.generated() != null).map(ChangeFileStore.ChangeFile::path).toList();
         List<String> unmatched = new ArrayList<>();
+        List<String> otherTests = new ArrayList<>();
         for (String test : tests) {
             // A failing test in a file of the change can be fixed like a compile error.
-            String className = test.substring(0, test.indexOf(':')).replaceAll("\\.[^.]+$", "");
+            String className = test.substring(0, Math.max(0, test.indexOf(':'))).replaceAll("\\.[^.]+$", "");
             String path = BuildLogParser.matchFile(className.replace('.', '/') + ".java", changed);
+            if (path == null) {
+                path = BuildLogParser.testFile(className, changed);
+            }
             if (path != null) {
                 errors.add(new BuildLogParser.BuildError(path, 0, "Test failed: " + test));
             } else {
                 unmatched.add("test " + test);
+                otherTests.add("Test failed: " + test);
             }
         }
         errors.stream().filter(e -> BuildLogParser.matchFile(e.file(), changed) == null)
                 .forEach(e -> unmatched.add(e.file() + ":" + e.line() + " " + e.message()));
-        List<String> described = errors.stream().map(e -> e.file() + (e.line() > 0 ? ":" + e.line() : "") + " " + e.message()).toList();
+        // Every failed test is recorded, also one no file of the change is named after: the unit test gate shows it failed
+        List<String> described = new ArrayList<>(errors.stream().map(e -> e.file() + (e.line() > 0 ? ":" + e.line() : "") + " " + e.message()).toList());
+        described.addAll(otherTests);
         builds.finish(buildId, result, described, BuildLogParser.tail(console, 60));
         return new JobOutcome(false, errors, unmatched);
     }

@@ -40,14 +40,15 @@ public final class Messages {
 
     /**
      * The text with what looks like a secret replaced by "[hidden]": a bearer token, an API key (sk-..., gsk_...), a
-     * key, token or password given as name=value or "name": "value". A model server's error can echo the request's
-     * headers, and messages are shown to every member of a workspace.
+     * key, token or password given as name=value or "name": "value", and every secret value the factory holds
+     * ({@link KnownSecrets}: an SVN password or an API key without a known prefix, echoed as it is). A model server's
+     * error can echo the request's headers, and messages are shown to every member of a workspace.
      */
     public static String redacted(String text) {
         if (text == null) {
             return null;
         }
-        java.util.regex.Matcher m = SECRET.matcher(text);
+        java.util.regex.Matcher m = SECRET.matcher(KnownSecrets.masked(text));
         StringBuilder out = new StringBuilder();
         while (m.find()) {
             String keep = m.group(1) != null ? m.group(1) : m.group(2) != null ? m.group(2) : "";

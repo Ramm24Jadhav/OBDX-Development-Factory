@@ -25,6 +25,12 @@ public class ModelSettings {
     public record Current(String baseUrl, String apiKey, String chatModel, String embeddingModel, String embeddingBaseUrl,
                           String embeddingApiKey, boolean saved, OffsetDateTime updatedAt, String updatedBy) {
 
+        public Current {
+            // a provider's error can echo the key, whatever it looks like: masked by its value
+            com.obdx.factory.common.KnownSecrets.remember(apiKey);
+            com.obdx.factory.common.KnownSecrets.remember(embeddingApiKey);
+        }
+
         /** Where the embedding model runs. */
         public String embeddingUrl() {
             return embeddingBaseUrl == null ? baseUrl : embeddingBaseUrl;
@@ -46,6 +52,11 @@ public class ModelSettings {
      */
     public record Update(String baseUrl, String apiKey, String chatModel, String embeddingModel, String embeddingBaseUrl,
                          String embeddingApiKey) {
+
+        public Update {
+            com.obdx.factory.common.KnownSecrets.remember(apiKey);
+            com.obdx.factory.common.KnownSecrets.remember(embeddingApiKey);
+        }
 
         public Update(String baseUrl, String apiKey, String chatModel, String embeddingModel) {
             this(baseUrl, apiKey, chatModel, embeddingModel, null, null);

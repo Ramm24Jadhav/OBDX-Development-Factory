@@ -37,6 +37,8 @@ public class JenkinsClient {
 
     public JenkinsClient(String baseUrl, String username, String token, JenkinsProperties properties) {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
+        // a server's error or the build's console can echo the token: it is masked wherever messages are built
+        com.obdx.factory.common.KnownSecrets.remember(token);
         this.authorization = username == null || username.isBlank() ? null
                 : "Basic " + Base64.getEncoder().encodeToString((username + ":" + (token == null ? "" : token)).getBytes(StandardCharsets.UTF_8));
         this.properties = properties;
@@ -129,7 +131,7 @@ public class JenkinsClient {
         if (response.statusCode() != 200) {
             return "";
         }
-        String text = response.body();
+        String text = com.obdx.factory.common.KnownSecrets.masked(response.body());
         int max = (int) properties.maxLogSize().toBytes();
         return text.length() <= max ? text : text.substring(text.length() - max);
     }

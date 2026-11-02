@@ -21,19 +21,24 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+    /** A problem whose detail never carries a secret the factory holds (a server's error can echo one). */
+    static ProblemDetail problem(HttpStatus status, String detail) {
+        return ProblemDetail.forStatusAndDetail(status, KnownSecrets.masked(detail));
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ProblemDetail notFound(NotFoundException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+        return problem(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ProblemDetail badRequest(BadRequestException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail conflict(ConflictException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        return problem(HttpStatus.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -47,22 +52,22 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ModelGatewayException.class)
     public ProblemDetail modelUnavailable(ModelGatewayException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+        return problem(HttpStatus.BAD_GATEWAY, e.getMessage());
     }
 
     @ExceptionHandler(com.obdx.factory.jenkins.JenkinsException.class)
     public ProblemDetail jenkinsFailed(com.obdx.factory.jenkins.JenkinsException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+        return problem(HttpStatus.BAD_GATEWAY, e.getMessage());
     }
 
     @ExceptionHandler(SvnException.class)
     public ProblemDetail svnFailed(SvnException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+        return problem(HttpStatus.BAD_GATEWAY, e.getMessage());
     }
 
     @ExceptionHandler(SecretCipher.MissingSecretKeyException.class)
     public ProblemDetail missingSecretKey(SecretCipher.MissingSecretKeyException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -120,11 +125,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail forbidden(AccessDeniedException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+        return problem(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     public ProblemDetail unauthorized(AuthenticationCredentialsNotFoundException e) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage());
+        return problem(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 }

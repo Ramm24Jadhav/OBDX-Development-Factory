@@ -37,11 +37,13 @@ public class ScreenDesignService {
     private final ScreenModelEditor editor;
     private final TargetPacks targets;
     private final ComponentPalette palette;
+    private final ComponentCompatibility compatibility;
     private final SecureRandom random = new SecureRandom();
 
     public ScreenDesignService(ScreenDesignRepository designs, DesignStore store, WorkspaceRepository workspaces,
                                RequirementService requirements, ScreenModelEditor editor, TargetPacks targets,
-                               ComponentPalette palette) {
+                               ComponentPalette palette, ComponentCompatibility compatibility) {
+        this.compatibility = compatibility;
         this.designs = designs;
         this.palette = palette;
         this.targets = targets;
@@ -331,6 +333,15 @@ public class ScreenDesignService {
         return detail(designs.save(design));
     }
 
+    /**
+     * Refuses an approved design before anything is fetched for it (a Figma import calls figma.com with the user's
+     * token: not for a design that cannot take the result).
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(UUID id) {
+        editable(find(id));
+    }
+
     /** Turns a design made in a design tool into this screen's next version. */
     @Transactional
     public DesignDetail importDesign(UUID id, DesignImporter.Design source) {
@@ -384,9 +395,38 @@ public class ScreenDesignService {
 
     @Transactional
     public DesignDetail approve(UUID id, String by) {
+        return approve(id, by, false).detail();
+    }
+
+    /** An approved design, with the elements the version pack forbids that the approver confirmed (empty: none). */
+    public record Approved(DesignDetail detail, List<String> unsupported) {
+    }
+
+    /** How a refused approval of a screen with elements the version pack forbids starts, so the UI can ask to confirm it. */
+    public static final String UNSUPPORTED = "Unsupported components: ";
+
+    /**
+     * @param unsupported true: the approver confirmed approving although the workspace's version pack forbids elements
+     *                    of the screen; without it the approval is refused, naming them and the rules
+     */
+    @Transactional
+    public Approved approve(UUID id, String by, boolean unsupported) {
         ScreenDesign design = editable(find(id));
-        design.approve(requireAuthor(by));
-        return detail(designs.save(design));
+        String author = requireAuthor(by);
+        List<ComponentCompatibility.Entry> forbidden = compatibility == null ? List.of()
+                : compatibility.unsupported(design.getWorkspaceId(), currentModel(design));
+        if (!forbidden.isEmpty() && !unsupported) {
+            throw new ConflictException(unsupportedMessage(forbidden));
+        }
+        design.approve(author);
+        return new Approved(detail(designs.save(design)), forbidden.stream().map(ComponentCompatibility.Entry::element).toList());
+    }
+
+    /** "Unsupported components: oj-select-one (Version pack rule ...). Replace ..., or approve it as it is." */
+    static String unsupportedMessage(List<ComponentCompatibility.Entry> forbidden) {
+        return UNSUPPORTED + "the workspace's version pack forbids " + forbidden.stream().map(e -> e.element() + " (" + e.evidence() + ")")
+                .collect(java.util.stream.Collectors.joining("; ")) + ". Replace " + (forbidden.size() == 1 ? "it" : "them")
+                + " in the designer, or approve the screen as it is if you have checked that it works in this OBDX version.";
     }
 
     /** Unlocks an approved design for further changes. */
@@ -417,12 +457,16 @@ public class ScreenDesignService {
                 forReviewer(store.comments(design.getId())), expiresAt, design.getApprovedBy(), design.getApprovedAt(), preview(design));
     }
 
-    /** The screen as reviewers see it: where values are loaded from (the bank's API paths) stays internal. */
+    /**
+     * The screen as reviewers see it: where values are loaded from (the bank's API paths) and a custom component's own
+     * HTML, CSS and script (the bank's code) stay internal; the preview draws such a component as a placeholder of its kind.
+     */
     static ScreenModel forReviewer(ScreenModel model) {
         List<ScreenModel.Section> sections = model.sections().stream().map(s -> new ScreenModel.Section(s.id(), s.title(), s.columns(),
-                s.components().stream().map(c -> c.dataSource() == null ? c : new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(),
+                s.components().stream().map(c -> c.dataSource() == null && c.html() == null && c.css() == null && c.script() == null ? c
+                        : new ScreenModel.Component(c.id(), c.type(), c.name(), c.label(),
                         c.required(), c.helpText(), c.placeholder(), c.maxLength(), c.defaultValue(), c.options(), c.validations(), c.readonly(),
-                        c.component(), c.params(), c.html(), c.css(), c.script(), null, c.visibleWhen(), c.requiredWhen())).toList())).toList();
+                        c.component(), c.params(), null, null, null, null, c.visibleWhen(), c.requiredWhen())).toList())).toList();
         return new ScreenModel(model.name(), model.title(), model.description(), model.changeType(), sections, model.actions(),
                 model.stage(), model.channels());
     }

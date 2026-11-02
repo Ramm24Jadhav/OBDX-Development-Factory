@@ -142,7 +142,11 @@ public class ChangeService {
                                OffsetDateTime createdAt, OffsetDateTime updatedAt, List<FileView> files,
                                String buildStatus, String buildMessage, List<ChangeBuildStore.Build> builds,
                                ChangeRequest.CloseReason closedReason, String closedBy, OffsetDateTime closedAt,
-                               Long branchDeletedRevision) {
+                               Long branchDeletedRevision, List<HistoryEvent> events) {
+    }
+
+    /** An event in the change's history: when, who, what ("Wrote x.js again", "Delivery failed: ..."). */
+    public record HistoryEvent(OffsetDateTime at, String by, String text) {
     }
 
     public record ChangeSummary(UUID id, String title, ChangeRequest.Status status, String message, int files,
@@ -403,6 +407,11 @@ public class ChangeService {
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
         ChangePlan plan = plan(change);
         Integer latest = planReviews.latest(id);
+        // A request for changes holds the plan: the revision it was made on is not approved, confirmed or not
+        // (edits and analyses record a new revision, so the latest one is the plan as it is)
+        if (latest != null && planReviews.changesRequested(id, latest)) {
+            throw new ConflictException(CHANGES_REQUESTED);
+        }
         if (!incomplete || !java.util.Objects.equals(revision, latest)) {
             requireCompletePlan(plan, requirements.get(change.getRequirementId()).spec(), latest, incomplete);
         }
@@ -426,6 +435,9 @@ public class ChangeService {
             throw new NotFoundException("Change not found: " + id);
         }
     }
+
+    /** Why a plan with a request for changes on its revision is not approved. */
+    static final String CHANGES_REQUESTED = "Changes were requested on this revision of the plan: edit it or analyze again first.";
 
     /** How a refused approval of an incomplete plan starts, so the UI can ask the reviewer to confirm it. */
     static final String INCOMPLETE_PLAN = "Incomplete plan: ";
@@ -548,7 +560,8 @@ public class ChangeService {
                 Kept partial = resumes ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
                 writing = item.path();
                 writtenNow.add(item.path());
-                String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
+                String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial,
+                        onlyPath != null);
                 if (onlyPath != null) {
                     failedAgain = error;
                 }
@@ -774,12 +787,15 @@ public class ChangeService {
 
     /** "8 file(s) written, 1 with problems, 2 with warnings, 3 not written yet. Review ..." */
     static String summary(List<ChangeFileStore.ChangeFile> result) {
-        long failed = result.stream().filter(f -> f.status() == ChangeFileStore.Status.FAILED
-                || f.checkStatus() == FileChecks.Status.FAILED).count();
+        // a file cut off part-way is not a problem of its code: it is counted as cut off, for Continue to finish
+        long cut = result.stream().filter(ChangeService::partial).count();
+        long failed = result.stream().filter(f -> !partial(f) && (f.status() == ChangeFileStore.Status.FAILED
+                || f.checkStatus() == FileChecks.Status.FAILED)).count();
         long warnings = result.stream().filter(f -> f.checkStatus() == FileChecks.Status.WARNING).count();
         long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
         long pending = result.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING).count();
         return written + " file(s) written, " + failed + " with problems, " + warnings + " with warnings"
+                + (cut > 0 ? ", " + cut + " cut off" + (pending > 0 ? "" : " (Continue generation)") : "")
                 + (pending > 0 ? ", " + pending + " not written yet (Continue generation)" : "") + ". Review the changes before delivering them.";
     }
 
@@ -824,7 +840,7 @@ public class ChangeService {
      * @return why the file could not be written, or null
      */
     private String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
-                                Path workingCopy, Map<String, String> earlier, String note, Kept partial) {
+                                Path workingCopy, Map<String, String> earlier, String note, Kept partial, boolean again) {
         boolean modify = "modify".equals(item.action());
         String current = null;
         try {
@@ -846,6 +862,27 @@ public class ChangeService {
                     partial == null ? null : partial.text(), partial != null && partial.complete());
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
+            if (cutOff(result.check())) {
+                // Still cut off at the output limit after its continuations: kept as a part, as when the model's limit
+                // stops a file, so it counts as cut off (not written) and Continue goes on from it
+                ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
+                if (previous == null || previous.generated() == null || partial(previous)) {
+                    files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, result.content(), false,
+                            new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " " + result.check().message()
+                                    + "\nContinue generation goes on from here, or write it again."), result.attempts());
+                    return null;
+                }
+                // Write again of a written file: that version stays; the new part is kept beside it to go on from
+                files.saveRewrite(changeId, item.path(), result.content(), false);
+                return "it was cut off at the model's output limit; the part written is kept beside it, and Write again (or Continue) "
+                        + "goes on from it";
+            }
+            String worse = again ? worseThanBefore(files.file(changeId, item.path()).orElse(null), result.check()) : null;
+            if (worse != null) {
+                // Write again never replaces a version that passed its checks with one that fails them: the earlier one stays
+                log.info("Writing {} again in change {} gave a version that fails its checks; the previous version is kept", item.path(), changeId);
+                return worse;
+            }
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
             earlier.put(item.path(), result.content());
             return null;
@@ -857,6 +894,26 @@ public class ChangeService {
         } catch (IOException | RuntimeException | StackOverflowError e) {
             return recordFailure(files, changeId, item.path(), current, e);
         }
+    }
+
+    /** Whether a written file is still cut off at the model's output limit after its continuations (CodeGenerator.CUT). */
+    static boolean cutOff(FileChecks.Result check) {
+        return check != null && check.status() == FileChecks.Status.FAILED && check.message() != null
+                && check.message().startsWith(CodeGenerator.CUT);
+    }
+
+    /**
+     * Why a version written again is not kept: the file's version before passed its checks (or had only warnings) and
+     * the new one fails them. Null when the new one may replace it (it passes, or the one before failed too or was none).
+     */
+    static String worseThanBefore(ChangeFileStore.ChangeFile previous, FileChecks.Result now) {
+        if (previous == null || previous.generated() == null || partial(previous) || now == null || now.status() != FileChecks.Status.FAILED
+                || previous.checkStatus() == FileChecks.Status.FAILED || previous.status() == ChangeFileStore.Status.FAILED) {
+            return null;
+        }
+        String reason = now.message() == null ? "" : now.message().lines().findFirst().orElse("").strip();
+        return "the new version fails its checks" + (reason.isEmpty() ? "" : ": " + Messages.reason(new IllegalStateException(reason)))
+                + "; it is not used";
     }
 
     /**
@@ -1239,6 +1296,9 @@ public class ChangeService {
         files.saveResult(id, path, text.equals(file.original()) ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED,
                 file.original(), text, true, localChecks.check(packs.scope(change.getWorkspaceId()), path, file.original(), text),
                 file.attempts());
+        // The message counted the files with problems before the edit: it says how they stand now
+        change.status(ChangeRequest.Status.GENERATED, path + " edited. " + summary(files.files(id)));
+        changes.save(change);
         return detail(change);
     }
 
@@ -1545,11 +1605,19 @@ public class ChangeService {
 
     /** @param incomplete true: the reviewer confirmed delivering although planned files are not written */
     public ChangeDetail deliverToBranch(UUID id, boolean incomplete) {
+        return deliverToBranch(id, incomplete, false);
+    }
+
+    /** @param failedChecks true: the reviewer confirmed delivering files that fail their checks */
+    public ChangeDetail deliverToBranch(UUID id, boolean incomplete, boolean failedChecks) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
         if (!incomplete) {
             requireComplete(files.files(id));
+        }
+        if (!failedChecks) {
+            requireChecksPassed(files.files(id));
         }
         List<ChangeFileStore.ChangeFile> deliverable = deliverable(id);
         if (deliverable.isEmpty()) {
@@ -1856,6 +1924,25 @@ public class ChangeService {
     /** How a refused incomplete delivery starts, so the UI can offer to deliver anyway. */
     static final String INCOMPLETE = "Incomplete change: ";
 
+    /** How a refused delivery of files that fail their checks starts, so the UI can offer to deliver anyway. */
+    static final String FAILED_CHECKS = "Failing checks: ";
+
+    /** The written files that would be delivered although their own checks failed. */
+    static List<String> failingChecks(List<ChangeFileStore.ChangeFile> files) {
+        return files.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null
+                && f.checkStatus() == FileChecks.Status.FAILED).map(ChangeFileStore.ChangeFile::path).toList();
+    }
+
+    /** Refuses delivering files that fail their checks, naming them, unless the reviewer confirmed it. */
+    static void requireChecksPassed(List<ChangeFileStore.ChangeFile> files) {
+        List<String> failing = failingChecks(files);
+        if (!failing.isEmpty()) {
+            throw new ConflictException(FAILED_CHECKS + failing.size() + " file(s) fail their checks: "
+                    + String.join(", ", failing.stream().limit(10).toList()) + (failing.size() > 10 ? " and " + (failing.size() - 10) + " more" : "")
+                    + ". Fix them first (Write again, or edit them), or submit them as they are.");
+        }
+    }
+
     private List<ChangeFileStore.ChangeFile> deliverable(UUID id) {
         return files.files(id).stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
     }
@@ -1885,7 +1972,24 @@ public class ChangeService {
                 c.getBaseRevision(), c.getPlan() == null ? null : json.readValue(c.getPlan(), ChangePlan.class),
                 c.getPlanApprovedBy(), c.getPlanApprovedAt(), c.getBranchUrl(), c.getDeliveredRevision(), c.getCreatedBy(),
                 c.getCreatedAt(), c.getUpdatedAt(), views, c.getBuildStatus(), c.getBuildMessage(), builds.list(c.getId()),
-                c.getClosedReason(), c.getClosedBy(), c.getClosedAt(), c.getBranchDeletedRevision());
+                c.getClosedReason(), c.getClosedBy(), c.getClosedAt(), c.getBranchDeletedRevision(), events(c));
+    }
+
+    /** The audited events of the change that its own dates do not show (files written again, failed deliveries), oldest first. */
+    private List<HistoryEvent> events(ChangeRequest c) {
+        List<HistoryEvent> events = jdbc.query("SELECT at, username, action, detail FROM audit_event WHERE workspace_id = ? AND target = ? "
+                        + "AND action IN (?, ?) ORDER BY at DESC, id DESC LIMIT 50",
+                (rs, i) -> new HistoryEvent(rs.getTimestamp("at").toInstant().atOffset(java.time.ZoneOffset.UTC), rs.getString("username"),
+                        historyText(rs.getString("action"), rs.getString("detail"))),
+                c.getWorkspaceId(), c.getId().toString(), ChangeController.WRITTEN_AGAIN, ChangeController.DELIVERY_FAILED);
+        List<HistoryEvent> oldestFirst = new ArrayList<>(events == null ? List.of() : events);
+        java.util.Collections.reverse(oldestFirst);
+        return oldestFirst;
+    }
+
+    static String historyText(String action, String detail) {
+        String text = detail == null ? "" : detail;
+        return ChangeController.WRITTEN_AGAIN.equals(action) ? "Wrote " + text + " again" : "Delivery failed: " + text;
     }
 
     static void requireNotBuilding(ChangeRequest change) {

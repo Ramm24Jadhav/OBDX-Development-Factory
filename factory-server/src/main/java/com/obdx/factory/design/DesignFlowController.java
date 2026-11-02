@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -34,12 +35,15 @@ public class DesignFlowController {
 
     /** Approves the listed screens of the requirement, or all of them when none are listed. */
     @PostMapping("/api/requirements/{requirementId}/designs/approve")
-    public DesignFlowService.DesignFlow approve(@PathVariable UUID requirementId, @RequestBody(required = false) ApproveRequest request) {
+    public DesignFlowService.DesignFlow approve(@PathVariable UUID requirementId, @RequestBody(required = false) ApproveRequest request,
+                                                @RequestParam(value = "unsupported", defaultValue = "false") boolean unsupported) {
         var user = guard.requireForRequirement(requirementId, Permission.APPROVE);
         DesignFlowService.Approval approval = service.approve(requirementId, request == null || request.designIds() == null ? null
-                : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName());
+                : request.designIds().stream().filter(java.util.Objects::nonNull).toList(), user.getDisplayName(), unsupported);
         DesignFlowService.DesignFlow flow = approval.flow();
-        approval.approved().forEach(name -> audit.record("DESIGN_APPROVED", flow.workspaceId(), name, "with the requirement's other screens"));
+        approval.approved().forEach(name -> audit.record("DESIGN_APPROVED", flow.workspaceId(), name, "with the requirement's other screens"
+                + approval.unsupported().stream().filter(u -> u.startsWith(name + ": ")).findFirst()
+                .map(u -> ", with " + u.substring(name.length() + 2) + " that the version pack forbids (confirmed)").orElse("")));
         return flow;
     }
 

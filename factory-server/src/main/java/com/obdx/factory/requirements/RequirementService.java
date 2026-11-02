@@ -80,7 +80,35 @@ public class RequirementService {
     public record RequirementDetail(UUID id, UUID workspaceId, String title, String fileName, int sizeBytes,
                                     Requirement.Status status, String message, Integer currentVersion,
                                     OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime approvedAt,
-                                    String approvedBy, String documentText, RequirementSpec spec) {
+                                    String approvedBy, String documentText, RequirementSpec spec, List<String> warnings) {
+    }
+
+    /**
+     * What looks wrong in a spec as stored, for the reviewer (the spec is not changed): an ID used by more than one
+     * requirement, criterion or non-functional requirement, as an older import made of traceability rows
+     * ("FR-001 | AC-001").
+     */
+    static List<String> warnings(RequirementSpec spec) {
+        if (spec == null) {
+            return List.of();
+        }
+        List<String> warnings = new ArrayList<>();
+        duplicateIds("requirement", spec.requirements().stream().map(RequirementSpec.FunctionalRequirement::id).toList(), warnings);
+        duplicateIds("acceptance criterion", spec.acceptanceCriteria().stream().map(RequirementSpec.AcceptanceCriterion::id).toList(), warnings);
+        duplicateIds("non-functional requirement", spec.nonFunctional().stream().map(RequirementSpec.NonFunctional::id).toList(), warnings);
+        return warnings;
+    }
+
+    private static void duplicateIds(String kind, List<String> ids, List<String> warnings) {
+        Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        ids.stream().filter(id -> id != null && !id.isBlank()).map(String::strip).forEach(id -> counts.merge(id, 1, Integer::sum));
+        List<String> repeated = counts.entrySet().stream().filter(e -> e.getValue() > 1)
+                .map(e -> e.getKey() + " (" + e.getValue() + " times)").toList();
+        if (!repeated.isEmpty()) {
+            warnings.add("Duplicate " + kind + " IDs: " + String.join(", ", repeated.stream().limit(10).toList())
+                    + (repeated.size() > 10 ? " and " + (repeated.size() - 10) + " more" : "") + ". The document's rows may have "
+                    + "been read twice (a traceability table such as \"FR-001 | AC-001\"): check them against the document before approving.");
+        }
     }
 
     public record Answer(int index, String answer) {
@@ -407,9 +435,10 @@ public class RequirementService {
     }
 
     private RequirementDetail detail(Requirement r) {
+        RequirementSpec spec = currentSpec(r);
         return new RequirementDetail(r.getId(), r.getWorkspaceId(), r.getTitle(), r.getFileName(), r.getSizeBytes(),
                 r.getStatus(), r.getMessage(), r.getCurrentVersion(), r.getCreatedAt(), r.getUpdatedAt(), r.getApprovedAt(),
-                r.getApprovedBy(), r.getDocumentText(), currentSpec(r));
+                r.getApprovedBy(), r.getDocumentText(), spec, warnings(spec));
     }
 
     private RequirementSpec currentSpec(Requirement requirement) {
@@ -419,10 +448,23 @@ public class RequirementService {
 
     private Requirement requireStatus(Requirement requirement, Requirement.Status status) {
         if (requirement.getStatus() != status) {
-            throw new ConflictException("The requirement is " + requirement.getStatus().name().toLowerCase()
-                    + "; this needs it to be " + status.name().toLowerCase());
+            throw new ConflictException(notInStatus(requirement.getStatus(), status));
         }
         return requirement;
+    }
+
+    /** Why the action cannot be done in the requirement's status, and what to do instead. */
+    static String notInStatus(Requirement.Status actual, Requirement.Status needed) {
+        if (needed == Requirement.Status.READY) {
+            return switch (actual) {
+                case APPROVED -> "The spec is approved, so it cannot be changed. To change it, add the requirement again with the "
+                        + "updated document or text, and approve the new spec.";
+                case PROCESSING -> "The spec is still being drafted. Wait for the draft to finish, then try again.";
+                case FAILED -> "Drafting the spec failed. Use Draft again first, then try again.";
+                default -> "The requirement is " + actual.name().toLowerCase() + "; this needs it to be ready";
+            };
+        }
+        return "The requirement is " + actual.name().toLowerCase() + "; this needs it to be " + needed.name().toLowerCase();
     }
 
     private Requirement find(UUID id) {

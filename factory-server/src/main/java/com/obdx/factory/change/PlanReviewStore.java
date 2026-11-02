@@ -63,6 +63,12 @@ public class PlanReviewStore {
         return jdbc.queryForObject("SELECT MAX(revision) FROM change_plan_revision WHERE change_id = ?", Integer.class, changeId);
     }
 
+    /** Whether a reviewer requested changes on this revision (it then waits for an edit or a new analysis). */
+    public boolean changesRequested(UUID changeId, int revision) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM change_plan_comment WHERE change_id = ? AND revision = ? "
+                + "AND kind = ?)", Boolean.class, changeId, revision, Kind.CHANGES_REQUESTED.name()));
+    }
+
     public Comment comment(UUID changeId, Integer revision, Kind kind, String author, String text) {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();

@@ -35,7 +35,8 @@ public class ProviderChecks {
     public void failed(String baseUrl, long latencyMs, String error) {
         String key = key(baseUrl);
         Check before = checks.get(key);
-        checks.put(key, new Check(key, OffsetDateTime.now(), false, latencyMs, before == null ? null : before.lastOk(), error,
+        checks.put(key, new Check(key, OffsetDateTime.now(), false, latencyMs, before == null ? null : before.lastOk(),
+                com.obdx.factory.common.Messages.redacted(error),
                 before == null ? 0 : before.models()));
     }
 
