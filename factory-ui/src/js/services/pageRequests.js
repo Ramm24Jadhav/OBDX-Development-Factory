@@ -1,6 +1,7 @@
 /*
  * Requests one page leaves for another: the top bar's search for the Code page, a new workspace's source started on
- * the Overview page for the Workspaces page, and the requirement or change the command palette opens. The receiving page reads the request and clears it.
+ * the Overview page for the Workspaces page, a workspace's details from the Code page, and the requirement or change
+ * the command palette opens. The receiving page reads the request and clears it.
  */
 define(['knockout'], function (ko) {
   return {
@@ -13,6 +14,8 @@ define(['knockout'], function (ko) {
     change: ko.observable(null),
     /** A screen design to open in the Visual Designer, and a requirement to open in the Design Studio */
     design: ko.observable(null),
-    studio: ko.observable(null)
+    studio: ko.observable(null),
+    /** A workspace id whose details the Workspaces page opens in its side sheet (from the Code page) */
+    workspace: ko.observable(null)
   };
 });

@@ -758,7 +758,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         document.title = 'Workspaces';
         polling = true;
         liveSubscription = data.subscribe(poll);
-        load().then(poll);
+        // A workspace's details asked for by another page (the Code page's repository settings)
+        const sheetRequest = pageRequests.workspace();
+        pageRequests.workspace(null);
+        load().then(() => {
+          if (sheetRequest && data().some((d) => d.workspace.id === sheetRequest)) {
+            this.openSheet(sheetRequest);
+          }
+        }).then(poll);
         if (session.isAdmin()) {
           // A new workspace asked for on Home (Connect a code base, or the first-run form): open the flow with it
           const request = pageRequests.newWorkspace();
