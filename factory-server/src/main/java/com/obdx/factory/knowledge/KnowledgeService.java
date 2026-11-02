@@ -239,8 +239,14 @@ public class KnowledgeService {
      *                 answers the user's question in its terms; null when none
      */
     public Question prepare(String question, List<Turn> history, UUID workspaceId, String pageContext, String style, String improved) {
+        return prepare(question, history, workspaceId, pageContext, style, improved, null);
+    }
+
+    /** @param version the OBDX version (or version line) the user chose to ask about; null for the workspace's */
+    public Question prepare(String question, List<Turn> history, UUID workspaceId, String pageContext, String style, String improved,
+                            String version) {
         requireAskable(question);
-        String versionLine = versionLineOf(workspaceId);
+        String versionLine = chosenVersionLine(version, versionLineOf(workspaceId));
         List<Turn> earlier = recent(history);
         long start = System.nanoTime();
         String searchedFor = improved == null || improved.isBlank() ? question : cap(improved.strip(), 2000);
@@ -622,6 +628,12 @@ public class KnowledgeService {
     /** Shared knowledge is reviewed by administrators; a workspace's own by those who approve in it. */
     private AppUser requireReviewer(KnowledgeRepository.Note note) {
         return note.workspaceId() == null ? guard.requireAdmin() : guard.require(note.workspaceId(), WorkspaceRole.Permission.APPROVE);
+    }
+
+    /** The version line a question searches: the one chosen ("25.2" or "25" gives 25), else the workspace's. */
+    static String chosenVersionLine(String chosen, String workspaceLine) {
+        String line = chosen == null || chosen.isBlank() ? null : KnowledgeImporter.versionLine(chosen.strip());
+        return line != null ? line : workspaceLine;
     }
 
     String versionLineOf(UUID workspaceId) {

@@ -3,7 +3,11 @@
  * that open the manual at the page, feedback, save an answer as a note), Documents (Oracle's manuals per OBDX version
  * and the bank's own and patchset documents, with their import progress, older revisions and the watched folders that
  * keep them current) and Notes (knowledge users and agents add; suggested until approved, and only approved notes reach
- * code generation; notes whose cited sections changed in a newer revision come back for review).
+ * code generation; notes whose cited sections changed in a newer revision come back for review). It is about documents,
+ * not the bank's code (Code and Knowledge Explorer search that). A status line shows what is indexed, failed, in progress
+ * and stale; documents filter by OBDX version, type and source; a question can be asked for another OBDX version; an
+ * answer lists the sources it cites (title, version, section, pages, a preview at the page), and says plainly when the
+ * documents hold too little, keeping the model's general answer folded away.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/ui',
         '../services/toast', '../services/dialog', '../services/markdown', 'ojs/ojknockout'],
@@ -23,6 +27,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       PARTIALLY_VERIFIED: ['fx-badge fx-badge--warning', 'Partly verified'],
       INSUFFICIENT_EVIDENCE: ['fx-badge fx-badge--neutral', 'Not enough in the manuals']
     };
+    // What a document or a cited source is
+    const KIND = (s) => (s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved note' : 'Suggested note') : s.bank ? 'Bank document' : 'Oracle manual');
     const STYLES = [{ value: 'CONCISE', label: 'Concise' }, { value: 'DETAILED', label: 'Detailed' }, { value: 'DEEP_DIVE', label: 'Technical deep dive' }];
     const copy = (text, what) => {
       if (!navigator.clipboard) { toast.error('Copying is not available in this browser.'); return; }
@@ -44,24 +50,57 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.tab = ko.observable('ask');
       this.tabs = [['ask', 'Ask', 'sparkle'], ['documents', 'Documents', 'doc'], ['notes', 'Notes', 'list']].map(([value, text, icon]) => ({
         value: value, text: text, iconClass: 'factory-nav-icon factory-ico-' + icon,
+        count: ko.pureComputed(() => {
+          const s = (this.overview() || {}).stats || {};
+          return value === 'documents' ? (s.documents ? ' (' + s.documents + ')' : '') : value === 'notes' ? ((s.trustedNotes || 0) + (s.suggestedNotes || 0) ? ' (' + ((s.trustedNotes || 0) + (s.suggestedNotes || 0)) + ')' : '') : '';
+        }),
         selected: ko.pureComputed(() => this.tab() === value),
         css: ko.pureComputed(() => (this.tab() === value ? 'factory-tab factory-tab-on' : 'factory-tab')),
         pick: () => { this.tab(value); if (value === 'notes') { this.loadNotes(); } }
       }));
+      // Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern)
+      this.tabKey = (event) => {
+        const keys = this.tabs.map((t) => t.value);
+        const at = keys.indexOf(this.tab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.tabs[next].pick();
+        const button = document.getElementById('lb-' + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
 
       // --- overview ---
-      this.kpis = ko.pureComputed(() => {
+      // The library's state in one line: what is indexed, what failed, what is still running and what is stale. Each
+      // part with documents behind it filters the Documents tab to them.
+      this.health = ko.pureComputed(() => {
         const s = (this.overview() || {}).stats || {};
-        const share = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '–');
+        const docs = this.documents().filter((d) => !d.older);
+        const failed = docs.filter((d) => d.status === 'FAILED').length;
+        const running = docs.filter((d) => d.busy).length;
+        const partial = docs.filter((d) => d.status === 'READY' && d.sections > d.embedded).length;
+        const ready = docs.filter((d) => d.status === 'READY');
+        const last = ready.map((d) => d.updatedAt).sort().pop();
         const rated = (s.helpful || 0) + (s.notHelpful || 0);
+        const show = (status) => () => { this.tab('documents'); this.docStatus(status); };
         return [
-          { label: 'Documents', value: s.documents || 0, sub: (s.ready || 0) + ' ready' + (s.revised ? ' · ' + s.revised + ' older revisions' : ''), icon: 'doc', tone: 'blue' },
-          { label: 'Sections', value: s.sections || 0, sub: share(s.embedded || 0, s.sections || 0) + ' searchable by meaning', icon: 'search', tone: 'violet' },
-          { label: 'Approved notes', value: s.trustedNotes || 0, sub: 'used by code generation', icon: 'check', tone: 'green' },
-          { label: 'Suggested notes', value: s.suggestedNotes || 0, sub: s.notesToCheck ? s.notesToCheck + ' to check after updates' : 'waiting for review', icon: 'clock', tone: 'amber' },
-          { label: 'Helpful answers', value: rated ? share(s.helpful || 0, rated) : '–', sub: rated + ' rated', icon: 'sparkle', tone: 'blue' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-ov2-tile-icon factory-ov2-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+          { key: 'ready', text: ready.length + ' of ' + docs.length + ' documents indexed', tone: 'SUCCEEDED', go: show('') },
+          { key: 'last', text: last ? 'last indexed ' + when(last) : 'nothing indexed yet', tone: '', go: null },
+          { key: 'failed', text: failed + ' failed', tone: 'FAILED', go: show('FAILED'), hide: !failed },
+          { key: 'running', text: running + ' in progress', tone: 'RUNNING', go: show('RUNNING'), hide: !running },
+          { key: 'partial', text: partial + ' not fully searchable by meaning', tone: 'WARNING', go: show('PARTIAL'), hide: !partial },
+          { key: 'older', text: (s.revised || 0) + ' older revisions kept', tone: '', go: show('OLDER'), hide: !s.revised },
+          { key: 'notes', text: (s.notesToCheck || 0) + ' notes to check after updates', tone: 'WARNING', go: () => { this.tab('notes'); this.noteFilter('CHECK'); }, hide: !s.notesToCheck },
+          { key: 'helpful', text: rated ? Math.round(100 * (s.helpful || 0) / rated) + '% of ' + rated + ' rated answers helpful' : 'no answers rated yet', tone: '', go: null }
+        ].filter((p) => !p.hide).map((p) => Object.assign(p, { css: 'factory-lb-hpart' + (p.tone ? ' is-' + p.tone.toLowerCase() : ''), id: 'libraryHealth-' + p.key }));
       });
+      const oracleSite = ko.pureComputed(() => (this.overview() || {}).fromOracleSite || []);
       this.documents = ko.pureComputed(() => ((this.overview() || {}).documents || []).map((d) => {
         const st = DOC_STATUS[d.status] || [d.status, d.status];
         const s = ui.status(st[0], st[1]);
@@ -78,6 +117,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           canEmbed: (d.status === 'READY' || d.status === 'FAILED') && d.sections > d.embedded,
           url: 'api/knowledge/documents/' + d.id + '/file',
           admin: d.workspaceId ? session.can(d.workspaceId, 'MANAGE_CODE') : session.isAdmin(),
+          type: d.workspaceId ? 'BANK' : 'ORACLE', patch: !!d.patchset,
+          source: oracleSite().indexOf(d.id) >= 0 ? 'SITE' : d.sourceId ? 'FOLDER' : 'UPLOAD',
+          sourceText: oracleSite().indexOf(d.id) >= 0 ? 'From Oracle\'s site' : d.sourceId ? 'From a watched folder' : 'Uploaded' + (d.importedBy ? ' by ' + d.importedBy : ''),
+          partial: d.status === 'READY' && d.sections > d.embedded,
           embed: () => this.embedAgain(d), remove: () => this.removeDocument(d),
           when: when(d.updatedAt)
         });
@@ -113,9 +156,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.showOlder = ko.observable(false);
       this.setShowOlder = (event) => this.showOlder(!!event.target.checked);
       this.olderCount = ko.pureComputed(() => this.documents().filter((d) => d.older).length);
+      // Filters: title, OBDX version, type (Oracle manual, bank document, patchset), source and state
+      this.docSearch = ko.observable('');
+      this.docSearchInput = ui.value(this.docSearch);
+      this.docVersion = ko.observable('');
+      this.docType = ko.observable('');
+      this.docSource = ko.observable('');
+      this.docStatus = ko.observable('');
+      this.docVersionOptions = ko.pureComputed(() => [{ value: '', label: 'All versions' }].concat(Array.from(new Set(this.documents().map((d) => d.obdxVersion))).sort().reverse()
+        .map((v) => ({ value: v, label: 'OBDX ' + v }))));
+      this.docTypeOptions = [{ value: '', label: 'All types' }, { value: 'ORACLE', label: 'Oracle manuals' }, { value: 'BANK', label: 'Bank documents' }, { value: 'PATCH', label: 'Patchset documents' }];
+      this.docSourceOptions = [{ value: '', label: 'All sources' }, { value: 'SITE', label: 'Oracle\'s site' }, { value: 'FOLDER', label: 'Watched folders' }, { value: 'UPLOAD', label: 'Uploaded' }];
+      this.docStatusOptions = [{ value: '', label: 'Any state' }, { value: 'FAILED', label: 'Failed' }, { value: 'RUNNING', label: 'In progress' },
+        { value: 'PARTIAL', label: 'Not fully searchable' }, { value: 'OLDER', label: 'Older revisions' }];
+      this.docFiltered = ko.pureComputed(() => !!(this.docSearch() || this.docVersion() || this.docType() || this.docSource() || this.docStatus()));
+      this.resetDocFilters = () => {
+        const el = document.getElementById('docSearch');
+        if (el) { el.value = ''; }
+        this.docSearch(''); this.docVersion(''); this.docType(''); this.docSource(''); this.docStatus('');
+      };
+      const docMatches = (d) => {
+        const text = this.docSearch().trim().toLowerCase();
+        const st = this.docStatus();
+        return (!text || (d.title + ' ' + d.fileName).toLowerCase().indexOf(text) >= 0) && (!this.docVersion() || d.obdxVersion === this.docVersion())
+          && (!this.docType() || (this.docType() === 'PATCH' ? d.patch : d.type === this.docType())) && (!this.docSource() || d.source === this.docSource())
+          && (st === 'OLDER' ? d.older : (this.showOlder() || !d.older) && (!st || (st === 'FAILED' && d.status === 'FAILED') || (st === 'RUNNING' && d.busy) || (st === 'PARTIAL' && d.partial)));
+      };
+      this.shownCount = ko.pureComputed(() => this.documents().filter(docMatches).length);
       this.versions = ko.pureComputed(() => {
         const by = {};
-        this.documents().filter((d) => this.showOlder() || !d.older).forEach((d) => { (by[d.obdxVersion] = by[d.obdxVersion] || []).push(d); });
+        this.documents().filter(docMatches).forEach((d) => { (by[d.obdxVersion] = by[d.obdxVersion] || []).push(d); });
         return Object.keys(by).sort().reverse().map((v) => {
           const current = by[v].filter((d) => !d.older);
           return { version: v, documents: by[v], summary: current.filter((d) => d.status === 'READY').length + ' of ' + current.length + ' ready' };
@@ -255,6 +325,42 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       // How much detail the answer has
       this.styleOptions = STYLES;
       this.style = ko.observable('DETAILED');
+      // The OBDX version the answer is for: the workspace's, or a version line the library has documents for
+      this.askVersion = ko.observable('');
+      this.askVersionOptions = ko.pureComputed(() => {
+        const ws = workspaceSelection.selectedVersion();
+        const lines = Array.from(new Set(this.documents().filter((d) => !d.older).map((d) => d.versionLine).filter(Boolean))).sort().reverse();
+        return [{ value: '', label: ws ? 'The workspace\'s OBDX ' + ws : 'The workspace\'s OBDX version' }].concat(lines.map((l) => ({ value: l, label: 'OBDX ' + l + '.x' })));
+      });
+      // An answer without sources is folded away until asked for
+      this.showUngrounded = ko.observable(false);
+      this.toggleUngrounded = () => this.showUngrounded(!this.showUngrounded());
+      this.citedRows = ko.pureComputed(() => {
+        const a = this.answer();
+        if (!a) {
+          return [];
+        }
+        const text = this.answerText();
+        return a.sourceRows.filter((s) => text.indexOf('[' + s.n + ']') >= 0);
+      });
+      this.otherRows = ko.pureComputed(() => {
+        const a = this.answer();
+        return a ? a.sourceRows.filter((s) => this.citedRows().indexOf(s) < 0) : [];
+      });
+      this.insufficient = ko.pureComputed(() => {
+        const a = this.answer();
+        return !!a && !this.asking() && (!a.grounded || (a.quality && a.quality.status === 'INSUFFICIENT_EVIDENCE') || (a.sourceRows.length > 0 && this.citedRows().length === 0));
+      });
+      this.insufficientText = ko.pureComputed(() => {
+        const a = this.answer();
+        if (!a) {
+          return '';
+        }
+        return !a.grounded ? 'The indexed documents and notes have nothing on this, so there is no answer from them.'
+          : a.quality && a.quality.status === 'INSUFFICIENT_EVIDENCE' ? 'The indexed documents do not hold enough to answer this fully. Parts the sources do not support are not facts.'
+            : this.answerText().trim() ? 'The answer cites none of the sources found, so it is not supported by the documents.'
+              : 'The model wrote no answer from the sources found.';
+      });
 
       // Improve My Question: the question rewritten precisely (or what to clarify), to edit and approve before asking
       this.improvement = ko.observable(null);
@@ -318,6 +424,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.rated(null);
         this.answer(null);
         this.answerText('');
+        this.showUngrounded(false);
         this.thinking('Searching the manuals and notes…');
         const shown = (a) => Object.assign({}, a, {
           question: q,
@@ -325,6 +432,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           quality: a.report ? {
             css: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[0],
             label: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[1],
+            status: a.report.quality.status,
             reason: a.report.quality.reason,
             findings: a.report.quality.findings || [],
             limitations: a.report.limitations || [],
@@ -334,7 +442,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : '') : '',
           sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
             url: safeUrl(s.url), oracleUrl: safeUrl(s.oracleUrl),
-            label: '[' + s.n + ']',
+            label: '[' + s.n + ']', kindText: KIND(s),
+            version: s.kind === 'NOTE' ? '' : 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : ''),
+            section: s.heading || '', pagesText: pages(s),
+            previewLabel: s.pageFrom ? 'Open at page ' + s.pageFrom : 'Open the document',
             where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
               : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
             css: 'factory-lb-source' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
@@ -347,7 +458,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         let diagnostics = null;
         let failed = null;
         const history = this.turns().slice(-3);
-        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history, style: this.style(), improved: improved }, (event) => {
+        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history, style: this.style(), improved: improved,
+          version: this.askVersion() || null }, (event) => {
           if (event.type === 'status') {
             this.thinking(event.text);
             if (this.answer() && this.answerText()) { this.answer(Object.assign({}, this.answer(), { checking: event.text })); }

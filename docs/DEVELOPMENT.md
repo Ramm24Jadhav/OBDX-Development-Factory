@@ -286,6 +286,15 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 
 The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per version, a bank's own documents for one
 workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
+It is about documents, not the bank's code (Code and Knowledge Explorer search that). A status line gives how many documents are
+indexed, when the last one was, and the failed, running, not fully searchable and older ones and the notes to check, each
+opening the Documents tab filtered to them. Documents filter by title, OBDX version, type (Oracle manual, bank document, patchset)
+and source (Oracle's site, a watched folder, an upload), and show when each was last indexed and why a failed one failed. **Ask**
+keeps Improve My Question and the answer detail and adds the OBDX version to answer for (the workspace's by default). An answer lists
+the sources it cites (title, kind, OBDX version and patchset, section, pages) with **Open at page N** (the factory's copy) and Oracle's
+page when known, and folds the sources searched but not cited. When the documents hold nothing on the question, an answer cites none
+of them, or the check finds the evidence insufficient, the page says so first; an answer with no sources at all stays folded until
+asked for.
 
 - **Import**: an administrator imports Oracle's manuals of a version from a folder on the factory's computer (needs
   `factory.local-folders.enabled`; folder import and **Check now** are for administrators only, and the factory's own
@@ -746,7 +755,7 @@ object: compute those in the view model.
 | `PUT /api/model/settings` | Use a server and models (`baseUrl`, `apiKey`: null keeps, empty removes, `chatModel`, `embeddingModel`; `embeddingBaseUrl`, `embeddingApiKey` for code search on another server, null: the same server); the reply's `embeddingProblem` says when the embedding model cannot embed (a fixed test phrase is sent to it) or does not look like an embedding model, and the Models page shows it with the OBDX Library's privacy notice (administrators) |
 | `POST /api/model/chat` | Send a test prompt (`prompt`); administrators |
 | `POST /api/model/embed` | Embed a test text (`text`); returns the vector size; administrators |
-| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, and `privacy` when the models are outside the bank |
+| `GET /api/knowledge` | Library overview: counts, whether folder import is allowed, the documents (older revisions too), the watched folders, `privacy` when the models are outside the bank, and `fromOracleSite` (the documents fetched from Oracle's site) |
 | `POST /api/knowledge/import` | Import and watch a folder (`folder`, `obdxVersion`, `patchset`, `workspaceId`: null for Oracle's manuals); administrators |
 | `POST /api/knowledge/documents` | Upload one file: PDF, Word, text, Markdown or HTML (multipart `file`, `obdxVersion`, `patchset`, `workspaceId`) |
 | `DELETE /api/knowledge/documents/{id}` | Remove a document and its sections |
@@ -761,7 +770,7 @@ object: compute those in the view model.
 | `POST /api/knowledge/documents/{id}/embed` | Embed the sections still without an embedding |
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
-| `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text) |
+| `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text; optional `version`: the OBDX version or version line to answer for instead of the workspace's) |
 | `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `status` while it is checked, then `done` (the checked answer with its `report`) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first; `style`: `CONCISE`, `DETAILED` (default) or `DEEP_DIVE`; `improved`: the wording the user approved after Improve My Question |
 | `POST /api/knowledge/improve-question` | Improve My Question (`question`, `workspaceId`, `history`): `status` (`READY`, `NEEDS_CLARIFICATION`, `AMBIGUOUS`), `enhancedQuery`, `detectedIntent`, `detectedModule`, `detectedVersion`, `technicalEntities`, `assumptions`, `clarificationQuestions`, `suggestedScope`, `byModel`; nothing is answered |
 | `POST /api/knowledge/evaluation` | Run the evaluation questions through the Library (`mode`: `SEARCH`, `CHOOSE` or `ANSWER`; administrators; see docs/KNOWLEDGE-AUDIT.md) |

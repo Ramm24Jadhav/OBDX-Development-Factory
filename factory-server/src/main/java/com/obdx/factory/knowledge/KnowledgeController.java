@@ -82,8 +82,9 @@ public class KnowledgeController {
      * privacy: why the knowledge is not sent to the configured models (they are outside the bank); null when it is.
      * folders: the watched folders, checked again for new and changed documents.
      */
+    /** fromOracleSite: the documents the factory fetched from Oracle's documentation site (the others were uploaded or came from a folder). */
     public record Overview(KnowledgeRepository.Stats stats, boolean folderImport, List<KnowledgeRepository.Document> documents,
-                           String privacy, List<KnowledgeRepository.Source> folders) {
+                           String privacy, List<KnowledgeRepository.Source> folders, List<UUID> fromOracleSite) {
     }
 
     @GetMapping("/api/knowledge")
@@ -92,7 +93,8 @@ public class KnowledgeController {
         List<UUID> visible = knowledge.visibleWorkspaceIds();
         String privacy = policy.chatProblem() != null ? policy.chatProblem() : policy.embeddingProblem();
         // Folder import reads the server's folders: administrators only
-        return new Overview(repository.stats(visible), localFolders && user != null && user.isAdmin(), repository.documents(visible), privacy, repository.sources(visible));
+        return new Overview(repository.stats(visible), localFolders && user != null && user.isAdmin(), repository.documents(visible), privacy, repository.sources(visible),
+                repository.oracleDocumentIds());
     }
 
     // --- documents ---
@@ -276,10 +278,10 @@ public class KnowledgeController {
     /**
      * history: the conversation's earlier questions and answers, oldest first, so follow-up questions are understood;
      * style: CONCISE, DETAILED (default) or DEEP_DIVE; improved: the fuller wording the user approved after Improve My
-     * Question, or null.
+     * Question, or null; version: the OBDX version (or version line) to answer for instead of the workspace's, or null.
      */
     public record AskRequest(String question, UUID workspaceId, String context, List<KnowledgeService.Turn> history, String style,
-                             String improved) {
+                             String improved, String version) {
     }
 
     public record ImproveRequest(String question, UUID workspaceId, List<KnowledgeService.Turn> history) {
@@ -299,7 +301,7 @@ public class KnowledgeController {
     public KnowledgeService.Answer ask(@RequestBody AskRequest request) {
         requireReader(request.workspaceId());
         return knowledge.answer(knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context(),
-                request.style(), request.improved()), piece -> { });
+                request.style(), request.improved(), request.version()), piece -> { });
     }
 
     /**
@@ -322,7 +324,7 @@ public class KnowledgeController {
             try {
                 lines.send(Map.of("type", "status", "text", "Searching the manuals and notes, and choosing the sections that answer the question…"));
                 question = knowledge.prepare(request.question(), request.history(), request.workspaceId(), request.context(),
-                        request.style(), request.improved());
+                        request.style(), request.improved(), request.version());
             } catch (RuntimeException e) {
                 lines.send(Map.of("type", "error", "message", e.getMessage() == null ? "The question could not be searched." : e.getMessage()));
                 emitter.complete();
