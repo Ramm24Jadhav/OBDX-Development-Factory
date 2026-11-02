@@ -118,8 +118,17 @@ local Ollama.
 
 ## Creating a workspace
 
-On the Workspaces page, administrators choose where the code is, and the factory checks it before the workspace is
-created:
+On the Workspaces page, **New workspace** (or **Connect a code base** on Home) walks administrators through five steps:
+the source, the check, the details to confirm, the import and index, and the detected profile. The check connects and
+reads the code, and suggests the name, bank and OBDX version with the evidence it found; a version the code does not
+show, or that both versions point to, is for the administrator to choose. After **Create and import** each stage shows
+what the server reports (workspace created, SVN sign-in saved, import started, checkout, indexing, profile detection),
+with the server's error and **Try again** where a stage failed; nothing is shown as done before the import job says so.
+The last step shows the OBDX version the profile detected, its confidence and evidence files, and **Confirm the detected
+version** (the profile fact `obdx.version`). A workspace's details open in a side sheet from the list: the index, the
+version with its evidence, the repository with **Test the connection**, members, **Update code** (an import: SVN update
+from the indexed revision, then only files whose content changed are indexed again) and **Delete**, which first names the
+requirements, screens, changes and index that go with it. Sources:
 
 - **SVN server (URL)**, with a username and password if the server asks. **Check** connects and reads the code.
 - **Folder on this computer** (the computer the factory runs on): a TortoiseSVN checkout (the factory imports from the
@@ -566,6 +575,16 @@ narrow or vary the run.
 `node scripts/check-home.js --url ...` (same sign-in variables) checks the Home page: its attention count against the data,
 that the continue and attention items open their records, the viewer role, keyboard reach and the offline message.
 
+`node scripts/check-workspaces.js --url ...` checks the Workspaces page: the list against the data, the details sheet
+(version evidence, connection test, the delete dialog, always cancelled), the New workspace steps, Home's link to them and
+the offline message. With `--svn <url> --create 1` it also creates a workspace from that URL, follows the import stages,
+updates the code once and deletes the workspace again: use it only on a factory whose data is a copy.
+
+`node scripts/check-code.js --url ...` checks the Code page: its four areas (repository health, quick checks, code search,
+repository settings), the index figures against the server, the stale-index check against the repository's latest
+revision (read only), that a search result opens its file at the matching line in the viewer, result and rule filters,
+the top-bar search request, the offline message and the link to the workspace's details sheet.
+
 `npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
 drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
 - the page transition runs (or is off with reduced motion);
@@ -585,7 +604,7 @@ It ends by signing out to check the sign-in page. It only reads. Both checks sha
 
 `ojet serve` serves the UI on its own port and reloads on save. The UI calls the backend at the relative path `api/`, so either open the UI through the Spring Boot server after a build, or configure a proxy for `api/` to `http://localhost:8080`.
 
-Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (one of the six sections in `NAV_GROUPS`: `overview`, `analyze`, `design`, `deliver`, `modernize`, `admin`; `sidebar: false` keeps a page out of the menu, `parent` names the page it is opened from). `index.html` holds the shell: the dark sidebar with the product name (collapsible; it slides in on phones), the top bar, a breadcrumb above each page (section › parent › page), and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`) with the selected workspace's OBDX version beside it, search of the workspace code (Ctrl K, opens the Code page Search tab), a bell listing what needs attention (with a link to the Notification Center), Help (the About page) and the user menu. Signing in opens **Home** (route `overview`), scoped to the workspace chosen in the top bar or to all workspaces: "Continue where you left off" (each requirement whose latest change is not delivered or closed, with its step and next action), "Attention required" (failed or interrupted spec drafts, changes, builds and imports, approvals and open questions waiting, generated code to review, code not imported), progress with what each number counts, then recent requirements, activity, builds and the workspaces. With no workspace yet it shows only the setup form. Every item opens its own record through `services/pageRequests`. `services/dashboard.js` loads that data for Home, the Workspaces page and the bell (which lists the same attention items) from the same endpoints the other pages use, and names in `missing` any part that could not be loaded. `src/js/services/api.js` wraps calls to the backend.
+Each page is a view (`src/js/views/<page>.html`) plus a view model (`src/js/viewModels/<page>.js`), registered in the route list in `src/js/appController.js` with its sidebar `icon` (a `factory-ico-<icon>` class in `app.css`) and `group` (one of the six sections in `NAV_GROUPS`: `overview`, `analyze`, `design`, `deliver`, `modernize`, `admin`; `sidebar: false` keeps a page out of the menu, `parent` names the page it is opened from). `index.html` holds the shell: the dark sidebar with the product name (collapsible; it slides in on phones), the top bar, a breadcrumb above each page (section › parent › page), and the sign-in page. The top bar has the workspace picker (shared with the pages through `services/workspaceSelection`) with the selected workspace's OBDX version beside it, search of the workspace code (Ctrl K, opens the Code page's Code search), a bell listing what needs attention (with a link to the Notification Center), Help (the About page) and the user menu. Signing in opens **Home** (route `overview`), scoped to the workspace chosen in the top bar or to all workspaces: "Continue where you left off" (each requirement whose latest change is not delivered or closed, with its step and next action), "Attention required" (failed or interrupted spec drafts, changes, builds and imports, approvals and open questions waiting, generated code to review, code not imported), progress with what each number counts, then recent requirements, activity, builds and the workspaces. With no workspace yet it shows only the setup form. Every item opens its own record through `services/pageRequests`. `services/dashboard.js` loads that data for Home, the Workspaces page and the bell (which lists the same attention items) from the same endpoints the other pages use, and names in `missing` any part that could not be loaded. `src/js/services/api.js` wraps calls to the backend.
 
 The pages follow the screen designs in `design/design and implementation plan.docx`: Home (Overview), Workspaces (with
 the workspace details), Code (and the Knowledge Explorer behind it), Project Profile, Requirements, UI Design Studio (and the Visual Designer behind it),
