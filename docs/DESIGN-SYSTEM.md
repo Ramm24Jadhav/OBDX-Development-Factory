@@ -61,6 +61,69 @@ internal classes. Inter is used when installed; there is no web font download (b
 - **Pages**: each page's own rules are scoped under its root class (`.factory-<prefix>`); the "Pages on the design
   system" section of `app.css` holds them. Phones: under 768 px the page grids become one column and toolbars wrap.
 
+## The source of truth
+
+The Design System page (`?ojr=design`) and `app.css` are the reference for every page. The page reads the tokens
+from the stylesheet itself, so it cannot drift from what the pages use.
+
+**Foundations on the page:**
+- **Tokens**: every `--fx-*` token with its light and dark value, a search, a group filter (colour, typography,
+  spacing and grid, radius/borders/elevation, motion), and buttons that copy `var(--fx-…)` or the value.
+- **Spacing and grid**: `--fx-space-1` to `-6` (4 to 24px) and the fluid `--fx-gutter`, `--fx-gap`,
+  `--fx-card-pad`, `--fx-touch` with their current values.
+- **Radius, borders and elevation**: `--fx-radius-sm|(none)|lg|xl|pill`, `--fx-border-width` (1px) and
+  `--fx-border-width-strong` (2px), `--fx-elevation-1|2|3` (named levels over `--fx-shadow-sm|(none)|lg`).
+- **Motion**: the `--fx-dur-*` values and a Play sample; nothing moves with reduced motion on.
+- **Contrast**: 14 token pairs measured in the theme in use, with the WCAG result.
+- **Responsive**: the four breakpoints, the one in use marked, and a card grid example.
+
+**Semantic status tokens** (the colours `ui.status()` categories stand for):
+
+| Token | Same as | Categories |
+|---|---|---|
+| `--fx-status-progress`, `-soft` | `--fx-primary-text`, `--fx-primary-soft` | In progress (running, building, importing) |
+| `--fx-status-review`, `-soft` | `--fx-warning-text`, `--fx-warning-soft` | Needs review, Warning |
+| `--fx-status-done`, `-soft` | `--fx-success-text`, `--fx-success-soft` | Done (approved, passed, delivered) |
+| `--fx-status-failed`, `-soft` | `--fx-danger-text`, `--fx-danger-soft` | Failed |
+| `--fx-status-neutral`, `-soft` | `--fx-text-body`, `--fx-surface-2` | Draft, Queued, Closed |
+
+Status chips themselves use `ui.status(raw, text)` (`fx-badge fx-status` with an icon), never colour alone.
+
+**Component states** shown on the page:
+
+| State | How it is made | Shown for |
+|---|---|---|
+| Default | the base class | every component |
+| Hover | `:hover` (the page's `.is-hover` copies it without a pointer) | buttons, options, icons |
+| Focus | `:focus-visible` with `--fx-focus` (`.is-focus` copies it) | buttons, fields, tabs |
+| Active | `:active` / `aria-selected` / `.is-active` | buttons, tabs, options |
+| Disabled | the `disabled` attribute | buttons, fields, selects, checks |
+| Loading | `.is-loading` on a button (automatic for every `api.js` request) | buttons |
+| Error | `.fx-field.is-error` with `.fx-error` and `aria-invalid` | fields |
+| Success | `.fx-field.is-success` with `.fx-success-text` | fields |
+
+**Components on the page:** buttons and split buttons, fields, selects and multi-select, checks and switches,
+dates, chips, badges and status chips, carousel, cards, tables with pagination, progress and steps, alerts, toasts,
+dialog, sheet (drawer), popover, tooltip, breadcrumb, tabs, empty state, ring chart, code surfaces
+(`.factory-code`, `.fx-log`, the `--fx-syn-*` syntax colours), range and resizer.
+
+**Not in the product, so not on the page:** charts other than the ring (no bar or line charts), a data grid with
+editable cells, and a date-range picker.
+
+**Accessibility rules:**
+- Text needs 4.5:1 against its background, large text and icons 3:1. `--fx-text-faint` is for decoration only.
+- State is never colour alone: status chips carry an icon and words; field errors carry an icon and a message.
+- Every control is reachable by keyboard with a visible focus ring; tab strips and lists move with the arrow
+  keys, Home and End.
+- Touch targets are at least `--fx-touch` (44px) on touch screens; text is never smaller than 11px.
+
+**Writing new CSS:**
+- Use the tokens for colour, radius, gap, border width, font weight and duration: `gap: var(--fx-space-2)`,
+  `border: var(--fx-border-width) solid var(--fx-border)`, `border-radius: var(--fx-radius)`.
+- Literals that are left: values with no token (for example 10px or 14px gaps, 3px radii) and colours in a few
+  fixed places (code blocks, illustrations, the brand). After the step 23 pass `app.css` still has 343 hex and 70
+  rgb colours, 80 radii, 390 gaps and 51 font weights as literals; values equal to a token were all replaced.
+
 ## Checks done
 
 - WCAG AA contrast of the token pairs in both themes (text, muted text, links, status text on tints, white on primary):

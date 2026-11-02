@@ -1,7 +1,9 @@
 /*
  * Design System page: the factory's design tokens and shared components, live. Colours and type come from the tokens
  * in app.css; the components are the same ones the other pages use, with the factory's real workspaces where a
- * component shows data (carousel, select, table).
+ * component shows data (carousel, select, table, ring chart).
+ * The token reference reads every --fx-* token from the stylesheet itself (its light and dark values), so it can never
+ * drift from app.css; the contrast table measures the token pairs in the theme in use.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/ui', '../services/toast', '../services/dialog', '../services/preferences',
         'ojs/ojknockout'],
@@ -9,6 +11,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
     const ICONS = ['home', 'folder', 'code', 'profile', 'list', 'design', 'branch', 'flask', 'refresh', 'chip', 'robot', 'cog', 'share', 'plug',
       'cube', 'sparkle', 'bell', 'user', 'users', 'info', 'search', 'plus', 'edit', 'trash', 'check', 'alert', 'clock', 'doc', 'link', 'shield',
       'bank', 'chart', 'target', 'monitor', 'laptop', 'rocket', 'help', 'sun', 'moon', 'arrow', 'more', 'x'];
+
+    // Token groups by name, in the order the reference lists them
+    const GROUPS = [['Colour', /^--fx-(primary|secondary|violet|success|warning|danger|info|bg|surface|border(?!-width)|text(?!-(display|h\d|lg|md|base|sm|caption|2xs|overline))|disabled|nav|on-|gradient|focus-color|status)/],
+      ['Typography', /^--fx-(font|text-(display|h\d|lg|md|base|sm|caption|2xs|overline)|weight)/], ['Spacing and grid', /^--fx-(space|gutter|gap|card-pad|control|touch|topbar)/],
+      ['Radius, borders and elevation', /^--fx-(radius|border-width|shadow|elevation|focus$)/], ['Motion', /^--fx-(dur|ease|stagger|duration)/]];
+    const groupOf = (name) => (GROUPS.find((g) => g[1].test(name)) || ['Other'])[0];
+    // Every --fx-* token the stylesheet defines on :root, with its light and dark values
+    const collectTokens = () => {
+      const light = {};
+      const dark = {};
+      Array.from(document.styleSheets).forEach((sheet) => {
+        let rules = [];
+        try { rules = Array.from(sheet.cssRules || []); } catch (e) { rules = []; }
+        rules.forEach((r) => {
+          if (!r.style || !r.selectorText) { return; }
+          const target = r.selectorText.trim() === ':root' ? light : r.selectorText.trim() === ':root[data-theme="dark"]' ? dark : null;
+          if (!target) { return; }
+          for (let i = 0; i < r.style.length; i++) {
+            const name = r.style[i];
+            if (name.indexOf('--fx-') === 0) { target[name] = r.style.getPropertyValue(name).trim(); }
+          }
+        });
+      });
+      return Object.keys(light).sort().map((name) => ({ name: name, light: light[name], dark: dark[name] || '', group: groupOf(name) }));
+    };
+    // Relative luminance and contrast ratio (WCAG 2.x) of two computed colours
+    const rgb = (css) => (css.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    // A translucent colour (the dark theme's soft tints) as seen over an opaque one
+    const over = (css, base) => {
+      const n = (css.match(/[\d.]+/g) || []).map(Number);
+      if (n.length < 4 || n[3] >= 1) { return css; }
+      const b = rgb(base);
+      return 'rgb(' + [0, 1, 2].map((i) => Math.round(n[i] * n[3] + b[i] * (1 - n[3]))).join(', ') + ')';
+    };
+    const lum = (c) => { const v = c.map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+    const ratio = (a, b) => { const l1 = lum(rgb(a)); const l2 = lum(rgb(b)); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+    const PAIRS = [['--fx-text', '--fx-surface', 'Text on a card'], ['--fx-text-body', '--fx-surface', 'Body text'], ['--fx-text-muted', '--fx-surface', 'Muted text'],
+      ['--fx-text-muted', '--fx-surface-2', 'Muted text on a tint'], ['--fx-text-faint', '--fx-surface', 'Faint text (decorative only)'], ['--fx-primary-text', '--fx-surface', 'Links'],
+      ['--fx-on-primary', '--fx-primary', 'Primary button'], ['--fx-success-text', '--fx-success-soft', 'Success badge'], ['--fx-warning-text', '--fx-warning-soft', 'Warning badge'],
+      ['--fx-danger-text', '--fx-danger-soft', 'Error badge'], ['--fx-info-text', '--fx-info-soft', 'Info badge'], ['--fx-violet-text', '--fx-violet-soft', 'Violet badge'],
+      ['--fx-nav-text', '--fx-nav-bg', 'Sidebar text'], ['--fx-text', '--fx-bg', 'Text on the page']];
+    // Breakpoints, as in app.css media queries (CSS variables cannot be used in media queries)
+    const BREAKPOINTS = [{ name: 'Phone', range: 'up to 767px', max: 767, layout: 'Menu as a drawer; grids one column; controls wrap; tab strips scroll' },
+      { name: 'Tablet', range: '768 to 1099px', max: 1099, layout: 'Menu as icons; breadcrumb and user name hidden' },
+      { name: 'Laptop', range: '1100 to 1439px', max: 1439, layout: 'Full menu; list and detail panels stack' },
+      { name: 'Desktop', range: '1440px and up', max: Infinity, layout: 'Layouts as designed' }];
 
     function DesignViewModel() {
       this.tab = ko.observable('light');
@@ -29,7 +77,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
         const styles = getComputedStyle(document.documentElement);
         this.brand.concat(this.neutrals, this.semantic).forEach((s) => s.value(styles.getPropertyValue(s.token).trim().toUpperCase()));
       };
-      preferences.theme.subscribe(() => window.setTimeout(readTokens, 0));
+      preferences.theme.subscribe(() => window.setTimeout(() => { readTokens(); measure(); }, 0));
       this.swatches = ko.pureComputed(() => (this.tab() === 'semantic' ? this.semantic : this.tab() === 'dark' ? this.neutrals : this.brand));
       this.swatchTitle = ko.pureComputed(() => (this.tab() === 'semantic' ? 'Text and tints' : this.tab() === 'dark' ? 'Neutrals' : 'Brand'));
 
@@ -133,6 +181,91 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
       // Carousel
       this.carousel = ui.carousel();
 
+      // Token reference: every token, its light and dark values, copy its var() or value
+      this.tokens = ko.observableArray([]);
+      this.tokenQuery = ko.observable('');
+      this.tokenQueryInput = ui.value(this.tokenQuery);
+      this.tokenGroup = ko.observable('');
+      this.tokenGroupChange = ui.value(this.tokenGroup);
+      this.tokenGroups = GROUPS.map((g) => g[0]).concat(['Other']);
+      this.tokenRows = ko.pureComputed(() => {
+        const q = this.tokenQuery().trim().toLowerCase();
+        return this.tokens().filter((t) => (!this.tokenGroup() || t.group === this.tokenGroup()) && (!q || (t.name + ' ' + t.light + ' ' + t.dark).toLowerCase().indexOf(q) >= 0))
+          .map((t) => Object.assign({}, t, {
+            isColour: t.group === 'Colour' && !/gradient/.test(t.name), sample: { background: 'var(' + t.name + ')' },
+            copyVar: () => ui.copy('var(' + t.name + ')').then(() => toast.success('Copied var(' + t.name + ').')).catch((e) => toast.error(e.message)),
+            copyValue: () => ui.copy(t.light).then(() => toast.success('Copied ' + t.light + '.')).catch((e) => toast.error(e.message))
+          }));
+      });
+      this.tokenCount = ko.pureComputed(() => this.tokenRows().length + ' of ' + this.tokens().length + ' tokens');
+      // Spacing, radius, borders, elevation and motion, as live samples of the tokens
+      this.spaceScale = [1, 2, 3, 4, 5, 6].map((n) => ({ name: '--fx-space-' + n, bar: { width: 'var(--fx-space-' + n + ')' } }));
+      this.radii = ['--fx-radius-sm', '--fx-radius', '--fx-radius-lg', '--fx-radius-xl', '--fx-radius-pill'].map((n) => ({ name: n, style: { borderRadius: 'var(' + n + ')' } }));
+      this.elevations = [['--fx-elevation-1', 'Cards at rest'], ['--fx-elevation-2', 'Cards on hover, popovers'], ['--fx-elevation-3', 'Menus, dialogs, sheets']]
+        .map((e) => ({ name: e[0], use: e[1], style: { boxShadow: 'var(' + e[0] + ')' } }));
+      this.borders = [['--fx-border-width', 'Card, field and table lines'], ['--fx-border-width-strong', 'Focus outlines, the active tab, status edges']]
+        .map((b) => ({ name: b[0], use: b[1], style: { borderWidth: 'var(' + b[0] + ')' } }));
+      this.motions = [['--fx-dur-press', 'A button press'], ['--fx-dur-hover', 'Hover and focus'], ['--fx-dur-pop', 'Menus and popups'], ['--fx-dur-panel', 'Panels, the menu'],
+        ['--fx-dur-modal', 'Dialogs, the palette'], ['--fx-dur-page', 'A page opening']].map((m) => ({ name: m[0], use: m[1], value: ko.observable('') }));
+      this.motionOn = ko.observable(false);
+      this.playMotion = () => { this.motionOn(false); window.setTimeout(() => this.motionOn(true), 30); };
+      this.motionCss = ko.pureComputed(() => 'factory-ds-motion' + (this.motionOn() ? ' is-on' : ''));
+      this.reducedMotion = ko.observable(!!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches));
+      this.layout = [['--fx-gutter', 'Page side padding'], ['--fx-gap', 'Between cards and sections'], ['--fx-card-pad', 'Inside cards'], ['--fx-touch', 'Smallest touch target']]
+        .map((l) => ({ name: l[0], use: l[1], value: ko.observable('') }));
+      // Contrast of the token pairs in the theme in use
+      this.contrast = ko.observableArray([]);
+      const measure = () => {
+        const probe = document.createElement('span');
+        document.body.appendChild(probe);
+        const colour = (token) => { probe.style.color = 'var(' + token + ')'; return getComputedStyle(probe).color; };
+        this.contrast(PAIRS.map((p) => {
+          const bg = over(colour(p[1]), colour('--fx-surface'));
+          const fg = over(colour(p[0]), bg);
+          const r = ratio(fg, bg);
+          const decorative = /decorative/.test(p[2]);
+          return { use: p[2], pair: p[0] + ' on ' + p[1], ratio: r.toFixed(2) + ':1', sample: { color: fg, background: bg },
+            pill: r >= 4.5 ? ui.status('SUCCEEDED', 'AA') : r >= 3 ? ui.status('WARNING', decorative ? 'Large text only (decorative)' : 'Large text only') : ui.status('FAILED', decorative ? 'Below 3:1 (decorative only)' : 'Below 3:1') };
+        }));
+        probe.remove();
+        const styles = getComputedStyle(document.documentElement);
+        this.motions.concat(this.layout).forEach((m) => m.value(styles.getPropertyValue(m.name).trim()));
+      };
+      this.contrastFails = ko.pureComputed(() => this.contrast().filter((c) => c.pill.text !== 'AA' && !/decorative/.test(c.use)).length);
+      // Responsive: the breakpoint the window is in now
+      this.width = ko.observable(window.innerWidth);
+      this.breakpoints = ko.pureComputed(() => {
+        const current = BREAKPOINTS.find((b) => this.width() <= b.max);
+        return BREAKPOINTS.map((b) => Object.assign({}, b, { css: b === current ? 'is-current' : '', now: b === current ? 'Now (' + this.width() + 'px)' : '' }));
+      });
+      const onResize = () => this.width(window.innerWidth);
+      // Ring chart (factory-ring, as on Modernization) with real data: the workspaces by OBDX version
+      this.ring = ko.pureComputed(() => {
+        const all = this.workspaces();
+        const v22 = all.filter((w) => w.obdxVersion === '22.x').length;
+        const p = all.length ? Math.round(100 * v22 / all.length) : 0;
+        return { style: { '--p': p, '--c': 'var(--fx-primary)' }, label: all.length ? p + '%' : '–', text: v22 + ' of ' + all.length + ' workspaces on OBDX 22.x' };
+      });
+      // Tabs: the tablist pattern (arrow keys, Home, End) every page uses
+      this.demoTab = ko.observable('overview');
+      this.demoTabs = ui.tabs(this.demoTab, [{ value: 'overview', label: 'Overview' }, { value: 'files', label: 'Files', count: 12 }, { value: 'history', label: 'History' }]);
+      this.demoTabKey = (event) => {
+        const keys = this.demoTabs.map((t) => t.value);
+        const at = keys.indexOf(this.demoTab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        this.demoTab(keys[next]);
+        const b = document.getElementById('dsTab-' + keys[next]);
+        if (b) {
+          b.focus();
+        }
+        return false;
+      };
+
       // Feedback
       this.toastSuccess = () => toast.success('Template created successfully.');
       this.toastError = () => toast.error('Build failed due to compilation errors.', { action: { label: 'Details', run: () => toast.info('Open Build & Test to see the log.') } });
@@ -163,9 +296,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
         accUtils.announce('Design System page loaded.');
         document.title = 'Design System';
         readTokens();
+        this.tokens(collectTokens());
+        measure();
+        window.addEventListener('resize', onResize);
         api.get('workspaces').then((list) => this.workspaces(list)).catch((e) => toast.error(e.message));
         this.carousel.attach('dsCarouselTrack');
       };
+      this.disconnected = () => window.removeEventListener('resize', onResize);
     }
 
     return DesignViewModel;

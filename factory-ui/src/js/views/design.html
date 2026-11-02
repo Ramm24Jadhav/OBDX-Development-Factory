@@ -1,9 +1,7 @@
 <div class="factory-pg factory-ds">
-  <div class="factory-pg-head">
-    <div>
-      <h1>Design System</h1>
-      <p>Modern, consistent and scalable UI components for all screens (1 – 23)</p>
-    </div>
+  <h1 class="fx-visually-hidden">Design System</h1>
+  <div class="factory-pg-head factory-ds-top">
+    <p class="factory-ds-intro">The source of truth for the factory's UI: the tokens every page uses, and each component in its states. Copy a token or a component's markup from here; docs/DESIGN-SYSTEM.md says how to use them.</p>
     <button type="button" class="fx-btn fx-btn--secondary" id="dsThemeButton" on-click="[[toggleTheme]]">
       <span class="factory-nav-icon factory-ico-moon" aria-hidden="true"></span><oj-bind-text value="[[themeButtonText]]"></oj-bind-text></button>
   </div>
@@ -57,6 +55,71 @@
     </section>
   </div>
 
+  <!-- Foundations: tokens, spacing and grid, radius, borders, elevation, motion, contrast, breakpoints -->
+  <section class="fx-card factory-ds-tokens" aria-labelledby="dsTokens">
+    <h2 class="fx-card-title" id="dsTokens">Tokens</h2>
+    <p class="fx-card-sub">Every token in app.css, read from the stylesheet: its light and dark values. Copy its var() into CSS, or its value.</p>
+    <div class="factory-filters factory-ds-tokenbar">
+      <span class="fx-control factory-ds-tokensearch"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="dsTokenSearch" placeholder="Search tokens or values" aria-label="Search tokens" on-input="[[tokenQueryInput]]"></span>
+      <select class="fx-select" id="dsTokenGroup" aria-label="Token group" on-change="[[tokenGroupChange]]"><option value="">All groups</option>
+        <oj-bind-for-each data="[[tokenGroups]]" as="g"><template><option :value="[[g.data]]"><oj-bind-text value="[[g.data]]"></oj-bind-text></option></template></oj-bind-for-each></select>
+      <span class="fx-muted" role="status"><oj-bind-text value="[[tokenCount]]"></oj-bind-text></span>
+    </div>
+    <div class="fx-table-wrap factory-ds-tokentable">
+      <table class="fx-table" id="dsTokenTable"><thead><tr><th scope="col">Token</th><th scope="col">Group</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col"><span class="fx-visually-hidden">Copy</span></th></tr></thead>
+        <tbody><oj-bind-for-each data="[[tokenRows]]" as="t"><template><tr>
+          <td><span class="factory-ds-tokenname"><oj-bind-if test="[[t.data.isColour]]"><span class="factory-ds-dot" :style="[[t.data.sample]]" aria-hidden="true"></span></oj-bind-if><code><oj-bind-text value="[[t.data.name]]"></oj-bind-text></code></span></td>
+          <td class="fx-muted"><oj-bind-text value="[[t.data.group]]"></oj-bind-text></td>
+          <td class="factory-mono factory-ds-val"><oj-bind-text value="[[t.data.light]]"></oj-bind-text></td>
+          <td class="factory-mono factory-ds-val"><oj-bind-text value="[[t.data.dark || 'same']]"></oj-bind-text></td>
+          <td class="factory-ds-copy"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[t.data.copyVar]]" :aria-label="[['Copy var(' + t.data.name + ')']]">var()</button>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[t.data.copyValue]]" :aria-label="[['Copy the value of ' + t.data.name]]">Value</button></td></tr></template></oj-bind-for-each></tbody></table>
+    </div>
+  </section>
+
+  <div class="factory-ds-row factory-ds-row-found">
+    <section class="fx-card" aria-labelledby="dsSpacing">
+      <h2 class="fx-card-title" id="dsSpacing">Spacing &amp; grid</h2>
+      <ul class="factory-ds-scale"><oj-bind-for-each data="[[spaceScale]]" as="s"><template><li><code><oj-bind-text value="[[s.data.name]]"></oj-bind-text></code><span class="factory-ds-bar" :style="[[s.data.bar]]"></span></li></template></oj-bind-for-each></ul>
+      <dl class="factory-kv factory-ds-kv"><oj-bind-for-each data="[[layout]]" as="l"><template><dt><code><oj-bind-text value="[[l.data.name]]"></oj-bind-text></code></dt><dd><oj-bind-text value="[[l.data.use + ': ' + l.data.value()]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+    </section>
+    <section class="fx-card" aria-labelledby="dsShape">
+      <h2 class="fx-card-title" id="dsShape">Radius, borders &amp; elevation</h2>
+      <ul class="factory-ds-shapes"><oj-bind-for-each data="[[radii]]" as="r"><template><li><span class="factory-ds-shape" :style="[[r.data.style]]"></span><code><oj-bind-text value="[[r.data.name]]"></oj-bind-text></code></li></template></oj-bind-for-each></ul>
+      <ul class="factory-ds-shapes"><oj-bind-for-each data="[[borders]]" as="b"><template><li><span class="factory-ds-shape factory-ds-border" :style="[[b.data.style]]"></span><code><oj-bind-text value="[[b.data.name]]"></oj-bind-text></code><span class="fx-muted"><oj-bind-text value="[[b.data.use]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+      <ul class="factory-ds-shapes"><oj-bind-for-each data="[[elevations]]" as="e"><template><li><span class="factory-ds-shape factory-ds-elev" :style="[[e.data.style]]"></span><code><oj-bind-text value="[[e.data.name]]"></oj-bind-text></code><span class="fx-muted"><oj-bind-text value="[[e.data.use]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+    </section>
+    <section class="fx-card" aria-labelledby="dsMotion">
+      <h2 class="fx-card-title" id="dsMotion">Motion</h2>
+      <ul class="factory-ds-motions" id="dsMotionList"><oj-bind-for-each data="[[motions]]" as="m"><template><li><code><oj-bind-text value="[[m.data.name]]"></oj-bind-text></code><span class="factory-mono"><oj-bind-text value="[[m.data.value]]"></oj-bind-text></span><span class="fx-muted"><oj-bind-text value="[[m.data.use]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+      <div class="fx-row"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="dsPlayMotion" on-click="[[playMotion]]">Play</button><span :class="[[motionCss]]" aria-hidden="true"></span></div>
+      <p class="fx-help"><oj-bind-text value="[[reducedMotion() ? 'Reduced motion is on: nothing moves, as everywhere in the factory.' : 'With reduced motion on, every transition and animation is off.']]"></oj-bind-text> Motion uses transform and opacity only.</p>
+    </section>
+  </div>
+
+  <div class="factory-ds-row factory-ds-row-found2">
+    <section class="fx-card" aria-labelledby="dsContrast">
+      <h2 class="fx-card-title" id="dsContrast">Accessibility: contrast</h2>
+      <p class="fx-card-sub">Measured now, in the theme in use (switch theme to check the other). AA needs 4.5:1 for text, 3:1 for large text and icons.</p>
+      <div class="fx-table-wrap"><table class="fx-table" id="dsContrastTable"><thead><tr><th scope="col">Use</th><th scope="col">Tokens</th><th scope="col">Sample</th><th scope="col">Ratio</th><th scope="col">WCAG</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[contrast]]" as="c"><template><tr><td><oj-bind-text value="[[c.data.use]]"></oj-bind-text></td><td class="factory-mono factory-ds-val"><oj-bind-text value="[[c.data.pair]]"></oj-bind-text></td>
+          <td><span class="factory-ds-sample" :style="[[c.data.sample]]">Aa</span></td><td class="factory-mono"><oj-bind-text value="[[c.data.ratio]]"></oj-bind-text></td>
+          <td><span :class="[[c.data.pill.css]]"><span :class="[[c.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[c.data.pill.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+      <ul class="factory-ds-rules"><li>State is never shown by colour alone: status chips carry an icon and words.</li><li>Every control has a visible focus ring (<code>--fx-focus</code>) and is reachable by keyboard; tabs and lists move with the arrow keys.</li>
+        <li>Touch targets are at least <code>--fx-touch</code> on touch screens. Text is never smaller than 11px.</li><li>Reduced motion turns every transition and animation off.</li></ul>
+    </section>
+    <section class="fx-card" aria-labelledby="dsResponsive">
+      <h2 class="fx-card-title" id="dsResponsive">Responsive</h2>
+      <p class="fx-card-sub">Breakpoints are in the media queries of app.css. Resize the window: the current one is marked.</p>
+      <div class="fx-table-wrap"><table class="fx-table" id="dsBreakpoints"><thead><tr><th scope="col">Range</th><th scope="col">Width</th><th scope="col">Layout</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[breakpoints]]" as="b"><template><tr :class="[[b.data.css]]"><td><strong><oj-bind-text value="[[b.data.name]]"></oj-bind-text></strong> <oj-bind-if test="[[b.data.now]]"><span class="fx-badge fx-badge--primary fx-badge--plain"><oj-bind-text value="[[b.data.now]]"></oj-bind-text></span></oj-bind-if></td>
+          <td class="factory-mono"><oj-bind-text value="[[b.data.range]]"></oj-bind-text></td><td><oj-bind-text value="[[b.data.layout]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+      <h3 class="factory-ds-h">Example: a card grid</h3>
+      <div class="factory-ds-grid"><span class="fx-card">1</span><span class="fx-card">2</span><span class="fx-card">3</span><span class="fx-card">4</span></div>
+      <p class="fx-help"><code>grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr))</code> with <code>gap: var(--fx-gap)</code>: four columns on a desktop, one on a phone.</p>
+    </section>
+  </div>
+
   <!-- Row 2: buttons, split buttons, fields, select -->
   <div class="factory-ds-row factory-ds-row-2">
     <section class="fx-card" aria-labelledby="dsButtons">
@@ -70,6 +133,7 @@
                 <td><button type="button" :class="[[v.data.css + ' fx-btn--sm' + st.data.extra]]" on-click="[[clicked(v.data.name)]]">Button</button></td>
               </template></oj-bind-for-each></tr>
           </template></oj-bind-for-each>
+          <tr><th>Focus</th><oj-bind-for-each data="[[variants]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm is-focus']]" on-click="[[clicked(v.data.name)]]">Button</button></td></template></oj-bind-for-each></tr>
           <tr><th>Disabled</th><oj-bind-for-each data="[[variants]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" disabled>Button</button></td></template></oj-bind-for-each></tr>
           <tr><th>With Icon</th><oj-bind-for-each data="[[variants]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" on-click="[[clicked(v.data.name)]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Button</button></td></template></oj-bind-for-each></tr>
           <tr><th>Loading</th><oj-bind-for-each data="[[loadingButtons]]" as="v"><template><td><button type="button" :class="[[v.data.css + ' fx-btn--sm']]" on-click="[[runLoading]]">Loading</button></td></template></oj-bind-for-each></tr>
@@ -123,6 +187,11 @@
         <div class="fx-field"><div class="fx-row"><label class="fx-label" for="dsNote">Notes</label><span class="fx-counter"><oj-bind-text value="[[noteCount]]"></oj-bind-text></span></div>
           <textarea id="dsNote" class="fx-textarea" maxlength="200" placeholder="Describe the change..." on-input="[[noteInput]]"></textarea><span class="fx-help">Shown to reviewers with the change.</span></div>
         <div class="fx-field"><label class="fx-label" for="dsDisabled">Disabled</label><input id="dsDisabled" class="fx-input" placeholder="Enter text..." disabled></div>
+        <div class="factory-ds-states">
+          <div class="fx-field"><span class="fx-label">Focus</span><input class="fx-input is-focus" value="Typing…" aria-label="Focus state example" readonly></div>
+          <div class="fx-field is-error"><span class="fx-label">Error</span><input class="fx-input" value="name@" aria-label="Error state example" aria-invalid="true" readonly><span class="fx-error"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>Enter a full email.</span></div>
+          <div class="fx-field is-success"><span class="fx-label">Success</span><input class="fx-input" value="name@bank.com" aria-label="Success state example" readonly><span class="fx-success-text"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Looks good!</span></div>
+        </div>
       </div>
     </section>
 
@@ -344,6 +413,33 @@
       <p class="fx-help">Pages map their server states to these seven categories, so a state always looks the same.</p>
       <details class="fx-disclosure"><summary>Advanced settings <span class="fx-disclosure-hint">progressive disclosure</span></summary><div class="fx-disclosure-body"><p class="fx-help">Rarely used settings stay folded until needed.</p></div></details>
       <div class="fx-row factory-ds-approval"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clicked('Validate')]]">Validate</button><span class="fx-approval"><span class="fx-approval-label">Approval</span><button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[clicked('Approve')]]">Approve plan</button></span></div>
+    </section>
+    <section class="fx-card" aria-labelledby="dsTabsTitle">
+      <h2 class="fx-card-title" id="dsTabsTitle">Tabs</h2>
+      <div class="fx-tabs" role="tablist" aria-label="Example tabs" on-keydown="[[demoTabKey]]">
+        <oj-bind-for-each data="[[demoTabs]]" as="t"><template><button type="button" role="tab" :id="[['dsTab-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+      </div>
+      <p class="fx-help" role="tabpanel"><oj-bind-text value="[['Showing ' + demoTab() + '. Arrow keys, Home and End move between tabs.']]"></oj-bind-text></p>
+      <p class="fx-help">Pages use <code>.fx-tabs</code> (inside cards) and <code>.factory-tabbar</code> (a page's main views); both follow the same pattern.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsEmpty">
+      <h2 class="fx-card-title" id="dsEmpty">Empty state</h2>
+      <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span><strong>No requirements yet</strong>Add a BRD or FSD on the Requirements page.</div>
+      <p class="fx-help">Say what is missing and the first thing to do; never a blank card.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsChart">
+      <h2 class="fx-card-title" id="dsChart">Chart: ring</h2>
+      <div class="fx-row"><span class="factory-ring" :style="[[ring().style]]" role="img" :aria-label="[[ring().text]]"><span><oj-bind-text value="[[ring().label]]"></oj-bind-text></span></span>
+        <span class="fx-muted"><oj-bind-text value="[[ring().text]]"></oj-bind-text></span></div>
+      <p class="fx-help">The only chart in the factory (Modernization readiness and screen risk). It always has a text equivalent.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsCode">
+      <h2 class="fx-card-title" id="dsCode">Code surfaces</h2>
+      <pre class="factory-code factory-code-light">public class FundTransferService {
+    // .factory-code: templates, examples, plans
+}</pre>
+      <pre class="fx-log">[12:04:01] .fx-log: build and run logs</pre>
+      <p class="fx-help">Diffs and viewers use <code>.factory-ch-lines</code> with the shared syntax colours (<code>services/syntax.js</code>, <code>--fx-syn-*</code>). Code scrolls inside its own box.</p>
     </section>
     <section class="fx-card" aria-labelledby="dsPanes">
       <h2 class="fx-card-title" id="dsPanes">Resizable panels (fx-resizer)</h2>
