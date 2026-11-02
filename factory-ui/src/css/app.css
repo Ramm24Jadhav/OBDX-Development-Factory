@@ -7480,6 +7480,29 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-pk-carddetail .factory-pk-head .fx-muted { font-size: var(--fx-text-sm); }
 .factory-pk .factory-pk-carousel { margin: 14px 18px 4px; }
 
+/* Version pack governance: rules by source, enforcement and evidence, history and impact (UI declutter step 17) */
+.factory-pk .factory-pk-top { align-items: center; }
+.factory-pk .factory-pk-intro { flex: 1 1 360px; margin: 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-pk .factory-pk-wrap { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.factory-pk .factory-pk-table { table-layout: auto; width: 100%; }
+.factory-pk .factory-pk-rulesnote { margin: 0 0 12px; }
+.factory-pk .factory-pk-rulegroup { margin-bottom: 14px; }
+.factory-pk .factory-pk-rules { font-size: var(--fx-text-sm); }
+.factory-pk .factory-pk-rules td { vertical-align: top; }
+.factory-pk .factory-pk-rulecell { display: flex; flex-direction: column; gap: 2px; min-width: 200px; overflow-wrap: anywhere; }
+.factory-pk .factory-pk-guidance { font-size: var(--fx-text-caption); }
+.factory-pk .factory-pk-inline { padding: 0; min-height: 0; vertical-align: baseline; }
+.factory-pk .factory-pk-silent { margin-bottom: 12px; }
+.factory-pk .factory-pk-impact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.factory-pk .factory-pk-impact > li { padding: 10px 12px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); color: var(--fx-text); }
+.factory-pk .factory-pk-impact p { margin: 4px 0 0; }
+.factory-pk .factory-pk-impactchanges { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.factory-pk .factory-pk-impactchanges li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: var(--fx-text-sm); }
+.factory-pk .factory-pk-histlist { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.factory-pk .factory-pk-histlist li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding-bottom: 8px; border-bottom: 1px solid var(--fx-border); color: var(--fx-text); }
+.factory-pk .factory-pk-histlist .factory-pk-utext { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 767px) { .factory-pk .factory-pk-rules { min-width: 760px; } }
+
 /* ---------- Notifications page, design system ---------- */
 /* Notification Center page (design system): tokens only, so it follows the light and dark themes */
 
