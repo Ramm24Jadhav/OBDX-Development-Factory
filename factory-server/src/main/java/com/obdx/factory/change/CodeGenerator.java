@@ -174,6 +174,30 @@ public class CodeGenerator {
     }
 
     /**
+     * One fix of a written file by findings its own checks do not make (what the other files of the change show): the
+     * model gets the file and the findings, the way a failed check is fixed, and is asked once. Null when the answer is
+     * still cut off at the output limit, so the file as written stays.
+     *
+     * @throws JoinFailed when the answer's pieces do not join
+     */
+    public Result fixFindings(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String content, String original,
+                              Map<String, String> earlier, String findings, ScreenScaffolder.Scaffold scaffold) {
+        Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
+        String rules = checks.describeRules(context.checks(), item.path());
+        String guidance = checks.targetGuidance(context.checks(), item.path());
+        java.util.function.DoubleFunction<String> prompt = scale -> prompt(context, plan, item, original, Map.of(), earlier, null, rules, recipe,
+                guidance, scaffold, 0, scale);
+        java.util.function.DoubleFunction<String> brief = scale -> continuationPrompt(context, item, original, earlier, null, rules, scale);
+        Written fixed = withoutReasoningComments(item.path(), original, fix(item, null, rules, content,
+                new FileChecks.Result(FileChecks.Status.FAILED, findings), prompt, brief, 1));
+        if (fixed.cutOff()) {
+            log.info("The fix of {} by the other files' findings was cut off; the file stays as written", item.path());
+            return null;
+        }
+        return new Result(fixed.content(), withNotes(checked(context, item, original, fixed.content(), scaffold, false), fixed.notes()), 1);
+    }
+
+    /**
      * A whole answer without the comments that carry the model's reasoning: they fail the file on their own, and asking
      * the model again for the whole file costs far more than taking them out.
      */
@@ -753,11 +777,16 @@ public class CodeGenerator {
 
     private static final Pattern BUNDLE_KEY = Pattern.compile("(?m)(?:^|[{,])\\s*[\"']?([A-Za-z_][\\w.-]*)[\"']?\\s*[:=]");
 
-    /** The keys a bundle defines (label: 'Amount', amount.label=Amount), at most 100. */
+    /** The keys a bundle defines (label: 'Amount', amount.label=Amount), at most 100 (for a prompt). */
     static List<String> bundleKeys(String content) {
+        return bundleKeys(content, 100);
+    }
+
+    /** The keys a bundle defines, at most max. */
+    static List<String> bundleKeys(String content, int max) {
         java.util.Set<String> keys = new java.util.LinkedHashSet<>();
         Matcher m = BUNDLE_KEY.matcher(content == null ? "" : content);
-        while (m.find() && keys.size() < 100) {
+        while (m.find() && keys.size() < max) {
             if (!m.group(1).equals("root")) {
                 keys.add(m.group(1));
             }
@@ -883,7 +912,7 @@ public class CodeGenerator {
                 // and no blank lines after it, which the model would write again after repeating the last line
                 sofar = sofar.stripTrailing() + "\n";
             }
-            boolean enough = !criteria.isEmpty() && tests(sofar) >= criteria.size();
+            boolean enough = !criteria.isEmpty() && covered(sofar, criteria);
             if (enough && finishAsked) {
                 // Asked to finish once already: more pieces would only repeat tests
                 log.info("{} has a test for each of its {} acceptance criteria and was asked to finish; it is not continued again", path,
@@ -986,10 +1015,10 @@ public class CodeGenerator {
         }
         String content = sofar.strip() + "\n";
         List<String> notes = new java.util.ArrayList<>();
-        if (cut && !criteria.isEmpty() && tests(content) >= criteria.size()) {
+        if (cut && !criteria.isEmpty() && covered(content, criteria)) {
             // Every criterion has its test: the file is closed after its last whole test rather than left cut off
             String closed = closedAfterLastMember(path, content);
-            if (closed != null && tests(closed) >= criteria.size()) {
+            if (closed != null && covered(closed, criteria)) {
                 log.info("Closed {} after its last whole test: it has a test for each of its {} acceptance criteria", path, criteria.size());
                 notes.add("The answer stopped at the output limit after a test for each acceptance criterion was written; the file was "
                         + "closed after its last whole test.");
@@ -1111,7 +1140,7 @@ public class CodeGenerator {
 
     /**
      * The acceptance criteria a test file's plan item names (AC-001, AC-003; AC-001 to AC-004 is four of them); empty
-     * for a file that is no test.
+     * for a file that is no test, and when it names more than {@link #MAX_CRITERIA} (such a list is no plan of tests).
      */
     static java.util.Set<String> criteria(ChangePlan.Item item) {
         java.util.Set<String> ids = new java.util.LinkedHashSet<>();
@@ -1122,12 +1151,30 @@ public class CodeGenerator {
         while (m.find()) {
             int from = Integer.parseInt(m.group(1));
             int to = m.group(2) == null ? from : Integer.parseInt(m.group(2));
+            if (to - from >= MAX_CRITERIA) {
+                return new java.util.LinkedHashSet<>();
+            }
             String width = "%0" + m.group(1).length() + "d";
-            for (int n = from; n <= Math.min(to, from + 50); n++) {
+            for (int n = from; n <= to; n++) {
                 ids.add("AC-" + String.format(width, n));
+            }
+            if (ids.size() > MAX_CRITERIA) {
+                return new java.util.LinkedHashSet<>();
             }
         }
         return ids;
+    }
+
+    /** The most acceptance criteria one test file is followed by. */
+    static final int MAX_CRITERIA = 100;
+
+    /**
+     * Whether a test file names each of the criteria (AC-001, as AC_001 or ac001 in a test's name too): then every one
+     * has its test, however many tests the file has.
+     */
+    static boolean covered(String content, java.util.Set<String> criteria) {
+        String flat = content.toUpperCase(java.util.Locale.ROOT).replaceAll("[-_ ]", "");
+        return !criteria.isEmpty() && criteria.stream().allMatch(id -> flat.contains(id.replace("-", "")));
     }
 
     private static final Pattern TEST_METHOD = Pattern.compile("@Test\\b|(?m)^\\s*(?:it|test)\\s*\\(");
@@ -1192,107 +1239,208 @@ public class CodeGenerator {
         List<com.obdx.factory.pack.SourceScan.Range> literal = new java.util.ArrayList<>(parts.comments());
         literal.addAll(parts.strings());
         String code = com.obdx.factory.pack.SourceScan.blank(content, literal);
-        // The class bodies open at each point: the brace of a class, interface, enum, record or anonymous class
-        java.util.Deque<int[]> open = new java.util.ArrayDeque<>();
-        int scanned = 0;
-        int boundary = 0;
-        Map<String, Integer> seen = new java.util.HashMap<>();
+        Braces braces = Braces.of(code);
+        int[] lineStarts = lineStarts(code);
+        Map<String, Member> seen = new java.util.HashMap<>();
         List<Repeat> repeated = new java.util.ArrayList<>();
         Matcher m = DECLARATION.matcher(code);
-        while (m.find()) {
-            for (; scanned < m.start(); scanned++) {
-                char c = code.charAt(scanned);
-                if (c == '{') {
-                    // (a declaration's head is short: at most its last 300 characters are read)
-                    String before = code.substring(Math.max(boundary, scanned - 300), scanned);
-                    boolean type = before.matches("(?s).*\\b(class|interface|enum|record)\\b[^=]*") || before.matches("(?s).*\\bnew\\s+[\\w.<>\\[\\], ?]+\\(.*\\)\\s*");
-                    open.push(new int[] {scanned, type ? 1 : 0});
-                }
-                if (c == '}' && !open.isEmpty()) {
-                    open.pop();
-                }
-                if (c == '{' || c == '}' || c == ';') {
-                    boundary = scanned + 1;
-                }
-            }
-            if (NOT_A_TYPE.contains(m.group(1)) || NOT_A_NAME.contains(m.group(2))) {
+        while (m.find() && repeated.size() < MAX_REPEATS) {
+            if (NOT_A_TYPE.contains(m.group(1)) || NOT_A_NAME.contains(m.group(2)) || m.group(3).length() > 1_000) {
                 continue;
             }
-            int container = open.stream().filter(o -> o[1] == 1).findFirst().map(o -> o[0]).orElse(-1);
-            String parameters = m.group(3).replaceAll("@\\w+(\\([^)]*\\))?", "").replaceAll("\\bfinal\\b", "")
-                    .replaceAll("\\s+\\w+\\s*(,|$)", "$1").replaceAll("\\s+", "");
+            int container = braces.typeBodyAt(m.start());
+            String parameters = m.group(3).replaceAll("@\\w++(\\([^)]*+\\))?", "").replaceAll("\\bfinal\\b", "")
+                    .replaceAll("(?<!\\s)\\s++\\w++\\s*+(,|$)", "$1").replaceAll("\\s++", "");
             String key = container + ":" + m.group(2) + "(" + parameters + ")";
-            int close = closingBrace(code, m.end() - 1);
-            if (close < 0) {
+            int close = braces.close(m.end() - 1);
+            int from = memberStart(content, code, m.start());
+            int to = close < 0 ? -1 : (code.indexOf('\n', close) < 0 ? code.length() : code.indexOf('\n', close) + 1);
+            String signature = m.group(2) + "(" + m.group(3).strip() + ")";
+            Member first = seen.get(key);
+            if (first == null) {
+                seen.put(key, new Member(from, to, m.start()));
                 continue;
             }
-            Integer first = seen.putIfAbsent(key, m.start());
-            if (first != null) {
-                int from = code.lastIndexOf('\n', m.start()) + 1;
-                // with its annotations (@Test, @Override) on the lines above
-                while (from > 0) {
-                    int previous = code.lastIndexOf('\n', from - 2) + 1;
-                    if (!code.substring(previous, from).strip().startsWith("@")) {
-                        break;
-                    }
-                    from = previous;
+            if (first.to() < 0 || first.to() > m.start()) {
+                // The first copy never closes before this one starts (a piece cut off in it): it goes, the whole one stays
+                if (to < 0) {
+                    continue;
                 }
-                // and the blank line (not a comment) that separated it from the member before
-                if (from > 0) {
-                    int previous = content.lastIndexOf('\n', from - 2) + 1;
-                    if (content.substring(previous, from).isBlank()) {
-                        from = previous;
-                    }
-                }
-                int to = code.indexOf('\n', close);
-                repeated.add(new Repeat(from, to < 0 ? code.length() : to + 1, lineOf(code, m.start()), lineOf(code, first),
-                        m.group(2) + "(" + m.group(3).strip() + ")"));
+                repeated.add(new Repeat(first.from(), from, lineOf(lineStarts, first.start()), lineOf(lineStarts, m.start()), signature, true));
+                seen.put(key, new Member(from, to, m.start()));
+            } else if (to >= 0) {
+                repeated.add(new Repeat(from, to, lineOf(lineStarts, m.start()), lineOf(lineStarts, first.start()), signature, false));
             }
         }
         if (repeated.isEmpty()) {
             return content;
         }
-        StringBuilder out = new StringBuilder(content);
-        int below = Integer.MAX_VALUE;
-        // from the bottom, so the offsets above stay right; one inside another already taken out is skipped
-        for (Repeat r : repeated.stream().sorted(java.util.Comparator.comparingInt(Repeat::from).reversed()).toList()) {
-            if (r.to() > below) {
+        StringBuilder out = new StringBuilder(content.length());
+        int kept = 0;
+        // in one pass, in order; a range inside or across one already taken out is skipped
+        for (Repeat r : repeated.stream().sorted(java.util.Comparator.comparingInt(Repeat::from)).toList()) {
+            if (r.from() < kept) {
                 continue;
             }
-            out.delete(r.from(), r.to());
-            below = r.from();
-            notes.add("The method " + r.signature() + " was written again (line " + r.line() + ", first on line " + r.firstLine()
+            out.append(content, kept, r.from());
+            kept = r.to();
+            notes.add(r.firstBroken() ? "The method " + r.signature() + " was written again (line " + r.firstLine() + ") after a first "
+                    + "copy that was never closed (line " + r.line() + "); the unclosed first copy was left out."
+                    : "The method " + r.signature() + " was written again (line " + r.line() + ", first on line " + r.firstLine()
                     + ") across the answer's pieces; the second one was left out.");
         }
+        out.append(content, kept, content.length());
         log.info("Left out {} method(s) written again in the pieces of a file", repeated.size());
         return out.toString();
     }
 
-    /** A method written again: the text to take out (from, to), its line, the line of the first one, and its signature. */
-    private record Repeat(int from, int to, int line, int firstLine, String signature) {
-    }
+    /** The most repeated methods taken out of one file. */
+    static final int MAX_REPEATS = 200;
 
-    private static int closingBrace(String code, int open) {
-        int depth = 0;
-        for (int i = open; i < code.length(); i++) {
-            char c = code.charAt(i);
-            if (c == '{') {
-                depth++;
-            } else if (c == '}' && --depth == 0) {
-                return i;
+    /** Where a member's text starts: its line, with its annotations on the lines above and one blank line (not a comment) before them. */
+    private static int memberStart(String content, String code, int start) {
+        int from = code.lastIndexOf('\n', start) + 1;
+        for (int k = 0; k < 20 && from > 0; k++) {
+            int previous = code.lastIndexOf('\n', from - 2) + 1;
+            if (!code.substring(previous, from).strip().startsWith("@")) {
+                break;
+            }
+            from = previous;
+        }
+        if (from > 0) {
+            int previous = content.lastIndexOf('\n', from - 2) + 1;
+            if (content.substring(previous, from).isBlank()) {
+                from = previous;
             }
         }
-        return -1;
+        return from;
     }
 
-    private static int lineOf(String text, int offset) {
-        int line = 1;
-        for (int i = 0; i < offset && i < text.length(); i++) {
+    /** A method seen first: its text (to is -1 when it never closes) and where its declaration starts. */
+    private record Member(int from, int to, int start) {
+    }
+
+    /**
+     * A method written again: the text to take out (from, to), the line of the copy taken out and of the one kept, its
+     * signature, and whether the copy taken out is the first (it never closed).
+     */
+    private record Repeat(int from, int to, int line, int firstLine, String signature, boolean firstBroken) {
+    }
+
+    /**
+     * The braces of a text without comments and strings, matched in one pass: where each closes, and for each the
+     * nearest enclosing type body (a class, interface, enum or record, an anonymous class, or an enum constant's body).
+     */
+    private record Braces(int[] close, int[] typeBody) {
+
+        private static final Pattern TYPE_KEYWORD = Pattern.compile("\\b(class|interface|enum|record)\\b");
+        private static final Pattern NEW_TYPE = Pattern.compile("\\bnew\\s++[\\w.<>\\[\\], ?]++$");
+        private static final Pattern ENUM_CONSTANT = Pattern.compile("^\\s*+@?[A-Za-z_$][\\w$]*+\\s*+$");
+
+        static Braces of(String code) {
+            int n = code.length();
+            int[] close = new int[n];
+            int[] typeBody = new int[n];
+            java.util.Arrays.fill(close, -1);
+            int[] stack = new int[n + 1];
+            int[] typeStack = new int[n + 1];
+            boolean[] enumBody = new boolean[n + 1];
+            int depth = 0;
+            int boundary = 0;
+            for (int i = 0; i < n; i++) {
+                char c = code.charAt(i);
+                if (c == '{') {
+                    int enclosing = depth == 0 ? -1 : typeStack[depth - 1];
+                    boolean inEnum = depth > 0 && enumBody[depth - 1];
+                    String before = code.substring(Math.max(boundary, i - 300), i);
+                    boolean type = false;
+                    boolean isEnum = false;
+                    Matcher keyword = TYPE_KEYWORD.matcher(before);
+                    String last = null;
+                    int lastEnd = 0;
+                    while (keyword.find()) {
+                        last = keyword.group(1);
+                        lastEnd = keyword.end();
+                    }
+                    String head = before.stripTrailing();
+                    if (last != null && before.indexOf('=', lastEnd) < 0) {
+                        type = true;
+                        isEnum = last.equals("enum");
+                    } else if (head.endsWith(")")) {
+                        // new Type(args) { (its arguments perhaps lambdas with braces of their own), or an enum constant ADD(1) {
+                        int open = openingParen(code, i - (before.length() - head.length()) - 1);
+                        if (open >= 0) {
+                            type = NEW_TYPE.matcher(code.substring(Math.max(0, open - 300), open).stripTrailing()).find()
+                                    || inEnum && ENUM_CONSTANT.matcher(afterLastComma(code.substring(Math.max(boundary, open - 300), open))).matches();
+                        }
+                    } else if (inEnum) {
+                        // an enum constant's body: ADD { ... }
+                        type = ENUM_CONSTANT.matcher(afterLastComma(before)).matches();
+                    }
+                    stack[depth] = i;
+                    typeStack[depth] = type ? i : enclosing;
+                    enumBody[depth] = isEnum;
+                    depth++;
+                    boundary = i + 1;
+                } else if (c == '}') {
+                    if (depth > 0) {
+                        depth--;
+                        close[stack[depth]] = i;
+                    }
+                    boundary = i + 1;
+                } else if (c == ';') {
+                    boundary = i + 1;
+                }
+                typeBody[i] = depth == 0 ? -1 : typeStack[depth - 1];
+            }
+            return new Braces(close, typeBody);
+        }
+
+        private static String afterLastComma(String text) {
+            return text.substring(text.lastIndexOf(',') + 1);
+        }
+
+        /** The innermost type body open at a position (its brace's offset), or -1. */
+        int typeBodyAt(int position) {
+            return position < typeBody.length ? typeBody[position] : -1;
+        }
+
+        /** Where the brace at open closes, or -1. */
+        int close(int open) {
+            return open >= 0 && open < close.length ? close[open] : -1;
+        }
+
+        /** The ( that the ) at close matches, looking back at most 10,000 characters; -1 when not found. */
+        private static int openingParen(String code, int close) {
+            int depth = 0;
+            for (int i = close; i >= 0 && close - i < 10_000; i--) {
+                char c = code.charAt(i);
+                if (c == ')') {
+                    depth++;
+                } else if (c == '(' && --depth == 0) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+    }
+
+    /** The offset each line starts at. */
+    private static int[] lineStarts(String text) {
+        List<Integer> starts = new java.util.ArrayList<>();
+        starts.add(0);
+        for (int i = 0; i < text.length(); i++) {
             if (text.charAt(i) == '\n') {
-                line++;
+                starts.add(i + 1);
             }
         }
-        return line;
+        return starts.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    /** The line (from 1) of an offset. */
+    private static int lineOf(int[] lineStarts, int offset) {
+        int found = java.util.Arrays.binarySearch(lineStarts, offset);
+        return found >= 0 ? found + 1 : -found - 1;
     }
 
     /** The file without the second (and later) declarations of a method with the same parameters, noted in notes. */

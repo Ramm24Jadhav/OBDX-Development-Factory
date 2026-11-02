@@ -180,6 +180,80 @@ class ContinuedTestsTest {
     }
 
     @Test
+    void anUnclosedFirstCopyGivesWayToTheWholeSecond() {
+        String content = """
+                package com.bank.x;
+
+                public class ATest {
+
+                    @Test
+                    public void first() {
+                        check(1);
+
+                    @Test
+                    public void first() {
+                        check(1);
+                    }
+
+                    @Test
+                    public void second() {
+                        check(2);
+                    }
+                }
+                """;
+        List<String> notes = new ArrayList<>();
+
+        String once = CodeGenerator.withoutRepeatedMethods(content, notes);
+
+        assertThat(CodeGenerator.joinProblem("ATest.java", content)).isNotNull();
+        assertThat(CodeGenerator.joinProblem("ATest.java", once)).isNull();
+        assertThat(once.split("void first", -1)).hasSize(2);
+        assertThat(notes).singleElement().asString().contains("never closed");
+    }
+
+    @Test
+    void enumConstantBodiesAndAnonymousClassesWithLambdasAreClassesOfTheirOwn() {
+        String content = """
+                enum Op {
+                    ADD {
+                        int apply(int a, int b) { return a + b; }
+                    },
+                    SUB(2) {
+                        int apply(int a, int b) { return a - b; }
+                    };
+                    Op() { }
+                    Op(int n) { }
+                    abstract int apply(int a, int b);
+                }
+                class B {
+                    Runnable one = new Task(() -> { log(); }) {
+                        public void run() { }
+                    };
+                    Runnable two = new Task(() -> { log(); }) {
+                        public void run() { }
+                    };
+                    void over(String s) { }
+                    void over(int i) { }
+                }
+                """;
+
+        assertThat(CodeGenerator.withoutRepeatedMethods(content, new ArrayList<>())).isEqualTo(content);
+    }
+
+    @Test
+    void criteriaCountByTheirIdsNotByTheNumberOfTests() {
+        java.util.Set<String> criteria = new java.util.LinkedHashSet<>(List.of("AC-001", "AC-002", "AC-003"));
+
+        // three tests, one of them written twice, but AC-003 has none
+        assertThat(CodeGenerator.covered("@Test void a() {} // AC-001\n@Test void b() {} // AC-002\n@Test void b() {} // AC-002", criteria))
+                .isFalse();
+        assertThat(CodeGenerator.covered("@Test void ac001() {}\n@Test void ac_002() {}\n@Test void AC003_rejects() {}", criteria)).isTrue();
+        // a range too wide to be a plan of tests is not followed
+        assertThat(CodeGenerator.criteria(new ChangePlan.Item("test/ATest.java", "create", "test", null, List.of(), "AC-1 to AC-9999")))
+                .isEmpty();
+    }
+
+    @Test
     void readsTheCriteriaATestFileCovers() {
         assertThat(CodeGenerator.criteria(new ChangePlan.Item("test/ATest.java", "create", "test", "AC-003", List.of(),
                 "Validates AC-001 to AC-002, and AC-005."))).containsExactly("AC-003", "AC-001", "AC-002", "AC-005");

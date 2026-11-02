@@ -95,6 +95,11 @@ class PlanReviewTest {
                 {"scope": ["A new Quick Transfer dashboard widget (UI component, view model, resource bundle).", "Uses no new REST service."],
                  "outOfScope": ["Any backend change: no new or changed REST service, Java class, DTO."]}
                 """, "x"))).isFalse();
+        // "new" that is not said of an endpoint, and existing services
+        assertThat(PlanReview.asksForEndpoints(SpecParser.parse("""
+                {"scope": ["Show the new balance using the existing REST API.", "Add a new payee via the payee API.",
+                           "A new service charge on transfers."]}
+                """, "x"))).isFalse();
     }
 
     @Test

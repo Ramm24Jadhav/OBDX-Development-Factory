@@ -93,11 +93,17 @@ public class ImpactAnalyzer {
                 }
                 // The model stopped at its output limit: keep the files it planned whole and ask for the rest
                 log.warn("The change plan was cut off at the model's output limit; asking for the files still missing");
-                return continued(context, candidates, fileExists, PlanParser.partial(result.reply()), shortly);
             } catch (BadRequestException e) {
                 log.warn("Unusable change plan from the model (attempt {}): {}", attempt + 1, e.getMessage());
                 last = e;
                 retry = shortly + "\nYour previous answer could not be used (" + e.getMessage() + "). Answer with only the JSON object.";
+                continue;
+            }
+            try {
+                return continued(context, candidates, fileExists, PlanParser.partial(result.reply()), shortly);
+            } catch (BadRequestException e) {
+                // Continued and still unusable (no file at all, too many): not asked for all over again, which would cost as much again
+                throw new IllegalStateException("The model did not return a usable change plan: " + e.getMessage());
             }
         }
         throw new IllegalStateException("The model did not return a usable change plan: " + last.getMessage());

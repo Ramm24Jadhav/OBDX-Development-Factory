@@ -323,6 +323,46 @@ class DocumentStructureTest {
     }
 
     @Test
+    void tablesOfRulesAndOtherCodesAreNoMessages() {
+        DocumentStructure.Structure s = DocumentStructure.read("""
+                # 6. Business Rules
+
+                | Rule Code | Rule Description |
+                | --- | --- |
+                | BR-001 | accountNumber: 9 to 18 digits. |
+                | BR-002 | ifsc is not required for INTERNAL. |
+                # 9. Product codes
+
+                | Code | Description |
+                | --- | --- |
+                | SAV01 | Savings account |
+                | CUR02 | Current account |
+                # 10. Requirement codes
+
+                | Code | Message |
+                | --- | --- |
+                | FR-001 | not a message |
+                """);
+
+        assertThat(s.messages()).isEmpty();
+        assertThat(s.rules()).extracting(RequirementSpec.BusinessRule::id).containsExactly("BR-001", "BR-002");
+    }
+
+    @Test
+    void aDocumentGivesAtMostItsShareOfMessages() {
+        StringBuilder brd = new StringBuilder("# Error codes\n\n| Code | Message |\n| --- | --- |\n");
+        for (int i = 0; i < DocumentStructure.MAX_MESSAGES + 50; i++) {
+            brd.append("| ERR_").append(i).append(" | Message ").append(i).append(" |\n");
+        }
+        brd.append("| ERR_1 | Repeated |\n");
+
+        List<RequirementSpec.Message> messages = DocumentStructure.read(brd.toString()).messages();
+
+        assertThat(messages).hasSize(DocumentStructure.MAX_MESSAGES);
+        assertThat(messages.get(1).text()).isEqualTo("Message 1");
+    }
+
+    @Test
     void aShortRequestWithoutTablesKeepsTheDraft() {
         RequirementSpec drafted = SpecParser.parse("{\"title\": \"x\", \"businessRules\": [{\"id\": \"BR-1\", \"description\": \"r\"}]}", "x");
         assertThat(DocumentStructure.apply(drafted, DocumentStructure.read("Add a remarks field to the transfer screen."))).isSameAs(drafted);

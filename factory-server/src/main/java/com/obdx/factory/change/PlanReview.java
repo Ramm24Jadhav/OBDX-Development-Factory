@@ -112,8 +112,10 @@ final class PlanReview {
      * endpoints of its own.
      */
     private static final Pattern NEW_ENDPOINTS = Pattern.compile(
-            "(?i)\\b(new|expose[sd]?|exposing)\\b[^.;\\n]{0,40}?\\b(rest|endpoints?|apis?|web ?services?)\\b"
-                    + "|\\b(expose[sd]?|exposing)\\s+(GET|POST|PUT|PATCH|DELETE)\\s+/");
+            "(?i)\\bnew\\s++(?:(?:rest(?:ful)?|web|http)\\s++)?(?:endpoints?|apis?)\\b"
+                    + "|\\bnew\\s++(?:rest(?:ful)?|web|http)\\s++services?\\b"
+                    + "|\\b(?:expose[sd]?|exposing)\\s++(?:(?:an?|the|new)\\s++)?(?:(?:rest(?:ful)?|web|http)\\s++)?(?:endpoints?|apis?|services?)\\b"
+                    + "|\\b(?:expose[sd]?|exposing)\\s++(?:GET|POST|PUT|PATCH|DELETE)\\s++/");
     /** "no new REST service", "without new endpoints": said right before it, it says the opposite. */
     private static final Pattern DENIED = Pattern.compile("(?i)\\b(no|not|without|nor|never)\\s+(\\w+\\s+)?$");
 
@@ -135,7 +137,8 @@ final class PlanReview {
             Matcher m = NEW_ENDPOINTS.matcher(capped);
             while (m.find()) {
                 String before = capped.substring(Math.max(0, m.start() - 20), m.start());
-                if (!DENIED.matcher(before).find()) {
+                String around = capped.substring(Math.max(0, m.start() - 40), Math.min(capped.length(), m.end() + 40)).toLowerCase(Locale.ROOT);
+                if (!DENIED.matcher(before).find() && !around.contains("existing")) {
                     return true;
                 }
             }

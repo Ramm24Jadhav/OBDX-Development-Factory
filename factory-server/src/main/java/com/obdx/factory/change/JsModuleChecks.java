@@ -104,9 +104,131 @@ final class JsModuleChecks {
     /** The findings above that are certain errors: the module does not work as written. */
     static final List<String> ERRORS = List.of(WRONG_BINDING, NOT_RECEIVED, BUNDLE_GET, BUNDLE_KEYS);
 
-    /** define([...], function (a, b) or (a, b) => or a =>: the module list and the parameters, from text without comments */
-    private static final Pattern DEFINE_FUNCTION = Pattern.compile("\\bdefine\\s*\\(\\s*\\[([^\\]]*)]\\s*,\\s*(?:(?:async\\s+)?function\\s*[\\w$]*\\s*"
-            + "\\(([^()]*)\\)|\\(([^()]*)\\)\\s*=>|([A-Za-z_$][\\w$]*)\\s*=>)");
+    /** The largest view model the define checks read (larger ones are not view models a person wrote), and its longest line. */
+    static final int MAX_DEFINE_TEXT = 200_000;
+    static final int MAX_DEFINE_LINE = 4_000;
+    /** The most parameters and modules of a define list that are compared. */
+    static final int MAX_PARAMETERS = 64;
+
+    /** The module list and the parameters of a define call; a parameter that is no plain name (destructured) is null. */
+    record Define(List<String> modules, List<String> parameters) {
+    }
+
+    /**
+     * The first define([...], function (a, b) / (a, b) => / a =>) of a text without comments, read by hand so that no
+     * input makes it slow; null when there is none.
+     */
+    static Define define(String text) {
+        int at = 0;
+        while ((at = text.indexOf("define", at)) >= 0) {
+            int start = at;
+            at += 6;
+            if (start > 0 && (Character.isJavaIdentifierPart(text.charAt(start - 1)) || text.charAt(start - 1) == '.')) {
+                continue;
+            }
+            int i = skipSpace(text, at);
+            if (i >= text.length() || text.charAt(i) != '(') {
+                continue;
+            }
+            i = skipSpace(text, i + 1);
+            if (i >= text.length() || text.charAt(i) != '[') {
+                continue;
+            }
+            int close = text.indexOf(']', i);
+            if (close < 0) {
+                return null;
+            }
+            String list = text.substring(i + 1, close);
+            i = skipSpace(text, close + 1);
+            if (i >= text.length() || text.charAt(i) != ',') {
+                continue;
+            }
+            i = skipSpace(text, i + 1);
+            String parameters;
+            if (text.startsWith("async", i) && !Character.isJavaIdentifierPart(charAt(text, i + 5))) {
+                i = skipSpace(text, i + 5);
+            }
+            if (text.startsWith("function", i) && !Character.isJavaIdentifierPart(charAt(text, i + 8))) {
+                int open = text.indexOf('(', i + 8);
+                int end = open < 0 ? -1 : closingParen(text, open);
+                if (end < 0) {
+                    return null;
+                }
+                parameters = text.substring(open + 1, end);
+            } else if (i < text.length() && text.charAt(i) == '(') {
+                int end = closingParen(text, i);
+                if (end < 0) {
+                    return null;
+                }
+                parameters = text.substring(i + 1, end);
+            } else {
+                int end = i;
+                while (end < text.length() && (Character.isJavaIdentifierPart(text.charAt(end)) || text.charAt(end) == '$')) {
+                    end++;
+                }
+                if (end == i) {
+                    continue;
+                }
+                parameters = text.substring(i, end);
+            }
+            List<String> modules = new ArrayList<>();
+            Matcher m = MODULE.matcher(list);
+            while (m.find() && modules.size() < MAX_PARAMETERS) {
+                modules.add(m.group(1));
+            }
+            return new Define(modules, splitParameters(parameters));
+        }
+        return null;
+    }
+
+    /** The parameters by their commas outside braces and brackets; a destructured one ({ A, B }) or a rest one is null. */
+    static List<String> splitParameters(String list) {
+        List<String> parameters = new ArrayList<>();
+        int depth = 0;
+        int begin = 0;
+        for (int i = 0; i <= list.length() && parameters.size() < MAX_PARAMETERS; i++) {
+            char c = i < list.length() ? list.charAt(i) : ',';
+            if (c == '{' || c == '[' || c == '(') {
+                depth++;
+            } else if (c == '}' || c == ']' || c == ')') {
+                depth--;
+            } else if (c == ',' && depth <= 0) {
+                String part = list.substring(begin, i);
+                int equals = part.indexOf('=');
+                String name = (equals < 0 ? part : part.substring(0, equals)).strip();
+                if (!name.isEmpty() || i < list.length()) {
+                    parameters.add(name.matches("[A-Za-z_$][\\w$]*+") ? name : null);
+                }
+                begin = i + 1;
+            }
+        }
+        return parameters;
+    }
+
+    private static int skipSpace(String text, int i) {
+        while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
+            i++;
+        }
+        return i;
+    }
+
+    private static char charAt(String text, int i) {
+        return i < text.length() ? text.charAt(i) : ' ';
+    }
+
+    private static int closingParen(String text, int open) {
+        int depth = 0;
+        for (int i = open; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')' && --depth == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /** The module a conventional parameter name stands for. */
     private static final Map<String, String> CONVENTIONAL = Map.of("ko", "knockout", "oj", "ojs/ojcore", "$", "jquery", "Bootstrap", "ojs/ojbootstrap",
             "ArrayDataProvider", "ojs/ojarraydataprovider", "Context", "ojs/ojcontext", "ResponsiveUtils", "ojs/ojresponsiveutils",
@@ -115,8 +237,8 @@ final class JsModuleChecks {
     private static final Pattern SIDE_EFFECT = Pattern.compile("ojs/oj(knockout|button|inputtext|inputnumber|formlayout|selectsingle|selectcombobox"
             + "|select|label|labelvalue|dialog|popup|table|listview|listitemlayout|checkboxset|radioset|switch|datetimepicker|menu"
             + "|navigationlist|tabbar|progress|progress-bar|progress-circle|avatar|chart|validationgroup|messages|message|collapsible"
-            + "|accordion|textarea|toolbar|conveyorbelt|filmstrip|train|switcher|module-element|defer|bind-for-each|knockout-keyset"
-            + "|inputsearch|inputpassword|optgroup|option|composite)");
+            + "|accordion|textarea|toolbar|conveyorbelt|filmstrip|train|switcher|module-element|defer|bind-for-each"
+            + "|inputsearch|inputpassword|optgroup|option)");
 
     /**
      * The certain findings about the define list and the resource bundles of a view model: a parameter that receives a
@@ -129,43 +251,36 @@ final class JsModuleChecks {
      *               'ojL10n!nls/quick-transfer'); null when not known
      */
     static List<String> defineProblems(String content, java.util.function.Function<String, String> source) {
-        if (content == null || JavaScriptCheck.structure(content) != null) {
+        if (content == null || content.length() > MAX_DEFINE_TEXT || content.lines().anyMatch(l -> l.length() > MAX_DEFINE_LINE)
+                || JavaScriptCheck.structure(content) != null) {
             return List.of();
         }
         String text = SourceScanText.withoutComments(content);
-        Matcher define = DEFINE_FUNCTION.matcher(text);
-        if (!define.find()) {
+        Define define = define(text);
+        if (define == null) {
             return List.of();
         }
-        List<String> modules = new ArrayList<>();
-        Matcher m = MODULE.matcher(define.group(1));
-        while (m.find()) {
-            modules.add(m.group(1));
-        }
-        String list = define.group(2) != null ? define.group(2) : define.group(3) != null ? define.group(3) : define.group(4);
-        List<String> parameters = new ArrayList<>();
-        for (String parameter : list.split(",")) {
-            String name = parameter.strip().replaceAll("\\s*=.*$", "");
-            if (!name.isEmpty()) {
-                parameters.add(name);
-            }
-        }
+        List<String> modules = define.modules();
+        List<String> parameters = define.parameters();
         String code = JavaScriptCheck.codeOnly(content);
         List<String> problems = new ArrayList<>();
         List<String> wrong = new ArrayList<>();
         for (int i = 0; i < parameters.size(); i++) {
             String parameter = parameters.get(i);
+            if (parameter == null) {
+                continue;
+            }
             String module = i < modules.size() ? modules.get(i) : null;
             String expected = CONVENTIONAL.get(parameter);
-            boolean used = Pattern.compile("(?<![\\w$.])" + Pattern.quote(parameter) + "\\s*(\\.|\\(|\\[)").matcher(code).find();
+            boolean used = Pattern.compile("(?<![\\w$.])" + Pattern.quote(parameter) + "\\s*+[.(\\[]").matcher(code).find();
+            if (!used) {
+                continue;
+            }
             if (module == null) {
-                if (used) {
-                    wrong.add(parameter + " receives nothing (the list has " + modules.size() + " module(s))");
-                }
-            } else if (expected != null && !expected.equals(module) && !module.endsWith("/" + expected.substring(expected.lastIndexOf('/') + 1))
-                    && used) {
+                wrong.add(parameter + " receives nothing (the list has " + modules.size() + " module(s))");
+            } else if (expected != null && !conventional(module, expected)) {
                 wrong.add(parameter + " receives '" + module + "' (module " + (i + 1) + "), not '" + expected + "'");
-            } else if (expected == null && used && SIDE_EFFECT.matcher(module).matches()) {
+            } else if (expected == null && SIDE_EFFECT.matcher(module).matches()) {
                 wrong.add(parameter + " receives '" + module + "' (module " + (i + 1) + "), which only registers elements");
             }
         }
@@ -176,11 +291,12 @@ final class JsModuleChecks {
         List<String> notReceived = new ArrayList<>();
         for (int i = parameters.size(); i < modules.size(); i++) {
             String module = modules.get(i);
-            if (module.startsWith("./") || module.startsWith("../")) {
-                String other = source == null ? null : source.apply(module);
-                List<String> functions = other == null ? List.of() : exported(other).stream()
-                        .filter(f -> Pattern.compile("\\.\\s*" + Pattern.quote(f) + "\\s*\\(").matcher(code).find()).toList();
-                notReceived.add(module + (functions.isEmpty() ? "" : " (whose " + String.join(", ", functions) + " this file calls on other objects)"));
+            String other = (module.startsWith("./") || module.startsWith("../")) && source != null ? source.apply(module) : null;
+            // Only a module this change writes, whose functions this file calls: a loader kept for what it does is no finding
+            List<String> functions = other == null ? List.of() : exported(other).stream().limit(200)
+                    .filter(f -> Pattern.compile("\\.\\s*+" + Pattern.quote(f) + "\\s*+\\(").matcher(code).find()).toList();
+            if (!functions.isEmpty()) {
+                notReceived.add(module + " (whose " + String.join(", ", functions) + " this file calls on other objects)");
             }
         }
         if (!notReceived.isEmpty()) {
@@ -188,7 +304,7 @@ final class JsModuleChecks {
                     + "at its position (for example Model for ./model) and call its functions on that parameter.");
         }
         for (int i = 0; i < Math.min(parameters.size(), modules.size()); i++) {
-            if (modules.get(i).startsWith("ojL10n!") && source != null) {
+            if (parameters.get(i) != null && modules.get(i).startsWith("ojL10n!") && source != null) {
                 String bundle = source.apply(modules.get(i));
                 if (bundle != null) {
                     problems.addAll(bundleProblems(text, code, parameters.get(i), modules.get(i), bundle));
@@ -198,9 +314,16 @@ final class JsModuleChecks {
         return problems;
     }
 
+    /** The module is the one the name stands for: the same, a variant of it (ojs/ojcore-base for ojs/ojcore), or the same file elsewhere. */
+    private static boolean conventional(String module, String expected) {
+        String file = expected.substring(expected.lastIndexOf('/') + 1);
+        return module.equals(expected) || module.startsWith(expected + "-") || module.endsWith("/" + file) || module.endsWith("/" + file + "-base");
+    }
+
     /** foo: function, foo() {, this.foo = function: the functions a module (a model.js) offers. */
-    private static final Pattern EXPORTED = Pattern.compile("(?m)(?:^|[{,])\\s*([A-Za-z_$][\\w$]*)\\s*(?::\\s*(?:async\\s+)?function\\b|:\\s*\\([^()]*\\)\\s*=>|\\([^()]*\\)\\s*\\{)"
-            + "|\\.\\s*([A-Za-z_$][\\w$]*)\\s*=\\s*(?:async\\s+)?function\\b");
+    private static final Pattern EXPORTED = Pattern.compile("(?m)(?:^|[{,])\\s*+([A-Za-z_$][\\w$]*+)\\s*+(?::\\s*+(?:async\\s++)?function\\b"
+            + "|:\\s*+\\([^()]*+\\)\\s*+=>|\\([^()]*+\\)\\s*+\\{)"
+            + "|\\.\\s*+([A-Za-z_$][\\w$]*+)\\s*+=\\s*+(?:async\\s++)?function\\b");
 
     static Set<String> exported(String module) {
         Set<String> names = new LinkedHashSet<>();
@@ -222,28 +345,33 @@ final class JsModuleChecks {
         // The names the bundle goes by: the parameter, and what is set to it (self.nls = resourceBundle)
         Set<String> names = new LinkedHashSet<>();
         names.add(Pattern.quote(parameter));
-        Matcher alias = Pattern.compile("((?:(?:this|self)\\s*\\.\\s*)?[A-Za-z_$][\\w$]*)\\s*=\\s*" + Pattern.quote(parameter) + "\\s*[;,\\n]").matcher(code);
-        while (alias.find()) {
-            names.add(alias.group(1).replaceAll("\\s+", "").replace(".", "\\s*\\.\\s*").replace("$", "\\$"));
+        // From the start of a name only, and possessive: a long name is not tried again from each of its letters
+        Matcher alias = Pattern.compile("(?<![\\w$.])((?:(?:this|self)\\s*+\\.\\s*+)?[A-Za-z_$][\\w$]*+)\\s*+=\\s*+" + Pattern.quote(parameter)
+                + "(?![\\w$])\\s*+[;,\\n]").matcher(code);
+        while (alias.find() && names.size() < 20) {
+            String name = alias.group(1).replaceAll("\\s+", "");
+            names.add(name.contains(".") ? Pattern.quote(name.substring(0, name.indexOf('.'))) + "\\s*+\\.\\s*+"
+                    + Pattern.quote(name.substring(name.indexOf('.') + 1)) : Pattern.quote(name));
         }
         String either = "(?<![\\w$.])(?:" + String.join("|", names) + ")";
-        Set<String> keys = new LinkedHashSet<>(CodeGenerator.bundleKeys(bundle));
+        // every key of the bundle: a key left out of a shortened list would be reported as missing
+        Set<String> keys = new LinkedHashSet<>(CodeGenerator.bundleKeys(bundle, Integer.MAX_VALUE));
         List<String> problems = new ArrayList<>();
         boolean hasGet = keys.contains("get");
-        if (!hasGet && Pattern.compile(either + "\\s*\\.\\s*get\\s*\\(").matcher(code).find()) {
+        if (!hasGet && Pattern.compile(either + "\\s*+\\.\\s*+get\\s*+\\(").matcher(code).find()) {
             problems.add(BUNDLE_GET + " (" + module + "): a bundle is a plain object of its keys, without get. Read the keys as properties "
                     + "(for example nls.amount), as the bundle file defines them.");
         }
         Set<String> missing = new java.util.TreeSet<>();
         // bundle.key, and bundle.get('key') in the text with its strings
-        Matcher read = Pattern.compile(either + "\\s*\\.\\s*([A-Za-z_$][\\w$]*)").matcher(code);
+        Matcher read = Pattern.compile(either + "\\s*+\\.\\s*+([A-Za-z_$][\\w$]*+)").matcher(code);
         while (read.find()) {
             String key = read.group(1);
             if (!key.equals("get") && !keys.contains(key)) {
                 missing.add(key);
             }
         }
-        Matcher got = Pattern.compile(either + "\\s*\\.\\s*get\\s*\\(\\s*['\"]([^'\"]+)['\"]").matcher(text);
+        Matcher got = Pattern.compile(either + "\\s*+\\.\\s*+get\\s*+\\(\\s*+['\"]([^'\"\\n]{1,200}+)['\"]").matcher(text);
         while (got.find()) {
             String key = got.group(1);
             String first = key.contains(".") ? key.substring(0, key.indexOf('.')) : key;

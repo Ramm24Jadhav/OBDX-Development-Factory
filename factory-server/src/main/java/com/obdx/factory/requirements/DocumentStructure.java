@@ -55,6 +55,7 @@ final class DocumentStructure {
         List<RequirementSpec.BusinessRule> rules = new ArrayList<>();
         List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
         List<RequirementSpec.Message> messages = new ArrayList<>();
+        Set<String> messageCodes = new java.util.HashSet<>();
         Map<String, Set<String>> criteriaOf = new LinkedHashMap<>();
         String heading = "";
         for (int i = 0; i < lines.size(); i++) {
@@ -74,13 +75,14 @@ final class DocumentStructure {
                 j++;
             }
             i = j - 1;
-            if (isMessageTable(header, heading, rows)) {
+            String kind = kindOf(header, heading, rows);
+            if (kind == null && isMessageTable(header, heading, rows)) {
                 // Code | HTTP | Message: the codes and wording the code must return, exactly as the document has them
                 String says = (String.join(" ", header) + " " + heading).toLowerCase(Locale.ROOT);
                 for (List<String> row : rows) {
                     String code = row.getFirst().strip();
                     String wording = longest(header, row, "message", "text", "description", "meaning");
-                    if (CODE.matcher(code).matches() && wording != null && messages.stream().noneMatch(m -> code.equals(m.code()))) {
+                    if (messages.size() < MAX_MESSAGES && messageCode(code) && wording != null && messageCodes.add(code)) {
                         String type = cell(header, row, "type", "severity", "level");
                         messages.add(new RequirementSpec.Message(code, wording, type != null ? type.toLowerCase(Locale.ROOT)
                                 : says.contains("error") ? "error" : null));
@@ -88,7 +90,6 @@ final class DocumentStructure {
                 }
                 continue;
             }
-            String kind = kindOf(header, heading, rows);
             if (kind == null) {
                 continue;
             }
@@ -155,10 +156,32 @@ final class DocumentStructure {
         if (header.size() < 2 || rows.isEmpty() || !header.getFirst().toLowerCase(Locale.ROOT).contains("code")) {
             return false;
         }
+        String says = (String.join(" ", header) + " " + heading).toLowerCase(Locale.ROOT);
+        if (says.contains("rule") && !says.contains("error") && !says.contains("message")) {
+            // Rule code | Rule description: rules, not messages
+            return false;
+        }
         boolean messageColumn = header.subList(1, header.size()).stream().map(h -> h.toLowerCase(Locale.ROOT))
-                .anyMatch(h -> h.contains("message") || h.contains("text") || h.contains("description") || h.contains("meaning"));
-        long codes = rows.stream().filter(r -> CODE.matcher(r.getFirst().strip()).matches()).count();
-        return messageColumn && codes * 2 >= rows.size();
+                .anyMatch(h -> h.contains("message") || h.contains("text"));
+        boolean messageHeading = says.contains("error") || says.contains("message");
+        boolean describedCodes = messageHeading && header.subList(1, header.size()).stream().map(h -> h.toLowerCase(Locale.ROOT))
+                .anyMatch(h -> h.contains("description") || h.contains("meaning"));
+        long codes = rows.stream().filter(r -> messageCode(r.getFirst().strip())).count();
+        return (messageColumn || describedCodes) && codes * 2 >= rows.size();
+    }
+
+    /** The most messages read from one document's tables. */
+    static final int MAX_MESSAGES = 2_000;
+    /** ID prefixes of the document's other tables, which are never message codes. */
+    private static final Set<String> ID_PREFIXES = Set.of("FR", "REQ", "F", "AC", "ACC", "NFR", "NF", "BR", "RULE", "R", "OQ", "Q", "QU", "TC", "UC", "US");
+
+    /** DIGX_BV_001 or ERR-004, but not FR-001 or BR-003. */
+    private static boolean messageCode(String code) {
+        if (code.length() > 60 || !CODE.matcher(code).matches()) {
+            return false;
+        }
+        Matcher id = ID.matcher(code);
+        return !(id.matches() && ID_PREFIXES.contains(id.group(1)));
     }
 
     /**

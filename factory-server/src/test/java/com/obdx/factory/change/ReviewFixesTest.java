@@ -243,6 +243,30 @@ class ReviewFixesTest {
         JavaCompileChecks.outline("class A {\n" + throwsSpaces + "\n" + shortThrows + "\n}\n");
         assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(1));
         assertThat(CodeGenerator.methodStart("    public Response read(@PathParam(\"id\") String id) throws IOException, X {")).isTrue();
+
+        // QA round 17's checks: a define list, a bundle alias and a parameter list built to make them slow
+        start = System.nanoTime();
+        JsModuleChecks.defineProblems("define([\n".repeat(20_000), module -> null);
+        JsModuleChecks.defineProblems("define([".repeat(10_000), module -> null);
+        String identifier = "a".repeat(3_900);
+        JsModuleChecks.defineProblems("define(['ojL10n!nls/x'], function (nls) {\n" + ("  var " + identifier + " = nlsx;\n").repeat(40)
+                + "  " + identifier + ".x = nls.y;\n});\n", module -> "define({ root: { y: 'x' } });");
+        JsModuleChecks.defineProblems("define(['a'], function (" + " ".repeat(3_900) + "x = 1) {\n});\n", module -> null);
+        JsModuleChecks.defineProblems("define(['a'], function (" + "p, ".repeat(1_000) + "q) {\n});\n", module -> null);
+        // a cut-off plan with a 100 KB summary, and a BRD with many message rows
+        PlanParser.partial("{\"summary\": \"" + "x".repeat(100_000) + "\", \"items\": [{\"path\": \"a\"}, {\"pa");
+        StringBuilder brd = new StringBuilder("# Error codes\n\n| Code | Message |\n| --- | --- |\n");
+        for (int i = 0; i < 30_000; i++) {
+            brd.append("| ERR_").append(i).append(" | Message ").append(i).append(" |\n");
+        }
+        com.obdx.factory.requirements.DocumentStructureAccess.read(brd.toString());
+        // repeated methods with long parameter lists of spaces, in a large file
+        StringBuilder java = new StringBuilder("class A {\n");
+        for (int i = 0; i < 2_000; i++) {
+            java.append("    void m(int a,").append(" ".repeat(500)).append("int b) { }\n");
+        }
+        CodeGenerator.withoutRepeatedMethods(java.append("}\n").toString(), new java.util.ArrayList<>());
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(5));
     }
 
     // --- VAPT 6: removing comments never changes strings or cuts the file ---

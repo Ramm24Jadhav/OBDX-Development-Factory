@@ -170,10 +170,44 @@ class JsModuleChecksTest {
         java.util.Map<String, String> written = java.util.Map.of("channel/resources/nls/quick-transfer.js", BUNDLE, "a/model.js", MODEL);
 
         assertThat(JsModuleChecks.defineProblems(js, module -> ChangeService.moduleSource("a/vm.js", module, written))).isEmpty();
-        // a bundle the change does not write is not judged
+        // a bundle or a ./ module the change does not write is not judged
         assertThat(JsModuleChecks.defineProblems(QUICK_TRANSFER.replace("self.title = self.nls.quickTransfer.title;", ""), module -> null))
-                .extracting(p -> p.substring(0, 20)).containsExactly(JsModuleChecks.WRONG_BINDING.substring(0, 20),
-                        JsModuleChecks.NOT_RECEIVED.substring(0, 20));
+                .extracting(p -> p.substring(0, 20)).containsExactly(JsModuleChecks.WRONG_BINDING.substring(0, 20));
+    }
+
+    @Test
+    void validDefineListsAreNoFinding() {
+        java.util.Map<String, String> written = java.util.Map.of("a/model.js", MODEL, "channel/resources/nls/quick-transfer.js", BUNDLE);
+        java.util.function.Function<String, String> source = module -> ChangeService.moduleSource("a/vm.js", module, written);
+        // ojs/ojknockout-keyset exports ObservableKeySet; ojs/ojcore-base is ojcore
+        assertThat(JsModuleChecks.defineProblems("""
+                define(['ojs/ojknockout-keyset', 'ojs/ojcore-base', 'ojs/ojcomposite'], function (keySet, oj, Composite) {
+                  return function VM() { this.selected = new keySet.ObservableKeySet(); oj.Logger.info('x'); Composite.register('x', {}); };
+                });
+                """, source)).isEmpty();
+        // a ./ loader kept for what it does, whose functions the file does not call
+        assertThat(JsModuleChecks.defineProblems("""
+                define(['knockout', './extensions', './model'], function (ko) {
+                  return function VM() { this.a = ko.observable(1); };
+                });
+                """, source)).isEmpty();
+        // destructured parameters keep their positions
+        assertThat(JsModuleChecks.defineProblems("""
+                define(['knockout', 'ojs/ojcore'], function ({ observable, computed }, oj) {
+                  return function VM() { this.a = observable(1); oj.Logger.info('x'); };
+                });
+                """, source)).isEmpty();
+        // the bundle's keys past its first 100 are keys too
+        StringBuilder many = new StringBuilder("define({ root: {\n");
+        for (int i = 0; i < 150; i++) {
+            many.append("  key").append(i).append(": 'Label ").append(i).append("',\n");
+        }
+        many.append("  last: 'x'\n} });\n");
+        assertThat(JsModuleChecks.defineProblems("""
+                define(['ojL10n!nls/big'], function (nls) {
+                  return function VM() { this.label = nls.key140 + nls.last; };
+                });
+                """, module -> module.equals("ojL10n!nls/big") ? many.toString() : null)).isEmpty();
     }
 
     @Test

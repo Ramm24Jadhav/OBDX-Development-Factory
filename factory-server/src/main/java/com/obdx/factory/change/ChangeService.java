@@ -314,6 +314,7 @@ public class ChangeService {
                 }
             }
             Set<String> toWrite = resume ? continued(files.files(id)) : null;
+            Set<String> writtenNow = new LinkedHashSet<>();
             for (int i = 0; i < plan.items().size(); i++) {
                 ChangePlan.Item item = plan.items().get(i);
                 if ((onlyPath != null && !item.path().equals(onlyPath)) || (toWrite != null && !toWrite.contains(item.path()))) {
@@ -333,6 +334,7 @@ public class ChangeService {
                 boolean resumes = resume || onlyPath != null && (note == null || note.isBlank());
                 Kept partial = resumes ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
                 writing = item.path();
+                writtenNow.add(item.path());
                 String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial);
                 if (onlyPath != null) {
                     failedAgain = error;
@@ -340,16 +342,29 @@ public class ChangeService {
             }
 
             Map<String, String> unfit = crossCheck(id, workspace.getId());
-            if (onlyPath == null && properties.fixAttempts() > 0 && !unfit.isEmpty()) {
-                // Certain errors only the other files show (a method the called class lacks): each such file is fixed once
-                for (Map.Entry<String, String> entry : unfit.entrySet()) {
-                    ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(entry.getKey())).findFirst().orElse(null);
-                    if (item != null) {
-                        change.status(ChangeRequest.Status.GENERATING, "Fixing " + item.path() + ", which does not fit the other files");
-                        change = changes.save(change);
-                        // (the file stays as written when the model's limit stops its fix: nothing of the fix is kept)
-                        writing = null;
-                        fitToOthers(id, context, plan, item, crossFileFixes(entry.getValue()));
+            String fixesStopped = "";
+            List<String> toFit = onlyPath == null && !resume && properties.fixAttempts() > 0
+                    ? toFit(unfit, writtenNow, files.files(id)) : List.of();
+            if (!toFit.isEmpty()) {
+                // Certain errors only the other files show (a method the called class lacks): each file written now is fixed once
+                CheckScope scope = packs.scope(workspace.getId());
+                writing = null;
+                for (String path : toFit) {
+                    ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(path)).findFirst().orElse(null);
+                    if (item == null) {
+                        continue;
+                    }
+                    change.status(ChangeRequest.Status.GENERATING, "Fixing " + item.path() + ", which does not fit the other files");
+                    change = changes.save(change);
+                    try {
+                        fitToOthers(files, generator, localChecks, scope, id, context, plan, item, crossFileFixes(unfit.get(path)),
+                                scaffold(context, path, files.file(id, path).map(ChangeFileStore.ChangeFile::original).orElse(null)));
+                    } catch (ModelLimitReachedException e) {
+                        // Every file is written; only these fixes wait for the model
+                        log.warn("Fixing the files of change {} by the other files stopped at the model's limit: {}", id, e.getMessage());
+                        fixesStopped = " The model's limit stopped the fixes of what the files' cross-checks found (" + Messages.reason(e)
+                                + "); the files are written as they are: Write again a file to fix it.";
+                        break;
                     }
                 }
                 crossCheck(id, workspace.getId());
@@ -359,7 +374,7 @@ public class ChangeService {
             change.status(ChangeRequest.Status.GENERATED, (onlyPath == null ? ""
                     : failedAgain != null ? "Writing " + onlyPath + " again failed (" + failedAgain + "); "
                     + (versionKept ? "the previous version is kept. " : "it is not written yet. ")
-                    : onlyPath + " written again. ") + summary(files.files(id)) + revisionNote);
+                    : onlyPath + " written again. ") + summary(files.files(id)) + revisionNote + fixesStopped);
         } catch (ModelLimitReachedException e) {
             // Every further file would fail the same way: stop, and leave the rest to Continue generation
             log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
@@ -384,28 +399,58 @@ public class ChangeService {
         changes.save(change);
     }
 
+    /** The most files of one generation fixed by what the cross-check found, so their model calls stay bounded. */
+    static final int MAX_CROSS_FIXES = 5;
+
     /**
-     * Fixes a written file by what the cross-check found against the other files of the change: the model gets the file
-     * as written and the findings, as in the build's fix loop. A fix whose pieces do not join leaves the file as it was.
+     * The files a generation fixes by what the cross-check found: those it wrote itself in this run, written by the
+     * model (a reviewer's edit is never rewritten), at most {@link #MAX_CROSS_FIXES}.
      */
-    private void fitToOthers(UUID changeId, ChangeContext context, ChangePlan plan, ChangePlan.Item item, String note) {
+    static List<String> toFit(Map<String, String> unfit, Set<String> writtenNow, List<ChangeFileStore.ChangeFile> all) {
+        return all.stream().filter(f -> unfit.containsKey(f.path()) && writtenNow.contains(f.path()) && !f.edited()
+                && f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).map(ChangeFileStore.ChangeFile::path)
+                .limit(MAX_CROSS_FIXES).toList();
+    }
+
+    /**
+     * Fixes a written file once by what the cross-check found against the other files of the change: the model gets the
+     * file and the findings, as when a failed check is fixed. The fix is kept only when it is whole (not cut off at the
+     * output limit, joined cleanly) and the file's own checks find it no worse than before; otherwise the file stays as
+     * it was. Returns whether the fix was kept.
+     */
+    static boolean fitToOthers(ChangeFileStore files, CodeGenerator generator, LocalChecks checks, CheckScope scope, UUID changeId,
+                               ChangeContext context, ChangePlan plan, ChangePlan.Item item, String note, ScreenScaffolder.Scaffold scaffold) {
         ChangeFileStore.ChangeFile file = files.file(changeId, item.path()).orElse(null);
-        if (file == null || file.generated() == null || note.isEmpty()) {
-            return;
+        if (file == null || file.generated() == null || file.edited() || note.isEmpty()) {
+            return false;
         }
         Map<String, String> others = new LinkedHashMap<>();
         files.files(changeId).stream().filter(f -> f.generated() != null && !f.path().equals(item.path()) && !partial(f))
                 .forEach(f -> others.put(f.path(), f.generated()));
         CodeGenerator.Result result;
         try {
-            result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
-                    scaffold(context, file.path(), file.original()));
+            result = generator.fixFindings(context, plan, item, file.generated(), file.original(), others, note, scaffold);
         } catch (CodeGenerator.JoinFailed e) {
             log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it is", item.path(), changeId);
-            return;
+            return false;
         }
-        files.saveResult(changeId, item.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(), file.edited(),
+        if (result == null || result.content().equals(file.generated())) {
+            return false;
+        }
+        FileChecks.Status before = CodeGenerator.withParity(checks.check(scope, item.path(), file.original(), file.generated()),
+                file.generated(), scaffold).status();
+        if (severity(result.check().status()) > severity(before)) {
+            log.info("The fix of {} in change {} made its own checks worse ({} after {}); the file is kept as it is", item.path(), changeId,
+                    result.check().status(), before);
+            return false;
+        }
+        files.saveResult(changeId, item.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(), false,
                 result.check(), file.attempts() + result.attempts());
+        return true;
+    }
+
+    private static int severity(FileChecks.Status status) {
+        return status == FileChecks.Status.FAILED ? 2 : status == FileChecks.Status.WARNING ? 1 : 0;
     }
 
     /**
@@ -997,8 +1042,13 @@ public class ChangeService {
             FileChecks.Status own = file.checkStatus();
             if (own == FileChecks.Status.FAILED && file.checkMessage() != null && file.checkMessage().lines().anyMatch(ChangeService::crossError)) {
                 // It may have failed only by an earlier cross-check: its own checks say whether it fails by itself
+                // (with the screen parity of a React Native or React app's file, as Check again has it)
+                ScreenScaffolder.Scaffold scaffold = scope.inApp(file.path()) && scope.appFolder() != null ? targetPacks.find(scope.target())
+                        .flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(), designModels(find(changeId)), file.original()))
+                        .orElse(null) : null;
                 own = file.checkMessage().contains(CodeGenerator.CUT) ? FileChecks.Status.FAILED
-                        : localChecks.check(scope, file.path(), file.original(), file.generated()).status();
+                        : CodeGenerator.withParity(localChecks.check(scope, file.path(), file.original(), file.generated()), file.generated(),
+                        scaffold).status();
             }
             FileChecks.Result check = withCrossChecks(own, file.checkMessage(), problems);
             if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {

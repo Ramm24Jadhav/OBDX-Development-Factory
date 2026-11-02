@@ -21,6 +21,12 @@ class ImpactAnalyzerTest {
         final Deque<Object> replies = new ArrayDeque<>();
         final List<String> prompts = new ArrayList<>();
         int outputLimit;
+        boolean local;
+
+        @Override
+        public boolean local() {
+            return local;
+        }
 
         ScriptedModel cut(String reply) {
             replies.add(new ChatResult(reply, "scripted", 1, true));
@@ -144,6 +150,55 @@ class ImpactAnalyzerTest {
     }
 
     @Test
+    void aCutOffAnswerWithNoWholeFileIsContinuedFromNothing() {
+        model.cut("{\"summary\": \"Adds remarks\", \"items\": [{\"path\": \"backend/src/Rem");
+        model.whole("{\"items\": [{\"path\": \"backend/src/Remarks.java\"}], \"risks\": []}");
+
+        ChangePlan plan = analyzer.analyze(context, List.of(), path -> false);
+
+        assertThat(plan.items()).extracting(ChangePlan.Item::path).containsExactly("backend/src/Remarks.java");
+        assertThat(plan.summary()).isEqualTo("Adds remarks");
+        assertThat(model.prompts.get(1)).contains("It planned no file completely.");
+    }
+
+    @Test
+    void onOllamaAPlanIsContinuedTwiceAtMost() {
+        model.local = true;
+        model.cut(FIRST);
+        for (int i = 0; i < 4; i++) {
+            model.cut("{\"items\":[{\"path\":\"backend/src/Extra" + i + ".java\"},{\"pa");
+        }
+
+        ChangePlan plan = analyzer.analyze(context, List.of(), path -> false);
+
+        assertThat(model.prompts).hasSize(1 + ImpactAnalyzer.LOCAL_CONTINUATIONS);
+        assertThat(plan.items()).hasSize(2 + ImpactAnalyzer.LOCAL_CONTINUATIONS);
+    }
+
+    @Test
+    void aContinuedPlanStopsAtTheMostFilesOfAChange() {
+        ImpactAnalyzer small = new ImpactAnalyzer(model, new ChangeProperties(3, 25, DataSize.ofKilobytes(80), 2, "branches/factory", "-"));
+        model.cut(FIRST).cut("{\"items\":[{\"path\":\"a/A.java\"},{\"path\":\"a/B.java\"},{\"path\":\"a/C.java\"},{\"pa");
+
+        ChangePlan plan = small.analyze(context, List.of(), path -> false);
+
+        assertThat(plan.items()).hasSize(3);
+        assertThat(plan.risks().getFirst()).contains("more files than one change may have (3)");
+        assertThat(model.prompts).hasSize(2);
+    }
+
+    @Test
+    void aContinuedPlanThatIsStillUnusableIsNotAskedForAgain() {
+        model.cut("{\"summary\": \"x\", \"items\": [{\"pa");
+        model.whole("{\"items\": [], \"risks\": []}");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> analyzer.analyze(context, List.of(), path -> false))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("no files");
+        // the first answer and one continuation: not the whole analysis again
+        assertThat(model.prompts).hasSize(2);
+    }
+
+    @Test
     void aWholePlanIsNotContinued() {
         model.whole("{\"summary\": \"s\", \"items\": [{\"path\": \"backend/src/A.java\"}], \"risks\": []}");
 
@@ -162,5 +217,8 @@ class ImpactAnalyzerTest {
                 .singleElement().satisfies(i -> assertThat(i.details()).isEqualTo("uses } and ] in text"));
         assertThat(PlanParser.partial("{\"summary\": \"x\", \"items\": [], \"risks\": [\"one\", \"tw").risks()).containsExactly("one");
         assertThat(PlanParser.partial("nothing").items()).isEmpty();
+        // a long summary is read without a regular expression's recursion, and kept to its first 2,000 characters
+        assertThat(PlanParser.partial("{\"summary\": \"" + "s".repeat(100_000) + "\", \"items\": [{\"path\": \"a\"}, {\"pa").summary())
+                .hasSize(PlanParser.MAX_SUMMARY);
     }
 }

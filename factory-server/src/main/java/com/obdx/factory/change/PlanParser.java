@@ -50,7 +50,9 @@ public final class PlanParser {
 
     private static final java.util.regex.Pattern ITEMS = java.util.regex.Pattern.compile("[\"']?items[\"']?\\s*:\\s*\\[");
     private static final java.util.regex.Pattern RISKS = java.util.regex.Pattern.compile("[\"']?risks[\"']?\\s*:\\s*\\[");
-    private static final java.util.regex.Pattern SUMMARY = java.util.regex.Pattern.compile("[\"']?summary[\"']?\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+    private static final java.util.regex.Pattern SUMMARY = java.util.regex.Pattern.compile("[\"']?summary[\"']?\\s*+:\\s*+\"");
+    /** The longest summary read from a cut-off plan. */
+    static final int MAX_SUMMARY = 2_000;
 
     /**
      * What can be used of a plan the model's output limit stopped part-way, not yet made safe (see normalize): its
@@ -75,10 +77,19 @@ public final class PlanParser {
         java.util.regex.Matcher summary = SUMMARY.matcher(text);
         String summaryText = null;
         if (summary.find()) {
+            // read by hand up to its closing quote (a regular expression recurses per character and overflows on a long one)
+            int stop = summary.end();
+            while (stop < text.length() && text.charAt(stop) != '"' && stop - summary.end() < MAX_SUMMARY) {
+                stop += text.charAt(stop) == '\\' ? 2 : 1;
+            }
+            String raw = text.substring(summary.end(), Math.min(stop, text.length()));
+            if (raw.endsWith("\\")) {
+                raw = raw.substring(0, raw.length() - 1);
+            }
             try {
-                summaryText = LENIENT.readValue("\"" + summary.group(1) + "\"", String.class);
+                summaryText = LENIENT.readValue("\"" + raw + "\"", String.class);
             } catch (JacksonException e) {
-                summaryText = summary.group(1);
+                summaryText = raw;
             }
         }
         List<ChangePlan.Item> items = new ArrayList<>();
