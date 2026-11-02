@@ -89,8 +89,32 @@ public class ChangeController {
     /** The body is the edited plan as JSON. */
     @PutMapping(path = "/api/changes/{id}/plan", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ChangeService.ChangeDetail updatePlan(@PathVariable UUID id, @RequestBody String planJson) {
-        guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.updatePlan(id, planJson);
+        var user = guard.requireForChange(id, Permission.MANAGE_CODE);
+        return service.updatePlan(id, planJson, user.getDisplayName());
+    }
+
+    /** The plan's revisions, and the comments, request for changes and approval on them. */
+    @GetMapping("/api/changes/{id}/plan-review")
+    public PlanReviewStore.Review planReview(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.VIEW);
+        return service.planReview(id);
+    }
+
+    /** kind COMMENT needs the right to comment; CHANGES_REQUESTED (not approving the plan as it is) the right to approve. */
+    public record PlanComment(PlanReviewStore.Kind kind, String text) {
+    }
+
+    @PostMapping("/api/changes/{id}/plan-comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PlanReviewStore.Comment commentOnPlan(@PathVariable UUID id, @RequestBody PlanComment request) {
+        PlanReviewStore.Kind kind = request.kind() == null ? PlanReviewStore.Kind.COMMENT : request.kind();
+        var user = guard.requireForChange(id, kind == PlanReviewStore.Kind.COMMENT ? Permission.COMMENT : Permission.APPROVE);
+        PlanReviewStore.Comment comment = service.commentOnPlan(id, kind, request.text(), user.getDisplayName());
+        if (kind == PlanReviewStore.Kind.CHANGES_REQUESTED) {
+            ChangeService.ChangeDetail change = service.get(id);
+            audit.record("CHANGE_PLAN_CHANGES_REQUESTED", change.workspaceId(), change.title(), comment.text());
+        }
+        return comment;
     }
 
     @PostMapping("/api/changes/{id}/approve-plan")

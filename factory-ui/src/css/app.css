@@ -7945,6 +7945,90 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 /* Approving the plan stands apart from analyzing and saving it */
 .factory-im .factory-im-approval { flex: 0 0 auto; }
 
+/* Impact Analysis: the change and its plan's status first, one row of tabs (UI declutter step 11) */
+.factory-im .factory-im-summary { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.factory-im .factory-im-sumhead { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.factory-im .factory-im-pick { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; flex: 0 1 420px; }
+.factory-im .factory-im-pick .fx-select { width: 100%; min-width: 0; }
+.factory-im .factory-im-spacer { flex: 1 1 auto; }
+/* The change's title wraps between words, never inside one */
+.factory-im .factory-card h2.factory-im-title { display: block; text-align: left; justify-content: initial; }
+.factory-im .factory-im-title { margin: 2px 0 6px; font-size: var(--fx-text-h2); line-height: 1.3; color: var(--fx-text); overflow-wrap: normal; word-break: normal; hyphens: none; }
+.factory-im .factory-im-code { margin-right: 6px; color: var(--fx-text-muted); font-family: var(--fx-font-mono, monospace); font-size: var(--fx-text-sm); font-weight: 600; white-space: nowrap; }
+.factory-im .factory-im-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-im .factory-im-gate, .factory-im .factory-im-request { margin: 10px 0 0; }
+.factory-im .factory-im-desc p { margin: 10px 0 0; color: var(--fx-text-body); }
+.factory-im .factory-im-counts { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; padding: 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-im .factory-im-counts strong { color: var(--fx-text); font-size: var(--fx-text-md); }
+.factory-im .factory-im-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.factory-im .factory-im-actions .fx-approval, .factory-im .factory-im-reviewactions .fx-approval { flex-wrap: wrap; row-gap: 6px; }
+.factory-im .factory-im-tabs { margin-bottom: 12px; }
+
+/* Scope filters */
+.factory-im .factory-im-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.factory-im .factory-im-scopechip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--fx-border-strong); border-radius: 999px;
+    background: var(--fx-surface); color: var(--fx-text-body); font: inherit; font-size: var(--fx-text-sm); cursor: pointer; transition: background var(--fx-dur-hover), border-color var(--fx-dur-hover); }
+.factory-im .factory-im-scopechip:hover { background: var(--fx-surface-2); }
+.factory-im .factory-im-scopechip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.factory-im .factory-im-scopechip-on { border-color: var(--fx-focus-color); background: var(--fx-primary-soft); color: var(--fx-primary-text); font-weight: 600; }
+.factory-im .factory-im-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fx-text-sm); color: var(--fx-text-body); white-space: nowrap; }
+.factory-im .factory-im-ftable td.factory-im-path { color: var(--fx-text); }
+.factory-im .factory-im-filters .fx-select { min-width: 150px; }
+.factory-im .factory-im-layerdot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+.factory-im .factory-im-reason { min-width: 220px; }
+.factory-im .factory-im-evidence { min-width: 160px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-im .factory-im-row-risk td:first-child { box-shadow: inset 3px 0 0 var(--fx-warning-text); }
+
+/* Dependencies: the legend switches layers, a file is a button that focuses on it */
+.factory-im .factory-im-legend { flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.factory-im .factory-im-legendbtn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--fx-border-strong); border-radius: 999px;
+    background: var(--fx-surface); color: var(--fx-text); font: inherit; font-size: var(--fx-text-sm); cursor: pointer; }
+.factory-im .factory-im-legendbtn i { width: 10px; height: 10px; }
+.factory-im .factory-im-legendbtn-off { color: var(--fx-text-muted); text-decoration: line-through; background: var(--fx-surface-2); }
+.factory-im .factory-im-legendbtn-off i { opacity: 0.35; }
+.factory-im .factory-im-legendbtn:disabled { opacity: 0.5; cursor: default; }
+.factory-im .factory-im-legendline { display: inline-flex; align-items: center; margin-left: 6px; }
+.factory-im .factory-im-legendtext { font-size: var(--fx-text-sm); color: var(--fx-text-muted); }
+.factory-im button.factory-im-node { font: inherit; text-align: left; color: var(--fx-text); background: var(--fx-surface); cursor: pointer; }
+.factory-im button.factory-im-node:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 2px; }
+.factory-im .factory-im-node-focus { box-shadow: 0 0 0 3px var(--fx-primary-soft); background: var(--fx-primary-soft); }
+
+/* Risks, revisions and review */
+.factory-im .factory-im-riskgroup h3 { margin: 12px 0 6px; font-size: var(--fx-text-base); }
+.factory-im .factory-im-riskgroup:first-of-type h3 { margin-top: 0; }
+.factory-im .factory-im-comparepick { display: flex; flex-wrap: wrap; gap: 10px; }
+.factory-im .factory-im-comparepick label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; min-width: 0; }
+.factory-im .factory-im-comparepick .fx-select { width: 100%; min-width: 0; }
+.factory-im .factory-im-difflist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fx-text-sm); }
+.factory-im .factory-im-diff { display: flex; gap: 8px; align-items: baseline; overflow-wrap: anywhere; }
+.factory-im .factory-im-diffkind { flex: 0 0 76px; padding: 0 6px; border-radius: 4px; background: var(--fx-surface-2); color: var(--fx-text-body); font-size: var(--fx-text-caption); font-weight: 600; text-align: center; }
+.factory-im .factory-im-diff-added .factory-im-diffkind { background: var(--fx-success-soft); color: var(--fx-success-text); }
+.factory-im .factory-im-diff-removed .factory-im-diffkind { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-im .factory-im-diff-changed .factory-im-diffkind { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-im .factory-im-reviewactions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; }
+.factory-im .factory-im-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: var(--fx-text-sm); }
+.factory-im .factory-im-event { display: flex; gap: 10px; align-items: flex-start; overflow-wrap: anywhere; }
+.factory-im .factory-im-eventkind { flex: 0 0 120px; padding: 1px 6px; border-radius: 4px; background: var(--fx-surface-2); color: var(--fx-text-body); font-size: var(--fx-text-caption); font-weight: 600; text-align: center; }
+.factory-im .factory-im-event-approved .factory-im-eventkind { background: var(--fx-success-soft); color: var(--fx-success-text); }
+.factory-im .factory-im-event-changes-requested .factory-im-eventkind { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-im .factory-im-event-revision .factory-im-eventkind { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
+
+@media (max-width: 767px) {
+    .factory-im .factory-im-title { font-size: var(--fx-text-h3); }
+    .factory-im .factory-im-pick { flex-basis: 100%; }
+    .factory-im .factory-im-eventkind { flex-basis: 96px; }
+    .factory-im .factory-im-reason, .factory-im .factory-im-evidence { min-width: 0; }
+    /* The file table becomes one block per file, each value under its label */
+    .factory-im #affectedFiles, .factory-im #affectedFiles tbody, .factory-im #affectedFiles tr, .factory-im #affectedFiles td { display: block; width: auto; }
+    .factory-im #affectedFiles thead { display: none; }
+    .factory-im #affectedFiles tr { padding: 10px 4px; border-bottom: 1px solid var(--fx-border); }
+    .factory-im #affectedFiles td { padding: 2px 0; border: 0; overflow-wrap: anywhere; word-break: normal; }
+    .factory-im #affectedFiles td[data-label]::before { content: attr(data-label) ": "; color: var(--fx-text-muted); font-family: var(--fx-font-sans, inherit); font-size: var(--fx-text-caption); }
+    .factory-im #affectedFiles td.factory-im-path { font-weight: 600; }
+    .factory-im .factory-im-row-risk td:first-child { box-shadow: none; }
+    .factory-im .factory-im-row-risk { box-shadow: inset 3px 0 0 var(--fx-warning-text); padding-left: 8px; }
+}
+
 /* ---------- Agents page, workflow ---------- */
 /* Filters: the status and agent multi-selects sit in the filter row like the selects beside them */
 .factory-ag .factory-ag-multi { flex: 0 1 200px; min-width: 150px; max-width: 280px; }
