@@ -1212,6 +1212,7 @@ public class ChangeService {
     public void failInterrupted() {
         int count = changes.failRunning("Interrupted because the server restarted. Analyze again.", OffsetDateTime.now());
         count += changes.failBuilding("Interrupted because the server restarted. Build again.");
+        builds.closeAllUnfinished("Interrupted because the server restarted. Build again.");
         if (count > 0) {
             log.warn("Marked {} change(s) as failed after restart", count);
         }

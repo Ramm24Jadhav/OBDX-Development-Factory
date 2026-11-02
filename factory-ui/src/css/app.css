@@ -8570,6 +8570,60 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-bt-sheet .factory-bt-fulllog { max-height: calc(100vh - 220px); }
 .factory-bt-sheet .fx-log { border: 1px solid var(--fx-border); }
 
+/* Build, Test & Review as a quality gate dashboard: the verdict, six gates, findings, runs (UI declutter step 13) */
+.factory-bt .factory-bt-top { flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+.factory-bt .factory-bt-spacer { flex: 1 1 auto; }
+.factory-bt .factory-bt-verdict { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.factory-bt .factory-bt-vname { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.factory-bt .factory-bt-code { color: var(--fx-text-muted); font-family: var(--fx-font-mono); font-size: var(--fx-text-sm); font-weight: 600; }
+.factory-bt .factory-bt-title { margin: 0; font-size: var(--fx-text-h3); line-height: 1.3; }
+.factory-bt .factory-bt-meta { margin: 4px 0 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-bt .factory-bt-vline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; border: 1px solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); }
+.factory-bt .factory-bt-gates { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 0; padding: 0; }
+.factory-bt .factory-bt-gate { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 12px; border-left-width: 4px; border-left-style: solid; border-left-color: var(--fx-border-strong); }
+.factory-bt .factory-bt-gatehead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.factory-bt .factory-bt-gateev { margin: 0; font-size: var(--fx-text-sm); color: var(--fx-text); overflow-wrap: anywhere; }
+.factory-bt .factory-bt-gatewhy { margin: 0; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+.factory-bt .factory-bt-gate .factory-link-sm { align-self: flex-start; margin-top: auto; }
+.factory-bt .factory-bt-gate-passed { border-left-color: var(--fx-success-text); }
+.factory-bt .factory-bt-gate-warnings { border-left-color: var(--fx-warning-text); }
+.factory-bt .factory-bt-gate-failed { border-left-color: var(--fx-danger-text); }
+.factory-bt .factory-bt-gate-running { border-left-color: var(--fx-focus-color); }
+.factory-bt .factory-bt-gate-blocked { border-left-color: var(--fx-violet); border-left-style: dashed; }
+.factory-bt .factory-bt-gate-not-run { border-left-color: var(--fx-border-strong); border-left-style: dotted; }
+/* The six states: Blocked and Not run look different, not only in colour */
+.factory-bt .factory-bt-state-blocked { background: var(--fx-violet-soft); color: var(--fx-violet-text); border: 1px dashed var(--fx-violet); }
+.factory-bt .factory-bt-state-not-run { background: transparent; color: var(--fx-text-muted); border: 1px dotted var(--fx-border-strong); }
+.factory-bt .factory-bt-state-warnings { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-bt .factory-bt-legend { margin: 0; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
+
+/* Findings */
+.factory-bt .factory-bt-ftable tbody tr:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: -2px; }
+.factory-bt .factory-bt-fd { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 0 0 10px; font-size: var(--fx-text-sm); }
+.factory-bt .factory-bt-fd dt { color: var(--fx-text-muted); }
+.factory-bt .factory-bt-fd dd { margin: 0; overflow-wrap: anywhere; }
+.factory-bt .factory-bt-msgcell { white-space: pre-wrap; overflow-wrap: anywhere; }
+.factory-bt .factory-bt-none { margin: 10px 0 0; }
+
+/* Runs and compare */
+.factory-bt .factory-bt-jobs { min-width: 220px; overflow-wrap: anywhere; font-size: var(--fx-text-sm); }
+.factory-bt .factory-bt-comparepick { display: flex; flex-wrap: wrap; gap: 10px; }
+.factory-bt .factory-bt-comparepick label, .factory-bt .factory-bt-logpick { display: flex; flex-direction: column; gap: 4px; flex: 1 1 220px; min-width: 0; margin-bottom: 8px; }
+.factory-bt .factory-bt-comparepick .fx-select, .factory-bt .factory-bt-logpick .fx-select { width: 100%; min-width: 0; }
+.factory-bt .factory-bt-difflist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--fx-text-sm); }
+.factory-bt .factory-bt-diff { display: flex; gap: 8px; align-items: baseline; overflow-wrap: anywhere; }
+.factory-bt .factory-bt-diffkind { flex: 0 0 64px; padding: 0 6px; border-radius: 4px; background: var(--fx-surface-2); color: var(--fx-text-body); font-size: var(--fx-text-caption); font-weight: 600; text-align: center; }
+.factory-bt .factory-bt-diff-new .factory-bt-diffkind { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-bt .factory-bt-diff-fixed .factory-bt-diffkind { background: var(--fx-success-soft); color: var(--fx-success-text); }
+.factory-bt .factory-bt-diff-still .factory-bt-diffkind { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+
+@media (max-width: 767px) {
+    .factory-bt .factory-bt-top .factory-bt-pick { flex: 1 1 100%; }
+    .factory-bt .factory-bt-top .factory-bt-pick .fx-select { width: 100%; min-width: 0; }
+    .factory-bt .factory-bt-gates { grid-template-columns: minmax(0, 1fr); }
+    .factory-bt .factory-bt-jobs { min-width: 0; }
+}
+
 /* ---------- Knowledge page, workflow ---------- */
 /*
  * Code Explorer columns with resizers (fx-resizer): the tree | the code viewer and details. The viewer and details sit
