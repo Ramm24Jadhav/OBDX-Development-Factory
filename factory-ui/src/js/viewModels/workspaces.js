@@ -64,15 +64,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const showError = (error) => this.errorMessage(error.message);
       this.go = (page) => dashboard.open(page);
 
-      // Per workspace, read on demand: project profile, modernization inventory and members
+      // Per workspace, read on demand: project profile, modernization inventory and members. A workspace whose code
+      // was never indexed has no profile yet, so it is not asked for (force: an import just ended, ask anyway).
       const wsDetails = ko.observable({});
       const pending = {};
       const loadDetails = (id, force) => {
         if (!id || pending[id] || (wsDetails()[id] && !force)) {
           return Promise.resolve(wsDetails()[id]);
         }
+        const entry = data().find((d) => d.workspace.id === id);
+        const noProfile = !force && !!entry && !dashboard.isIndexed(entry.workspace);
         pending[id] = Promise.all([
-          api.get('workspaces/' + id + '/profile').catch(() => null),
+          noProfile ? Promise.resolve(null) : api.get('workspaces/' + id + '/profile').catch(() => null),
           api.get('workspaces/' + id + '/inventory').catch(() => null),
           api.get('workspaces/' + id + '/members').catch(() => null)
         ]).then(([profile, inventory, members]) => {

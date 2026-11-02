@@ -20,7 +20,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       failed: ui.status('FAILED', 'Failed'), approval: ui.status('IN_REVIEW', 'Approval'), questions: ui.status('READY', 'Questions'),
       review: ui.status('GENERATED', 'To review'), setup: ui.status('DRAFT', 'Setup')
     };
-    const STEPS = ['Spec', 'Screens', 'Plan', 'Code'];
     const ATTENTION_SHOWN = 5;
     const count = (list, test) => list.filter(test).length;
     const all = (data, key) => data.reduce((sum, d) => sum.concat(d[key]), []);
@@ -84,7 +83,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return e.workspace.bankName + ' · OBDX ' + e.workspace.obdxVersion + ' · ' + code;
       });
       this.canAddRequirement = ko.pureComputed(() => !!this.entry() && session.can(this.entry().workspace.id, 'EDIT_REQUIREMENTS'));
-      this.newRequirement = () => dashboard.open('requirements', this.entry().workspace.id)();
+      this.newRequirement = () => { pageRequests.newRequirement('upload'); dashboard.open('requirements', this.entry().workspace.id)(); };
       // Parts that could not be loaded: said once, so a count is never shown as complete when it is not
       this.missing = ko.pureComputed(() => this.scoped().filter((e) => e.missing.length)
         .map((e) => e.missing.join(', ') + ' of ' + e.workspace.name).join('; '));
@@ -98,58 +97,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           const w = d.workspace;
           const can = (permission) => session.can(w.id, permission);
           d.requirements.forEach((r) => {
-            const designs = d.designs.filter((s) => s.requirementId === r.id);
-            const changes = d.changeDetails.filter((c) => c.requirementId === r.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            const c = changes[0] || null;
-            if (c && (c.status === 'DELIVERED' || c.status === 'CLOSED')) {
+            // step (1-4), status chip, next step, the permission it needs and who does it otherwise, where it opens
+            const s = dashboard.workflow(r, d.designs, d.changeDetails, w.id);
+            if (s.finished) {
               return;
             }
-            const openRequirement = dashboard.openRecord('requirements', w.id, 'requirement', r.id);
-            const openChange = c ? dashboard.openRecord('changes', w.id, 'change', c.id) : null;
-            // step (1-4), status chip, next step, the permission it needs and who does it otherwise, where it opens
-            let s;
-            if (r.status === 'PROCESSING') {
-              s = { step: 1, status: ui.status('PROCESSING', 'Drafting'), next: 'The spec is being drafted. Open it to follow progress.', open: openRequirement };
-            } else if (r.status === 'FAILED') {
-              s = { step: 1, status: ui.status('FAILED', dashboard.interrupted(r.message) ? 'Interrupted' : 'Failed'), next: 'Drafting the spec stopped. Open it to try again.',
-                perm: 'EDIT_REQUIREMENTS', who: 'an analyst', open: openRequirement };
-            } else if (r.status === 'READY' && r.openQuestions > 0) {
-              s = { step: 1, status: ui.status('READY', plural(r.openQuestions, 'open question')), next: 'Answer the open questions, then approve the spec.',
-                perm: 'EDIT_REQUIREMENTS', who: 'an analyst', open: openRequirement };
-            } else if (r.status === 'READY') {
-              s = { step: 1, status: ui.status('READY', 'Ready for approval'), next: 'Review the spec and approve it.', perm: 'APPROVE', who: 'someone who can approve', open: openRequirement };
-            } else if (!c) {
-              const approved = count(designs, (x) => x.status === 'APPROVED');
-              if (!designs.length) {
-                s = { step: 2, status: ui.status('APPROVED', 'Spec approved'), next: 'Design the screens, or plan the change if it has none.', open: openRequirement };
-              } else if (approved < designs.length) {
-                s = { step: 2, status: ui.status(designs.some((x) => x.status === 'IN_REVIEW') ? 'IN_REVIEW' : 'DRAFT', approved + ' of ' + designs.length + ' screens approved'),
-                  next: 'Finish the screens and approve them.', perm: 'EDIT_DESIGNS', who: 'an analyst or developer', open: dashboard.openRecord('studio', w.id, 'studio', r.id) };
-              } else {
-                s = { step: 3, status: ui.status('APPROVED', 'Screens approved'), next: 'Plan the change.', perm: 'MANAGE_CODE', who: 'a developer', open: openRequirement };
-              }
-            } else if (c.status === 'ANALYZING') {
-              s = { step: 3, status: ui.status('ANALYZING', 'Analysing'), next: 'The impact analysis is running.', open: openChange };
-            } else if (c.status === 'PLAN_READY') {
-              s = { step: 3, status: ui.status('PLAN_READY', 'Plan ready'), next: 'Review the plan and approve it.', perm: 'APPROVE', who: 'someone who can approve', open: openChange };
-            } else if (c.status === 'GENERATING') {
-              s = { step: 4, status: ui.status('GENERATING', 'Writing code'), next: 'The code is being written.', open: openChange };
-            } else if (c.status === 'FAILED') {
-              s = { step: c.planApprovedAt ? 4 : 3, status: ui.status('FAILED', dashboard.interrupted(c.message) ? 'Interrupted' : 'Failed'),
-                next: (dashboard.firstClause(c.message) || 'The change failed') + '. Open the change to try again.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange };
-            } else if (c.buildStatus === 'FAILED') {
-              s = { step: 4, status: ui.status('FAILED', 'Build failed'), next: 'The last build failed. See the errors and build again.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange };
-            } else if (c.buildStatus === 'BUILDING') {
-              s = { step: 4, status: ui.status('BUILDING', 'Building'), next: 'Jenkins is building the change.', open: openChange };
-            } else {
-              s = { step: 4, status: ui.status('GENERATED', 'Ready to review'), next: 'Review the code, build it and deliver it.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange };
-            }
-            const at = newest([r.updatedAt, c && c.updatedAt].concat(designs.map((x) => x.updatedAt)));
+            const at = newest([r.updatedAt, s.change && s.change.updatedAt].concat(s.designs.map((x) => x.updatedAt)));
             rows.push({
               key: r.id, title: r.title, workspace: w.name, at: at, when: dashboard.ago(at), whenTitle: dashboard.when(at),
-              stepText: 'Step ' + s.step + ' of 4 · ' + STEPS[s.step - 1], status: s.status,
+              stepText: s.stepText, status: s.status,
               next: s.perm && !can(s.perm) ? waiting(s.next, s.who) : s.next,
-              steps: STEPS.map((name, i) => ({ name: name, css: 'factory-home-step' + (i + 1 < s.step ? ' is-done' : (i + 1 === s.step ? ' is-current' : '')) })),
+              steps: s.steps.map((st) => ({ name: st.name, css: 'factory-home-step' + (st.state === 'done' ? ' is-done' : (st.state === 'current' ? ' is-current' : '')) })),
               open: s.open
             });
           });

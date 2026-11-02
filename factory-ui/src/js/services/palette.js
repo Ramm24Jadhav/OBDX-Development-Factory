@@ -47,7 +47,7 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
       const q = query().trim();
       const themeDark = preferences.theme() && preferences.isDark();
       items.push(
-        { group: 'Actions', label: 'New requirement', hint: 'Describe a change or upload a document', icon: 'plus', run: go('requirements') },
+        { group: 'Actions', label: 'New requirement', hint: 'Describe a change or upload a document', icon: 'plus', run: () => { pageRequests.newRequirement('upload'); go('requirements')(); } },
         { group: 'Actions', label: 'Add a workspace', hint: 'From a folder or an SVN URL', icon: 'folder', run: go('workspaces') },
         { group: 'Actions', label: themeDark ? 'Use the light theme' : 'Use the dark theme', hint: 'Theme', icon: themeDark ? 'sun' : 'moon', run: () => preferences.toggleTheme() },
         { group: 'Actions', label: 'Keyboard shortcuts', hint: 'Show every shortcut', icon: 'help', keys: '?', run: () => helpOpen(true) },

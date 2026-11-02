@@ -3,7 +3,7 @@
  * see: each workspace with its requirements, screens, changes (with their Jenkins builds), code index and imports, plus
  * what needs the user's attention. Loaded from the same endpoints the other pages use; nothing here is stored.
  */
-define(['knockout', './api', './session', './workspaceSelection', './preferences', './pageRequests'], function (ko, api, session, workspaceSelection, preferences, pageRequests) {
+define(['knockout', './api', './session', './workspaceSelection', './preferences', './pageRequests', './ui'], function (ko, api, session, workspaceSelection, preferences, pageRequests, ui) {
   const OPEN_CHANGES = ['ANALYZING', 'PLAN_READY', 'GENERATING', 'GENERATED'];
   // The parts of a workspace's data, by endpoint. A part that could not be loaded is named in the entry's `missing`
   // (pages say so rather than showing it as empty).
@@ -146,6 +146,69 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     return builds.slice().sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
   }
 
+  // The four steps of a requirement's workflow (Home and the Requirements list)
+  const STEPS = ['Spec', 'Screens', 'Plan', 'Code'];
+
+  /**
+   * Where a requirement's workflow stands, from its status, its screens and its latest change (designs: the
+   * workspace's design summaries; changes: its change details): step (1-4), a status chip, the next thing to do, the
+   * permission that needs and who does it otherwise, what opens (open; target and place name it), a short action
+   * label (act), and finished when the latest change is delivered or closed. stepText and steps describe the four
+   * steps for display.
+   */
+  function workflow(r, designs, changes, workspaceId) {
+    const own = designs.filter((s) => s.requirementId === r.id);
+    const c = changes.filter((x) => x.requirementId === r.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
+    const openRequirement = openRecord('requirements', workspaceId, 'requirement', r.id);
+    const openChange = c ? openRecord('changes', workspaceId, 'change', c.id) : null;
+    const approved = own.filter((x) => x.status === 'APPROVED').length;
+    let s;
+    if (c && (c.status === 'DELIVERED' || c.status === 'CLOSED')) {
+      s = { step: 4, finished: true, status: ui.status(c.status, c.status === 'DELIVERED' ? 'Delivered' : 'Closed'), next: '', open: openChange, act: 'Open the change' };
+    } else if (r.status === 'PROCESSING') {
+      s = { step: 1, status: ui.status('PROCESSING', 'Drafting'), next: 'The spec is being drafted. Open it to follow progress.', open: openRequirement, act: 'Follow progress' };
+    } else if (r.status === 'FAILED') {
+      s = { step: 1, status: ui.status('FAILED', interrupted(r.message) ? 'Interrupted' : 'Failed'), next: 'Drafting the spec stopped. Open it to try again.',
+        perm: 'EDIT_REQUIREMENTS', who: 'an analyst', open: openRequirement, act: 'Try again' };
+    } else if (r.status === 'READY' && r.openQuestions > 0) {
+      s = { step: 1, status: ui.status('READY', r.openQuestions + ' open question' + (r.openQuestions === 1 ? '' : 's')),
+        next: 'Answer the open questions, then approve the spec.', perm: 'EDIT_REQUIREMENTS', who: 'an analyst', open: openRequirement, questions: true, act: 'Answer the questions' };
+    } else if (r.status === 'READY') {
+      s = { step: 1, status: ui.status('READY', 'Ready for approval'), next: 'Review the spec and approve it.', perm: 'APPROVE', who: 'someone who can approve', open: openRequirement, act: 'Review and approve' };
+    } else if (!c) {
+      if (!own.length) {
+        s = { step: 2, status: ui.status('APPROVED', 'Spec approved'), next: 'Design the screens, or plan the change if it has none.', open: openRequirement, act: 'Make the screens' };
+      } else if (approved < own.length) {
+        s = { step: 2, status: ui.status(own.some((x) => x.status === 'IN_REVIEW') ? 'IN_REVIEW' : 'DRAFT', approved + ' of ' + own.length + ' screens approved'),
+          next: 'Finish the screens and approve them.', perm: 'EDIT_DESIGNS', who: 'an analyst or developer', open: openRecord('studio', workspaceId, 'studio', r.id), act: 'Approve the screens', target: 'studio' };
+      } else {
+        s = { step: 3, status: ui.status('APPROVED', 'Screens approved'), next: 'Plan the change.', perm: 'MANAGE_CODE', who: 'a developer', open: openRequirement, act: 'Plan the change' };
+      }
+    } else if (c.status === 'ANALYZING') {
+      s = { step: 3, status: ui.status('ANALYZING', 'Analysing'), next: 'The impact analysis is running.', open: openChange, act: 'Follow progress' };
+    } else if (c.status === 'PLAN_READY') {
+      s = { step: 3, status: ui.status('PLAN_READY', 'Plan ready'), next: 'Review the plan and approve it.', perm: 'APPROVE', who: 'someone who can approve', open: openChange, act: 'Review the plan' };
+    } else if (c.status === 'GENERATING') {
+      s = { step: 4, status: ui.status('GENERATING', 'Writing code'), next: 'The code is being written.', open: openChange, act: 'Follow progress' };
+    } else if (c.status === 'FAILED') {
+      s = { step: c.planApprovedAt ? 4 : 3, status: ui.status('FAILED', interrupted(c.message) ? 'Interrupted' : 'Failed'),
+        next: (firstClause(c.message) || 'The change failed') + '. Open the change to try again.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange, act: 'Open the change' };
+    } else if (c.buildStatus === 'FAILED') {
+      s = { step: 4, status: ui.status('FAILED', 'Build failed'), next: 'The last build failed. See the errors and build again.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange, act: 'See the errors' };
+    } else if (c.buildStatus === 'BUILDING') {
+      s = { step: 4, status: ui.status('BUILDING', 'Building'), next: 'Jenkins is building the change.', open: openChange, act: 'Follow the build' };
+    } else {
+      s = { step: 4, status: ui.status('GENERATED', 'Ready to review'), next: 'Review the code, build it and deliver it.', perm: 'MANAGE_CODE', who: 'a developer', open: openChange, act: 'Review the code' };
+    }
+    const target = s.target || (s.open === openChange ? 'change' : 'requirement');
+    return Object.assign(s, {
+      designs: own, change: c, target: target,
+      place: { requirement: 'the requirement', studio: 'the UI Design Studio', change: 'the change' }[target],
+      stepText: s.finished ? 'All 4 steps done' : 'Step ' + s.step + ' of 4 · ' + STEPS[s.step - 1],
+      steps: STEPS.map((name, i) => ({ name: name, state: s.finished || i + 1 < s.step ? 'done' : (i + 1 === s.step ? 'current' : 'todo') }))
+    });
+  }
+
   // What needs someone: failed or interrupted work (spec drafts, changes, builds, imports), approvals waiting (specs,
   // screens, plans), open questions, generated code to review and deliver, code never imported, and models never
   // chosen (administrators). Each item opens its record; `action` says what the user can do there with their role.
@@ -240,6 +303,8 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     open: open,
     openRecord: openRecord,
     latestBuild: latestBuild,
+    workflow: workflow,
+    steps: STEPS,
     interrupted: interrupted,
     firstClause: firstClause,
     codeState: codeState,
