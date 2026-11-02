@@ -201,6 +201,9 @@ class ChangeFlowIntegrationTest {
     private ImportService imports;
 
     @Autowired
+    private ChangeBuildStore buildStore;
+
+    @Autowired
     private RequirementService requirements;
 
     @Autowired
@@ -492,6 +495,16 @@ class ChangeFlowIntegrationTest {
         assertThat(svn.exists(repo.trunkUrl().replace("/trunk", "/branches/factory"), SvnCredentials.NONE)).isTrue();
         assertThatThrownBy(() -> changeBranches.close(changeId, ChangeRequest.CloseReason.ABANDONED, false, "Lead"))
                 .hasMessageContaining("is closed");
+
+        // A round that never got a result (Jenkins could not be reached, or the server restarted) is closed as not built
+        UUID stuck = buildStore.start(changeId, 9, "unreachable job");
+        assertThat(buildStore.closeUnfinished(changeId, "Could not reach Jenkins")).isEqualTo(1);
+        assertThat(buildStore.list(changeId)).filteredOn(b -> b.id().equals(stuck)).singleElement().satisfies(b -> {
+            assertThat(b.result()).isEqualTo("NOT_BUILT");
+            assertThat(b.errors()).containsExactly("Could not reach Jenkins");
+            assertThat(b.finishedAt()).isNotNull();
+        });
+        assertThat(buildStore.closeUnfinished(changeId, "again")).isZero();
         changes.delete(changeId);
     }
 

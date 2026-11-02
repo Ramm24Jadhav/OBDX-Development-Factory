@@ -302,6 +302,9 @@ public class ChangeBuildService {
     }
 
     private void finish(UUID changeId, String status, String message) {
+        if ("FAILED".equals(status)) {
+            builds.closeUnfinished(changeId, message);
+        }
         ChangeRequest change = changes.find(changeId);
         change.build(status, message);
         repository.save(change);

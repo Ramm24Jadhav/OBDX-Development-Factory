@@ -1,32 +1,31 @@
 <div class="factory-pg factory-bt">
-  <div class="factory-pg-head">
-    <div>
-      <h1>Build, Test &amp; Review</h1>
-      <p>Validate generated changes, review results and manage approvals</p>
-    </div>
-    <div class="factory-pg-actions">
-      <label class="factory-bt-pick"><span>Requirement</span>
-        <select class="fx-select" id="buildRequirement" aria-label="Requirement" on-change="[[requirementChange]]">
-          <option value="" :selected="[[requirementId() === '']]">All requirements</option>
-          <oj-bind-for-each data="[[requirements]]">
-            <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === requirementId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
-          </oj-bind-for-each>
-        </select></label>
-      <label class="factory-bt-pick"><span>Change</span>
-        <select class="fx-select" id="buildChange" aria-label="Change" on-change="[[changeChange]]">
-          <oj-bind-for-each data="[[changeOptions]]">
-            <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
-          </oj-bind-for-each>
-        </select></label>
-      <span class="fx-tip-wrap" :tabindex="[[canBuild() ? null : '0']]" :data-fx-tip="[[rebuildTip]]">
-        <button type="button" id="rebuildButton" class="fx-btn fx-btn--secondary" on-click="[[rebuild]]" :disabled="[[!canBuild()]]">
-          <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Rebuild</button></span>
-      <span class="fx-approval" id="buildApproval"><span class="fx-approval-label">Approval</span>
-        <button type="button" id="submitReviewButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[!detail() || detail().status !== 'GENERATED' || !canManage()]]">
-          <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button></span>
-      <fx-menu-button id="buildMoreButton" variant="ghost" icon="more" icon-only label="More actions" :disabled="[[!detail()]]"
-                      items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
-    </div>
+  <h1 class="fx-visually-hidden">Build, Test &amp; Review</h1>
+  <div class="factory-pg-actions factory-bt-top">
+    <label class="factory-bt-pick"><span>Requirement</span>
+      <select class="fx-select" id="buildRequirement" aria-label="Requirement" on-change="[[requirementChange]]">
+        <option value="" :selected="[[requirementId() === '']]">All requirements</option>
+        <oj-bind-for-each data="[[requirements]]">
+          <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === requirementId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
+        </oj-bind-for-each>
+      </select></label>
+    <label class="factory-bt-pick"><span>Change</span>
+      <select class="fx-select" id="buildChange" aria-label="Change" on-change="[[changeChange]]">
+        <oj-bind-for-each data="[[changeOptions]]">
+          <template><option :value="[[$current.data.id]]" :selected="[[$current.data.id === changeId()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template>
+        </oj-bind-for-each>
+      </select></label>
+    <span class="factory-bt-spacer"></span>
+    <span class="fx-tip-wrap" :tabindex="[[canBuild() ? null : '0']]" :data-fx-tip="[[rebuildTip]]">
+      <button type="button" id="rebuildButton" class="fx-btn fx-btn--secondary" on-click="[[rebuild]]" :disabled="[[!canBuild()]]">
+        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Build with Jenkins</button></span>
+    <span class="fx-tip-wrap" :tabindex="[[canCheck() ? null : '0']]" :data-fx-tip="[[checkTip]]">
+      <button type="button" id="checkAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!canCheck()]]">
+        <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Run quick checks</button></span>
+    <span class="fx-approval" id="buildApproval"><span class="fx-approval-label">Approval</span>
+      <button type="button" id="submitReviewButton" class="fx-btn fx-btn--primary" on-click="[[deliver]]" :disabled="[[!canDeliver()]]">
+        <span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Submit for Review</button></span>
+    <fx-menu-button id="buildMoreButton" variant="ghost" icon="more" icon-only label="More actions" :disabled="[[!detail()]]"
+                    items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
   </div>
 
   <oj-bind-if test="[[errorMessage()]]">
@@ -37,170 +36,190 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[detail()]]">
+    <!-- The verdict first, then one card per gate -->
+    <section class="factory-card factory-bt-verdict" id="qualityGate" aria-labelledby="verdictTitle">
+      <div class="factory-bt-vhead">
+        <div class="factory-bt-vname">
+          <span class="factory-bt-code"><oj-bind-text value="[[summary().code]]"></oj-bind-text></span>
+          <h2 class="factory-bt-title"><oj-bind-text value="[[summary().title]]"></oj-bind-text></h2>
+          <span :class="[[summary().status.css]]"><span :class="[[summary().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[summary().status.text]]"></oj-bind-text></span>
+          <oj-bind-if test="[[isLive()]]"><span class="fx-live" id="buildLive">Live</span></oj-bind-if>
+        </div>
+        <p class="factory-bt-meta"><oj-bind-text value="[[summary().meta]]"></oj-bind-text></p>
+      </div>
+      <oj-bind-if test="[[verdict()]]">
+        <div class="factory-bt-vline" role="status">
+          <span :class="[[verdict().status.css]]" id="verdictStatus"><span :class="[[verdict().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[verdict().status.text]]"></oj-bind-text></span>
+          <strong id="verdictTitle"><oj-bind-text value="[[verdictTitle]]"></oj-bind-text></strong>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[verdict().text]]"></oj-bind-text></span>
+        </div>
+      </oj-bind-if>
+      <ul class="factory-bt-gates" id="gates" aria-label="Quality gates">
+        <oj-bind-for-each data="[[gates]]" as="g">
+          <template><li :class="[[g.data.css]]" :data-gate="[[g.data.key]]">
+            <div class="factory-bt-gatehead"><strong><oj-bind-text value="[[g.data.title]]"></oj-bind-text></strong>
+              <span :class="[[g.data.status.css]]"><span :class="[[g.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[g.data.status.text]]"></oj-bind-text></span></div>
+            <p class="factory-bt-gateev"><oj-bind-text value="[[g.data.evidence]]"></oj-bind-text></p>
+            <p class="factory-bt-gatewhy"><oj-bind-text value="[[g.data.why]]"></oj-bind-text></p>
+            <oj-bind-if test="[[g.data.key !== 'integration']]">
+              <button type="button" class="factory-link-sm" on-click="[[g.data.pick]]"><oj-bind-text value="[['Show ' + g.data.title.toLowerCase() + ' findings']]"></oj-bind-text></button>
+            </oj-bind-if>
+          </li></template>
+        </oj-bind-for-each>
+      </ul>
+      <p class="factory-bt-legend">Not run: no result yet. Running. Passed. Passed with warnings. Failed. Blocked: could not run or finish because of an earlier step.</p>
+    </section>
+
     <div class="factory-row factory-row-main">
       <div class="factory-stack">
-        <section class="factory-card">
-          <ol class="factory-stepper">
-            <oj-bind-for-each data="[[stages]]">
-              <template>
-                <li :class="[[$current.data.css]]"><span class="factory-st-mark">
-                  <oj-bind-if test="[[$current.data.check]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></oj-bind-if>
-                  <oj-bind-if test="[[!$current.data.check]]"><oj-bind-text value="[[$current.data.number]]"></oj-bind-text></oj-bind-if></span>
-                  <span class="factory-st-label"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></li>
-              </template>
-            </oj-bind-for-each>
-          </ol>
-          <div class="factory-bt-headrow">
-            <div class="factory-bt-head">
-              <span :class="[[headCss]]"><span :class="[[headIcon]]" aria-hidden="true"></span></span>
-              <div><strong id="buildHeadline"><oj-bind-text value="[[headline().text]]"></oj-bind-text></strong>
-                <oj-bind-if test="[[isLive()]]"><span class="fx-live" id="buildLive">Live</span></oj-bind-if>
-                <span class="factory-ov-subtle"><oj-bind-text value="[[headline().note]]"></oj-bind-text></span></div>
-            </div>
-            <div class="factory-bt-kpis">
-              <oj-bind-for-each data="[[kpis]]">
-                <template><div><b><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></b><span class="factory-bt-klabel" :title="[[$current.data.label]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span>
-                  <span class="factory-bt-subs"><oj-bind-for-each data="[[$current.data.subs]]" as="s"><template><span :class="[[s.data.css]]"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></span></div></template>
-              </oj-bind-for-each>
-            </div>
-          </div>
-        </section>
-
-        <div class="factory-tabbar" role="tablist" aria-label="Validation">
+        <div class="factory-tabbar" role="tablist" aria-label="Build, test and review" on-keydown="[[tabKey]]">
           <oj-bind-for-each data="[[tabs]]">
-            <template><button type="button" role="tab" :id="[['bt-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            <template><button type="button" role="tab" :id="[['bt-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]"
+                              :tabindex="[[$current.data.selected() ? '0' : '-1']]" aria-controls="buildPanel" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
           </oj-bind-for-each>
         </div>
+        <div id="buildPanel" role="tabpanel" :aria-labelledby="[['bt-' + tab()]]">
 
-        <oj-bind-if test="[[tab() === 'results']]">
-          <div class="factory-bt-stages">
-            <oj-bind-for-each data="[[stageCards]]">
-              <template><div class="factory-card factory-bt-stage"><span :class="[[$current.data.css]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span></span>
-                <div><strong><oj-bind-text value="[[$current.data.title]]"></oj-bind-text></strong><span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.detail]]"></oj-bind-text></span>
-                  <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span>
-                  <span class="factory-bt-stagestate"><span :class="[[$current.data.pill.css]]"><span :class="[[$current.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span>
-                    <oj-bind-if test="[[$current.data.live]]"><span class="fx-live">Live</span></oj-bind-if></span></div></div></template>
-            </oj-bind-for-each>
-          </div>
+        <!-- Failures of the gates -->
+        <oj-bind-if test="[[tab() === 'gates']]">
           <div class="factory-row factory-bt-row">
             <section class="factory-card">
-              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Failures</span></h2>
-              <div class="factory-bt-chips" role="group" aria-label="Show failures">
+              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>Findings</span></h2>
+              <div class="factory-bt-chips" role="group" aria-label="Show findings of">
                 <oj-bind-for-each data="[[failureTabs]]">
                   <template><button type="button" :class="[[$current.data.selected() ? 'fx-chip is-on' : 'fx-chip']]" :aria-pressed="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
                 </oj-bind-for-each>
               </div>
               <div class="factory-bt-searchrow">
                 <span class="fx-control factory-bt-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
-                  <input type="search" class="fx-input" placeholder="Search file or error message..." aria-label="Search failures" on-input="[[failureSearchInput]]"></span>
-                <fx-menu-button id="failureFilterButton" variant="secondary" icon="list" icon-only label="Filter by layer"
-                                items="[[layerOptions]]" on-fx-action="[[layerAction]]"></fx-menu-button>
+                  <input type="search" class="fx-input" placeholder="Search file or error message..." aria-label="Search findings" on-input="[[failureSearchInput]]"></span>
               </div>
-              <oj-bind-if test="[[layerFilter()]]"><p class="factory-bt-layer">Layer: <b><oj-bind-text value="[[layerFilter]]"></oj-bind-text></b>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearLayer]]">Show all</button></p></oj-bind-if>
               <div class="fx-table-wrap">
                 <table class="fx-table factory-bt-ftable" id="failureTable">
-                  <thead><tr><th class="factory-bt-c1">Status</th><th class="factory-bt-c3">File</th><th>Error Message</th><th class="factory-bt-c4 fx-table-actions"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+                  <caption class="fx-visually-hidden">Findings of the quality gates</caption>
+                  <thead><tr><th scope="col">Severity</th><th scope="col">Check</th><th scope="col">File and line</th><th scope="col">Summary</th><th scope="col">Linked</th><th scope="col" class="fx-table-actions"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
                   <tbody>
-                    <oj-bind-for-each data="[[visibleFailures]]">
-                      <template><tr :class="[[$current.data.index === selectedFailure() ? 'factory-clickable is-selected' : 'factory-clickable']]" on-click="[[$current.data.pick]]">
-                        <td><span :class="[[$current.data.status.css]]"><span :class="[[$current.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.status.text]]"></oj-bind-text></span>
-                          <span class="factory-bt-kind"><oj-bind-text value="[[$current.data.kind]]"></oj-bind-text></span></td>
-                        <td class="factory-bt-path" :title="[[$current.data.file]]"><bdi><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></bdi></td>
-                        <td class="factory-bt-msg" :title="[[$current.data.message]]"><div><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></div></td>
-                        <td class="factory-bt-more fx-table-actions" on-click="[[$current.data.stop]]"><fx-menu-button class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only label="Failure actions"
-                          items="[[failureItems]]" on-fx-action="[[$current.data.action]]"></fx-menu-button></td></tr></template>
+                    <oj-bind-for-each data="[[visibleFailures]]" as="f">
+                      <template><tr :class="[[f.data.index === selectedFailure() ? 'factory-clickable is-selected' : 'factory-clickable']]" on-click="[[f.data.pick]]" tabindex="0"
+                                    :aria-selected="[[f.data.index === selectedFailure() ? 'true' : 'false']]" on-keydown="[[rowKey]]">
+                        <td><span :class="[[f.data.status.css]]"><span :class="[[f.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[f.data.severity]]"></oj-bind-text></span></td>
+                        <td><oj-bind-text value="[[f.data.checkLabel]]"></oj-bind-text></td>
+                        <td class="factory-bt-path" :title="[[f.data.file]]"><bdi><oj-bind-text value="[[f.data.name + (f.data.line ? ':' + f.data.line : '')]]"></oj-bind-text></bdi></td>
+                        <td class="factory-bt-msg" :title="[[f.data.message]]"><div><oj-bind-text value="[[f.data.message]]"></oj-bind-text></div></td>
+                        <td class="factory-mono"><oj-bind-text value="[[f.data.linked.join(', ') || '–']]"></oj-bind-text></td>
+                        <td class="factory-bt-more fx-table-actions" on-click="[[f.data.stop]]"><fx-menu-button class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only label="Finding actions"
+                          items="[[failureItems]]" on-fx-action="[[f.data.action]]"></fx-menu-button></td></tr></template>
                     </oj-bind-for-each>
                   </tbody>
                 </table>
-                <oj-bind-if test="[[visibleFailures().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>No failures</strong>Nothing matches these filters.</div></oj-bind-if>
+                <oj-bind-if test="[[visibleFailures().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>No findings</strong>Nothing matches. A gate that has not run has no findings either: see its status above.</div></oj-bind-if>
               </div>
             </section>
-            <section class="factory-card">
-              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>Failure Details</span>
-                <oj-bind-if test="[[failure()]]"><span class="factory-bt-nav"><span :class="[[failure().status.css]]"><span :class="[[failure().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[failure().status.text]]"></oj-bind-text></span>
-                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[prevFailure]]" aria-label="Previous failure">‹</button><oj-bind-text value="[[failurePosition]]"></oj-bind-text>
-                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[nextFailure]]" aria-label="Next failure">›</button></span></oj-bind-if></h2>
-              <oj-bind-if test="[[!failure()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>Nothing failed</strong>Failures from the quick checks and Jenkins show here.</div></oj-bind-if>
+            <section class="factory-card" id="failureDetail">
+              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-branch" aria-hidden="true"></span>Finding</span>
+                <oj-bind-if test="[[failure()]]"><span class="factory-bt-nav">
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[prevFailure]]" aria-label="Previous finding">‹</button><oj-bind-text value="[[failurePosition]]"></oj-bind-text>
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-bt-step" on-click="[[nextFailure]]" aria-label="Next finding">›</button></span></oj-bind-if></h2>
+              <oj-bind-if test="[[!failure()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>No findings</strong>Findings of the build, the tests, the checks and the coverage show here.</div></oj-bind-if>
               <oj-bind-if test="[[failure()]]">
-                <p class="factory-bt-ftitle"><oj-bind-text value="[[failure().source]]"></oj-bind-text></p>
+                <dl class="factory-bt-fd">
+                  <dt>Severity</dt><dd><span :class="[[failure().status.css]]"><span :class="[[failure().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[failure().severity]]"></oj-bind-text></span></dd>
+                  <dt>Check</dt><dd><oj-bind-text value="[[failure().checkLabel + ' · ' + failure().source]]"></oj-bind-text></dd>
+                  <dt>File</dt><dd class="factory-mono"><oj-bind-text value="[[failure().file ? failure().file + (failure().line ? ':' + failure().line : '') : 'None named']]"></oj-bind-text></dd>
+                  <dt>Linked</dt><dd class="factory-mono"><oj-bind-text value="[[failure().linked.join(', ') || 'No criterion or requirement named']]"></oj-bind-text></dd>
+                </dl>
                 <div class="factory-subtabs">
                   <oj-bind-for-each data="[[detailTabs]]">
-                    <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+                    <template><button type="button" :class="[[$current.data.css]]" :aria-pressed="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
                   </oj-bind-for-each>
                 </div>
                 <oj-bind-if test="[[detailTab() === 'message']]"><div class="factory-bt-errbox"><pre class="factory-code factory-code-light factory-bt-err"><oj-bind-text value="[[failure().message]]"></oj-bind-text></pre>
                   <button type="button" class="factory-bt-copy" id="copyErrorButton" on-click="[[copyMessage]]" data-fx-tip="Copy the error message" aria-label="Copy the error message">
                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path></svg></button></div></oj-bind-if>
-                <oj-bind-if test="[[detailTab() === 'stack']]"><pre class="factory-code factory-code-light factory-bt-pre"><oj-bind-text value="[[stackTrace]]"></oj-bind-text></pre></oj-bind-if>
                 <oj-bind-if test="[[detailTab() === 'code']]"><pre class="factory-code factory-code-light factory-bt-pre"><oj-bind-text value="[[failureCode]]"></oj-bind-text></pre></oj-bind-if>
-                <oj-bind-if test="[[detailTab() === 'log']]"><pre class="factory-code factory-bt-pre"><oj-bind-text value="[[failure().log || '(no log for this failure)']]"></oj-bind-text></pre></oj-bind-if>
-                <oj-bind-if test="[[failure().file]]">
-                  <h3>Related Code</h3>
-                  <div class="factory-bt-file factory-mono"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>
-                    <span class="factory-bt-fpath" :title="[[failure().file]]"><bdi><oj-bind-text value="[[failure().file + (failure().line ? ':' + failure().line : '')]]"></oj-bind-text></bdi></span>
-                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showCode]]">View</button></div>
-                </oj-bind-if>
-                <div class="factory-btn-row factory-bt-center"><button type="button" id="openWorkbenchButton" class="fx-btn fx-btn--primary" on-click="[[openWorkbench]]">Open in Code Workbench</button></div>
-              </oj-bind-if>
-            </section>
-          </div>
-          <div class="factory-row factory-bt-row">
-            <section class="factory-card">
-              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Build Logs</span>
-                <span class="factory-bt-logbtns">
-                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="fullLogButton" on-click="[[openFullLog]]">View full log</button>
-                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="rawLogButton" on-click="[[rawLog]]">Raw</button>
-                  <a class="fx-btn fx-btn--secondary fx-btn--sm factory-bt-dl" :href="[[logDownload]]" download="build-log.txt">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>Download</a>
-                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--icon" id="expandLogButton" on-click="[[toggleLog]]" :title="[[logExpanded() ? 'Collapse the log' : 'Expand the log']]" :aria-label="[[logExpanded() ? 'Collapse the log' : 'Expand the log']]">
-                    <oj-bind-if test="[[!logExpanded()]]"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if>
-                    <oj-bind-if test="[[logExpanded()]]"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"></path><path d="M20 10h-6V4"></path><path d="M14 10l7-7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if></button>
-                </span></h2>
-              <div class="factory-subtabs factory-bt-logtabs">
-                <oj-bind-for-each data="[[logTypeTabs]]">
-                  <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-                </oj-bind-for-each>
-              </div>
-              <oj-bind-if test="[[logType() === 'build' && logs().length > 1]]">
-                <div class="factory-chips factory-bt-filters">
-                  <oj-bind-for-each data="[[logs]]">
-                    <template><button type="button" :class="[[$current.data.css]]" :aria-pressed="[[$current.data.on() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></button></template>
-                  </oj-bind-for-each>
+                <oj-bind-if test="[[detailTab() === 'log']]"><pre class="factory-code factory-bt-pre"><oj-bind-text value="[[failure().log || 'No log for this finding: the quick checks and the coverage have none; a Jenkins finding has its round\'s log excerpt.']]"></oj-bind-text></pre></oj-bind-if>
+                <div class="factory-btn-row">
+                  <span class="fx-tip-wrap" :tabindex="[[canFix() ? null : '0']]" :data-fx-tip="[[fixTip]]">
+                    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="qaFix" on-click="[[fixWithAi]]" :disabled="[[!canFix()]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Write the file again with the fix</button></span>
+                  <button type="button" id="openWorkbenchButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openWorkbench]]">Open in Changes</button>
                 </div>
               </oj-bind-if>
-              <div :class="[[logExpanded() ? 'fx-log factory-bt-log factory-bt-log-big' : 'fx-log factory-bt-log']]" id="buildLog" role="log" aria-label="Build log" tabindex="0"><oj-bind-for-each data="[[logLines]]"><template><div :class="[[$current.data.css]]"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></div></template></oj-bind-for-each></div>
-            </section>
-            <section class="factory-card factory-bt-cov">
-              <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-chart" aria-hidden="true"></span>Test Coverage</span></h2>
-              <div class="factory-bt-covtop">
-                <svg class="factory-bt-donut" viewBox="0 0 100 100" role="img" aria-label="Line coverage not available">
-                  <circle class="factory-bt-donut-track" cx="50" cy="50" r="40" fill="none" stroke-width="10"></circle>
-                  <text x="50" y="50" text-anchor="middle" class="factory-bt-donut-v">–</text>
-                  <text x="50" y="66" text-anchor="middle" class="factory-bt-donut-l">Line Coverage</text>
-                </svg>
-                <dl class="factory-bt-covkv"><dt>Lines</dt><dd>–</dd><dt>Covered</dt><dd>–</dd><dt>Missed</dt><dd>–</dd></dl>
-              </div>
-              <h3>Coverage by Module</h3>
-              <p class="fx-alert fx-alert--info factory-bt-note" id="coverageEmpty">Coverage: the Jenkins builds of this workspace do not publish coverage yet. Add a coverage report (for example JaCoCo) to the job to see it here.</p>
             </section>
           </div>
         </oj-bind-if>
 
-        <oj-bind-if test="[[tab() === 'static' || tab() === 'obdx']]">
+        <!-- Runs and compare -->
+        <oj-bind-if test="[[tab() === 'history']]">
           <section class="factory-card">
-            <h2><oj-bind-text value="[[tab() === 'obdx' ? 'OBDX Checks' : 'Static Analysis']]"></oj-bind-text>
-              <span class="factory-bt-checkhead"><oj-bind-if test="[[checking()]]"><span class="fx-live">Checking</span></oj-bind-if>
-                <button type="button" id="checkAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkAgain]]" :disabled="[[!canManage() || checking()]]">Run quick checks</button></span></h2>
-            <p class="factory-card-sub">Syntax at the bank's Java level and the version pack rules, on the lines each file adds.</p>
+            <h2>Runs</h2>
+            <p class="factory-card-sub">Each build of the change is one run: the quick checks, the Jenkins jobs, and the fix rounds between them.</p>
+            <div class="fx-table-wrap">
+              <table class="fx-table" id="runTable">
+                <thead><tr><th scope="col">Run</th><th scope="col">Result</th><th scope="col">Started</th><th scope="col">Rounds</th><th scope="col">Jobs</th><th scope="col">Errors</th><th scope="col">Fixed</th><th scope="col">Took</th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[runRows]]" as="r">
+                    <template><tr><td><oj-bind-text value="[[r.data.number]]"></oj-bind-text></td>
+                      <td><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></td>
+                      <td><oj-bind-text value="[[r.data.started]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.rounds]]"></oj-bind-text></td>
+                      <td class="factory-bt-jobs"><oj-bind-text value="[[r.data.jobs]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.errors]]"></oj-bind-text></td>
+                      <td class="factory-mono"><oj-bind-text value="[[r.data.fixed]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.took]]"></oj-bind-text></td></tr></template>
+                  </oj-bind-for-each>
+                </tbody>
+              </table>
+              <oj-bind-if test="[[runRows().length === 0]]"><p class="fx-muted factory-bt-none">No runs yet. Build with Jenkins to see them here.</p></oj-bind-if>
+            </div>
+          </section>
+          <section class="factory-card" id="runCompare">
+            <h2>Compare runs</h2>
+            <div class="factory-bt-comparepick">
+              <label><span class="fx-label">From</span>
+                <select class="fx-select" id="compareFrom" on-change="[[compareFromChange]]">
+                  <oj-bind-for-each data="[[runOptions]]" as="o"><template><option :value="[[o.data.value]]" :selected="[[o.data.value === compareFrom()]]"><oj-bind-text value="[[o.data.label]]"></oj-bind-text></option></template></oj-bind-for-each>
+                </select></label>
+              <label><span class="fx-label">To</span>
+                <select class="fx-select" id="compareTo" on-change="[[compareToChange]]">
+                  <oj-bind-for-each data="[[runOptions]]" as="o"><template><option :value="[[o.data.value]]" :selected="[[o.data.value === compareTo()]]"><oj-bind-text value="[[o.data.label]]"></oj-bind-text></option></template></oj-bind-for-each>
+                </select></label>
+            </div>
+            <p class="factory-card-sub" role="status"><oj-bind-text value="[[comparison().note]]"></oj-bind-text></p>
+            <ul class="factory-bt-difflist" aria-label="Differences between the runs">
+              <oj-bind-for-each data="[[comparison().rows]]" as="d">
+                <template><li :class="[[d.data.css]]"><span class="factory-bt-diffkind"><oj-bind-text value="[[d.data.kind]]"></oj-bind-text></span><span><oj-bind-text value="[[d.data.text]]"></oj-bind-text></span></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </section>
+        </oj-bind-if>
+
+        <!-- Logs -->
+        <oj-bind-if test="[[tab() === 'logs']]">
+          <section class="factory-card">
+            <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Logs</span>
+              <span class="factory-bt-logbtns">
+                <oj-bind-if test="[[consoleUrl()]]"><a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[consoleUrl]]" target="_blank" rel="noopener noreferrer"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Jenkins console</a></oj-bind-if>
+                <a class="fx-btn fx-btn--secondary fx-btn--sm factory-bt-dl" :href="[[logDownload]]" download="build-log.txt">Download</a>
+              </span></h2>
+            <label class="factory-bt-logpick"><span class="fx-label">Round</span>
+              <select class="fx-select" id="logRound" on-change="[[logChange]]">
+                <oj-bind-for-each data="[[logOptions]]" as="o"><template><option :value="[[o.data.value]]" :selected="[[o.data.value === logChoice()]]"><oj-bind-text value="[[o.data.label]]"></oj-bind-text></option></template></oj-bind-for-each>
+              </select></label>
+            <div class="fx-log factory-bt-log factory-bt-log-big" id="buildLog" role="log" aria-label="Log" tabindex="0"><oj-bind-for-each data="[[logLines]]"><template><div :class="[[$current.data.css]]"><span><oj-bind-text value="[[$current.data.n]]"></oj-bind-text></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></div></template></oj-bind-for-each></div>
+            <p class="fx-help">The factory keeps an excerpt of each Jenkins console (its end and the error lines). The full console is in Jenkins.</p>
+          </section>
+        </oj-bind-if>
+
+        <!-- Quick checks per file -->
+        <oj-bind-if test="[[tab() === 'checks']]">
+          <section class="factory-card">
+            <h2>Quick checks per file <oj-bind-if test="[[checking()]]"><span class="fx-live">Checking</span></oj-bind-if></h2>
+            <p class="factory-card-sub">Syntax at the bank's Java level and the version pack rules, on the lines each file adds. Files not written are not checked.</p>
             <div class="fx-table-wrap">
               <table class="fx-table" id="checkTable">
-                <thead><tr><th>File</th><th>Layer</th><th>Result</th><th>Message</th><th>Attempts</th></tr></thead>
+                <thead><tr><th scope="col">File</th><th scope="col">Layer</th><th scope="col">Result</th><th scope="col">Message</th><th scope="col">Attempts</th></tr></thead>
                 <tbody>
                   <oj-bind-for-each data="[[fileRows]]">
                     <template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.layer]]"></oj-bind-text></td>
                       <td><span :class="[[$current.data.check.css]]"><span :class="[[$current.data.check.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
-                      <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.attempts]]"></oj-bind-text></td></tr></template>
+                      <td class="factory-ov-subtle factory-bt-msgcell"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.attempts]]"></oj-bind-text></td></tr></template>
                   </oj-bind-for-each>
                 </tbody>
               </table>
@@ -208,116 +227,84 @@
           </section>
         </oj-bind-if>
 
-        <oj-bind-if test="[[tab() === 'security']]">
-          <section class="factory-card">
-            <h2>Security Scan</h2>
-            <p class="fx-alert fx-alert--info factory-bt-note" id="securityEmpty">No security scanner reports to the factory yet. The quick checks cover syntax and the version pack rules; add a security scan to the Jenkins job to see its findings here.</p>
-            <oj-bind-if test="[[securityRows().length > 0]]">
-              <p class="factory-card-sub">Quick check findings that touch data safety:</p>
-              <div class="fx-table-wrap">
-                <table class="fx-table">
-                  <thead><tr><th>File</th><th>Result</th><th>Message</th></tr></thead>
-                  <tbody><oj-bind-for-each data="[[securityRows]]"><template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td>
-                    <td><span :class="[[$current.data.check.css]]"><span :class="[[$current.data.check.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.check.text]]"></oj-bind-text></span></td>
-                    <td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.message]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-                </table>
-              </div>
-            </oj-bind-if>
-          </section>
-        </oj-bind-if>
-
-        <oj-bind-if test="[[tab() === 'comments']]">
-          <section class="factory-card">
-            <h2>Reviewer Comments</h2>
-            <p class="fx-alert fx-alert--info factory-bt-note">The factory does not record review comments on changes yet. Reviewers comment in the bank's own review of the SVN branch or patch. Files a reviewer changed in the workbench are listed below.</p>
+        <!-- Requirement coverage -->
+        <oj-bind-if test="[[tab() === 'coverage']]">
+          <section class="factory-card" id="coveragePanel">
+            <h2>Acceptance criteria</h2>
+            <p class="factory-card-sub">Which written files name each criterion. A test that names it is meant to check it; whether that test passes is the Unit tests gate. Line coverage is not reported to the factory.</p>
             <div class="fx-table-wrap">
-              <table class="fx-table">
-                <thead><tr><th>File</th><th>Layer</th><th>Reviewer edit</th></tr></thead>
-                <tbody><oj-bind-for-each data="[[reviewRows]]"><template><tr><td class="factory-mono"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.layer]]"></oj-bind-text></td>
-                  <td><span :class="[[$current.data.pill.css]]"><oj-bind-text value="[[$current.data.pill.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody>
+              <table class="fx-table" id="coverageTable">
+                <thead><tr><th scope="col">Criterion</th><th scope="col">Traced</th><th scope="col">Tests</th><th scope="col">Code</th><th scope="col">Requirements</th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[coverageRows]]" as="c">
+                    <template><tr><td><strong class="factory-mono"><oj-bind-text value="[[c.data.id]]"></oj-bind-text></strong> <span class="factory-ov-subtle"><oj-bind-text value="[[c.data.text]]"></oj-bind-text></span></td>
+                      <td><span :class="[[c.data.status.css]]"><span :class="[[c.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[c.data.status.text]]"></oj-bind-text></span></td>
+                      <td class="factory-mono"><oj-bind-text value="[[c.data.tests]]"></oj-bind-text></td><td class="factory-mono"><oj-bind-text value="[[c.data.code]]"></oj-bind-text></td>
+                      <td class="factory-mono"><oj-bind-text value="[[c.data.requirements]]"></oj-bind-text></td></tr></template>
+                  </oj-bind-for-each>
+                </tbody>
+              </table>
+              <oj-bind-if test="[[coverageRows().length === 0]]"><p class="fx-muted factory-bt-none">No acceptance criteria with IDs to trace.</p></oj-bind-if>
+            </div>
+            <h3>Functional requirements</h3>
+            <div class="fx-table-wrap">
+              <table class="fx-table" id="requirementTable">
+                <thead><tr><th scope="col">Requirement</th><th scope="col">Traced</th><th scope="col">Files that name it</th></tr></thead>
+                <tbody>
+                  <oj-bind-for-each data="[[requirementRows]]" as="r">
+                    <template><tr><td><strong class="factory-mono"><oj-bind-text value="[[r.data.id]]"></oj-bind-text></strong> <span class="factory-ov-subtle"><oj-bind-text value="[[r.data.text]]"></oj-bind-text></span></td>
+                      <td><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></td>
+                      <td class="factory-mono"><oj-bind-text value="[[r.data.files]]"></oj-bind-text></td></tr></template>
+                  </oj-bind-for-each>
+                </tbody>
               </table>
             </div>
           </section>
         </oj-bind-if>
 
-        <oj-bind-if test="[[tab() === 'approval']]">
+        <!-- Delivery and approvals -->
+        <oj-bind-if test="[[tab() === 'delivery']]">
           <section class="factory-card">
-            <h2>Approval History</h2>
-            <div class="fx-table-wrap">
-              <table class="fx-table">
-                <thead><tr><th>Step</th><th>By</th><th>When</th></tr></thead>
-                <tbody><oj-bind-for-each data="[[approvals]]"><template><tr><td><oj-bind-text value="[[$current.data.what]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.who]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.at]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-              </table>
-            </div>
-            <p class="factory-card-sub">Approving the plan, delivering the code and closing the change are separate steps, each recorded with who did it.</p>
-          </section>
-        </oj-bind-if>
-
-        <oj-bind-if test="[[tab() === 'deployment']]">
-          <section class="factory-card">
-            <h2>Deployment</h2>
+            <h2>Delivery</h2>
             <dl class="factory-kv">
               <dt>Delivery</dt><dd><oj-bind-text value="[[detail().branchUrl ? 'SVN branch' : 'Patch (download)']]"></oj-bind-text></dd>
               <dt>Branch</dt><dd class="factory-mono"><oj-bind-text value="[[detail().branchUrl || 'Not delivered']]"></oj-bind-text></dd>
               <dt>Delivered revision</dt><dd><oj-bind-text value="[[detail().deliveredRevision ? 'r' + detail().deliveredRevision : '–']]"></oj-bind-text></dd>
               <dt>Closed</dt><dd><oj-bind-text value="[[detail().closedAt ? (detail().closedReason + ' by ' + detail().closedBy) : 'Open']]"></oj-bind-text></dd>
             </dl>
-            <p class="factory-card-sub">The factory never changes trunk: code goes to a branch or a patch, and the bank merges it with its own process.</p>
+            <h3>Approvals</h3>
+            <div class="fx-table-wrap">
+              <table class="fx-table">
+                <thead><tr><th scope="col">Step</th><th scope="col">By</th><th scope="col">When</th></tr></thead>
+                <tbody><oj-bind-for-each data="[[approvals]]"><template><tr><td><oj-bind-text value="[[$current.data.what]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.who]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.at]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+              </table>
+            </div>
+            <h3>Files a reviewer edited</h3>
+            <ul class="factory-pf-evlist"><oj-bind-for-each data="[[editedFiles]]"><template><li class="factory-mono"><oj-bind-text value="[[$current.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+            <oj-bind-if test="[[editedFiles().length === 0]]"><p class="fx-muted factory-bt-none">None.</p></oj-bind-if>
+            <p class="factory-card-sub">The factory never changes trunk: code goes to a branch or a patch, and the bank merges it with its own process. Review comments are made in the bank's review of the branch; the factory does not record them.</p>
           </section>
         </oj-bind-if>
+        </div>
       </div>
 
       <div class="factory-stack">
-        <section class="factory-card">
-          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Change Information</span>
-            <span :class="[[headStatus().css]]"><span :class="[[headStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[headStatus().text]]"></oj-bind-text></span></h2>
-          <dl class="factory-kv">
-            <oj-bind-for-each data="[[info]]">
-              <template><dt><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></dt><dd :class="[[$current.data.link ? 'factory-cp-link' : '']]"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></dd></template>
-            </oj-bind-for-each>
-          </dl>
-        </section>
-        <section class="factory-card">
-          <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-rocket" aria-hidden="true"></span>Quick Actions</span></h2>
-          <div class="factory-bt-actions">
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaChecks" :disabled="[[!canManage() || checking()]]" :data-fx-tip="[[canManage() ? null : 'You need the Manage code permission']]" on-click="[[checkAgain]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Run quick checks</button>
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" id="qaFix" :disabled="[[!canManage() || !failure()]]" :data-fx-tip="[[!canManage() ? 'You need the Manage code permission' : !failure() ? 'Nothing failed' : null]]" on-click="[[fixWithAi]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Generate Fix with AI</button>
-          </div>
-          <oj-bind-if test="[[buildHint()]]"><p class="factory-card-sub"><oj-bind-text value="[[buildHint]]"></oj-bind-text></p></oj-bind-if>
-        </section>
-        <section :class="[[aiExpanded() ? 'factory-card factory-ai factory-bt-ai factory-bt-ai-big' : 'factory-card factory-ai factory-bt-ai']]">
+        <section class="factory-card factory-ai factory-bt-ai">
           <h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Assistant</span>
-            <span class="factory-bt-aihead"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ai.clear]]">New Chat</button>
-              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="aiExpandButton" on-click="[[toggleAi]]" :title="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]" :aria-label="[[aiExpanded() ? 'Make smaller' : 'Make bigger']]">
-                <oj-bind-if test="[[!aiExpanded()]]"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if>
-                <oj-bind-if test="[[aiExpanded()]]"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"></path><path d="M20 10h-6V4"></path><path d="M14 10l7-7"></path><path d="M3 21l7-7"></path></svg></oj-bind-if></button></span></h2>
-          <div class="factory-subtabs">
-            <oj-bind-for-each data="[[aiTabs]]">
-              <template><button type="button" :class="[[$current.data.css]]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            <span class="factory-bt-aihead"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ai.clear]]">New Chat</button></span></h2>
+          <div class="factory-ai-log factory-bt-ailog">
+            <oj-bind-if test="[[ai.messages().length === 0]]"><p class="factory-bt-aihint">Ask why a gate failed, or how to fix it. The answer uses this change's gates, checks, build rounds and logs.</p></oj-bind-if>
+            <oj-bind-for-each data="[[ai.messages]]">
+              <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]" sources="[[$current.data.sources]]"></fx-markdown>
+                <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
             </oj-bind-for-each>
           </div>
-          <oj-bind-if test="[[aiTab() === 'chat']]">
-            <div class="factory-ai-log factory-bt-ailog">
-              <oj-bind-if test="[[ai.messages().length === 0]]"><p class="factory-bt-aihint">Ask why a check or build failed, or how to fix it. The answer uses this change's checks, build rounds and logs.</p></oj-bind-if>
-              <oj-bind-for-each data="[[ai.messages]]">
-                <template><div :class="[[$current.data.css]]"><fx-markdown text="[[$current.data.text]]" sources="[[$current.data.sources]]"></fx-markdown>
-                  <oj-bind-if test="[[$current.data.meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[$current.data.meta]]"></oj-bind-text></span></oj-bind-if></div></template>
-              </oj-bind-for-each>
-            </div>
-            <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
-            <div class="factory-ai-suggest">
-              <oj-bind-for-each data="[[ai.suggestions]]">
-                <template><button type="button" class="fx-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-              </oj-bind-for-each>
-            </div>
-          </oj-bind-if>
-          <oj-bind-if test="[[aiTab() === 'actions']]">
-            <div class="factory-bt-actions factory-bt-aiactions">
-              <oj-bind-for-each data="[[aiActions]]">
-                <template><button type="button" class="fx-btn fx-btn--secondary fx-btn--block factory-bt-qa" :disabled="[[$current.data.disabled]]" :data-fx-tip="[[$current.data.title || null]]" on-click="[[$current.data.run]]"><span :class="[[$current.data.icon]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-              </oj-bind-for-each>
-            </div>
-          </oj-bind-if>
+          <oj-bind-if test="[[ai.waiting()]]"><p class="factory-ai-busy">Thinking...</p></oj-bind-if>
+          <div class="factory-ai-suggest">
+            <oj-bind-for-each data="[[ai.suggestions]]">
+              <template><button type="button" class="fx-chip" on-click="[[$current.data.ask]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
           <div class="factory-ai-input">
             <fx-input id="buildAsk" class="factory-grow" label="Ask" hide-label placeholder="Ask about the build or tests..." value="{{ai.input}}" on-fx-enter="[[ai.send]]"></fx-input>
             <button type="button" class="fx-btn fx-btn--primary fx-btn--icon" aria-label="Send" data-fx-tip="Send" on-click="[[ai.send]]" :disabled="[[ai.busy]]">
@@ -327,17 +314,4 @@
       </div>
     </div>
   </oj-bind-if>
-
-  <fx-sheet id="buildLogSheet" open="{{fullLogOpen}}" heading="[[fullLogTitle]]" subtitle="[[fullLogSubtitle]]" wide>
-    <div class="factory-bt-sheet">
-      <div class="factory-bt-sheethead">
-        <oj-bind-if test="[[logStatus()]]"><span :class="[[logStatus().css]]"><span :class="[[logStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[logStatus().text]]"></oj-bind-text></span></oj-bind-if>
-        <oj-bind-if test="[[isLive()]]"><span class="fx-live">Live, updates while it runs</span></oj-bind-if>
-        <oj-bind-if test="[[consoleUrl()]]"><a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[consoleUrl]]" target="_blank" rel="noopener noreferrer"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Open the Jenkins console</a></oj-bind-if>
-        <a class="fx-btn fx-btn--secondary fx-btn--sm" :href="[[logDownload]]" download="build-log.txt">Download</a>
-      </div>
-      <pre class="fx-log factory-bt-fulllog" id="buildFullLog"><oj-bind-text value="[[logText]]"></oj-bind-text></pre>
-      <oj-bind-if test="[[logRoundBuild()]]"><p class="fx-help">The factory keeps an excerpt of each Jenkins console (the end of the log and the error lines). The full console is in Jenkins.</p></oj-bind-if>
-    </div>
-  </fx-sheet>
 </div>

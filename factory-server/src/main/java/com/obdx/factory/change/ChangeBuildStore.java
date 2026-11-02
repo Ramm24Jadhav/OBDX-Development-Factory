@@ -49,6 +49,21 @@ public class ChangeBuildStore {
                 result, json.writeValueAsString(errors), logExcerpt, Timestamp.from(java.time.Instant.now()), id);
     }
 
+    /**
+     * Closes a change's rounds that have no result, as NOT_BUILT with the reason: the build ended (it could not reach
+     * Jenkins, or the server restarted) before Jenkins answered, so they will never get one. Returns how many.
+     */
+    public int closeUnfinished(UUID changeId, String reason) {
+        return jdbc.update("UPDATE change_build SET result = 'NOT_BUILT', errors = ?, finished_at = ? WHERE change_id = ? AND finished_at IS NULL",
+                json.writeValueAsString(List.of(reason)), Timestamp.from(java.time.Instant.now()), changeId);
+    }
+
+    /** The same for every change, after a restart. */
+    public int closeAllUnfinished(String reason) {
+        return jdbc.update("UPDATE change_build SET result = 'NOT_BUILT', errors = ?, finished_at = ? WHERE finished_at IS NULL",
+                json.writeValueAsString(List.of(reason)), Timestamp.from(java.time.Instant.now()));
+    }
+
     public void fixed(UUID id, List<String> files) {
         jdbc.update("UPDATE change_build SET fixed_files = ? WHERE id = ?", json.writeValueAsString(files), id);
     }
