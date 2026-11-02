@@ -18,7 +18,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const VIEW_LINES = 4000;
     const plural = (n, word) => n.toLocaleString() + ' ' + word + (n === 1 ? '' : 's');
     // The repository's latest revision, from a check the user ran (POST svn/test), per workspace for this browser session
-    const headChecks = {};
+    const headChecks = workspaceSelection.headChecks;
 
     /** "4m 32s", "12s" */
     function duration(ms) {
@@ -906,9 +906,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.tab('search');
           this.query(requested);
         }
+        // A file another page asked to open (Knowledge Explorer): the viewer shows it at its lines
+        const wantedFile = pageRequests.codeFile();
+        pageRequests.codeFile(null);
+        if (wantedFile) {
+          this.tab('search');
+        }
         // If loading the list changed the selection, the subscription has already loaded the workspace.
         workspaceSelection.load().then(() => (this.workspaceId() === before ? loadWorkspace(before) : null))
-          .then(() => { if (requested) { searchFor(requested); } }).catch(showError);
+          .then(() => {
+            if (requested) {
+              searchFor(requested);
+            }
+            if (wantedFile) {
+              const line = Math.max(1, wantedFile.startLine || 1);
+              this.openResult({ path: wantedFile.path, startLine: line, endLine: Math.max(line, wantedFile.endLine || line), kind: 'file', language: wantedFile.language || '' });
+            }
+          }).catch(showError);
         // Searches from the top bar while this page is open
         searchSubscription = pageRequests.codeSearch.subscribe((text) => {
           if (text) {

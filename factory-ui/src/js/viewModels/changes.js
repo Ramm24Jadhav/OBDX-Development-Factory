@@ -9,7 +9,7 @@
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
         '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/busy',
-        '../services/codeHighlight', 'ojs/ojknockout'],
+        '../services/syntax', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService, highlight) {
     const POLL_MS = 2000;
     // A status badge (design system fx-badge, with a dot) from the older tone names
@@ -678,10 +678,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!file) {
           return [];
         }
-        const lang = highlight.languageOf(file.path);
+        const lang = highlight.langOf(file.path);
         const state = highlight.start();
         if (this.fileMode() === 'full') {
-          return (file.generated || file.original || '').split('\n').map((line, i) => ({ n: i + 1, sign: '', text: line, html: highlight.line(line, lang, state), css: 'factory-ch-line' }));
+          return (file.generated || file.original || '').split('\n').map((line, i) => ({ n: i + 1, sign: '', text: line, html: highlight.html(line, lang, state), css: 'factory-ch-line' }));
         }
         if (!file.diff) {
           const empty = file.generated === null ? '(not written yet)' : '(no changes)';
@@ -702,7 +702,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
           return {
             n: sign === '-' ? '' : n, sign: sign === '+' || sign === '-' ? sign : '', text: line.slice(1),
-            html: highlight.line(line.slice(1), lang, sign === '-' ? oldState : state),
+            html: highlight.html(line.slice(1), lang, sign === '-' ? oldState : state),
             css: 'factory-ch-line' + (sign === '+' ? ' factory-ch-add' : sign === '-' ? ' factory-ch-del' : '')
           };
         });
@@ -719,7 +719,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         let adds = [];
         let oldN = 0;
         let newN = 0;
-        const lang = highlight.languageOf(file.path);
+        const lang = highlight.langOf(file.path);
         const left = highlight.start();
         const right = highlight.start();
         const flush = () => {
@@ -728,7 +728,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             const r = adds[i];
             rows.push({
               css: 'factory-ch-srow', ln: l ? l.n : '', lt: l ? l.text : '', rn: r ? r.n : '', rt: r ? r.text : '',
-              lhtml: l ? highlight.line(l.text, lang, left) : '', rhtml: r ? highlight.line(r.text, lang, right) : '',
+              lhtml: l ? highlight.html(l.text, lang, left) : '', rhtml: r ? highlight.html(r.text, lang, right) : '',
               lcss: 'factory-ch-sside' + (l ? ' factory-ch-del' : ' factory-ch-sempty'), rcss: 'factory-ch-sside' + (r ? ' factory-ch-add' : ' factory-ch-sempty')
             });
           }
@@ -751,8 +751,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             adds.push({ n: ++newN, text: line.slice(1) });
           } else {
             flush();
-            rows.push({ css: 'factory-ch-srow', ln: ++oldN, lt: line.slice(1), rn: ++newN, rt: line.slice(1), lhtml: highlight.line(line.slice(1), lang, left),
-              rhtml: highlight.line(line.slice(1), lang, right), lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
+            rows.push({ css: 'factory-ch-srow', ln: ++oldN, lt: line.slice(1), rn: ++newN, rt: line.slice(1), lhtml: highlight.html(line.slice(1), lang, left),
+              rhtml: highlight.html(line.slice(1), lang, right), lcss: 'factory-ch-sside', rcss: 'factory-ch-sside' });
           }
         });
         flush();

@@ -1,7 +1,8 @@
 /*
- * Simple client-side syntax colouring for code viewers: keywords, types, strings, annotations, numbers, comments, tags
- * and attributes. No library; it colours by pattern, line by line, carrying block comments across lines.
- * tokenize() returns [{text, css}] with css 'fx-syn-<kind>' (styled in app.css with theme tokens).
+ * Simple client-side syntax colouring for every code viewer (Code, Changes, Knowledge Explorer): keywords, types,
+ * strings, annotations, numbers, comments, tags and attributes. No library; it colours by pattern, line by line,
+ * carrying block comments across lines. tokenize() returns [{text, css}] with css 'fx-syn-<kind>'; html() returns the
+ * same line as escaped HTML. The colours are theme tokens in app.css (a page with a dark code pane sets its own).
  */
 define([], function () {
   const KEYWORDS = {
@@ -107,5 +108,15 @@ define([], function () {
     return out.map((t) => ({ text: t.text, css: t.kind ? 'fx-syn-' + t.kind : '' }));
   }
 
-  return { langOf: langOf, tokenize: tokenize };
+  const escape = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  /** A fresh state for a file; pass the same one to every line of it in order. */
+  const start = () => ({ inBlock: false });
+
+  /** One line as escaped HTML with <span class="fx-syn-..."> around the coloured parts. */
+  function html(text, lang, state) {
+    return tokenize(text, lang, state).map((t) => (t.css ? '<span class="' + t.css + '">' + escape(t.text) + '</span>' : escape(t.text))).join('');
+  }
+
+  return { langOf: langOf, tokenize: tokenize, start: start, html: html, escape: escape };
 });

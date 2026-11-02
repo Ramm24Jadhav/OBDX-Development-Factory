@@ -1,108 +1,30 @@
 /*
- * Knowledge Explorer page: browse the workspace's indexed code as a tree, read a file with simple syntax colouring and
- * its details (size, lines, revision, what it imports, what mentions it, the endpoints it serves, comments,
- * requirements that link it), the API and screen inventory from the modernization scan, the business rules of the
- * requirements and the code they link, a dependency diagram, code search, and AI insights on the open file.
- * Files and content come from /files (a server without it falls back to code search hits).
+ * Knowledge Explorer page: the workspace's bank code as indexed by the factory. Browse it as a tree, read a file with
+ * syntax colouring (services/syntax.js) and its details (size, lines, revision, what it imports, what mentions it, the
+ * endpoints it serves, comments, requirements that link it), search file names and the indexed code, the API and
+ * screen inventory from the modernization scan, the business rules of the requirements and the code they link, a
+ * dependency diagram, and AI insights on the open file. The index's revision and freshness show at the top: the
+ * repository's latest revision is only known from a check run on the Code page (it is not asked for here).
+ * AI answers are marked as such, cite the file's lines, and name any manual they use. A file opens in the Code page's
+ * viewer at its lines (pageRequests.codeFile). Files and content come from /files (an older server falls back to
+ * code search hits).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/assistant',
-        '../services/pageRequests', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, ui, assistant, pageRequests, toast) {
+        '../services/pageRequests', '../services/toast', '../services/syntax', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, ui, assistant, pageRequests, toast, syntax) {
     const size = (bytes) => (bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : bytes >= 1024 ? (bytes / 1024).toFixed(1) + ' KB' : bytes + ' B');
     const MAX_LINES = 3000;
+    // The AI gets the open file with line numbers, up to this many characters
+    const AI_CHARS = 15000;
+    const langOf = syntax.langOf;
+    const tokenize = syntax.tokenize;
+    // A failed request in plain words: a network failure says to check the connection
+    const plain = (error) => (/Failed to fetch|NetworkError|Load failed/i.test((error && error.message) || '')
+      ? 'Could not reach the factory. Check your connection, then try again.' : (error && error.message) || 'Something went wrong. Try again.');
+    const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
+    // Line references in an AI answer: "lines 12-20", "line 7", "L12-L20", "path:12-20"
+    const CITE = /(?:\blines?\s+|\bL|:)(\d{1,6})(?:\s*(?:-|–|to)\s*L?(\d{1,6}))?/gi;
 
-    // Simple client-side syntax colouring: keywords, strings, annotations, numbers, comments, tags
-    const KEYWORDS = {
-      java: 'abstract assert boolean break byte case catch char class continue default do double else enum extends final finally float for if implements import instanceof int interface long new package private protected public return short static super switch synchronized this throw throws transient try void volatile while var record true false null',
-      javascript: 'async await break case catch class const continue debugger default delete do else export extends finally for from function if import in instanceof let new of return super switch this throw try typeof var void while yield true false null undefined define require',
-      sql: 'select from where insert into update delete create replace table view index alter drop and or not null primary key foreign references values set join left right inner outer on group by order having as begin end procedure function trigger grant varchar varchar2 number integer date commit constraint default unique sequence'
-    };
-    const KW = {};
-    Object.keys(KEYWORDS).forEach((k) => { KW[k] = {}; KEYWORDS[k].split(' ').forEach((w) => { KW[k][w] = true; }); });
-    const C_RULES = [[/^\/\/.*/, 'com'], [/^"(?:\\.|[^"\\])*"?/, 'str'], [/^'(?:\\.|[^'\\])*'?/, 'str'], [/^`[^`]*`?/, 'str'], [/^@[A-Za-z_]\w*/, 'ann'], [/^\d[\d._]*[lLfFdD]?\b/, 'num'], [/^[A-Za-z_$][\w$]*/, 'word']];
-    const RULES = {
-      java: C_RULES, javascript: C_RULES, css: [[/^"[^"]*"?/, 'str'], [/^'[^']*'?/, 'str'], [/^#[\w-]+|^\.[\w-]+/, 'ann'], [/^\d[\d.]*\w*/, 'num']],
-      html: [[/^\[\[[^\]]*\]\]/, 'ann'], [/^<\/?[\w:.-]+/, 'tag'], [/^\/?>/, 'tag'], [/^[\w:.-]+(?==)/, 'attr'], [/^"[^"]*"?/, 'str'], [/^'[^']*'?/, 'str']],
-      sql: [[/^--.*/, 'com'], [/^'(?:''|[^'])*'?/, 'str'], [/^\d+(\.\d+)?/, 'num'], [/^[A-Za-z_][\w$#]*/, 'word']],
-      plain: []
-    };
-    const BLOCK = { java: ['/*', '*/'], javascript: ['/*', '*/'], css: ['/*', '*/'], sql: ['/*', '*/'], html: ['<!--', '-->'] };
-    const langOf = (path, language) => {
-      const ext = (path.split('.').pop() || '').toLowerCase();
-      if (ext === 'java' || language === 'java') {
-        return 'java';
-      }
-      if (/^(js|jsx|ts|tsx|json|mjs)$/.test(ext) || language === 'javascript' || language === 'typescript') {
-        return 'javascript';
-      }
-      if (/^(html|htm|xml|xhtml|jsp|vue)$/.test(ext) || language === 'html' || language === 'xml') {
-        return 'html';
-      }
-      if (ext === 'sql' || language === 'sql') {
-        return 'sql';
-      }
-      if (/^(css|scss|less)$/.test(ext)) {
-        return 'css';
-      }
-      return 'plain';
-    };
-    const tokenize = (text, lang, state) => {
-      const out = [];
-      const push = (t, kind) => {
-        if (!t) {
-          return;
-        }
-        const last = out[out.length - 1];
-        if (last && last.kind === kind) {
-          last.text += t;
-        } else {
-          out.push({ text: t, kind: kind });
-        }
-      };
-      const block = BLOCK[lang];
-      const rules = RULES[lang] || [];
-      let i = 0;
-      while (i < text.length) {
-        if (state.inBlock) {
-          const end = text.indexOf(block[1], i);
-          if (end < 0) {
-            push(text.slice(i), 'com');
-            break;
-          }
-          push(text.slice(i, end + block[1].length), 'com');
-          i = end + block[1].length;
-          state.inBlock = false;
-          continue;
-        }
-        const rest = text.slice(i);
-        if (block && rest.indexOf(block[0]) === 0) {
-          state.inBlock = true;
-          push(block[0], 'com');
-          i += block[0].length;
-          continue;
-        }
-        let matched = false;
-        for (let r = 0; r < rules.length; r++) {
-          const m = rules[r][0].exec(rest);
-          if (m && m[0]) {
-            let kind = rules[r][1];
-            if (kind === 'word') {
-              const words = KW[lang] || {};
-              kind = words[lang === 'sql' ? m[0].toLowerCase() : m[0]] ? 'kw' : (lang === 'java' && /^[A-Z]/.test(m[0]) ? 'type' : '');
-            }
-            push(m[0], kind);
-            i += m[0].length;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) {
-          push(text.charAt(i), '');
-          i += 1;
-        }
-      }
-      return out.map((t) => ({ text: t.text, css: t.kind ? 'factory-kn-' + t.kind : '' }));
-    };
     // Re-indents brace languages by nesting depth (display only)
     const reindent = (lines, lang) => {
       if (lang !== 'java' && lang !== 'javascript' && lang !== 'css') {
@@ -122,7 +44,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     function KnowledgeViewModel() {
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
-      const showError = (error) => this.errorMessage(error.message);
+      const showError = (error) => this.errorMessage(plain(error));
       this.workspace = ko.observable(null);
       this.index = ko.observable(null);
       this.inventory = ko.observable(null);
@@ -130,25 +52,61 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.fallback = ko.observable(false);
       const requirements = ko.observableArray([]);
 
-      this.kpis = ko.pureComputed(() => {
+      // The index: its revision, size and last import; the repository's latest revision only from a check on the Code page
+      this.lastImport = ko.observable(null);
+      this.headCheck = ko.observable(null);
+      this.indexFacts = ko.pureComputed(() => {
         const s = this.index();
-        const inv = this.inventory() ? this.inventory().summary : null;
-        const langs = s ? s.filesByLanguage : {};
-        return [
-          { label: 'Total Files', value: s ? s.files.toLocaleString() : '–', sub: s ? s.chunks.toLocaleString() + ' searchable pieces' : '', tone: 'blue', icon: 'doc' },
-          { label: 'Modules', value: inv ? inv.modules : '–', sub: 'UI modules in the scan', tone: 'green', icon: 'cube' },
-          { label: 'API Endpoints', value: inv ? inv.endpoints : '–', sub: 'REST services in this code', tone: 'violet', icon: 'link' },
-          { label: 'UI Components', value: inv ? inv.screens : '–', sub: 'Screens and components', tone: 'blue', icon: 'monitor' },
-          { label: 'Database Objects', value: langs.sql || 0, sub: 'SQL files', tone: 'amber', icon: 'cube' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+        if (!s || s.indexedRevision === null || s.indexedRevision === undefined) {
+          return s ? 'Not imported yet' : '';
+        }
+        const last = this.lastImport();
+        return 'Index at r' + s.indexedRevision + ' · ' + s.files.toLocaleString() + ' files · ' + s.chunks.toLocaleString() + ' searchable pieces'
+          + (last && last.finishedAt ? ' · imported ' + ui.when(last.finishedAt) : '');
       });
+      this.freshness = ko.pureComputed(() => {
+        const s = this.index();
+        const head = this.headCheck();
+        if (!s || s.indexedRevision === null || s.indexedRevision === undefined) {
+          return { pill: ui.status('NEW', 'Not imported'), text: 'Import the code on the Code page to explore it.' };
+        }
+        if (!head) {
+          return { pill: ui.status('DRAFT', 'Freshness not checked'), text: 'The repository\'s latest revision is not known in this session. Check for new commits on the Code page.' };
+        }
+        if (!head.ok) {
+          return { pill: ui.status('FAILED', 'Repository not reachable'), text: 'The last check (' + head.at + ') could not read the repository: ' + head.error };
+        }
+        const behind = Math.max(0, head.revision - s.indexedRevision);
+        return behind ? { pill: ui.status('WARNING', behind + (behind === 1 ? ' revision' : ' revisions') + ' behind'), text: 'The repository is at r' + head.revision + ' (checked ' + head.at + '). Reindex on the Code page to explore the latest code.' }
+          : { pill: ui.status('SUCCEEDED', 'Up to date'), text: 'The index matches the repository\'s latest revision, r' + head.revision + ' (checked ' + head.at + ').' };
+      });
+      this.openCodePage = () => navigate('code');
       this.tab = ko.observable('code');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'code', label: 'Code Explorer', icon: 'code' }, { value: 'apis', label: 'API Explorer', icon: 'link' },
-        { value: 'ui', label: 'UI Components', icon: 'monitor' }, { value: 'logic', label: 'Business Logic', icon: 'cube' },
-        { value: 'search', label: 'Search Result', icon: 'search' }, { value: 'dependencies', label: 'Dependencies', icon: 'plug' },
-        { value: 'diagrams', label: 'Diagrams', icon: 'share' }
+        { value: 'code', label: 'Code', icon: 'code' }, { value: 'search', label: 'Search', icon: 'search' },
+        { value: 'apis', label: 'APIs', icon: 'link', count: ko.pureComputed(() => (this.inventory() ? this.inventory().endpoints.length : 0)) },
+        { value: 'ui', label: 'Screens', icon: 'monitor', count: ko.pureComputed(() => (this.inventory() ? this.inventory().screens.length : 0)) },
+        { value: 'dependencies', label: 'Service calls', icon: 'plug' }, { value: 'diagrams', label: 'Diagram', icon: 'share' },
+        { value: 'logic', label: 'Business rules', icon: 'cube' }
       ]);
+      // Arrow keys, Home and End move between tabs (WAI-ARIA tabs pattern); ids are prefix + value
+      const tabKeys = (selected, list, prefix) => (event) => {
+        const keys = list.map((t) => t.value);
+        const at = keys.indexOf(selected());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        selected(keys[next]);
+        const button = document.getElementById(prefix + keys[next]);
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
+      this.tabKey = tabKeys(this.tab, this.tabs, 'kn-');
 
       // The project tree: folders open and close; files open in the viewer
       this.folder = ko.observable('');
@@ -237,14 +195,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return f.pieceLines || f.content.split('\n').map((t, i) => ({ n: i + 1, text: t, marker: false }));
       });
       this.tooLong = ko.pureComputed(() => sourceLines().length > MAX_LINES);
+      // Lines picked from an AI citation: {from, to}, marked in the viewer
+      this.focus = ko.observable(null);
       this.lines = ko.pureComputed(() => {
         const src = sourceLines().slice(0, MAX_LINES);
         const lang = this.lang();
         const texts = this.formatted() ? reindent(src.map((l) => (l.marker ? '' : l.text)), lang) : src.map((l) => l.text);
-        const state = { inBlock: false };
+        const state = syntax.start();
+        const focus = this.focus();
         return src.map((l, i) => (l.marker
-          ? { n: '', tokens: [{ text: l.text, css: 'factory-kn-marker' }], css: 'factory-kn-line factory-kn-markerline' }
-          : { n: l.n, tokens: tokenize(texts[i], lang, state), css: 'factory-kn-line' }));
+          ? { n: '', id: null, tokens: [{ text: l.text, css: 'factory-kn-marker' }], css: 'factory-kn-line factory-kn-markerline' }
+          : { n: l.n, id: 'kn-line-' + l.n, tokens: tokenize(texts[i], lang, state), css: 'factory-kn-line' + (focus && l.n >= focus.from && l.n <= focus.to ? ' is-hit' : '') }));
       });
 
       // What the file depends on, what mentions it, its APIs and comments
@@ -291,7 +252,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.comments = ko.pureComputed(() => {
         const list = [];
         this.lines().forEach((l) => {
-          const text = l.tokens.filter((t) => t.css === 'factory-kn-com').map((t) => t.text).join(' ').replace(/^\s*(\/\*\*?|\/\/|<!--|\*|--)\s*|\s*(\*\/|-->)\s*$/g, '').trim();
+          const text = l.tokens.filter((t) => t.css === 'fx-syn-com').map((t) => t.text).join(' ').replace(/^\s*(\/\*\*?|\/\/|<!--|\*|--)\s*|\s*(\*\/|-->)\s*$/g, '').trim();
           if (text && l.n !== '' && !/^\*+$/.test(text)) {
             list.push({ n: l.n, text: text });
           }
@@ -301,11 +262,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.codeTab = ko.observable('code');
       this.codeTabs = ui.tabs(this.codeTab, [
         { value: 'code', label: 'Code' }, { value: 'deps', label: 'Dependencies', count: ko.pureComputed(() => this.imports().length) },
-        { value: 'usedby', label: 'Used By', count: ko.pureComputed(() => (this.usedBy() ? this.usedBy().length : 0)) },
+        { value: 'usedby', label: 'Mentioned in', count: ko.pureComputed(() => (this.usedBy() ? this.usedBy().length : 0)) },
         { value: 'apis', label: 'Related APIs', count: ko.pureComputed(() => this.relatedApis().length) },
         { value: 'comments', label: 'Comments', count: ko.pureComputed(() => this.comments().length) }
       ]);
       this.codeTab.subscribe((v) => { if (v === 'usedby') { loadUsedBy(); } });
+      this.codeTabKey = tabKeys(this.codeTab, this.codeTabs, 'knc-');
       this.showDeps = () => this.codeTab('deps');
       this.showUsedBy = () => this.codeTab('usedby');
       this.showApis = () => this.codeTab('apis');
@@ -324,6 +286,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           name: f.path.split('/').pop(), folder: f.path.split('/').slice(0, -1).join('/'), type: kind, size: f.partial ? 'Not listed by this server' : size(f.sizeBytes || f.content.length),
           lines: f.partial ? 'Not known (indexed pieces only)' : f.lines + (f.truncated ? ' (shown up to 512 KB)' : ''),
           revision: f.revision ? 'r' + f.revision : (indexRevision() ? 'r' + indexRevision() + ' or earlier' : '–'),
+          indexed: indexRevision() ? 'r' + indexRevision() : 'Not imported',
           endpoints: this.relatedApis().filter((a) => a.note.indexOf('Served') === 0).map((a) => ({ method: a.method, path: a.path, code: a.note.replace('Served here: ', ''), methodCss: a.methodCss })),
           related: related.map((r) => ({ code: 'REQ-' + r.id.replace(/-/g, '').slice(0, 4).toUpperCase(), title: r.title })),
           tags: tags.map((t) => ({ text: t, css: 'fx-chip factory-kn4-tag' })),
@@ -333,6 +296,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.openFile = (path) => {
         this.loadingFile(true);
         this.usedBy(null);
+        this.focus(null);
         this.codeTab('code');
         const id = this.workspaceId();
         api.get('workspaces/' + id + '/files/content?path=' + encodeURIComponent(path))
@@ -374,6 +338,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         open(o);
         this.folder(parts.slice(0, -1).join('/'));
       };
+      // The Code page's viewer, at the given lines (or the cited ones, or the top)
+      const openInCode = (path, from, to) => {
+        pageRequests.codeFile({ path: path, startLine: from || 1, endLine: to || from || 1 });
+        navigate('code');
+      };
+      this.openInCode = () => {
+        const f = this.file();
+        if (f) {
+          const focus = this.focus();
+          openInCode(f.path, focus ? focus.from : 1, focus ? focus.to : 1);
+        }
+      };
       this.searchUsages = () => { if (this.file()) { this.query(this.file().path.split('/').pop().replace(/\.\w+$/, '')); this.tab('search'); this.search(); } };
 
       // File Details menu
@@ -388,6 +364,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.menuSearch = () => { this.fileMenu.close(); this.searchUsages(); };
       this.menuExplain = () => { this.fileMenu.close(); this.explain(); };
+      this.menuOpenInCode = () => { this.fileMenu.close(); this.openInCode(); };
 
       // Search
       this.query = ko.observable('');
@@ -399,10 +376,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.searching(true);
+        this.searchError('');
         api.get('workspaces/' + this.workspaceId() + '/search?q=' + encodeURIComponent(this.query()))
-          .then((res) => { this.results(res.results.map((r) => Object.assign({}, r, { open: () => { this.tab('code'); this.openFile(r.path); } }))); this.searchNote(res.results.length ? (res.semanticNote || '') : 'No matches.'); })
-          .catch(showError).finally(() => this.searching(false));
+          .then((res) => {
+            this.results(res.results.map((r) => Object.assign({}, r, {
+              where: ' lines ' + r.startLine + '-' + r.endLine + ' · ' + r.kind + (r.symbol ? ' ' + r.symbol : '') + ' · ' + r.matchedBy,
+              open: () => { this.tab('code'); this.openFile(r.path); }, openInCode: () => openInCode(r.path, r.startLine, r.endLine)
+            })));
+            this.searchNote(res.results.length ? (res.semanticNote || '') : 'No matches in the indexed code.');
+          })
+          .catch((error) => { this.results([]); this.searchNote(''); this.searchError(plain(error)); })
+          .finally(() => this.searching(false));
       };
+      this.searchError = ko.observable('');
+      // File names that contain the words, from the index's file list (no request)
+      this.fileMatches = ko.pureComputed(() => {
+        const words = this.searchedFor().toLowerCase().split(/\s+/).filter(Boolean);
+        if (!words.length) {
+          return [];
+        }
+        return this.files().filter((x) => words.every((w) => x.path.toLowerCase().indexOf(w) >= 0)).slice(0, 50)
+          .map((x) => ({ path: x.path, language: x.language, open: () => { this.tab('code'); this.openFile(x.path); }, openInCode: () => openInCode(x.path, 1, 1) }));
+      });
+      this.searchedFor = ko.observable('');
+      const runSearch = this.search;
+      this.search = () => { this.searchedFor(this.query().trim()); runSearch(); };
       // Search options, the same as on the Code page: kinds of result and the top-level folder, applied to the results here
       this.inContent = ko.observable(true);
       this.inNames = ko.observable(true);
@@ -494,12 +492,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         usage: 'Where and how is this file used? Use the list of files that mention it when it is given.',
         suggest: 'Suggest improvements, risks and good places to change this file, briefly.'
       };
+      // Every insight asks for line citations from the numbered file it is given
+      const CITE_ASK = ' Base it on the file\'s code below, and cite the lines you rely on as "lines N-M" (the numbers before each line).';
       this.ai = assistant.create(() => {
         const f = this.file();
         const w = this.workspace();
         const users = this.usedBy() && this.usedBy().length ? '\nFiles that mention it: ' + this.usedBy().map((u) => u.path).join(', ') : '';
         const where = w ? 'Workspace: ' + w.name + ' (' + w.bankName + ', OBDX ' + w.obdxVersion + ')\n' : '';
-        return f ? where + 'File ' + f.path + ' (' + f.language + ', ' + (f.lines || 'some') + ' lines):\n' + f.content.slice(0, 15000) + users : '';
+        if (!f) {
+          return '';
+        }
+        // The file with its line numbers (the indexed pieces of an older server have none)
+        let numbered = '';
+        const rows = sourceLines();
+        for (let i = 0; i < rows.length && numbered.length < AI_CHARS; i++) {
+          numbered += (rows[i].n ? rows[i].n + '| ' : '') + rows[i].text + '\n';
+        }
+        return where + 'File ' + f.path + ' (' + f.language + ', ' + (f.lines || 'some') + ' lines):\n' + numbered.slice(0, AI_CHARS) + users;
       }, []);
       // The chips above AI Code Insights: exactly what the context above sends (nothing is sent without an open file)
       this.aiContext = ko.pureComputed(() => {
@@ -512,7 +521,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (w) {
           chips.push({ label: w.name + ' · OBDX ' + w.obdxVersion, title: 'Workspace ' + w.name + ' (' + w.bankName + ', OBDX ' + w.obdxVersion + ')' });
         }
-        chips.push({ label: f.path.split('/').pop(), title: f.path + (f.content.length > 15000 ? ' (the first 15,000 characters)' : '') + (f.partial ? ' (indexed pieces only)' : '') });
+        chips.push({ label: f.path.split('/').pop(), title: f.path + (f.content.length > AI_CHARS ? ' (the first 15,000 characters, with line numbers)' : ' (with line numbers)') + (f.partial ? ' (indexed pieces only)' : '') });
         if (this.usedBy() && this.usedBy().length) {
           chips.push({ label: this.usedBy().length + ' file' + (this.usedBy().length === 1 ? '' : 's') + ' that mention it', title: this.usedBy().map((u) => u.path).join(', ') });
         }
@@ -522,18 +531,68 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.insightTabs = ui.tabs(this.insightTab, [
         { value: 'summary', label: 'Summary' }, { value: 'explain', label: 'Explain' }, { value: 'usage', label: 'Find Usage' }, { value: 'suggest', label: 'Suggest Changes' }
       ]);
+      this.insightKey = tabKeys(this.insightTab, this.insightTabs, 'kni-');
       const replies = ko.observable({});
       let pending = null;
       this.ai.messages.subscribe((list) => {
         const last = list[list.length - 1];
         if (pending && last && !last.mine) {
           const m = Object.assign({}, replies());
-          m[pending] = { text: last.text, meta: last.meta, css: last.css.indexOf('error') >= 0 ? 'factory-kn-insight factory-kn-insight-bad' : 'factory-kn-insight' };
+          m[pending] = { text: last.text, meta: last.meta, sources: last.sources || ko.observable([]), path: this.file() ? this.file().path : '',
+            css: ko.unwrap(last.css).indexOf('error') >= 0 ? 'factory-kn-insight factory-kn-insight-bad' : 'factory-kn-insight' };
           replies(m);
           pending = null;
         }
       });
       this.insight = ko.pureComputed(() => replies()[this.insightTab()] || null);
+      // The lines the answer cites (they open in the viewer), and the manuals it used, each named
+      this.citations = ko.pureComputed(() => {
+        const i = this.insight();
+        if (!i) {
+          return [];
+        }
+        const text = String(ko.unwrap(i.text) || '').replace(/\[\d+\]/g, '');
+        const seen = {};
+        const list = [];
+        let m;
+        CITE.lastIndex = 0;
+        while ((m = CITE.exec(text)) !== null && list.length < 20) {
+          const from = Number(m[1]);
+          const to = Math.max(from, Number(m[2] || m[1]));
+          const key = from + '-' + to;
+          if (from > 0 && !seen[key]) {
+            seen[key] = true;
+            list.push({ from: from, to: to, label: i.path.split('/').pop() + ' ' + (from === to ? 'line ' + from : 'lines ' + from + '-' + to),
+              show: () => this.showLines(i.path, from, to), open: () => openInCode(i.path, from, to) });
+          }
+        }
+        return list.sort((x, y) => x.from - y.from);
+      });
+      this.manualSources = ko.pureComputed(() => {
+        const i = this.insight();
+        return i ? (ko.unwrap(i.sources) || []).map((src) => ({
+          n: '[' + src.n + ']', kind: src.bank ? 'Bank document' : src.kind === 'note' || src.noteId ? 'Knowledge note' : 'Oracle manual',
+          title: src.title + (src.heading ? ': ' + src.heading : ''),
+          where: (src.obdxVersion ? 'OBDX ' + src.obdxVersion : '') + (src.pageFrom ? ', pages ' + src.pageFrom + (src.pageTo && src.pageTo !== src.pageFrom ? '-' + src.pageTo : '') : '')
+        })) : [];
+      });
+      // Shows cited lines in the viewer (the file must still be the one open)
+      this.showLines = (path, from, to) => {
+        if (!this.file() || this.file().path !== path) {
+          toast.info('Open ' + path.split('/').pop() + ' again to see these lines.');
+          return;
+        }
+        this.tab('code');
+        this.codeTab('code');
+        this.focus({ from: from, to: to });
+        window.setTimeout(() => {
+          const box = document.getElementById('fileCode');
+          const line = document.getElementById('kn-line-' + from);
+          if (box && line) {
+            box.scrollTop = Math.max(0, line.offsetTop - box.offsetTop - 40);
+          }
+        }, 50);
+      };
       this.insightHint = ko.pureComputed(() => (this.file() ? 'Press Generate to have the AI ' + { summary: 'summarize', explain: 'explain', usage: 'find the usage of', suggest: 'suggest changes to' }[this.insightTab()] + ' this file.' : 'Open a file first.'));
       this.generate = () => {
         if (!this.file() || this.ai.busy()) {
@@ -543,7 +602,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (pending === 'usage') {
           loadUsedBy();
         }
-        this.ai.ask(INSIGHT_PROMPTS[pending]);
+        this.ai.ask(INSIGHT_PROMPTS[pending] + CITE_ASK);
       };
       this.explain = () => { this.insightTab('explain'); this.generate(); };
       this.explainLogic = () => { this.insightTab('explain'); this.generate(); };
@@ -572,13 +631,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.folder('');
         this.inventory(null);
         this.index(null);
+        this.lastImport(null);
         this.errorMessage('');
         replies({});
+        this.headCheck(id ? workspaceSelection.headChecks[id] || null : null);
         if (!id) {
           return;
         }
         api.get('workspaces/' + id).then((w) => this.workspace(w)).catch(() => null);
         api.get('workspaces/' + id + '/index').then((s) => this.index(s)).catch(() => null);
+        api.get('workspaces/' + id + '/imports').then((jobs) => this.lastImport((jobs || []).filter((j) => j.status === 'SUCCEEDED')
+          .sort((x, y) => new Date(y.finishedAt) - new Date(x.finishedAt))[0] || null)).catch(() => null);
         api.get('workspaces/' + id + '/inventory').then((inv) => this.inventory(inv || null)).catch(() => null);
         api.get('workspaces/' + id + '/requirements').then((list) => Promise.all(list.map((r) => api.get('requirements/' + r.id).catch(() => null))))
           .then((list) => requirements(list.filter(Boolean))).catch(() => null);

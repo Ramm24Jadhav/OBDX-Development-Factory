@@ -1,25 +1,20 @@
 <div class="factory-pg factory-kn-page">
-  <div class="factory-pg-head">
-    <div>
-      <h1>OBDX Knowledge Explorer</h1>
-      <p>Search, explore and understand source code, APIs, UI components and business logic from your OBDX repositories</p>
-    </div>
-  </div>
+  <h1 class="fx-visually-hidden">Knowledge Explorer</h1>
+  <section class="factory-card factory-kn-repo" id="indexBar" aria-label="Repository and index">
+    <span class="factory-kn-reponame"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span><strong><oj-bind-text value="[[rootName]]"></oj-bind-text></strong>
+      <span class="factory-ov-subtle factory-mono factory-kn-repourl" :title="[[workspace() ? workspace().svnUrl : '']]"><oj-bind-text value="[[rootUrl]]"></oj-bind-text></span></span>
+    <span class="factory-kn-repofacts" id="indexFacts"><oj-bind-text value="[[indexFacts]]"></oj-bind-text></span>
+    <span :class="[[freshness().pill.css]]" id="indexFreshness" :title="[[freshness().text]]"><span :class="[[freshness().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[freshness().pill.text]]"></oj-bind-text></span>
+    <span class="fx-visually-hidden"><oj-bind-text value="[[freshness().text]]"></oj-bind-text></span>
+    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="openCodePage" on-click="[[openCodePage]]" :data-fx-tip="[[freshness().text]]"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Code page</button>
+  </section>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-kn4-alert" id="knowledgeError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
   <oj-bind-if test="[[fallback()]]"><p class="factory-kn-fallback" id="knowledgeFallback"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>This server cannot list files yet, so the tree shows the files code search finds. Update the factory to see every file.</p></oj-bind-if>
 
-  <div class="factory-kpis">
-    <oj-bind-for-each data="[[kpis]]">
-      <template><div class="factory-kpi"><span :class="[['fx-kpi-icon ' + $current.data.iconCss]]"><span :class="[[$current.data.iconClass]]" aria-hidden="true"></span></span>
-        <span><span class="factory-kpi-label"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></span><span class="factory-kpi-value"><oj-bind-text value="[[$current.data.value]]"></oj-bind-text></span>
-          <span class="factory-kpi-sub"><oj-bind-text value="[[$current.data.sub]]"></oj-bind-text></span></span></div></template>
-    </oj-bind-for-each>
-  </div>
-
-  <div class="factory-tabbar" role="tablist" aria-label="Explorer views">
+  <div class="factory-tabbar factory-kn-tabs" role="tablist" aria-label="Explorer views" on-keydown="[[tabKey]]">
     <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['kn-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
+      <template><button type="button" role="tab" :id="[['kn-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]">
         <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
     </oj-bind-for-each>
   </div>
@@ -61,8 +56,8 @@
           </div>
         </section>
         <section class="factory-card factory-kn-codecard">
-          <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="File views">
-            <oj-bind-for-each data="[[codeTabs]]"><template><button type="button" role="tab" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+          <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="File views" on-keydown="[[codeTabKey]]">
+            <oj-bind-for-each data="[[codeTabs]]"><template><button type="button" role="tab" :id="[['knc-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
           </div>
           <div class="factory-kn-toolbar">
             <strong class="factory-kn-fname"><oj-bind-text value="[[file() ? file().path.split('/').pop() : 'Code']]"></oj-bind-text></strong>
@@ -75,9 +70,9 @@
           </div>
           <oj-bind-if test="[[loadingFile()]]"><div class="factory-kn4-loading" role="status"><span class="fx-skeleton"></span><span class="fx-skeleton"></span><span class="fx-skeleton"></span><span class="fx-visually-hidden">Loading...</span></div></oj-bind-if>
           <oj-bind-if test="[[file() && codeTab() === 'code']]">
-            <div class="factory-ch-lines factory-kn-code" id="fileCode">
+            <div class="factory-ch-lines factory-kn-code" id="fileCode" tabindex="0" aria-label="Code of the open file">
               <oj-bind-for-each data="[[lines]]" as="line">
-                <template><div :class="[[line.data.css]]"><span class="factory-ch-n"><oj-bind-text value="[[line.data.n]]"></oj-bind-text></span><span class="factory-ch-t"><oj-bind-for-each data="[[line.data.tokens]]" as="tok"><template><span :class="[[tok.data.css]]"><oj-bind-text value="[[tok.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></span></div></template>
+                <template><div :class="[[line.data.css]]" :id="[[line.data.id]]"><span class="factory-ch-n"><oj-bind-text value="[[line.data.n]]"></oj-bind-text></span><span class="factory-ch-t"><oj-bind-for-each data="[[line.data.tokens]]" as="tok"><template><span :class="[[tok.data.css]]"><oj-bind-text value="[[tok.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></span></div></template>
               </oj-bind-for-each>
             </div>
             <oj-bind-if test="[[tooLong()]]"><p class="factory-card-sub">Only the first 3000 lines are shown.</p></oj-bind-if>
@@ -91,7 +86,7 @@
           <oj-bind-if test="[[file() && codeTab() === 'usedby']]">
             <oj-bind-if test="[[usedBy() === null]]"><p class="fx-help" role="status">Searching the code...</p></oj-bind-if>
             <oj-bind-if test="[[usedBy() !== null]]">
-              <p class="factory-card-sub">Files whose indexed code mentions this file's name.</p>
+              <p class="factory-card-sub">Files whose indexed code mentions this file's name (from code search, so a mention is not always a use).</p>
               <ul class="factory-kn-plain"><oj-bind-for-each data="[[usedBy]]" as="use"><template><li><button type="button" class="factory-link-sm factory-mono" on-click="[[use.data.open]]"><oj-bind-text value="[[use.data.path]]"></oj-bind-text></button><span class="factory-ov-subtle"><oj-bind-text value="[[' ' + use.data.lines]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
               <oj-bind-if test="[[usedBy().length === 0]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>No other file mentions it.</div></oj-bind-if>
             </oj-bind-if>
@@ -115,11 +110,12 @@
         <section class="factory-card">
           <div class="factory-kn-cardhead"><h2>File Details</h2>
             <span class="factory-kn-headbtns">
-              <span class="factory-kn4-tipwrap" tabindex="0" data-fx-tip="The factory cannot open your IDE; copy the path from the menu instead"><button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm factory-kn4-tool" disabled><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Open in IDE</button></span>
+              <button type="button" id="openInCode" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openInCode]]" :disabled="[[!file()]]" data-fx-tip="Open this file in the Code page's viewer (at the lines picked from an AI citation)"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Open in Code</button>
               <span class="fx-menu-wrap">
                 <button type="button" class="fx-btn fx-btn--tertiary fx-btn--sm fx-btn--icon" on-click="[[fileMenu.toggle]]" :disabled="[[!file()]]" aria-haspopup="menu" :aria-expanded="[[fileMenu.open() ? 'true' : 'false']]" aria-label="More file actions"><span class="factory-nav-icon factory-ico-more" aria-hidden="true"></span></button>
                 <oj-bind-if test="[[fileMenu.open()]]">
                   <div class="fx-menu" role="menu" aria-label="File actions" on-keydown="[[fileMenu.key]]">
+                    <button type="button" role="menuitem" on-click="[[menuOpenInCode]]"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span>Open in Code</button>
                     <button type="button" role="menuitem" on-click="[[copyPath]]"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Copy path</button>
                     <button type="button" role="menuitem" on-click="[[menuSearch]]"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>Search usages</button>
                     <button type="button" role="menuitem" on-click="[[menuExplain]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Explain this file</button>
@@ -132,10 +128,11 @@
             <dl class="factory-kv factory-kn-kv">
               <dt>Type</dt><dd><oj-bind-text value="[[fileInfo().type]]"></oj-bind-text></dd>
               <dt>Size</dt><dd><oj-bind-text value="[[fileInfo().size]]"></oj-bind-text></dd>
-              <dt>Last Modified</dt><dd><oj-bind-text value="[[fileInfo().revision]]"></oj-bind-text></dd>
+              <dt>Last changed</dt><dd><oj-bind-text value="[[fileInfo().revision]]"></oj-bind-text></dd>
+              <dt>Index</dt><dd><oj-bind-text value="[[fileInfo().indexed]]"></oj-bind-text></dd>
               <dt>Lines of Code</dt><dd><oj-bind-text value="[[fileInfo().lines]]"></oj-bind-text></dd>
               <dt>Dependencies</dt><dd class="factory-kn-viewrow"><oj-bind-text value="[[imports().length + ' imports']]"></oj-bind-text><button type="button" class="factory-link-sm" on-click="[[showDeps]]">View</button></dd>
-              <dt>Used By</dt><dd class="factory-kn-viewrow"><oj-bind-text value="[[usedBy() === null ? 'Not searched yet' : usedBy().length + ' files']]"></oj-bind-text><button type="button" class="factory-link-sm" on-click="[[showUsedBy]]">View</button></dd>
+              <dt>Mentioned in</dt><dd class="factory-kn-viewrow"><oj-bind-text value="[[usedBy() === null ? 'Not searched yet' : usedBy().length + ' files']]"></oj-bind-text><button type="button" class="factory-link-sm" on-click="[[showUsedBy]]">View</button></dd>
               <dt>Related APIs</dt><dd class="factory-kn-viewrow"><oj-bind-text value="[[relatedApis().length + ' endpoints']]"></oj-bind-text><button type="button" class="factory-link-sm" on-click="[[showApis]]">View</button></dd>
             </dl>
             <div class="factory-kn-tags" aria-label="Tags"><oj-bind-for-each data="[[fileInfo().tags]]"><template><span :class="[[$current.data.css]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></div>
@@ -143,8 +140,8 @@
           </oj-bind-if>
           <oj-bind-if test="[[!fileInfo()]]"><div class="fx-empty factory-ov-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span></span>No file open.</div></oj-bind-if>
         </section>
-        <section class="factory-card factory-kn-insights">
-          <div class="factory-kn-cardhead"><h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Code Insights</span></h2>
+        <section class="factory-card factory-kn-insights" aria-labelledby="insightsTitle">
+          <div class="factory-kn-cardhead"><h2 id="insightsTitle"><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>AI Code Insights</span></h2>
             <div class="fx-split">
               <button type="button" id="generateButton" :class="[[ai.busy() ? 'fx-btn fx-btn--primary fx-btn--sm is-loading' : 'fx-btn fx-btn--primary fx-btn--sm']]" on-click="[[generate]]" :disabled="[[!file() || ai.busy()]]"><oj-bind-text value="[[ai.busy() ? 'Generating...' : 'Generate']]"></oj-bind-text></button>
               <button type="button" id="generateMenuButton" class="fx-btn fx-btn--primary fx-btn--sm fx-split-toggle" on-click="[[genMenu.toggle]]" :disabled="[[!file() || ai.busy()]]" aria-haspopup="menu" :aria-expanded="[[genMenu.open() ? 'true' : 'false']]" aria-label="Choose what to generate"><span class="fx-caret" aria-hidden="true"></span></button>
@@ -158,12 +155,26 @@
             <oj-bind-for-each data="[[aiContext]]" as="cx"><template><span class="fx-chip" :title="[[cx.data.title]]"><oj-bind-text value="[[cx.data.label]]"></oj-bind-text></span></template></oj-bind-for-each>
             <oj-bind-if test="[[aiContext().length === 0]]"><span class="factory-ov-subtle">nothing yet; open a file</span></oj-bind-if>
           </div>
-          <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="Insight kinds">
-            <oj-bind-for-each data="[[insightTabs]]"><template><button type="button" role="tab" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+          <div class="factory-subtabs factory-kn-subtabs" role="tablist" aria-label="Insight kinds" on-keydown="[[insightKey]]">
+            <oj-bind-for-each data="[[insightTabs]]"><template><button type="button" role="tab" :id="[['kni-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
           </div>
           <oj-bind-if test="[[insight()]]">
-            <div :class="[[insight().css]]" id="insightText"><oj-bind-text value="[[insight().text]]"></oj-bind-text>
-              <oj-bind-if test="[[insight().meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[insight().meta]]"></oj-bind-text></span></oj-bind-if></div>
+            <div class="factory-kn-aiblock" id="insightBlock" role="note" aria-label="AI-generated answer">
+              <p class="factory-kn-ailabel"><span class="fx-badge fx-badge--violet">AI-generated</span> <span>Not a source fact: check it against the code.</span></p>
+              <div :class="[[insight().css]]" id="insightText"><oj-bind-text value="[[insight().text]]"></oj-bind-text>
+                <oj-bind-if test="[[insight().meta]]"><span class="factory-ai-meta"><oj-bind-text value="[[insight().meta]]"></oj-bind-text></span></oj-bind-if></div>
+              <h3 class="factory-kn-h3">Cited lines</h3>
+              <ul class="factory-kn-cites" id="insightCitations"><oj-bind-for-each data="[[citations]]" as="ci"><template><li>
+                <button type="button" class="factory-link-sm factory-mono" on-click="[[ci.data.show]]"><oj-bind-text value="[[ci.data.label]]"></oj-bind-text></button>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ci.data.open]]" :aria-label="[['Open ' + ci.data.label + ' in the Code page']]">Open in Code</button></li></template></oj-bind-for-each></ul>
+              <oj-bind-if test="[[citations().length === 0]]"><p class="factory-kn-none">The answer cites no lines of the file.</p></oj-bind-if>
+              <oj-bind-if test="[[manualSources().length > 0]]">
+                <h3 class="factory-kn-h3">Also from the knowledge base (not this code)</h3>
+                <ul class="factory-kn-manuals" id="insightManuals"><oj-bind-for-each data="[[manualSources]]" as="ms"><template><li><span class="factory-mono"><oj-bind-text value="[[ms.data.n]]"></oj-bind-text></span>
+                  <span class="fx-badge fx-badge--plain"><oj-bind-text value="[[ms.data.kind]]"></oj-bind-text></span> <oj-bind-text value="[[ms.data.title]]"></oj-bind-text>
+                  <span class="factory-ov-subtle"><oj-bind-text value="[[ms.data.where]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+              </oj-bind-if>
+            </div>
           </oj-bind-if>
           <oj-bind-if test="[[!insight()]]"><div class="factory-kn-insight factory-kn-insight-empty"><oj-bind-text value="[[insightHint]]"></oj-bind-text></div></oj-bind-if>
           <h3 class="factory-kn-h3">Key Endpoints</h3>
@@ -240,7 +251,8 @@
         <div class="factory-kn-cardhead"><h2><span class="factory-cp-h"><span class="factory-nav-icon factory-ico-sparkle factory-ai-star" aria-hidden="true"></span>Logic of the open file</span></h2>
           <button type="button" :class="[[ai.busy() ? 'fx-btn fx-btn--primary fx-btn--sm is-loading' : 'fx-btn fx-btn--primary fx-btn--sm']]" on-click="[[explainLogic]]" :disabled="[[!file() || ai.busy()]]"><oj-bind-text value="[[ai.busy() ? 'Generating...' : 'Explain']]"></oj-bind-text></button></div>
         <p class="factory-card-sub"><oj-bind-text value="[[file() ? file().path : 'Open a file in the Code Explorer first.']]"></oj-bind-text></p>
-        <oj-bind-if test="[[insightTab() === 'explain' && insight()]]"><div :class="[[insight().css]]"><oj-bind-text value="[[insight().text]]"></oj-bind-text></div></oj-bind-if>
+        <oj-bind-if test="[[insightTab() === 'explain' && insight()]]"><div class="factory-kn-aiblock" role="note" aria-label="AI-generated answer"><p class="factory-kn-ailabel"><span class="fx-badge fx-badge--violet">AI-generated</span> <span>Not a source fact. Its cited lines and sources are under AI Code Insights on the Code tab.</span></p>
+          <div :class="[[insight().css]]"><oj-bind-text value="[[insight().text]]"></oj-bind-text></div></div></oj-bind-if>
       </section>
     </div>
   </oj-bind-if>
@@ -249,7 +261,7 @@
     <section class="factory-card">
       <h2>Search the code</h2>
       <div class="factory-cp-search">
-        <fx-input id="knowledgeQuery" class="factory-grow" label="Search" hide-label icon="search" clearable placeholder="Search code, classes, APIs, UI components, services..." value="{{query}}" on-fx-enter="[[search]]"></fx-input>
+        <fx-input id="knowledgeQuery" class="factory-grow" label="Search" hide-label icon="search" clearable placeholder="Search file names and the indexed code: classes, methods, services..." value="{{query}}" on-fx-enter="[[search]]"></fx-input>
         <button type="button" id="knowledgeSearchButton" class="fx-btn fx-btn--primary" on-click="[[search]]" :disabled="[[searching]]">Search</button>
       </div>
       <div class="factory-cp2-searchopts factory-cp2-searchopts-wide factory-kn5-searchopts">
@@ -263,11 +275,20 @@
           <oj-bind-for-each data="[[modules]]"><template><option :value="[[$current.data]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each>
         </select>
       </div>
+      <oj-bind-if test="[[searchError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="knowledgeSearchError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[searchError]]"></oj-bind-text></span></div></oj-bind-if>
+      <oj-bind-if test="[[fileMatches().length > 0]]">
+        <h3 class="factory-kn-h3"><oj-bind-text value="[['File names (' + fileMatches().length + ')']]"></oj-bind-text></h3>
+        <ul class="factory-kn-filehits" id="fileNameHits"><oj-bind-for-each data="[[fileMatches]]" as="fm"><template><li>
+          <button type="button" class="factory-link-sm factory-mono" on-click="[[fm.data.open]]"><oj-bind-text value="[[fm.data.path]]"></oj-bind-text></button>
+          <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[fm.data.openInCode]]" :aria-label="[['Open ' + fm.data.path + ' in the Code page']]">Open in Code</button></li></template></oj-bind-for-each></ul>
+        <h3 class="factory-kn-h3">In the indexed code</h3>
+      </oj-bind-if>
       <oj-bind-if test="[[searchNote()]]"><p class="factory-ov-subtle"><oj-bind-text value="[[searchNote]]"></oj-bind-text></p></oj-bind-if>
       <oj-bind-if test="[[results().length > 0 && filteredResults().length === 0]]"><p class="factory-ov-subtle">No results match the options above.</p></oj-bind-if>
       <oj-bind-for-each data="[[filteredResults]]">
         <template><div class="factory-cp-result"><button type="button" class="factory-link-sm factory-mono" on-click="[[$current.data.open]]"><oj-bind-text value="[[$current.data.path]]"></oj-bind-text></button>
-          <span class="factory-ov-subtle"><oj-bind-text value="[[' lines ' + $current.data.startLine + '-' + $current.data.endLine + ' · ' + $current.data.kind + ' · ' + $current.data.matchedBy]]"></oj-bind-text></span>
+          <span class="factory-ov-subtle"><oj-bind-text value="[[$current.data.where]]"></oj-bind-text></span>
+          <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-kn-incode" on-click="[[$current.data.openInCode]]" :aria-label="[['Open ' + $current.data.path + ' in the Code page at these lines']]">Open in Code</button>
           <pre class="factory-code factory-code-light"><oj-bind-text value="[[$current.data.snippet]]"></oj-bind-text></pre></div></template>
       </oj-bind-for-each>
     </section>
