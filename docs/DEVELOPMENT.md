@@ -118,8 +118,17 @@ local Ollama.
 
 ## Creating a workspace
 
-On the Workspaces page, administrators choose where the code is, and the factory checks it before the workspace is
-created:
+On the Workspaces page, **New workspace** (or **Connect a code base** on Home) walks administrators through five steps:
+the source, the check, the details to confirm, the import and index, and the detected profile. The check connects and
+reads the code, and suggests the name, bank and OBDX version with the evidence it found; a version the code does not
+show, or that both versions point to, is for the administrator to choose. After **Create and import** each stage shows
+what the server reports (workspace created, SVN sign-in saved, import started, checkout, indexing, profile detection),
+with the server's error and **Try again** where a stage failed; nothing is shown as done before the import job says so.
+The last step shows the OBDX version the profile detected, its confidence and evidence files, and **Confirm the detected
+version** (the profile fact `obdx.version`). A workspace's details open in a side sheet from the list: the index, the
+version with its evidence, the repository with **Test the connection**, members, **Update code** (an import: SVN update
+from the indexed revision, then only files whose content changed are indexed again) and **Delete**, which first names the
+requirements, screens, changes and index that go with it. Sources:
 
 - **SVN server (URL)**, with a username and password if the server asks. **Check** connects and reads the code.
 - **Folder on this computer** (the computer the factory runs on): a TortoiseSVN checkout (the factory imports from the
@@ -553,6 +562,11 @@ narrow or vary the run.
 
 `node scripts/check-home.js --url ...` (same sign-in variables) checks the Home page: its attention count against the data,
 that the continue and attention items open their records, the viewer role, keyboard reach and the offline message.
+
+`node scripts/check-workspaces.js --url ...` checks the Workspaces page: the list against the data, the details sheet
+(version evidence, connection test, the delete dialog, always cancelled), the New workspace steps, Home's link to them and
+the offline message. With `--svn <url> --create 1` it also creates a workspace from that URL, follows the import stages,
+updates the code once and deletes the workspace again: use it only on a factory whose data is a copy.
 
 `npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
 drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
