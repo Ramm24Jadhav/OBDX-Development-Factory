@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -55,6 +56,16 @@ public class PackController {
     public RecipeService.WorkspaceRecipes recipes(@PathVariable UUID workspaceId) {
         guard.require(workspaceId, Permission.VIEW);
         return recipes.get(workspaceId);
+    }
+
+    /** A version pack's own recipes (22.x or 25.x), for anyone who can see a workspace: to compare versions of a recipe. */
+    @GetMapping("/api/version-packs/{version}/recipes")
+    public RecipeService.WorkspaceRecipes packRecipes(@PathVariable String version) {
+        var user = guard.current();
+        if (!user.isAdmin() && guard.visibleWorkspaces().isEmpty()) {
+            throw new AccessDeniedException("You are not a member of any workspace");
+        }
+        return recipes.packRecipes(version);
     }
 
     @PostMapping("/api/workspaces/{workspaceId}/recipes/{recipeId}/parts/{partId}/examples")

@@ -4,16 +4,30 @@
  * reference examples, and the factory's built-in tasks. Usage counts the planned files of the workspace's changes that
  * each recipe applies to. Recipes are changed in the team's version pack files (FACTORY_PACKS_DIR), not on this page,
  * and have no review or retirement steps, so nothing is under review or deprecated.
+ * Governance view: editable templates (the version pack recipes) and protected system prompts (the factory's built-in
+ * tasks, part of its code) show apart, each with its purpose, target agent or task, version, the model it runs on,
+ * approval and lifecycle as far as the factory records them. A recipe compares with the same recipe in the other OBDX
+ * version's pack; the Library's answer task links to its evaluation (administrators). Text that looks like a secret
+ * (password, token, key) is masked wherever a prompt is shown or copied.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/updates', '../services/ui', '../services/toast',
-        '../services/preferences', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences) {
+        '../services/preferences', '../services/session', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences, session) {
     // Badges (design system .fx-badge): statuses carry a dot, categories are plain labels
     const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
     const badgeCss = (tone) => 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '');
     const pill = (text, tone) => ({ text: text, css: badgeCss(tone) });
     /** The current value of a design token, for the preview frame (its own document cannot read the page's variables). */
     const token = (name, fallback) => (window.getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || fallback;
+    // Values that look like secrets are never shown: key = value pairs and bearer tokens become a mask
+    const SECRET = /((?:password|passwd|pwd|secret|token|api[_-]?key|client[_-]?secret|access[_-]?key)["']?\s*[:=]\s*["']?)([^\s"',;]{4,})/gi;
+    const BEARER = /(Bearer\s+)[A-Za-z0-9._~+/-]{12,}=*/g;
+    const mask = (text) => String(text || '').replace(SECRET, (m, k) => k + '•••• (hidden)').replace(BEARER, (m, k) => k + '•••• (hidden)');
+    const masked = (text) => mask(text) !== String(text || '');
+    // A file of the bank's pack folder by its name only: the folder is a path on the factory's server
+    const sourceName = (source) => (!source || /^packs\//.test(source) ? source : 'bank pack folder: ' + String(source).replace(/\\/g, '/').split('/').pop());
+    // The agent or task each kind of prompt serves (the names Agent Runs uses)
+    const AGENT = { recipe: 'Code Generator' };
     const CATEGORY = { ui: 'UI Generation', service: 'Code Generation', integration: 'API Generation', data: 'Database Script', test: 'Test Generation', config: 'Configuration' };
     const TONE = { 'UI Generation': 'blue', 'Code Generation': 'blue', 'API Generation': 'violet', 'Database Script': 'amber', 'Test Generation': 'red', Configuration: 'grey', 'Built-in Task': 'green', 'Business Logic': 'violet' };
     const BUILT_IN = [
@@ -24,8 +38,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       { title: 'Change a screen with AI', category: 'Built-in Task', when: 'Ask AI in the designer', guidance: 'Changes the Screen Model (or the selected component) as the instruction says.' },
       { title: 'Import a screen design', category: 'Built-in Task', when: 'An image, PDF or Figma frame is imported in the designer', guidance: 'Reads the design and turns it into a Screen Model.' },
       { title: 'Make a custom component', category: 'Built-in Task', when: 'A component is made in the designer', guidance: 'Writes the component HTML, CSS and script from a description or an image.' },
-      { title: 'Fix build errors', category: 'Built-in Task', when: 'A Jenkins build of a change fails', guidance: 'Sends the build errors of a file back to the model to fix, for a few rounds.' }
+      { title: 'Fix build errors', category: 'Built-in Task', when: 'A Jenkins build of a change fails', guidance: 'Sends the build errors of a file back to the model to fix, for a few rounds.' },
+      { title: 'Answer from the OBDX Library', category: 'Built-in Task', when: 'A question on the OBDX Library or an AI Assistant panel', guidance: 'Answers from the manuals, bank documents and notes the search found, citing them as [n], and says when they do not cover the question.', evaluation: true },
+      { title: 'Improve a question', category: 'Built-in Task', when: 'Improve My Question on the OBDX Library', guidance: 'Rewrites the question precisely, or says what to clarify first; nothing is answered.' }
     ];
+    const BUILT_IN_AGENT = ['Requirements Agent', 'Requirements Agent', 'Analysis Agent', 'Code Generator', 'UI Agent', 'UI Agent', 'UI Agent', 'Debug Agent', 'OBDX Library', 'OBDX Library'];
     // What the factory adds to the recipe guidance when it asks for one file
     const USER_PROMPT = [
       'Built for each planned file when the change is generated:',
@@ -78,20 +95,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const variables = [];
           templates.forEach((p) => (p.templateContent.match(/<<[^>]+>>/g) || []).forEach((v) => { if (variables.indexOf(v) < 0) { variables.push(v); } }));
           const byChange = usageByChange(r);
+          const bank = !/^packs\//.test(r.source || '');
           return {
-            key: r.id, title: r.title, category: category, version: data.version, versionTitle: 'OBDX ' + data.version + ' version pack', status: pill('Approved', 'green'), statusKey: 'approved',
-            when: r.when || 'Files matching ' + (r.layers.join(', ') || 'any layer'), guidance: r.guidance, layers: r.layers.join(', ') || 'Any', actions: r.actions.join(', ') || 'create, modify',
-            source: r.source, custom: !/^packs\//.test(r.source || ''), usage: byChange.reduce((s, u) => s + u.n, 0), byChange: byChange,
+            key: r.id, title: r.title, category: category, version: data.version, versionTitle: 'OBDX ' + data.version + ' version pack', status: pill('In effect', 'green'), statusKey: 'approved',
+            kind: 'template', kindText: 'Editable template', agent: AGENT.recipe, approvalShort: bank ? 'Bank pack folder' : 'Version pack',
+            approval: bank ? 'Set in the bank\'s pack folder by the factory\'s administrator' : 'Shipped in the OBDX ' + data.version + ' version pack',
+            lifecycle: 'In effect while it is in the pack. Draft, review and retirement are not recorded by the factory: a change is made in the pack files, reviewed in source control, and takes effect when the factory restarts.',
+            hasSecret: masked(r.guidance) || r.parts.some((p) => masked(p.templateContent)),
+            when: r.when || 'Files matching ' + (r.layers.join(', ') || 'any layer'), guidance: mask(r.guidance), layers: r.layers.join(', ') || 'Any', actions: r.actions.join(', ') || 'create, modify',
+            source: sourceName(r.source), custom: !/^packs\//.test(r.source || ''), usage: byChange.reduce((s, u) => s + u.n, 0), byChange: byChange,
             updated: 'Pack ' + data.version, updatedTitle: 'Changes with the ' + data.version + ' version pack',
-            templates: templates.map((p) => ({ name: p.name, file: p.template, content: p.templateContent })),
+            templates: templates.map((p) => ({ name: p.name, file: p.template, content: mask(p.templateContent) })),
             parts: r.parts.map((p) => ({ name: p.name, file: p.template || 'No template: follows the reference examples' })),
             variables: variables.map((v) => ({ name: v.replace(/[<>]/g, ''), type: 'text', required: true, description: 'From the spec and screen design' })),
             examples: [].concat.apply([], r.parts.map((p) => p.examples.map((e) => ({ part: p.name, path: e.path, reason: e.reason, pinned: e.pinned })))),
-            tags: [category].concat(r.layers).concat(['OBDX ' + data.version]), createdBy: 'Version pack', approvedBy: 'Shipped in the version pack', approvalDate: 'Not recorded'
+            tags: [category].concat(r.layers).concat(['OBDX ' + data.version]), createdBy: bank ? 'Bank pack folder' : 'Version pack', approvedBy: bank ? 'The factory\'s administrator (bank pack folder)' : 'Shipped in the version pack', approvalDate: 'Not recorded'
           };
         }) : [];
         const builtIn = BUILT_IN.map((b, i) => ({
-          key: 'builtin-' + i, title: b.title, category: b.category, version: 'Factory', versionTitle: 'Part of the factory', status: pill('Built in', 'blue'), statusKey: 'builtin',
+          key: 'builtin-' + i, title: b.title, category: b.category, version: 'Factory', versionTitle: 'Part of the factory', status: pill('Protected', 'blue'), statusKey: 'builtin',
+          kind: 'system', kindText: 'Protected system prompt', agent: BUILT_IN_AGENT[i] || 'Factory', approvalShort: 'Factory code', evaluation: !!b.evaluation, hasSecret: false,
+          approval: 'Part of the factory\'s code; changes only with a factory update',
+          lifecycle: 'Protected: it cannot be edited here or in the pack files. It changes only with a factory update (see the release notes on the About page).',
           when: b.when, guidance: b.guidance + '\n\n(The full prompt is part of the factory and changes with its updates.)', layers: '–', actions: '–', source: 'Factory', custom: false,
           usage: null, byChange: [], updated: build ? 'Build ' + build : 'Factory', updatedTitle: 'Changes with factory updates',
           templates: [], parts: [], variables: [], examples: [], tags: [b.category], createdBy: 'Built in', approvedBy: 'Built in', approvalDate: 'Not recorded'
@@ -99,38 +124,61 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return fromPack.concat(builtIn).map((x) => Object.assign(x, {
           catCss: badgeCss(TONE[x.category]) + ' fx-badge--plain factory-pr-cat',
           iconCss: 'factory-kpi-icon factory-pr-icon factory-ov2-icon-' + (TONE[x.category] || 'blue'), usageText: x.usage === null ? '–' : x.usage,
-          tagPills: x.tags.map((t) => ({ text: t, css: 'fx-chip factory-pr-tag' }))
+          tagPills: x.tags.map((t) => ({ text: t, css: 'fx-chip factory-pr-tag' })),
+          model: model() ? 'Any chat model; in use now: ' + model() : 'Any chat model set on Models & AI Providers',
+          kindCss: 'fx-badge fx-badge--plain' + (x.kind === 'system' ? ' fx-badge--info' : ' fx-badge--success')
         }));
       });
 
-      this.kpis = ko.pureComputed(() => {
+      // The model the prompts run on: the one set on Models & AI Providers (no prompt is tied to a model)
+      const model = ko.observable('');
+      this.governance = ko.pureComputed(() => {
         const all = this.items();
-        const pack = all.filter((x) => x.statusKey === 'approved');
-        return [
-          { label: 'Total Prompts', value: all.length, sub: pack.length + ' in the pack, ' + (all.length - pack.length) + ' built in', css: 'factory-kpi-sub', tone: 'violet', icon: 'doc' },
-          { label: 'Templates', value: pack.reduce((s, x) => s + x.templates.length, 0), sub: 'Reusable patterns', css: 'factory-kpi-sub', tone: 'blue', icon: 'cube' },
-          { label: 'Approved', value: pack.length, sub: 'In the version pack', css: 'factory-kpi-sub', tone: 'green', icon: 'check' },
-          { label: 'Under Review', value: 0, sub: 'No review step yet', css: 'factory-kpi-sub', tone: 'amber', icon: 'clock' },
-          { label: 'Deprecated', value: 0, sub: 'No retire step yet', css: 'factory-kpi-sub', tone: 'red', icon: 'x' }
-        ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-ov2-icon-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon }));
+        const templates = all.filter((x) => x.kind === 'template');
+        return {
+          templates: templates.length + ' editable templates (version pack recipes' + (templates.some((x) => x.custom) ? ', bank\'s included' : '') + ')',
+          system: (all.length - templates.length) + ' protected system prompts (part of the factory)',
+          model: model() ? 'Model in use: ' + model() : 'Model: set on Models & AI Providers'
+        };
       });
       // Tabs: the design's groups, worked out from what each recipe is
       const TABS = {
         all: () => true, usecase: (x) => x.templates.length > 0, 'Code Generation': (x) => x.category === 'Code Generation', 'UI Generation': (x) => x.category === 'UI Generation',
         'API Generation': (x) => x.category === 'API Generation', 'Test Generation': (x) => x.category === 'Test Generation', 'Database Script': (x) => x.category === 'Database Script',
-        modernization: (x) => /moderni[sz]|migrat|legacy/i.test(x.key + ' ' + x.title), custom: (x) => x.custom, 'Built-in Task': (x) => x.category === 'Built-in Task'
+        modernization: (x) => /moderni[sz]|migrat|legacy/i.test(x.key + ' ' + x.title), custom: (x) => x.custom, 'Built-in Task': (x) => x.category === 'Built-in Task',
+        editable: (x) => x.kind === 'template'
       };
       this.tab = ko.observable('all');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'all', label: 'All', icon: 'doc' }, { value: 'usecase', label: 'Use Case Templates', icon: 'list' },
+        { value: 'all', label: 'All', icon: 'doc' }, { value: 'editable', label: 'Editable templates', icon: 'edit' },
+        { value: 'Built-in Task', label: 'Protected system prompts', icon: 'shield' }, { value: 'usecase', label: 'Use Case Templates', icon: 'list' },
         { value: 'Code Generation', label: 'Code Generation', icon: 'code' }, { value: 'UI Generation', label: 'UI Generation', icon: 'monitor' },
         { value: 'API Generation', label: 'API Generation', icon: 'link' }, { value: 'Test Generation', label: 'Test Generation', icon: 'flask' },
         { value: 'Database Script', label: 'Database', icon: 'cube' }, { value: 'modernization', label: 'Modernization', icon: 'refresh' },
-        { value: 'custom', label: 'Custom Prompts', icon: 'edit' }, { value: 'Built-in Task', label: 'Built-in Tasks', icon: 'sparkle' }
+        { value: 'custom', label: 'Bank templates', icon: 'bank' }
       ]);
+      // Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern)
+      const tabKeys = (selected, list, prefix) => (event) => {
+        const keys = list.map((t) => t.value);
+        const at = keys.indexOf(selected());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        event.preventDefault();
+        selected(keys[next]);
+        const button = document.getElementById(prefix + keys[next].replace(/\s+/g, '-'));
+        if (button) {
+          button.focus();
+        }
+        return false;
+      };
+      this.tabKey = tabKeys(this.tab, this.tabs, 'pr-');
+      this.tabId = (value) => 'pr-' + value.replace(/\s+/g, '-');
       this.emptyText = ko.pureComputed(() => ({
         modernization: 'No modernization prompts in this version pack. The Modernization page uses the built-in tasks.',
-        custom: 'No custom prompts. Put a recipes.yml in the team pack folder (FACTORY_PACKS_DIR) to add your own.'
+        custom: 'No bank templates. The factory\'s administrator adds them as a recipes.yml in the bank\'s pack folder (FACTORY_PACKS_DIR).'
       }[this.tab()] || 'No prompts match.'));
       this.search = ko.observable('');
       this.searchInput = ui.value(this.search);
@@ -154,7 +202,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const cats = this.catPicked();
         const anyCat = this.anyCat();
         return this.items().filter((x) => TABS[this.tab()](x) && (!anyCat || cats[x.category])
-          && (!text || (x.title + ' ' + x.guidance + ' ' + x.category).toLowerCase().indexOf(text) >= 0));
+          && (!text || (x.title + ' ' + x.guidance + ' ' + x.category + ' ' + x.agent).toLowerCase().indexOf(text) >= 0));
       });
 
       // Pages with a size the user picks (design system .fx-pager)
@@ -230,8 +278,96 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.detailTab = ko.observable('overview');
       this.detailTabs = ui.tabs(this.detailTab, [
         { value: 'overview', label: 'Overview' }, { value: 'prompt', label: 'Prompt' }, { value: 'variables', label: 'Variables' }, { value: 'examples', label: 'Examples' },
-        { value: 'usage', label: 'Usage' }, { value: 'history', label: 'History' }
+        { value: 'usage', label: 'Usage' }, { value: 'versions', label: 'Versions' }, { value: 'evaluation', label: 'Evaluation' }, { value: 'history', label: 'History' }
       ]);
+      this.detailKey = tabKeys(this.detailTab, this.detailTabs, 'prd-');
+      // Versions: the same recipe in the other OBDX version's pack, line by line
+      const otherPacks = ko.observable({});
+      this.otherVersion = ko.pureComputed(() => {
+        const data = recipes();
+        return data ? (data.version === '22.x' ? '25.x' : '22.x') : '';
+      });
+      ko.computed(() => {
+        const v = this.otherVersion();
+        if (v && otherPacks()[v] === undefined && this.detailTab() === 'versions') {
+          const all = Object.assign({}, otherPacks());
+          all[v] = null;
+          otherPacks(all);
+          api.get('version-packs/' + encodeURIComponent(v) + '/recipes').then((r) => { const m = Object.assign({}, otherPacks()); m[v] = r; otherPacks(m); })
+            .catch((error) => { const m = Object.assign({}, otherPacks()); m[v] = { error: error.message }; otherPacks(m); });
+        }
+      });
+      // Lines of a: equal (=), only in a (-), only in b (+), by longest common subsequence
+      const diff = (a, b) => {
+        const x = a.slice(0, 400);
+        const y = b.slice(0, 400);
+        const t = Array.from({ length: x.length + 1 }, () => new Array(y.length + 1).fill(0));
+        for (let i = x.length - 1; i >= 0; i--) {
+          for (let j = y.length - 1; j >= 0; j--) {
+            t[i][j] = x[i] === y[j] ? t[i + 1][j + 1] + 1 : Math.max(t[i + 1][j], t[i][j + 1]);
+          }
+        }
+        const out = [];
+        let i = 0;
+        let j = 0;
+        while (i < x.length || j < y.length) {
+          if (i < x.length && j < y.length && x[i] === y[j]) { out.push({ sign: ' ', text: x[i] }); i++; j++; }
+          else if (j < y.length && (i >= x.length || t[i][j + 1] >= t[i + 1][j])) { out.push({ sign: '+', text: y[j] }); j++; }
+          else { out.push({ sign: '-', text: x[i] }); i++; }
+        }
+        return out;
+      };
+      this.versionCompare = ko.pureComputed(() => {
+        const x = this.selected();
+        const data = recipes();
+        if (!x || x.kind !== 'template' || !data) {
+          return { state: 'none', text: 'Protected system prompts have one version: the factory\'s. They change with factory updates.' };
+        }
+        const other = otherPacks()[this.otherVersion()];
+        if (other === undefined || other === null) {
+          return { state: 'loading', text: 'Loading the OBDX ' + this.otherVersion() + ' pack…' };
+        }
+        if (other.error) {
+          return { state: 'error', text: other.error };
+        }
+        const twin = other.recipes.find((r) => r.id === x.key);
+        if (!twin) {
+          return { state: 'missing', text: 'The OBDX ' + this.otherVersion() + ' pack has no recipe with this id: it is only in OBDX ' + data.version + '.' };
+        }
+        const rows = diff(x.guidance.split('\n'), mask(twin.guidance).split('\n')).map((d) => ({ sign: d.sign, text: d.text,
+          css: 'factory-pr-dline' + (d.sign === '+' ? ' is-add' : d.sign === '-' ? ' is-del' : '') }));
+        const changed = rows.filter((r) => r.sign !== ' ').length;
+        return { state: 'ok', rows: rows, text: changed ? changed + ' guidance line' + (changed === 1 ? '' : 's') + ' differ between OBDX ' + data.version + ' (−) and OBDX ' + this.otherVersion() + ' (+). Source there: ' + sourceName(twin.source) + '.'
+          : 'The guidance is the same in OBDX ' + data.version + ' and OBDX ' + this.otherVersion() + ' (' + sourceName(twin.source) + ').' };
+      });
+      // Evaluation: the Library's question set, for the answer task (administrators run and read it)
+      this.isAdmin = session.isAdmin;
+      this.evaluation = ko.observable(null);
+      this.evaluationLoaded = ko.observable(false);
+      const loadEvaluation = () => {
+        if (!session.isAdmin()) {
+          return Promise.resolve();
+        }
+        return api.get('knowledge/evaluation').then((r) => { this.evaluation(r || null); this.evaluationLoaded(true); }).catch(() => this.evaluationLoaded(true));
+      };
+      this.evaluationView = ko.pureComputed(() => {
+        const r = this.evaluation();
+        if (!r) {
+          return null;
+        }
+        const pct = (v) => Math.round((v || 0) * 100) + '%';
+        return {
+          head: (r.running ? 'Running: ' + r.done + ' of ' + r.total : r.total + ' cases') + ' · ' + String(r.mode).toLowerCase() + ' · model ' + (r.chatModel || '–') + (r.finishedAt ? ' · ' + ui.when(r.finishedAt) : ''),
+          facts: [{ k: 'Expected section found (top 5)', v: pct(r.recallAt5) }, { k: 'Answers that held up', v: r.mode === 'ANSWER' ? pct(r.answersPassed) : 'Not run (answers are checked in the ANSWER mode)' },
+            { k: 'Unanswerable questions refused', v: r.mode === 'ANSWER' ? pct(r.unsupportedRefused) : '–' }, { k: 'Average time', v: (r.averageMillis || 0) + ' ms' }],
+          rows: (r.rows || []).slice(0, 15).map((row) => ({ q: row.question, ok: r.mode === 'ANSWER' ? row.passed : row.rank > 0, text: row.rank > 0 ? 'found at ' + row.rank : 'not found' })),
+          error: r.error || ''
+        };
+      });
+      this.runEvaluation = () => api.post('knowledge/evaluation', { mode: 'SEARCH' })
+        .then((r) => { this.evaluation(r); toast.success('The evaluation runs the question set through the Library search.'); window.setTimeout(loadEvaluation, 3000); })
+        .catch((error) => toast.error(error.message));
+      this.detailTab.subscribe((t) => { if (t === 'evaluation' && !this.evaluationLoaded()) { loadEvaluation(); } });
       this.description = ko.pureComputed(() => {
         const x = this.selected();
         if (!x) {
@@ -334,6 +470,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const before = this.workspaceId();
         workspaceSelection.load().then(() => { if (this.workspaceId() === before) { load(before); } }).catch(showError);
         updates.refresh(false);
+        api.get('model/status').then((s) => model(s && s.chatModel ? s.chatModel : '')).catch(() => null);
         this.carousel.attach('useCaseTrack');
         document.addEventListener('click', outside);
         window.addEventListener('scroll', closeMenu, true);
