@@ -26,5 +26,9 @@ define(['knockout', './api', './preferences'], function (ko, api, preferences) {
     return selected && selected.obdxVersion ? selected.obdxVersion : null;
   });
 
-  return { selectedId: selectedId, options: options, selectedVersion: selectedVersion, load: load };
+  // The repository's latest revision per workspace, from a check the user ran on the Code page (POST svn/test), kept
+  // for this browser session: {ok, revision, root, at} or {ok: false, error, at}. Other pages read it, never call SVN.
+  const headChecks = {};
+
+  return { selectedId: selectedId, options: options, selectedVersion: selectedVersion, load: load, headChecks: headChecks };
 });

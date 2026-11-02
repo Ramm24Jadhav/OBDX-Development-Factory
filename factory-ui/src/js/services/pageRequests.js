@@ -16,6 +16,8 @@ define(['knockout'], function (ko) {
     design: ko.observable(null),
     studio: ko.observable(null),
     /** A workspace id whose details the Workspaces page opens in its side sheet (from the Code page) */
-    workspace: ko.observable(null)
+    workspace: ko.observable(null),
+    /** { path, startLine, endLine } a file the Code page opens in its viewer at those lines (from Knowledge Explorer) */
+    codeFile: ko.observable(null)
   };
 });

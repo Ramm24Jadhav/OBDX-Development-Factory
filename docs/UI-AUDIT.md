@@ -152,8 +152,7 @@ New failures in the declutter work are those that are not in this table.
 - the carousel by keyboard;
 - Workspaces refresh, Code search and Knowledge search on slow and offline networks (busy clears every time).
 
-One existing wording issue: offline, Code search and Knowledge search say "Failed to fetch" instead of a plain sentence
-("Could not reach the factory; check your connection"). Fix it when those pages are touched.
+Fixed: offline, Code search and Knowledge search now say "Could not reach the factory. Check your connection, then try again." instead of "Failed to fetch".
 
 ## 4. Rules for every screen task
 

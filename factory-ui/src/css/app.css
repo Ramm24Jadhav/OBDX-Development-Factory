@@ -5366,14 +5366,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-kn-line { display: grid; grid-template-columns: 44px minmax(0, 1fr); white-space: pre; }
 .factory-kn-markerline { background: var(--fx-surface-3); }
 .factory-kn-marker { color: var(--fx-text-muted); font-style: italic; }
-.factory-kn-kw { color: var(--fx-violet-text); font-weight: 600; }
-.factory-kn-type { color: #0e7490; }
-.factory-kn-str { color: var(--fx-warning-text); }
-.factory-kn-ann { color: #0f766e; }
-.factory-kn-num { color: var(--fx-warning-text); }
-.factory-kn-com { color: var(--fx-text-muted); font-style: italic; }
-.factory-kn-tag { color: var(--fx-primary-text); }
-.factory-kn-attr { color: #9333ea; }
 .factory-kn-plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: var(--fx-text-sm); }
 .factory-kn-comments li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 6px; color: var(--fx-text-body); }
 .factory-kn-cn { color: var(--fx-text-faint); text-align: right; font-family: Consolas, Menlo, monospace; }
@@ -6671,9 +6663,6 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-kn-page .factory-kn4-loading .fx-skeleton:nth-child(3) { width: 60%; }
 
 /* Code viewer: syntax colours that read on both surfaces */
-.factory-kn-page .factory-kn-type { color: var(--fx-info-text); }
-.factory-kn-page .factory-kn-ann { color: var(--fx-success-text); }
-.factory-kn-page .factory-kn-attr { color: var(--fx-violet-text); }
 .factory-kn-page .factory-kn-markerline { border-top-color: var(--fx-primary-border); border-bottom-color: var(--fx-primary-border); }
 
 /* Tags, methods, insights, diagram */
@@ -7993,13 +7982,9 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-ch .factory-ch-vsec { margin-top: 10px; }
 .factory-ch .factory-ch-vsec > summary { cursor: pointer; font-weight: 600; color: var(--fx-text); padding: 4px 0; }
 
-/* Syntax colours on the code's dark background (the same in both themes) */
-.factory-ch .factory-hl-keyword { color: #c4b5fd; }
-.factory-ch .factory-hl-string { color: #86efac; }
-.factory-ch .factory-hl-comment { color: #94a3b8; font-style: italic; }
-.factory-ch .factory-hl-number { color: #fcd34d; }
-.factory-ch .factory-hl-tag { color: #93c5fd; }
-.factory-ch .factory-hl-attr { color: #f9a8d4; }
+/* Syntax colours (services/syntax.js) on the code's dark background, the same in both themes */
+.factory-ch .factory-ch-lines { --fx-syn-kw: #c4b5fd; --fx-syn-type: #67e8f9; --fx-syn-str: #86efac; --fx-syn-ann: #5eead4; --fx-syn-com: #94a3b8; --fx-syn-tag: #93c5fd; --fx-syn-attr: #f9a8d4; }
+.factory-ch .factory-ch-lines .fx-syn-num { color: #fcd34d; }
 
 @media (max-width: 1250px) {
     .factory-ch .factory-ch-inner { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
@@ -8302,6 +8287,25 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 .factory-kn-page .factory-kn5-searchopts .factory-cp2-checks { flex-wrap: wrap; }
 .factory-kn-page .factory-kn5-searchopts .fx-check { font-size: var(--fx-text-sm); color: var(--fx-text); }
 .factory-kn-page .factory-kn5-searchopts .factory-cp2-modules { width: auto; height: var(--fx-control-height-sm); font-size: var(--fx-text-sm); padding: 0 28px 0 10px; background-position: right 8px center; }
+
+/* Knowledge Explorer as the bank-code workspace: index bar, AI answers marked and cited, Open in Code (UI declutter step 15) */
+.factory-kn-page .factory-kn-repo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 12px; padding: 10px 14px; }
+.factory-kn-page .factory-kn-reponame { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.factory-kn-page .factory-kn-repourl { overflow-wrap: anywhere; font-size: var(--fx-text-sm); }
+.factory-kn-page .factory-kn-repofacts { color: var(--fx-text-muted); font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
+.factory-kn-page .factory-kn-repo > .fx-btn { margin-left: auto; }
+.factory-kn-page .factory-kn-tabs { overflow-x: auto; }
+.factory-kn-page .factory-kn-line.is-hit { background: var(--fx-warning-soft); }
+.factory-kn-page .factory-kn-line.is-hit .factory-ch-n { color: var(--fx-warning-text); box-shadow: inset 3px 0 0 var(--fx-warning); }
+.factory-kn-page .factory-kn-code:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 2px; }
+.factory-kn-page .factory-kn-aiblock { padding: 10px; border: 1px dashed var(--fx-violet-text); border-radius: var(--fx-radius); background: var(--fx-violet-soft); }
+.factory-kn-page .factory-kn-aiblock .factory-kn-insight { background: var(--fx-surface); }
+.factory-kn-page .factory-kn-ailabel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 8px; font-size: var(--fx-text-sm); color: var(--fx-text); }
+.factory-kn-page .factory-kn-cites, .factory-kn-page .factory-kn-manuals, .factory-kn-page .factory-kn-filehits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.factory-kn-page .factory-kn-cites li, .factory-kn-page .factory-kn-filehits li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.factory-kn-page .factory-kn-manuals li { font-size: var(--fx-text-sm); overflow-wrap: anywhere; color: var(--fx-text); }
+.factory-kn-page .factory-kn-filehits .factory-link-sm { overflow-wrap: anywhere; text-align: left; }
+.factory-kn-page .factory-kn-incode { margin-left: 8px; }
 
 /* ---------- Code page, workflow ---------- */
 /* Advanced settings (progressive disclosure) under the essential fields */
@@ -9597,13 +9601,14 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-cd-t { padding: 0 14px 0 10px; }
 .factory-cd-line.is-hit { background: var(--fx-warning-soft); }
 .factory-cd-line.is-hit .factory-cd-n { background: var(--fx-warning-soft); color: var(--fx-warning-text); font-weight: var(--fx-weight-semibold); box-shadow: inset 3px 0 0 var(--fx-warning); }
-.fx-syn-kw { color: var(--fx-violet-text); font-weight: 600; }
-.fx-syn-type { color: var(--fx-info-text); }
-.fx-syn-str, .fx-syn-num { color: var(--fx-warning-text); }
-.fx-syn-ann { color: var(--fx-success-text); }
-.fx-syn-com { color: var(--fx-text-muted); font-style: italic; }
-.fx-syn-tag { color: var(--fx-primary-text); }
-.fx-syn-attr { color: var(--fx-danger-text); }
+/* Syntax colours of every code viewer (services/syntax.js): theme tokens; a code pane with its own background sets --fx-syn-* */
+.fx-syn-kw { color: var(--fx-syn-kw, var(--fx-violet-text)); font-weight: 600; }
+.fx-syn-type { color: var(--fx-syn-type, var(--fx-info-text)); }
+.fx-syn-str, .fx-syn-num { color: var(--fx-syn-str, var(--fx-warning-text)); }
+.fx-syn-ann { color: var(--fx-syn-ann, var(--fx-success-text)); }
+.fx-syn-com { color: var(--fx-syn-com, var(--fx-text-muted)); font-style: italic; }
+.fx-syn-tag { color: var(--fx-syn-tag, var(--fx-primary-text)); }
+.fx-syn-attr { color: var(--fx-syn-attr, var(--fx-danger-text)); }
 .factory-cd-ai { background: var(--fx-surface); }
 .factory-cd-ai .factory-ai-input { flex-wrap: wrap; }
 

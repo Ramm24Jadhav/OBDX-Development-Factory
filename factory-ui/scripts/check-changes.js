@@ -100,7 +100,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   // The file: highlighting, split, details
   const code = await run(() => ({
     numbered: [...document.querySelectorAll('#codeLines .factory-ch-n')].some((n) => /\d/.test(n.textContent)),
-    coloured: document.querySelectorAll('#codeLines [class^="factory-hl-"]').length
+    coloured: document.querySelectorAll('#codeLines [class^="fx-syn-"]').length
   }));
   record('the diff has line numbers and highlighting', code.numbered && code.coloured > 0, code);
   await run(() => { document.getElementById('modeSplit').click(); return 1; });
