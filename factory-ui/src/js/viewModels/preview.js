@@ -142,12 +142,15 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
     /**
      * @param context optional: bank (name in the header), breadcrumb, steps (screen names of the journey) and step
      *                (index of this screen), warnings (by component id), editing (true in the designer), brdOnly
-     *                (true: no invented sample values; what the BRD does not give is marked to be confirmed)
+     *                (true: no invented sample values; what the BRD does not give is marked to be confirmed),
+     *                validation (true: each field shows the messages it gives when it is checked) and focusOrder (the
+     *                Tab order by element id, shown as numbers on the canvas)
      */
     function toView(model, highlight, context) {
       const ctx = context || {};
       const warnings = ctx.warnings || {};
       const brdOnly = ctx.brdOnly === true;
+      const focusOrder = ctx.focusOrder || {};
       const component = (c) => {
         const look = c.type === 'component' && !c.html && !c.script ? (LOOKS[c.component] || 'generic') : null;
         const named = (c.options || []).filter((o) => o && !PLACEHOLDERS.includes(o));
@@ -189,6 +192,8 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
           displayValue: value === null || value === undefined ? (brdOnly ? '—' : 'Sample value') : String(value),
           optionsProvider: new ArrayDataProvider(optionItems, { keyAttributes: 'value' }),
           warning: warnings[c.id] || '',
+          rules: (c.validations || []).filter((rule) => rule && rule.trim()),
+          focus: focusOrder[c.id] ? String(focusOrder[c.id]) : null,
           // Where the values come from, shown on the canvas while designing
           api: c.dataSource && c.dataSource.api ? c.dataSource.api : '',
           visibleWhen: c.visibleWhen || null,
@@ -230,6 +235,18 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         v.shown = ko.pureComputed(() => holds(v.visibleWhen));
         v.required = ko.pureComputed(() => v.baseRequired || (!!v.requiredWhen && holds(v.requiredWhen)));
         v.display = ko.pureComputed(() => (v.shown() || editing ? '' : 'none'));
+        // The validation preview: "required" follows what is typed on the canvas; the written rules are shown as the
+        // checks the field makes (they are text, so they are not run here)
+        v.messages = ko.pureComputed(() => {
+          if (ctx.validation !== true || !v.shown()) {
+            return [];
+          }
+          const raw = v.type === 'checkbox' ? v.values() : v.value();
+          const empty = Array.isArray(raw) ? raw.length === 0 : raw === null || raw === undefined || String(raw).trim() === '';
+          const messages = v.required() && empty && v.type !== 'switch' && !v.readonly
+            ? [{ severity: 'error', summary: 'Required', detail: 'Enter ' + (v.label || 'a value') + '. It is mandatory.' }] : [];
+          return messages.concat(v.rules.map((rule) => ({ severity: 'info', summary: 'Check', detail: rule })));
+        });
         v.css = ko.pureComputed(() => v.baseCss + (v.shown() ? '' : ' factory-conditional-hidden')
           + (v.visibleWhen || v.requiredWhen ? ' factory-conditional' : ''));
       });
@@ -242,7 +259,7 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         title: model.title || model.name,
         sections: sections,
         actions: model.actions.map((a) => ({
-          id: a.id, label: a.label,
+          id: a.id, label: a.label, focus: focusOrder[a.id] ? String(focusOrder[a.id]) : null,
           chroming: a.kind === 'primary' ? 'callToAction' : a.kind === 'link' ? 'borderless' : 'outlined',
           css: 'factory-cmp' + (a.id === highlight ? ' factory-highlight' : '')
         }))

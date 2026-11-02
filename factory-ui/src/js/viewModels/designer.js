@@ -1,12 +1,15 @@
 /*
- * Screen designer: the title row (design or code, screen size, zoom, more, preview, save version), a left panel (component
- * palette, and the screens with the open screen's layers), the canvas card (journey stepper, the live preview to click and
- * drop on, "Ask AI" to change it), an inspector on the right (properties, data, events, style), and under them the
- * requirement's rules with the screen's validations, comments and history, beside the AI Assistant.
+ * Visual Designer, in three zones: on the left the components, the open screen's layers and the workspace's screens; in
+ * the middle the canvas (journey stepper, a toolbar for screen size, zoom, the validation and focus-order previews, the
+ * live preview to click and drop on, "Ask AI" to change it); on the right the inspector, one list of sections
+ * (properties, data binding, validation, visibility conditions, events and actions, style, accessibility). The title
+ * row keeps design or code, more, preview and save version. The requirement's rules, comments, history with compare,
+ * and the AI Assistant share one drawer under the canvas.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
-        '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast, pageRequests) {
+        '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/designDiff',
+        'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast, pageRequests, designDiff) {
     // Asks before an action (design system dialog); resolves true when confirmed
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
     // A screen's status in the shared categories (ui.status): {text, css, iconCss}
@@ -38,6 +41,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       checkbox: '☑', switch: '◐', display: '≡', table: '▤', action: '▭', component: '⧉'
     };
     const SHORT_LABELS = { 'Table (options are its columns)': 'Table', 'Switch (on/off)': 'Switch', 'Multi-line text': 'Text area' };
+    // Compatibility with the workspace's OBDX version, as the server finds it from evidence (ComponentCompatibility)
+    const COMPAT_WORDS = { VERIFIED: 'Verified', UNSUPPORTED: 'Unsupported', UNVERIFIED: 'Unverified' };
+    const COMPAT_MARKS = { VERIFIED: '✓', UNSUPPORTED: '✕', UNVERIFIED: '?' };
     const camel = (label) => (label || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/)
       .map((word, i) => (i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
 
@@ -96,28 +102,70 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.isApproved = ko.pureComputed(() => !!this.detail() && this.detail().status === 'APPROVED');
       this.shareOpen = ko.pureComputed(() => this.drawer() === 'share');
 
-      // Panels: the left one shows components or layers; the right one the selection, comments or history; the top bar
-      // opens one drawer at a time (a new screen, an import, the review link)
+      // Panels: the left one shows components, layers or screens; the right one is the inspector of the selection; the
+      // top bar opens one drawer at a time (a new screen, an import, the review link)
       this.leftTab = ko.observable('components');
-      this.rightTab = ko.observable('properties');
+      this.leftTabs = [['components', 'Components'], ['layers', 'Layers'], ['screens', 'Screens']].map(([key, label]) => ({
+        key: key,
+        label: label,
+        id: 'leftTab-' + key,
+        selected: ko.pureComputed(() => this.leftTab() === key),
+        css: ko.pureComputed(() => 'factory-dz-tab' + (this.leftTab() === key ? ' factory-dz-tab-active' : '')),
+        pick: () => this.leftTab(key)
+      }));
+      // Arrow keys move between the left panel's tabs, as in any tab list
+      this.leftTabKey = (event) => {
+        const keys = this.leftTabs.map((t) => t.key);
+        const at = keys.indexOf(this.leftTab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        this.leftTab(keys[next]);
+        const tab = document.getElementById('leftTab-' + keys[next]);
+        if (tab) {
+          tab.focus();
+        }
+        event.preventDefault();
+        return false;
+      };
       this.drawer = ko.observable(null);
       this.toggleDrawer = (name) => () => this.drawer(this.drawer() === name ? null : name);
       this.openNew = this.toggleDrawer('new');
       this.openImport = this.toggleDrawer('import');
       this.openShare = this.toggleDrawer('share');
       this.closeDrawer = () => this.drawer(null);
-      this.showComponents = () => this.leftTab('components');
-      this.showLayers = () => this.leftTab('layers');
-      this.showProperties = () => this.rightTab('properties');
       this.showComments = () => { this.contextTab('comments'); this.contextOpen(true); };
       this.showHistory = () => { this.contextTab('history'); this.contextOpen(true); };
-      this.showCodeTab = () => this.mode('code');
-      this.rightTabs = [['properties', 'Properties'], ['data', 'Data'], ['events', 'Events'], ['style', 'Style']].map(([key, label]) => ({
-        label: label,
-        on: ko.pureComputed(() => this.rightTab() === key),
-        css: ko.pureComputed(() => 'factory-dz-tab' + (this.rightTab() === key ? ' factory-dz-tab-active' : '')),
-        pick: () => this.rightTab(key)
-      }));
+      this.showAssistant = () => { this.contextTab('assistant'); this.contextOpen(true); };
+      // The inspector: one list of sections in a fixed order; which are open is kept while other elements are selected
+      const INSPECTOR = [['properties', 'Properties'], ['binding', 'Data Binding'], ['validation', 'Validation'],
+        ['visibility', 'Visibility Conditions'], ['events', 'Events and Actions'], ['style', 'Style'], ['accessibility', 'Accessibility']];
+      this.sectionOpen = {};
+      INSPECTOR.forEach(([key]) => { this.sectionOpen[key] = ko.observable(key === 'properties'); });
+      this.sectionToggle = (event) => {
+        const key = event.target && event.target.getAttribute ? event.target.getAttribute('data-section') : null;
+        if (key && this.sectionOpen[key] && event.target.tagName === 'DETAILS') {
+          this.sectionOpen[key](event.target.open);
+        }
+      };
+      /** Opens an inspector section and brings it into view (and its first box into focus, when asked). */
+      const openSection = (key, focusSelector) => {
+        this.rightOpen(true);
+        this.sectionOpen[key](true);
+        setTimeout(() => {
+          const section = document.querySelector('#rightPanel details[data-section="' + key + '"]');
+          if (section) {
+            section.open = true;
+            section.scrollIntoView({ block: 'nearest' });
+          }
+          const box = focusSelector ? document.querySelector(focusSelector) : null;
+          if (box) {
+            box.focus();
+          }
+        }, 80);
+      };
       // Design shows the canvas; Code shows what the screen is made of (and the app code for app targets)
       this.mode = ko.observable('design');
       this.setDesignMode = () => this.mode('design');
@@ -150,18 +198,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.rightOpen = ko.observable(remembered('rightOpen', true));
       this.leftOpen.subscribe((open) => remember('leftOpen', open));
       this.rightOpen.subscribe((open) => remember('rightOpen', open));
+      // The drawer under the canvas (rules, comments, history, AI Assistant) starts closed so the canvas gets the room
+      this.contextTab = ko.observable('rules');
+      this.contextOpen = ko.observable(remembered('contextOpen', false));
+      this.contextOpen.subscribe((open) => remember('contextOpen', open));
       this.collapseLeft = () => this.leftOpen(false);
       this.collapseRight = () => this.rightOpen(false);
       const openLeftOn = (tab) => () => { this.leftTab(tab); this.leftOpen(true); };
-      const openRightOn = (tab) => () => { this.rightTab(tab); this.rightOpen(true); };
       this.railComponents = openLeftOn('components');
       this.railLayers = openLeftOn('layers');
-      this.railProperties = openRightOn('properties');
+      this.railScreens = openLeftOn('screens');
+      this.railProperties = () => this.rightOpen(true);
       this.railComments = () => this.showComments();
       this.railHistory = () => this.showHistory();
+      this.railAssistant = () => this.showAssistant();
       this.bodyClass = ko.pureComputed(() => 'factory-dz-body' + (this.leftOpen() ? ' factory-dz-left-open' : '')
         + (this.rightOpen() ? ' factory-dz-right-open' : '') + (this.detail() ? '' : ' factory-dz-nodetail')
-        + (this.previewMode() ? ' factory-dz-previewing' : ''));
+        + (this.previewMode() ? ' factory-dz-previewing' : '') + (this.contextOpen() ? ' factory-dz-ctx-open' : ''));
 
       const catalog = ko.observableArray([]);
       this.typeOptions = catalog;
@@ -169,6 +222,74 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.kindOptions = [
         { value: 'primary', label: 'Primary' }, { value: 'secondary', label: 'Secondary' }, { value: 'link', label: 'Link' }
       ];
+
+      // --- compatibility: each element of the screen against the workspace's OBDX version ---
+
+      /** The element code generation uses for a component: the catalog's JET element, or the component's own name. */
+      const elementOf = (component) => {
+        if (!component) {
+          return null;
+        }
+        if (component.type === 'component') {
+          return component.component || null;
+        }
+        const entry = catalog().find((t) => t.value === component.type);
+        const match = entry && entry.jet ? /^[a-z][a-z0-9-]*/.exec(entry.jet) : null;
+        return match ? match[0] : null;
+      };
+      const compatibility = ko.observable({ version: '', imported: false, entries: {} });
+      this.compatibilityOf = (element) => (element ? compatibility().entries[element] || null : null);
+      this.obdxVersion = ko.pureComputed(() => compatibility().version);
+      const screenElements = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model || !catalog().length) {
+          return [];
+        }
+        const names = [];
+        model.sections.forEach((s) => s.components.forEach((c) => {
+          const element = elementOf(c);
+          if (element && names.indexOf(element) < 0) {
+            names.push(element);
+          }
+        }));
+        if (model.actions.length) {
+          names.push('oj-button');
+        }
+        return names.sort();
+      });
+      // Asked again only when the set of elements changes, not on every edit
+      let askedFor = null;
+      ko.computed(() => {
+        const names = screenElements();
+        const workspace = this.workspaceId();
+        const key = workspace + '|' + names.join(',');
+        if (!workspace || names.length === 0 || key === askedFor) {
+          return;
+        }
+        askedFor = key;
+        api.get('workspaces/' + workspace + '/design-compatibility?' + names.map((n) => 'element=' + encodeURIComponent(n)).join('&'))
+          .then((report) => {
+            const entries = Object.assign({}, compatibility().version === report.obdxVersion ? compatibility().entries : {});
+            report.elements.forEach((e) => { entries[e.element] = e; });
+            compatibility({ version: report.obdxVersion, imported: report.codeImported, entries: entries });
+          })
+          .catch(() => { askedFor = null; });
+      }).extend({ rateLimit: 400 });
+      this.compatibilitySummary = ko.pureComputed(() => {
+        const names = screenElements();
+        const counts = { VERIFIED: 0, UNSUPPORTED: 0, UNVERIFIED: 0 };
+        names.forEach((n) => { const e = this.compatibilityOf(n); if (e) { counts[e.status]++; } });
+        const known = counts.VERIFIED + counts.UNSUPPORTED + counts.UNVERIFIED;
+        return {
+          shown: known > 0,
+          text: 'OBDX ' + this.obdxVersion() + ': ' + counts.VERIFIED + ' verified · ' + counts.UNSUPPORTED + ' unsupported · '
+            + counts.UNVERIFIED + ' unverified',
+          css: 'factory-dz-compat-chip' + (counts.UNSUPPORTED ? ' factory-dz-compat-chip-bad' : ''),
+          title: 'The elements this screen uses, checked against the OBDX ' + this.obdxVersion() + ' version pack and the bank\'s imported code. '
+            + 'Verified: the bank\'s code uses it. Unsupported: a version pack rule forbids it. Unverified: no evidence either way.'
+            + (compatibility().imported ? '' : ' The code is not imported yet, so nothing can be verified.')
+        };
+      });
 
       // Errors stay above the canvas and show a toast; other feedback is a toast
       const showError = (error) => { this.infoMessage(''); this.errorMessage(error.message); toast.error(error.message); };
@@ -196,6 +317,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Zoom: fit (the chosen width scaled down to the canvas) or a fixed percentage
       this.zoom = ko.observable('fit');
       this.zoomOptions = [{ value: 'fit', label: 'Fit' }, { value: '100', label: '100%' }, { value: '75', label: '75%' }, { value: '50', label: '50%' }];
+      // The minus and plus buttons step through the fixed zooms; from Fit they start at the zoom Fit shows now
+      const ZOOM_STEPS = [50, 75, 100];
+      const zoomNow = () => (this.zoom() === 'fit' ? Math.round(this.deviceScale() * 100) : Number(this.zoom()));
+      this.canZoomOut = ko.pureComputed(() => zoomNow() > ZOOM_STEPS[0]);
+      this.canZoomIn = ko.pureComputed(() => zoomNow() < ZOOM_STEPS[ZOOM_STEPS.length - 1]);
+      this.zoomOut = () => {
+        const lower = ZOOM_STEPS.filter((z) => z < zoomNow());
+        if (lower.length) {
+          this.zoom(String(lower[lower.length - 1]));
+        }
+      };
+      this.zoomIn = () => {
+        const higher = ZOOM_STEPS.filter((z) => z > zoomNow());
+        if (higher.length) {
+          this.zoom(String(higher[0]));
+        }
+      };
       this.deviceScale = ko.pureComputed(() => {
         if (this.zoom() !== 'fit') {
           return Number(this.zoom()) / 100;
@@ -213,11 +351,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ];
       this.sizeButtons = SIZE_GROUPS.map((g) => ({
         title: g.title,
+        label: g.icon === 'desktop' ? 'Desktop' : g.icon === 'tablet' ? 'Tablet' : 'Phone',
         icon: 'factory-dz-devico factory-dz-devico-' + g.icon,
         on: ko.pureComputed(() => g.keys.includes(this.viewport())),
         css: ko.pureComputed(() => 'factory-dz-size' + (g.keys.includes(this.viewport()) ? ' factory-dz-size-on' : '')),
         pick: () => this.viewport(g.key)
       }));
+      this.viewportOptions = VIEWPORTS.map((v) => ({ value: v.key, label: v.label }));
+      // Canvas previews: the messages each field shows when it is checked, and the order the Tab key follows
+      this.validationPreview = ko.observable(false);
+      this.showFocusOrder = ko.observable(false);
+      this.toggleValidationPreview = () => this.validationPreview(!this.validationPreview());
+      this.toggleFocusOrder = () => this.showFocusOrder(!this.showFocusOrder());
       this.frameInnerHeight = ko.pureComputed(() => (100 / this.deviceScale()) + '%');
       this.frameTransform = ko.pureComputed(() => (this.deviceScale() < 1 ? 'scale(' + this.deviceScale() + ')' : 'none'));
       this.viewportText = ko.pureComputed(() => {
@@ -427,6 +572,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- layers: the screen's sections, components and buttons as a tree ---
 
+      // Each row carries its compatibility mark (see compatibility below) and its hidden condition
+      const layerMark = (element) => {
+        const entry = this.compatibilityOf(element);
+        return entry ? { css: 'factory-dz-compat factory-dz-compat-' + entry.status.toLowerCase(), text: COMPAT_MARKS[entry.status],
+          title: COMPAT_WORDS[entry.status] + ': ' + entry.evidence } : { css: 'factory-dz-compat', text: '', title: '' };
+      };
       this.layers = ko.pureComputed(() => {
         const model = this.working();
         if (!model) {
@@ -445,6 +596,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             label: (c.label || c.name) + (c.required === true ? ' *' : ''),
             icon: ICONS[c.type] || '•',
             typeLabel: typeLabel(c),
+            conditional: !!(c.visibleWhen && c.visibleWhen.field),
+            mark: layerMark(elementOf(c)),
             selected: c.id === selected,
             selectAction: () => this.selectedId(c.id)
           }))
@@ -454,9 +607,51 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const model = this.working();
         const selected = this.selectedId();
         return model ? model.actions.map((a) => ({
-          id: a.id, label: a.label, kind: a.kind, selected: a.id === selected, selectAction: () => this.selectedId(a.id)
+          id: a.id, label: a.label, kind: a.kind, mark: layerMark('oj-button'), selected: a.id === selected, selectAction: () => this.selectedId(a.id)
         })) : [];
       });
+      /**
+       * Keys in the layers tree: up and down move between rows, Home and End to the ends, Enter or Space selects, and
+       * Alt with up or down moves the selected component (the keyboard way to drag it).
+       */
+      this.layerKey = (event) => {
+        const rows = [...document.querySelectorAll('#designLayers [data-layer]')];
+        const at = rows.indexOf(document.activeElement);
+        const focusRow = (row) => {
+          if (row) {
+            row.focus();
+          }
+        };
+        if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          const id = document.activeElement && document.activeElement.getAttribute('data-cid');
+          if (id && this.editable()) {
+            this.selectedId(id);
+            move(id, event.key === 'ArrowUp' ? -1 : 1);
+            setTimeout(() => focusRow(document.querySelector('#designLayers [data-cid="' + id + '"]')), 30);
+          }
+          event.preventDefault();
+          return false;
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          focusRow(rows[Math.min(Math.max(at + (event.key === 'ArrowDown' ? 1 : -1), 0), rows.length - 1)]);
+          event.preventDefault();
+          return false;
+        }
+        if (event.key === 'Home' || event.key === 'End') {
+          focusRow(rows[event.key === 'Home' ? 0 : rows.length - 1]);
+          event.preventDefault();
+          return false;
+        }
+        if ((event.key === 'Enter' || event.key === ' ') && at >= 0) {
+          // Selecting redraws the tree, so the same row gets the focus back
+          const key = rows[at].getAttribute('data-layer');
+          rows[at].click();
+          setTimeout(() => focusRow(document.querySelector('#designLayers [data-layer="' + key + '"]')), 30);
+          event.preventDefault();
+          return false;
+        }
+        return true;
+      };
       this.componentCount = ko.pureComputed(() => (this.working()
         ? this.working().sections.reduce((n, s) => n + s.components.length, 0) : 0));
 
@@ -655,12 +850,48 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         event.dataTransfer.effectAllowed = 'copy';
         event.dataTransfer.setData('text/plain', id);
       };
+      // Where a drop on the layers tree would land: a line above the row it goes before, or the section it goes into
+      let dropMark = null;
+      const markDrop = (element, css) => {
+        if (dropMark && (dropMark.element !== element || dropMark.css !== css)) {
+          dropMark.element.classList.remove(dropMark.css);
+          dropMark = null;
+        }
+        if (element && !dropMark) {
+          element.classList.add(css);
+          dropMark = { element: element, css: css };
+        }
+      };
       // A drop on the canvas arrives as a message after dragend, so the dragged thing is forgotten a moment later.
-      this.dragEnd = () => setTimeout(() => { draggedId = null; draggedItem = null; }, 300);
+      this.dragEnd = () => {
+        markDrop(null);
+        setTimeout(() => { draggedId = null; draggedItem = null; }, 300);
+      };
       this.dragOver = (event) => {
         if (draggedId || (draggedItem && this.editable())) {
           event.preventDefault();
+          const row = event.currentTarget.hasAttribute('data-cid') ? event.currentTarget : null;
+          if (row) {
+            event.stopPropagation();
+            markDrop(row, 'factory-layer-drop-before');
+          } else {
+            markDrop(event.currentTarget, 'factory-layer-drop-into');
+          }
         }
+      };
+      this.dragLeave = (event) => {
+        if (dropMark && dropMark.element === event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          markDrop(null);
+        }
+      };
+      // Enter or Space on a palette item adds it, like a click
+      this.paletteKey = (event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
+          event.currentTarget.click();
+          event.preventDefault();
+          return false;
+        }
+        return true;
       };
       const moveComponent = (id, targetId, sectionId) => update((m) => {
         const from = locate(m, id);
@@ -694,10 +925,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.dropOnComponent = (event) => {
         event.preventDefault();
         event.stopPropagation();
+        markDrop(null);
         drop(event.currentTarget.getAttribute('data-cid'), null);
       };
       this.dropOnSection = (event) => {
         event.preventDefault();
+        markDrop(null);
         drop(null, event.currentTarget.getAttribute('data-sid'));
       };
 
@@ -862,6 +1095,99 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.requiredValue = conditionPart('requiredWhen', 'value');
       this.visibleNeedsValue = ko.pureComputed(() => ['equals', 'notEquals'].includes(this.visibleOperator()));
       this.requiredNeedsValue = ko.pureComputed(() => ['equals', 'notEquals'].includes(this.requiredOperator()));
+
+      // --- the selection's compatibility, focus order and accessibility ---
+
+      this.selectedCompat = ko.pureComputed(() => {
+        const kind = this.selectedKind();
+        const element = kind === 'component' ? elementOf(this.selectedComponent()) : kind === 'action' ? 'oj-button' : null;
+        if (!element) {
+          return null;
+        }
+        const entry = this.compatibilityOf(element);
+        const status = entry ? entry.status : null;
+        return {
+          element: '<' + element + '>',
+          text: status ? COMPAT_WORDS[status] + ' for OBDX ' + this.obdxVersion() : 'Checking…',
+          evidence: entry ? entry.evidence : '',
+          css: 'factory-dz-compat-line' + (status ? ' factory-dz-compat-line-' + status.toLowerCase() : ''),
+          mark: status ? COMPAT_MARKS[status] : '…'
+        };
+      });
+      // Keyboard focus moves through the screen in document order: the sections top to bottom, each section's fields in
+      // the order of its layers, then the buttons. Read-only values, tables and elements with their own code are left out.
+      const FOCUSLESS = ['display', 'table', 'component'];
+      this.focusOrder = ko.pureComputed(() => {
+        const model = this.working();
+        if (!model) {
+          return [];
+        }
+        const order = [];
+        model.sections.forEach((s) => s.components.forEach((c) => {
+          if (!FOCUSLESS.includes(c.type) && c.readonly !== true && !c.html && !c.script) {
+            order.push({ id: c.id, label: c.label || c.name, kind: typeLabel(c), note: c.visibleWhen && c.visibleWhen.field ? 'only while shown' : '' });
+          }
+        }));
+        model.actions.forEach((a) => order.push({ id: a.id, label: a.label, kind: 'Button', note: '' }));
+        const selected = this.selectedId();
+        return order.map((item, i) => Object.assign(item, {
+          number: i + 1,
+          css: 'factory-dz-focusrow' + (item.id === selected ? ' factory-dz-focusrow-on' : ''),
+          selectAction: () => this.selectedId(item.id)
+        }));
+      });
+      this.focusPosition = ko.pureComputed(() => {
+        const item = this.focusOrder().find((f) => f.id === this.selectedId());
+        return item ? item.number + ' of ' + this.focusOrder().length : 'Not a tab stop';
+      });
+      // What a screen reader announces for the selected field, and what to fix
+      this.accessibility = ko.pureComputed(() => {
+        const c = this.selectedComponent();
+        const action = this.selectedKind() === 'action' && this.working() ? this.working().actions.find((a) => a.id === this.selectedId()) : null;
+        if (!c && !action) {
+          return null;
+        }
+        const notes = [];
+        const add = (level, text) => notes.push({ text: text, css: 'factory-dz-check factory-dz-check-' + level, icon: level === 'ok' ? '✓' : level === 'warn' ? '!' : 'i' });
+        if (action) {
+          if (action.label && action.label.trim()) {
+            add('ok', 'Announced as the button "' + action.label + '"');
+          } else {
+            add('warn', 'The button has no label, so a screen reader has nothing to announce');
+          }
+          return { name: action.label || '', description: '', notes: notes };
+        }
+        if (c.label && c.label.trim()) {
+          add('ok', 'Announced by its label "' + c.label + '"' + (c.required === true ? ', as required' : ''));
+        } else {
+          add('warn', 'No label: a screen reader announces nothing useful. Give it a label under Properties.');
+        }
+        if (c.placeholder && (!c.label || !c.label.trim())) {
+          add('warn', 'A placeholder disappears while typing and is not a label');
+        }
+        if (c.helpText) {
+          add('ok', 'Its help text describes it');
+        }
+        if (c.visibleWhen && c.visibleWhen.field) {
+          add('info', 'Shown only when another field meets a condition; it is out of the focus order while hidden');
+        }
+        if (c.html || c.script) {
+          add('info', 'It is drawn by its own HTML: check its labels and keyboard use there');
+        }
+        if (c.type === 'table') {
+          add('info', 'A table needs a caption or a heading; its columns are its headers');
+        }
+        return { name: c.label || '', description: c.helpText || '', notes: notes };
+      });
+      // The events of the selection: the conditions it drives or follows, or what a button does
+      this.selectedEvents = ko.pureComputed(() => {
+        const id = this.selectedId();
+        const model = this.working();
+        if (!model || !id) {
+          return [];
+        }
+        return this.eventRows().filter((row) => row.ids.indexOf(id) >= 0);
+      });
 
       // The element's own HTML, CSS and JS; a value binding commits when the box loses focus, so the canvas does not redraw per key
       this.codeTab = ko.observable('html');
@@ -1149,16 +1475,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'new', label: 'New screen', icon: 'plus', disabled: !this.canDesign() },
         { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
         { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() },
-        { value: 'board', label: 'All screens', icon: 'design' },
-        { separator: true },
-        { value: 'size-fit', label: 'Size: fit to the canvas' },
-        { value: 'size-desktop', label: 'Size: desktop · 1440' },
-        { value: 'size-laptop', label: 'Size: laptop · 1280' },
-        { value: 'size-tablet-landscape', label: 'Size: tablet landscape · 1024' },
-        { value: 'size-tablet', label: 'Size: tablet · 768' },
-        { value: 'size-phone', label: 'Size: phone · 390' },
-        { value: 'size-phone-small', label: 'Size: small phone · 360' },
-        { value: 'size-custom', label: 'Size: custom width' }
+        { value: 'board', label: 'All screens', icon: 'design' }
       ]);
       this.screenMenuItems = ko.pureComputed(() => {
         const approved = !!this.detail() && this.detail().status === 'APPROVED';
@@ -1180,8 +1497,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.openImport();
         } else if (value === 'board') {
           this.backToBoard();
-        } else if (value && value.indexOf('size-') === 0) {
-          this.viewport(value.slice(5));
         }
       };
       this.screenMenu = (event) => {
@@ -1342,7 +1657,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           });
       });
       // Add Rule: a validation on the selected field (business rules come from the requirement)
-      this.validationOpen = ko.observable(false);
       this.canAddRule = ko.pureComputed(() => this.editable() && this.selectedKind() === 'component');
       this.addRuleTitle = ko.pureComputed(() => {
         if (!this.editable()) {
@@ -1355,20 +1669,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!this.canAddRule()) {
           return;
         }
-        this.rightOpen(true);
-        this.rightTab('properties');
-        this.validationOpen(true);
-        setTimeout(() => {
-          const section = document.getElementById('validationSection');
-          if (section) {
-            section.open = true;
-            section.scrollIntoView({ block: 'nearest' });
-          }
-          const box = document.querySelector('#propValidations textarea');
-          if (box) {
-            box.focus();
-          }
-        }, 80);
+        openSection('validation', '#propValidations textarea');
       };
 
       // Data: where each field's value comes from
@@ -1398,16 +1699,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const specAction = spec ? (spec.actions || []).find((x) => norm(x.name) === norm(a.label)) : null;
           return {
             kind: 'Click', element: a.label + ' button',
-            does: specAction && specAction.description ? specAction.description : (a.kind === 'primary' ? 'The main action of the screen' : a.kind + ' action'),
+            does: specAction && specAction.description ? specAction.description
+              : (a.kind === 'primary' ? 'The main button. ' : '') + 'The requirement does not say what it does.',
+            ids: [a.id],
             selectAction: () => this.selectedId(a.id)
           };
         });
         allComponents(model).forEach((c) => {
           if (c.visibleWhen && c.visibleWhen.field) {
-            rows.push({ kind: 'Change', element: label(c.visibleWhen.field), does: 'Shows "' + (c.label || c.name) + '" when it ' + op(c.visibleWhen), selectAction: () => this.selectedId(c.id) });
+            rows.push({ kind: 'Change', element: label(c.visibleWhen.field), does: 'Shows "' + (c.label || c.name) + '" when it ' + op(c.visibleWhen), ids: [c.id, c.visibleWhen.field], selectAction: () => this.selectedId(c.id) });
           }
           if (c.requiredWhen && c.requiredWhen.field) {
-            rows.push({ kind: 'Change', element: label(c.requiredWhen.field), does: 'Makes "' + (c.label || c.name) + '" mandatory when it ' + op(c.requiredWhen), selectAction: () => this.selectedId(c.id) });
+            rows.push({ kind: 'Change', element: label(c.requiredWhen.field), does: 'Makes "' + (c.label || c.name) + '" mandatory when it ' + op(c.requiredWhen), ids: [c.id, c.requiredWhen.field], selectAction: () => this.selectedId(c.id) });
           }
         });
         return rows;
@@ -1473,7 +1776,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
         : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
-      this.showChecks = () => { this.selectedId(null); this.rightTab('properties'); this.rightOpen(true); };
+      this.showChecks = () => {
+        this.selectedId(null);
+        this.rightOpen(true);
+        setTimeout(() => {
+          const checks = document.getElementById('checksSection');
+          if (checks) {
+            checks.open = true;
+            checks.scrollIntoView({ block: 'nearest' });
+          }
+        }, 80);
+      };
       /**
        * What the requirement says about this screen: the functional requirements it serves (FR-001), the acceptance
        * criteria that check them (AC-001) and the business rules.
@@ -1501,11 +1814,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const warnings = {};
         this.checks().filter((c) => c.level === 'warn' && c.id).forEach((c) => { warnings[c.id] = c.text; });
         // The journey's steps show in the strip above the canvas, not again inside the page
+        const focus = {};
+        if (this.showFocusOrder()) {
+          this.focusOrder().forEach((f) => { focus[f.id] = f.number; });
+        }
         return {
           bank: bankNames[this.workspaceId()] || 'Online banking',
           breadcrumb: 'Dashboard' + (this.journeyTitle() ? ' / ' + this.journeyTitle() : ''),
           warnings: warnings,
-          editing: this.editable()
+          editing: this.editable(),
+          validation: this.validationPreview(),
+          focusOrder: focus
         };
       });
       ko.computed(() => preview.show(this.working(), this.selectedId(), this.previewContext()));
@@ -1590,6 +1909,100 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.canRestorePrevious = ko.pureComputed(() => this.editable() && !this.dirty() && !!this.detail() && this.detail().currentVersion > 1);
+
+      // Compare two versions (or the unsaved changes) in plain words; a change selects its element
+      this.compareFrom = ko.observable(null);
+      this.compareTo = ko.observable(null);
+      this.compareOptions = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const options = d.versions.slice().sort((a, b) => b.version - a.version).map((v) => ({
+          value: String(v.version),
+          label: 'v' + v.version + (v.version === d.currentVersion ? ' (saved)' : '') + ' · ' + v.origin.charAt(0) + v.origin.slice(1).toLowerCase()
+        }));
+        return this.dirty() ? [{ value: 'working', label: 'Unsaved changes' }].concat(options) : options;
+      });
+      const versionModels = {};
+      const modelOf = (key) => {
+        if (key === 'working') {
+          return Promise.resolve(this.working());
+        }
+        const id = this.detail().id;
+        if (Number(key) === this.detail().currentVersion) {
+          return Promise.resolve(this.detail().model);
+        }
+        const cacheKey = id + ':' + key;
+        return versionModels[cacheKey] ? Promise.resolve(versionModels[cacheKey])
+          : api.get('designs/' + id + '/versions/' + key).then((model) => { versionModels[cacheKey] = model; return model; });
+      };
+      this.differences = ko.observableArray([]);
+      this.compareNote = ko.observable('');
+      const resetCompare = () => {
+        const d = this.detail();
+        if (!d) {
+          return;
+        }
+        this.compareTo(this.dirty() ? 'working' : String(d.currentVersion));
+        const earlier = d.versions.filter((v) => v.version < d.currentVersion).map((v) => v.version);
+        this.compareFrom(this.dirty() ? String(d.currentVersion) : earlier.length ? String(Math.max.apply(null, earlier)) : String(d.currentVersion));
+      };
+      this.compare = () => {
+        const from = this.compareFrom();
+        const to = this.compareTo();
+        if (!this.detail() || !from || !to) {
+          return;
+        }
+        if (from === to) {
+          this.differences([]);
+          this.compareNote(this.detail().versions.length < 2 && !this.dirty() ? 'Only one version so far. Change the screen, then compare.' : 'Choose two different versions.');
+          return;
+        }
+        Promise.all([modelOf(from), modelOf(to)]).then(([a, b]) => {
+          const label = (key) => (key === 'working' ? 'the unsaved changes' : 'v' + key);
+          this.compareNote('From ' + label(from) + ' to ' + label(to) + ':');
+          this.differences(designDiff(a, b).map((d) => {
+            const exists = !!d.id && to === (this.dirty() ? 'working' : String(this.detail().currentVersion));
+            return {
+              kind: d.kind,
+              text: d.text,
+              css: 'factory-dz-diff factory-dz-diff-' + d.kind.toLowerCase(),
+              selectable: exists,
+              selectAction: () => { if (exists) { this.selectedId(d.id); } }
+            };
+          }));
+        }).catch(showError);
+      };
+      ko.computed(() => {
+        this.compareFrom();
+        this.compareTo();
+        if (this.contextTab() === 'history' && this.contextOpen()) {
+          ko.ignoreDependencies(this.compare);
+        }
+      });
+      this.contextTab.subscribe((tab) => { if (tab === 'history') { resetCompare(); } });
+      this.compareVersion = ko.pureComputed(() => {
+        const from = this.compareFrom();
+        return from && from !== 'working' && this.detail() && Number(from) !== this.detail().currentVersion ? Number(from) : null;
+      });
+      /** Shows the "from" version on the canvas, to look at it or save it again (Undo goes back). */
+      this.showCompareVersion = () => {
+        const version = this.versions().find((v) => v.version === this.compareVersion());
+        if (version) {
+          version.previewAction();
+        }
+      };
+      this.restoreCompareVersion = () => {
+        const version = this.versions().find((v) => v.version === this.compareVersion());
+        if (version) {
+          ask('Restore version ' + version.version + '?', 'It is saved again as the newest version; no version is lost.', 'Restore').then((ok) => {
+            if (ok) {
+              version.restoreAction();
+            }
+          });
+        }
+      };
       this.reviewUrl = ko.pureComputed(() => (this.detail() && this.detail().reviewToken
         ? window.location.origin + window.location.pathname + '?ojr=review&embed=1&token=' + this.detail().reviewToken : ''));
       this.reviewExpires = ko.pureComputed(() => (this.detail() && this.detail().reviewExpiresAt
@@ -1650,7 +2063,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!this.detail() || this.detail().id !== detail.id) {
           this.codeFiles([]);
           this.ai.clear();
-          this.validationOpen(false);
           loadRequirement(detail.requirementId);
           undoStack([]);
           redoStack([]);
@@ -1665,6 +2077,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!keepSelection) {
           this.selectedId(null);
         }
+        resetCompare();
         loadDesigns();
       };
 
@@ -1816,7 +2229,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       // The panel under the canvas: what the screen's requirement says (rules, APIs, host interfaces, roles) and the
       // screen's own validations, comments and versions
-      this.contextTab = ko.observable('rules');
       const specList = (key) => ko.pureComputed(() => (this.requirement() && this.requirement().spec ? this.requirement().spec[key] || [] : []));
       this.ctxRules = specList('businessRules');
       this.ctxApis = specList('apis');
@@ -1839,25 +2251,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.ctxVersions = ko.pureComputed(() => (this.detail() ? this.detail().versions.slice().reverse().map((v) => ({
         version: 'v' + v.version, origin: v.origin.charAt(0) + v.origin.slice(1).toLowerCase(), note: v.note || '', when: new Date(v.createdAt).toLocaleString()
       })) : []));
-      const ctxTab = (value, label, list) => ({
-        value: value, text: ko.pureComputed(() => label + (list ? ' (' + list().length + ')' : '')),
-        css: ko.pureComputed(() => 'factory-tab' + (this.contextTab() === value ? ' factory-tab-on' : '')), pick: () => this.contextTab(value)
+      const ctxTab = (value, label, list, title) => ({
+        value: value, id: 'ctxTab-' + value, title: title || label, text: ko.pureComputed(() => label + (list ? ' (' + list().length + ')' : '')),
+        selected: ko.pureComputed(() => this.contextTab() === value),
+        css: ko.pureComputed(() => 'factory-tab' + (this.contextTab() === value ? ' factory-tab-on' : '')),
+        pick: () => { this.contextTab(value); this.contextOpen(true); }
       });
       this.contextTabs = [
-        ctxTab('rules', 'Business Rules', this.ctxRules), ctxTab('apis', 'APIs', this.ctxApis), ctxTab('hosts', 'Host Interfaces', this.ctxHosts),
+        ctxTab('rules', 'Rules', this.ctxRules, 'Business rules from the requirement'), ctxTab('apis', 'APIs', this.ctxApis), ctxTab('hosts', 'Hosts', this.ctxHosts, 'Host interfaces from the requirement'),
         ctxTab('roles', 'Roles', this.ctxRoles), ctxTab('validations', 'Validations', this.ctxValidations), ctxTab('comments', 'Comments', this.ctxComments),
-        ctxTab('history', 'History', this.ctxVersions)
+        ctxTab('history', 'History', this.ctxVersions), ctxTab('assistant', 'AI Assistant', null)
       ];
-      this.contextOpen = ko.observable(true);
+      this.contextTabKey = (event) => {
+        const keys = this.contextTabs.map((t) => t.value);
+        const at = keys.indexOf(this.contextTab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        this.contextTabs[next].pick();
+        const tab = document.getElementById('ctxTab-' + keys[next]);
+        if (tab) {
+          tab.focus();
+        }
+        event.preventDefault();
+        return false;
+      };
       this.toggleContext = () => this.contextOpen(!this.contextOpen());
       this.hasRequirement = ko.pureComputed(() => !!(this.requirement() && this.requirement().spec));
       this.specTabWithoutSpec = ko.pureComputed(() => !this.hasRequirement() && ['rules', 'apis', 'hosts', 'roles'].indexOf(this.contextTab()) >= 0);
 
       this.connected = () => {
-        accUtils.announce('Screen designer loaded.');
-        document.title = 'Screen designer';
+        accUtils.announce('Visual Designer loaded.');
+        document.title = 'Visual Designer';
         preview.attach('designerPreview');
         window.addEventListener('beforeunload', beforeUnload);
+        window.addEventListener('unhandledrejection', keptChanges);
         document.addEventListener('keydown', onKeydown);
         if (window.ResizeObserver) {
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
@@ -1866,7 +2296,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             stageObserver.observe(stage);
           }
         }
-        api.get('design/catalog').then((types) => catalog(types.map((t) => ({ value: t.type, label: t.label, hasOptions: t.hasOptions }))))
+        api.get('design/catalog').then((types) => catalog(types.map((t) => ({ value: t.type, label: t.label, hasOptions: t.hasOptions, jet: t.jetComponent }))))
           .catch(showError);
         const refreshPalette = () => {
           codeItems([]);
@@ -1893,13 +2323,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
         }).catch(showError);
       };
-      this.backToStudio = () => {
-        pageRequests.studio(this.detail() ? this.detail().requirementId : null);
-        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' }));
+      // Leaving the page for another one asks first when there are unsaved changes; the router stays when the promise
+      // is rejected (ModuleRouterAdapter), so Cancel rejects
+      const STAY = 'Unsaved changes kept';
+      this.canExit = () => (this.dirty() ? ask.apply(null, DISCARD).then((ok) => (ok ? undefined : Promise.reject(new Error(STAY))))
+        : Promise.resolve());
+      // The pages that navigate do not catch the router's rejection; staying is expected, so it is not an error
+      const keptChanges = (event) => {
+        if (event.reason && event.reason.message === STAY) {
+          event.preventDefault();
+        }
       };
       this.disconnected = () => {
         preview.detach();
         window.removeEventListener('beforeunload', beforeUnload);
+        window.removeEventListener('unhandledrejection', keptChanges);
         document.removeEventListener('keydown', onKeydown);
         if (stageObserver) {
           stageObserver.disconnect();
