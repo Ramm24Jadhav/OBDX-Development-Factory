@@ -912,6 +912,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (wantedFile) {
           this.tab('search');
         }
+        // A tab another page asked for (the Integrations page opens Repository settings)
+        const wantedTab = pageRequests.codeTab();
+        pageRequests.codeTab(null);
+        if (wantedTab && !requested && !wantedFile) {
+          this.tab(wantedTab);
+        }
         // If loading the list changed the selection, the subscription has already loaded the workspace.
         workspaceSelection.load().then(() => (this.workspaceId() === before ? loadWorkspace(before) : null))
           .then(() => {

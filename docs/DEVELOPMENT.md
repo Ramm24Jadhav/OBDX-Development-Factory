@@ -560,7 +560,7 @@ Every API checks these permissions (`AccessGuard`); the UI hides actions a user 
 
 **Sessions** use an HTTP-only cookie that ends after `FACTORY_SESSION_TIMEOUT` (30 minutes) of inactivity; changes need the CSRF token from the `XSRF-TOKEN` cookie in an `X-XSRF-TOKEN` header (the UI does this). Five failed sign-ins in a row from one address lock that username for that address for 15 minutes, so no one elsewhere can lock an administrator out. An address with 20 failed sign-ins (any usernames) waits 1 second before the next try, doubling with each further failure up to 15 minutes (`factory.auth.max-failed-logins`, `max-failed-logins-per-address`, `lock-duration`). Behind Oracle HTTP Server set `FACTORY_FORWARD_HEADERS=native` so the address is the user's, not the proxy's. A wrong password for a disabled account gets the same answer as any wrong password. Responses carry `Content-Security-Policy: frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'` (plus the SAML identity provider in SAML mode), `Referrer-Policy: same-origin` and, on HTTPS requests, `Strict-Transport-Security`. A query or a JSON text with a NUL character, or a path a file cannot have, is a 400. A body that cannot be read gets "The request could not be read (field "name", line 1, column 9). Check the data sent."; the parser's own message goes to the log. Serve the factory over HTTPS in production and set `FACTORY_COOKIE_SECURE=true`. Sessions are kept in memory, so a restart signs everyone out, and running several servers behind a load balancer needs sticky sessions.
 
-**Audit log** (Admin page, `GET /api/admin/audit`): sign-ins and failed sign-ins, workspace creation and deletion, SVN setting changes, imports, Project Profile corrections, requirements created, approved and deleted, review links, design approvals (including by customers), and user and role changes. Passwords are never recorded.
+**Audit log** (Admin page, `GET /api/admin/audit`): sign-ins and failed sign-ins, workspace creation and deletion, SVN and Jenkins setting changes, SVN and Jenkins connection tests (pass or fail, with the error), imports, Project Profile corrections, requirements created, approved and deleted, review links, design approvals (including by customers), and user and role changes. Passwords are never recorded.
 
 ## Working on the UI
 
@@ -668,13 +668,15 @@ object: compute those in the view model.
 | `GET` / `POST /api/admin/users`, `PUT /api/admin/users/{id}`, `POST /api/admin/users/{id}/password` | Users (administrators) |
 | `GET /api/workspaces/{id}/members`, `PUT` / `DELETE /api/workspaces/{id}/members/{userId}` | Workspace members and roles (changes by administrators) |
 | `GET /api/admin/audit` | Audit log (administrators) |
+| `GET /api/admin/last-sign-in?source=LDAP` | When someone last signed in through that source (`at` is null when none is recorded; single sign-on sign-ins are not recorded), for the Integrations page (administrators) |
 | `GET /api/workspaces` | List workspaces (administrators: all; others: their workspaces) |
 | `POST /api/workspaces` | Create a workspace (`name`, `bankName`, `obdxVersion` = `22.x` or `25.x`, optional `svnUrl`) |
 | `GET /api/workspaces/{id}` | Get one workspace |
 | `DELETE /api/workspaces/{id}` | Delete a workspace, its index and its working copy |
 | `PUT /api/workspaces/{id}/svn` | Set SVN URL, username and password (`svnPassword`: omit or null to keep, empty to remove) |
-| `POST /api/workspaces/{id}/svn/test` | Check the SVN connection; returns the latest revision |
-| `GET /api/update` | Version, build number and whether a newer build exists (`?check=true`: ask GitHub now, administrators) |
+| `POST /api/workspaces/{id}/svn/test` | Check the SVN connection; returns the latest revision. The result is recorded (`SVN_TEST_PASSED` or `SVN_TEST_FAILED`) |
+| `GET /api/workspaces/{id}/integrations/activity` | The workspace's SVN and Jenkins settings changes and connection tests, newest first (audit events), for the Integrations page |
+| `GET /api/update` | Version, build number, whether a newer build exists and when the factory last checked (`checkedAt`) (`?check=true`: ask GitHub now, administrators) |
 | `POST /api/update` | Download the newer build and restart with it (administrators) |
 | `POST /api/sources/inspect-url` | Check an SVN URL (`svnUrl`, optional `svnUsername`, `svnPassword`) and suggest name, bank and OBDX version |
 | `GET /api/sources/local` | Whether folders on the factory's computer can be used, where to start browsing, SVN repositories found |
@@ -759,7 +761,7 @@ object: compute those in the view model.
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |
 | `GET /api/workspaces/{id}/jenkins` | Jenkins settings (204 when not set; the token is never returned) |
 | `PUT /api/workspaces/{id}/jenkins` | Save Jenkins settings (`token`: omit or null to keep, empty to remove) |
-| `POST /api/workspaces/{id}/jenkins/test` | Check the Jenkins login and jobs |
+| `POST /api/workspaces/{id}/jenkins/test` | Check the Jenkins login and jobs. The result is recorded (`JENKINS_TEST_PASSED`, `_WARNING` or `_FAILED`) |
 | `GET /api/workspaces/{id}/profile` | The Project Profile with detected and confirmed/corrected values, and warnings |
 | `POST /api/workspaces/{id}/profile/refresh` | Scan the working copy again |
 | `PUT /api/workspaces/{id}/profile/facts/{key}` | Confirm or correct a fact (`value`) |

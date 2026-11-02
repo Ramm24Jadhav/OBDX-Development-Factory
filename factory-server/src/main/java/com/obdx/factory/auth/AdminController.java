@@ -120,6 +120,19 @@ public class AdminController {
         return memberships.members(workspaceId);
     }
 
+    public record LastSignIn(AppUser.Source source, OffsetDateTime at) {
+    }
+
+    /**
+     * When someone last signed in through the given source (LDAP for the factory's sign-in form); at is null when no
+     * such sign-in is recorded. Single sign-on (OIDC, SAML) sign-ins are not recorded, so they always come back empty.
+     */
+    @GetMapping("/api/admin/last-sign-in")
+    public LastSignIn lastSignIn(@RequestParam AppUser.Source source) {
+        guard.requireAdmin();
+        return new LastSignIn(source, audit.latest("LOGIN", source.name()).map(AuditLog.Event::at).orElse(null));
+    }
+
     @GetMapping("/api/admin/audit")
     public List<AuditLog.Event> audit(@RequestParam(required = false) UUID workspaceId, @RequestParam(defaultValue = "200") int limit) {
         guard.requireAdmin();

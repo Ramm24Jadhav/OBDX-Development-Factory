@@ -58,6 +58,7 @@ class UpdateServiceTest {
         UpdateService.Status status = service.status(true);
         assertThat(status.state()).isEqualTo(UpdateService.State.AVAILABLE);
         assertThat(status.latestBuild()).isEqualTo("7");
+        assertThat(status.checkedAt()).isNotNull();
 
         service.update();
         assertThat(exitCode.get(20, TimeUnit.SECONDS)).isEqualTo(UpdateService.RESTART_EXIT_CODE);
@@ -115,6 +116,7 @@ class UpdateServiceTest {
         UpdateService.Status status = service("5").status(true);
         assertThat(status.state()).isEqualTo(UpdateService.State.FAILED);
         assertThat(status.message()).startsWith("Could not check for updates");
+        assertThat(status.checkedAt()).as("the Integrations page shows when the check ran").isNotNull();
     }
 
     private UpdateService service(String build) {

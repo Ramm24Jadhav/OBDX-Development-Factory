@@ -50,10 +50,11 @@ public class UpdateService {
     public enum State { UP_TO_DATE, AVAILABLE, DOWNLOADING, READY, RESTARTING, FAILED, OFF }
 
     /**
-     * @param progress percent downloaded while DOWNLOADING
+     * @param progress  percent downloaded while DOWNLOADING
+     * @param checkedAt when the factory last asked the release server (whether or not it answered); null before the first check
      */
     public record Status(boolean enabled, String version, String build, String builtAt, String latestBuild, String latestDate,
-                         State state, int progress, String message) {
+                         State state, int progress, String message, Instant checkedAt) {
     }
 
     private record Release(String build, String commit, String date, String sha256, long size) {
@@ -102,7 +103,7 @@ public class UpdateService {
         }
         return new Status(enabled, buildInfo == null ? null : buildInfo.getVersion(), currentBuild(),
                 buildInfo == null || buildInfo.getTime() == null ? null : buildInfo.getTime().toString(),
-                latest == null ? null : latest.build(), latest == null ? null : latest.date(), state, progress, message);
+                latest == null ? null : latest.build(), latest == null ? null : latest.date(), state, progress, message, checkedAt);
     }
 
     /** Downloads the newer build in the background; when it is complete and verified, the factory restarts with it. */

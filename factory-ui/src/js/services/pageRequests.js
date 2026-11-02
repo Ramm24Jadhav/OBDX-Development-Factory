@@ -20,6 +20,8 @@ define(['knockout'], function (ko) {
     /** A workspace id whose details the Workspaces page opens in its side sheet (from the Code page) */
     workspace: ko.observable(null),
     /** { path, startLine, endLine } a file the Code page opens in its viewer at those lines (from Knowledge Explorer) */
-    codeFile: ko.observable(null)
+    codeFile: ko.observable(null),
+    /** A Code page tab to open ('settings' from the Integrations page, for a workspace's SVN and Jenkins settings) */
+    codeTab: ko.observable(null)
   };
 });

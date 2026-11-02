@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -68,6 +69,12 @@ public class AuditLog {
         return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE workspace_id = ? "
                         + "AND action IN (" + String.join(", ", Collections.nCopies(actions.size(), "?")) + ") "
                         + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
+    }
+
+    /** The newest event of the action with exactly this detail, if any (for example the last LDAP sign-in). */
+    public Optional<Event> latest(String action, String detail) {
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE action = ? AND detail = ? "
+                + "ORDER BY at DESC, id DESC LIMIT 1", AuditLog::event, action, detail).stream().findFirst();
     }
 
     private static Event event(ResultSet rs, int row) throws SQLException {
