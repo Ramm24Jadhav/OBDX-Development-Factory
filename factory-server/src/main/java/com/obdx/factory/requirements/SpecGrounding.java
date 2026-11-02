@@ -113,9 +113,12 @@ final class SpecGrounding {
             "\\b(GET|POST|PUT|PATCH|DELETE)\\s+(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+){0,12})");
     private static final java.util.regex.Pattern REQUIREMENT_ID = java.util.regex.Pattern.compile("\\b((?:FR|REQ|NFR|BR)-\\d{1,4})\\b");
 
+    /** The most APIs read from a document (each is checked against every planned file). */
+    static final int MAX_NAMED_APIS = 100;
+
     /**
      * The APIs the document names as "METHOD /path" ("POST /payments/beneficiaries/validation" in FR-001), each with the
-     * requirement ID of its line (or the last one before it) in its description.
+     * requirement ID of its line (or the last one before it) in its description; at most {@link #MAX_NAMED_APIS}.
      */
     static List<RequirementSpec.Api> namedApis(String documentText) {
         List<RequirementSpec.Api> apis = new ArrayList<>();
@@ -137,7 +140,7 @@ final class SpecGrounding {
                 requirement = id.group(1);
             }
             java.util.regex.Matcher m = NAMED_API.matcher(part);
-            while (m.find()) {
+            while (m.find() && apis.size() < MAX_NAMED_APIS) {
                 String path = m.group(2).replaceAll("[.,;:]+$", "");
                 apis.add(new RequirementSpec.Api(m.group(1) + " " + path, m.group(1),
                         "Named in the document" + (requirement == null ? "" : " (" + requirement + ")")));

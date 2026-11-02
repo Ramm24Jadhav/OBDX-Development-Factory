@@ -209,7 +209,7 @@ public class ChangeService {
             List<ImpactAnalyzer.Candidate> candidates = candidates(workspace.getId(), requirement.spec());
             String print = contextPrint(context);
             // A plan the model's limit stopped part-way is completed: its files are kept and only the missing ones asked for
-            ChangePlan before = change.getPlan() == null ? null : storedPlan(change, requirement, print);
+            ChangePlan before = change.getPlan() == null ? null : plan(change);
             String notResumed = fresh ? "a fresh analysis was asked for" : whyNotResumed(before, workspace.getIndexedRevision(), print);
             boolean resumed = notResumed == null;
             if (before != null) {
@@ -262,7 +262,10 @@ public class ChangeService {
         if (!ImpactAnalyzer.resumable(before)) {
             return "the plan is incomplete for another reason than the model's limit (" + before.incomplete().kind() + ")";
         }
-        if (before.incomplete().revision() == null || !before.incomplete().revision().equals(indexedRevision)) {
+        if (before.incomplete().revision() == null) {
+            return "the plan was stored by an earlier version, which did not record what it was made from";
+        }
+        if (!before.incomplete().revision().equals(indexedRevision)) {
             return "the code revision changed (planned at r" + before.incomplete().revision() + ", now r" + indexedRevision + ")";
         }
         if (!contextPrint.equals(before.incomplete().context())) {
@@ -272,25 +275,53 @@ public class ChangeService {
     }
 
     /**
-     * The change's stored plan. One stored before the server kept the record of an incomplete plan gets it from the
-     * server's own risk (see ImpactAnalyzer.legacyIncomplete), with the spec and designs taken as those it was made from
-     * only when none of them was approved after the plan was stored.
+     * Gives the plans stored before the server kept the record of an incomplete plan (see ChangePlan#incomplete) the
+     * record their server-written risk stands for, once, at startup: an unapproved plan whose latest revision is the
+     * impact analysis's own (never an edit), with the risk the analysis wrote (see ImpactAnalyzer.legacyRecord). The
+     * plan then asks for the confirmation of an incomplete plan when approved, shows as incomplete, and an edit keeps
+     * the record. It is not continued by Analyze again: what it was made from was not recorded (see whyNotResumed). A
+     * plan stored by this version never needs it (a model's answer or an edit cannot carry such a risk, see PlanParser),
+     * so a plan once upgraded or stored since is left alone.
      */
-    private ChangePlan storedPlan(ChangeRequest change, RequirementService.RequirementDetail requirement, String contextPrint) {
-        ChangePlan stored = plan(change);
-        if (stored.incomplete() != null || ImpactAnalyzer.legacyIncomplete(stored, null, null) == stored) {
-            return stored;
+    @EventListener(ApplicationReadyEvent.class)
+    public void upgradeLegacyPlans() {
+        try {
+            upgradeLegacy();
+        } catch (RuntimeException e) {
+            // The factory starts all the same; such a plan stays as it was
+            log.warn("Could not record the plans of an earlier version as incomplete", e);
         }
-        List<OffsetDateTime> approvals = new ArrayList<>();
-        approvals.add(requirement.approvedAt());
-        designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId()).forEach(d -> approvals.add(d.getApprovedAt()));
-        boolean unchanged = madeAfter(planReviews.latestAt(change.getId()), approvals);
-        return ImpactAnalyzer.legacyIncomplete(stored, change.getBaseRevision(), unchanged ? contextPrint : null);
     }
 
-    /** Whether a plan stored at {@code stored} was made after every approval (none missing): then from what they approved. */
-    static boolean madeAfter(OffsetDateTime stored, List<OffsetDateTime> approvals) {
-        return stored != null && approvals.stream().allMatch(a -> a != null && !a.isAfter(stored));
+    private void upgradeLegacy() {
+        List<Map<String, Object>> rows = jdbc.queryForList("SELECT c.id, c.plan::text AS plan, (SELECT v.origin FROM change_plan_revision v "
+                + "WHERE v.change_id = c.id ORDER BY v.revision DESC LIMIT 1) AS origin, (SELECT MAX(v.revision) FROM change_plan_revision v "
+                + "WHERE v.change_id = c.id) AS revision FROM change_request c WHERE c.plan IS NOT NULL AND c.plan_approved_at IS NULL "
+                + "AND c.plan->>'incomplete' IS NULL");
+        int upgraded = 0;
+        for (Map<String, Object> row : rows) {
+            ChangePlan stored;
+            try {
+                stored = json.readValue((String) row.get("plan"), ChangePlan.class);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            ChangePlan.Incomplete record = ImpactAnalyzer.legacyRecord(stored, (String) row.get("origin"));
+            if (record == null) {
+                continue;
+            }
+            String planJson = json.writeValueAsString(new ChangePlan(stored.summary(), stored.items(), stored.risks(), record));
+            // (only while the plan is still the one read)
+            if (jdbc.update("UPDATE change_request SET plan = ?::jsonb WHERE id = ? AND plan = ?::jsonb", planJson, row.get("id"),
+                    row.get("plan")) == 1) {
+                jdbc.update("UPDATE change_plan_revision SET plan = ?::jsonb WHERE change_id = ? AND revision = ?", planJson, row.get("id"),
+                        row.get("revision"));
+                upgraded++;
+            }
+        }
+        if (upgraded > 0) {
+            log.info("Recorded {} plan(s) stored by an earlier version as incomplete, as their risks said", upgraded);
+        }
     }
 
     /** A fingerprint of what a plan is made from: the spec and the designs as the model gets them. */
@@ -341,9 +372,16 @@ public class ChangeService {
         if (previous == null || previous.incomplete() == null) {
             return edited;
         }
+        ChangePlan.Incomplete record = previous.incomplete();
+        // "No test is planned yet" is no longer true once the edit adds a test
+        if (record.risk() != null && record.risk().endsWith(ImpactAnalyzer.TESTS_MISSING)
+                && edited.items().stream().anyMatch(i -> "test".equals(i.layer()) || PlanReview.isTest(i.path()))) {
+            record = new ChangePlan.Incomplete(record.kind(), record.risk().substring(0, record.risk().length()
+                    - ImpactAnalyzer.TESTS_MISSING.length()), record.revision(), record.context());
+        }
         List<String> risks = new ArrayList<>(edited.risks() == null ? List.of() : edited.risks());
-        risks.add(0, previous.incomplete().risk());
-        return new ChangePlan(edited.summary(), edited.items(), risks, previous.incomplete());
+        risks.add(0, record.risk());
+        return new ChangePlan(edited.summary(), edited.items(), risks, record);
     }
 
     /** Approves the plan and starts writing the code in the background. */
@@ -363,8 +401,7 @@ public class ChangeService {
         lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
-        // (a plan stored before the server kept its incomplete record is confirmed as incomplete too)
-        ChangePlan plan = ImpactAnalyzer.legacyIncomplete(plan(change), change.getBaseRevision(), null);
+        ChangePlan plan = plan(change);
         Integer latest = planReviews.latest(id);
         if (!incomplete || !java.util.Objects.equals(revision, latest)) {
             requireCompletePlan(plan, requirements.get(change.getRequirementId()).spec(), latest, incomplete);
@@ -537,7 +574,7 @@ public class ChangeService {
                     change.status(ChangeRequest.Status.GENERATING, "Fixing " + item.path() + ", which does not fit the other files");
                     change = changes.save(change);
                     try {
-                        fitToOthers(files, generator, localChecks, scope, id, context, plan, item, crossFileFixes(unfit.get(path)),
+                        fitToOthers(files, generator, localChecks, scope, id, context, plan, item, fitNote(unfit.get(path), onlyPath, note),
                                 scaffold(context, path, files.file(id, path).map(ChangeFileStore.ChangeFile::original).orElse(null)));
                     } catch (ModelLimitReachedException e) {
                         // Every file is written; only these fixes wait for the model
@@ -599,6 +636,18 @@ public class ChangeService {
             return writtenNow;
         }
         return failedAgain == null && writtenNow.contains(onlyPath) ? Set.of(onlyPath) : Set.of();
+    }
+
+    /**
+     * What the fix by the cross-check's findings is told: the findings, and for Write again with a reviewer's note the
+     * note too, so the fix keeps what the reviewer asked for (the file was just written with it). Empty without findings.
+     */
+    static String fitNote(String findings, String onlyPath, String note) {
+        String fixes = crossFileFixes(findings);
+        if (fixes.isEmpty() || onlyPath == null || note == null || note.isBlank()) {
+            return fixes;
+        }
+        return fixes + "\n\nKeep what the reviewer asked for when this file was written again: " + note.strip();
     }
 
     /** The most files of one generation fixed by what the cross-check found, so their model calls stay bounded. */

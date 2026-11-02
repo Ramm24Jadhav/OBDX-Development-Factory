@@ -343,29 +343,82 @@ define(['knockout', './preferences'], function (ko, preferences) {
     return minutes >= 120 ? 'about ' + Math.round(minutes / 60) + ' hours' : 'about ' + minutes + (minutes === 1 ? ' minute' : ' minutes');
   }
 
+  /** A model server's own words in an error: its JSON answer, or the limit it reports with the account and the counts. */
+  const LIMIT_REPORT = /Rate limit reached|\borg_[A-Za-z0-9]{6,}|\bin organization\b|\b(?:tokens|requests) per (?:day|minute)\b|\((?:TPD|RPD|TPM|RPM|ITPM|OTPM)\)/i;
+  const RAW = new RegExp('\\{"error"|' + LIMIT_REPORT.source, 'i');
+  /** A model named with its server's address, as the factory's messages start: "Chat model 'x' at https://host/v1". */
+  const NAMED = /\b(Chat|Embedding) model '[^']{0,200}' at [^\s()]+/g;
+  /** What looks like a secret (a bearer token, an API key, key=value): hidden, also under Details. */
+  const SECRET = /(\bbearer\s+)[^\s"',;)]+|\b(?:sk|pk|rk|gsk|xai)-[A-Za-z0-9_-]{8,}|((?:api[-_]?key|access[-_]?token|auth[-_]?token|client[-_]?secret|secret|password|passwd|authorization)"?\s{0,3}[=:]\s{0,3}"?(?:bearer\s+)?)[^\s"',;&)]+/gi;
+  /** The most of a message that is shortened (the factory's messages are far shorter). */
+  const MAX_SHORTENED = 4000;
+
+  function redact(text) {
+    return text.replace(SECRET, (m, bearer, name) => (bearer || name || '') + '[hidden]');
+  }
+
   /**
-   * A message that carries a model server's raw error (its JSON answer, the model's name and address, the account,
-   * the token counts) as one plain line, with the wait when the server gave one: {text, details}, details being the
-   * full message (empty when nothing was shortened). Other messages are returned as they are.
+   * The innermost group, ( ) or { }, whose text holds the server's own words (see RAW), as [start, end); null when
+   * there is none. Brackets of the other kind and unmatched ones are passed over. One pass.
+   */
+  function rawGroup(text) {
+    const stack = [];
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charAt(i);
+      if (c === '(' || c === '{') {
+        stack.push(i);
+      } else if ((c === ')' || c === '}') && stack.length && text.charAt(stack[stack.length - 1]) === (c === ')' ? '(' : '{')) {
+        const open = stack.pop();
+        if (RAW.test(text.substring(open, i + 1))) {
+          return [open, i + 1];
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * A message that carries a model server's raw error as people read it, and the whole message under Details:
+   * {text, details}, details empty when nothing was changed. Only the server's words are taken out: the model's name
+   * and address become "the model server", and its JSON answer or limit report in brackets goes, with what it said
+   * (the daily or the rate limit and the wait) added only when the factory's words around it do not say so. The
+   * factory's own sentences before and after (which file, what to do next, its "Try again in ...") stay as they are.
+   * Other messages (no model named, no server words) are returned as they are; secrets are hidden either way.
    */
   function shortError(message) {
-    const full = String(message || '');
-    const raw = full.indexOf('{"error"') >= 0 || /\bChat model '[^']*' at https?:\/\//.test(full) || /\borg_[a-z0-9]{8,}/i.test(full);
-    if (!raw) {
+    const full = redact(String(message || ''));
+    NAMED.lastIndex = 0;
+    // (a JSON answer alone is no model server's: "the build server answered {"error": ...}" stays as it is)
+    if (!NAMED.test(full) && !LIMIT_REPORT.test(full) || full.length > MAX_SHORTENED) {
       return { text: full, details: '' };
     }
-    // What the factory said before the server's words ("Impact analysis failed: ")
-    const cut = full.search(/\bChat model '|\{"error"/);
-    const before = cut > 0 ? full.substring(0, cut).trim() : '';
-    const daily = /tokens per day|requests per day|\(TPD\)|\(RPD\)|daily limit/i.test(full);
-    const rate = !daily && /rate.limit|per minute|\(TPM\)|\(RPM\)|\(ITPM\)|\(OTPM\)/i.test(full);
-    const waitMatch = /try again in (?:about )?([\dhms.]+)/i.exec(full);
-    const said = /try again in (about \d+ (?:minutes?|hours?|seconds?))/i.exec(full);
-    const wait = said ? said[1] : waitMatch ? waitWords(waitMatch[1].replace(/\.+$/, '')) : '';
-    const what = daily ? "The model's daily limit is used up." : rate ? "The model's server is at its rate limit."
-      : 'The model server returned an error.';
-    const next = daily || rate ? (wait ? ' Try again in ' + wait + '.' : ' Try again later.') : ' Check the Models page, then try again.';
-    return { text: (before ? before.replace(/[:\s]+$/, '') + ': ' : '') + what + next, details: full };
+    NAMED.lastIndex = 0;
+    let text = full.replace(NAMED, (m, kind, offset) => {
+      const before = full.substring(Math.max(0, offset - 3), offset);
+      const capital = offset === 0 || /[.:!?]\s*$/.test(before);
+      return (capital ? 'The ' : 'the ') + (kind === 'Embedding' ? 'code search server' : 'model server');
+    });
+    let removed = '';
+    for (let n = 0, group = rawGroup(text); group && n < 20; n++, group = rawGroup(text)) {
+      removed += ' ' + text.substring(group[0], group[1]);
+      text = text.substring(0, group[0]) + text.substring(group[1]);
+    }
+    if (removed) {
+      const daily = /(?:tokens|requests) per day|\((?:TPD|RPD)\)|daily limit/i.test(removed);
+      const rate = !daily && /rate.limit|per minute|\((?:TPM|RPM|ITPM|OTPM)\)/i.test(removed);
+      const waitMatch = /try again in ([\dhms.]+)/i.exec(removed);
+      const wait = waitMatch ? waitWords(waitMatch[1].replace(/\.+$/, '')) : '';
+      const told = daily ? /daily limit/i.test(text) : rate ? /rate limit/i.test(text) : true;
+      const hint = told ? '' : (daily ? "its daily limit is used up" : "it is at its rate limit")
+        + (wait && !/try again/i.test(text) ? '; try again in ' + wait : '');
+      // the colon the answer followed ("failed: {...}") ends the sentence, or says what the answer said
+      text = text.replace(/:\s*(?=$|[;.)])/, hint ? ': ' + hint : '');
+      text = text.replace(/\s+([.,;)])/g, '$1').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+      if (!/[.!?)]$/.test(text)) {
+        text += '.';
+      }
+    }
+    return text === full ? { text: full, details: '' } : { text: text, details: full };
   }
 
   return {

@@ -62,6 +62,14 @@ public class ModelSettings {
         this.cipher = cipher;
         this.defaults = defaults;
         this.events = events;
+        // The address from the settings file is not checked like one entered on the Models page: say so, and keep its
+        // secrets out of messages (see shown)
+        for (String url : new String[] {defaults.baseUrl(), defaults.embeddingBaseUrl()}) {
+            if (!blank(url) && !plain(url)) {
+                org.slf4j.LoggerFactory.getLogger(ModelSettings.class).warn("The model server URL in the settings ({}) has a user name, "
+                        + "password or query; they are left out of messages. Put the API key in its own setting.", origin(url));
+            }
+        }
     }
 
     public Current current() {
@@ -110,6 +118,36 @@ public class ModelSettings {
         if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null) {
             throw new BadRequestException("Enter the model server URL without a user name, password or query (http(s)://host:port/v1); "
                     + "put the API key in its own field.");
+        }
+    }
+
+    /** Whether a server address has no user, password, query or fragment (see plainServerUrl). */
+    static boolean plain(String url) {
+        try {
+            plainServerUrl(url);
+            return true;
+        } catch (BadRequestException e) {
+            return false;
+        }
+    }
+
+    /**
+     * A server address as messages that people read show it: without a user and password, a query or a fragment (where
+     * secrets end up). A plain address is shown as it is; one that cannot be read, as its origin.
+     */
+    public static String shown(String url) {
+        if (url == null) {
+            return "(the model server)";
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            if (uri.getRawUserInfo() == null && uri.getRawQuery() == null && uri.getRawFragment() == null) {
+                return url;
+            }
+            return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "")
+                    + (uri.getRawPath() == null ? "" : uri.getRawPath());
+        } catch (IllegalArgumentException e) {
+            return origin(url);
         }
     }
 

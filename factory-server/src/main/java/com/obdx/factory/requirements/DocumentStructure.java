@@ -1,6 +1,7 @@
 package com.obdx.factory.requirements;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -175,6 +176,8 @@ final class DocumentStructure {
 
     /** The most messages read from one document's tables. */
     static final int MAX_MESSAGES = 2_000;
+    /** The most of the document's open questions kept, and of the model's compared with them (each with each). */
+    static final int MAX_DOCUMENT_QUESTIONS = 200;
     /**
      * ID prefixes the document's ID tables are read by, whatever their header says, which are never message codes; F1001,
      * R-01 or Q12 can be (those prefixes count as IDs only where a header or heading says so).
@@ -214,24 +217,48 @@ final class DocumentStructure {
         // The document's questions first (the analysts asked them), then the model's that are not the same question
         // The document's questions first (the analysts asked them), with the options and usual answer the model gave for
         // the same question, then the model's other questions
-        List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
+        // Each question's words are read once; the document's are kept apart from each other (only one asked twice word
+        // for word is one), and at most MAX_DOCUMENT_QUESTIONS of them; the model's are compared with at most as many
+        List<RequirementSpec.OpenQuestion> documented = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
         for (RequirementSpec.OpenQuestion d : doc.questions()) {
-            if (spec.decisions().stream().anyMatch(x -> sameQuestion(x.question(), d.question()))) {
+            if (documented.size() < MAX_DOCUMENT_QUESTIONS && seen.add(SpecMerger.normalize(d.question()))) {
+                documented.add(d);
+            }
+        }
+        List<Prepared> documentWords = documented.stream().map(d -> prepare(d.question())).toList();
+        List<RequirementSpec.OpenQuestion> drafts = spec.openQuestions().size() > MAX_DOCUMENT_QUESTIONS
+                ? spec.openQuestions().subList(0, MAX_DOCUMENT_QUESTIONS) : spec.openQuestions();
+        List<Prepared> draftWords = drafts.stream().map(q -> prepare(q.question())).toList();
+        List<Prepared> decisionWords = spec.decisions().stream().limit(MAX_DOCUMENT_QUESTIONS).map(x -> prepare(x.question())).toList();
+        boolean[] restated = new boolean[drafts.size()];
+        List<RequirementSpec.OpenQuestion> questions = new ArrayList<>();
+        for (int i = 0; i < documented.size(); i++) {
+            RequirementSpec.OpenQuestion d = documented.get(i);
+            Prepared dw = documentWords.get(i);
+            if (decisionWords.stream().anyMatch(x -> sameQuestion(x, dw))) {
                 continue;
             }
-            RequirementSpec.OpenQuestion drafted = spec.openQuestions().stream().filter(q -> SpecMerger.sameQuestion(d, q))
-                    .findFirst().orElse(null);
-            questions.add(drafted == null || !d.options().isEmpty() ? d : new RequirementSpec.OpenQuestion(d.question(),
-                    d.reason() != null ? d.reason() : drafted.reason(), d.reference(), drafted.options(),
-                    d.suggestedAnswer() != null ? d.suggestedAnswer() : drafted.suggestedAnswer(), d.answer()));
+            RequirementSpec.OpenQuestion drafted = null;
+            for (int j = 0; j < drafts.size(); j++) {
+                if (SpecMerger.restates(d, dw, drafts.get(j), draftWords.get(j))) {
+                    restated[j] = true;
+                    drafted = drafted == null ? drafts.get(j) : drafted;
+                }
+            }
+            RequirementSpec.OpenQuestion asked = drafted == null ? d : SpecMerger.joined(d, drafted);
+            // the document's reason and usual answer stay when it has options of its own
+            questions.add(drafted == null || !d.options().isEmpty() ? new RequirementSpec.OpenQuestion(d.question(), d.reason(), d.reference(),
+                    d.options(), d.suggestedAnswer(), asked.answer()) : asked);
         }
-        for (RequirementSpec.OpenQuestion q : spec.openQuestions()) {
-            if (doc.questions().stream().noneMatch(d -> SpecMerger.sameQuestion(d, q))) {
-                questions.add(q);
+        for (int j = 0; j < drafts.size(); j++) {
+            if (!restated[j]) {
+                questions.add(drafts.get(j));
             }
         }
-        // and the same question asked twice in other words (the model's own, or one of them and the document's): the first kept
-        questions = SpecMerger.questions(questions);
+        if (spec.openQuestions().size() > drafts.size()) {
+            questions.addAll(spec.openQuestions().subList(drafts.size(), spec.openQuestions().size()));
+        }
         // The document's codes with its wording (the type the model gave when the document has none), then the model's others
         List<RequirementSpec.Message> messages = merge(doc.messages(), spec.messages(), RequirementSpec.Message::code,
                 RequirementSpec.Message::text, (m, d) -> m.type() == null && d != null ? new RequirementSpec.Message(m.code(), m.text(), d.type()) : m);
@@ -500,11 +527,32 @@ final class DocumentStructure {
      * audit rows be kept?" and "What is the required retention period for audit rows?").
      */
     static boolean sameQuestion(String a, String b) {
-        if (similar(a, b)) {
-            return true;
+        return sameQuestion(prepare(a), prepare(b));
+    }
+
+    /** A question's words, read once for comparing it with many others (see sameQuestion). */
+    record Prepared(Set<String> words, Set<String> meaning) {
+    }
+
+    /** The most of a question's text read for its words. */
+    static final int MAX_QUESTION_TEXT = 500;
+
+    static Prepared prepare(String question) {
+        String text = question == null ? "" : question.length() > MAX_QUESTION_TEXT ? question.substring(0, MAX_QUESTION_TEXT) : question;
+        return new Prepared(words(text), meaning(text));
+    }
+
+    /** {@link #sameQuestion(String, String)} of two questions whose words were read before. */
+    static boolean sameQuestion(Prepared a, Prepared b) {
+        if (!a.words().isEmpty() && !b.words().isEmpty()) {
+            Set<String> small = a.words().size() <= b.words().size() ? a.words() : b.words();
+            Set<String> large = small == a.words() ? b.words() : a.words();
+            if (small.stream().filter(large::contains).count() * 10 >= small.size() * 7L) {
+                return true;
+            }
         }
-        Set<String> x = meaning(a);
-        Set<String> y = meaning(b);
+        Set<String> x = a.meaning();
+        Set<String> y = b.meaning();
         Set<String> small = x.size() <= y.size() ? x : y;
         Set<String> large = small == x ? y : x;
         long shared = small.stream().filter(large::contains).count();

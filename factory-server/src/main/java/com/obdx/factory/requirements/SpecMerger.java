@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -100,72 +99,82 @@ public final class SpecMerger {
         return m.find() ? m.group().replaceAll("[.,;:]+$", "") : null;
     }
 
-    /** The open questions of all sections, once each: the same question in other words is one (the first kept). */
+    /** The most questions compared with each other; the others are compared by their normalised text only. */
+    static final int MAX_COMPARED = 200;
+
+    /**
+     * The open questions of all sections, once each: the same question in other words is one (the first kept, with the
+     * options, reason and answer a later one adds). Each question's words are read once; the first
+     * {@link #MAX_COMPARED} are compared with each other, the rest only by their normalised text, so a draft with
+     * thousands of questions stays quick.
+     */
     static List<RequirementSpec.OpenQuestion> questions(List<RequirementSpec.OpenQuestion> all) {
         List<RequirementSpec.OpenQuestion> kept = new ArrayList<>();
+        List<DocumentStructure.Prepared> prepared = new ArrayList<>();
+        Map<String, Integer> byText = new java.util.HashMap<>();
         for (RequirementSpec.OpenQuestion q : all) {
-            boolean same = false;
-            for (int i = 0; i < kept.size() && !same; i++) {
-                RequirementSpec.OpenQuestion k = kept.get(i);
-                if (sameQuestion(k, q)) {
-                    same = true;
-                    if (k.options().isEmpty() && !q.options().isEmpty()) {
-                        kept.set(i, new RequirementSpec.OpenQuestion(k.question(), first(k.reason(), q.reason()), first(k.reference(), q.reference()),
-                                q.options(), first(k.suggestedAnswer(), q.suggestedAnswer()), k.answer()));
+            String key = normalize(capped(q.question()));
+            Integer same = byText.get(key);
+            DocumentStructure.Prepared words = null;
+            if (same == null && kept.size() < MAX_COMPARED) {
+                words = DocumentStructure.prepare(q.question());
+                for (int i = 0; i < prepared.size() && same == null; i++) {
+                    if (DocumentStructure.sameQuestion(prepared.get(i), words)) {
+                        same = i;
                     }
                 }
             }
-            if (!same) {
-                kept.add(q);
+            if (same != null) {
+                kept.set(same, joined(kept.get(same), q));
+                continue;
+            }
+            byText.putIfAbsent(key, kept.size());
+            kept.add(q);
+            if (words != null) {
+                prepared.add(words);
             }
         }
         return kept;
     }
 
-    /**
-     * Whether two open questions ask the same thing: the same words, the same question as DocumentStructure tells it, or
-     * most of the same words with their options ("Should a NONE name match be VALID with a warning or INVALID?" and "How
-     * should a 'NONE' name match be treated?" with the options "VALID with warning" and "INVALID"): of the words of the
-     * one with fewer (at least four), at least {@link #SAME_WORDS} are the other's.
-     */
-    static boolean sameQuestion(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
-        if (normalize(a.question()).equals(normalize(b.question())) || DocumentStructure.sameQuestion(a.question(), b.question())) {
-            return true;
-        }
-        Set<String> x = questionWords(a);
-        Set<String> y = questionWords(b);
-        Set<String> small = x.size() <= y.size() ? x : y;
-        Set<String> large = small == x ? y : x;
-        if (small.size() < 4) {
-            return false;
-        }
-        long shared = small.stream().filter(large::contains).count();
-        return shared >= SAME_WORDS * small.size();
+    /** The first question with what a later one of the same adds: its options when it has none, its reason, its answer. */
+    static RequirementSpec.OpenQuestion joined(RequirementSpec.OpenQuestion k, RequirementSpec.OpenQuestion q) {
+        boolean options = k.options().isEmpty() && !q.options().isEmpty();
+        return new RequirementSpec.OpenQuestion(k.question(), first(k.reason(), q.reason()), first(k.reference(), q.reference()),
+                options ? q.options() : k.options(), first(k.suggestedAnswer(), options ? q.suggestedAnswer() : null),
+                first(k.answer(), q.answer()));
     }
 
-    /** The share of words two questions have in common to be the same question (see sameQuestion). */
-    static final double SAME_WORDS = 0.8;
-    /** The longest text of a question (with its options) read for its words. */
-    static final int MAX_QUESTION = 2000;
-    private static final Set<String> FILLER = Set.of("a", "an", "the", "be", "is", "are", "was", "were", "been", "should", "would", "could",
-            "can", "will", "shall", "must", "may", "do", "does", "did", "how", "what", "which", "when", "where", "who", "why", "or", "and",
-            "as", "with", "for", "of", "to", "in", "on", "at", "by", "from", "it", "its", "this", "that", "these", "those", "there", "if",
-            "any", "yes", "no", "not", "we", "our", "you", "your", "they", "their", "than", "then", "into", "per", "each", "every", "all");
+    /** Whether two open questions ask the same thing: the same words, or the same question as DocumentStructure tells it. */
+    static boolean sameQuestion(RequirementSpec.OpenQuestion a, RequirementSpec.OpenQuestion b) {
+        return normalize(capped(a.question())).equals(normalize(capped(b.question())))
+                || DocumentStructure.sameQuestion(DocumentStructure.prepare(a.question()), DocumentStructure.prepare(b.question()));
+    }
 
-    /** The words of a question and its options, in lower case, without filler words and a plural s. */
-    private static Set<String> questionWords(RequirementSpec.OpenQuestion q) {
-        StringBuilder text = new StringBuilder(q.question() == null ? "" : q.question());
-        for (String option : q.options()) {
-            text.append(' ').append(option);
-        }
-        String capped = text.length() > MAX_QUESTION ? text.substring(0, MAX_QUESTION) : text.toString();
-        Set<String> words = new java.util.LinkedHashSet<>();
-        for (String w : capped.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
-            if (!w.isEmpty() && !FILLER.contains(w)) {
-                words.add(w.length() > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.substring(0, w.length() - 1) : w);
-            }
-        }
-        return words;
+    /**
+     * Whether the model's question restates one of the document's own (a row of its "Open questions" table): the same
+     * question as {@link #sameQuestion} tells it, or the model gave it the document question's ID as its reference
+     * ("OQ-001" for both "Should a NONE name match be VALID or INVALID?" and "How should a 'NONE' name match be
+     * treated?"). Two of the document's own questions are never taken as one: the analysts asked both.
+     */
+    static boolean restates(RequirementSpec.OpenQuestion document, RequirementSpec.OpenQuestion drafted) {
+        return restates(document, DocumentStructure.prepare(document.question()), drafted, DocumentStructure.prepare(drafted.question()));
+    }
+
+    /** {@link #restates(RequirementSpec.OpenQuestion, RequirementSpec.OpenQuestion)} with the words read before. */
+    static boolean restates(RequirementSpec.OpenQuestion document, DocumentStructure.Prepared documentWords, RequirementSpec.OpenQuestion drafted,
+                            DocumentStructure.Prepared draftedWords) {
+        return document.reference() != null && documentId(document.reference()) && drafted.reference() != null
+                && normalize(document.reference()).equals(normalize(drafted.reference()))
+                || normalize(capped(document.question())).equals(normalize(capped(drafted.question())))
+                || DocumentStructure.sameQuestion(documentWords, draftedWords);
+    }
+
+    /** The most of a question's text read to compare it. */
+    static final int MAX_QUESTION = 500;
+
+    private static String capped(String text) {
+        return text == null ? "" : text.length() > MAX_QUESTION ? text.substring(0, MAX_QUESTION) : text;
     }
 
     /** An ID the document gave (BR-001, BR-12): letters, a dash or none, and a number. */

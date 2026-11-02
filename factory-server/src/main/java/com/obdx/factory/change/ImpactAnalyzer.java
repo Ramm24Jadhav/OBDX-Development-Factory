@@ -98,7 +98,7 @@ public class ImpactAnalyzer {
             ModelGateway.ChatResult result = PromptFit.chatJson(modelGateway, SYSTEM, scale -> prompt(context, candidates, scale) + again);
             try {
                 if (!result.cutOff()) {
-                    return PlanParser.parse(result.reply(), fileExists, properties.maxPlanItems());
+                    return PlanParser.parseModel(result.reply(), fileExists, properties.maxPlanItems());
                 }
                 // The model stopped at its output limit: keep the files it planned whole and ask for the rest
                 log.warn("The change plan was cut off at the model's output limit; asking for the files still missing");
@@ -148,7 +148,8 @@ public class ImpactAnalyzer {
      * reads {@link ChangePlan#incomplete()}, never the text.
      */
     static boolean incompleteRisk(String risk) {
-        return risk != null && (risk.startsWith(LIMIT_STOPPED) || risk.startsWith(CUT_OFF) || risk.startsWith(TOO_MANY));
+        // anywhere in it: a risk that only starts with other words ("Wait. The model's limit ...") is no less one
+        return risk != null && (risk.contains(LIMIT_STOPPED) || risk.contains(CUT_OFF) || risk.contains(TOO_MANY));
     }
 
     /** Whether the model's limit stopped the plan part-way, so that Analyze again can continue it. */
@@ -158,27 +159,27 @@ public class ImpactAnalyzer {
     }
 
     /**
-     * A plan as stored before the server kept the record of an incomplete plan (see {@link ChangePlan#incomplete()}):
-     * then only the server's risk said the model's limit stopped it. Only for a plan read from the change's own row,
-     * which the server wrote (a model's answer or an edit never gets here: PlanParser drops such a risk from them), the
-     * risk is read once more and the plan given the record it would have had. A plan with a record, or without that
-     * risk, is returned as it is.
-     *
-     * @param revision the code revision the plan was made at (the change's base revision)
-     * @param context  the fingerprint of the spec and designs, when they are known to be those the plan was made from;
-     *                 null otherwise (then the plan is not continued, see ChangeService.resumes)
+     * The record a plan stored by an earlier version (before the server kept it, see {@link ChangePlan#incomplete()})
+     * stands for, from the risk the server wrote then: the model's limit stopped it (LIMIT), its answer stayed cut off
+     * (CUT_OFF), or it had too many files (TOO_MANY). Only for a plan whose latest revision is the impact analysis's
+     * own ({@code latestOrigin} ANALYZED: an edit never carries such a risk), without a record, and with the risk as the
+     * server wrote it (its fixed start, then its reason in parentheses). Null otherwise. The record names no revision
+     * or context, as none was kept: such a plan is analyzed afresh, never continued (see ChangeService.whyNotResumed).
      */
-    static ChangePlan legacyIncomplete(ChangePlan stored, Long revision, String context) {
-        if (stored == null || stored.incomplete() != null || stored.risks() == null) {
-            return stored;
+    static ChangePlan.Incomplete legacyRecord(ChangePlan stored, String latestOrigin) {
+        if (stored == null || stored.incomplete() != null || stored.risks() == null || stored.items() == null || stored.items().isEmpty()
+                || !PlanReviewStore.Origin.ANALYZED.name().equals(latestOrigin)) {
+            return null;
         }
-        // The server's risk names the limit's message in parentheses after its fixed start
-        String risk = stored.risks().stream().filter(r -> r != null && r.startsWith(LIMIT_STOPPED + " (")).findFirst().orElse(null);
-        if (risk == null) {
-            return stored;
+        for (String risk : stored.risks()) {
+            String kind = risk == null ? null : risk.startsWith(LIMIT_STOPPED + " (") ? ChangePlan.Incomplete.LIMIT
+                    : risk.startsWith(CUT_OFF + " (") || risk.startsWith(CUT_OFF + ", so") ? ChangePlan.Incomplete.CUT_OFF
+                    : risk.startsWith(TOO_MANY + " (") ? ChangePlan.Incomplete.TOO_MANY : null;
+            if (kind != null) {
+                return new ChangePlan.Incomplete(kind, risk, null, null);
+            }
         }
-        return new ChangePlan(stored.summary(), stored.items(), stored.risks(),
-                new ChangePlan.Incomplete(ChangePlan.Incomplete.LIMIT, risk, revision, context));
+        return null;
     }
 
     /** How a continuation starts when the model's answer stopped at its output limit. */
@@ -251,7 +252,8 @@ public class ImpactAnalyzer {
                     + "from this plan. Add them before approving, or analyze again with a model or plan with a higher output limit.";
         }
         // (normalize drops any such risk the model wrote itself; the server's own is added after it)
-        ChangePlan plan = PlanParser.normalize(new ChangePlan(summary, new ArrayList<>(items.values()), risks), fileExists, maxItems);
+        ChangePlan plan = PlanParser.normalize(PlanParser.withoutModelReasoning(new ChangePlan(summary, new ArrayList<>(items.values()), risks)),
+                fileExists, maxItems);
         if (kind == null) {
             return plan;
         }

@@ -121,28 +121,35 @@ public final class ModelReasoning {
 
     /**
      * The model talking about its input or its own answers in prose (a plan's risks, purposes and details): "The JSON
-     * provided was truncated ...", "The previous answer likely created ...", "The prompt says ...", "Let's assume ...",
-     * "Wait, ...", "I already planned ...". Not a real risk such as "the spec does not say how long rows are kept" or
-     * "the spec provided is incomplete about the host's error codes".
+     * provided was truncated ...", "The previous answer likely created ...", "My earlier answer ...", "The prompt says
+     * ...", "Let's check ...", "Wait, ...", "I already planned ...", "As an AI ...". Narrow on purpose, as these are
+     * also a developer's words about the host or the user: not "The input given was truncated by the host", "The
+     * previous answer from the host is cached", "Our previous attempt to reconcile failed", "In this response the host
+     * returns 200", "The user wants weekly only", "Wait times can exceed 30 seconds", "Wait: the host returns Y", nor an
+     * assumption ("The prompt does not specify the currency; assume INR", "Let's assume ISO dates"), which is a risk.
      */
-    private static final Pattern PROSE = Pattern.compile("(?i)\\b(?:the|this) (?:json|input|text|context|prompt)"
+    private static final Pattern PROSE = Pattern.compile("(?i)\\b(?:the|this) (?:json|context|prompt)"
             + " (?:provided|given|above|you (?:provided|gave|sent)|in the prompt) (?:was|is|got|has been|seems|appears)(?: to be)?"
             + " (?:truncated|cut off|cut)\\b"
-            // (not "the last response of the host": a host's responses are a real risk's words)
-            + "|\\b(?:my|your|our) (?:previous|earlier|last) (?:answer|response|reply|output|attempt)\\b"
-            + "|\\bthe (?:previous|earlier) (?:answer|reply|output)\\b"
-            + "|\\b(?:the|your) prompt (?:says|said|asks|asked|wants|requires|gives|shows|mentions|does not|doesn'?t)\\b"
-            + "|\\blet'?s (?:assume|check|see|re-?check|re-?read)\\b|\\blet us assume\\b|\\bas an ai\\b"
-            + "|\\bin this (?:response|answer)\\b|\\bthe user (?:wants|asked|asks)\\b"
+            + "|^\\W{0,3}the (?:previous|earlier) (?:answer|reply)\\b(?! (?:from|of|by|for|to|in|on|at|with)\\b)"
+            + "|\\b(?:my|our) (?:previous|earlier|last) (?:answer|reply|response)\\b"
+            + "|\\b(?:the|your) prompt (?:says|said|asks|asked|wants|requires|gives|shows|mentions)\\b(?! nothing\\b)"
+            + "|\\blet'?s (?:check|see|re-?check|re-?read)\\b|\\bas an ai\\b"
+            + "|\\bin this (?:response|answer),? (?:i|we)\\b|\\bthe user (?:wants|asks|asked) (?:me|us)\\b"
             + "|\\bi (?:already|previously) (?:wrote|planned|listed|created|answered)\\b"
-            + "|^\\W{0,3}(?:but |hmm,? |ok(?:ay)?,? )?wait\\b");
+            + "|^\\W{0,3}(?:but |hmm,? |ok(?:ay)?,? )?wait\\s{0,3}[,.!\\u2026\\u2014-]");
     /** The most of a text that is read for such sentences; the rest is kept as it is. */
     static final int MAX_PROSE = 4000;
+    /** Words whose full stop ends no sentence ("e.g.", "Mr."), without their dots. */
+    private static final Set<String> NO_STOP = Set.of("eg", "ie", "etc", "vs", "approx", "incl", "cf", "viz", "no", "nos", "fig", "sec",
+            "mr", "mrs", "ms", "dr", "st", "ltd", "inc", "jr", "sr");
 
     /**
      * The text without its sentences in which the model talks about its input or its own answers (see {@link #PROSE});
      * empty when every sentence was such. A sentence ends at . ! or ? before a space or the end, or at a line break; a
-     * dot inside a word (model.js) ends none. Linear in the text's length.
+     * dot inside a word (model.js), after a single letter or an abbreviation (e.g., Mr.) ends none. What is kept is
+     * kept as written (indentation, spaces); only the space a dropped sentence leaves at the start or end goes. Linear
+     * in the text's length.
      */
     public static String withoutReasoningSentences(String text) {
         if (text == null || text.isEmpty()) {
@@ -154,7 +161,8 @@ public final class ModelReasoning {
         int start = 0;
         for (int i = 0; i <= read.length(); i++) {
             boolean end = i == read.length() || read.charAt(i) == '\n'
-                    || ".!?".indexOf(read.charAt(i)) >= 0 && (i + 1 == read.length() || Character.isWhitespace(read.charAt(i + 1)));
+                    || ".!?".indexOf(read.charAt(i)) >= 0 && (i + 1 == read.length() || Character.isWhitespace(read.charAt(i + 1)))
+                    && !(read.charAt(i) == '.' && abbreviation(read, i));
             if (!end) {
                 continue;
             }
@@ -170,7 +178,23 @@ public final class ModelReasoning {
         if (!dropped) {
             return text;
         }
-        return (kept + text.substring(read.length())).strip().replaceAll("[ \\t]{2,}", " ");
+        String out = kept + text.substring(read.length());
+        // the space or line break left before the first sentence kept, not the indentation of a line
+        out = out.startsWith("\r\n") ? out.substring(2) : out.startsWith("\n") ? out.substring(1) : out.replaceFirst("^[ \\t]++", "");
+        return out.stripTrailing();
+    }
+
+    /** Whether the full stop at {@code dot} ends a single letter or an abbreviation (read back at most 8 characters). */
+    private static boolean abbreviation(String text, int dot) {
+        int from = dot;
+        while (from > 0 && dot - from < 8 && (Character.isLetter(text.charAt(from - 1)) || text.charAt(from - 1) == '.')) {
+            from--;
+        }
+        if (from > 0 && Character.isLetterOrDigit(text.charAt(from - 1))) {
+            return false;
+        }
+        String word = text.substring(from, dot).replace(".", "").toLowerCase(Locale.ROOT);
+        return word.length() == 1 || NO_STOP.contains(word);
     }
 
     /** A comment longer than this many lines is not taken out (it may be code the scan misread). */

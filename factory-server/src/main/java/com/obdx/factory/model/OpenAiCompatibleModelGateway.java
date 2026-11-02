@@ -612,7 +612,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 if (tooLarge != null && (!sizeRefusal(e, text) || tooLarge[0] < MIN_INPUT)) {
                     log.info("Chat model '{}' refused a request as too large ({} tokens, limit {}); not learned as its limit", current.chatModelName(),
                             tooLarge[1], tooLarge[0]);
-                    throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
+                    throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
                 }
                 if (tooLarge != null) {
@@ -640,7 +640,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     }
                     current.limits().charsPerToken = Math.clamp((double) chars / prompt, 2.0, 6.0);
                     saveLimits(current);
-                    throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " takes at most "
+                    throw new PromptTooLargeException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " takes at most "
                             + tooLarge[0] + " tokens in one request; this one had " + tooLarge[1] + ".", tooLarge[0], tooLarge[1], e);
                 }
                 int[] output = outputTooLarge(text);
@@ -674,13 +674,13 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                             Thread.sleep(wait);
                         } catch (InterruptedException interrupted) {
                             Thread.currentThread().interrupt();
-                            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped",
+                            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " was stopped",
                                     interrupted);
                         }
                         room = (int) (perMinute * 0.9) - limits.usedLastMinute(System.currentTimeMillis());
                     }
                     if (room < MIN_OUTPUT || lowered >= 3) {
-                        throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " writes at most "
+                        throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " writes at most "
                                 + limit + " tokens a minute, too few for an answer. Use a model or plan with a higher output limit.", e);
                     }
                     lowered++;
@@ -697,19 +697,19 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                 // A daily limit is rolling: a short wait it asks for is waited out like a per-minute one; without a time,
                 // or with a long one, every call fails until the allowance frees up
                 if (daily && (!waitGiven(text) || wait.compareTo(MAX_WAIT) > 0)) {
-                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl())
                             + " has used up its daily limit (" + serverMessage(text) + "). Try again "
                             + (waitGiven(text) ? "in " + roughly(wait) + " (the server's estimate; it changes if others use the same key)"
                             : "later") + ", or use a plan or model with a larger limit.", true,
                             waitGiven(text) ? roughly(wait) : null, e);
                 }
                 if (attempt >= RATE_LIMIT_ATTEMPTS) {
-                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl())
                             + " stayed at its rate limit after " + attempt + " tries (" + serverMessage(text) + "). Try again in a few "
                             + "minutes, or use a plan or model with larger limits.", daily, "a few minutes", e);
                 }
                 if (wait.compareTo(MAX_WAIT) > 0) {
-                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl()
+                    throw new ModelLimitReachedException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl())
                             + " reached its rate limit and asks to wait " + roughly(wait) + ". Try again then, or use a plan or model "
                             + "with a larger limit.", false, roughly(wait), e);
                 }
@@ -720,7 +720,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
                     Thread.sleep(wait);
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
-                    throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped", interrupted);
+                    throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " was stopped", interrupted);
                 }
             }
         }
@@ -814,7 +814,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         // patterns that start with their words, not with spaces, so a long run of spaces costs nothing
         message = message.replaceAll("in organization `[^`]{0,200}` ?", "").replaceAll("service tier `[^`]{0,200}` ?", "").replaceAll(" {2,}", " ");
         int end = message.indexOf(". ");
-        return end > 0 ? message.substring(0, end) : message.length() > 200 ? message.substring(0, 200) : message;
+        return com.obdx.factory.common.Messages.redacted(end > 0 ? message.substring(0, end) : message.length() > 200 ? message.substring(0, 200) : message);
     }
 
     /** The messages of an error and its causes, at most 4 KB: the patterns read only the start of what a server sent. */
@@ -921,7 +921,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         } catch (InterruptedException e) {
             stop(worker, body.get());
             Thread.currentThread().interrupt();
-            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped", e);
+            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " was stopped", e);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             throw chatFailure(current, cause instanceof RuntimeException r ? r : new IllegalStateException(cause.getMessage(), cause));
@@ -981,7 +981,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " was stopped", e);
+            throw new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " was stopped", e);
         } catch (ExecutionException e) {
             throw chatFailure(current, e.getCause() instanceof RuntimeException r ? r : new IllegalStateException(e.getCause()));
         } catch (TimeoutException e) {
@@ -1133,12 +1133,12 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private ModelGatewayException chatFailure(Connection current, RuntimeException e) {
         if (timedOut(e)) {
-            return new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " did not answer within "
+            return new ModelGatewayException("Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " did not answer within "
                     + readable(timeout) + ". It may be busy, for example embedding documents an import added: try again when that "
                     + "finishes. If it keeps happening, use a faster model server (one with a GPU) or a longer FACTORY_MODEL_TIMEOUT.", e);
         }
         return new ModelGatewayException(
-                "Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
+                "Chat model '" + current.chatModelName() + "' at " + ModelSettings.shown(current.baseUrl()) + " failed: " + com.obdx.factory.common.Messages.redacted(e.getMessage()), e);
     }
 
     @Override
@@ -1271,6 +1271,6 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private static ModelGatewayException embeddingFailure(Connection current, RuntimeException e) {
         return new ModelGatewayException(
-                "Embedding model '" + current.embeddingModelName() + "' at " + current.embeddingUrl() + " failed: " + e.getMessage(), e);
+                "Embedding model '" + current.embeddingModelName() + "' at " + ModelSettings.shown(current.embeddingUrl()) + " failed: " + com.obdx.factory.common.Messages.redacted(e.getMessage()), e);
     }
 }

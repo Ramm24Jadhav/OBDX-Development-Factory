@@ -33,6 +33,10 @@ public final class PlanParser {
     }
 
     public static ChangePlan parse(String text, Predicate<String> fileExists, int maxItems) {
+        return normalize(read(text), fileExists, maxItems);
+    }
+
+    private static ChangePlan read(String text) {
         int start = text.indexOf('{');
         int end = text.lastIndexOf('}');
         if (start < 0 || end <= start) {
@@ -44,7 +48,7 @@ public final class PlanParser {
         } catch (JacksonException e) {
             throw new BadRequestException("The plan is not valid JSON: " + e.getOriginalMessage());
         }
-        return normalize(raw, fileExists, maxItems);
+        return raw;
     }
 
     private static final java.util.regex.Pattern ITEMS = java.util.regex.Pattern.compile("[\"']?items[\"']?\\s*:\\s*\\[");
@@ -191,11 +195,11 @@ public final class PlanParser {
                     basedOn.add(clean);
                 }
             }
-            String purpose = blankToNull(withoutReasoning(item.purpose()));
+            String purpose = blankToNull(item.purpose());
             if (isBuildFile(path) && (purpose == null || !purpose.startsWith(BUILD_FILE_MARK))) {
                 purpose = BUILD_FILE_MARK + (purpose == null ? "" : " " + purpose);
             }
-            items.put(path, new ChangePlan.Item(path, action, layer, purpose, basedOn, blankToNull(withoutReasoning(item.details()))));
+            items.put(path, new ChangePlan.Item(path, action, layer, purpose, basedOn, blankToNull(item.details())));
         }
         if (items.isEmpty()) {
             throw new BadRequestException("The plan has no files to change");
@@ -209,10 +213,8 @@ public final class PlanParser {
         ordered.sort(java.util.Comparator.comparingInt((ChangePlan.Item i) -> stage(i.layer(), i.path())));
         // The risks that say the plan is incomplete are the server's own (see ChangePlan.incomplete): one written by the
         // model, or by a reviewer's edit, is dropped, as is whether the plan is incomplete (a plan sent in never sets it)
-        // and the model's talk about its input or its earlier answers ("The JSON provided was truncated ...") is no risk
         List<String> risks = new ArrayList<>(plan.risks() == null ? List.of() : plan.risks().stream()
-                .filter(r -> r != null && !r.isBlank() && !ImpactAnalyzer.incompleteRisk(r)).map(PlanParser::withoutReasoning)
-                .filter(r -> !r.isBlank()).toList());
+                .filter(r -> r != null && !r.isBlank() && !ImpactAnalyzer.incompleteRisk(r)).toList());
         List<String> buildFiles = ordered.stream().map(ChangePlan.Item::path).filter(PlanParser::isBuildFile).toList();
         risks.removeIf(r -> r.startsWith(BUILD_FILE_RISK));
         if (!buildFiles.isEmpty()) {
@@ -274,6 +276,9 @@ public final class PlanParser {
         }
         // A UI file by its path, whatever layer the model gave it (a model.js or a resource bundle it called "service"
         // would otherwise be written before the back end's resource)
+        if ("test".equals(layer)) {
+            return 20 + rank;
+        }
         if (uiPath(lower)) {
             return 10 + rank;
         }
@@ -288,16 +293,22 @@ public final class PlanParser {
     }
 
     /**
-     * Whether a path (lower case) is a UI file whatever layer it was given: a view (.html), a resource bundle (an nls
-     * folder), or a script under a channel or components folder (OBDX's JET UI). Never a Java file.
+     * Whether a path (lower case) is a UI file whatever layer it was given: a view (.html), a resource bundle (a .js,
+     * .json or .properties file in an nls folder), or a script or style under a channel or components folder (OBDX's
+     * JET UI). Never a Java file, a build file (gruntfile.js, package.json), nor a file of a back end's resources, its
+     * templates or documentation (src/main/resources, templates/, docs/), whose .html or .json is no screen's.
      */
     static boolean uiPath(String lower) {
-        if (lower.endsWith(".java")) {
+        String slashed = "/" + lower;
+        if (lower.endsWith(".java") || isBuildFile(lower) || slashed.contains("/src/main/resources/") || slashed.contains("/templates/")
+                || slashed.contains("/docs/") || slashed.contains("/doc/") || slashed.contains("/server/")) {
             return false;
         }
-        String slashed = "/" + lower;
-        return lower.endsWith(".html") || slashed.contains("/nls/")
-                || (slashed.contains("/channel/") || slashed.contains("/components/")) && lower.matches(".*\\.(js|ts|jsx|tsx|json|css|scss)");
+        if (slashed.contains("/nls/")) {
+            return lower.matches(".*\\.(js|json|properties)");
+        }
+        return lower.endsWith(".html")
+                || (slashed.contains("/channel/") || slashed.contains("/components/")) && lower.matches(".*\\.(js|ts|jsx|tsx|css|scss)");
     }
 
     /**
@@ -353,6 +364,36 @@ public final class PlanParser {
     /** A plan's text without the sentences in which the model talks about its input or its own answers (see ModelReasoning). */
     static String withoutReasoning(String text) {
         return com.obdx.factory.pack.ModelReasoning.withoutReasoningSentences(text);
+    }
+
+    /**
+     * A plan the model wrote, without the sentences in which it talks about its input or its earlier answers ("The JSON
+     * provided was truncated ...") in its risks, purposes and details; a risk left empty goes. Only for the model's
+     * answer, before normalize (whose filter of the server's own risks then sees what is left): never for a reviewer's
+     * edit, whose words are the reviewer's.
+     */
+    static ChangePlan withoutModelReasoning(ChangePlan plan) {
+        List<ChangePlan.Item> items = new ArrayList<>();
+        for (ChangePlan.Item item : plan.items() == null ? List.<ChangePlan.Item>of() : plan.items()) {
+            if (item == null) {
+                continue;
+            }
+            items.add(new ChangePlan.Item(item.path(), item.action(), item.layer(), withoutReasoning(item.purpose()),
+                    item.basedOn(), withoutReasoning(item.details())));
+        }
+        List<String> risks = new ArrayList<>();
+        for (String risk : plan.risks() == null ? List.<String>of() : plan.risks()) {
+            String kept = withoutReasoning(risk);
+            if (kept != null && !kept.isBlank()) {
+                risks.add(kept);
+            }
+        }
+        return new ChangePlan(plan.summary(), items, risks);
+    }
+
+    /** A plan the model wrote as JSON, read (see parse) without its reasoning (see withoutModelReasoning). */
+    static ChangePlan parseModel(String text, Predicate<String> fileExists, int maxItems) {
+        return normalize(withoutModelReasoning(read(text)), fileExists, maxItems);
     }
 
     private static String blankToNull(String value) {

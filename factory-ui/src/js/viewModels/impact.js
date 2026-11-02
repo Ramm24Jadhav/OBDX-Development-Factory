@@ -26,26 +26,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const OPERATIONS = { create: 'Create', modify: 'Modify' };
     const code = (prefix, id, n) => prefix + '-' + id.replace(/-/g, '').slice(0, n).toUpperCase();
     // Folders that say what kind of file is in them, not which module: a module is the folder above them
-    const KIND_FOLDERS = /^(src|main|java|com|org|net|service|services|controller|controllers|dao|dto|dtos|model|models|impl|rest|resource|resources|adapter|adapters|api|ui|js|test|tests)$/i;
-    /** The module of a planned file, from its folders only (never its name): the folder after the last modules or components
-     * folder of a JET UI (payments in channel/components/modules/payments/x/x.js), else the deepest folder that is not a kind
-     * of file (payments in backend/src/com/bank/obdx/payments/service/X.java); a file at the top has none. */
+    const KIND_FOLDERS = /^(src|main|java|com|org|net|service|services|controller|controllers|dao|dto|dtos|model|models|impl|rest|resource|resources|adapter|adapters|api|ui|js|ts|test|tests|views|viewmodels|nls|css|scss|styles|screens|pages|hooks|navigation|components|modules)$/i;
+    /** File names that say what a file is in its folder, not which feature it is (model.js, index.js). */
+    const KIND_NAMES = /^(model|index|main|app|styles?|types|api|constants)$/i;
+    /** The module of a planned file: the folder after the last modules or components folder of a JET UI (payments in
+     * channel/components/modules/payments/x/x.js); else the deepest folder below the top one that is not a kind of file
+     * (payments in backend/src/com/bank/obdx/payments/service/X.java); else, when only such folders and the top one are
+     * left (ui/js/viewModels/fund-transfer.js, app/src/api/si.ts), the file's own name without its extension
+     * (fund-transfer), so a feature's view, view model and texts are one module; a file named for its kind there
+     * (model.js), its folder. */
     const moduleOf = (path) => {
-      const folders = path.split('/').filter(Boolean).slice(0, -1);
+      const parts = path.split('/').filter(Boolean);
+      const folders = parts.slice(0, -1);
+      const stem = (parts[parts.length - 1] || path).replace(/\.[^.]*$/, '');
       if (!folders.length) {
-        return '(top folder)';
+        return stem;
       }
       let ui = -1;
       folders.forEach((p, i) => { if (/^(modules|components)$/i.test(p) && i + 1 < folders.length) { ui = i; } });
       if (ui >= 0) {
         return folders[ui + 1];
       }
-      for (let i = folders.length - 1; i >= 0; i--) {
+      for (let i = folders.length - 1; i >= 1; i--) {
         if (!KIND_FOLDERS.test(folders[i])) {
           return folders[i];
         }
       }
-      return folders[folders.length - 1];
+      return KIND_NAMES.test(stem) ? folders[folders.length - 1] : stem;
     };
     const fileName = (path) => path.split('/').pop() || path;
     // Requirement references a planned file names in its purpose or details (FR-001, AC-002, BR-003)
@@ -423,7 +430,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks || [] : []));
       // Whether files may be missing is the server's own record (plan.incomplete), never a risk's wording
       this.planIncomplete = ko.pureComputed(() => !!(this.detail() && this.detail().plan && this.detail().plan.incomplete));
-      this.planResumable = ko.pureComputed(() => this.planIncomplete() && this.detail().plan.incomplete.kind === 'LIMIT');
+      // (a plan an earlier version stored names no revision: it is analyzed afresh, not continued)
+      this.planResumable = ko.pureComputed(() => this.planIncomplete() && this.detail().plan.incomplete.kind === 'LIMIT'
+        && this.detail().plan.incomplete.revision != null);
       this.riskGroups = ko.pureComputed(() => {
         const left = this.risks().slice();
         return RISK_KINDS.map((k) => {

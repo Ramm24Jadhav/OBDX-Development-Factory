@@ -37,6 +37,8 @@ final class PlanReview {
     private static final Pattern API_PATH = Pattern.compile("(?<![\\w/])(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+)*)");
     /** The most of an API's name or description that is searched for its path. */
     static final int MAX_TEXT = 300;
+    /** The most APIs of a spec checked against the plan. */
+    static final int MAX_APIS = 100;
     /**
      * The first path segments of OBDX's own REST services: a bank's extension that adds a resource under them can clash
      * with the product's services.
@@ -111,7 +113,8 @@ final class PlanReview {
         // A UI-only change calls existing services; a plan with Java code, or for a spec that asks for new REST endpoints,
         // is expected to serve the APIs the existing code does not
         boolean backend = plan.items().stream().anyMatch(i -> i.path().toLowerCase(Locale.ROOT).endsWith(".java")) || asksForEndpoints(spec);
-        for (RequirementSpec.Api api : spec.apis()) {
+        // (at most MAX_APIS: each is compared with every planned file)
+        for (RequirementSpec.Api api : spec.apis().subList(0, Math.min(MAX_APIS, spec.apis().size()))) {
             String path = pathOf(api);
             if (path == null) {
                 continue;
@@ -200,84 +203,85 @@ final class PlanReview {
         return p.replaceAll("^v\\d+/", "");
     }
 
+    /** Words of a resource's name that say what it is, not what it serves. */
+    private static final Set<String> RESOURCE_WORDS = Set.of("resource", "rest", "api", "controller", "endpoint", "service", "impl",
+            "java");
+    /** The most words of a path or a file's name that are compared. */
+    static final int MAX_WORDS = 20;
+
     /**
-     * Whether a planned file looks like it serves the path: its name holds the last fixed segment of the path, without
-     * a plural s ("standingInstructions" in StandingInstructionResource.java).
+     * Whether a planned file looks like it serves the path by its name: each word of the path's last fixed segment is a
+     * word of the file's name ("standingInstructions": StandingInstructionResource.java) or shortened from it (Stand,
+     * Instr: see {@link #abbreviates}); and when that segment is under a parameter (/accounts/{id}/limits), the segment
+     * before the parameter is named too (an AccountLimitResource, not a CardLimitResource).
      */
     static boolean serves(String file, String path) {
-        String name = file.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/]", "");
         List<String> fixed = new ArrayList<>();
-        for (String segment : normalize(path).split("/")) {
-            if (!segment.isEmpty() && !segment.equals("{}")) {
-                fixed.add(segment.replaceAll("[^a-z0-9]", ""));
+        int lastIndex = -1;
+        String[] segments = path.split("/");
+        for (int i = 0; i < segments.length; i++) {
+            String segment = segments[i].strip();
+            if (!segment.isEmpty() && !segment.startsWith("{") && !segment.matches("(?i)v\\d+")) {
+                fixed.add(segment);
+                lastIndex = i;
             }
         }
         if (fixed.isEmpty()) {
             return true;
         }
-        String last = fixed.getLast();
-        String singular = last.endsWith("ies") ? last.substring(0, last.length() - 3) + "y" : last.endsWith("s") ? last.substring(0, last.length() - 1) : last;
-        return name.contains(singular);
+        String name = file.substring(file.lastIndexOf('/') + 1).replaceAll("\\.[A-Za-z]+$", "");
+        List<String> have = words(name).stream().filter(w -> !RESOURCE_WORDS.contains(w)).toList();
+        if (!named(words(fixed.getLast()), have)) {
+            return false;
+        }
+        boolean underParameter = lastIndex > 0 && segments[lastIndex - 1].strip().startsWith("{");
+        return !underParameter || fixed.size() < 2 || named(words(fixed.get(fixed.size() - 2)), have);
     }
 
-    /** Words of a resource's name that say what it is, not what it serves. */
-    private static final Set<String> RESOURCE_WORDS = Set.of("resource", "rest", "api", "controller", "endpoint", "service", "impl",
-            "java");
+    /** Whether each wanted word is one of the words a name has, or shortened from it (see abbreviates). */
+    private static boolean named(List<String> wanted, List<String> have) {
+        return !wanted.isEmpty() && wanted.stream().allMatch(w -> have.stream().anyMatch(h -> h.equals(w) || abbreviates(h, w)));
+    }
 
     /**
-     * Whether a planned file serves the path: its name holds the path's last fixed segment (see {@link #serves(String,
-     * String)}); or its purpose or details name the path ("@Path('/payments/standingInstructions')"), or its last
-     * segment as such (a compound one, "standingInstructions", also without its slash); or each word of the last
-     * segment is a word of the file's name or one shortened ("StandInstructionResource" or "StandInstrResource" for
-     * standingInstructions: stand, instr; a word of at least three letters).
+     * A path the details or purpose of a resource declare it serves: after an HTTP method or @Path ("GET /payments/x",
+     * "@Path('/payments/x')", "path /payments/x"), not a path the text only mentions ("Unlike /payments/x, ...").
+     */
+    private static final Pattern DECLARED_PATH = Pattern.compile(
+            "(?i)(?:\\b(?:GET|POST|PUT|PATCH|DELETE)\\b|@Path\\s*+\\(\\s*+(?:value\\s*+=\\s*+)?[\"']?|\\bpaths?\\b\\s*+[:=]?)\\s*+[\"']?"
+                    + "(/[A-Za-z][\\w.\\-]*+(?:/[\\w{}.\\-]++)*+)");
+
+    /**
+     * Whether a planned file serves the path: by its name (see {@link #serves(String, String)}), or because its purpose
+     * or details declare the path (see DECLARED_PATH), or a path above it (a resource's base path serves its
+     * sub-resources), compared whole after normalising (a version segment and OBDX's /digx base left out). A path
+     * below it, or one the text only mentions, does not count.
      */
     static boolean serves(ChangePlan.Item item, String path) {
         if (serves(item.path(), path)) {
             return true;
         }
-        String last = null;
-        for (String segment : path.split("/")) {
-            if (!segment.isBlank() && !segment.startsWith("{") && !segment.matches("(?i)v\\d+")) {
-                last = segment.strip();
-            }
-        }
-        if (last == null) {
-            return true;
-        }
-        String text = capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())).toLowerCase(Locale.ROOT);
-        String lastLower = last.toLowerCase(Locale.ROOT);
-        List<String> wanted = words(last);
-        // (a single-word segment such as "validation" is named only with its slash: as a word it says too little)
-        if (contains(text, "/" + lastLower) || wanted.size() > 1 && contains(text, lastLower)) {
-            return true;
-        }
-        String file = item.path().substring(item.path().lastIndexOf('/') + 1).replaceAll("\\.[A-Za-z]+$", "");
-        List<String> have = words(file).stream().filter(w -> !RESOURCE_WORDS.contains(w)).toList();
-        return !wanted.isEmpty() && wanted.stream().allMatch(w -> have.stream().anyMatch(h -> shortened(h, w)));
-    }
-
-    /**
-     * Whether the text holds the word (or "/segment") as a whole: nothing alphanumeric right after it, nor right before a
-     * word (a "/segment" may end a longer path). The text is capped, so the search stays bounded.
-     */
-    private static boolean contains(String text, String word) {
-        boolean slash = word.startsWith("/");
-        for (int at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + 1)) {
-            int end = at + word.length();
-            boolean before = slash || at == 0 || !Character.isLetterOrDigit(text.charAt(at - 1));
-            boolean after = end >= text.length() || !Character.isLetterOrDigit(text.charAt(end));
-            if (before && after) {
+        String wanted = base(normalize(path));
+        Matcher m = DECLARED_PATH.matcher(capped(nullToEmpty(item.purpose()) + " " + nullToEmpty(item.details())));
+        while (m.find()) {
+            String declared = base(normalize(m.group(1).replaceAll("[.,;:]+$", "")));
+            if (!declared.isEmpty() && (wanted.equals(declared) || wanted.startsWith(declared + "/"))) {
                 return true;
             }
         }
         return false;
     }
 
-    /** The lower-case words of a camel-case, kebab-case or snake-case name, without a plural s: standing, instruction. */
+    /** A normalised path without OBDX's base (digx/v1/): payments/x for digx/v1/payments/x. */
+    private static String base(String normalized) {
+        return normalized.replaceFirst("^digx/(?:v\\d+/)?", "");
+    }
+
+    /** The lower-case words of a camel-, kebab- or snake-case name without a plural s (standing, instruction), MAX_WORDS. */
     static List<String> words(String name) {
         List<String> words = new ArrayList<>();
         StringBuilder word = new StringBuilder();
-        for (int i = 0; i < name.length(); i++) {
+        for (int i = 0; i < name.length() && words.size() < MAX_WORDS; i++) {
             char c = name.charAt(i);
             boolean boundary = !Character.isLetterOrDigit(c)
                     || Character.isUpperCase(c) && i > 0 && (Character.isLowerCase(name.charAt(i - 1)) || Character.isDigit(name.charAt(i - 1))
@@ -290,7 +294,7 @@ final class PlanReview {
                 word.append(c);
             }
         }
-        if (!word.isEmpty()) {
+        if (!word.isEmpty() && words.size() < MAX_WORDS) {
             words.add(singular(word.toString().toLowerCase(Locale.ROOT)));
         }
         return words;
@@ -301,11 +305,13 @@ final class PlanReview {
                 : word.length() > 3 && word.endsWith("s") && !word.endsWith("ss") ? word.substring(0, word.length() - 1) : word;
     }
 
-    /** One word the other or a shortening of it (instr, instruction), of at least three letters. */
-    private static boolean shortened(String a, String b) {
-        String shorter = a.length() <= b.length() ? a : b;
-        String longer = shorter == a ? b : a;
-        return shorter.length() >= 3 && longer.startsWith(shorter);
+    /**
+     * Whether a file's word is a shortening of the path's word: at least four letters, the path's word starting with it
+     * and at least three letters longer (Stand for standing, Instr for instruction); not a word the path's word only
+     * inflects (Bill for billers) and never a longer one (Scheduled for schedule, Chargeback for charges).
+     */
+    static boolean abbreviates(String fileWord, String pathWord) {
+        return fileWord.length() >= 4 && pathWord.length() >= fileWord.length() + 3 && pathWord.startsWith(fileWord);
     }
 
     /**

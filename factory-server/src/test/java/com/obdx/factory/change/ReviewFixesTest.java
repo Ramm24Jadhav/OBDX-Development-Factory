@@ -357,13 +357,51 @@ class ReviewFixesTest {
                         List.of(), null), "/payments/standingInstructions"));
         quickly("stage of long paths", () -> PlanParser.stage("service", "channel/a/model.js"),
                 () -> PlanParser.stage("service", "channel/".repeat(50_000) + "nls/x.js"));
-        List<com.obdx.factory.requirements.RequirementSpec.OpenQuestion> questions = new ArrayList<>();
-        for (int i = 0; i < 60; i++) {
-            questions.add(new com.obdx.factory.requirements.RequirementSpec.OpenQuestion("Question " + i + " " + "word ".repeat(400), null,
-                    null, List.of("option ".repeat(400)), null, null));
+        // QA 19 review: declared paths that only start like the wanted one, secrets in a message, thousands of distinct
+        // questions (none the same, so each pair is compared in full) and long rows
+        quickly("paths that start alike", () -> PlanReview.serves(resource, "/payments/standingInstructions"),
+                () -> PlanReview.serves(new ChangePlan.Item("backend/XResource.java", "create", "service", null, List.of(),
+                        "GET /payments/standingInstruction ".repeat(5_000)), "/payments/standingInstructions/{id}"));
+        quickly("@Path openings", () -> PlanReview.serves(resource, "/payments/standingInstructions"),
+                () -> PlanReview.serves(new ChangePlan.Item("backend/XResource.java", "create", "service", null, List.of(),
+                        "@Path(\"".repeat(20_000)), "/payments/standingInstructions"));
+        quickly("a-b segments", () -> PlanReview.serves(resource, "/payments/standingInstructions"),
+                () -> PlanReview.serves(new ChangePlan.Item("backend/XResource.java", "create", "service", "a-".repeat(1_000), List.of(),
+                        "a-".repeat(1_000)), "/x/" + "a-".repeat(149) + "b"));
+        quickly("bearer words", () -> com.obdx.factory.common.Messages.redacted("Bearer x"),
+                () -> com.obdx.factory.common.Messages.redacted("bearer ".repeat(100_000)));
+        quickly("key names", () -> com.obdx.factory.common.Messages.redacted("api_key=x"),
+                () -> com.obdx.factory.common.Messages.redacted("api_key=\" ".repeat(50_000) + "password:"));
+        List<com.obdx.factory.requirements.RequirementSpec.OpenQuestion> drafted = new ArrayList<>();
+        StringBuilder rows = new StringBuilder("## Open questions\n| ID | Question |\n|---|---|\n");
+        StringBuilder longRows = new StringBuilder(rows);
+        for (int i = 0; i < 20_000; i++) {
+            String question = "Should the " + word(i) + " field on the " + word(i + 7) + " screen allow " + word(i + 13) + " values?";
+            rows.append("| OQ-").append(i).append(" | ").append(question).append(" |\n");
+            if (i < 3_000) {
+                drafted.add(new com.obdx.factory.requirements.RequirementSpec.OpenQuestion(question.replace("Should", "Must"), null, null,
+                        List.of(), null, null));
+            }
+            if (i < 400) {
+                longRows.append("| OQ-").append(i).append(" | ").append(question).append(" zz".repeat(700)).append(" |\n");
+            }
         }
-        quickly("many long questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(questions.subList(0, 2)),
-                () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(questions));
+        quickly("thousands of questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(drafted.subList(0, 2)),
+                () -> com.obdx.factory.requirements.DocumentStructureAccess.questions(drafted));
+        quickly("thousands of document questions", () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith("", drafted.subList(0, 2)),
+                () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(rows.toString(), drafted));
+        quickly("long question rows", () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith("", drafted.subList(0, 2)),
+                () -> com.obdx.factory.requirements.DocumentStructureAccess.questionsWith(longRows.toString(), drafted));
+    }
+
+    /** A five-letter word of its own for each number: aaaaa, aaaab, ... */
+    private static String word(int n) {
+        char[] letters = new char[5];
+        for (int i = 4; i >= 0; i--) {
+            letters[i] = (char) ('a' + n % 26);
+            n /= 26;
+        }
+        return new String(letters);
     }
 
     /** Runs a small input first (so the code is compiled), then the large one, which must take under 2 seconds. */

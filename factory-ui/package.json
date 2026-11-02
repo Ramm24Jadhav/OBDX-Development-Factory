@@ -24,11 +24,13 @@
     "@types/minimatch": "5.1.2"
   },
   "scripts": {
-    "build": "node scripts/check-tokens.js && ojet build",
-    "build:release": "node scripts/check-tokens.js && ojet build --release && node scripts/build-previews.js",
+    "build": "node scripts/check-tokens.js && node scripts/check-messages.js && node scripts/check-modules.js && ojet build",
+    "build:release": "node scripts/check-tokens.js && node scripts/check-messages.js && node scripts/check-modules.js && ojet build --release && node scripts/build-previews.js",
     "serve": "ojet serve",
     "build:previews": "node scripts/build-previews.js",
     "check:tokens": "node scripts/check-tokens.js",
+    "check:messages": "node scripts/check-messages.js",
+    "check:modules": "node scripts/check-modules.js",
     "check:responsive": "node scripts/check-responsive.js",
     "check:interactions": "node scripts/check-interactions.js"
   }
