@@ -1,5 +1,6 @@
 package com.obdx.factory.importing;
 
+import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.profile.ProjectProfileService;
@@ -106,6 +107,9 @@ class ImportAndSearchIntegrationTest {
     private ProjectProfileService profiles;
 
     @Autowired
+    private AuditLog audit;
+
+    @Autowired
     private CodeFiles codeFiles;
 
     private UUID workspaceId;
@@ -181,6 +185,13 @@ class ImportAndSearchIntegrationTest {
         assertThat(fact(profile, "backend.javaVersion").status()).isEqualTo("corrected");
         assertThat(fact(profile, "backend.javaVersion").value()).isEqualTo("Java 8");
         assertThat(fact(profile, "ui.moduleSystem").status()).isEqualTo("confirmed");
+
+        // The profile's correction history reads only its own entries of the audit log
+        audit.recordAs("alice", "PROFILE_FACT_SET", workspaceId, "backend.javaVersion", "Java 8");
+        audit.recordAs("alice", "WORKSPACE_UPDATED", workspaceId, "bank-a", null);
+        audit.recordAs("alice", "PROFILE_FACT_RESET", workspaceId, "backend.javaVersion", null);
+        assertThat(audit.recent(workspaceId, List.of("PROFILE_FACT_SET", "PROFILE_FACT_RESET"), 10))
+                .extracting(AuditLog.Event::action).containsExactly("PROFILE_FACT_RESET", "PROFILE_FACT_SET");
 
         repo.commit(Map.of("ui/js/viewModels/beneficiary.js", "define([], function () { function BeneficiaryViewModel() {} });"),
                 List.of("ui/js/viewModels/account-summary.js"));

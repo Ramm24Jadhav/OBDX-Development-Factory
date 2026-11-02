@@ -12,11 +12,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/workspaces/{workspaceId}/profile")
 public class ProjectProfileController {
+
+    static final String FACT_SET = "PROFILE_FACT_SET";
+    static final String FACT_RESET = "PROFILE_FACT_RESET";
 
     private final ProjectProfileService service;
     private final AccessGuard guard;
@@ -40,23 +45,44 @@ public class ProjectProfileController {
         return service.refresh(workspaceId);
     }
 
-    /** Confirms (same value as detected) or corrects a fact. */
+    /** Confirms (same value as detected) or corrects a fact. Recorded in the audit log once it is saved. */
     @PutMapping("/facts/{key}")
     public ProjectProfileService.ProfileResponse setValue(@PathVariable UUID workspaceId, @PathVariable String key,
                                                           @RequestBody FactValueRequest request) {
         guard.require(workspaceId, Permission.MANAGE_CODE);
-        audit.record("PROFILE_FACT_SET", workspaceId, key, request.value());
-        return service.setValue(workspaceId, key, request.value());
+        ProjectProfileService.ProfileResponse profile = service.setValue(workspaceId, key, request.value());
+        audit.record(FACT_SET, workspaceId, key, request.value().trim());
+        return profile;
     }
 
     /** Drops the confirmed or corrected value, going back to the detected one. */
     @DeleteMapping("/facts/{key}")
     public ProjectProfileService.ProfileResponse reset(@PathVariable UUID workspaceId, @PathVariable String key) {
         guard.require(workspaceId, Permission.MANAGE_CODE);
-        audit.record("PROFILE_FACT_RESET", workspaceId, key, null);
-        return service.reset(workspaceId, key);
+        ProjectProfileService.ProfileResponse profile = service.reset(workspaceId, key);
+        audit.record(FACT_RESET, workspaceId, key, null);
+        return profile;
+    }
+
+    /** Who confirmed, corrected or reset which fact, newest first: the profile's entries of the audit log. */
+    @GetMapping("/history")
+    public List<FactChange> history(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return audit.recent(workspaceId, List.of(FACT_SET, FACT_RESET), 200).stream().map(FactChange::from).toList();
     }
 
     public record FactValueRequest(String value) {
+    }
+
+    /**
+     * One change to a fact. action is "set" (a value was confirmed or corrected; value holds it) or "reset" (back to
+     * the detected value).
+     */
+    public record FactChange(OffsetDateTime at, String username, String key, String action, String value) {
+
+        static FactChange from(AuditLog.Event event) {
+            return new FactChange(event.at(), event.username(), event.target(),
+                    FACT_RESET.equals(event.action()) ? "reset" : "set", event.detail());
+        }
     }
 }
