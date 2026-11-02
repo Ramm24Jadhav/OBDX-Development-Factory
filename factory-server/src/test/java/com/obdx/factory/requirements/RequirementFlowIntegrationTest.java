@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Requirement workflow against a real PostgreSQL: draft from text, answer questions, update the spec with the
@@ -164,6 +165,13 @@ class RequirementFlowIntegrationTest {
         assertThat(approved.approvedAt()).isNotNull();
         assertThat(approved.approvedBy()).isEqualTo("Lead");
         assertThatThrownBy(() -> requirements.updateSpec(created.id(), edited)).hasMessageContaining("is approved");
+
+        // The revision history: every version, newest first, with how it was made
+        assertThat(requirements.versions(created.id())).extracting(RequirementSpecRepository.Version::version,
+                        RequirementSpecRepository.Version::origin)
+                .containsExactly(tuple(4, RequirementSpecRepository.Origin.EDITED), tuple(3, RequirementSpecRepository.Origin.REFINED),
+                        tuple(2, RequirementSpecRepository.Origin.ANSWERED), tuple(1, RequirementSpecRepository.Origin.DRAFTED));
+        assertThat(requirements.versions(created.id())).allSatisfy(v -> assertThat(v.createdAt()).isNotNull());
     }
 
     private RequirementService.RequirementDetail waitUntilReady(UUID id) throws InterruptedException {

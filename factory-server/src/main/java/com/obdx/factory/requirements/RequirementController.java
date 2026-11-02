@@ -77,6 +77,12 @@ public class RequirementController {
         return service.get(id);
     }
 
+    @GetMapping("/api/requirements/{id}/versions")
+    public List<RequirementSpecRepository.Version> versions(@PathVariable UUID id) {
+        guard.requireForRequirement(id, Permission.VIEW);
+        return service.versions(id);
+    }
+
     @PutMapping("/api/requirements/{id}/answers")
     public RequirementService.RequirementDetail saveAnswers(@PathVariable UUID id, @RequestBody AnswersRequest request) {
         guard.requireForRequirement(id, Permission.EDIT_REQUIREMENTS);

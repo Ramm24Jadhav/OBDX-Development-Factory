@@ -610,6 +610,12 @@ filters (only values that exist), the Upload BRD/FSD and New requirement panel (
 server refuses, Close), the viewer role, keyboard reach, the offline message, and that the Workspaces page asks for no
 profile a workspace cannot have yet. Its only upload is an empty text file, which the server refuses before storing it.
 
+`node scripts/check-requirement-detail.js --url ...` checks the selected requirement, for every requirement of every
+workspace: only the parts the spec has something for, the document's IDs and exact wording, Drafted on exactly the items not
+found word for word in the document, the links between requirements and the criteria that verify them, History against
+`GET /api/requirements/{id}/versions`, Approve offered only when the server would accept it (and, for a spec with open
+questions put into the page, "Answer the questions" instead), and the phone width. It changes nothing.
+
 `npm run check:interactions` (same environment variables and `--url`, `--pages`, `--sizes`, `--workspace`, `--reduced-motion`)
 drives the factory with real keyboard, mouse and touch input instead. On every page it checks:
 - the page transition runs (or is off with reduced motion);
@@ -686,6 +692,7 @@ object: compute those in the view model.
 | `POST /api/workspaces/{id}/requirements` | Upload a document (multipart `file`, optional `title`); drafting starts in the background |
 | `POST /api/workspaces/{id}/requirements/text` | Create from text (`title`, `text`) |
 | `GET /api/requirements/{id}` | Requirement with status, document text and current spec |
+| `GET /api/requirements/{id}/versions` | The spec's versions, newest first: `version`, `origin` (DRAFTED, ANSWERED, REFINED, EDITED), `createdAt` |
 | `PUT /api/requirements/{id}/answers` | Save answers to open questions (`answers`: `index`, `answer`) |
 | `POST /api/requirements/{id}/refine` | Update the spec with the answers (background) |
 | `PUT /api/requirements/{id}/spec` | Replace the spec with edited JSON |
