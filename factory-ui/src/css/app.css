@@ -8274,6 +8274,20 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 /* ---------- Admin page, workflow ---------- */
 .factory-ad .fx-bulkbar .fx-btn + .fx-btn { margin-left: 0; }
 
+/* Access control: matrix from the role definitions, effective access and privilege history (UI declutter step 21) */
+.factory-ad-intro { margin: 0 0 12px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-ad .factory-ad-matrix th[scope="row"] { min-width: 220px; }
+.factory-ad .factory-ad-perm { display: block; color: var(--fx-text); font-weight: var(--fx-weight-semibold); }
+.factory-ad .factory-ad-permdesc { display: block; font-weight: normal; font-size: var(--fx-text-caption); overflow-wrap: anywhere; }
+.factory-ad .factory-ad-cell { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fx-text-sm); color: var(--fx-text); }
+.factory-ad-sheet h3 { margin: 16px 0 8px; font-size: var(--fx-text-sm); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+.factory-ad-sheet .factory-ad-wrap { white-space: normal; overflow-wrap: anywhere; }
+.factory-ad-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.factory-ad-history li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding-bottom: 8px; border-bottom: 1px solid var(--fx-border); }
+.factory-ad-htitle { font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+.factory-ad-hsub { grid-column: 1; font-size: var(--fx-text-sm); color: var(--fx-text-body); overflow-wrap: anywhere; }
+.factory-ad-history li > .factory-ov-subtle { grid-column: 2; grid-row: 1; white-space: nowrap; font-size: var(--fx-text-caption); }
+
 /* ---------- Workspaces page, workflow ---------- */
 /* Live import progress next to a heading */
 
