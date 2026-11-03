@@ -33,6 +33,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
     const criterionKey = (c) => (c.id && c.id.trim() ? c.id : String(c.description));
+    // The "BRD" of the screens that have none
+    const NONE = 'none';
     /** What changed from one version of a screen to another, in plain words (the same words as the editor's History). */
     const differences = (from, to) => designDiff(from, to).map((d) => ({ kind: d.kind, text: d.text, css: 'factory-studio-diff-' + d.kind.toLowerCase() }));
 
@@ -52,9 +54,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.requirements = ko.observableArray([]);
       this.requirementId = ko.observable(null);
+      // Blank and imported screens, and screens whose BRD is gone: picked as "Screens without a BRD" (requirementId NONE)
+      this.looseDesigns = ko.observableArray([]);
+      this.loose = ko.pureComputed(() => this.requirementId() === NONE);
       this.requirementOptions = ko.pureComputed(() => this.requirements().map((r) => ({
         value: r.id, label: r.title, description: (r.fileName || 'Text request') + ' · ' + ui.status(r.status).text
-      })));
+      })).concat(this.looseDesigns().length ? [{ value: NONE, label: 'Screens without a BRD', description: plural(this.looseDesigns().length, 'blank or imported screen', 'blank or imported screens') }] : []));
       this.summary = ko.pureComputed(() => this.requirements().find((r) => r.id === this.requirementId()) || null);
       this.flow = ko.observable(null);
       this.changes = ko.observableArray([]);
@@ -517,9 +522,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const host = {
         select: (id) => this.selectScreen(id),
         changed: () => reloadFlow().catch(actionError),
-        deleted: () => { closeEditor(); reloadFlow().catch(actionError); },
+        deleted: () => { closeEditor(); Promise.all([loadRequirements(), reloadFlow()]).catch(actionError); },
         leave: () => this.showReview(),
-        element: () => document.getElementById('studioEditor')
+        element: () => document.getElementById('studioEditor'),
+        // The journey strip follows the server's flow order (each review and confirmation after its initiate screen)
+        order: () => this.screens().map((s) => s.id)
+      };
+      /** Runs fn with the editor once it shows the selected screen (Edit is opened first). */
+      const inEditor = (fn) => {
+        this.showEdit();
+        const vm = this.editor();
+        if (!vm) {
+          return;
+        }
+        const ready = () => vm.detail() && vm.detail().id === this.selectedScreenId();
+        if (ready()) {
+          fn(vm);
+          return;
+        }
+        const opened = vm.detail.subscribe(() => { if (ready()) { opened.dispose(); window.setTimeout(() => fn(vm), 0); } });
       };
       const closeEditor = () => {
         const wasOpen = this.editing();
@@ -580,18 +601,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return false;
       };
       // The editor's own checks (fields placed, placeholder values, buttons, compatibility) are in Edit
-      this.openChecks = () => {
-        this.showEdit();
-        const vm = this.editor();
-        if (!vm) {
-          return;
-        }
-        if (vm.detail()) {
-          vm.showChecks();
-        } else {
-          const opened = vm.detail.subscribe((d) => { if (d) { opened.dispose(); window.setTimeout(vm.showChecks, 0); } });
-        }
-      };
+      this.openChecks = () => inEditor((vm) => vm.showChecks());
       /** Approval locks a saved version: with unsaved changes in Edit, saves them first when the user agrees. */
       const savedFirst = () => {
         const vm = this.editor();
@@ -616,11 +626,59 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.approveScreen = () => savedFirst().then((ok) => {
         const s = this.screen();
         const vm = this.editor();
-        return ok && s && approve([s.id], { count: 1, name: s.name, version: vm && vm.detail() ? vm.detail().currentVersion : s.currentVersion });
+        const version = vm && vm.detail() ? vm.detail().currentVersion : s && s.currentVersion;
+        if (!ok || !s) {
+          return null;
+        }
+        // A screen without a BRD is approved on its own
+        return this.loose()
+          ? designActions.approveScreen(s.id, s.name, version)
+            .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is approved for development.'); }))
+            .catch(actionError)
+          : approve([s.id], { count: 1, name: s.name, version: version });
       });
       this.reopenScreen = () => designActions.reopen(this.screen().id, this.screen().name)
         .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is reopened for changes.'); }))
         .catch(actionError);
+
+      // The selected screen's More menu: share for review, import into it, its review and confirmation screens, delete
+      this.screenMenuItems = ko.pureComputed(() => {
+        const s = this.screen();
+        return [
+          { value: 'share', label: 'Share for review', icon: 'link', disabled: !this.screenEditable() || this.narrow() },
+          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.screenEditable() || this.narrow() },
+          { value: 'flow', label: 'Add review and confirmation screens', disabled: !this.screenEditable() || !s || (!!s.stage && s.stage !== 'initiate') },
+          { separator: true },
+          { value: 'delete', label: 'Delete screen', icon: 'trash', danger: true, disabled: !this.canDesign() }
+        ];
+      });
+      this.screenMenu = (event) => {
+        const value = event.detail.value;
+        if (value === 'share') {
+          inEditor((vm) => vm.openShare());
+        } else if (value === 'import') {
+          inEditor((vm) => vm.openImport());
+        } else if (value === 'flow') {
+          this.addSteps();
+        } else if (value === 'delete') {
+          this.deleteScreen();
+        }
+      };
+      this.deleteScreen = () => {
+        const s = this.screen();
+        if (this.editor()) {
+          // The editor asks, deletes and tells the Studio (host.deleted)
+          this.editor().remove();
+          return Promise.resolve();
+        }
+        return dialog.confirm({
+          title: 'Delete this screen?', danger: true, confirmLabel: 'Delete',
+          message: '"' + s.name + '", all its versions and its comments are deleted. This cannot be undone.'
+        }).then((ok) => ok && api.del('designs/' + s.id)
+          .then(() => Promise.all([loadRequirements(), reloadFlow()]))
+          .then(() => toast.success('"' + s.name + '" is deleted.')))
+          .catch(actionError);
+      };
 
       // --- summary of the selected group: channels, screens, fields and the components used ---
 
@@ -656,6 +714,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const allApproved = ko.pureComputed(() => this.screens().length > 0 && this.screens().every((s) => s.status === 'APPROVED'));
       this.stage = ko.pureComputed(() => {
         const r = this.summary();
+        // Screens without a BRD have no stages: no spec, and their code comes with a change started elsewhere
+        if (this.loose()) {
+          return 0;
+        }
         if (!r) {
           return 1;
         }
@@ -691,6 +753,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.next = ko.pureComputed(() => {
         const r = this.summary();
         switch (this.stage()) {
+          case 0:
+            return { title: 'Screens without a BRD', text: 'Blank and imported screens, and screens whose BRD was deleted. Review, edit and approve them here; their code comes with a change on the Changes page.', action: null };
           case 1:
             return { title: 'Start with a BRD', text: 'Upload the business requirements document. The AI drafts its specification: screens, fields, rules and questions.', action: null };
           case 2:
@@ -744,6 +808,71 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.generate = () => api.post('requirements/' + this.requirementId() + '/designs')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens generated. Review them below.')))
         .catch(actionError);
+
+      // + New screen: generate them from the approved spec, or a blank screen, or one imported from a design tool (a
+      // blank screen first, then the editor's import); blank and imported screens are under "Screens without a BRD"
+      this.newKind = ko.observable(null);
+      this.newName = ko.observable('');
+      this.newMenuItems = ko.pureComputed(() => (this.stage() === 3 ? [{ value: 'generate', label: 'Generate screens from the spec', icon: 'wand' }] : [])
+        .concat([
+          { value: 'blank', label: 'Blank screen', icon: 'plus' },
+          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: this.narrow() }
+        ]));
+      this.newMenu = (event) => {
+        const value = event.detail.value;
+        if (value === 'generate') {
+          this.generate();
+        } else {
+          this.newKind(value);
+          window.setTimeout(() => { const box = document.querySelector('#studioNewName input'); if (box) { box.focus(); } }, 50);
+        }
+      };
+      this.newTitle = ko.pureComputed(() => (this.newKind() === 'import' ? 'Import a screen' : 'Blank screen'));
+      this.newHint = ko.pureComputed(() => (this.newKind() === 'import'
+        ? 'Name the screen, then choose the Figma frame, image or PDF. The import becomes its first designed version.'
+        : 'An empty screen to build from the components. It is listed under Screens without a BRD.'));
+      this.cancelNew = () => { this.newKind(null); this.newName(''); };
+      this.createNew = () => {
+        const name = (this.newName() || '').trim();
+        const kind = this.newKind();
+        if (!name) {
+          toast.info('Name the screen first, for example "Fixed deposit opening".');
+          return Promise.resolve();
+        }
+        return guard().then((ok) => ok && api.post('workspaces/' + this.workspaceId() + '/designs', { name: name })
+          .then((detail) => {
+            this.cancelNew();
+            // Opened in Edit under Screens without a BRD; an import continues in the editor's import drawer
+            openAfterLoad = { id: detail.id, edit: true, then: kind === 'import' ? (vm) => vm.openImport() : null };
+            return loadRequirements().then(() => {
+              closeEditor();
+              if (this.requirementId() === NONE) {
+                return reloadFlow();
+              }
+              this.requirementId(NONE);
+              return null;
+            });
+          })
+          .then(() => toast.success('"' + name + '" is created.')))
+          .catch(actionError);
+      };
+      // A screen to select (and open in Edit) once the flow it is in has loaded
+      let openAfterLoad = null;
+      const openPending = () => {
+        const wanted = openAfterLoad;
+        if (!wanted || !screenById(wanted.id)) {
+          return;
+        }
+        openAfterLoad = null;
+        const current = this.group();
+        if (!current || current.screens.indexOf(wanted.id) < 0) {
+          this.groupKey('all');
+        }
+        this.selectedScreenId(wanted.id);
+        if (wanted.edit && !this.narrow()) {
+          inEditor((vm) => { if (wanted.then) { wanted.then(vm); } });
+        }
+      };
       // Every approval asks first, and again for elements the version pack forbids (services/designActions)
       const approve = (ids, question) => designActions.approveScreens(this.requirementId(), ids, question)
         .then((flow) => {
@@ -897,7 +1026,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         // A change shows the current version again; the frame gets the new model (a new frame asks when ready)
         this.shownVersion(null);
         window.setTimeout(() => { observeStage(); sendAll(); }, 0);
+        openPending();
       };
+      /** Screens without a BRD as a flow of their own: no requirements, criteria or questions; in the order they were made. */
+      const looseFlow = () => api.get('workspaces/' + this.workspaceId() + '/designs').then((list) => {
+        const ids = this.requirements().map((r) => r.id);
+        const loose = list.filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0);
+        this.looseDesigns(loose);
+        return Promise.all(loose.map((d) => api.get('designs/' + d.id))).then((details) => ({
+          title: 'Screens without a BRD', requirements: [], others: [], rules: [], criteria: [], uncovered: [], questions: [],
+          screens: details.map((d) => ({
+            id: d.id, name: d.name, status: d.status, currentVersion: d.currentVersion, approvedBy: d.approvedBy, model: d.model,
+            stage: d.model ? d.model.stage : null, channels: d.model ? d.model.channels || [] : [], criteria: [], unconfirmed: [], decisions: [], needsSteps: false
+          }))
+        }));
+      });
       const reloadFlow = () => {
         const id = this.requirementId();
         if (!id) {
@@ -906,7 +1049,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return Promise.resolve();
         }
         const mine = ++token;
-        return Promise.all([api.get('requirements/' + id + '/design-flow'), api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
+        return Promise.all([id === NONE ? looseFlow() : api.get('requirements/' + id + '/design-flow'),
+          id === NONE ? Promise.resolve([]) : api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
           .then(([flow, changes]) => {
             if (mine !== token) {
               return;
@@ -922,10 +1066,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.requirements([]);
           return Promise.resolve();
         }
-        return api.get('workspaces/' + id + '/requirements').then((list) => {
-          this.requirements(list);
-          return list;
-        });
+        return Promise.all([api.get('workspaces/' + id + '/requirements'), api.get('workspaces/' + id + '/designs').catch(() => [])])
+          .then(([list, designs]) => {
+            this.requirements(list);
+            const ids = list.map((r) => r.id);
+            this.looseDesigns(designs.filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0));
+            return list;
+          });
       };
       const poll = () => {
         clearTimeout(pollTimer);
@@ -955,8 +1102,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const wanted = pageRequests.studio();
         pageRequests.studio(null);
         const remembered = recall(storageKey(this.workspaceId()));
-        const choice = [wanted, remembered].find((id) => id && list.some((r) => r.id === id))
-          || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || null;
+        const known = (id) => id && (list.some((r) => r.id === id) || (id === NONE && this.looseDesigns().length > 0));
+        const choice = [wanted, remembered].find(known)
+          || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || (this.looseDesigns().length ? NONE : null);
         if (choice === this.requirementId()) {
           this.requirementId.valueHasMutated();
         } else {

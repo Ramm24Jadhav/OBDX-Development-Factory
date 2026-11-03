@@ -62,16 +62,6 @@
   <oj-bind-if test="[[drawer() === 'new' && !embedded]]">
     <div class="factory-dz-drawer" id="newScreenDrawer">
       <div class="factory-dz-drawer-col">
-        <h3>From an approved requirement</h3>
-        <p class="factory-dz-hint">One screen for each screen of its spec, with every field.</p>
-        <div class="factory-dz-row">
-          <fx-select id="requirementSelect" class="factory-dz-grow" label="Approved requirement" hide-label
-                     options="[[requirementOptions]]" value="{{requirementId}}" placeholder="Choose an approved requirement" searchable></fx-select>
-          <button type="button" id="fromRequirementButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createFromRequirement]]"
-                  :disabled="[[!requirementId()]]">Create screens</button>
-        </div>
-      </div>
-      <div class="factory-dz-drawer-col">
         <h3>Blank screen</h3>
         <p class="factory-dz-hint">Start empty and build it from the components.</p>
         <div class="factory-dz-row">
@@ -357,41 +347,7 @@
             <p>Choose a workspace in the top bar.</p>
           </oj-bind-if>
           <oj-bind-if test="[[workspaceId()]]">
-            <p>Each approved requirement and its screens. Open a screen to design it; when all of a requirement's screens are
-              approved, its change can be planned on the Changes page.</p>
-            <div id="designBoard" class="factory-dz-board">
-              <oj-bind-for-each data="[[board]]" as="g">
-                <template>
-                  <section class="factory-dz-board-group">
-                    <div class="factory-dz-board-head">
-                      <h3><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h3>
-                      <span class="factory-dz-hint"><oj-bind-text value="[[g.data.progressText]]"></oj-bind-text></span>
-                    </div>
-                    <div class="factory-dz-progress" aria-hidden="true"><span :style.width="[[g.data.progressWidth]]"></span></div>
-                    <div class="factory-dz-screen-list">
-                      <oj-bind-for-each data="[[g.data.screens]]" as="d">
-                        <template>
-                          <button type="button" class="factory-dz-screen-card" on-click="[[d.data.openAction]]">
-                            <span class="factory-dz-screen-name"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></span>
-                            <span class="factory-dz-hint"><oj-bind-text value="[[d.data.meta]]"></oj-bind-text></span>
-                            <span :class="[[d.data.status.css]]"><span :class="[[d.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.status.text]]"></oj-bind-text></span>
-                          </button>
-                        </template>
-                      </oj-bind-for-each>
-                    </div>
-                    <oj-bind-if test="[[g.data.canCreate]]">
-                      <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[g.data.createAction]]">Create its screens</button>
-                    </oj-bind-if>
-                    <oj-bind-if test="[[g.data.done]]">
-                      <a class="fx-btn fx-btn--primary fx-btn--sm factory-dz-btn-link" href="?ojr=changes">All approved · plan the change</a>
-                    </oj-bind-if>
-                  </section>
-                </template>
-              </oj-bind-for-each>
-            </div>
-            <oj-bind-if test="[[board().length === 0]]">
-              <p class="factory-dz-hint">No approved requirements yet. Approve one on the Requirements page, or start a blank screen.</p>
-            </oj-bind-if>
+            <p>Screens are listed in the <a class="factory-dz-link" href="?ojr=studio">Design Studio</a>: pick a screen there and choose Edit.</p>
           </oj-bind-if>
         </div>
       </oj-bind-if>

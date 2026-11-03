@@ -11,7 +11,7 @@
         <fx-select id="studioBrd" class="factory-studio-brd" label="BRD" hide-label placeholder="Choose a BRD" searchable
                    options="[[requirementOptions]]" value="{{brdPick}}"></fx-select>
       </oj-bind-if>
-      <ol class="factory-studio-stepper" aria-label="From BRD to code">
+      <oj-bind-if test="[[!loose()]]"><ol class="factory-studio-stepper" aria-label="From BRD to code">
         <oj-bind-for-each data="[[steps]]" as="st">
           <template>
             <li :class="[[st.data.css]]" :aria-current="[[st.data.current]]" :title="[[st.data.sub]]">
@@ -21,7 +21,7 @@
             </li>
           </template>
         </oj-bind-for-each>
-      </ol>
+      </ol></oj-bind-if>
       <div class="factory-studio-bar-actions">
         <oj-bind-if test="[[next().action]]">
           <button type="button" id="studioNextAction" :class="[[nextButtonCss]]" on-click="[[next().action]]"><oj-bind-text value="[[next().label]]"></oj-bind-text></button>
@@ -29,7 +29,7 @@
         <oj-bind-if test="[[stage() === 1 && canUpload()]]">
           <label for="studioFile" class="fx-btn fx-btn--primary"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>Choose a BRD</label>
         </oj-bind-if>
-        <oj-bind-if test="[[stage() > 1 && canUpload()]]">
+        <oj-bind-if test="[[stage() !== 1 && canUpload()]]">
           <label for="studioFile" id="studioUploadButton" class="fx-btn fx-btn--ghost" title="Upload another BRD"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span><span class="factory-studio-hide-sm">Upload BRD</span></label>
         </oj-bind-if>
       </div>
@@ -44,6 +44,19 @@
   <oj-bind-if test="[[errorMessage()]]">
     <div class="fx-alert fx-alert--danger" id="studioError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
       <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
+  </oj-bind-if>
+
+  <!-- A new blank screen, or one to import into -->
+  <oj-bind-if test="[[newKind()]]">
+    <div class="fx-card factory-studio-new" id="studioNewPanel" role="group" aria-labelledby="studioNewTitle">
+      <div class="factory-studio-new-text">
+        <h2 id="studioNewTitle"><oj-bind-text value="[[newTitle]]"></oj-bind-text></h2>
+        <p class="fx-card-sub"><oj-bind-text value="[[newHint]]"></oj-bind-text></p>
+      </div>
+      <fx-input id="studioNewName" class="factory-studio-new-name" label="Screen name" hide-label placeholder="Fixed deposit opening" value="{{newName}}"></fx-input>
+      <button type="button" id="studioNewCreate" class="fx-btn fx-btn--primary" on-click="[[createNew]]"><oj-bind-text value="[[newKind() === 'import' ? 'Create and import' : 'Create']]"></oj-bind-text></button>
+      <button type="button" class="fx-btn fx-btn--ghost" on-click="[[cancelNew]]">Cancel</button>
+    </div>
   </oj-bind-if>
 
   <oj-bind-if test="[[chosenName()]]">
@@ -61,7 +74,12 @@
       <!-- The BRD's functional requirements, with their screens and what is still open -->
       <nav class="fx-card factory-studio-nav" aria-label="Requirements">
         <div class="factory-studio-nav-head">
-          <h2 class="fx-card-title">Requirements</h2>
+          <div class="factory-studio-nav-title">
+            <h2 class="fx-card-title"><oj-bind-text value="[[loose() ? 'Screens' : 'Requirements']]"></oj-bind-text></h2>
+            <oj-bind-if test="[[canDesign()]]">
+              <fx-menu-button id="studioNew" label="New screen" icon="plus" variant="ghost" size="sm" items="[[newMenuItems]]" on-fx-action="[[newMenu]]"></fx-menu-button>
+            </oj-bind-if>
+          </div>
           <fx-input id="studioSearch" label="Search requirements" hide-label icon="search" placeholder="Search requirements" clearable value="{{search}}"></fx-input>
           <oj-bind-if test="[[priorities().length > 0]]">
             <div class="factory-studio-prios" role="group" aria-label="Priority">
@@ -162,7 +180,7 @@
             </oj-bind-for-each>
           </ol>
           <div class="factory-studio-map-actions">
-            <oj-bind-if test="[[canApprove() && groupUnapproved().length > 0]]">
+            <oj-bind-if test="[[canApprove() && !loose() && groupUnapproved().length > 0]]">
               <button type="button" id="studioApproveGroup" class="fx-btn fx-btn--secondary" on-click="[[approveGroup]]">
                 <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[approveGroupLabel]]"></oj-bind-text></button>
             </oj-bind-if>
@@ -242,6 +260,7 @@
                   <template><button type="button" :id="[[m.data.id]]" :aria-pressed="[[m.data.pressed]]" :tabindex="[[m.data.tabindex]]" on-click="[[m.data.pick]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></template>
                 </oj-bind-for-each>
               </div>
+              <fx-menu-button id="studioScreenMore" label="Screen actions" icon="more" icon-only variant="secondary" items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
             </div>
           </div>
 
@@ -425,11 +444,14 @@
     </div>
   </oj-bind-if>
 
-  <oj-bind-if test="[[!hasScreens() && stage() > 1]]">
+  <oj-bind-if test="[[!hasScreens() && stage() !== 1]]">
     <div class="fx-card fx-empty factory-studio-empty">
       <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
       <strong>No screens yet</strong>
       <span>Screens appear here once the spec is approved and they are generated: each functional requirement with its flow, previewed as a phone, tablet or desktop.</span>
+      <oj-bind-if test="[[canDesign() && workspaceId()]]">
+        <fx-menu-button id="studioNewEmpty" label="New screen" icon="plus" variant="secondary" items="[[newMenuItems]]" on-fx-action="[[newMenu]]"></fx-menu-button>
+      </oj-bind-if>
     </div>
   </oj-bind-if>
 </div>

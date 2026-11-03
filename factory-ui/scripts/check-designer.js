@@ -1,5 +1,7 @@
-// Visual Designer check: drives a running factory in headless Edge or Chrome and checks what the designer promises:
-//  - three zones: the left panel's three tabs (arrow keys move between them), the canvas toolbar and the inspector;
+// Visual Designer check: drives a running factory in headless Edge or Chrome and checks what the designer promises, in
+// the Design Studio's Edit mode (a screen that can be changed, opened from the Studio's flow):
+//  - three zones: the left panel's tabs (Components and Layers; arrow keys move between them), the canvas toolbar and the
+//    inspector, and no title, board or Screens tab of its own;
 //  - a selected component's inspector has its seven sections in order, with its compatibility and evidence;
 //  - Focus order numbers the canvas, and Validation shows the fields' messages;
 //  - in Layers, Alt+Down moves a component (unsaved), History compares it with the saved version, leaving the page
@@ -32,35 +34,42 @@ const SECTIONS = ['properties', 'binding', 'validation', 'visibility', 'events',
 
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await open(BASE + '/?ojr=overview');
-  if (args.workspace) {
-    await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (w) => { w.selectedId(id); r(1); })), args.workspace);
-  }
-  await open(BASE + '/?ojr=designer');
-  await sleep(3500);
-  // A screen that can be changed (a draft or one in review), else the first one
-  const picked = await run(() => {
-    const cards = [...document.querySelectorAll('.factory-dz-screen-card')];
-    const card = cards.find((c) => /Draft|In review/i.test(c.textContent)) || cards[0];
-    if (card) { card.click(); }
-    return card ? card.querySelector('.factory-dz-screen-name').textContent.trim() : null;
+  await s.selectWorkspace(args.workspace || null);
+  // A BRD with a screen that can be changed (a draft or one in review); the Studio opens on it
+  const brd = await run(async () => {
+    const get = (p) => fetch('api/' + p, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null));
+    const w = await new Promise((r) => window.require(['services/workspaceSelection'], r));
+    const pr = await new Promise((r) => window.require(['services/pageRequests'], r));
+    for (const r of ((await get('workspaces/' + w.selectedId() + '/requirements')) || []).filter((x) => x.status === 'APPROVED')) {
+      const flow = await get('requirements/' + r.id + '/design-flow');
+      const screen = flow && flow.screens.find((x) => x.status !== 'APPROVED');
+      if (screen) { pr.studio(r.id); return { brd: r.title, screen: screen.id, name: screen.name }; }
+    }
+    return null;
   });
-  record('a screen opens from the board', !!picked, picked || 'no screens in this workspace');
-  if (!picked) { s.close(); process.exit(1); }
+  record('a BRD with a screen that can be changed', !!brd, brd || 'none in this workspace');
+  if (!brd) { s.close(); process.exit(1); }
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); return 1; });
+  await sleep(4500);
+  await run((id) => { const n = document.querySelector('[data-studio-node="' + id + '"]'); if (n) { n.click(); } return 1; }, brd.screen);
+  await sleep(1000);
+  await run(() => { document.getElementById('studioMode-edit').click(); return 1; });
   await sleep(6000);
+  const picked = await run(() => (document.querySelector('#studioEditor .factory-dz-cardname') || {}).textContent || null);
+  record('the screen opens in Edit', !!picked && picked.trim().length > 0, picked);
 
   const layout = await run(() => ({
-    title: (document.querySelector('.factory-dz-pagehead h1') || {}).className || '',
-    back: !!document.getElementById('backToStudio'),
+    title: !!document.querySelector('#studioEditor h1'),
+    board: !!document.getElementById('designBoard'),
     tabs: [...document.querySelectorAll('#leftPanel [role=tab]')].map((t) => t.textContent.trim()),
     toolbar: !!document.getElementById('canvasToolbar') && getComputedStyle(document.getElementById('canvasToolbar')).display !== 'none',
     inspector: !!document.getElementById('rightPanel') && getComputedStyle(document.getElementById('rightPanel')).display !== 'none',
-    drawerOpen: !!document.getElementById('designContextBody'),
     canvas: Math.round(document.querySelector('.factory-dz-canvas').getBoundingClientRect().width)
   }));
-  record('the page title is only for screen readers, and the back link is gone', /fx-visually-hidden/.test(layout.title) && !layout.back, layout);
-  record('left panel has Components, Layers and Screens', layout.tabs.join(',') === 'Components,Layers,Screens', layout.tabs);
+  record('the editor has no title or board of its own', !layout.title && !layout.board, layout);
+  record('left panel has Components and Layers', layout.tabs.join(',') === 'Components,Layers', layout.tabs);
   record('canvas toolbar and inspector show', layout.toolbar && layout.inspector);
-  record('canvas is wider than before (617 px at 1440)', layout.canvas >= 660, layout.canvas);
+  record('canvas is as wide as the Visual Designer had it (660 px at 1440)', layout.canvas >= 660, layout.canvas);
 
   // Tabs: ArrowRight from Components selects Layers
   await run(() => { document.getElementById('leftTab-components').focus(); return 1; });
@@ -109,7 +118,7 @@ const SECTIONS = ['properties', 'binding', 'validation', 'visibility', 'events',
     record('leaving with unsaved changes asks first', guard.dialog, guard);
     await run(() => { const b = document.querySelector('.fx-dialog .fx-btn--secondary'); if (b) { b.click(); } return 1; });
     await sleep(1000);
-    record('cancelling keeps the designer open', await run(() => new URLSearchParams(location.search).get('ojr') === 'designer' && !!document.querySelector('.factory-dz-unsaved')));
+    record('cancelling keeps the editor open', await run(() => new URLSearchParams(location.search).get('ojr') === 'studio' && !!document.querySelector('.factory-dz-unsaved')));
     await run(() => { document.getElementById('undoButton').click(); return 1; });
     await sleep(800);
     record('Undo brings back the saved version', await run(() => !document.querySelector('.factory-dz-unsaved')));

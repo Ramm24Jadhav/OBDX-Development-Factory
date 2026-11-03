@@ -7,7 +7,10 @@
 //  - Edit draws the designer inside the page (no board, title or Screens tab of its own, the library and the flow fold
 //    away, one preview at a time, no invented sample values); an unsaved change is asked about on switching to Review,
 //    opening another screen and leaving the page; Ctrl+Z outside the editor leaves it alone; Escape with nothing
-//    selected goes back to Review; at 390 px Edit says to use a wider screen and Review still works.
+//    selected goes back to Review; at 390 px Edit says to use a wider screen and Review still works;
+//  - + New screen offers a blank screen (asks for its name; Cancel creates nothing) and an import; the screen's More
+//    menu has share, import and delete, and Delete asks first;
+//  - "Screens without a BRD" (in a workspace that has some) lists them without stages, and approving one asks first.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-studio.js --url http://localhost:8080 [--workspace <id>]
 //
@@ -248,6 +251,63 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
   await sleep(1500);
   record('Review works at 390 px', JSON.stringify(await frames()) === JSON.stringify({ review: 1, editor: 0, all: 1 }), await frames());
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+
+  // ---------- + New screen and the selected screen's More menu ----------
+  const menu = async (sel) => {
+    await run((q) => { const b = document.querySelector(q + ' button'); if (b) { b.click(); } return 1; }, sel);
+    await sleep(500);
+    return run((q) => [...document.querySelectorAll(q + ' [role=menuitem]')].map((m) => m.textContent.trim()), sel);
+  };
+  const pick = async (sel, label) => { await run((a) => { const m = [...document.querySelectorAll(a.sel + ' [role=menuitem]')].find((x) => x.textContent.trim() === a.label); if (m) { m.click(); } return 1; }, { sel: sel, label: label }); await sleep(700); };
+  const newItems = await menu('#studioNew');
+  record('+ New screen offers a blank screen and an import', newItems.indexOf('Blank screen') >= 0 && newItems.some((t) => /^Import/.test(t)), newItems);
+  await pick('#studioNew', 'Blank screen');
+  record('Blank screen asks for its name first', await run(() => !!document.getElementById('studioNewPanel') && !!document.querySelector('#studioNewName')));
+  await run(() => { const b = [...document.querySelectorAll('#studioNewPanel button')].find((x) => x.textContent.trim() === 'Cancel'); if (b) { b.click(); } return 1; });
+  await sleep(500);
+  record('Cancel creates nothing', await run(() => !document.getElementById('studioNewPanel')));
+  const moreItems = await menu('#studioScreenMore');
+  record('the screen\'s More menu has share, import and delete', ['Share for review', 'Delete screen'].every((t) => moreItems.indexOf(t) >= 0) && moreItems.some((t) => /^Import/.test(t)), moreItems);
+  await pick('#studioScreenMore', 'Delete screen');
+  const askedDelete = await dialog();
+  record('Delete screen asks first', !!askedDelete, askedDelete);
+  await cancel();
+
+  // ---------- Screens without a BRD (a workspace that has some) ----------
+  const loose = await run(async () => {
+    const get = (p) => fetch('api/' + p, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : []));
+    for (const w of await get('workspaces')) {
+      const ids = (await get('workspaces/' + w.id + '/requirements')).map((r) => r.id);
+      const list = (await get('workspaces/' + w.id + '/designs')).filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0);
+      if (list.length) { return { workspace: w.id, count: list.length }; }
+    }
+    return null;
+  });
+  if (loose) {
+    await s.selectWorkspace(loose.workspace);
+    await run(() => new Promise((r) => window.require(['services/pageRequests'], (pr) => { pr.studio('none'); r(1); })));
+    await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'overview' })); return 1; });
+    await sleep(1500);
+    await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); return 1; });
+    await sleep(5000);
+    const none = await run(() => ({
+      brd: ((document.getElementById('studioBrd') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      stepper: !!document.querySelector('.factory-studio-stepper'),
+      nodes: document.querySelectorAll('.factory-studio-node').length,
+      next: ((document.getElementById('studioNext') || {}).textContent || '').replace(/\s+/g, ' ').trim()
+    }));
+    record('"Screens without a BRD" lists the blank and imported screens', /Screens without a BRD/.test(none.brd + ' ' + none.next) && none.nodes === loose.count && !none.stepper, none);
+    const approve = await run(() => { const b = document.getElementById('studioApproveScreen'); if (b) { b.click(); } return !!b; });
+    if (approve) {
+      await sleep(600);
+      const asked = await dialog();
+      record('approving a screen without a BRD asks first', !!asked, asked);
+      await cancel();
+    }
+    await s.selectWorkspace(args.workspace || null);
+  } else {
+    record('no workspace has screens without a BRD: not checked', true);
+  }
 
   const errors = s.errors.filter((e) => !/auth\/me/.test(e));
   record('no console errors', errors.length === 0, errors.slice(0, 3));

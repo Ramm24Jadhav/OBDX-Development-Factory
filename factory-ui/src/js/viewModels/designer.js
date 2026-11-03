@@ -69,9 +69,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.infoMessage = ko.observable('');
       this.busy = ko.observable(false);
 
-      const requirementOptions = ko.observableArray([]);
-      this.requirementOptions = requirementOptions;
-      this.requirementId = ko.observable(null);
       this.blankName = ko.observable('');
       this.designs = ko.observableArray([]);
       // The workspace's screens and requirements as the server lists them, the bank of each workspace, and the
@@ -1340,10 +1337,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!d || !d.requirementId) {
           return [];
         }
+        // Embedded: the Studio's flow order from the server (review and confirmation after their initiate screen);
+        // else the order of the spec's screens
+        const flowOrder = embedded && host.order ? host.order() : null;
         const order = specScreens().map((s) => norm(s.name));
         const position = (design) => {
-          const i = order.indexOf(norm(design.name));
-          return i < 0 ? order.length : i;
+          const i = flowOrder ? flowOrder.indexOf(design.id) : order.indexOf(norm(design.name));
+          return i < 0 ? (flowOrder || order).length : i;
         };
         return rawDesigns().filter((x) => x.requirementId === d.requirementId)
           .slice().sort((a, b) => position(a) - position(b))
@@ -1867,37 +1867,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       ko.computed(() => preview.show(this.working(), this.selectedId(), this.previewContext()));
 
-      // --- the start page: each requirement with its screens and how far they are ---
-
-      this.board = ko.pureComputed(() => {
-        const designs = rawDesigns();
-        const groups = requirements()
-          .filter((r) => r.status === 'APPROVED' || designs.some((d) => d.requirementId === r.id))
-          .map((r) => ({ id: r.id, title: r.title, designs: designs.filter((d) => d.requirementId === r.id) }));
-        const loose = designs.filter((d) => !d.requirementId || !requirements().some((r) => r.id === d.requirementId));
-        if (loose.length > 0) {
-          groups.push({ id: null, title: 'Other screens', designs: loose });
-        }
-        return groups.map((g) => {
-          const approved = g.designs.filter((d) => d.status === 'APPROVED').length;
-          return {
-            title: g.title,
-            empty: g.designs.length === 0,
-            progressText: g.designs.length === 0 ? 'No screens yet' : approved + ' of ' + g.designs.length + ' approved',
-            progressWidth: g.designs.length === 0 ? '0%' : Math.round(approved * 100 / g.designs.length) + '%',
-            done: g.designs.length > 0 && approved === g.designs.length,
-            createAction: () => { this.requirementId(g.id); this.createFromRequirement(); },
-            canCreate: !!g.id && g.designs.length === 0 && this.canDesign(),
-            screens: g.designs.map((d) => ({
-              name: d.name,
-              meta: d.components + ' components · v' + d.currentVersion,
-              status: screenStatus(d.status, statusLabel(d.status)),
-              openAction: () => this.open(d.id)
-            }))
-          };
-        });
-      });
-
       // --- comments, versions, review ---
 
       const componentLabel = (id) => {
@@ -2059,7 +2028,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           rawDesigns([]);
           requirements([]);
           designOptions([]);
-          requirementOptions([]);
           return Promise.resolve();
         }
         return Promise.all([api.get('workspaces/' + id + '/designs'), api.get('workspaces/' + id + '/requirements')])
@@ -2071,7 +2039,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               name: d.name, status: d.status, statusPill: screenStatus(d.status, d.status.replace('_', ' ').toLowerCase()), selected: d.id === current, openAction: () => this.open(d.id)
             })));
             designOptions(designList.map((d) => ({ value: d.id, label: d.name + ' (' + d.status.replace('_', ' ').toLowerCase() + ')' })));
-            requirementOptions(requirementList.filter((r) => r.status === 'APPROVED').map((r) => ({ value: r.id, label: r.title })));
           }).catch(showError);
       };
 
@@ -2157,14 +2124,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.open(id);
         }
       });
-
-      this.createFromRequirement = () => api.post('requirements/' + this.requirementId() + '/designs')
-        .then((created) => {
-          this.requirementId(null);
-          this.drawer(null);
-          return (created.length > 0 ? this.open(created[0].id) : loadDesigns())
-            .then(() => showInfo(created.length + ' screen(s) created.'));
-        }).catch(showError);
 
       this.createBlank = () => api.post('workspaces/' + this.workspaceId() + '/designs', { name: this.blankName() })
         .then((detail) => { this.blankName(''); this.drawer(null); show(detail); })
