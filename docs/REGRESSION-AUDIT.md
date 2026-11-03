@@ -154,3 +154,45 @@ Re-run against a factory of their own (8151) with the stubs; "before" is the aud
 | O1b, O3, O4 | Plan risk for Must requirements no planned file names; a file still cut off at the output limit is kept as cut off (Continue goes on from it); an edit refreshes the change's message | as stated |
 
 Left out: C3 (citations are computed in the UI), O1 and O2 (policy decisions).
+
+## After the fixes (re-run on 2e40660, 3 Nov 2026)
+
+The server fixes went through three more rounds after the table above: a code review, a VAPT review and two verification
+passes. Those rounds fixed:
+
+- secrets being registered before the permission checks;
+- review-link approval skipping the unsupported check;
+- Continue replacing a passing file;
+- delivery from the Build page;
+- a plan held for ever after Request Changes;
+- a working-copy swap that was not atomic, and a check-out-again lock race.
+
+The UI fixes (branch audit-ui-fixes) covered:
+
+- B1-B5;
+- C3, C5, C6 and C9 in the UI;
+- plain error text (`ui.errorText`);
+- a reliable packs carousel check.
+
+Both branches were merged at 2e40660. `mvn clean verify` with the database integration tests ran 654 tests: 0 failures,
+1 skipped (the Windows symlink test).
+
+A separate re-run used its own factory on a copy of that jar (8161). Stand-ins replaced the model, Jenkins and SVN, and a
+hot copy of bank-b-25 was used. Results and evidence: `C:\work\obdx-tmp\audit\rerun\RESULTS.md`.
+
+| Area | After |
+|---|---|
+| A1-A8, B1-B5, C1-C9, O1b, O3, O4 | all PASS. A1 is also refused through a review link. A6 is checked in the UI as well as the API. C9 is shown on the Requirements page. |
+| 16-step workflow on a new workspace | PASS, delivered r10. The review step ran on a reopened screen: a review link on an approved screen is refused (unchanged since c1880ad). |
+| check-responsive, 24 pages × 1440/1024/768/390, light, dark, reduced motion | 0 defects |
+| check-interactions | 323/323. With reduced motion, 322/323 once: focus visibility on Models at 390 px; it did not recur in two re-runs (47/47). |
+| check-messages | 23/23 |
+
+Low items left:
+
+- After a failed update, the Workspaces sheet adds generic SVN advice after "Use Check out again".
+- An SVN server answering 500 is described as "SVN path not found".
+- A model host that does not resolve is reported as "refused the connection".
+
+Still open as policy decisions: O1 (Drafted items approvable without acknowledgement) and O2 (a change can be started through
+the API without approved screens).
