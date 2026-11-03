@@ -47,8 +47,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const camel = (label) => (label || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/)
       .map((word, i) => (i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
 
-    function DesignerViewModel() {
+    /**
+     * params (optional): { embedded: true, designId, host } when the Design Studio shows the designer as its Edit mode.
+     * Embedded, the designer has no title, board, Screens tab or New drawer of its own; it opens designId, previews the
+     * BRD's values only, and tells the host (select(id), changed(detail), deleted(id), leave(); element() is where it is
+     * drawn) instead of opening
+     * screens itself. Its keys, preview frame and size observer stay inside its own element.
+     */
+    function DesignerViewModel(params) {
       const self = this;
+      const options = params || {};
+      const embedded = options.embedded === true;
+      const host = options.host || {};
+      this.embedded = embedded;
+      // The element the designer is drawn in (the oj-module, or the page), for every lookup of its own elements
+      let root = document;
+      const find = (selector) => root.querySelector(selector);
+      const findAll = (selector) => root.querySelectorAll(selector);
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
       this.infoMessage = ko.observable('');
@@ -105,7 +120,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Panels: the left one shows components, layers or screens; the right one is the inspector of the selection; the
       // top bar opens one drawer at a time (a new screen, an import, the review link)
       this.leftTab = ko.observable('components');
-      this.leftTabs = [['components', 'Components'], ['layers', 'Layers'], ['screens', 'Screens']].map(([key, label]) => ({
+      // Embedded, the Studio's library lists the screens, so the panel has no Screens tab
+      this.leftTabs = [['components', 'Components'], ['layers', 'Layers']].concat(embedded ? [] : [['screens', 'Screens']]).map(([key, label]) => ({
         key: key,
         label: label,
         id: 'leftTab-' + key,
@@ -123,7 +139,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return true;
         }
         this.leftTab(keys[next]);
-        const tab = document.getElementById('leftTab-' + keys[next]);
+        const tab = find('#leftTab-' + keys[next]);
         if (tab) {
           tab.focus();
         }
@@ -155,12 +171,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.rightOpen(true);
         this.sectionOpen[key](true);
         setTimeout(() => {
-          const section = document.querySelector('#rightPanel details[data-section="' + key + '"]');
+          const section = find('#rightPanel details[data-section="' + key + '"]');
           if (section) {
             section.open = true;
             section.scrollIntoView({ block: 'nearest' });
           }
-          const box = focusSelector ? document.querySelector(focusSelector) : null;
+          const box = focusSelector ? find(focusSelector) : null;
           if (box) {
             box.focus();
           }
@@ -385,7 +401,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.previewNote = ko.pureComputed(() => (this.appTarget()
         ? 'Preview with the components of the ' + this.targetTitle() + ' app'
           + (this.previewKind() === 'react-native' ? ' (React Native Web; check on a device with Expo)' : '')
-        : 'Oracle JET with the Redwood theme, in an OBDX page, with sample data'));
+        : 'Oracle JET with the Redwood theme, in an OBDX page, with ' + (embedded ? 'the BRD\'s values only' : 'sample data')));
 
       // Code the design becomes in a React Native or React app (current saved version)
       this.codeModule = ko.observable('app');
@@ -440,8 +456,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.dirty(!sameAsSaved(model));
       };
       // Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z), except while typing in a box, which has its own undo
+      // Embedded, only keys pressed inside the designer (or with nothing focused) count, never in a dialog or menu over it;
+      // Escape with nothing selected leaves the editor
       const onKeydown = (event) => {
         const typing = event.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable);
+        const inside = root === document || event.target === document.body || (root.contains && root.contains(event.target));
+        if (!inside || event.defaultPrevented || document.querySelector('.fx-dialog')) {
+          return;
+        }
+        if (embedded && event.key === 'Escape' && !typing && !event.target.closest('[role="menu"], .fx-menu, .fx-popup')
+            && !this.selectedId() && !this.drawer() && !this.previewMode() && host.leave) {
+          event.preventDefault();
+          host.leave();
+          return;
+        }
         if (typing || !(event.ctrlKey || event.metaKey) || !this.detail()) {
           return;
         }
@@ -615,7 +643,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
        * Alt with up or down moves the selected component (the keyboard way to drag it).
        */
       this.layerKey = (event) => {
-        const rows = [...document.querySelectorAll('#designLayers [data-layer]')];
+        const rows = [...findAll('#designLayers [data-layer]')];
         const at = rows.indexOf(document.activeElement);
         const focusRow = (row) => {
           if (row) {
@@ -627,7 +655,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           if (id && this.editable()) {
             this.selectedId(id);
             move(id, event.key === 'ArrowUp' ? -1 : 1);
-            setTimeout(() => focusRow(document.querySelector('#designLayers [data-cid="' + id + '"]')), 30);
+            setTimeout(() => focusRow(find('#designLayers [data-cid="' + id + '"]')), 30);
           }
           event.preventDefault();
           return false;
@@ -646,7 +674,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           // Selecting redraws the tree, so the same row gets the focus back
           const key = rows[at].getAttribute('data-layer');
           rows[at].click();
-          setTimeout(() => focusRow(document.querySelector('#designLayers [data-layer="' + key + '"]')), 30);
+          setTimeout(() => focusRow(find('#designLayers [data-layer="' + key + '"]')), 30);
           event.preventDefault();
           return false;
         }
@@ -1328,7 +1356,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             stage: (x.id === d.id && this.working() ? this.working().stage : x.stage) || '',
             stageCss: 'factory-dz-stage-badge factory-dz-stage-' + ((x.id === d.id && this.working() ? this.working().stage : x.stage) || 'none'),
             css: 'factory-dz-step' + (x.id === d.id ? ' factory-dz-step-current' : '') + ' factory-dz-step-' + x.status.toLowerCase(),
-            openAction: () => this.open(x.id)
+            openAction: () => this.openOther(x.id)
           }));
       });
       this.journeyTitle = ko.pureComputed(() => (this.requirement() ? this.requirement().title : ''));
@@ -1478,12 +1506,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
       // The title row's More menu and the screen card's actions menu
-      this.pageMenuItems = ko.pureComputed(() => [
-        { value: 'new', label: 'New screen', icon: 'plus', disabled: !this.canDesign() },
-        { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
-        { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() },
-        { value: 'board', label: 'All screens', icon: 'design' }
-      ]);
+      // Embedded, new screens and the list of all screens are the Studio's
+      this.pageMenuItems = ko.pureComputed(() => (embedded ? [] : [{ value: 'new', label: 'New screen', icon: 'plus', disabled: !this.canDesign() }])
+        .concat([
+          { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
+          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() }
+        ])
+        .concat(embedded ? [] : [{ value: 'board', label: 'All screens', icon: 'design' }]));
       this.screenMenuItems = ko.pureComputed(() => {
         const approved = !!this.detail() && this.detail().status === 'APPROVED';
         return [
@@ -1519,7 +1548,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         } else if (value === 'comment') {
           this.selectedId(null);
           this.showComments();
-          setTimeout(() => { const box = document.getElementById('commentText'); if (box) { box.focus(); } }, 50);
+          setTimeout(() => { const box = find('#commentText'); if (box) { box.focus(); } }, 50);
         } else if (value === 'delete') {
           this.remove();
         }
@@ -1651,7 +1680,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
                 if (value === 'apply') {
                   this.aiInstruction('Apply this business rule to the screen: ' + r.description);
                   this.selectedId(null);
-                  setTimeout(() => { const box = document.getElementById('aiInstruction'); if (box) { box.focus(); } }, 50);
+                  setTimeout(() => { const box = find('#aiInstruction'); if (box) { box.focus(); } }, 50);
                 } else if (value === 'copy') {
                   if (navigator.clipboard) {
                     navigator.clipboard.writeText((r.id ? r.id + ': ' : '') + r.description).then(() => showInfo('Rule copied.')).catch(() => showInfo('Copying is not allowed here.'));
@@ -1787,7 +1816,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.selectedId(null);
         this.rightOpen(true);
         setTimeout(() => {
-          const checks = document.getElementById('checksSection');
+          const checks = find('#checksSection');
           if (checks) {
             checks.open = true;
             checks.scrollIntoView({ block: 'nearest' });
@@ -1831,7 +1860,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           warnings: warnings,
           editing: this.editable(),
           validation: this.validationPreview(),
-          focusOrder: focus
+          focusOrder: focus,
+          // In the Design Studio, Edit shows the BRD's values only, as Review does
+          brdOnly: embedded
         };
       });
       ko.computed(() => preview.show(this.working(), this.selectedId(), this.previewContext()));
@@ -2082,17 +2113,45 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         resetCompare();
         loadDesigns();
+        // A saved change (a version, approval, reopening, new flow screens): the Studio shows it too
+        if (keepSelection && host.changed) {
+          host.changed(detail);
+        }
       };
 
-      this.open = (id) => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true)).then((ok) => {
+      /** Asks before unsaved changes are lost; resolves true when there are none or they may go. */
+      this.confirmDiscard = () => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true));
+      /** Empties the designer when the Studio closes Edit: no screen, no unsaved changes, nothing left to check. */
+      this.clear = () => {
+        this.detail(null);
+        this.working(null);
+        this.dirty(false);
+        this.selectedId(null);
+        this.drawer(null);
+        this.previewMode(false);
+        this.mode('design');
+        this.clearMessages();
+      };
+      /** Opens a screen without asking (the caller has asked: the Studio's guard). */
+      let loading = null;
+      this.load = (id) => {
+        options.designId = id;
+        loading = id;
+        this.clearMessages();
+        this.drawer(null);
+        // Only the screen asked for last is shown, whichever answer comes first
+        return api.get('designs/' + id).then((detail) => { if (options.designId === id) { show(detail); } })
+          .catch(showError).finally(() => { if (loading === id) { loading = null; } });
+      };
+      this.open = (id) => this.confirmDiscard().then((ok) => {
         if (!ok) {
           this.designPick(this.detail() ? this.detail().id : null);
           return null;
         }
-        this.clearMessages();
-        this.drawer(null);
-        return api.get('designs/' + id).then((detail) => show(detail)).catch(showError);
+        return this.load(id);
       });
+      // Another screen of the journey: embedded, the Studio selects it (and asks about unsaved changes)
+      this.openOther = (id) => (embedded && host.select ? host.select(id) : this.open(id));
       this.designPick.subscribe((id) => {
         if (id && (!this.detail() || this.detail().id !== id)) {
           this.open(id);
@@ -2187,7 +2246,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .catch(showError);
       this.closeReview = () => api.del(base() + '/review-link').then((detail) => { show(detail, true); showInfo('Review link closed.'); }).catch(showError);
       this.copyReviewLink = () => {
-        const input = document.getElementById('reviewUrl');
+        const input = find('#reviewUrl');
         input.select();
         (navigator.clipboard ? navigator.clipboard.writeText(this.reviewUrl()) : Promise.resolve(document.execCommand('copy')))
           .then(() => showInfo('Review link copied.'))
@@ -2204,7 +2263,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!ok) {
           return;
         }
+        const id = this.detail().id;
         api.del(base()).then(() => {
+          if (embedded && host.deleted) {
+            this.dirty(false);
+            showInfo('Screen deleted.');
+            host.deleted(id);
+            return;
+          }
           this.detail(null);
           this.working(null);
           this.dirty(false);
@@ -2274,7 +2340,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return true;
         }
         this.contextTabs[next].pick();
-        const tab = document.getElementById('ctxTab-' + keys[next]);
+        const tab = find('#ctxTab-' + keys[next]);
         if (tab) {
           tab.focus();
         }
@@ -2285,16 +2351,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.hasRequirement = ko.pureComputed(() => !!(this.requirement() && this.requirement().spec));
       this.specTabWithoutSpec = ko.pureComputed(() => !this.hasRequirement() && ['rules', 'apis', 'hosts', 'roles'].indexOf(this.contextTab()) >= 0);
 
+      // Embedded: the element the Studio draws the designer in (host.element(), its oj-module)
       this.connected = () => {
-        accUtils.announce('Visual Designer loaded.');
-        document.title = 'Visual Designer';
-        preview.attach('designerPreview');
+        root = (embedded && host.element && host.element()) || document;
+        if (embedded) {
+          accUtils.announce('Editing the screen.');
+        } else {
+          accUtils.announce('Visual Designer loaded.');
+          document.title = 'Visual Designer';
+        }
+        preview.attach(find('iframe.factory-dz-frame'));
         window.addEventListener('beforeunload', beforeUnload);
         window.addEventListener('unhandledrejection', keptChanges);
         document.addEventListener('keydown', onKeydown);
         if (window.ResizeObserver) {
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
-          const stage = document.querySelector('.factory-dz-stage');
+          const stage = find('.factory-dz-stage');
           if (stage) {
             stageObserver.observe(stage);
           }
@@ -2318,10 +2390,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           list.forEach((workspace) => { bankNames[workspace.id] = workspace.bankName; });
           return Promise.all([loadDesigns(), refreshPalette()]);
         }).then(() => {
-          // A screen opened from the Design Studio
-          const wanted = pageRequests.design();
-          if (wanted) {
+          // Embedded: the Studio's selected screen; else a screen asked for by another page
+          const wanted = embedded ? options.designId : pageRequests.design();
+          if (wanted && !embedded) {
             pageRequests.design(null);
+          }
+          if (wanted && wanted !== loading && !(this.detail() && this.detail().id === wanted)) {
             this.open(wanted);
           }
         }).catch(showError);

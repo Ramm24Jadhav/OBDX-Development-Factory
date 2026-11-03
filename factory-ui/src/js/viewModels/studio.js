@@ -3,12 +3,15 @@
  * stages and the next action); the BRD's functional requirements with their screens and what is still open; the
  * selected requirement's screen flow; and the selected screen's preview as a phone, tablet or desktop, with the
  * acceptance criteria it helps meet, values the BRD leaves to an analyst, refining it (the AI, back to the generated
- * version, a quick edit), comparing versions and approving it. The Visual Designer stays for detailed work on one screen.
+ * version, a quick edit), comparing versions and approving it. Review is the default mode; Edit draws the Visual
+ * Designer (viewModels/designer, embedded) for the selected screen in its place, one editor and one preview at a time,
+ * and every way out of Edit asks first about unsaved changes.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', '../services/designActions',
-        '../services/designDiff', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog, designActions, designDiff) {
+        '../services/designDiff', './designer', 'ojs/ojmodule-element-utils', 'ojs/ojknockout', 'ojs/ojmodule-element'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog, designActions, designDiff,
+            DesignerViewModel, moduleUtils) {
     const POLL_MS = 4000;
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In review', APPROVED: 'Approved' };
@@ -30,7 +33,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
     const criterionKey = (c) => (c.id && c.id.trim() ? c.id : String(c.description));
-
     /** What changed from one version of a screen to another, in plain words (the same words as the editor's History). */
     const differences = (from, to) => designDiff(from, to).map((d) => ({ kind: d.kind, text: d.text, css: 'factory-studio-diff-' + d.kind.toLowerCase() }));
 
@@ -203,7 +205,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             statusText: ko.pureComputed(() => status().text), statusIcon: ko.pureComputed(() => status().iconCss),
             css: ko.pureComputed(() => 'factory-studio-node' + (this.selectedScreenId() === id ? ' is-selected' : '') + (approved() ? ' is-approved' : '')),
             pressed: ko.pureComputed(() => (this.selectedScreenId() === id ? 'true' : 'false')),
-            pick: () => this.selectedScreenId(id)
+            pick: () => this.selectScreen(id)
           };
         }
         return items[id];
@@ -255,7 +257,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         event.preventDefault();
         const to = list[Math.max(0, Math.min(list.length - 1, moves[event.key]))];
-        this.selectedScreenId(to.id);
+        this.selectScreen(to.id);
         const node = document.querySelector('[data-studio-node="' + to.id + '"]');
         if (node) {
           node.focus();
@@ -289,8 +291,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ? this.flow().questions.filter((q) => q.screens.indexOf(this.screen().id) >= 0).map(questionView)
           .concat((this.screen().decisions || []).map((text) => ({ question: text, detail: '', scope: '' }))) : []));
       this.screenIndex = ko.pureComputed(() => this.flowScreens().findIndex((s) => s.id === this.selectedScreenId()));
-      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { this.selectedScreenId(this.flowScreens()[i - 1].id); } };
-      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < this.flowScreens().length - 1) { this.selectedScreenId(this.flowScreens()[i + 1].id); } };
+      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { this.selectScreen(this.flowScreens()[i - 1].id); } };
+      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < this.flowScreens().length - 1) { this.selectScreen(this.flowScreens()[i + 1].id); } };
       this.hasPrevious = ko.pureComputed(() => this.screenIndex() > 0);
       this.hasNext = ko.pureComputed(() => this.screenIndex() >= 0 && this.screenIndex() < this.flowScreens().length - 1);
       this.position = ko.pureComputed(() => (this.screenIndex() < 0 ? '' : 'Screen ' + (this.screenIndex() + 1) + ' of ' + this.flowScreens().length));
@@ -488,18 +490,136 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.showCurrent = () => { this.shownVersion(null); sendAll(); };
 
-      this.openInDesigner = () => {
-        if (this.screen()) {
-          pageRequests.design(this.screen().id);
+      // --- Review or Edit: Edit draws the designer (viewModels/designer, embedded) for the selected screen ---
+
+      this.mode = ko.observable('review');
+      this.editing = ko.pureComputed(() => this.mode() === 'edit');
+      // Phones get Review only: the editor needs a wider screen
+      const phoneQuery = window.matchMedia('(max-width: 767px)');
+      this.narrow = ko.observable(phoneQuery.matches);
+      const onNarrow = (event) => this.narrow(event.matches);
+      // The editor while Edit is open; its preview is the only one then (Review's frame is not drawn). One designer view
+      // model serves every Edit of this page, emptied when Edit closes, so closed editors leave nothing behind.
+      this.editor = ko.observable(null);
+      let editorVm = null;
+      this.editorConfig = ko.pureComputed(() => {
+        const vm = this.editor();
+        return vm ? moduleUtils.createView({ viewPath: 'views/designer.html' }).then((view) => ({ view: view, viewModel: vm })) : { view: [] };
+      });
+      /** Asks before the editor's unsaved changes are lost (another screen, Review, another BRD); true when they may go. */
+      const guard = () => (this.editor() ? this.editor().confirmDiscard() : Promise.resolve(true));
+      this.selectScreen = (id) => guard().then((ok) => {
+        if (ok && id && id !== this.selectedScreenId()) {
+          this.selectedScreenId(id);
         }
-        navigate('designer');
+        return ok;
+      });
+      const host = {
+        select: (id) => this.selectScreen(id),
+        changed: () => reloadFlow().catch(actionError),
+        deleted: () => { closeEditor(); reloadFlow().catch(actionError); },
+        leave: () => this.showReview(),
+        element: () => document.getElementById('studioEditor')
+      };
+      const closeEditor = () => {
+        const wasOpen = this.editing();
+        if (this.editor()) {
+          this.editor().clear();
+        }
+        this.mode('review');
+        this.editor(null);
+        if (wasOpen) {
+          window.setTimeout(() => { observeStage(); sendAll(); }, 0);
+        }
+      };
+      this.showEdit = () => {
+        const s = this.screen();
+        if (!s || this.editor()) {
+          return;
+        }
+        if (editorVm) {
+          editorVm.load(s.id);
+        } else {
+          editorVm = new DesignerViewModel({ embedded: true, designId: s.id, host: host });
+        }
+        this.editor(editorVm);
+        this.mode('edit');
+      };
+      this.showReview = () => (this.editing() ? guard().then((ok) => { if (ok) { closeEditor(); } return ok; }) : Promise.resolve(true));
+      // The editor follows the selected screen
+      this.selectedScreenId.subscribe((id) => {
+        const vm = this.editor();
+        if (!vm) {
+          return;
+        }
+        if (!id) {
+          closeEditor();
+        } else if (!vm.detail() || vm.detail().id !== id) {
+          vm.load(id);
+        }
+      });
+      this.modes = [['review', 'Review'], ['edit', 'Edit']].map(([value, label]) => ({
+        value: value, label: label, id: 'studioMode-' + value,
+        pressed: ko.pureComputed(() => (this.mode() === value ? 'true' : 'false')),
+        tabindex: ko.pureComputed(() => (this.mode() === value ? '0' : '-1')),
+        pick: () => (value === 'edit' ? this.showEdit() : this.showReview())
+      }));
+      // Arrow keys, Home and End move between Review and Edit
+      this.modeKey = (event) => {
+        const to = { ArrowRight: 'edit', ArrowLeft: 'review', Home: 'review', End: 'edit' }[event.key];
+        if (!to) {
+          return true;
+        }
+        event.preventDefault();
+        Promise.resolve(to === 'edit' ? this.showEdit() : this.showReview()).then(() => {
+          const button = document.getElementById('studioMode-' + this.mode());
+          if (button) {
+            button.focus();
+          }
+        });
+        return false;
+      };
+      // The editor's own checks (fields placed, placeholder values, buttons, compatibility) are in Edit
+      this.openChecks = () => {
+        this.showEdit();
+        const vm = this.editor();
+        if (!vm) {
+          return;
+        }
+        if (vm.detail()) {
+          vm.showChecks();
+        } else {
+          const opened = vm.detail.subscribe((d) => { if (d) { opened.dispose(); window.setTimeout(vm.showChecks, 0); } });
+        }
+      };
+      /** Approval locks a saved version: with unsaved changes in Edit, saves them first when the user agrees. */
+      const savedFirst = () => {
+        const vm = this.editor();
+        if (!vm || !vm.dirty()) {
+          return Promise.resolve(true);
+        }
+        return dialog.confirm({
+          title: 'Save the changes first?', confirmLabel: 'Save and approve',
+          message: 'Approval locks a saved version. Your changes are saved as a new version, then you approve it.'
+        }).then((ok) => ok && vm.save().then(() => !vm.dirty()));
+      };
+      // After an approval or reopening, the editor shows the screen's new state (locked or open)
+      const refreshEditor = () => {
+        const vm = this.editor();
+        if (vm && this.selectedScreenId()) {
+          vm.load(this.selectedScreenId());
+        }
       };
       this.addSteps = () => api.post('designs/' + this.screen().id + '/flow-screens')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens added after "' + this.screen().name + '".')))
         .catch(actionError);
-      this.approveScreen = () => approve([this.screen().id], { count: 1, name: this.screen().name, version: this.screen().currentVersion });
+      this.approveScreen = () => savedFirst().then((ok) => {
+        const s = this.screen();
+        const vm = this.editor();
+        return ok && s && approve([s.id], { count: 1, name: s.name, version: vm && vm.detail() ? vm.detail().currentVersion : s.currentVersion });
+      });
       this.reopenScreen = () => designActions.reopen(this.screen().id, this.screen().name)
-        .then((detail) => detail && reloadFlow().then(() => toast.success('"' + detail.name + '" is reopened for changes.')))
+        .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is reopened for changes.'); }))
         .catch(actionError);
 
       // --- summary of the selected group: channels, screens, fields and the components used ---
@@ -632,19 +752,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
           const before = this.screens().filter((s) => s.status === 'APPROVED').length;
           setFlow(flow);
+          refreshEditor();
           const now = flow.screens.filter((s) => s.status === 'APPROVED').length;
           toast.success((now - before) + (now - before === 1 ? ' screen' : ' screens') + ' approved.'
             + (now === flow.screens.length ? ' Every screen is approved: you can generate the code.' : ''));
         })
         .catch(actionError);
-      this.approveGroup = () => {
+      this.approveGroup = () => savedFirst().then((ok) => ok && approveGroupNow());
+      const approveGroupNow = () => {
         const ids = this.groupUnapproved();
         const only = ids.length === 1 ? screenById(ids[0]) : null;
         const g = this.group();
         return approve(ids, { count: ids.length, name: only ? only.name : '', version: only ? only.currentVersion : null,
           group: g && g.key !== 'all' ? (g.id ? g.id + ' ' : '') + '"' + g.title + '"' : 'this BRD' });
       };
-      this.approveAll = () => approve(null, { every: true, count: this.screens().filter((s) => s.status !== 'APPROVED').length });
+      this.approveAll = () => savedFirst().then((ok) => ok && approve(null, { every: true, count: this.screens().filter((s) => s.status !== 'APPROVED').length }));
       this.generateCode = () => api.post('requirements/' + this.requirementId() + '/changes')
         .then((created) => {
           toast.success('The change was started. The factory is analysing the impact on the code.');
@@ -673,11 +795,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.cancelUpload = () => this.chosenFile(null);
 
-      this.pickGroup = (key) => {
+      this.pickGroup = (key) => guard().then((ok) => {
+        if (!ok) {
+          return;
+        }
         this.groupKey(key);
         const g = this.group();
         this.selectedScreenId(g && g.screens.length ? g.screens[0] : null);
-      };
+      });
+      // The BRD picker: another BRD asks first about the editor's unsaved changes, and stays on this one when kept
+      this.brdPick = ko.observable(null);
+      this.requirementId.subscribe((id) => this.brdPick(id));
+      this.brdPick.subscribe((id) => {
+        if (id !== this.requirementId()) {
+          guard().then((ok) => (ok ? this.requirementId(id) : this.brdPick(this.requirementId())));
+        }
+      });
 
       // --- the preview: one frame showing the selected screen as a phone, tablet or desktop ---
 
@@ -835,6 +968,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .catch(() => null);
       const loadWorkspace = () => {
         const id = this.workspaceId();
+        closeEditor();
         this.flow(null);
         this.requirementId(null);
         if (!id) {
@@ -850,6 +984,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         accUtils.announce('UI Design Studio loaded.');
         document.title = 'UI Design Studio';
         window.addEventListener('message', onMessage);
+        phoneQuery.addEventListener('change', onNarrow);
         if (window.ResizeObserver) {
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
           observeStage();
@@ -861,8 +996,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return loadWorkspace();
         }).catch(showError);
       };
+      // Leaving the page with unsaved changes in Edit asks first (the editor's own guard)
+      this.canExit = () => (this.editor() ? this.editor().canExit() : Promise.resolve());
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
+        phoneQuery.removeEventListener('change', onNarrow);
+        this.editor(null);
+        this.mode('review');
         clearTimeout(pollTimer);
         if (stageObserver) {
           stageObserver.disconnect();

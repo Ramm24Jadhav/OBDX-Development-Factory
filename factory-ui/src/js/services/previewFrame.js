@@ -49,8 +49,9 @@ define([], function () {
       ready = false;
     };
 
-    this.attach = (iframeId) => {
-      frame = document.getElementById(iframeId);
+    /** iframe: the frame element (or its id); the page looks it up inside its own element. */
+    this.attach = (iframe) => {
+      frame = typeof iframe === 'string' ? document.getElementById(iframe) : iframe;
       ready = false;
       window.addEventListener('message', onMessage);
     };

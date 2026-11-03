@@ -1,6 +1,6 @@
 <div class="factory-pg-head factory-dz-pagehead">
   <div class="factory-dz-pagetitle">
-    <h1 class="fx-visually-hidden">Visual Designer</h1>
+    <oj-bind-if test="[[!embedded]]"><h1 class="fx-visually-hidden">Visual Designer</h1></oj-bind-if>
   </div>
   <!-- Title row actions: design or code, more, preview, save -->
   <oj-bind-if test="[[detail()]]">
@@ -36,7 +36,7 @@
       </div>
     </div>
   </oj-bind-if>
-  <oj-bind-if test="[[!detail() && workspaceId() && canDesign()]]">
+  <oj-bind-if test="[[!embedded && !detail() && workspaceId() && canDesign()]]">
     <div class="factory-dz-headactions">
       <button type="button" id="newScreenButton" class="fx-btn fx-btn--primary" on-click="[[openNew]]">
         <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New screen</button>
@@ -59,7 +59,7 @@
   </oj-bind-if>
 
   <!-- Drawers opened from the menus -->
-  <oj-bind-if test="[[drawer() === 'new']]">
+  <oj-bind-if test="[[drawer() === 'new' && !embedded]]">
     <div class="factory-dz-drawer" id="newScreenDrawer">
       <div class="factory-dz-drawer-col">
         <h3>From an approved requirement</h3>
@@ -181,7 +181,7 @@
     <div id="leftRail" class="factory-dz-rail factory-dz-rail-left" :style.display="[[detail() && !leftOpen() ? 'flex' : 'none']]">
       <button type="button" class="factory-dz-rail-btn" title="Components" aria-label="Show components" on-click="[[railComponents]]">⧉<span>Components</span></button>
       <button type="button" class="factory-dz-rail-btn" title="Layers" aria-label="Show the layers" on-click="[[railLayers]]">☰<span>Layers</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="Screens" aria-label="Show the screens" on-click="[[railScreens]]">▭<span>Screens</span></button>
+      <oj-bind-if test="[[!embedded]]"><button type="button" class="factory-dz-rail-btn" title="Screens" aria-label="Show the screens" on-click="[[railScreens]]">▭<span>Screens</span></button></oj-bind-if>
     </div>
     <div id="rightRail" class="factory-dz-rail factory-dz-rail-right" :style.display="[[detail() && !rightOpen() ? 'flex' : 'none']]">
       <button type="button" class="factory-dz-rail-btn" title="Inspector" aria-label="Show the inspector" on-click="[[railProperties]]">⚙<span>Inspector</span></button>
@@ -347,7 +347,10 @@
                 :style.display="[[detail() && leftOpen() && !previewMode() ? '' : 'none']]"></fx-resizer>
     <!-- Centre: the canvas -->
     <main class="factory-dz-canvas">
-      <oj-bind-if test="[[!detail()]]">
+      <oj-bind-if test="[[!detail() && embedded]]">
+        <p class="factory-dz-hint factory-dz-opening">Opening the screen…</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[!detail() && !embedded]]">
         <div class="factory-dz-empty">
           <h2>Design a screen</h2>
           <oj-bind-if test="[[!workspaceId()]]">
@@ -415,7 +418,7 @@
               <button type="button" id="reviewLinkButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openShare]]" :disabled="[[!!shareBlocked()]]"
                       :aria-expanded="[[shareOpen() ? 'true' : 'false']]" aria-controls="shareDrawer">
                 <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Review link</button></span>
-            <oj-bind-if test="[[!isApproved()]]">
+            <oj-bind-if test="[[!isApproved() && !embedded]]">
               <span class="fx-tip-wrap" :tabindex="[[approveBlocked() ? 0 : null]]" :data-fx-tip="[[approveBlocked() || 'Approve this version for development; its components are then locked']]">
                 <button type="button" id="approveScreenButton" class="fx-btn fx-btn--secondary fx-btn--sm factory-dz-approvebtn" on-click="[[approve]]" :disabled="[[!!approveBlocked()]]">
                   <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve screen</button></span>

@@ -3,7 +3,11 @@
 //  - arrow keys, Home and End move through the flow's nodes, and the screen under the focus is shown;
 //  - arrow keys move through the selected screen's tabs, each with its own panel;
 //  - approving all screens, one screen or a requirement's screens, and reopening a screen, each ask first, and Cancel
-//    changes nothing.
+//    changes nothing;
+//  - Edit draws the designer inside the page (no board, title or Screens tab of its own, the library and the flow fold
+//    away, one preview at a time, no invented sample values); an unsaved change is asked about on switching to Review,
+//    opening another screen and leaving the page; Ctrl+Z outside the editor leaves it alone; Escape with nothing
+//    selected goes back to Review; at 390 px Edit says to use a wider screen and Review still works.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-studio.js --url http://localhost:8080 [--workspace <id>]
 //
@@ -148,6 +152,102 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
       record('Reopen is offered for an approved screen', false);
     }
   }
+
+  // ---------- Edit: the designer inside the Studio ----------
+  await run((id) => new Promise((r) => window.require(['services/pageRequests'], (pr) => { pr.studio(id); r(1); })), brd.id);
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'overview' })); return 1; });
+  await sleep(1500);
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); return 1; });
+  await sleep(4000);
+  // A screen that can be changed
+  await run(() => { const n = [...document.querySelectorAll('.factory-studio-node')].find((x) => !x.classList.contains('is-approved')); if (n) { n.click(); } return 1; });
+  await sleep(1000);
+  const frames = () => run(() => ({
+    review: document.querySelectorAll('iframe[data-studio-screen]').length,
+    editor: document.querySelectorAll('#studioEditor iframe.factory-dz-frame').length,
+    all: document.querySelectorAll('.factory-page iframe').length
+  }));
+  record('Review shows one preview', JSON.stringify(await frames()) === JSON.stringify({ review: 1, editor: 0, all: 1 }), await frames());
+  await run(() => { document.getElementById('studioMode-edit').click(); return 1; });
+  await sleep(6000);
+  const edit = await run(() => ({
+    pressed: document.getElementById('studioMode-edit').getAttribute('aria-pressed'),
+    module: !!document.querySelector('#studioEditor .factory-dz'),
+    library: !!document.querySelector('.factory-studio-nav') || !!document.querySelector('.factory-studio-map'),
+    tabs: [...document.querySelectorAll('#studioEditor #leftPanel [role=tab]')].map((t) => t.textContent.trim()),
+    board: !!document.getElementById('designBoard'),
+    ownTitle: [...document.querySelectorAll('h1')].some((h) => /Visual Designer/.test(h.textContent)),
+    journey: !!document.querySelector('#studioEditor #journeyStrip'),
+    loaded: !!document.querySelector('#studioEditor #designLayers, #studioEditor #designPalette')
+  }));
+  record('Edit draws the designer inside the Studio', edit.pressed === 'true' && edit.module && edit.loaded, edit);
+  record('the requirements and the flow fold away; the journey strip shows the flow', !edit.library && edit.journey);
+  record('the editor has no board, title or Screens tab of its own', !edit.board && !edit.ownTitle && edit.tabs.join(',') === 'Components,Layers', edit.tabs);
+  record('Edit has one preview: the editor\'s', JSON.stringify(await frames()) === JSON.stringify({ review: 0, editor: 1, all: 1 }), await frames());
+  const brdOnly = await run(() => new Promise((r) => setTimeout(() => {
+    const doc = document.querySelector('#studioEditor iframe.factory-dz-frame').contentDocument;
+    r(doc && doc.body ? !/Sample value/.test(doc.body.textContent) : false);
+  }, 1500)));
+  record('the editor\'s canvas shows no invented sample values', brdOnly);
+
+  const editable = await run(() => !!document.querySelector('#studioEditor #undoButton'));
+  if (editable) {
+    // An unsaved change: move the first component down in Layers
+    await run(() => { document.getElementById('leftTab-layers').click(); return 1; });
+    await sleep(600);
+    const firstId = await run(() => { const row = document.querySelector('#designLayers [data-cid]'); if (row) { row.click(); } return row ? row.getAttribute('data-cid') : null; });
+    await sleep(600);
+    await run((id) => { document.querySelector('#designLayers [data-cid="' + id + '"]').focus(); return 1; }, firstId);
+    await key('ArrowDown', 1);
+    await sleep(800);
+    const unsaved = () => run(() => !!document.querySelector('#studioEditor .factory-dz-unsaved'));
+    record('a change in Edit is unsaved', await unsaved());
+    // Ctrl+Z outside the editor (the Studio's own header) leaves it alone
+    await run(() => { document.getElementById('studioBackToFlow').focus(); return 1; });
+    await cdp('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'z', code: 'KeyZ', windowsVirtualKeyCode: 90, modifiers: 2 });
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: 'z', code: 'KeyZ', windowsVirtualKeyCode: 90, modifiers: 2 });
+    await sleep(600);
+    record('Ctrl+Z outside the editor does not undo in it', await unsaved());
+    // Each way out asks first: Review, another screen of the journey, another page
+    for (const [what, act] of [
+      ['switching to Review', () => { document.getElementById('studioMode-review').click(); return 1; }],
+      ['opening another screen of the journey', () => { const b = [...document.querySelectorAll('#studioEditor .factory-dz-stepbtn')].find((x) => !x.disabled); if (b) { b.click(); } return !!b; }],
+      ['leaving the page', () => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'overview' })); return 1; }]
+    ]) {
+      const did = await run(act);
+      await sleep(1200);
+      const asked = await dialog();
+      record(what + ' with unsaved changes asks first', !did || !!asked, did ? asked : 'no other screen');
+      await cancel();
+      const kept = await run(() => ({ page: new URLSearchParams(location.search).get('ojr'), edit: document.getElementById('studioMode-edit') && document.getElementById('studioMode-edit').getAttribute('aria-pressed') }));
+      record('cancelling keeps Edit and the changes', kept.page === 'studio' && kept.edit === 'true' && await unsaved(), kept);
+    }
+    await run(() => { document.querySelector('#studioEditor #undoButton').click(); return 1; });
+    await sleep(800);
+    record('Undo brings back the saved version', !(await unsaved()));
+    // Escape with nothing selected goes back to Review
+    await run(() => { const row = document.querySelector('#designLayers [data-layer="screen"]'); row.click(); row.focus(); return 1; });
+    await sleep(500);
+    await key('Escape');
+    await sleep(1200);
+    const back = await run(() => document.getElementById('studioMode-review').getAttribute('aria-pressed'));
+    record('Escape with nothing selected goes back to Review', back === 'true', back);
+    record('Review has its preview back', JSON.stringify(await frames()) === JSON.stringify({ review: 1, editor: 0, all: 1 }), await frames());
+  } else {
+    record('the screen is read-only here: unsaved-change guards not checked', true);
+  }
+
+  // Phones: Edit says to use a wider screen; Review still works
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await sleep(1500);
+  await run(() => { document.getElementById('studioMode-edit').click(); return 1; });
+  await sleep(1500);
+  const phone = await run(() => ({ text: (document.getElementById('studioEditNarrow') || {}).textContent || '', editor: !!document.querySelector('#studioEditor') }));
+  record('Edit at 390 px says to use a wider screen', /Use a wider screen to edit this screen/.test(phone.text) && !phone.editor, phone.text.replace(/\s+/g, ' ').trim().slice(0, 60));
+  await run(() => { document.getElementById('studioMode-review').click(); return 1; });
+  await sleep(1500);
+  record('Review works at 390 px', JSON.stringify(await frames()) === JSON.stringify({ review: 1, editor: 0, all: 1 }), await frames());
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
   const errors = s.errors.filter((e) => !/auth\/me/.test(e));
   record('no console errors', errors.length === 0, errors.slice(0, 3));

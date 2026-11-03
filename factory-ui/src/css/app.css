@@ -7447,6 +7447,22 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
   .factory-studio-field > :nth-child(2) { display: none; }
   .factory-studio-compare-pick { grid-template-columns: minmax(0, 1fr); }
 }
+/* Design Studio, Edit: the selected screen takes the page's width and holds the designer (viewModels/designer, embedded) */
+.factory-studio-work.is-editing { grid-template-columns: minmax(0, 1fr); grid-template-areas: "canvas"; }
+.factory-studio-work.is-editing .factory-studio-canvas { padding: 12px; }
+.factory-studio-modes button { min-width: 72px; }
+.factory-studio-editbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); }
+.factory-studio-editbar .fx-card-sub { margin: 0; }
+.factory-studio-editor { display: block; min-width: 0; }
+.factory-studio-editor .factory-dz-pagehead { padding: 0; margin-bottom: 8px; }
+.factory-studio-checks-link { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); padding-top: 10px; border-top: var(--fx-border-width) solid var(--fx-border); }
+.factory-studio-checks-link .fx-card-sub { flex: 1 1 260px; margin: 0; }
+.factory-studio-narrow { padding: 28px 16px; }
+.factory-dz-opening { margin: 0; padding: 24px; }
+@media (min-width: 1251px) {
+  /* Below the Studio's bar and the screen's header: the designer fills the window once scrolled to (not 100vh of its own) */
+  .factory-studio-editor .factory-dz { height: calc(100vh - 170px); min-height: 680px; }
+}
 
 /* ---------- Shell: six menu sections, the collapsed menu's tooltip, the breadcrumb and the workspace version ---------- */
 /* Plain section labels sit close to their links; only Administration (it folds) keeps the dividing line above it */
