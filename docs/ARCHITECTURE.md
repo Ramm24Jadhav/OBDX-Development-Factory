@@ -226,6 +226,12 @@ BRD / FSD  ->  Screen Model (JSON)  <->  Live preview + designer  ->  Customer a
 
 **Implemented (first version):** designs are generated from approved requirement specs (or started blank) with form components (text, multi-line text, number, amount, date, dropdown, account selector, radio, checkboxes, switch, read-only text) and action buttons. The designer supports drag-and-drop ordering, a properties panel, plain-language changes through the model, versions, comments and review links with customer comments and approval. Not yet: tables/grids as components, the bank's own JET version and theme in the preview, starting enhancements from the existing screen's layout in the code, and side-by-side version comparison.
 
+**One page in the UI.** The Screen Designer is the **Design Studio**'s Edit mode (route `studio`; the old `designer`
+route redirects). The Studio takes a BRD from upload to approved screens (stages, the flow of each functional
+requirement, coverage of the acceptance criteria, Review with the BRD's values only), and Edit draws the designer for
+the selected screen in the same page, also previewing the BRD's values only. Approvals go through one service that asks
+before every approve and reopen. See `docs/DESIGN-STUDIO.md`.
+
 ### 5.8 Target Packs
 
 A **Target Pack** teaches the factory how to turn a target-neutral Screen Model into code for one UI technology. Each pack contains:

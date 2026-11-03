@@ -1,7 +1,7 @@
-# UI Design Studio: from BRD to approved screens
+# Design Studio: from BRD to approved screens
 
-The design note for the Design Studio page (`?ojr=studio`), which replaces the Visual Designer as the way into screen
-design. The Visual Designer stays for detailed work on one screen.
+The design note for the Design Studio page (`?ojr=studio`), the one page for screen design: from a BRD to approved
+screens, with the Visual Designer as its Edit mode for detailed work on one screen (see "One Design Studio" below).
 
 ## Today's journey (before)
 
@@ -30,7 +30,7 @@ Where it confuses:
 
 ## The simplified flow (after)
 
-One page, **UI Design Studio**, with a five-step stepper at the top that always shows where the BRD stands and what
+One page, **Design Studio**, with a five-step stepper at the top that always shows where the BRD stands and what
 to do next:
 
 | Step | Done when | Action on the page |
@@ -51,7 +51,7 @@ Below the stepper, when screens exist, two columns:
   - the **user flow** strip: the screens in order, each with its status; clicking one selects it;
   - the **flow preview**: every screen side by side in phone frames, or one at a time in a desktop frame;
   - **refine** the selected screen: a plain-language change for the AI, a quick edit of field labels and mandatory
-    flags, or "Open in designer" for anything more;
+    flags, or Edit (the Visual Designer) for anything more;
   - a **summary**: channels, screens, fields and the OBDX components used;
   - an **approval bar**: "n of m approved", "Approve all screens of FR-001", and when an initiate screen has no review
     and confirmation screens, "Add review and confirmation screens".
@@ -84,13 +84,38 @@ The Studio became the central design workspace. The stages, the order of the flo
   mandatory, and whether a screen is new or a change to an existing one.
 - **BRD values only:** the Studio's preview no longer invents sample names, amounts or options. A choice or table
   without values from the BRD reads "To be confirmed by the analyst"; accounts and lists loaded from an API say so.
-  The Visual Designer keeps its realistic sample data.
+  Edit (the Visual Designer) shows the BRD's values only too.
 - **Regenerate** saves the version generated from the approved spec again as a new version. Generation from a spec is
   deterministic, so this is the screen the generator makes from that spec; changes stay in the version history.
 - **Compare versions** lists what changed between two versions (title, sections, fields and their label, type,
   mandatory flag, values, default, length and checks, buttons) and can show the earlier one in the preview.
 - **Keyboard:** arrow keys, Home and End move through the flow nodes and the tabs; the preview can be scrolled with the
   keyboard.
+
+## One Design Studio (the merge with the Visual Designer)
+
+The UI Design Studio and the Visual Designer were two pages for one job, with two approvals that asked differently,
+two version compares and two screen orders. They are one page now (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done):
+
+- **Review | Edit** on the selected screen. Review is the default (the BRD-only preview, Coverage, Refine, Compare);
+  Edit draws the Visual Designer for that screen in the page (`viewModels/designer` with
+  `{ embedded: true, designId, host }` in an `oj-module`). In Edit the requirements and the flow fold away behind
+  **← Flow**, and the designer's journey strip shows the flow in the server's order. The designer has no title, board,
+  Screens tab or New drawer of its own there.
+- **One approval service** (`services/designActions`): approve one screen, a requirement's screens or all of them, and
+  reopen, each asking first; the unsupported-component confirm (`?unsupported=true`) is written once. Approving with
+  unsaved changes offers to save them first.
+- **Unsaved changes** are asked about on switching to Review, another screen (the flow, the journey strip, the BRD
+  picker, a requirement) and leaving the page.
+- **Scoped to the editor:** Ctrl+Z and Ctrl+Y count only inside it, its element lookups, size observer and preview
+  frame are found inside its own element, and only one preview is live at a time (Review's frame is not drawn in Edit).
+  Esc with nothing selected goes back to Review.
+- **Entry points** that were the designer's: **+ New screen** (generate, blank, import), **Screens without a BRD** in
+  the BRD picker (blank and imported screens, approved one at a time), and the screen's **More** menu (share, import,
+  review and confirmation screens, delete).
+- **Phones:** below 768 px Edit says "Use a wider screen to edit this screen"; Review works.
+- **Links:** the `designer` route redirects to `studio`; `pageRequests.design(id)` opens the screen in Edit;
+  `?ojr=studio&requirement=<id>&screen=<id>` opens that screen, and the address follows the selection.
 
 ## Server support
 

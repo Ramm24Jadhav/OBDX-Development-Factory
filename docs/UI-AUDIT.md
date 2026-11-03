@@ -16,8 +16,8 @@ Routes live in `factory-ui/src/js/appController.js` (CoreRouter, `?ojr=<path>`).
 | Code (`code`) | Workflow | 1,286 | Browse and search the imported code, quick checks, index, settings |
 | Project Profile (`profile`) | Workflow | 627 | What the factory learned about the code base |
 | Requirements (`requirements`) | Workflow | 1,128 | Upload BRD/FSD, spec, open questions, approve |
-| UI Design Studio (`studio`) | Workflow | 940 | BRD to approved screens (owned by the Design Studio session) |
-| Visual Designer (`designer`) | under Studio | 2,932 | Edit one screen |
+| Design Studio (`studio`) | Workflow | 940 | BRD to approved screens; Edit mode is the Visual Designer (merged, see DESIGN-STUDIO-MERGE-PLAN.md) |
+| Visual Designer (`designer`, now a redirect) | Studio Edit mode | 2,932 | Edit one screen, inside the Design Studio |
 | Changes (`changes`) | Workflow | 1,327 | Plan, generate, review, deliver code |
 | Impact Analysis (`impact`) | under Changes | 637 | The plan of a change |
 | Build, Test & Review (`build`) | Workflow | 866 | Jenkins builds, checks, review |
@@ -95,17 +95,17 @@ Approval gates (all must stay):
 | Gate | Where | Confirmation today |
 | --- | --- | --- |
 | Approve spec | Requirements | **None** (toast only); the spec is locked afterwards |
-| Approve one screen | Visual Designer | "Approve this screen?" |
+| Approve one screen | Design Studio (Review and Edit) | "Approve this screen?" |
 | Approve all screens | Design Studio | "Approve every screen?" |
-| Approve a group of screens | Design Studio | **None** |
+| Approve a group of screens | Design Studio | "Approve n screens?" (added with the merge) |
 | Approve plan | Changes, Impact | "Approve this plan?" |
 | Submit for review / deliver | Changes, Build | "Submit for review?" |
 | Incomplete delivery or patch | Changes | Danger dialog listing unwritten files |
 | Customer approval | Review link | Dialog |
 | Close, abandon, delete change | Changes | Dialogs |
 
-Two gates have no confirmation: spec approval and group approval. The declutter work keeps the gates as they are. Adding the
-two missing confirmations is a small separate decision (see 5).
+Spec approval is the one gate without a confirmation now: the Design Studio merge added the group approval's (every approve,
+group approve and reopen asks first, `services/designActions`). Adding the spec approval's is a small separate decision (see 5).
 
 ## 2. Where the clutter is
 
@@ -188,8 +188,8 @@ The order agreed with the product owner (1 Nov 2026), mapped to routes:
 | 6 | Project Profile | `profile` | |
 | 7 | Requirements list | `requirements` (list part) | Same route as 8 |
 | 8 | Requirement detail | `requirements` (detail part) | |
-| 9 | UI Design Studio | `studio` | Done by the Design Studio session, merged here |
-| 10 | Visual Designer | `designer` | Coordinated with the Design Studio session |
+| 9 | Design Studio | `studio` | Done by the Design Studio session, merged here; one page with the Visual Designer since the merge |
+| 10 | Visual Designer | `designer` (redirects to `studio`) | The Design Studio's Edit mode since the merge |
 | 11 | Impact Analysis | `impact` | |
 | 12 | Changes Workbench | `changes` | |
 | 13 | Build, Test & Review | `build` | |
@@ -241,10 +241,10 @@ Ordered by how much a user's daily work suffers, and by keeping each step small 
 
    This is the largest page. It is coordinated with the Design Studio session, which owns the Studio side.
 9. **Setup pages.** Prompts, Packs, Integrations, Modernization, Reviews, Agents, Admin: one tab level, no KPI rows unless they are the point of the page.
-10. **Design Studio.** Already simplified by its own session. Any further change goes through that session.
+10. **Design Studio.** Already simplified by its own session, and merged with the Visual Designer into one page (Review | Edit; `docs/DESIGN-STUDIO-MERGE-PLAN.md`).
 
 Separate small decisions (not part of decluttering, need your yes):
-- add a confirmation to spec approval and to approving a group of screens, so every approval gate asks before it acts;
+- add a confirmation to spec approval, so every approval gate asks before it acts (approving a group of screens asks since the Design Studio merge);
 - move `check-responsive.js` and `check-interactions.js` runs into the declutter task reports as standard.
 
 ## 6. Prompt-pack mapping
