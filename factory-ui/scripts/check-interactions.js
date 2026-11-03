@@ -22,7 +22,7 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]; }
 const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'interaction-report');
-const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,designer,changes,impact,build,models,'
+const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,studio,designer,changes,impact,build,models,'
   + 'modernization,agents,admin,reviews,integrations,packs,knowledge,prompts,notifications,account,about,design').split(',');
 const SIZES = (args.sizes || '1440x900,375x667').split(',').map((s) => { const m = /^(\d+)x(\d+)$/.exec(s); return { w: +m[1], h: +m[2], name: s }; });
 const REDUCED = !!args['reduced-motion'];
