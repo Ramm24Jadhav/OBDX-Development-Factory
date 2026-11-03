@@ -51,7 +51,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
      * params (optional): { embedded: true, designId, host } when the Design Studio shows the designer as its Edit mode.
      * Embedded, the designer has no title, board, Screens tab or New drawer of its own; it opens designId, previews the
      * BRD's values only, and tells the host (select(id), changed(detail), deleted(id), leave(); element() is where it is
-     * drawn) instead of opening
+     * drawn, order() the flow's screen ids, catalog() and target(id) what the Studio has loaded) instead of opening
      * screens itself. Its keys, preview frame and size observer stay inside its own element.
      */
     function DesignerViewModel(params) {
@@ -69,7 +69,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.infoMessage = ko.observable('');
       this.busy = ko.observable(false);
 
-      this.blankName = ko.observable('');
       this.designs = ko.observableArray([]);
       // The workspace's screens and requirements as the server lists them, the bank of each workspace, and the
       // approved requirement of the open screen (its spec drives the journey and the checks)
@@ -117,8 +116,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Panels: the left one shows components, layers or screens; the right one is the inspector of the selection; the
       // top bar opens one drawer at a time (a new screen, an import, the review link)
       this.leftTab = ko.observable('components');
-      // Embedded, the Studio's library lists the screens, so the panel has no Screens tab
-      this.leftTabs = [['components', 'Components'], ['layers', 'Layers']].concat(embedded ? [] : [['screens', 'Screens']]).map(([key, label]) => ({
+      // The Studio's library lists the screens, so the panel has no Screens tab
+      this.leftTabs = [['components', 'Components'], ['layers', 'Layers']].map(([key, label]) => ({
         key: key,
         label: label,
         id: 'leftTab-' + key,
@@ -145,7 +144,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.drawer = ko.observable(null);
       this.toggleDrawer = (name) => () => this.drawer(this.drawer() === name ? null : name);
-      this.openNew = this.toggleDrawer('new');
       this.openImport = this.toggleDrawer('import');
       this.openShare = this.toggleDrawer('share');
       this.closeDrawer = () => this.drawer(null);
@@ -220,7 +218,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const openLeftOn = (tab) => () => { this.leftTab(tab); this.leftOpen(true); };
       this.railComponents = openLeftOn('components');
       this.railLayers = openLeftOn('layers');
-      this.railScreens = openLeftOn('screens');
       this.railProperties = () => this.rightOpen(true);
       this.railComments = () => this.showComments();
       this.railHistory = () => this.showHistory();
@@ -1505,14 +1502,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return list;
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
-      // The title row's More menu and the screen card's actions menu
-      // Embedded, new screens and the list of all screens are the Studio's
-      this.pageMenuItems = ko.pureComputed(() => (embedded ? [] : [{ value: 'new', label: 'New screen', icon: 'plus', disabled: !this.canDesign() }])
-        .concat([
-          { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
-          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() }
-        ])
-        .concat(embedded ? [] : [{ value: 'board', label: 'All screens', icon: 'design' }]));
+      // The title row's More menu and the screen card's actions menu (new screens and the list of all screens are the
+      // Studio's)
+      this.pageMenuItems = ko.pureComputed(() => [
+        { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
+        { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() }
+      ]);
       this.screenMenuItems = ko.pureComputed(() => {
         const approved = !!this.detail() && this.detail().status === 'APPROVED';
         return [
@@ -1525,14 +1520,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.pageMenu = (event) => {
         const value = event.detail.value;
-        if (value === 'new') {
-          this.openNew();
-        } else if (value === 'component') {
+        if (value === 'component') {
           this.openNewComponent();
         } else if (value === 'import') {
           this.openImport();
-        } else if (value === 'board') {
-          this.backToBoard();
         }
       };
       this.screenMenu = (event) => {
@@ -1584,29 +1575,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ? 'This screen is approved, so its components are locked. Reopen it to change it, or open another screen.'
         : 'You can look at this screen but not change it.'));
       this.screenHeading = ko.pureComputed(() => (this.working() ? this.working().title || this.detail().name : ''));
-      /** Back to the start page with every requirement and its screens. */
-      this.backToBoard = () => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true)).then((ok) => {
-        if (!ok) {
-          return;
-        }
-        this.detail(null);
-        this.working(null);
-        this.dirty(false);
-        this.designPick(null);
-        this.previewMode(false);
-        this.mode('design');
-      });
-      // The workspace's screens, for the Screens tab
-      this.screenList = ko.pureComputed(() => {
-        const current = this.detail() ? this.detail().id : null;
-        return rawDesigns().map((d) => ({
-          name: d.name,
-          meta: d.components + ' components · v' + d.currentVersion,
-          status: screenStatus(d.status, statusLabel(d.status)),
-          css: 'factory-dz-scr' + (d.id === current ? ' factory-dz-scr-on' : ''),
-          openAction: () => { if (d.id !== current) { this.open(d.id); } }
-        }));
-      });
 
       // The journey as a stepper: the requirement's screens in order, then the OBDX review and confirm steps still to make
       const STAGE_NAMES = { initiate: 'Initiate', review: 'Review', confirm: 'Confirmation', inquiry: 'Inquiry' };
@@ -2013,7 +1981,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- loading and actions ---
 
-      const loadTarget = (id) => api.get('workspaces/' + id + '/target').then((target) => {
+      const loadTarget = (id) => (host.target ? host.target(id) : api.get('workspaces/' + id + '/target')).then((target) => {
         this.targetTitle(target.title);
         this.previewKind(target.preview);
       });
@@ -2124,10 +2092,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.open(id);
         }
       });
-
-      this.createBlank = () => api.post('workspaces/' + this.workspaceId() + '/designs', { name: this.blankName() })
-        .then((detail) => { this.blankName(''); this.drawer(null); show(detail); })
-        .catch(showError);
 
       const base = () => 'designs/' + this.detail().id;
 
@@ -2330,7 +2294,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             stageObserver.observe(stage);
           }
         }
-        api.get('design/catalog').then((types) => catalog(types.map((t) => ({ value: t.type, label: t.label, hasOptions: t.hasOptions, jet: t.jetComponent }))))
+        (host.catalog ? host.catalog() : api.get('design/catalog')).then((types) => catalog(types.map((t) => ({ value: t.type, label: t.label, hasOptions: t.hasOptions, jet: t.jetComponent }))))
           .catch(showError);
         const refreshPalette = () => {
           codeItems([]);

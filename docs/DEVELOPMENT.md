@@ -250,9 +250,9 @@ workspace when only `screen` is given), and the address follows the selected BRD
   review and confirmation screens, delete it), then, in Review, one row of tabs: **Coverage** (the criteria this screen
   helps meet, values to confirm, decisions it waits for, **Open the checks** of the editor, and **Add them** when an
   input screen has no review and confirmation screens), **Refine** (Change with AI; **Regenerate this screen**, which
-  saves the version generated from the approved spec again as a new version), **Edit** (title, labels and mandatory
-  flags, saved as a new version) and **Compare versions** (what changed between two versions, in the same words as the
-  editor's History, and a preview of the earlier one). Refine and Edit show to the Analyst and Developer roles.
+  saves the version generated from the approved spec again as a new version) and **Compare versions** (what changed
+  between two versions, in the same words as the editor's History, and a preview of the earlier one). Refine shows to
+  the Analyst and Developer roles. (The quick Edit tab for labels and mandatory flags went with the merge: Edit does it.)
 - **Approvals ask first, everywhere** (`services/designActions`): one screen, a requirement's screens, every remaining
   screen and reopening a screen each have a confirmation, and a screen with components the version pack forbids asks
   again (`?unsupported=true`). Approving with unsaved changes in Edit offers to save them first.

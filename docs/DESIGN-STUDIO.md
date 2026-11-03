@@ -50,8 +50,8 @@ Below the stepper, when screens exist, two columns:
   - its description, business rules and acceptance criteria (folded to one line each, expandable);
   - the **user flow** strip: the screens in order, each with its status; clicking one selects it;
   - the **flow preview**: every screen side by side in phone frames, or one at a time in a desktop frame;
-  - **refine** the selected screen: a plain-language change for the AI, a quick edit of field labels and mandatory
-    flags, or Edit (the Visual Designer) for anything more;
+  - **refine** the selected screen: a plain-language change for the AI, or Edit (the Visual Designer) for anything
+    more (a quick edit of labels and mandatory flags was here until the merge);
   - a **summary**: channels, screens, fields and the OBDX components used;
   - an **approval bar**: "n of m approved", "Approve all screens of FR-001", and when an initiate screen has no review
     and confirmation screens, "Add review and confirmation screens".

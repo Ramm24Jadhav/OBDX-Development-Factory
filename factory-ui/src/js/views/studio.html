@@ -214,7 +214,7 @@
                 </li></template>
               </oj-bind-for-each>
             </ul>
-            <p class="fx-card-sub">Settle each one with the BRD's owner, then set it with a quick edit, the AI or in Edit.</p>
+            <p class="fx-card-sub">Settle each one with the BRD's owner, then set it with the AI (Refine) or in Edit.</p>
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[openSpec]]">Open the spec</button>
           </details>
         </oj-bind-if>
@@ -268,7 +268,7 @@
           <oj-bind-if test="[[editing()]]">
             <div class="factory-studio-editbar">
               <button type="button" id="studioBackToFlow" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showReview]]"><span aria-hidden="true">←</span> Flow</button>
-              <span class="fx-card-sub">Esc with nothing selected goes back to Review.</span>
+              <oj-bind-if test="[[!narrow()]]"><span class="fx-card-sub">Esc with nothing selected goes back to Review.</span></oj-bind-if>
             </div>
             <oj-bind-if test="[[narrow()]]">
               <div class="fx-card fx-empty factory-studio-narrow" id="studioEditNarrow">
@@ -340,7 +340,7 @@
               <oj-bind-if test="[[screenUnconfirmed().length > 0]]">
                 <div class="factory-studio-open factory-studio-open--confirm factory-studio-open--static">
                   <h3>To be confirmed by the analyst</h3>
-                  <p class="fx-card-sub">The BRD gives no values for these. Confirm them, then set them with a quick edit, the AI or in Edit.</p>
+                  <p class="fx-card-sub">The BRD gives no values for these. Confirm them, then set them with the AI (Refine) or in Edit.</p>
                   <ul><oj-bind-for-each data="[[screenUnconfirmed]]" as="u"><template><li><oj-bind-text value="[[u.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
                 </div>
               </oj-bind-if>
@@ -385,42 +385,11 @@
             </div>
           </oj-bind-if>
 
-          <!-- Edit: the screen's title and each field's label and mandatory flag -->
-          <oj-bind-if test="[[tab() === 'edit']]">
-            <div class="factory-studio-panel" role="tabpanel" id="studio-panel-edit" aria-labelledby="studio-tab-edit">
-              <oj-bind-if test="[[!screenEditable()]]"><p class="fx-card-sub"><oj-bind-text value="[[lockedText]]"></oj-bind-text></p></oj-bind-if>
-              <oj-bind-if test="[[screenEditable()]]">
-                <div class="factory-studio-quick">
-                  <fx-input id="studioTitle" label="Screen title" value="{{editTitle}}"></fx-input>
-                  <oj-bind-if test="[[editFields().length > 0]]">
-                    <div class="factory-studio-fields" role="table" aria-label="Fields">
-                      <div class="factory-studio-field factory-studio-field--head" role="row"><span role="columnheader">Label</span><span role="columnheader">Type</span><span role="columnheader">Mandatory</span></div>
-                      <oj-bind-for-each data="[[editFields]]" as="f">
-                        <template>
-                          <div class="factory-studio-field" role="row">
-                            <span role="cell"><fx-input label="Label" hide-label value="{{f.data.label}}"></fx-input></span>
-                            <span role="cell" class="factory-studio-field-type"><oj-bind-text value="[[f.data.type]]"></oj-bind-text></span>
-                            <span role="cell"><oj-bind-if test="[[!f.data.readonly]]"><label class="fx-check"><input type="checkbox" :checked="[[f.data.required]]" :aria-label="[[f.data.requiredLabel]]" on-change="[[f.data.toggleRequired]]"><span class="fx-visually-hidden">Mandatory</span></label></oj-bind-if>
-                              <oj-bind-if test="[[f.data.readonly]]"><span class="factory-studio-field-type">Shown only</span></oj-bind-if></span>
-                          </div>
-                        </template>
-                      </oj-bind-for-each>
-                    </div>
-                  </oj-bind-if>
-                  <div class="factory-studio-quick-actions">
-                    <button type="button" id="studioSaveEdit" class="fx-btn fx-btn--primary" on-click="[[saveEdit]]" :disabled="[[!editDirty()]]">Save as new version</button>
-                    <button type="button" class="fx-btn fx-btn--ghost" on-click="[[resetEdit]]" :disabled="[[!editDirty()]]">Undo</button>
-                  </div>
-                </div>
-              </oj-bind-if>
-            </div>
-          </oj-bind-if>
-
           <!-- Compare: what changed between two versions -->
           <oj-bind-if test="[[tab() === 'compare']]">
             <div class="factory-studio-panel" role="tabpanel" id="studio-panel-compare" aria-labelledby="studio-tab-compare">
               <oj-bind-if test="[[versionOptions().length < 2]]">
-                <p class="fx-card-sub">This screen has one version only. Each change with the AI, a quick edit or in Edit saves a new one.</p>
+                <p class="fx-card-sub">This screen has one version only. Each change with the AI or in Edit saves a new one.</p>
               </oj-bind-if>
               <oj-bind-if test="[[versionOptions().length >= 2]]">
                 <div class="factory-studio-compare-pick">

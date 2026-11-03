@@ -3,9 +3,10 @@
  * stages and the next action); the BRD's functional requirements with their screens and what is still open; the
  * selected requirement's screen flow; and the selected screen's preview as a phone, tablet or desktop, with the
  * acceptance criteria it helps meet, values the BRD leaves to an analyst, refining it (the AI, back to the generated
- * version, a quick edit), comparing versions and approving it. Review is the default mode; Edit draws the Visual
- * Designer (viewModels/designer, embedded) for the selected screen in its place, one editor and one preview at a time,
- * and every way out of Edit asks first about unsaved changes.
+ * version), comparing versions and approving it. Review is the default mode; Edit draws the Visual Designer
+ * (viewModels/designer, embedded) for the selected screen in its place, one editor and one preview at a time, and every
+ * way out of Edit asks first about unsaved changes. The Studio loads the component catalog and the workspace's UI
+ * target once and hands them to the editor (host.catalog, host.target).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', '../services/designActions',
@@ -63,7 +64,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.summary = ko.pureComputed(() => this.requirements().find((r) => r.id === this.requirementId()) || null);
       this.flow = ko.observable(null);
       this.changes = ko.observableArray([]);
+      // The component catalog (type → label) and each workspace's UI target, loaded once for the Studio and its editor
       const catalog = {};
+      let catalogLoad = null;
+      const catalogTypes = () => {
+        if (!catalogLoad) {
+          catalogLoad = api.get('design/catalog').catch((error) => { catalogLoad = null; throw error; });
+        }
+        return catalogLoad;
+      };
+      const targets = {};
+      const targetOf = (workspaceId) => {
+        if (!targets[workspaceId]) {
+          targets[workspaceId] = api.get('workspaces/' + workspaceId + '/target').catch((error) => { delete targets[workspaceId]; throw error; });
+        }
+        return targets[workspaceId];
+      };
 
       // --- the screens, by id, and the groups (each functional requirement, all screens, the others) ---
 
@@ -302,10 +318,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.hasNext = ko.pureComputed(() => this.screenIndex() >= 0 && this.screenIndex() < this.flowScreens().length - 1);
       this.position = ko.pureComputed(() => (this.screenIndex() < 0 ? '' : 'Screen ' + (this.screenIndex() + 1) + ' of ' + this.flowScreens().length));
 
-      // One tab level for the selected screen; Refine and Edit only for those who may change screens
+      // One tab level for the selected screen in Review; Refine only for those who may change screens (Edit is the mode)
       this.tab = ko.observable('coverage');
       this.tabs = ko.pureComputed(() => ui.tabs(this.tab, [{ value: 'coverage', label: 'Coverage' }]
-        .concat(this.canDesign() ? [{ value: 'refine', label: 'Refine' }, { value: 'edit', label: 'Edit' }] : [])
+        .concat(this.canDesign() ? [{ value: 'refine', label: 'Refine' }] : [])
         .concat([{ value: 'compare', label: 'Compare versions' }])));
       this.tabKey = (event) => {
         const list = this.tabs();
@@ -323,53 +339,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return false;
       };
-      this.canDesign.subscribe((can) => { if (!can && (this.tab() === 'refine' || this.tab() === 'edit')) { this.tab('coverage'); } });
-
-      // Quick edit: the screen's title and each field's label and mandatory flag
-      this.editTitle = ko.observable('');
-      this.editFields = ko.observableArray([]);
-      const resetEdit = () => {
-        const s = this.screen();
-        this.editTitle(s && s.model ? s.model.title || '' : '');
-        this.editFields(fieldsOf(s && s.model).filter((c) => c.type !== 'table').map((c) => {
-          const required = ko.observable(c.required === true);
-          return {
-            id: c.id, type: catalog[c.type] || c.type, label: ko.observable(c.label || c.name), required: required,
-            readonly: c.readonly === true || c.type === 'display',
-            requiredLabel: 'Mandatory: ' + (c.label || c.name),
-            toggleRequired: (data, event) => { required(event.target.checked); return true; }
-          };
-        }));
-      };
-      this.screen.subscribe(resetEdit);
-      this.editDirty = ko.pureComputed(() => {
-        const s = this.screen();
-        if (!s || !s.model) {
-          return false;
-        }
-        const fields = fieldsOf(s.model);
-        return (this.editTitle() || '') !== (s.model.title || '') || this.editFields().some((f) => {
-          const c = fields.find((x) => x.id === f.id);
-          return c && ((f.label() || '') !== (c.label || c.name) || f.required() !== (c.required === true));
-        });
-      });
-      this.resetEdit = resetEdit;
-      this.saveEdit = () => {
-        const s = this.screen();
-        const model = clone(s.model);
-        model.title = this.editTitle().trim() || model.title;
-        model.sections.forEach((section) => section.components.forEach((c) => {
-          const f = this.editFields().find((x) => x.id === c.id);
-          if (f) {
-            c.label = (f.label() || '').trim() || c.label;
-            c.required = f.required() ? true : null;
-          }
-        }));
-        return api.put('designs/' + s.id + '/model', { model: model, note: 'Quick edit in the Design Studio' })
-          .then(() => reloadFlow())
-          .then(() => toast.success('Saved as version ' + (screenById(s.id) ? screenById(s.id).currentVersion : '') + '.'))
-          .catch(actionError);
-      };
+      this.canDesign.subscribe((can) => { if (!can && this.tab() === 'refine') { this.tab('coverage'); } });
 
       // Refine with the AI: a plain-language change to the whole screen
       this.instruction = ko.observable('');
@@ -525,6 +495,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         deleted: () => { closeEditor(); Promise.all([loadRequirements(), reloadFlow()]).catch(actionError); },
         leave: () => this.showReview(),
         element: () => document.getElementById('studioEditor'),
+        catalog: catalogTypes,
+        target: targetOf,
         // The journey strip follows the server's flow order (each review and confirmation after its initiate screen)
         order: () => this.screens().map((s) => s.id)
       };
@@ -1021,7 +993,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!this.selectedScreenId() || !screenById(this.selectedScreenId()) || ids.indexOf(this.selectedScreenId()) < 0) {
           this.selectedScreenId(this.group() && this.group().screens.length ? this.group().screens[0] : null);
         }
-        resetEdit();
         loadVersions();
         // A change shows the current version again; the frame gets the new model (a new frame asks when ready)
         this.shownVersion(null);
@@ -1191,7 +1162,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.requirementId(choice);
         }
       };
-      const loadTarget = (id) => api.get('workspaces/' + id + '/target')
+      const loadTarget = (id) => targetOf(id)
         .then((target) => { if (id === this.workspaceId() && target.preview) { this.previewKind(target.preview); } })
         .catch(() => null);
       const loadWorkspace = () => {
@@ -1203,6 +1174,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.requirements([]);
           return Promise.resolve();
         }
+        // Asked again on each workspace load (the target may have changed on another page), then shared with the editor
+        delete targets[id];
         loadTarget(id);
         return loadRequirements()
           .then((list) => screenRequest(list).then((forScreen) => {
@@ -1224,7 +1197,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
           observeStage();
         }
-        api.get('design/catalog').then((types) => types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); })).catch(() => null);
+        catalogTypes().then((types) => types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); })).catch(() => null);
         subscription = this.workspaceId.subscribe(loadWorkspace);
         workspaceSelection.load().then((list) => {
           list.forEach((w) => { bankNames[w.id] = w.bankName; indexed[w.id] = w.indexedRevision !== null && w.indexedRevision !== undefined; });
