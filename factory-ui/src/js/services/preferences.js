@@ -6,7 +6,10 @@
  */
 define(['knockout'], function (ko) {
   const KEY = 'factory.preferences';
+  // studio*: the Design Studio's layout (Review expanded, Edit expanded, the readiness panel folded: '' follows the window,
+  // the Screens panel hidden)
   const DEFAULTS = { theme: 'light', density: 'comfortable', landing: 'overview', workspace: '', hour12: true, textSize: 'normal', assistant: true, sidebarCollapsed: false,
+    studioExpanded: false, studioEditExpanded: true, studioReadiness: '', studioScreensHidden: false,
     notify: { build: true, agent: true, review: true, system: true } };
   const stored = (() => { try { return JSON.parse(window.localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } })();
   const values = Object.assign({}, DEFAULTS, stored, { notify: Object.assign({}, DEFAULTS.notify, stored.notify || {}) });

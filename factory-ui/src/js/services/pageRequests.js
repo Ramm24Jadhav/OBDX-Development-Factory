@@ -17,6 +17,8 @@ define(['knockout'], function (ko) {
     /** A screen to open in the Design Studio's Edit, and a requirement to open in the Design Studio */
     design: ko.observable(null),
     studio: ko.observable(null),
+    /** true while a page wants the app menu folded to icons (the Design Studio's Edit); the shell follows it */
+    foldMenu: ko.observable(false),
     /** A workspace id whose details the Workspaces page opens in its side sheet (from the Code page) */
     workspace: ko.observable(null),
     /** { path, startLine, endLine } a file the Code page opens in its viewer at those lines (from Knowledge Explorer) */

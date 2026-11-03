@@ -99,29 +99,61 @@ two version compares and two screen orders. They are one page now (`docs/DESIGN-
 
 - **Review | Edit** on the selected screen. Review is the default (the BRD-only preview, Coverage, Refine, Compare);
   Edit draws the Visual Designer for that screen in the page (`viewModels/designer` with
-  `{ embedded: true, designId, host }` in an `oj-module`). In Edit the requirements and the flow fold away behind
-  **← Flow**, and the designer's journey strip shows the flow in the server's order. The designer has no title, board,
-  Screens tab or New drawer of its own there.
+  `{ embedded: true, designId, host }` in an `oj-module`). Edit opens expanded (the Screens panel hidden, see "The
+  approved layout" below). The designer has no title, board, Screens tab or New drawer of its own there.
 - **One approval service** (`services/designActions`): approve one screen, a requirement's screens or all of them, and
-  reopen, each asking first; the unsupported-component confirm (`?unsupported=true`) is written once. Approving with
-  unsaved changes offers to save them first.
-- **Unsaved changes** are asked about on switching to Review, another screen (the flow, the journey strip, the BRD
-  picker, a requirement) and leaving the page.
+  reopen, each asking first; the unsupported-component confirm (`?unsupported=true`) is written once. A screen with
+  unsaved changes offers Save changes and no Approve: approval locks a saved version.
+- **Unsaved changes** are asked about on switching to Review, another screen (a card, the screen switcher, the
+  carousel, the BRD picker) and leaving the page.
 - **Scoped to the editor:** Ctrl+Z and Ctrl+Y count only inside it, its element lookups, size observer and preview
   frame are found inside its own element, and only one preview is live at a time (Review's frame is not drawn in Edit).
   Esc with nothing selected goes back to Review.
-- **Entry points** that were the designer's: **+ New screen** (generate, blank, import), **Screens without a BRD** in
-  the BRD picker (blank and imported screens, approved one at a time), and the screen's **More** menu (share, import,
-  review and confirmation screens, delete).
-- **One header in Edit:** the workflow bar is one line (BRD and stage chip); one row holds ← Flow, the screen's name,
-  status and checks, the editor's tools (undo, Design or Code, Preview, Save), Approve or Reopen, Review | Edit and
-  More (share, import, review and confirmation screens, comment, delete). The designer has no title, card head or
-  approval row of its own, so the canvas starts about 420 px from the top at 1440 × 900.
+- **Entry points** that were the designer's: **+ New screen** (generate, blank, import), **Without a BRD** in the
+  Screens panel's requirement dropdown (blank and imported screens, approved one at a time), and the screen's **More**
+  menu (share, import, review and confirmation screens, delete).
 - **Workspace changes ask too** (`workspaceSelection.guardChange`), as do the BRD picker, an upload and Back; a
   workspace change and a page leave that come together share one question.
 - **Phones:** below 768 px Edit says "Use a wider screen to edit this screen"; Review works.
 - **Links:** the `designer` route redirects to `studio`; `pageRequests.design(id)` opens the screen in Edit;
   `?ojr=studio&requirement=<id>&screen=<id>` opens that screen, and the address follows the selection.
+
+## The approved layout
+
+One reading order, from context to decision, with the factory's own elements (`fx-*`) and tokens (`--fx-*`):
+
+1. **Header, one row:** Design Studio, the BRD picker (no label), the stages (BRD ✓, Spec ✓, Screens ✓, the current
+   one as "Approve 0 of 5 screens" for the whole BRD, Code) and Upload BRD.
+2. **Screens panel** (it replaces the requirements list and the flow column): one functional requirement at a time
+   as a carousel. The title row has the requirement dropdown (in spec order, plus Other screens and Without a BRD),
+   the subtitle, "0 of 3 screens approved", + New screen, Approve All and ▴ to hide the panel. The cards are the
+   requirement's screens in the server's flow order, joined by →; up to four share the width, from five they are
+   232 px and scroll with snap. ‹ ›, the dots, "Requirement 1 of 4", the dropdown and ←/→ stay in step; with one
+   requirement they are left out. The requirement in the address picks the BRD; the screen picks the slide.
+3. **The selected screen:** its name and status chip; "Requirement FR-001 · Step 1 of 3 · stage · Version 8"; on the
+   right the ‹ 1 / 5 › switcher (whole BRD), More, Approve screen or Reopen, and ⤢ Expand, which hides the Screens
+   panel and the readiness panel ("Exit full view"). Then Review | Edit, and in Review the Phone/Tablet/Desktop
+   switch.
+4. **Ready to approve?** beside the Review preview: "3 of 4 checks need attention"; an accordion (one row open) of
+   Acceptance criteria (Add it), Open decisions (Resolve), Values to confirm (Confirm) and OBDX compatibility (from
+   `design-compatibility`); Refine with AI and Compare versions at its foot. » folds it to a 56 px rail with the count.
+   It uses the data the server already gives (the flow, the spec, the compatibility evidence).
+5. **Edit** opens expanded, with the app menu folded to icons; ⤡ Show the screens brings the panel back. One 48 px
+   toolbar of 32 px controls ([Undo|Redo] [Design|Code] [Phone|Tablet|Desktop] … the compatibility chip, Fit ▾,
+   Preview); the canvas at the screen's full height (the preview frame reports its height, `factory-preview-size`, so
+   the page scrolls and the canvas does not); Ask AI under it and the Behaviour strip (Rules, APIs, Hosts, Roles,
+   Validations, AI Assistant) at the bottom. Expanded, and at 1024 px and below, the side panels are rails (Components,
+   Layers; Checks with its count, Properties, Comments, History) that open one floating panel at a time; otherwise
+   they are docked 260 and 320 px columns, sticky, scrolling inside. The palette is a search, tiles by group (Layout,
+   Form controls, Data display, Actions), the workspace's groups as rows with their counts and + Create component;
+   Layers is the real tree with each row's type. While a change is unsaved there is Save changes and no Approve;
+   after saving, "✓ Saved" and Approve screen. An approved screen is read-only with "Reopen to edit".
+6. **Phones** (below 768 px): the BRD picker and the stage as dots, the requirement dropdown and a screen switcher, the
+   checks folded into one line, and a fixed bottom bar with More and Approve screen. Edit says to use a wider screen.
+
+Expand (Review and Edit each), the readiness fold (folded by default below 1366 px) and the hidden Screens panel are
+kept per user (`services/preferences`). At 1024 and 768 px the page has no horizontal scroll. Validation and Focus
+order are in the Fit menu; the AI Assistant stayed a tab of the Behaviour strip.
 
 ## Server support
 

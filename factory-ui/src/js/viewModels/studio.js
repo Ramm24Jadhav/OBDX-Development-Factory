@@ -1,32 +1,28 @@
 /*
- * Design Studio: the workspace from a BRD to approved screens. A workflow bar that stays at the top (the BRD, five
- * stages and the next action); the BRD's functional requirements with their screens and what is still open; the
- * selected requirement's screen flow; and the selected screen's preview as a phone, tablet or desktop, with the
- * acceptance criteria it helps meet, values the BRD leaves to an analyst, refining it (the AI, back to the generated
- * version), comparing versions and approving it. Review is the default mode; Edit draws the Visual Designer
+ * Design Studio: the workspace from a BRD to approved screens, read top to bottom: a header (the BRD and its five
+ * stages); the Screens panel (one requirement at a time, its screens as cards in flow order, with a dropdown, arrows and
+ * dots to move between requirements); the selected screen (name, step and status, the switcher, More, Approve,
+ * Expand), then Review (the BRD-only preview as a phone, tablet or desktop, and "Ready to approve?": acceptance
+ * criteria, open decisions, values to confirm and compatibility, Refine with AI, Compare versions; the panel folds to
+ * a rail) or Edit. Expand gives the screen the page. Review is the default mode; Edit draws the Visual Designer
  * (viewModels/designer, embedded) for the selected screen in its place, one editor and one preview at a time, and every
  * way out of Edit asks first about unsaved changes. The Studio loads the component catalog and the workspace's UI
  * target once and hands them to the editor (host.catalog, host.target).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', '../services/designActions',
-        '../services/designDiff', './designer', 'ojs/ojmodule-element-utils', 'ojs/ojknockout', 'ojs/ojmodule-element'],
+        '../services/designDiff', '../services/preferences', './designer', 'ojs/ojmodule-element-utils', 'ojs/ojknockout', 'ojs/ojmodule-element'],
   function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog, designActions, designDiff,
-            DesignerViewModel, moduleUtils) {
+            preferences, DesignerViewModel, moduleUtils) {
     const POLL_MS = 4000;
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In review', APPROVED: 'Approved' };
     const STAGE_WORDS = { initiate: 'Enter details', review: 'Review', confirm: 'Confirmation', inquiry: 'List or details' };
-    const CHANNEL_WORDS = { desktop: 'Desktop', tablet: 'Tablet', 'mobile-web': 'Mobile web', 'mobile-app': 'Mobile app' };
     const ORIGIN_WORDS = { GENERATED: 'generated from the spec', EDITED: 'edited', AI: 'changed by the AI', BLANK: 'blank', IMPORTED: 'imported', RESTORED: 'restored' };
-    const PRIORITY_TONES = { must: 'danger', high: 'danger', should: 'warning', medium: 'warning', could: 'info', low: 'info' };
     // The page each preview size shows, in CSS pixels; phone and tablet use the preview's own narrow layouts
     const DEVICES = { phone: { width: 390, height: 720, label: 'Phone' }, tablet: { width: 820, height: 1000, label: 'Tablet' }, desktop: { width: 1280, height: 800, label: 'Desktop' } };
     // Never smaller than this, so the text stays readable; a wider page scrolls inside the preview instead
     const MIN_SCALE = 0.8;
-    const priorityBadge = (priority) => (priority
-      ? { text: priority, css: 'fx-badge fx-badge--plain fx-badge--' + (PRIORITY_TONES[priority.toLowerCase().split(/\W/)[0]] || 'neutral') }
-      : null);
     const storageKey = (workspaceId) => 'factory.studio.requirement.' + workspaceId;
     const remember = (key, value) => { try { window.localStorage.setItem(key, value); } catch (e) { /* private window */ } };
     const recall = (key) => { try { return window.localStorage.getItem(key); } catch (e) { return null; } };
@@ -55,17 +51,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.requirements = ko.observableArray([]);
       this.requirementId = ko.observable(null);
-      // Blank and imported screens, and screens whose BRD is gone: picked as "Screens without a BRD" (requirementId NONE)
+      // Blank and imported screens, and screens whose BRD is gone: the Screens panel's "Without a BRD" requirement, with
+      // every BRD (requirementId NONE only when the workspace has no BRD at all)
       this.looseDesigns = ko.observableArray([]);
-      this.loose = ko.pureComputed(() => this.requirementId() === NONE);
       this.requirementOptions = ko.pureComputed(() => this.requirements().map((r) => ({
         value: r.id, label: r.title, description: (r.fileName || 'Text request') + ' · ' + ui.status(r.status).text
-      })).concat(this.looseDesigns().length ? [{ value: NONE, label: 'Screens without a BRD', description: plural(this.looseDesigns().length, 'blank or imported screen', 'blank or imported screens') }] : []));
+      })));
       this.summary = ko.pureComputed(() => this.requirements().find((r) => r.id === this.requirementId()) || null);
       this.flow = ko.observable(null);
       this.changes = ko.observableArray([]);
       // The component catalog (type → label) and each workspace's UI target, loaded once for the Studio and its editor
       const catalog = {};
+      // The catalog's types once loaded (the readiness panel's compatibility check needs their JET elements)
+      const catalogList = ko.observable(null);
+      this.obdxVersion = ko.pureComputed(() => workspaceSelection.selectedVersion() || '');
       let catalogLoad = null;
       const catalogTypes = () => {
         if (!catalogLoad) {
@@ -81,38 +80,56 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return targets[workspaceId];
       };
 
-      // --- the screens, by id, and the groups (each functional requirement, all screens, the others) ---
+      // --- the screens, by id, and the requirements they are grouped by (the Screens panel's slides) ---
 
       this.screens = ko.pureComputed(() => (this.flow() ? this.flow().screens : []));
+      // The BRD's own screens (in the server's flow order), without the workspace's screens that have no BRD
+      const brdScreens = ko.pureComputed(() => this.screens().filter((s) => !s.loose));
       const screenById = (id) => this.screens().find((s) => s.id === id) || null;
-      const approvedCount = (ids) => ids.filter((id) => { const s = screenById(id); return s && s.status === 'APPROVED'; }).length;
       const criterionByKey = (key) => (this.flow() ? this.flow().criteria.find((c) => criterionKey(c) === key) : null) || { id: '', description: key, requirements: [] };
 
-      this.groupKey = ko.observable('all');
-      this.search = ko.observable('');
-      this.priority = ko.observable('all');
+      this.groupKey = ko.observable(null);
+      // One slide per functional requirement of the spec, in its order; then the screens no requirement names, and the
+      // workspace's screens without a BRD. A spec without requirements has one slide with all its screens.
       const allGroups = ko.pureComputed(() => {
         const flow = this.flow();
         if (!flow) {
           return [];
         }
-        const groups = [{
-          key: 'all', id: '', title: 'All screens', description: flow.title, priority: null,
-          screens: flow.screens.map((s) => s.id), rules: flow.rules, criteria: flow.criteria, all: true
-        }];
-        flow.requirements.forEach((r, i) => groups.push({
+        const groups = flow.requirements.map((r, i) => ({
           key: 'fr' + i, id: r.id || '', title: r.title || r.description || 'Requirement ' + (i + 1), description: r.description,
           priority: r.priority, screens: r.screens, screenNames: r.screenNames, rules: r.rules, criteria: r.criteria
         }));
-        if (flow.others.length > 0 && flow.requirements.length > 0) {
-          groups.push({
-            key: 'others', id: '', title: 'Other screens', description: 'Screens no functional requirement names, for example renamed ones.',
-            priority: null, screens: flow.others, rules: [], criteria: []
-          });
+        const own = brdScreens().map((s) => s.id);
+        if (groups.length === 0 && own.length > 0) {
+          groups.push({ key: 'all', id: '', title: 'All screens', description: flow.title, priority: null, screens: own, rules: flow.rules, criteria: flow.criteria, all: true });
+        } else if (flow.others.length > 0) {
+          groups.push({ key: 'others', id: '', title: 'Other screens', description: 'Screens no functional requirement names, for example renamed ones.', priority: null, screens: flow.others, rules: [], criteria: [] });
+        }
+        const loose = this.screens().filter((s) => s.loose).map((s) => s.id);
+        if (loose.length > 0) {
+          groups.push({ key: 'loose', id: '', title: 'Without a BRD', description: 'Blank and imported screens, and screens whose BRD was deleted.', priority: null, screens: loose, rules: [], criteria: [], loose: true });
         }
         return groups;
       });
-      // What is still open in a group: criteria no screen covers, and questions about it the spec leaves unanswered
+      this.group = ko.pureComputed(() => allGroups().find((g) => g.key === this.groupKey()) || allGroups()[0] || null);
+      // The selected screen's group is a group of screens without a BRD: no stages, approved one at a time
+      this.loose = ko.pureComputed(() => this.requirementId() === NONE || (!!this.group() && !!this.group().loose));
+      const groupLabel = (g) => (g.loose ? 'Without a BRD' : g.id ? g.id + ' · ' + g.title : g.title);
+      this.groupOptions = ko.pureComputed(() => allGroups().map((g) => ({ value: g.key, label: groupLabel(g) })));
+      this.manyGroups = ko.pureComputed(() => allGroups().length > 1);
+      this.groupIndex = ko.pureComputed(() => Math.max(0, allGroups().findIndex((g) => g.key === (this.group() || {}).key)));
+      this.groupPosition = ko.pureComputed(() => 'Requirement ' + (this.groupIndex() + 1) + ' of ' + allGroups().length);
+      this.hasPreviousGroup = ko.pureComputed(() => this.groupIndex() > 0);
+      this.hasNextGroup = ko.pureComputed(() => this.groupIndex() < allGroups().length - 1);
+      this.groupDots = ko.pureComputed(() => allGroups().map((g, i) => ({
+        label: 'Show ' + (g.id || g.title),
+        css: 'factory-studio-dot' + (i === this.groupIndex() ? ' is-current' : ''),
+        current: i === this.groupIndex() ? 'true' : 'false',
+        pick: () => this.pickGroup(g.key)
+      })));
+
+      // What is open for a group: criteria no screen covers, and questions the spec leaves unanswered
       const uncoveredOf = (g) => {
         const flow = this.flow();
         if (!flow || !g) {
@@ -121,81 +138,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const keys = g.all ? flow.uncovered : g.criteria.map(criterionKey).filter((k) => flow.uncovered.indexOf(k) >= 0);
         return keys.map(criterionByKey);
       };
-      const questionsOf = (g) => {
-        const flow = this.flow();
-        if (!flow || !g) {
-          return [];
-        }
-        return g.all ? flow.questions : flow.questions.filter((q) => (g.id && q.requirements.indexOf(g.id) >= 0)
-          || q.screens.some((id) => g.screens.indexOf(id) >= 0));
-      };
-      const screenDecisionsOf = (g) => (g ? g.screens.reduce((n, id) => n + ((screenById(id) || {}).decisions || []).length, 0) : 0);
-      const unconfirmedOf = (g) => (g ? g.screens.reduce((n, id) => n + ((screenById(id) || {}).unconfirmed || []).length, 0) : 0);
-      const flag = (n, one, many, tone) => (n > 0 ? [{ text: plural(n, one, many), css: 'fx-badge fx-badge--plain fx-badge--' + tone }] : []);
-      this.priorities = ko.pureComputed(() => {
-        const seen = [];
-        allGroups().forEach((g) => { if (g.priority && seen.indexOf(g.priority) < 0) { seen.push(g.priority); } });
-        return seen.length < 2 ? [] : ['all'].concat(seen).map((p) => ({
-          label: p === 'all' ? 'All' : p,
-          pressed: ko.pureComputed(() => (this.priority() === p ? 'true' : 'false')),
-          pick: () => this.priority(p)
-        }));
-      });
-      this.groups = ko.pureComputed(() => {
-        const text = this.search().trim().toLowerCase();
-        return allGroups()
-          .filter((g) => g.key === 'all' || this.priority() === 'all' || g.priority === this.priority())
-          .filter((g) => !text || (g.id + ' ' + g.title + ' ' + (g.description || '')).toLowerCase().indexOf(text) >= 0)
-          .map((g) => {
-            const approved = approvedCount(g.screens);
-            return {
-              key: g.key, id: g.id, title: g.title, priority: priorityBadge(g.priority),
-              count: g.screens.length === 0 ? 'No screen' : plural(g.screens.length, 'screen', 'screens'),
-              progress: g.screens.length === 0 ? '' : approved + '/' + g.screens.length + ' approved',
-              progressCss: 'factory-studio-req-progress' + (g.screens.length > 0 && approved === g.screens.length ? ' is-done' : ''),
-              flags: flag(uncoveredOf(g).length, 'criterion not covered', 'criteria not covered', 'danger')
-                .concat(flag(questionsOf(g).length + screenDecisionsOf(g), 'decision open', 'decisions open', 'violet'))
-                .concat(flag(unconfirmedOf(g), 'value to confirm', 'values to confirm', 'warning')),
-              css: ko.pureComputed(() => 'factory-studio-req' + (this.groupKey() === g.key ? ' is-selected' : '')),
-              current: ko.pureComputed(() => (this.groupKey() === g.key ? 'true' : null)),
-              pick: () => this.pickGroup(g.key)
-            };
-          });
-      });
-      this.group = ko.pureComputed(() => allGroups().find((g) => g.key === this.groupKey()) || allGroups()[0] || null);
-      this.groupPriority = ko.pureComputed(() => (this.group() ? priorityBadge(this.group().priority) : null));
-      this.groupRules = ko.pureComputed(() => (this.group() ? this.group().rules.map((r) => (r.id ? r.id + ': ' : '') + r.description) : []));
-      this.groupCriteria = ko.pureComputed(() => {
-        const flow = this.flow();
-        return this.group() && flow ? this.group().criteria.map((c) => {
-          const covered = flow.uncovered.indexOf(criterionKey(c)) < 0;
-          return {
-            id: c.id || '', text: c.description, mark: covered ? 'Covered' : 'Not covered',
-            markCss: 'factory-studio-mark' + (covered ? ' is-covered' : ' is-gap'),
-            iconCss: 'factory-nav-icon ' + (covered ? 'factory-ico-check' : 'factory-ico-alert')
-          };
-        }) : [];
-      });
-      this.groupDescription = ko.pureComputed(() => {
-        const g = this.group();
-        return g && g.key !== 'all' && g.description && g.description !== g.title ? g.description : '';
-      });
-      this.missingScreens = ko.pureComputed(() => {
-        const g = this.group();
-        return g && g.screenNames && g.screens.length === 0 && g.screenNames.length > 0 ? g.screenNames.join(', ') : '';
-      });
-      this.groupUncovered = ko.pureComputed(() => {
-        const flow = this.flow();
-        return uncoveredOf(this.group()).map((c) => {
-          const screenless = c.requirements.filter((id) => flow.requirements.some((r) => r.id && r.id.toLowerCase() === id.toLowerCase()));
-          return {
-            id: c.id || '', text: c.description,
-            why: c.requirements.length === 0 ? 'Linked to no requirement.'
-              : screenless.length > 0 ? 'Its requirement (' + screenless.join(', ') + ') has no screen.' : 'Its requirement is not in the spec.'
-          };
-        });
-      });
-      this.uncoveredTitle = ko.pureComputed(() => plural(this.groupUncovered().length, 'acceptance criterion', 'acceptance criteria') + ' not covered by a screen');
       const questionView = (q) => {
         const names = q.screens.map((id) => (screenById(id) || {}).name).filter(Boolean);
         const scope = q.requirements.concat(names);
@@ -204,52 +146,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .filter(Boolean).join(' · ');
         return { question: q.question, detail: detail, scope: scope.length ? scope.join(' · ') : 'Whole BRD' };
       };
-      // Open decisions: the spec's unanswered questions, then those the BRD leaves open on each screen of the group
-      const screenDecisionViews = (ids) => ids.map(screenById).filter(Boolean)
-        .reduce((all, s) => all.concat((s.decisions || []).map((text) => ({ question: text, detail: '', scope: s.name }))), []);
-      this.groupQuestions = ko.pureComputed(() => questionsOf(this.group()).map(questionView)
-        .concat(this.group() ? screenDecisionViews(this.group().screens) : []));
-      this.questionsTitle = ko.pureComputed(() => plural(this.groupQuestions().length, 'design decision', 'design decisions') + ' still open');
 
-      // --- the selected group's screens, in flow order ---
+      // --- the selected group's screens, as cards in flow order ---
 
       this.selectedScreenId = ko.observable(null);
-      // One item per screen, kept while the screen is shown, so the list is not drawn again after each change
+      // One card per screen, kept while the screen is shown, so the row is not drawn again after each change
       const items = {};
       const itemFor = (id) => {
         if (!items[id]) {
-          const status = ko.observable(ui.status('DRAFT'));
           const approved = ko.observable(false);
           items[id] = {
-            id: id, number: ko.observable(''), name: ko.observable(''), stage: ko.observable(''),
-            status: status, approved: approved, criteria: ko.observableArray([]), toConfirm: ko.observable(''), decisions: ko.observable(''),
-            statusText: ko.pureComputed(() => status().text), statusIcon: ko.pureComputed(() => status().iconCss),
+            id: id, number: ko.observable(''), name: ko.observable(''), meta: ko.observable(''), warn: ko.observable(''), approved: approved,
             css: ko.pureComputed(() => 'factory-studio-node' + (this.selectedScreenId() === id ? ' is-selected' : '') + (approved() ? ' is-approved' : '')),
             pressed: ko.pureComputed(() => (this.selectedScreenId() === id ? 'true' : 'false')),
+            current: ko.pureComputed(() => (this.selectedScreenId() === id ? 'true' : null)),
             pick: () => this.selectScreen(id)
           };
         }
         return items[id];
       };
-      // The list itself changes only when its screens do; otherwise the items update in place
       this.flowScreens = ko.observableArray([]);
       ko.computed(() => {
         const g = this.group();
         const flow = this.flow();
+        const own = brdScreens();
         const list = g ? g.screens.map(screenById).filter(Boolean) : [];
-        const next = list.map((s, i) => {
+        const next = list.map((s) => {
           const item = itemFor(s.id);
           const questions = flow ? flow.questions.filter((q) => q.screens.indexOf(s.id) >= 0).length : 0;
-          item.number(String(i + 1));
+          const at = own.indexOf(s);
+          // Numbered through the whole BRD, so a screen keeps its number in every requirement
+          item.number(s.loose ? '–' : String(at + 1));
           item.name(s.name);
-          item.stage(STAGE_WORDS[s.stage] || 'Screen');
-          item.status(ui.status(s.status, DESIGN_WORDS[s.status]));
-          item.approved(s.status === 'APPROVED');
-          const criteria = (s.criteria || []).map((k) => criterionByKey(k).id || 'Criterion');
-          item.criteria(criteria.length > 4 ? criteria.slice(0, 3).concat(['+' + (criteria.length - 3)]) : criteria);
-          item.toConfirm((s.unconfirmed || []).length ? (s.unconfirmed || []).length + ' to confirm' : '');
+          item.meta((s.loose ? (ORIGIN_WORDS[s.origin] ? s.origin.charAt(0) + s.origin.slice(1).toLowerCase() : 'Blank') : (STAGE_WORDS[s.stage] || 'Screen')) + ' · ' + (DESIGN_WORDS[s.status] || ui.status(s.status).text));
           const open = questions + (s.decisions || []).length;
-          item.decisions(open ? plural(open, 'decision', 'decisions') : '');
+          item.warn([(s.unconfirmed || []).length ? (s.unconfirmed || []).length + ' to confirm' : '', open ? plural(open, 'decision', 'decisions') : '']
+            .filter(Boolean).map((w) => ' · ' + w).join(''));
+          item.approved(s.status === 'APPROVED');
           return item;
         });
         const current = this.flowScreens.peek();
@@ -257,18 +190,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.flowScreens(next);
         }
       });
-      this.groupProgress = ko.pureComputed(() => {
+      // Up to four cards share the row's width; from five they keep 232 px and the row scrolls
+      this.cardsCss = ko.pureComputed(() => 'factory-studio-nodes' + (this.flowScreens().length > 4 ? ' is-scrolling' : ''));
+      this.groupUnapproved = ko.pureComputed(() => this.flowScreens().filter((s) => !s.approved()).map((s) => s.id));
+      this.groupCount = ko.pureComputed(() => {
         const list = this.flowScreens();
         const approved = list.filter((s) => s.approved()).length;
-        return list.length === 0 ? '' : approved + ' of ' + list.length + ' approved';
+        return list.length === 0 ? '' : approved + ' of ' + plural(list.length, 'screen', 'screens') + ' approved' + (list.length > 4 ? ' · scroll for more →' : '');
       });
-      this.groupUnapproved = ko.pureComputed(() => this.flowScreens().filter((s) => !s.approved()).map((s) => s.id));
-      this.approveGroupLabel = ko.pureComputed(() => {
-        const n = this.groupUnapproved().length;
+      this.missingScreens = ko.pureComputed(() => {
         const g = this.group();
-        return 'Approve ' + (n === 1 ? 'this screen' : (g && g.key === 'all' ? 'all ' : 'the ') + n + ' screens');
+        return g && g.screenNames && g.screens.length === 0 && g.screenNames.length > 0 ? g.screenNames.join(', ') : '';
       });
-      // Arrow keys move through the flow; the screen under the focus is shown
+      // Arrow keys, Home and End move through the cards; the screen under the focus is shown
       this.nodeKey = (event) => {
         const list = this.flowScreens();
         const at = list.findIndex((s) => s.id === this.selectedScreenId());
@@ -277,11 +211,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return true;
         }
         event.preventDefault();
+        event.stopPropagation();
         const to = list[Math.max(0, Math.min(list.length - 1, moves[event.key]))];
-        this.selectScreen(to.id);
-        const node = document.querySelector('[data-studio-node="' + to.id + '"]');
-        if (node) {
-          node.focus();
+        this.selectScreen(to.id).then(() => {
+          const node = document.querySelector('[data-studio-node="' + to.id + '"]');
+          if (node) {
+            node.focus();
+            node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }
+        });
+        return false;
+      };
+      // ← and → on the Screens panel (outside the cards) move to the previous or next requirement
+      this.carouselKey = (event) => {
+        if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || (event.target && event.target.closest && event.target.closest('fx-select, input, [data-studio-node]'))) {
+          return true;
+        }
+        event.preventDefault();
+        if (event.key === 'ArrowLeft') {
+          this.previousGroup();
+        } else {
+          this.nextGroup();
         }
         return false;
       };
@@ -290,57 +240,77 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.screen = ko.pureComputed(() => screenById(this.selectedScreenId()));
       this.screenStatus = ko.pureComputed(() => (this.screen() ? ui.status(this.screen().status, DESIGN_WORDS[this.screen().status]) : null));
+      // "Requirement FR-001 · Step 1 of 3 · Enter details · Version 8"
       this.screenMeta = ko.pureComputed(() => {
         const s = this.screen();
+        const g = this.group();
         if (!s) {
           return '';
         }
-        return (STAGE_WORDS[s.stage] || 'Screen') + ' · version ' + s.currentVersion
-          + (s.status === 'APPROVED' && s.approvedBy ? ' · approved by ' + s.approvedBy : '');
+        const step = g ? g.screens.indexOf(s.id) : -1;
+        const where = s.loose ? 'Without a BRD' : g && g.id ? 'Requirement ' + g.id : g ? g.title : '';
+        return [where, step >= 0 && g.screens.length > 1 ? 'Step ' + (step + 1) + ' of ' + g.screens.length : '',
+          s.loose ? '' : (STAGE_WORDS[s.stage] || 'Screen'), 'Version ' + s.currentVersion,
+          s.status === 'APPROVED' && s.approvedBy ? 'approved by ' + s.approvedBy : ''].filter(Boolean).join(' · ');
       });
       this.screenEditable = ko.pureComputed(() => !!this.screen() && this.screen().status !== 'APPROVED' && this.canDesign());
       this.screenLocked = ko.pureComputed(() => !!this.screen() && this.screen().status === 'APPROVED');
       this.lockedText = ko.pureComputed(() => (this.screenLocked() ? 'Approved and locked. Reopen it to change it.'
         : 'You can view this screen. Changing screens needs the Analyst or Developer role.'));
       this.screenNeedsSteps = ko.pureComputed(() => !!this.screen() && this.screen().needsSteps && this.screenEditable());
-      this.screenCriteria = ko.pureComputed(() => (this.screen() ? (this.screen().criteria || []).map((k) => {
-        const c = criterionByKey(k);
-        return { id: c.id || 'Criterion', text: c.description };
-      }) : []));
       this.screenUnconfirmed = ko.pureComputed(() => (this.screen() ? this.screen().unconfirmed || [] : []));
       this.screenQuestions = ko.pureComputed(() => (this.screen() && this.flow()
         ? this.flow().questions.filter((q) => q.screens.indexOf(this.screen().id) >= 0).map(questionView)
           .concat((this.screen().decisions || []).map((text) => ({ question: text, detail: '', scope: '' }))) : []));
-      this.screenIndex = ko.pureComputed(() => this.flowScreens().findIndex((s) => s.id === this.selectedScreenId()));
-      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { this.selectScreen(this.flowScreens()[i - 1].id); } };
-      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < this.flowScreens().length - 1) { this.selectScreen(this.flowScreens()[i + 1].id); } };
+      // The ‹ 1 / 5 › switcher goes through the whole BRD (or through the screens without a BRD)
+      const switchList = ko.pureComputed(() => {
+        const s = this.screen();
+        return s && s.loose ? this.screens().filter((x) => x.loose) : brdScreens();
+      });
+      this.screenIndex = ko.pureComputed(() => switchList().findIndex((s) => s.id === this.selectedScreenId()));
       this.hasPrevious = ko.pureComputed(() => this.screenIndex() > 0);
-      this.hasNext = ko.pureComputed(() => this.screenIndex() >= 0 && this.screenIndex() < this.flowScreens().length - 1);
-      this.position = ko.pureComputed(() => (this.screenIndex() < 0 ? '' : 'Screen ' + (this.screenIndex() + 1) + ' of ' + this.flowScreens().length));
+      this.hasNext = ko.pureComputed(() => this.screenIndex() >= 0 && this.screenIndex() < switchList().length - 1);
+      this.position = ko.pureComputed(() => (this.screenIndex() < 0 ? '' : (this.screenIndex() + 1) + ' / ' + switchList().length));
+      this.positionLabel = ko.pureComputed(() => (this.screenIndex() < 0 ? 'Screens' : 'Screen ' + (this.screenIndex() + 1) + ' of ' + switchList().length));
+      /** Selects a screen and the requirement it is in (the switcher can cross requirements). */
+      const showScreen = (id) => guard().then((ok) => {
+        if (!ok) {
+          return false;
+        }
+        const g = this.group();
+        if (!g || g.screens.indexOf(id) < 0) {
+          const other = allGroups().find((x) => x.screens.indexOf(id) >= 0);
+          if (other) {
+            this.groupKey(other.key);
+          }
+        }
+        this.selectedScreenId(id);
+        return true;
+      });
+      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { showScreen(switchList()[i - 1].id); } };
+      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < switchList().length - 1) { showScreen(switchList()[i + 1].id); } };
+      this.showScreen = showScreen;
 
-      // One tab level for the selected screen in Review; Refine only for those who may change screens (Edit is the mode)
-      this.tab = ko.observable('coverage');
-      this.tabs = ko.pureComputed(() => ui.tabs(this.tab, [{ value: 'coverage', label: 'Coverage' }]
-        .concat(this.canDesign() ? [{ value: 'refine', label: 'Refine' }] : [])
-        .concat([{ value: 'compare', label: 'Compare versions' }])));
-      this.tabKey = (event) => {
-        const list = this.tabs();
-        const at = list.findIndex((t) => t.value === this.tab());
-        const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: list.length - 1 }[event.key];
-        if (to === undefined) {
+      // Review | Edit: one tab list; arrow keys, Home and End move between the two
+      this.modeKey = (event) => {
+        const to = { ArrowRight: 'edit', ArrowLeft: 'review', Home: 'review', End: 'edit' }[event.key];
+        if (!to) {
           return true;
         }
         event.preventDefault();
-        const tab = list[(to + list.length) % list.length];
-        this.tab(tab.value);
-        const button = document.getElementById('studio-tab-' + tab.value);
-        if (button) {
-          button.focus();
-        }
+        Promise.resolve(to === 'edit' ? this.showEdit() : this.showReview()).then(() => {
+          const button = document.getElementById('studioMode-' + this.mode());
+          if (button) {
+            button.focus();
+          }
+        });
         return false;
       };
-      this.canDesign.subscribe((can) => { if (!can && this.tab() === 'refine') { this.tab('coverage'); } });
 
+      // The readiness panel shows its checks, or the version compare ("Compare versions")
+      this.readinessView = ko.observable('checks');
+      this.showCompare = () => this.readinessView('compare');
+      this.showChecksList = () => this.readinessView('checks');
       // Refine with the AI: a plain-language change to the whole screen
       this.instruction = ko.observable('');
       this.refining = ko.observable(false);
@@ -436,7 +406,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const s = this.screen();
         const from = Number(this.compareFrom());
         const to = Number(this.compareTo());
-        if (!s || !from || !to || this.tab() !== 'compare') {
+        if (!s || !from || !to || this.readinessView() !== 'compare') {
           return;
         }
         if (from === to) {
@@ -465,6 +435,98 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.showCurrent = () => { this.shownVersion(null); sendAll(); };
 
+      // --- Ready to approve? Four checks of the selected screen, from the server's data, one open at a time ---
+
+      // The screen's elements against the workspace's OBDX version (as the editor's compatibility marks)
+      const compat = ko.observable(null);
+      let compatFor = null;
+      ko.computed(() => {
+        const s = this.screen();
+        const types = catalogList();
+        const ws = this.workspaceId();
+        if (!s || !s.model || !types || !ws) {
+          return;
+        }
+        const names = [];
+        const jet = {};
+        types.forEach((t) => { const m = t.jetComponent ? /^[a-z][a-z0-9-]*/.exec(t.jetComponent) : null; jet[t.type] = m ? m[0] : null; });
+        fieldsOf(s.model).forEach((c) => {
+          const e = c.type === 'component' ? c.component : jet[c.type];
+          if (e && names.indexOf(e) < 0) {
+            names.push(e);
+          }
+        });
+        if (s.model.actions.length) {
+          names.push('oj-button');
+        }
+        const key = ws + '|' + s.id + '@' + s.currentVersion;
+        if (key === compatFor) {
+          return;
+        }
+        compatFor = key;
+        compat(null);
+        if (names.length === 0) {
+          compat({ version: '', elements: [] });
+          return;
+        }
+        api.get('workspaces/' + encodeURIComponent(ws) + '/design-compatibility?' + names.sort().map((n) => 'element=' + encodeURIComponent(n)).join('&'))
+          .then((report) => { if (compatFor === key) { compat({ version: report.obdxVersion, elements: report.elements }); } })
+          .catch(() => { if (compatFor === key) { compatFor = null; } });
+      });
+      this.openCheck = ko.observable('criteria');
+      // "Add it" asks the AI (the Refine box) for what a criterion needs; "Resolve" opens the spec; "Confirm" opens the field
+      const askFor = (text) => {
+        this.instruction(text);
+        window.setTimeout(() => { const box = document.querySelector('#studioRefine input'); if (box) { box.focus(); } }, 0);
+      };
+      this.checks = ko.pureComputed(() => {
+        const s = this.screen();
+        if (!s) {
+          return [];
+        }
+        const g = this.group();
+        const covered = (s.criteria || []).map((k) => criterionByKey(k).id || 'a criterion');
+        const missing = s.loose ? [] : uncoveredOf(g);
+        const questions = this.screenQuestions();
+        const values = this.screenUnconfirmed();
+        const report = compat();
+        const unsupported = report ? report.elements.filter((e) => e.status === 'UNSUPPORTED') : [];
+        const verified = report ? report.elements.filter((e) => e.status === 'VERIFIED').length : 0;
+        const unverified = report ? report.elements.filter((e) => e.status === 'UNVERIFIED').length : 0;
+        const list = [
+          { key: 'criteria', title: 'Acceptance criteria', ok: missing.length === 0,
+            count: s.loose ? 'No BRD' : missing.length ? missing.length + ' missing' : covered.length ? 'All covered' : 'None linked',
+            items: (covered.length ? [{ text: (covered.length === 1 ? covered[0] + ' is' : covered.slice(0, -1).join(', ') + ' and ' + covered[covered.length - 1] + ' are') + ' on this screen', action: '' }]
+              : [{ text: s.loose ? 'A screen without a BRD has no acceptance criteria.' : 'No criterion of the spec is linked to this screen\'s requirement.', action: '' }])
+              .concat(missing.map((c) => ({ text: (c.id || 'A criterion') + ' is not on any screen yet', action: this.screenEditable() ? 'Add it' : '',
+                run: () => askFor('Add what ' + (c.id || 'this criterion') + ' needs: ' + c.description) }))) },
+          { key: 'decisions', title: 'Open decisions', ok: questions.length === 0, count: questions.length ? questions.length + ' open' : 'None',
+            items: questions.length ? questions.map((q) => ({ text: q.question, detail: q.detail, action: this.summary() ? 'Resolve' : '', run: this.openSpec }))
+              : [{ text: 'Nothing the BRD leaves open for this screen.', action: '' }] },
+          { key: 'values', title: 'Values to confirm', ok: values.length === 0, count: values.length ? plural(values.length, 'field', 'fields') : 'None',
+            items: values.length ? values.map((v) => ({ text: v, action: this.screenEditable() && !this.narrow() ? 'Confirm' : '', run: () => inEditor((vm) => vm.selectByText(v)) }))
+              : [{ text: 'Every choice and table has its values from the BRD.', action: '' }] },
+          { key: 'compat', title: 'OBDX ' + (report && report.version ? report.version : this.obdxVersion()) + ' compatibility', ok: unsupported.length === 0,
+            count: !report ? 'Checking…' : unsupported.length ? unsupported.length + ' unsupported' : verified + ' verified',
+            items: !report ? [{ text: 'Checking the components against the version pack…', action: '' }]
+              : unsupported.map((e) => ({ text: e.element + ': ' + e.evidence, action: this.screenEditable() && !this.narrow() ? 'Open in Edit' : '', run: () => inEditor((vm) => vm.showChecks()) }))
+                .concat(unsupported.length ? [] : [{ text: 'No unsupported components' + (unverified ? ' (' + unverified + ' unverified: the code shows no use of them either way)' : ''), action: '' }]) }
+        ];
+        return list.map((c) => Object.assign(c, {
+          id: 'studioCheck-' + c.key,
+          open: ko.pureComputed(() => this.openCheck() === c.key),
+          expanded: ko.pureComputed(() => (this.openCheck() === c.key ? 'true' : 'false')),
+          iconCss: 'factory-studio-check-icon' + (c.ok ? ' is-ok' : ' is-warn'),
+          countCss: 'factory-studio-check-count' + (c.ok ? ' is-ok' : ' is-warn'),
+          toggle: () => this.openCheck(this.openCheck() === c.key ? null : c.key),
+          items: c.items.map((it) => Object.assign({ detail: '', run: () => {} }, it))
+        }));
+      });
+      this.checksOpen = ko.pureComputed(() => this.checks().filter((c) => !c.ok).length);
+      this.checksSummary = ko.pureComputed(() => (this.checksOpen() === 0 ? 'All checks pass'
+        : this.checksOpen() + ' of ' + this.checks().length + ' checks need attention'));
+      this.checksRailLabel = ko.pureComputed(() => (this.checksOpen() === 0 ? 'All checks pass' : plural(this.checksOpen(), 'check needs', 'checks need') + ' attention'));
+
       // --- Review or Edit: Edit draws the designer (viewModels/designer, embedded) for the selected screen ---
 
       this.mode = ko.observable('review');
@@ -482,8 +544,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const vm = this.editor();
         return vm && !this.narrow() ? moduleUtils.createView({ viewPath: 'views/designer.html' }).then((view) => ({ view: view, viewModel: vm })) : { view: [] };
       });
-      // The editor's tools in the Studio's header (save, undo, design or code, preview): bound to the editor itself
-      this.editorTools = ko.pureComputed(() => (this.editor() && !this.narrow() ? [this.editor()] : []));
+      // --- the page's layout: Expand (Review and Edit each remember theirs), the readiness panel's fold, the Screens
+      // panel hidden; kept per person (services/preferences) ---
+      const smallQuery = window.matchMedia('(max-width: 1365px)');
+      const small = ko.observable(smallQuery.matches);
+      const onSmall = (event) => small(event.matches);
+      // Docked editor panels drop to rails at 1024 px and below
+      const tabletQuery = window.matchMedia('(max-width: 1024px)');
+      this.tabletWide = ko.observable(tabletQuery.matches);
+      const onTablet = (event) => this.tabletWide(event.matches);
+      this.expanded = ko.pureComputed(() => !this.narrow() && (this.editing() ? preferences.studioEditExpanded() : preferences.studioExpanded()));
+      this.toggleExpand = () => (this.editing() ? preferences.studioEditExpanded(!preferences.studioEditExpanded()) : preferences.studioExpanded(!preferences.studioExpanded()));
+      this.expandLabel = ko.pureComputed(() => (this.editing() ? (this.expanded() ? 'Show the screens' : 'Expand the editor') : (this.expanded() ? 'Exit full view' : 'Expand')));
+      this.expandIcon = ko.pureComputed(() => (this.expanded() ? '⤡' : '⤢'));
+      this.screensHidden = ko.pureComputed(() => preferences.studioScreensHidden());
+      this.hideScreens = () => preferences.studioScreensHidden(true);
+      this.showScreens = () => preferences.studioScreensHidden(false);
+      this.showScreensPanel = ko.pureComputed(() => !this.expanded() && !this.screensHidden());
+      // The readiness panel: open or folded to a rail; unset, it follows the window (folded below 1366 px)
+      this.readinessFolded = ko.pureComputed(() => (preferences.studioReadiness() ? preferences.studioReadiness() === 'folded' : small()));
+      this.foldReadiness = () => preferences.studioReadiness('folded');
+      this.unfoldReadiness = () => preferences.studioReadiness('open');
+      this.reviewBodyCss = ko.pureComputed(() => 'factory-studio-review' + (this.expanded() ? ' is-expanded' : this.readinessFolded() ? ' is-folded' : ''));
+      // The editor's panels: rails with floating panels when expanded or on a tablet, docked columns otherwise
+      this.editorRails = ko.pureComputed(() => this.expanded() || this.tabletWide());
+      // On phones the readiness panel opens below the summary line
+      this.phoneReadiness = ko.observable(false);
+      this.togglePhoneReadiness = () => this.phoneReadiness(!this.phoneReadiness());
       /** Asks before the editor's unsaved changes are lost (another screen, Review, another BRD); true when they may go. */
       const guard = () => (this.editor() ? this.editor().confirmDiscard() : Promise.resolve(true));
       this.selectScreen = (id) => guard().then((ok) => {
@@ -498,11 +585,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         deleted: () => { closeEditor(); Promise.all([loadRequirements(), reloadFlow()]).catch(actionError); },
         leave: () => this.showReview(),
         element: () => document.getElementById('studioEditor'),
-        // The editor's tools in the Studio's header count as inside the editor (Ctrl+Z there undoes in it)
-        contains: (node) => { const tools = document.getElementById('studioEditTools'); return !!tools && tools.contains(node); },
+        // The Studio's header (Save changes, the switcher) counts as inside the editor for Ctrl+Z
+        contains: (node) => { const head = document.getElementById('studioScreenHead'); return !!head && head.contains(node); },
+        // true: the side panels are rails that open floating panels (Expand, or a tablet); false: docked columns
+        rails: () => this.editorRails(),
         catalog: catalogTypes,
         target: targetOf,
-        // The journey strip follows the server's flow order (each review and confirmation after its initiate screen)
+        // The editor's screen order is the server's flow order (each review and confirmation after its initiate screen)
         order: () => this.screens().map((s) => s.id)
       };
       /** Runs fn with the editor once it shows the selected screen (Edit is opened first). */
@@ -570,34 +659,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         tabindex: ko.pureComputed(() => (this.mode() === value ? '0' : '-1')),
         pick: () => (value === 'edit' ? this.showEdit() : this.showReview())
       }));
-      // Arrow keys, Home and End move between Review and Edit
-      this.modeKey = (event) => {
-        const to = { ArrowRight: 'edit', ArrowLeft: 'review', Home: 'review', End: 'edit' }[event.key];
-        if (!to) {
-          return true;
-        }
-        event.preventDefault();
-        Promise.resolve(to === 'edit' ? this.showEdit() : this.showReview()).then(() => {
-          const button = document.getElementById('studioMode-' + this.mode());
-          if (button) {
-            button.focus();
-          }
-        });
-        return false;
-      };
-      // The editor's own checks (fields placed, placeholder values, buttons, compatibility) are in Edit
+      // The editor's checks (fields placed, placeholder values, buttons, compatibility) are in Edit's Checks panel
       this.openChecks = () => inEditor((vm) => vm.showChecks());
-      /** Approval locks a saved version: with unsaved changes in Edit, saves them first when the user agrees. */
-      const savedFirst = () => {
+      // Unsaved changes in Edit: the header says so and offers Save changes instead of Approve (approval locks a saved
+      // version); after a save it says Saved and offers Approve again
+      this.editorDirty = ko.pureComputed(() => !!this.editor() && this.editor().dirty());
+      this.justSaved = ko.observable(false);
+      this.editorDirty.subscribe((dirty) => { if (dirty) { this.justSaved(false); } });
+      this.selectedScreenId.subscribe(() => this.justSaved(false));
+      this.saveChanges = () => {
         const vm = this.editor();
-        if (!vm || !vm.dirty()) {
-          return Promise.resolve(true);
-        }
-        return dialog.confirm({
-          title: 'Save the changes first?', confirmLabel: 'Save and approve',
-          message: 'Approval locks a saved version. Your changes are saved as a new version, then you approve it.'
-        }).then((ok) => ok && vm.save().then(() => !vm.dirty()));
+        return vm ? vm.save().then(() => { if (!vm.dirty()) { this.justSaved(true); } }) : Promise.resolve();
       };
+      this.approveOffered = ko.pureComputed(() => this.canApprove() && !this.screenLocked() && !this.editorDirty());
+      // An approved screen opens read-only in Edit
+      this.editLocked = ko.pureComputed(() => this.editing() && this.screenLocked());
       // After an approval or reopening, the editor shows the screen's new state (locked or open)
       const refreshEditor = () => {
         const vm = this.editor();
@@ -608,20 +684,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.addSteps = () => api.post('designs/' + encodeURIComponent(this.screen().id) + '/flow-screens')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens added after "' + this.screen().name + '".')))
         .catch(actionError);
-      this.approveScreen = () => savedFirst().then((ok) => {
+      this.approveScreen = () => {
         const s = this.screen();
         const vm = this.editor();
-        const version = vm && vm.detail() ? vm.detail().currentVersion : s && s.currentVersion;
-        if (!ok || !s) {
-          return null;
+        if (!s) {
+          return Promise.resolve(null);
         }
+        if (vm && vm.dirty()) {
+          toast.info('Save the changes first: approval locks a saved version.');
+          return Promise.resolve(null);
+        }
+        const version = vm && vm.detail() ? vm.detail().currentVersion : s.currentVersion;
         // A screen without a BRD is approved on its own
-        return this.loose()
+        return s.loose || this.requirementId() === NONE
           ? designActions.approveScreen(s.id, s.name, version)
             .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is approved for development.'); }))
             .catch(actionError)
           : approve([s.id], { count: 1, name: s.name, version: version });
-      });
+      };
       this.reopenScreen = () => designActions.reopen(this.screen().id, this.screen().name)
         .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is reopened for changes.'); }))
         .catch(actionError);
@@ -635,10 +715,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             title: this.editor() && this.editor().dirty() ? 'Save the changes first: the link shows a saved version.' : null },
           { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.screenEditable() || this.narrow() },
           { value: 'flow', label: 'Add review and confirmation screens', disabled: !this.screenEditable() || !s || (!!s.stage && s.stage !== 'initiate') },
-          { value: 'comment', label: 'Comment on the screen', icon: 'edit', disabled: this.narrow() },
+          { value: 'comment', label: 'Comment on the screen', icon: 'edit', disabled: this.narrow() }
+        ].concat(this.editing() && this.editor() ? [
+          { value: 'discard', label: 'Discard the changes', icon: 'x', disabled: !this.editorDirty() },
+          { value: 'previous', label: 'Bring back the previous version', icon: 'refresh', disabled: !this.editor().canRestorePrevious() }
+        ] : []).concat([
           { separator: true },
           { value: 'delete', label: 'Delete screen', icon: 'trash', danger: true, disabled: !this.canDesign() }
-        ];
+        ]);
       });
       this.screenMenu = (event) => {
         const value = event.detail.value;
@@ -650,6 +734,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           inEditor((vm) => vm.commentOnScreen());
         } else if (value === 'flow') {
           this.addSteps();
+        } else if (value === 'discard' && this.editor()) {
+          this.editor().discard();
+        } else if (value === 'previous' && this.editor()) {
+          this.editor().restorePrevious();
         } else if (value === 'delete') {
           this.deleteScreen();
         }
@@ -672,42 +760,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .catch(actionError);
       };
 
-      // --- summary of the selected group: channels, screens, fields and the components used ---
-
-      this.facts = ko.pureComputed(() => {
-        const list = this.flowScreens().map((s) => screenById(s.id)).filter(Boolean);
-        const channels = [];
-        list.forEach((s) => (s.channels || []).forEach((c) => { if (channels.indexOf(c) < 0) { channels.push(c); } }));
-        const fields = list.reduce((n, s) => n + fieldsOf(s.model).length, 0);
-        return [
-          { label: 'Screens', value: String(list.length) },
-          { label: 'Fields', value: String(fields) },
-          { label: 'Channels', value: channels.length ? channels.map((c) => CHANNEL_WORDS[c] || c).join(', ') : 'All channels' },
-          { label: 'Preview', value: this.previewKind() === 'jet' ? 'Oracle JET (OBDX)' : this.previewKind() === 'react' ? 'React' : 'React Native' }
-        ];
-      });
-      this.componentsUsed = ko.pureComputed(() => {
-        const counts = {};
-        this.flowScreens().map((s) => screenById(s.id)).filter(Boolean).forEach((s) => {
-          fieldsOf(s.model).forEach((c) => {
-            const name = c.type === 'component' && c.component ? c.component : (catalog[c.type] || c.type);
-            counts[name] = (counts[name] || 0) + 1;
-          });
-          if (s.model && s.model.actions.length) {
-            counts.Button = (counts.Button || 0) + s.model.actions.length;
-          }
-        });
-        return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).map((name) => ({ name: name, count: String(counts[name]) }));
-      });
 
       // --- the stepper and the next action ---
 
       const change = ko.pureComputed(() => this.changes()[0] || null);
-      const allApproved = ko.pureComputed(() => this.screens().length > 0 && this.screens().every((s) => s.status === 'APPROVED'));
+      const allApproved = ko.pureComputed(() => brdScreens().length > 0 && brdScreens().every((s) => s.status === 'APPROVED'));
       this.stage = ko.pureComputed(() => {
         const r = this.summary();
-        // Screens without a BRD have no stages: no spec, and their code comes with a change started elsewhere
-        if (this.loose()) {
+        // A workspace with screens but no BRD: no stages (their code comes with a change started elsewhere)
+        if (this.requirementId() === NONE) {
           return 0;
         }
         if (!r) {
@@ -716,7 +777,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (r.status !== 'APPROVED') {
           return 2;
         }
-        if (this.screens().length === 0) {
+        if (brdScreens().length === 0) {
           return 3;
         }
         if (!allApproved()) {
@@ -727,8 +788,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.steps = ko.pureComputed(() => {
         const stage = this.stage();
         const r = this.summary();
-        const total = this.screens().length;
-        const approved = this.screens().filter((s) => s.status === 'APPROVED').length;
+        const total = brdScreens().length;
+        const approved = brdScreens().filter((s) => s.status === 'APPROVED').length;
         const subs = [
           r ? (r.fileName || 'Text request') : 'Upload or pick one',
           r ? (r.status === 'APPROVED' ? 'Approved' : ui.status(r.status, r.status === 'READY' ? 'Needs your approval' : null).text) : 'Drafted by the AI',
@@ -736,10 +797,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           total ? approved + ' of ' + total + ' approved' : 'All screens of the BRD',
           change() ? ui.status(change().status).text : 'Plan, code and delivery'
         ];
+        // The current stage says what is left in it: "Approve 0 of 5 screens"
+        const current = ['BRD', 'Spec', 'Screens', total ? 'Approve ' + approved + ' of ' + plural(total, 'screen', 'screens') : 'Approve', change() ? 'Code: ' + subs[4] : 'Code'];
         return ['BRD', 'Spec', 'Screens', 'Approve', 'Code'].map((label, i) => ({
-          number: String(i + 1), label: label, sub: subs[i],
+          number: String(i + 1), label: label, sub: subs[i], done: i + 1 < stage,
+          text: i + 1 === stage ? current[i] : label,
+          mark: i + 1 < stage ? '✓' : String(i + 1),
           css: 'factory-studio-stepper-item' + (i + 1 < stage ? ' is-done' : i + 1 === stage ? ' is-current' : ''),
-          current: i + 1 === stage ? 'step' : null
+          current: i + 1 === stage ? 'step' : null,
+          notFirst: i > 0
         }));
       });
       this.next = ko.pureComputed(() => {
@@ -783,15 +849,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             return { title: 'Code is under way', text: change().title + ': ' + ui.status(change().status).text + '.', label: 'Open the change', action: this.openChange, tone: 'success' };
         }
       });
-      // In Edit (on a wide screen) the bar is one line: the BRD and where it stands, so the canvas gets the room
-      this.compactBar = ko.pureComputed(() => this.editing() && !this.narrow());
-      this.barCss = ko.pureComputed(() => 'fx-card factory-studio-bar' + (this.next().tone ? ' factory-studio-bar--' + this.next().tone : '')
-        + (this.compactBar() ? ' is-compact' : ''));
+      // The header's next action, for the stages before and after approving (Approve All is in the Screens panel)
+      this.headerAction = ko.pureComputed(() => (this.stage() !== 4 && this.next().action ? this.next() : null));
+      this.nextButtonCss = ko.pureComputed(() => 'fx-btn ' + (this.next().secondary ? 'fx-btn--secondary' : this.next().tone === 'success' ? 'fx-btn--success' : 'fx-btn--primary'));
+      // On phones: "Step 4 of 5 · Approve" and "· 0 of 5 approved"
       this.stageChip = ko.pureComputed(() => {
         const st = this.steps().find((x) => x.current);
-        return this.loose() ? 'Screens without a BRD' : st ? 'Step ' + st.number + ' of 5 · ' + st.label + ' · ' + st.sub : 'Code is under way';
+        return this.stage() === 0 ? 'Screens without a BRD' : st ? 'Step ' + st.number + ' of 5 · ' + st.label : 'Code is under way';
       });
-      this.nextButtonCss = ko.pureComputed(() => 'fx-btn ' + (this.next().secondary ? 'fx-btn--secondary' : this.next().tone === 'success' ? 'fx-btn--success' : 'fx-btn--primary'));
+      this.stageChipSub = ko.pureComputed(() => {
+        const st = this.steps().find((x) => x.current);
+        return st ? '· ' + st.sub : '';
+      });
       this.hasScreens = ko.pureComputed(() => this.screens().length > 0);
 
       // --- actions ---
@@ -845,7 +914,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             openAfterLoad = { id: detail.id, edit: true, then: kind === 'import' ? (vm) => vm.openImport() : null };
             return loadRequirements().then(() => {
               closeEditor();
-              if (this.requirementId() === NONE) {
+              if (this.requirementId()) {
                 return reloadFlow();
               }
               this.requirementId(NONE);
@@ -865,7 +934,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         openAfterLoad = null;
         const current = this.group();
         if (!current || current.screens.indexOf(wanted.id) < 0) {
-          this.groupKey('all');
+          const other = allGroups().find((g) => g.screens.indexOf(wanted.id) >= 0);
+          this.groupKey(other ? other.key : null);
         }
         this.selectedScreenId(wanted.id);
         if (wanted.edit && !this.narrow()) {
@@ -879,7 +949,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             return;
           }
           const before = this.screens().filter((s) => s.status === 'APPROVED').length;
-          // A flow still loading (after Save and approve saved first) is older than this one: it is not shown
+          // A flow still loading (after a save) is older than this one: it is not shown
           token++;
           setFlow(flow);
           refreshEditor();
@@ -888,15 +958,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             + (now === flow.screens.length ? ' Every screen is approved: you can generate the code.' : ''));
         })
         .catch(actionError);
-      this.approveGroup = () => savedFirst().then((ok) => ok && approveGroupNow());
-      const approveGroupNow = () => {
-        const ids = this.groupUnapproved();
-        const only = ids.length === 1 ? screenById(ids[0]) : null;
-        const g = this.group();
-        return approve(ids, { count: ids.length, name: only ? only.name : '', version: only ? only.currentVersion : null,
-          group: g && g.key !== 'all' ? (g.id ? g.id + ' ' : '') + '"' + g.title + '"' : 'this BRD' });
+      // Approve All: every screen of the BRD not approved yet; the question says how many still have open checks
+      const openChecksOf = (s) => (s.unconfirmed || []).length + (s.decisions || []).length
+        + (this.flow() ? this.flow().questions.filter((q) => q.screens.indexOf(s.id) >= 0).length : 0);
+      this.canApproveAll = ko.pureComputed(() => this.canApprove() && this.requirementId() !== NONE && !!this.summary()
+        && brdScreens().some((s) => s.status !== 'APPROVED'));
+      this.approveAll = () => {
+        if (this.editorDirty()) {
+          toast.info('Save the changes first: approval locks a saved version.');
+          return Promise.resolve(null);
+        }
+        const remaining = brdScreens().filter((s) => s.status !== 'APPROVED');
+        return approve(null, { every: true, count: remaining.length, open: remaining.filter((s) => openChecksOf(s) > 0).length });
       };
-      this.approveAll = () => savedFirst().then((ok) => ok && approve(null, { every: true, count: this.screens().filter((s) => s.status !== 'APPROVED').length }));
       this.generateCode = () => api.post('requirements/' + encodeURIComponent(this.requirementId()) + '/changes')
         .then((created) => {
           toast.success('The change was started. The factory is analysing the impact on the code.');
@@ -929,14 +1003,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.cancelUpload = () => this.chosenFile(null);
 
-      this.pickGroup = (key) => guard().then((ok) => {
+      // A requirement (the dropdown, ‹ ›, the dots, ← →): asks first about unsaved changes, then shows its first screen
+      this.pickGroup = (key) => (key === (this.group() || {}).key ? Promise.resolve(true) : guard().then((ok) => {
         if (!ok) {
-          return;
+          this.groupPick((this.group() || {}).key || null);
+          return false;
         }
         this.groupKey(key);
         const g = this.group();
         this.selectedScreenId(g && g.screens.length ? g.screens[0] : null);
-      });
+        return true;
+      }));
+      this.previousGroup = () => { const i = this.groupIndex(); return i > 0 ? this.pickGroup(allGroups()[i - 1].key) : Promise.resolve(false); };
+      this.nextGroup = () => { const i = this.groupIndex(); return i < allGroups().length - 1 ? this.pickGroup(allGroups()[i + 1].key) : Promise.resolve(false); };
+      // The requirement dropdown follows the selected requirement; choosing one goes through pickGroup
+      this.groupPick = ko.observable(null);
+      ko.computed(() => { const g = this.group(); this.groupPick(g ? g.key : null); });
+      this.groupPick.subscribe((key) => { if (key && key !== (this.group() || {}).key) { this.pickGroup(key); } });
       // The BRD picker: another BRD asks first about the editor's unsaved changes, and stays on this one when kept
       // Every change of the BRD the user starts (the picker, an upload, a screen asked for) goes through switchBrd
       this.brdPick = ko.observable(null);
@@ -1027,13 +1110,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       let token = 0;
       const setFlow = (flow) => {
         this.flow(flow);
-        const group = this.group();
         if (!allGroups().some((g) => g.key === this.groupKey())) {
-          this.groupKey('all');
+          this.groupKey(allGroups().length ? allGroups()[0].key : null);
         }
+        const group = this.group();
         const ids = group ? group.screens : [];
         if (!this.selectedScreenId() || !screenById(this.selectedScreenId()) || ids.indexOf(this.selectedScreenId()) < 0) {
-          this.selectedScreenId(this.group() && this.group().screens.length ? this.group().screens[0] : null);
+          this.selectedScreenId(ids.length ? ids[0] : null);
         }
         loadVersions();
         // A change shows the current version again; the frame gets the new model (a new frame asks when ready)
@@ -1041,19 +1124,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         window.setTimeout(() => { observeStage(); sendAll(); }, 0);
         openPending();
       };
-      /** Screens without a BRD as a flow of their own: no requirements, criteria or questions; in the order they were made. */
-      const looseFlow = () => api.get('workspaces/' + this.workspaceId() + '/designs').then((list) => {
+      /** The workspace's screens without a BRD (blank, imported, or their BRD deleted), marked loose, in the order made. */
+      const looseScreens = () => api.get('workspaces/' + encodeURIComponent(this.workspaceId()) + '/designs').then((list) => {
         const ids = this.requirements().map((r) => r.id);
         const loose = list.filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0);
         this.looseDesigns(loose);
-        return Promise.all(loose.map((d) => api.get('designs/' + encodeURIComponent(d.id)))).then((details) => ({
-          title: 'Screens without a BRD', requirements: [], others: [], rules: [], criteria: [], uncovered: [], questions: [],
-          screens: details.map((d) => ({
+        return Promise.all(loose.map((d) => api.get('designs/' + encodeURIComponent(d.id)))).then((details) => details.map((d) => {
+          const first = (d.versions || []).slice().sort((a, b) => a.version - b.version)[0];
+          return {
             id: d.id, name: d.name, status: d.status, currentVersion: d.currentVersion, approvedBy: d.approvedBy, model: d.model,
-            stage: d.model ? d.model.stage : null, channels: d.model ? d.model.channels || [] : [], criteria: [], unconfirmed: [], decisions: [], needsSteps: false
-          }))
+            stage: d.model ? d.model.stage : null, channels: d.model ? d.model.channels || [] : [], criteria: [], unconfirmed: [], decisions: [],
+            needsSteps: false, loose: true, origin: first ? first.origin : 'BLANK'
+          };
         }));
       });
+      const emptyFlow = { title: 'Screens without a BRD', requirements: [], others: [], rules: [], criteria: [], uncovered: [], questions: [], screens: [] };
+      // The BRD's flow with the workspace's screens without a BRD after its own (the Screens panel's last requirement)
       const reloadFlow = () => {
         const id = this.requirementId();
         if (!id) {
@@ -1062,15 +1148,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return Promise.resolve();
         }
         const mine = ++token;
-        return Promise.all([id === NONE ? looseFlow() : api.get('requirements/' + encodeURIComponent(id) + '/design-flow'),
+        return Promise.all([id === NONE ? Promise.resolve(emptyFlow) : api.get('requirements/' + encodeURIComponent(id) + '/design-flow'),
+          looseScreens().catch(() => []),
           id === NONE ? Promise.resolve([]) : api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
-          .then(([flow, changes]) => {
+          .then(([flow, loose, changes]) => {
             if (mine !== token) {
               return;
             }
             this.changes(changes.filter((c) => c.requirementId === id && c.status !== 'CLOSED')
               .concat(changes.filter((c) => c.requirementId === id && c.status === 'CLOSED')));
-            setFlow(flow);
+            setFlow(Object.assign({}, flow, { screens: flow.screens.concat(loose) }));
           });
       };
       const loadRequirements = () => {
@@ -1103,7 +1190,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (id && this.workspaceId()) {
           remember(storageKey(this.workspaceId()), id);
         }
-        this.groupKey('all');
+        this.groupKey(null);
         this.selectedScreenId(null);
         this.errorMessage('');
         this.loading(true);
@@ -1142,7 +1229,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             return null;
           }
           openAfterLoad = { id: d.id, edit: wanted.edit, then: null };
-          return d.requirementId && list.some((r) => r.id === d.requirementId) ? d.requirementId : NONE;
+          // A screen without a BRD is in every BRD's "Without a BRD" requirement: the BRD stays as it is
+          return d.requirementId && list.some((r) => r.id === d.requirementId) ? d.requirementId
+            : this.requirementId() || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || NONE;
         }).catch((error) => {
           toast.warning(error.status === 403 ? 'You don\'t have access to that screen.'
             : 'That screen is not there any more. It may have been deleted.');
@@ -1202,7 +1291,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         pageRequests.studio(null);
         fromAddress = null;
         const remembered = recall(storageKey(this.workspaceId()));
-        const known = (id) => id && (list.some((r) => r.id === id) || (id === NONE && this.looseDesigns().length > 0));
+        // "none" stands for the screens without a BRD only in a workspace that has no BRD
+        const known = (id) => id && (list.some((r) => r.id === id) || (id === NONE && list.length === 0 && this.looseDesigns().length > 0));
         const choice = [wanted, remembered].find(known)
           || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || (this.looseDesigns().length ? NONE : null);
         if (choice === this.requirementId()) {
@@ -1242,11 +1332,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         document.title = 'Design Studio';
         window.addEventListener('message', onMessage);
         phoneQuery.addEventListener('change', onNarrow);
+        smallQuery.addEventListener('change', onSmall);
+        tabletQuery.addEventListener('change', onTablet);
+        // The app menu folds to icons while Edit is open, for the canvas
+        menuFold = ko.computed(() => pageRequests.foldMenu(this.editing() && !this.narrow()));
         if (window.ResizeObserver) {
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
           observeStage();
         }
-        catalogTypes().then((types) => types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); })).catch(() => null);
+        catalogTypes().then((types) => { types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); }); catalogList(types); }).catch(() => null);
         alive = true;
         subscription = this.workspaceId.subscribe(loadWorkspace);
         // Another workspace asks first while Edit has unsaved changes (the top bar, the bell, a link to another workspace)
@@ -1265,6 +1359,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }).catch(showError);
       };
       let designRequests = null;
+      let menuFold = { dispose: () => {} };
       let alive = false;
       let unguard = null;
       // Leaving the page with unsaved changes in Edit asks first (the editor's own guard)
@@ -1272,6 +1367,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
         phoneQuery.removeEventListener('change', onNarrow);
+        smallQuery.removeEventListener('change', onSmall);
+        tabletQuery.removeEventListener('change', onTablet);
+        menuFold.dispose();
+        pageRequests.foldMenu(false);
         if (this.editor()) {
           this.editor().clear();
         }

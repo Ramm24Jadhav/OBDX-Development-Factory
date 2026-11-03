@@ -16,8 +16,9 @@ define([], function () {
    * @param onSelect called with the id of a component, action or section clicked in the preview
    * @param onDrop   called when something is dropped on the preview: the component it was dropped on (to insert
    *                 before) and the section, either may be null
+   * @param onSize   optional: called with the page's height in pixels whenever it changes
    */
-  function PreviewFrame(onSelect, onDrop) {
+  function PreviewFrame(onSelect, onDrop, onSize) {
     let frame = null;
     let ready = false;
     let pending = null;
@@ -39,6 +40,8 @@ define([], function () {
         onSelect(event.data.id);
       } else if (event.data.type === 'factory-preview-drop' && onDrop) {
         onDrop(event.data.targetId || null, event.data.sectionId || null);
+      } else if (event.data.type === 'factory-preview-size' && onSize && typeof event.data.height === 'number') {
+        onSize(event.data.height);
       }
     };
 

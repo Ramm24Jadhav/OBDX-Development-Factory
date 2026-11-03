@@ -25,7 +25,9 @@ define(['./api', './dialog'], function (api, dialog) {
   /** The question asked before approving: one screen (by name), a group (by its title) or every remaining screen. */
   const approveQuestion = (o) => {
     if (o.every) {
-      return { title: 'Approve every screen?', message: 'All ' + o.count + ' remaining screens of this BRD are locked for development. You can reopen a screen later.', confirmLabel: 'Approve all' };
+      return { title: 'Approve every screen?', message: 'All ' + o.count + ' remaining screens of this BRD are locked for development.'
+        + (o.open ? ' ' + (o.open === o.count && o.count > 1 ? 'All of them have' : o.open + (o.open === 1 ? ' of them has' : ' of them have')) + ' open checks (values to confirm or decisions).' : ' None of them has open checks.')
+        + ' You can reopen a screen later.', confirmLabel: 'Approve all' };
     }
     if (o.count === 1) {
       return {

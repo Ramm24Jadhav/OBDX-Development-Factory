@@ -258,7 +258,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
       const phoneQuery = window.matchMedia('(max-width: 767px)');
       const phone = ko.observable(phoneQuery.matches);
       phoneQuery.addEventListener('change', (event) => phone(event.matches));
-      this.sidebarCollapsed = ko.pureComputed(() => !phone() && (tablet() ? !tabletExpanded() : collapsedChoice()));
+      this.sidebarCollapsed = ko.pureComputed(() => !phone() && (pageRequests.foldMenu() || (tablet() ? !tabletExpanded() : collapsedChoice())));
       this.toggleCollapsed = () => {
         if (tablet()) { tabletExpanded(!tabletExpanded()); } else { collapsedChoice(!collapsedChoice()); }
       };

@@ -355,8 +355,38 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         document.addEventListener('dragleave', onDragLeave);
         if (window.parent !== window) {
           window.parent.postMessage({ type: 'factory-preview-ready' }, window.location.origin);
+          // The page's height, so a host can show the whole screen without a scroll bar of its own (the Design Studio's Edit).
+          // It is the content's own height: the page fills the frame (min-height 100vh), so its scroll height would grow
+          // with the frame. Measured when the page resizes or its content changes, once a frame.
+          if (window.ResizeObserver && window.MutationObserver) {
+            let last = 0;
+            let queued = false;
+            const range = document.createRange();
+            const measure = () => {
+              queued = false;
+              const root = document.querySelector('.factory-preview') || document.body;
+              range.selectNodeContents(root);
+              const height = Math.ceil(range.getBoundingClientRect().bottom - root.getBoundingClientRect().top + 16);
+              if (height !== last) {
+                last = height;
+                window.parent.postMessage({ type: 'factory-preview-size', height: height }, window.location.origin);
+              }
+            };
+            const queue = () => {
+              if (!queued) {
+                queued = true;
+                window.requestAnimationFrame(measure);
+              }
+            };
+            const resized = new ResizeObserver(queue);
+            const changed = new MutationObserver(queue);
+            resized.observe(document.body);
+            changed.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+            sizeWatch = { disconnect: () => { resized.disconnect(); changed.disconnect(); } };
+          }
         }
       };
+      let sizeWatch = null;
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
         window.removeEventListener('message', onElementMessage);
@@ -364,6 +394,9 @@ define(['knockout', 'ojs/ojarraydataprovider', 'ojs/ojconverter-number',
         document.removeEventListener('dragover', onDragOver);
         document.removeEventListener('drop', onDrop);
         document.removeEventListener('dragleave', onDragLeave);
+        if (sizeWatch) {
+          sizeWatch.disconnect();
+        }
       };
     }
 

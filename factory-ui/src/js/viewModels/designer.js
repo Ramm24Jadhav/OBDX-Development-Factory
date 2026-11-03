@@ -149,9 +149,80 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // The Studio's More menu opens a drawer (choosing it again keeps it open, unlike the toggles here)
       this.showDrawer = (name) => this.drawer(name);
       this.closeDrawer = () => this.drawer(null);
-      this.showComments = () => { this.contextTab('comments'); this.contextOpen(true); };
-      this.showHistory = () => { this.contextTab('history'); this.contextOpen(true); };
+
+      // The side panels. Expanded (or on a tablet) they are rails of icons, each opening its panel floating over the
+      // canvas with a close button; otherwise they are docked columns, always open.
+      this.rails = ko.pureComputed(() => !!(host.rails && host.rails()));
+      this.leftFloat = ko.observable(false);
+      this.rightFloat = ko.observable(false);
+      this.leftShown = ko.pureComputed(() => !!this.detail() && !this.previewMode() && (!this.rails() || this.leftFloat()));
+      this.rightShown = ko.pureComputed(() => !!this.detail() && !this.previewMode() && (!this.rails() || this.rightFloat()));
+      this.rails.subscribe(() => { this.leftFloat(false); this.rightFloat(false); });
+      this.closeLeft = () => this.leftFloat(false);
+      this.closeRight = () => this.rightFloat(false);
+      // A rail button opens its panel, or closes it when it is open on the same tab; one floating panel at a time
+      const railLeft = (tab) => () => {
+        const same = this.leftFloat() && this.leftTab() === tab;
+        this.leftTab(tab);
+        this.leftFloat(!same);
+        if (!same) {
+          this.rightFloat(false);
+        }
+      };
+      this.railComponents = railLeft('components');
+      this.railLayers = railLeft('layers');
+      this.rightTab = ko.observable('checks');
+      /** Shows a tab of the right panel (opening it as a floating panel on rails). */
+      const openRight = (tab) => {
+        this.rightTab(tab);
+        if (this.rails()) {
+          this.rightFloat(true);
+          this.leftFloat(false);
+        }
+      };
+      const railRight = (tab) => () => {
+        if (this.rightFloat() && this.rightTab() === tab) {
+          this.rightFloat(false);
+        } else {
+          openRight(tab);
+        }
+      };
+      this.railChecks = railRight('checks');
+      this.railProperties = railRight('properties');
+      this.railComments = railRight('comments');
+      this.railHistory = railRight('history');
+      // Selecting an element on the Checks tab shows its properties (History and Comments stay where they are)
+      this.selectedId.subscribe((id) => {
+        if (id && this.rightTab() === 'checks') {
+          this.rightTab('properties');
+        }
+      });
+      this.showComments = () => openRight('comments');
+      this.showHistory = () => { openRight('history'); resetCompare(); };
       this.showAssistant = () => { this.contextTab('assistant'); this.contextOpen(true); };
+      this.rightTabs = [['checks', 'Checks'], ['properties', 'Properties'], ['comments', 'Comments'], ['history', 'History']].map(([key, label]) => ({
+        key: key, id: 'rightTab-' + key,
+        text: ko.pureComputed(() => label + (key === 'checks' && this.openChecks() ? ' ' + this.openChecks() : '')),
+        selected: ko.pureComputed(() => this.rightTab() === key),
+        pick: () => openRight(key)
+      }));
+      // Arrow keys move between the right panel's tabs
+      this.rightTabKey = (event) => {
+        const keys = this.rightTabs.map((t) => t.key);
+        const at = keys.indexOf(this.rightTab());
+        const next = event.key === 'ArrowRight' ? (at + 1) % keys.length : event.key === 'ArrowLeft' ? (at + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1;
+        if (next < 0) {
+          return true;
+        }
+        openRight(keys[next]);
+        const tab = find('#rightTab-' + keys[next]);
+        if (tab) {
+          tab.focus();
+        }
+        event.preventDefault();
+        return false;
+      };
       // The inspector: one list of sections in a fixed order; which are open is kept while other elements are selected
       const INSPECTOR = [['properties', 'Properties'], ['binding', 'Data Binding'], ['validation', 'Validation'],
         ['visibility', 'Visibility Conditions'], ['events', 'Events and Actions'], ['style', 'Style'], ['accessibility', 'Accessibility']];
@@ -165,7 +236,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       /** Opens an inspector section and brings it into view (and its first box into focus, when asked). */
       const openSection = (key, focusSelector) => {
-        this.rightOpen(true);
+        openRight('properties');
         this.sectionOpen[key](true);
         setTimeout(() => {
           const section = find('#rightPanel details[data-section="' + key + '"]');
@@ -191,7 +262,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.mode('design');
       };
 
-      // The side panels float over the canvas and collapse to rails; whether each is open is remembered in this browser.
       const remembered = (key, fallback) => {
         try {
           const value = window.localStorage.getItem('factory.designer.' + key);
@@ -204,29 +274,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         try {
           window.localStorage.setItem('factory.designer.' + key, String(value));
         } catch (e) {
-          // private window or blocked storage: the panels just open as before next time
+          // private window or blocked storage: the strip just opens as before next time
         }
       };
-      this.leftOpen = ko.observable(remembered('leftOpen', true));
-      this.rightOpen = ko.observable(remembered('rightOpen', true));
-      this.leftOpen.subscribe((open) => remember('leftOpen', open));
-      this.rightOpen.subscribe((open) => remember('rightOpen', open));
-      // The drawer under the canvas (rules, comments, history, AI Assistant) starts closed so the canvas gets the room
+      // The Behaviour strip under the canvas (rules, APIs, hosts, roles, validations, AI Assistant) starts closed
       this.contextTab = ko.observable('rules');
       this.contextOpen = ko.observable(remembered('contextOpen', false));
       this.contextOpen.subscribe((open) => remember('contextOpen', open));
-      this.collapseLeft = () => this.leftOpen(false);
-      this.collapseRight = () => this.rightOpen(false);
-      const openLeftOn = (tab) => () => { this.leftTab(tab); this.leftOpen(true); };
-      this.railComponents = openLeftOn('components');
-      this.railLayers = openLeftOn('layers');
-      this.railProperties = () => this.rightOpen(true);
-      this.railComments = () => this.showComments();
-      this.railHistory = () => this.showHistory();
-      this.railAssistant = () => this.showAssistant();
-      this.bodyClass = ko.pureComputed(() => 'factory-dz-body' + (this.leftOpen() ? ' factory-dz-left-open' : '')
-        + (this.rightOpen() ? ' factory-dz-right-open' : '') + (this.detail() ? '' : ' factory-dz-nodetail')
-        + (this.previewMode() ? ' factory-dz-previewing' : '') + (this.contextOpen() ? ' factory-dz-ctx-open' : ''));
+      this.shellCss = ko.pureComputed(() => 'factory-dz factory-de' + (this.rails() ? ' is-rails' : ' is-docked') + (this.previewMode() ? ' is-previewing' : ''));
+      this.gridCss = ko.pureComputed(() => 'factory-de-grid' + (this.leftFloat() || this.rightFloat() ? ' has-float' : ''));
 
       const catalog = ko.observableArray([]);
       this.typeOptions = catalog;
@@ -297,6 +353,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           text: 'OBDX ' + this.obdxVersion() + ': ' + counts.VERIFIED + ' verified · ' + counts.UNSUPPORTED + ' unsupported · '
             + counts.UNVERIFIED + ' unverified',
           css: 'factory-dz-compat-chip' + (counts.UNSUPPORTED ? ' factory-dz-compat-chip-bad' : ''),
+          // The toolbar's chip: "✓ OBDX 25.x: 6 verified", or the unsupported count
+          short: (counts.UNSUPPORTED ? '! OBDX ' + this.obdxVersion() + ': ' + counts.UNSUPPORTED + ' unsupported' : '✓ OBDX ' + this.obdxVersion() + ': ' + counts.VERIFIED + ' verified'),
+          chipCss: 'factory-de-chip' + (counts.UNSUPPORTED ? ' is-bad' : ' is-ok'),
           title: 'The elements this screen uses, checked against the OBDX ' + this.obdxVersion() + ' version pack and the bank\'s imported code. '
             + 'Verified: the bank\'s code uses it. Unsupported: a version pack rule forbids it. Unverified: no evidence either way.'
             + (compatibility().imported ? '' : ' The code is not imported yet, so nothing can be verified.')
@@ -357,9 +416,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.frameWidth = ko.pureComputed(() => (this.deviceWidth() ? Math.round(this.deviceWidth() * this.deviceScale()) + 'px' : '100%'));
       this.frameInnerWidth = ko.pureComputed(() => (this.deviceWidth() ? this.deviceWidth() + 'px' : (100 / this.deviceScale()) + '%'));
       const SIZE_GROUPS = [
-        { key: 'fit', keys: ['fit', 'desktop', 'laptop', 'custom'], title: 'Desktop (fit to the canvas)', icon: 'desktop' },
+        { key: 'phone', keys: ['phone', 'phone-small'], title: 'Mobile · 390', icon: 'phone' },
         { key: 'tablet', keys: ['tablet', 'tablet-landscape'], title: 'Tablet · 768', icon: 'tablet' },
-        { key: 'phone', keys: ['phone', 'phone-small'], title: 'Mobile · 390', icon: 'phone' }
+        { key: 'fit', keys: ['fit', 'desktop', 'laptop', 'custom'], title: 'Desktop (fit to the canvas)', icon: 'desktop' }
       ];
       this.sizeButtons = SIZE_GROUPS.map((g) => ({
         title: g.title,
@@ -370,19 +429,43 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         pick: () => this.viewport(g.key)
       }));
       this.viewportOptions = VIEWPORTS.map((v) => ({ value: v.key, label: v.label }));
+      // "Fit ▾": the zoom, the exact screen widths, and the validation and focus-order previews, in one menu
+      this.zoomLabel = ko.pureComputed(() => (this.zoomOptions.find((z) => z.value === this.zoom()) || { label: 'Fit' }).label);
+      this.zoomItems = ko.pureComputed(() => this.zoomOptions.map((z) => ({ value: 'zoom:' + z.value, label: (z.value === this.zoom() ? '✓ ' : '') + (z.value === 'fit' ? 'Fit to the canvas' : 'Zoom ' + z.label) }))
+        .concat([{ separator: true }])
+        .concat(VIEWPORTS.filter((v) => v.width).map((v) => ({ value: 'width:' + v.key, label: (v.key === this.viewport() ? '✓ ' : '') + v.label })))
+        .concat([{ separator: true },
+          { value: 'validation', label: (this.validationPreview() ? '✓ ' : '') + 'Show the validation messages', id: 'validationPreviewButton' },
+          { value: 'focus', label: (this.showFocusOrder() ? '✓ ' : '') + 'Number the focus order', id: 'focusOrderButton' }]));
+      this.zoomMenu = (event) => {
+        const value = event.detail.value;
+        if (value.indexOf('zoom:') === 0) {
+          this.zoom(value.slice(5));
+        } else if (value.indexOf('width:') === 0) {
+          this.viewport(value.slice(6));
+        } else if (value === 'validation') {
+          this.toggleValidationPreview();
+        } else if (value === 'focus') {
+          this.toggleFocusOrder();
+        }
+      };
       // Canvas previews: the messages each field shows when it is checked, and the order the Tab key follows
       this.validationPreview = ko.observable(false);
       this.showFocusOrder = ko.observable(false);
       this.toggleValidationPreview = () => this.validationPreview(!this.validationPreview());
       this.toggleFocusOrder = () => this.showFocusOrder(!this.showFocusOrder());
-      this.frameInnerHeight = ko.pureComputed(() => (100 / this.deviceScale()) + '%');
+      // The canvas is as tall as the screen (the preview reports its height), so the page scrolls, not the canvas
+      this.contentHeight = ko.observable(800);
+      this.frameInnerHeight = ko.pureComputed(() => Math.max(this.contentHeight(), 480) + 'px');
+      this.frameOuterHeight = ko.pureComputed(() => Math.ceil(Math.max(this.contentHeight(), 480) * Math.min(1, this.deviceScale())) + 'px');
       this.frameTransform = ko.pureComputed(() => (this.deviceScale() < 1 ? 'scale(' + this.deviceScale() + ')' : 'none'));
       this.viewportText = ko.pureComputed(() => {
         const width = this.deviceWidth();
         return width ? width + ' px' + (this.deviceScale() < 1 ? ' · shown at ' + Math.round(this.deviceScale() * 100) + '%' : '')
           : Math.round(this.stageWidth()) + ' px';
       });
-      const preview = new PreviewFrame((id) => this.selectedId(id), (targetId, sectionId) => dropOnCanvas(targetId, sectionId));
+      const preview = new PreviewFrame((id) => this.selectedId(id), (targetId, sectionId) => dropOnCanvas(targetId, sectionId),
+        (height) => this.contentHeight(height));
       // The workspace's UI target decides the renderer: JET, or the React Native / React app's own components.
       this.previewKind = ko.observable('jet');
       this.targetTitle = ko.observable('');
@@ -710,13 +793,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         },
         addAction: () => addFromPalette(item, null)
       });
-      // The whole "OBDX Components" tree folds away
-      this.paletteOpen = ko.observable(true);
-      this.togglePalette = () => this.paletteOpen(!this.paletteOpen());
-      this.paletteGroups = ko.pureComputed(() => {
+      // The palette: tiles for the built-in types (Layout, Form controls, Data display, Actions), then the groups found in
+      // the workspace's code as rows that open (each remembers whether it is open while the page is)
+      const workspaceOpen = {};
+      const tileTitles = { 'Form Controls': 'Form controls', 'Data Display': 'Data display', Actions: 'Actions' };
+      const paletteMatch = (item, filter) => !filter || (item.label + ' ' + (item.tag || '') + ' ' + (item.module || '')).toLowerCase().includes(filter);
+      this.tileGroups = ko.pureComputed(() => {
         const filter = (this.paletteFilter() || '').trim().toLowerCase();
-        const matches = (item) => !filter || (item.label + ' ' + (item.tag || '') + ' ' + (item.module || '')).toLowerCase().includes(filter);
-        const builtIn = paletteItems().filter((item) => (item.group === 'Forms' || item.group === 'Controls') && matches(item));
+        const builtIn = paletteItems().filter((item) => (item.group === 'Forms' || item.group === 'Controls') && paletteMatch(item, filter));
         // Layout: a section of the screen; it is added with a click, not dragged into another section
         const layout = !filter || 'section layout'.includes(filter) ? [{
           id: 'layout:section', page: self, drag: false, label: 'Section', icon: '▭', detail: '', custom: false,
@@ -728,16 +812,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             }
           }
         }] : [];
-        return [{ title: 'Layout', open: true, items: layout }]
-          .concat(BUILT_IN_GROUPS.map((g) => ({
-            title: g.title, open: true, items: builtIn.filter((item) => g.types.includes(item.type)).map(paletteRow)
-          })))
-          .concat(GROUPS.filter((group) => group !== 'Forms' && group !== 'Controls').map((group) => ({
-            title: group,
-            open: group !== 'Other components used in this code' || !!filter,
-            items: paletteItems().filter((item) => item.group === group && matches(item)).map(paletteRow)
-          })))
-          .filter((group) => group.items.length > 0);
+        return [{ title: 'Layout', items: layout }]
+          .concat(BUILT_IN_GROUPS.map((g) => ({ title: tileTitles[g.title] || g.title, items: builtIn.filter((item) => g.types.includes(item.type)).map(paletteRow) })))
+          .filter((g) => g.items.length > 0);
+      });
+      this.workspaceGroups = ko.pureComputed(() => {
+        const filter = (this.paletteFilter() || '').trim().toLowerCase();
+        return GROUPS.filter((group) => group !== 'Forms' && group !== 'Controls').map((group) => {
+          if (!workspaceOpen[group]) {
+            workspaceOpen[group] = ko.observable(false);
+          }
+          const items = paletteItems().filter((item) => item.group === group && paletteMatch(item, filter)).map(paletteRow);
+          const open = workspaceOpen[group];
+          return {
+            title: group, count: String(items.length), items: items,
+            // A search opens every group it finds something in
+            open: ko.pureComputed(() => open() || (!!filter && items.length > 0)),
+            toggle: () => open(!open())
+          };
+        });
       });
       const loadCustom = (id) => api.get('workspaces/' + id + '/custom-components').then((list) => customItems(list));
       const loadPalette = (id) => Promise.all([
@@ -794,7 +887,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.newComponentLink('');
           this.drawer(null);
           this.leftTab('components');
-          this.leftOpen(true);
+          if (this.rails()) { this.leftFloat(true); }
           showInfo('"' + component.name + '" is in Custom components. Drag it onto the screen.');
           return loadCustom(id);
         }).catch(showError).finally(() => this.busy(false));
@@ -1748,15 +1841,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.checksSummary = ko.pureComputed(() => (this.openChecks() === 0 ? 'Ready to approve'
         : this.openChecks() + (this.openChecks() === 1 ? ' check to fix' : ' checks to fix')));
       this.showChecks = () => {
-        this.selectedId(null);
-        this.rightOpen(true);
+        openRight('checks');
         setTimeout(() => {
           const checks = find('#checksSection');
           if (checks) {
-            checks.open = true;
             checks.scrollIntoView({ block: 'nearest' });
           }
         }, 80);
+      };
+      /** Selects the field a text names (the Studio's "Confirm" on a value to confirm), and shows its properties. */
+      this.selectByText = (text) => {
+        const model = this.working();
+        const lower = String(text || '').toLowerCase();
+        const found = model ? allComponents(model).filter((c) => (c.label || c.name) && lower.indexOf(String(c.label || c.name).toLowerCase()) >= 0)
+          .sort((a, b) => String(b.label || b.name).length - String(a.label || a.name).length)[0] : null;
+        if (found) {
+          this.selectedId(found.id);
+          openRight('properties');
+        }
       };
       /**
        * What the requirement says about this screen: the functional requirements it serves (FR-001), the acceptance
@@ -1886,9 +1988,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const earlier = d.versions.filter((v) => v.version < d.currentVersion).map((v) => v.version);
         this.compareFrom(this.dirty() ? String(d.currentVersion) : earlier.length ? String(Math.max.apply(null, earlier)) : String(d.currentVersion));
       };
+      let compareRun = 0;
       this.compare = () => {
         const from = this.compareFrom();
         const to = this.compareTo();
+        const run = ++compareRun;
         if (!this.detail() || !from || !to) {
           return;
         }
@@ -1898,6 +2002,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         Promise.all([modelOf(from), modelOf(to)]).then(([a, b]) => {
+          // A later comparison (another pair chosen meanwhile) wins over one whose older version took longer to load
+          if (run !== compareRun) {
+            return;
+          }
           const label = (key) => (key === 'working' ? 'the unsaved changes' : 'v' + key);
           this.compareNote('From ' + label(from) + ' to ' + label(to) + ':');
           this.differences(designDiff(a, b).map((d) => {
@@ -1915,11 +2023,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       ko.computed(() => {
         this.compareFrom();
         this.compareTo();
-        if (this.contextTab() === 'history' && this.contextOpen()) {
+        if (this.rightTab() === 'history' && this.rightShown()) {
           ko.ignoreDependencies(this.compare);
         }
       });
-      this.contextTab.subscribe((tab) => { if (tab === 'history') { resetCompare(); } });
+      this.rightTab.subscribe((tab) => { if (tab === 'history') { resetCompare(); } });
       this.compareVersion = ko.pureComputed(() => {
         const from = this.compareFrom();
         return from && from !== 'working' && this.detail() && Number(from) !== this.detail().currentVersion ? Number(from) : null;
@@ -2051,6 +2159,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.drawer(null);
         this.previewMode(false);
         this.mode('design');
+        this.leftFloat(false);
+        this.rightFloat(false);
         this.clearMessages();
       };
       /** Opens a screen without asking (the caller has asked: the Studio's guard). */
@@ -2233,15 +2343,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         version: 'v' + v.version, origin: v.origin.charAt(0) + v.origin.slice(1).toLowerCase(), note: v.note || '', when: new Date(v.createdAt).toLocaleString()
       })) : []));
       const ctxTab = (value, label, list, title) => ({
-        value: value, id: 'ctxTab-' + value, title: title || label, text: ko.pureComputed(() => label + (list ? ' (' + list().length + ')' : '')),
+        value: value, id: 'ctxTab-' + value, title: title || label, text: ko.pureComputed(() => label + (list ? ' ' + list().length : '')),
         selected: ko.pureComputed(() => this.contextTab() === value),
         css: ko.pureComputed(() => 'factory-tab' + (this.contextTab() === value ? ' factory-tab-on' : '')),
         pick: () => { this.contextTab(value); this.contextOpen(true); }
       });
       this.contextTabs = [
         ctxTab('rules', 'Rules', this.ctxRules, 'Business rules from the requirement'), ctxTab('apis', 'APIs', this.ctxApis), ctxTab('hosts', 'Hosts', this.ctxHosts, 'Host interfaces from the requirement'),
-        ctxTab('roles', 'Roles', this.ctxRoles), ctxTab('validations', 'Validations', this.ctxValidations), ctxTab('comments', 'Comments', this.ctxComments),
-        ctxTab('history', 'History', this.ctxVersions), ctxTab('assistant', 'AI Assistant', null)
+        ctxTab('roles', 'Roles', this.ctxRoles), ctxTab('validations', 'Validations', this.ctxValidations),
+        ctxTab('assistant', 'AI Assistant', null)
       ];
       this.contextTabKey = (event) => {
         const keys = this.contextTabs.map((t) => t.value);

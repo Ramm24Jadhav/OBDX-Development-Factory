@@ -1,4 +1,4 @@
-<div class="factory-dz">
+<div :class="[[shellCss]]">
   <!-- Messages -->
   <oj-bind-if test="[[errorMessage()]]">
     <div id="designError" class="fx-alert fx-alert--danger factory-dz-alert" role="alert">
@@ -107,102 +107,108 @@
     </div>
   </oj-bind-if>
 
-  <div :class="[[bodyClass]]" data-fx-panes>
-    <!-- Rails: the collapsed side panels -->
-    <div id="leftRail" class="factory-dz-rail factory-dz-rail-left" :style.display="[[detail() && !leftOpen() ? 'flex' : 'none']]">
-      <button type="button" class="factory-dz-rail-btn" title="Components" aria-label="Show components" on-click="[[railComponents]]">⧉<span>Components</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="Layers" aria-label="Show the layers" on-click="[[railLayers]]">☰<span>Layers</span></button>
-    </div>
-    <div id="rightRail" class="factory-dz-rail factory-dz-rail-right" :style.display="[[detail() && !rightOpen() ? 'flex' : 'none']]">
-      <button type="button" class="factory-dz-rail-btn" title="Inspector" aria-label="Show the inspector" on-click="[[railProperties]]">⚙<span>Inspector</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="Checks" aria-label="Show checks" on-click="[[showChecks]]">
-        <oj-bind-text value="[[openChecks() > 0 ? '!' : '✓']]"></oj-bind-text><span>Checks</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="Comments" aria-label="Show comments" on-click="[[railComments]]">✎<span>Comments</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="History" aria-label="Show history" on-click="[[railHistory]]">↺<span>History</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="AI Assistant" aria-label="Show the AI Assistant" on-click="[[railAssistant]]">✦<span>AI</span></button>
-    </div>
 
-    <!-- Left: components, the open screen's layers, and the workspace's screens -->
-    <aside id="leftPanel" class="factory-dz-left factory-dz-float" :style.display="[[detail() && leftOpen() ? 'flex' : 'none']]" aria-label="Components, layers and screens">
-      <div class="factory-dz-tabs" role="tablist" aria-label="Left panel" on-keydown="[[leftTabKey]]">
-        <oj-bind-for-each data="[[leftTabs]]" as="lt">
-          <template>
-            <button type="button" role="tab" :id="[[lt.data.id]]" :class="[[lt.data.css]]" :aria-selected="[[lt.data.selected() ? 'true' : 'false']]"
-                    :tabindex="[[lt.data.selected() ? '0' : '-1']]" aria-controls="leftPanelBody" on-click="[[lt.data.pick]]"><oj-bind-text value="[[lt.data.label]]"></oj-bind-text></button>
-          </template>
-        </oj-bind-for-each>
-        <span class="factory-dz-spacer"></span>
-        <button type="button" id="collapseLeftButton" class="factory-dz-icon" title="Collapse to the side" aria-label="Collapse the left panel"
-                on-click="[[collapseLeft]]">«</button>
+  <div :class="[[gridCss]]" data-fx-panes>
+    <!-- Left: Components | Layers. Expanded (or on a tablet) a rail that opens a floating panel; else a docked column -->
+    <oj-bind-if test="[[rails()]]">
+      <div class="factory-de-rail factory-de-rail-left" id="leftRail" role="toolbar" aria-label="Editor tools" aria-orientation="vertical">
+        <button type="button" id="railComponents" class="factory-de-railbtn" title="Components" aria-label="Components" :aria-pressed="[[leftFloat() && leftTab() === 'components' ? 'true' : 'false']]" on-click="[[railComponents]]">▦</button>
+        <button type="button" id="railLayers" class="factory-de-railbtn" title="Layers" aria-label="Layers" :aria-pressed="[[leftFloat() && leftTab() === 'layers' ? 'true' : 'false']]" on-click="[[railLayers]]">≣</button>
       </div>
-      <div class="factory-dz-panel-scroll" id="leftPanelBody" role="tabpanel" :aria-labelledby="[['leftTab-' + leftTab()]]">
+    </oj-bind-if>
+    <aside id="leftPanel" class="factory-de-panel factory-de-left" :style.display="[[leftShown() ? 'flex' : 'none']]" aria-label="Components and layers">
+      <div class="factory-de-panelhead">
+        <div class="factory-de-seg" role="tablist" aria-label="Left panel" on-keydown="[[leftTabKey]]">
+          <oj-bind-for-each data="[[leftTabs]]" as="lt">
+            <template>
+              <button type="button" role="tab" :id="[[lt.data.id]]" :aria-selected="[[lt.data.selected() ? 'true' : 'false']]"
+                      :tabindex="[[lt.data.selected() ? '0' : '-1']]" aria-controls="leftPanelBody" on-click="[[lt.data.pick]]"><oj-bind-text value="[[lt.data.label]]"></oj-bind-text></button>
+            </template>
+          </oj-bind-for-each>
+        </div>
+        <oj-bind-if test="[[rails()]]"><button type="button" class="factory-de-close" aria-label="Close panel" title="Close" on-click="[[closeLeft]]">×</button></oj-bind-if>
+      </div>
+      <div class="factory-de-panelbody" id="leftPanelBody" role="tabpanel" :aria-labelledby="[['leftTab-' + leftTab()]]">
         <oj-bind-if test="[[leftTab() === 'components']]">
-          <div id="designPalette">
+          <div id="designPalette" class="factory-de-palette">
             <oj-bind-if test="[[!editable()]]">
               <p class="factory-dz-note"><oj-bind-text value="[[readOnlyNote]]"></oj-bind-text></p>
             </oj-bind-if>
-            <div class="factory-dz-row">
-              <input type="search" id="paletteFilter" class="fx-input factory-dz-input factory-dz-search factory-dz-grow" placeholder="Search components..."
-                     aria-label="Search components" data-bind="textInput: paletteFilter"/>
-            </div>
-            <oj-bind-if test="[[editable()]]">
-              <button type="button" id="createComponentButton" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[openNewComponent]]">+ Create component</button>
-              <p class="factory-dz-hint">Drag onto the canvas or a layer, or press Enter or click to add after the selection.</p>
-            </oj-bind-if>
+            <label class="factory-de-search"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
+              <span class="fx-visually-hidden">Search components</span>
+              <input type="search" id="paletteFilter" placeholder="Search components" data-bind="textInput: paletteFilter"/></label>
             <oj-bind-if test="[[paletteNote()]]">
               <p class="factory-dz-note"><oj-bind-text value="[[paletteNote]]"></oj-bind-text></p>
             </oj-bind-if>
-            <div class="factory-dz-treehead">
-              <button type="button" id="paletteTreeToggle" class="factory-dz-treehead-btn" :aria-expanded="[[paletteOpen() ? 'true' : 'false']]" on-click="[[togglePalette]]">
-                <span>Components</span>
-                <span :class="[[paletteOpen() ? 'factory-dz-chev factory-dz-chev-up' : 'factory-dz-chev']]" aria-hidden="true"></span></button>
-            </div>
-            <p class="factory-dz-hint factory-dz-palette-note">Form controls are the factory's own types; code generation writes them as Oracle JET
-              elements. The groups below them were found in the bank's code.</p>
-            <div class="factory-dz-tree" :style.display="[[paletteOpen() ? 'block' : 'none']]">
-            <oj-bind-for-each data="[[paletteGroups]]" as="g">
+            <oj-bind-for-each data="[[tileGroups]]" as="g">
               <template>
-                <details class="factory-palette-group factory-dz-treegroup" :open="[[g.data.open]]">
-                  <summary><span class="factory-dz-chev factory-dz-chev-sm" aria-hidden="true"></span><oj-bind-text value="[[g.data.title]]"></oj-bind-text>
-                    <span class="factory-dz-count"><oj-bind-text value="[[g.data.items.length]]"></oj-bind-text></span></summary>
-                  <div class="factory-dz-treelist">
+                <div class="factory-de-tilegroup">
+                  <span class="factory-de-grouptitle"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></span>
+                  <div class="factory-de-tiles">
                     <oj-bind-for-each data="[[g.data.items]]" as="p">
                       <template>
-                        <div :class="[['factory-palette-item factory-dz-treeitem' + (p.data.page.editable() ? '' : ' factory-dz-palette-off')]]" :draggable="[[p.data.page.editable() && p.data.drag ? 'true' : 'false']]" :aria-disabled="[[p.data.page.editable() ? 'false' : 'true']]" tabindex="0" role="button"
-                             :data-pid="[[p.data.id]]" :title="[[p.data.title + (p.data.detail ? ' · ' + p.data.detail : '')]]"
+                        <div :class="[['factory-palette-item factory-de-tile' + (p.data.page.editable() ? '' : ' factory-dz-palette-off')]]" :draggable="[[p.data.page.editable() && p.data.drag ? 'true' : 'false']]" :aria-disabled="[[p.data.page.editable() ? 'false' : 'true']]" tabindex="0" role="button"
+                             :data-pid="[[p.data.id]]" :title="[[p.data.title]]"
                              on-dragstart="[[p.data.page.paletteDragStart]]" on-dragend="[[p.data.page.dragEnd]]" on-click="[[p.data.addAction]]" on-keydown="[[p.data.page.paletteKey]]">
-                          <span class="factory-palette-icon" aria-hidden="true"><oj-bind-text value="[[p.data.icon]]"></oj-bind-text></span>
+                          <span class="factory-de-tileicon" aria-hidden="true"><oj-bind-text value="[[p.data.icon]]"></oj-bind-text></span>
                           <span class="factory-palette-label"><oj-bind-text value="[[p.data.label]]"></oj-bind-text></span>
-                          <oj-bind-if test="[[p.data.drag && p.data.page.editable()]]"><span class="factory-dz-grip" aria-hidden="true">⠿</span></oj-bind-if>
-                          <oj-bind-if test="[[p.data.custom]]">
-                            <button type="button" class="factory-palette-delete" title="Delete this custom component" aria-label="Delete this custom component"
-                                    on-click="[[p.data.deleteAction]]">✕</button>
-                          </oj-bind-if>
                         </div>
                       </template>
                     </oj-bind-for-each>
                   </div>
-                </details>
+                </div>
               </template>
             </oj-bind-for-each>
-            </div>
+            <oj-bind-if test="[[workspaceGroups().length > 0]]">
+              <div class="factory-de-workspace">
+                <span class="factory-de-grouptitle">From this workspace</span>
+                <oj-bind-for-each data="[[workspaceGroups]]" as="g">
+                  <template>
+                    <div class="factory-de-wsgroup">
+                      <button type="button" class="factory-de-wsrow" :aria-expanded="[[g.data.open() ? 'true' : 'false']]" on-click="[[g.data.toggle]]">
+                        <span class="factory-de-twisty" aria-hidden="true"><oj-bind-text value="[[g.data.open() ? '▾' : '▸']]"></oj-bind-text></span>
+                        <span class="factory-row-label"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></span>
+                        <span class="factory-de-type"><oj-bind-text value="[[g.data.count]]"></oj-bind-text></span></button>
+                      <oj-bind-if test="[[g.data.open()]]">
+                        <div class="factory-de-wslist">
+                          <oj-bind-for-each data="[[g.data.items]]" as="p">
+                            <template>
+                              <div :class="[['factory-palette-item factory-dz-treeitem' + (p.data.page.editable() ? '' : ' factory-dz-palette-off')]]" :draggable="[[p.data.page.editable() && p.data.drag ? 'true' : 'false']]" :aria-disabled="[[p.data.page.editable() ? 'false' : 'true']]" tabindex="0" role="button"
+                                   :data-pid="[[p.data.id]]" :title="[[p.data.title + (p.data.detail ? ' · ' + p.data.detail : '')]]"
+                                   on-dragstart="[[p.data.page.paletteDragStart]]" on-dragend="[[p.data.page.dragEnd]]" on-click="[[p.data.addAction]]" on-keydown="[[p.data.page.paletteKey]]">
+                                <span class="factory-palette-icon" aria-hidden="true"><oj-bind-text value="[[p.data.icon]]"></oj-bind-text></span>
+                                <span class="factory-palette-label"><oj-bind-text value="[[p.data.label]]"></oj-bind-text></span>
+                                <oj-bind-if test="[[p.data.custom]]">
+                                  <button type="button" class="factory-palette-delete" title="Delete this custom component" aria-label="Delete this custom component"
+                                          on-click="[[p.data.deleteAction]]">✕</button>
+                                </oj-bind-if>
+                              </div>
+                            </template>
+                          </oj-bind-for-each>
+                        </div>
+                      </oj-bind-if>
+                    </div>
+                  </template>
+                </oj-bind-for-each>
+              </div>
+            </oj-bind-if>
           </div>
         </oj-bind-if>
         <oj-bind-if test="[[leftTab() === 'layers']]">
           <div>
-            <div class="factory-dz-lhead"><oj-bind-text value="[['Layers of ' + (working() ? working().title || detail().name : '')]]"></oj-bind-text></div>
+            
             <oj-bind-if test="[[editable()]]">
               <p class="factory-dz-hint" id="layersHint">Drag a row to move it, or select it and press Alt with ↑ or ↓. A line shows where it lands.</p>
             </oj-bind-if>
             <div id="designLayers" class="factory-layers" role="tree" aria-label="Layers" aria-describedby="layersHint" on-keydown="[[layerKey]]">
               <div :class="[['factory-layer factory-layer-screen' + (selectedKind() === 'screen' ? ' factory-layer-selected' : '')]]" role="treeitem" aria-level="1"
-                   tabindex="0" data-layer="screen" :aria-selected="[[selectedKind() === 'screen' ? 'true' : 'false']]" on-click="[[selectScreen]]">Screen</div>
+                   tabindex="0" data-layer="screen" :aria-selected="[[selectedKind() === 'screen' ? 'true' : 'false']]" on-click="[[selectScreen]]"><span class="factory-de-twisty" aria-hidden="true">▾</span><span class="factory-row-label"><oj-bind-text value="[[screenHeading]]"></oj-bind-text></span><span class="factory-de-type">Page</span></div>
               <oj-bind-for-each data="[[layers]]" as="s">
                 <template>
                   <div class="factory-layer-group" role="group" :data-sid="[[s.data.id]]" on-dragover="[[s.data.page.dragOver]]" on-dragleave="[[s.data.page.dragLeave]]" on-drop="[[s.data.page.dropOnSection]]">
                     <div :class="[['factory-layer factory-layer-section' + (s.data.selected ? ' factory-layer-selected' : '')]]" role="treeitem" aria-level="2" tabindex="-1"
                          :data-layer="[[s.data.id]]" :aria-selected="[[s.data.selected ? 'true' : 'false']]" on-click="[[s.data.selectAction]]">
-                      <span aria-hidden="true">▾</span> <oj-bind-text value="[[s.data.title]]"></oj-bind-text>
+                      <span class="factory-de-twisty" aria-hidden="true">▾</span><span class="factory-row-label"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></span><span class="factory-de-type">Section</span>
                     </div>
                     <oj-bind-for-each data="[[s.data.components]]" as="c">
                       <template>
@@ -214,7 +220,7 @@
                           <span class="factory-palette-icon" aria-hidden="true"><oj-bind-text value="[[c.data.icon]]"></oj-bind-text></span>
                           <span class="factory-row-label"><oj-bind-text value="[[c.data.label]]"></oj-bind-text></span>
                           <oj-bind-if test="[[c.data.conditional]]"><span class="factory-dz-hint" title="Shown only when a condition holds">◑</span></oj-bind-if>
-                          <span class="fx-visually-hidden"><oj-bind-text value="[[', ' + c.data.typeLabel]]"></oj-bind-text></span>
+                          <span class="factory-de-type"><span class="fx-visually-hidden">, </span><oj-bind-text value="[[c.data.typeLabel]]"></oj-bind-text></span>
                           <span :class="[[c.data.mark.css]]" :title="[[c.data.mark.title]]"><oj-bind-text value="[[c.data.mark.text]]"></oj-bind-text>
                             <span class="fx-visually-hidden"><oj-bind-text value="[[c.data.mark.title]]"></oj-bind-text></span></span>
                         </div>
@@ -227,14 +233,14 @@
                 </template>
               </oj-bind-for-each>
               <div class="factory-layer-group" role="group">
-                <div class="factory-layer factory-layer-section"><span aria-hidden="true">▾</span> Buttons</div>
+                <div class="factory-layer factory-layer-section"><span class="factory-de-twisty" aria-hidden="true">▾</span><span class="factory-row-label">Actions</span><span class="factory-de-type">Section</span></div>
                 <oj-bind-for-each data="[[actionLayers]]" as="a">
                   <template>
                     <div :class="[['factory-layer factory-layer-component' + (a.data.selected ? ' factory-layer-selected' : '')]]" role="treeitem" aria-level="2" tabindex="-1"
                          :data-layer="[[a.data.id]]" :aria-selected="[[a.data.selected ? 'true' : 'false']]" on-click="[[a.data.selectAction]]">
                       <span class="factory-palette-icon" aria-hidden="true">▭</span>
                       <span class="factory-row-label"><oj-bind-text value="[[a.data.label]]"></oj-bind-text></span>
-                      <span class="factory-dz-hint factory-dz-layer-type"><oj-bind-text value="[[a.data.kind]]"></oj-bind-text></span>
+                      <span class="factory-de-type">Button</span>
                       <span :class="[[a.data.mark.css]]" :title="[[a.data.mark.title]]"><oj-bind-text value="[[a.data.mark.text]]"></oj-bind-text>
                         <span class="fx-visually-hidden"><oj-bind-text value="[[a.data.mark.title]]"></oj-bind-text></span></span>
                     </div>
@@ -251,80 +257,63 @@
           </div>
         </oj-bind-if>
       </div>
+      <oj-bind-if test="[[leftTab() === 'components']]">
+        <div class="factory-de-panelfoot">
+          <span class="factory-dz-hint">Drag onto the canvas, or press Enter to add after the selection.</span>
+          <oj-bind-if test="[[editable()]]">
+            <button type="button" id="createComponentButton" class="factory-de-create" on-click="[[openNewComponent]]">+ Create component</button>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
+      <oj-bind-if test="[[leftTab() === 'layers']]">
+        <div class="factory-de-panelfoot"><span class="factory-dz-hint">Drag to reorder. Select a layer to edit it in Properties.</span></div>
+      </oj-bind-if>
     </aside>
-    <fx-resizer class="factory-dz-resizer" storage-key="designer-left" min="200" max="420" label="Resize the components panel"
-                :style.display="[[detail() && leftOpen() && !previewMode() ? '' : 'none']]"></fx-resizer>
-    <!-- Centre: the canvas -->
-    <main class="factory-dz-canvas">
+
+    <!-- Centre: one toolbar, the canvas at the screen's full height, Ask AI, and the screen's behaviour -->
+    <section class="factory-de-canvas" aria-label="Canvas">
       <oj-bind-if test="[[!detail()]]">
         <p class="factory-dz-hint factory-dz-opening">Opening the screen…</p>
       </oj-bind-if>
       <oj-bind-if test="[[detail()]]">
-        <div id="journeyStrip" class="factory-dz-journey2">
-          <ol class="factory-dz-stepper">
-            <oj-bind-for-each data="[[journeySteps]]" as="st">
-              <template>
-                <li :class="[[st.data.css]]">
-                  <button type="button" class="factory-dz-stepbtn" on-click="[[st.data.openAction]]" :disabled="[[!st.data.openable]]" :title="[[st.data.title]]"
-                          :aria-current="[[st.data.current ? 'step' : 'false']]">
-                    <span class="factory-dz-stepdot"><oj-bind-text value="[[st.data.mark]]"></oj-bind-text></span>
-                    <span class="factory-dz-steplabel"><oj-bind-text value="[[st.data.number + '. ' + st.data.name]]"></oj-bind-text></span>
-                    <span :class="[[st.data.status.css + ' factory-dz-stepsub']]"><span :class="[[st.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[st.data.status.text]]"></oj-bind-text></span>
-                  </button>
-                </li>
-              </template>
-            </oj-bind-for-each>
-          </ol>
-          <div class="factory-dz-journeyname">
-            <strong><oj-bind-text value="[[journeyTitle() || 'No requirement']]"></oj-bind-text></strong>
-            <span class="factory-dz-hint"><oj-bind-text value="[[journey().length ? journeyApproved() + ' of ' + journey().length + ' screens approved' : 'A screen of its own']]"></oj-bind-text></span>
-            <oj-bind-if test="[[journeyDone()]]">
-              <a class="factory-dz-link" href="?ojr=changes">Plan the change</a>
+        <div id="canvasToolbar" class="factory-de-toolbar" role="toolbar" aria-label="Editing tools">
+          <div class="factory-de-toolgroup">
+            <div class="factory-de-pair" role="group" aria-label="Undo and redo">
+              <button type="button" id="undoButton" title="Undo (Ctrl+Z)" aria-label="Undo" on-click="[[undo]]" :disabled="[[!canUndo()]]">↶</button>
+              <button type="button" id="redoButton" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
+            </div>
+            <div class="factory-de-switch" role="group" aria-label="Design or code">
+              <button type="button" id="designModeButton" :aria-pressed="[[mode() === 'design' ? 'true' : 'false']]" on-click="[[setDesignMode]]">Design</button>
+              <button type="button" id="codeModeButton" :aria-pressed="[[mode() === 'code' ? 'true' : 'false']]" on-click="[[setCodeMode]]">Code</button>
+            </div>
+            <div class="factory-de-switch" role="group" aria-label="Screen size">
+              <oj-bind-for-each data="[[sizeButtons]]" as="sz">
+                <template>
+                  <button type="button" :title="[[sz.data.title]]" :aria-pressed="[[sz.data.on() ? 'true' : 'false']]" on-click="[[sz.data.pick]]"><oj-bind-text value="[[sz.data.label]]"></oj-bind-text></button>
+                </template>
+              </oj-bind-for-each>
+            </div>
+          </div>
+          <div class="factory-de-toolgroup">
+            <oj-bind-if test="[[compatibilitySummary().shown]]">
+              <button type="button" id="compatibilityChip" :class="[[compatibilitySummary().chipCss]]" :title="[[compatibilitySummary().title]]" on-click="[[showChecks]]">
+                <oj-bind-text value="[[compatibilitySummary().short]]"></oj-bind-text></button>
             </oj-bind-if>
+            <fx-menu-button id="zoomMenu" class="factory-de-zoom" label="[[zoomLabel]]" variant="secondary" size="sm" items="[[zoomItems]]" on-fx-action="[[zoomMenu]]"></fx-menu-button>
+            <button type="button" id="previewButton" class="fx-btn fx-btn--secondary fx-btn--sm" :aria-pressed="[[previewMode() ? 'true' : 'false']]"
+                    on-click="[[togglePreview]]" title="See the screen without the panels"><oj-bind-text value="[[previewMode() ? 'Exit preview' : 'Preview']]"></oj-bind-text></button>
           </div>
-          <span class="factory-dz-journeyicon" aria-hidden="true"><span class="factory-nav-icon factory-ico-chart"></span></span>
-        </div>
-        <!-- Canvas toolbar: screen size, zoom, the validation and focus-order previews, compatibility -->
-        <div id="canvasToolbar" class="factory-dz-toolbar" role="toolbar" aria-label="Canvas" :style.display="[[mode() === 'design' ? '' : 'none']]">
-          <div class="fx-toggle-group factory-dz-sizes" role="group" aria-label="Screen size">
-            <oj-bind-for-each data="[[sizeButtons]]" as="sz">
-              <template>
-                <button type="button" :data-fx-tip="[[sz.data.title]]" :aria-label="[[sz.data.title]]" :aria-pressed="[[sz.data.on() ? 'true' : 'false']]" on-click="[[sz.data.pick]]">
-                  <span :class="[[sz.data.icon]]" aria-hidden="true"></span></button>
-              </template>
-            </oj-bind-for-each>
-          </div>
-          <select id="viewportSelect" class="fx-select factory-dz-toolselect" aria-label="Screen width" title="Screen width"
-                  data-bind="options: viewportOptions, optionsText: 'label', optionsValue: 'value', value: viewport"></select>
-          <oj-bind-if test="[[viewport() === 'custom']]">
-            <input type="number" id="customWidth" class="fx-input factory-dz-input factory-dz-width" min="320" max="2560" step="10" aria-label="Width in pixels"
-                   data-bind="value: customWidth"/>
-          </oj-bind-if>
-          <div class="factory-dz-zoomgroup" role="group" aria-label="Zoom">
-            <button type="button" id="zoomOutButton" class="factory-dz-icon" aria-label="Zoom out" title="Zoom out" on-click="[[zoomOut]]" :disabled="[[!canZoomOut()]]">−</button>
-            <select id="zoomSelect" class="fx-select factory-dz-zoom" aria-label="Zoom" title="Zoom" data-bind="options: zoomOptions, optionsText: 'label', optionsValue: 'value', value: zoom"></select>
-            <button type="button" id="zoomInButton" class="factory-dz-icon" aria-label="Zoom in" title="Zoom in" on-click="[[zoomIn]]" :disabled="[[!canZoomIn()]]">+</button>
-          </div>
-          <span class="factory-dz-toolsep" aria-hidden="true"></span>
-          <button type="button" id="validationPreviewButton" class="factory-dz-toolbtn" :aria-pressed="[[validationPreview() ? 'true' : 'false']]"
-                  on-click="[[toggleValidationPreview]]" title="Show the messages each field gives when it is checked; type on the canvas to see them change">Validation</button>
-          <button type="button" id="focusOrderButton" class="factory-dz-toolbtn" :aria-pressed="[[showFocusOrder() ? 'true' : 'false']]"
-                  on-click="[[toggleFocusOrder]]" title="Number the fields and buttons in the order the Tab key reaches them">Focus order</button>
-          <span class="factory-dz-spacer"></span>
-          <oj-bind-if test="[[compatibilitySummary().shown]]">
-            <button type="button" id="compatibilityChip" :class="[[compatibilitySummary().css]]" :title="[[compatibilitySummary().title]]" on-click="[[railLayers]]">
-              <oj-bind-text value="[[compatibilitySummary().text]]"></oj-bind-text></button>
-          </oj-bind-if>
         </div>
       </oj-bind-if>
-      <div class="factory-dz-stage" :style.display="[[detail() && mode() === 'design' ? 'flex' : 'none']]">
-        <div class="factory-dz-device" :style.width="[[frameWidth]]">
-          <iframe id="designerPreview" title="Screen canvas" :src="[[previewSrc]]" class="factory-dz-frame"
-                  :style.width="[[frameInnerWidth]]" :style.height="[[frameInnerHeight]]" :style.transform="[[frameTransform]]"></iframe>
-        </div>
-        <p id="previewNote" class="factory-dz-hint factory-dz-canvas-note"><span id="viewportText"><oj-bind-text value="[[viewportText]]"></oj-bind-text></span>
-          · <span id="channelsText"><oj-bind-text value="[[channelsText]]"></oj-bind-text></span>
-          · <oj-bind-text value="[[previewNote]]"></oj-bind-text>. Click a component to select it.</p>
+      <!-- The canvas stays in the page (the preview connection is made once, when the designer opens) -->
+        <div class="factory-dz-stage factory-de-stage" :style.display="[[detail() && mode() === 'design' ? 'flex' : 'none']]">
+          <div class="factory-dz-device" :style.width="[[frameWidth]]" :style.height="[[frameOuterHeight]]">
+            <iframe id="designerPreview" title="Screen canvas" :src="[[previewSrc]]" class="factory-dz-frame" scrolling="no"
+                    :style.width="[[frameInnerWidth]]" :style.height="[[frameInnerHeight]]" :style.transform="[[frameTransform]]"></iframe>
+          </div>
+          <p id="previewNote" class="factory-dz-hint factory-dz-canvas-note"><span id="viewportText"><oj-bind-text value="[[viewportText]]"></oj-bind-text></span>
+            · <span id="channelsText"><oj-bind-text value="[[channelsText]]"></oj-bind-text></span>
+            · <oj-bind-text value="[[previewNote]]"></oj-bind-text>. Click a component to select it.</p>
         <oj-bind-if test="[[editable()]]">
           <div class="factory-dz-ai">
             <span class="factory-dz-ai-mark" aria-hidden="true">✦</span>
@@ -343,7 +332,7 @@
             </button>
           </div>
         </oj-bind-if>
-      </div>
+        </div>
       <!-- Code mode: what the screen is made of, and the app code for React Native and React workspaces -->
       <oj-bind-if test="[[detail() && mode() === 'code']]">
         <div class="factory-dz-codeview" id="designCode">
@@ -371,26 +360,24 @@
           <pre class="factory-dz-json" id="designJson"><oj-bind-text value="[[modelJson]]"></oj-bind-text></pre>
         </div>
       </oj-bind-if>
-    </main>
-
-    <!-- Under the canvas, one drawer: the requirement's rules and context, comments, history with compare, the AI Assistant -->
-    <oj-bind-if test="[[detail()]]">
-      <section class="factory-dz-context" id="designContext" aria-label="Screen context">
-        <div class="factory-dz-context-head">
-          <div class="factory-subtabs" role="tablist" aria-label="Screen context" on-keydown="[[contextTabKey]]">
-            <oj-bind-for-each data="[[contextTabs]]">
-              <template><button type="button" role="tab" :id="[[$current.data.id]]" :title="[[$current.data.title]]" :class="[[$current.data.css]]"
-                                :aria-selected="[[$current.data.selected() && contextOpen() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]"
-                                aria-controls="designContextBody" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-            </oj-bind-for-each>
+      <oj-bind-if test="[[detail()]]">
+        <!-- The screen's behaviour: what its requirement says, in one strip at the bottom -->
+        <section class="factory-dz-context factory-de-behaviour" id="designContext" aria-label="Behaviour">
+          <div class="factory-dz-context-head">
+            <button type="button" id="contextToggle" class="factory-de-behaviourtoggle" :aria-expanded="[[contextOpen() ? 'true' : 'false']]" aria-controls="designContextBody"
+                    on-click="[[toggleContext]]">Behaviour <span aria-hidden="true"><oj-bind-text value="[[contextOpen() ? '▾' : '▴']]"></oj-bind-text></span></button>
+            <div class="factory-subtabs" role="tablist" aria-label="Behaviour" on-keydown="[[contextTabKey]]">
+              <oj-bind-for-each data="[[contextTabs]]">
+                <template><button type="button" role="tab" :id="[[$current.data.id]]" :title="[[$current.data.title]]" :class="[[$current.data.css]]"
+                                  :aria-selected="[[$current.data.selected() && contextOpen() ? 'true' : 'false']]" :tabindex="[[$current.data.selected() ? '0' : '-1']]"
+                                  aria-controls="designContextBody" on-click="[[$current.data.pick]]"><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </div>
+            <span :title="[[addRuleTitle]]"><button type="button" id="addRuleButton" class="factory-dz-addrule" on-click="[[addRule]]" :disabled="[[!canAddRule()]]">
+              <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Rule</button></span>
           </div>
-          <span :title="[[addRuleTitle]]"><button type="button" id="addRuleButton" class="factory-dz-addrule" on-click="[[addRule]]" :disabled="[[!canAddRule()]]">
-            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add Rule</button></span>
-          <button type="button" id="contextToggle" class="factory-dz-icon" :aria-expanded="[[contextOpen() ? 'true' : 'false']]" aria-controls="designContextBody"
-                  :aria-label="[[contextOpen() ? 'Close the drawer' : 'Open the drawer']]" on-click="[[toggleContext]]"><oj-bind-text value="[[contextOpen() ? '▾' : '▴']]"></oj-bind-text></button>
-        </div>
-        <oj-bind-if test="[[contextOpen()]]">
-          <div class="factory-dz-context-body" id="designContextBody" role="tabpanel" :aria-labelledby="[['ctxTab-' + contextTab()]]">
+          <oj-bind-if test="[[contextOpen()]]">
+            <div class="factory-dz-context-body" id="designContextBody" role="tabpanel" :aria-labelledby="[['ctxTab-' + contextTab()]]">
             <oj-bind-if test="[[specTabWithoutSpec]]"><p class="factory-dz-hint">This screen has no requirement, so there are no rules, APIs or roles from a specification.</p></oj-bind-if>
             <oj-bind-if test="[[contextTab() === 'rules' && hasRequirement()]]">
               <table class="factory-ov2-table factory-dz-rulestable"><thead><tr><th>#</th><th>Rule Name</th><th>Type</th><th>Condition</th><th>Action</th><th>Severity</th><th>Status</th><th><span class="oj-helper-hidden-accessible">Actions</span></th></tr></thead>
@@ -424,87 +411,7 @@
                 <tbody><oj-bind-for-each data="[[ctxValidations]]"><template><tr><td><oj-bind-text value="[[$current.data.field]]"></oj-bind-text></td><td><oj-bind-text value="[[$current.data.rule]]"></oj-bind-text></td><td class="factory-ov-subtle"><oj-bind-text value="[[$current.data.section]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
               <oj-bind-if test="[[ctxValidations().length === 0]]"><p class="factory-dz-hint">No validations yet. Select a field and add them under Validation.</p></oj-bind-if>
             </oj-bind-if>
-            <oj-bind-if test="[[contextTab() === 'comments']]">
-              <div id="commentsPanel" class="factory-dz-ctxcomments">
-                <div class="factory-dz-ctxlist">
-                  <oj-bind-for-each data="[[comments]]" as="cm">
-                    <template>
-                      <div class="factory-dz-comment">
-                        <span class="factory-dz-avatar" aria-hidden="true"><oj-bind-text value="[[cm.data.initials]]"></oj-bind-text></span>
-                        <div>
-                          <div><strong><oj-bind-text value="[[cm.data.author]]"></oj-bind-text></strong> <span class="factory-dz-hint"><oj-bind-text value="[[cm.data.meta]]"></oj-bind-text></span></div>
-                          <div class="factory-dz-comment-text"><oj-bind-text value="[[cm.data.text]]"></oj-bind-text></div>
-                        </div>
-                      </div>
-                    </template>
-                  </oj-bind-for-each>
-                  <oj-bind-if test="[[comments().length === 0]]">
-                    <p class="factory-dz-hint">No comments yet. Comments from the customer's review link appear here too.</p>
-                  </oj-bind-if>
-                </div>
-                <div class="factory-dz-ctxform">
-                  <textarea id="commentText" class="fx-textarea factory-dz-input factory-dz-textarea" rows="3"
-                            :placeholder="[[selectedKind() === 'screen' ? 'Comment on the screen' : 'Comment on ' + selectedTitle()]]"
-                            data-bind="textInput: commentText"
-                            aria-label="Comment"></textarea>
-                  <button type="button" id="addCommentButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[addComment]]" :disabled="[[!commentText()]]">Add comment</button>
-                </div>
-              </div>
-            </oj-bind-if>
-            <oj-bind-if test="[[contextTab() === 'history']]">
-              <div id="historyPanel" class="factory-dz-history2">
-                <div class="factory-dz-compare" id="comparePanel">
-                  <div class="factory-dz-compare-pick">
-                    <fx-select id="compareFrom" label="From" options="[[compareOptions]]" value="{{compareFrom}}"></fx-select>
-                    <fx-select id="compareTo" label="To" options="[[compareOptions]]" value="{{compareTo}}"></fx-select>
-                  </div>
-                  <p class="factory-dz-hint" role="status"><oj-bind-text value="[[compareNote]]"></oj-bind-text></p>
-                  <ul class="factory-dz-difflist" aria-label="Differences">
-                    <oj-bind-for-each data="[[differences]]" as="df">
-                      <template>
-                        <li :class="[[df.data.css]]">
-                          <span class="factory-dz-diff-kind"><oj-bind-text value="[[df.data.kind]]"></oj-bind-text></span>
-                          <oj-bind-if test="[[df.data.selectable]]">
-                            <button type="button" class="factory-dz-link" on-click="[[df.data.selectAction]]"><oj-bind-text value="[[df.data.text]]"></oj-bind-text></button>
-                          </oj-bind-if>
-                          <oj-bind-if test="[[!df.data.selectable]]"><span><oj-bind-text value="[[df.data.text]]"></oj-bind-text></span></oj-bind-if>
-                        </li>
-                      </template>
-                    </oj-bind-for-each>
-                  </ul>
-                  <oj-bind-if test="[[editable() && compareVersion()]]">
-                    <div class="factory-dz-row">
-                      <button type="button" id="showCompareButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[showCompareVersion]]">
-                        <oj-bind-text value="[['Show v' + compareVersion() + ' on the canvas']]"></oj-bind-text></button>
-                      <button type="button" id="restoreCompareButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[restoreCompareVersion]]" :disabled="[[dirty()]]"
-                              :title="[[dirty() ? 'Save or discard your changes first.' : 'Saved again as the newest version; no version is lost']]">
-                        <oj-bind-text value="[['Restore v' + compareVersion()]]"></oj-bind-text></button>
-                    </div>
-                  </oj-bind-if>
-                </div>
-                <div class="factory-dz-history">
-                  <oj-bind-for-each data="[[versions]]" as="v">
-                    <template>
-                      <div :class="[['factory-dz-version' + (v.data.current ? ' factory-dz-version-current' : '')]]">
-                        <span class="factory-dz-version-dot" aria-hidden="true"></span>
-                        <div class="factory-dz-grow">
-                          <div><strong>v<oj-bind-text value="[[v.data.version]]"></oj-bind-text></strong>
-                            <span class="factory-dz-hint"> · <oj-bind-text value="[[v.data.origin]]"></oj-bind-text> · <oj-bind-text value="[[v.data.when]]"></oj-bind-text></span>
-                            <oj-bind-if test="[[v.data.note]]"><span class="factory-dz-version-note"> · <oj-bind-text value="[[v.data.note]]"></oj-bind-text></span></oj-bind-if></div>
-                          <oj-bind-if test="[[v.data.loadable]]">
-                            <span class="factory-dz-version-actions">
-                              <button type="button" class="factory-dz-link" on-click="[[v.data.restoreAction]]">Restore this version</button>
-                              <button type="button" class="factory-dz-link" on-click="[[v.data.previewAction]]">Show on canvas</button>
-                            </span>
-                          </oj-bind-if>
-                        </div>
-                      </div>
-                    </template>
-                  </oj-bind-for-each>
-                </div>
-              </div>
-            </oj-bind-if>
-            <oj-bind-if test="[[contextTab() === 'assistant']]">
+              <oj-bind-if test="[[contextTab() === 'assistant']]">
               <div class="factory-dz-assist factory-ai" id="designAssistant" aria-label="AI Assistant">
                 <div class="factory-dz-assist-head">
                   <div class="fx-context factory-dz-aicontext" id="designAiContext">Answers from:
@@ -536,21 +443,48 @@
                     <span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
                 </div>
               </div>
-            </oj-bind-if>
+              </oj-bind-if>
+            </div>
+          </oj-bind-if>
+        </section>
+      </oj-bind-if>
+    </section>
+
+    <!-- Right: Checks, Properties, Comments, History. Expanded (or on a tablet) a rail that opens a floating panel -->
+    <aside id="rightPanel" class="factory-de-panel factory-de-right" :style.display="[[rightShown() ? 'flex' : 'none']]" aria-label="Inspector">
+      <div class="factory-de-panelhead factory-de-righthead">
+        <div class="factory-de-tabs" role="tablist" aria-label="Right panel" on-keydown="[[rightTabKey]]">
+          <oj-bind-for-each data="[[rightTabs]]" as="rt">
+            <template>
+              <button type="button" role="tab" :id="[[rt.data.id]]" :aria-selected="[[rt.data.selected() ? 'true' : 'false']]"
+                      :tabindex="[[rt.data.selected() ? '0' : '-1']]" aria-controls="inspectorBody" on-click="[[rt.data.pick]]"><oj-bind-text value="[[rt.data.text]]"></oj-bind-text></button>
+            </template>
+          </oj-bind-for-each>
+        </div>
+        <oj-bind-if test="[[rails()]]"><button type="button" class="factory-de-close" aria-label="Close panel" title="Close" on-click="[[closeRight]]">×</button></oj-bind-if>
+      </div>
+      <div class="factory-de-panelbody" id="inspectorBody" role="tabpanel" :aria-labelledby="[['rightTab-' + rightTab()]]">
+        <oj-bind-if test="[[rightTab() === 'checks' && detail()]]">
+          <div id="checksSection">
+              <div id="checksPanel" class="factory-dz-checks">
+                <oj-bind-for-each data="[[checks]]" as="ck">
+                  <template>
+                    <div :class="[[ck.data.css]]">
+                      <span class="factory-dz-check-icon" aria-hidden="true"><oj-bind-text value="[[ck.data.icon]]"></oj-bind-text></span>
+                      <div class="factory-dz-grow">
+                        <div class="factory-dz-check-text" on-click="[[ck.data.selectAction]]"><oj-bind-text value="[[ck.data.text]]"></oj-bind-text></div>
+                        <oj-bind-if test="[[ck.data.fixLabel && ck.data.level !== 'ok']]">
+                          <button type="button" class="factory-dz-link" on-click="[[ck.data.fixAction]]"><oj-bind-text value="[[ck.data.fixLabel]]"></oj-bind-text></button>
+                        </oj-bind-if>
+                      </div>
+                    </div>
+                  </template>
+                </oj-bind-for-each>
+              </div>
           </div>
         </oj-bind-if>
-      </section>
-    </oj-bind-if>
-
-    <!-- Right: the inspector, one list of sections for the selection -->
-    <aside id="rightPanel" class="factory-dz-right factory-dz-float" :style.display="[[detail() && rightOpen() ? 'flex' : 'none']]" aria-label="Inspector">
-      <div class="factory-dz-tabs">
-        <h2 class="factory-dz-inspector-title">Inspector</h2>
-        <span class="factory-dz-spacer"></span>
-        <button type="button" id="collapseRightButton" class="factory-dz-icon" title="Collapse to the side" aria-label="Collapse the inspector"
-                on-click="[[collapseRight]]">»</button>
-      </div>
-      <div class="factory-dz-panel-scroll" id="inspectorBody">
+        <oj-bind-if test="[[rightTab() === 'properties']]">
+          <div id="propertiesTab">
         <oj-bind-if test="[[detail()]]">
           <div class="factory-dz-inspector-head">
             <div>
@@ -839,25 +773,6 @@
         <!-- The screen (nothing selected) -->
         <oj-bind-if test="[[detail() && selectedKind() === 'screen']]">
           <div>
-            <details class="factory-dz-sec" id="checksSection" open>
-              <summary>Checks <span :class="[[openChecks() === 0 ? 'fx-badge fx-badge--success' : 'fx-badge fx-badge--warning']]">
-                <oj-bind-text value="[[checksSummary]]"></oj-bind-text></span></summary>
-              <div id="checksPanel" class="factory-dz-checks">
-                <oj-bind-for-each data="[[checks]]" as="ck">
-                  <template>
-                    <div :class="[[ck.data.css]]">
-                      <span class="factory-dz-check-icon" aria-hidden="true"><oj-bind-text value="[[ck.data.icon]]"></oj-bind-text></span>
-                      <div class="factory-dz-grow">
-                        <div class="factory-dz-check-text" on-click="[[ck.data.selectAction]]"><oj-bind-text value="[[ck.data.text]]"></oj-bind-text></div>
-                        <oj-bind-if test="[[ck.data.fixLabel && ck.data.level !== 'ok']]">
-                          <button type="button" class="factory-dz-link" on-click="[[ck.data.fixAction]]"><oj-bind-text value="[[ck.data.fixLabel]]"></oj-bind-text></button>
-                        </oj-bind-if>
-                      </div>
-                    </div>
-                  </template>
-                </oj-bind-for-each>
-              </div>
-            </details>
             <details class="factory-dz-sec" data-section="properties" on-toggle="[[sectionToggle]]" :open="[[sectionOpen.properties()]]">
               <summary>Properties</summary>
               <div class="fx-form factory-dz-propform">
@@ -954,7 +869,99 @@
             </oj-bind-if>
           </div>
         </oj-bind-if>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[rightTab() === 'comments']]">
+              <div id="commentsPanel" class="factory-dz-ctxcomments">
+                <div class="factory-dz-ctxlist">
+                  <oj-bind-for-each data="[[comments]]" as="cm">
+                    <template>
+                      <div class="factory-dz-comment">
+                        <span class="factory-dz-avatar" aria-hidden="true"><oj-bind-text value="[[cm.data.initials]]"></oj-bind-text></span>
+                        <div>
+                          <div><strong><oj-bind-text value="[[cm.data.author]]"></oj-bind-text></strong> <span class="factory-dz-hint"><oj-bind-text value="[[cm.data.meta]]"></oj-bind-text></span></div>
+                          <div class="factory-dz-comment-text"><oj-bind-text value="[[cm.data.text]]"></oj-bind-text></div>
+                        </div>
+                      </div>
+                    </template>
+                  </oj-bind-for-each>
+                  <oj-bind-if test="[[comments().length === 0]]">
+                    <p class="factory-dz-hint">No comments yet. Comments from the customer's review link appear here too.</p>
+                  </oj-bind-if>
+                </div>
+                <div class="factory-dz-ctxform">
+                  <textarea id="commentText" class="fx-textarea factory-dz-input factory-dz-textarea" rows="3"
+                            :placeholder="[[selectedKind() === 'screen' ? 'Comment on the screen' : 'Comment on ' + selectedTitle()]]"
+                            data-bind="textInput: commentText"
+                            aria-label="Comment"></textarea>
+                  <button type="button" id="addCommentButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[addComment]]" :disabled="[[!commentText()]]">Add comment</button>
+                </div>
+              </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[rightTab() === 'history']]">
+              <div id="historyPanel" class="factory-dz-history2">
+                <div class="factory-dz-compare" id="comparePanel">
+                  <div class="factory-dz-compare-pick">
+                    <fx-select id="compareFrom" label="From" options="[[compareOptions]]" value="{{compareFrom}}"></fx-select>
+                    <fx-select id="compareTo" label="To" options="[[compareOptions]]" value="{{compareTo}}"></fx-select>
+                  </div>
+                  <p class="factory-dz-hint" role="status"><oj-bind-text value="[[compareNote]]"></oj-bind-text></p>
+                  <ul class="factory-dz-difflist" aria-label="Differences">
+                    <oj-bind-for-each data="[[differences]]" as="df">
+                      <template>
+                        <li :class="[[df.data.css]]">
+                          <span class="factory-dz-diff-kind"><oj-bind-text value="[[df.data.kind]]"></oj-bind-text></span>
+                          <oj-bind-if test="[[df.data.selectable]]">
+                            <button type="button" class="factory-dz-link" on-click="[[df.data.selectAction]]"><oj-bind-text value="[[df.data.text]]"></oj-bind-text></button>
+                          </oj-bind-if>
+                          <oj-bind-if test="[[!df.data.selectable]]"><span><oj-bind-text value="[[df.data.text]]"></oj-bind-text></span></oj-bind-if>
+                        </li>
+                      </template>
+                    </oj-bind-for-each>
+                  </ul>
+                  <oj-bind-if test="[[editable() && compareVersion()]]">
+                    <div class="factory-dz-row">
+                      <button type="button" id="showCompareButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[showCompareVersion]]">
+                        <oj-bind-text value="[['Show v' + compareVersion() + ' on the canvas']]"></oj-bind-text></button>
+                      <button type="button" id="restoreCompareButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[restoreCompareVersion]]" :disabled="[[dirty()]]"
+                              :title="[[dirty() ? 'Save or discard your changes first.' : 'Saved again as the newest version; no version is lost']]">
+                        <oj-bind-text value="[['Restore v' + compareVersion()]]"></oj-bind-text></button>
+                    </div>
+                  </oj-bind-if>
+                </div>
+                <div class="factory-dz-history">
+                  <oj-bind-for-each data="[[versions]]" as="v">
+                    <template>
+                      <div :class="[['factory-dz-version' + (v.data.current ? ' factory-dz-version-current' : '')]]">
+                        <span class="factory-dz-version-dot" aria-hidden="true"></span>
+                        <div class="factory-dz-grow">
+                          <div><strong>v<oj-bind-text value="[[v.data.version]]"></oj-bind-text></strong>
+                            <span class="factory-dz-hint"> · <oj-bind-text value="[[v.data.origin]]"></oj-bind-text> · <oj-bind-text value="[[v.data.when]]"></oj-bind-text></span>
+                            <oj-bind-if test="[[v.data.note]]"><span class="factory-dz-version-note"> · <oj-bind-text value="[[v.data.note]]"></oj-bind-text></span></oj-bind-if></div>
+                          <oj-bind-if test="[[v.data.loadable]]">
+                            <span class="factory-dz-version-actions">
+                              <button type="button" class="factory-dz-link" on-click="[[v.data.restoreAction]]">Restore this version</button>
+                              <button type="button" class="factory-dz-link" on-click="[[v.data.previewAction]]">Show on canvas</button>
+                            </span>
+                          </oj-bind-if>
+                        </div>
+                      </div>
+                    </template>
+                  </oj-bind-for-each>
+                </div>
+              </div>
+        </oj-bind-if>
       </div>
     </aside>
+    <oj-bind-if test="[[rails()]]">
+      <div class="factory-de-rail factory-de-rail-right" id="rightRail" role="toolbar" aria-label="Inspector tools" aria-orientation="vertical">
+        <button type="button" id="railChecks" :class="[[openChecks() ? 'factory-de-railbtn is-warn' : 'factory-de-railbtn']]" :title="[[checksSummary]]" :aria-label="[['Checks, ' + checksSummary()]]"
+                :aria-pressed="[[rightFloat() && rightTab() === 'checks' ? 'true' : 'false']]" on-click="[[railChecks]]"><oj-bind-text value="[[openChecks() ? '!' : '✓']]"></oj-bind-text>
+          <oj-bind-if test="[[openChecks()]]"><span class="factory-de-badge" aria-hidden="true"><oj-bind-text value="[[openChecks]]"></oj-bind-text></span></oj-bind-if></button>
+        <button type="button" id="railProperties" class="factory-de-railbtn" title="Properties" aria-label="Properties" :aria-pressed="[[rightFloat() && rightTab() === 'properties' ? 'true' : 'false']]" on-click="[[railProperties]]">⚙</button>
+        <button type="button" id="railComments" class="factory-de-railbtn" title="Comments" aria-label="Comments" :aria-pressed="[[rightFloat() && rightTab() === 'comments' ? 'true' : 'false']]" on-click="[[railComments]]">✎</button>
+        <button type="button" id="railHistory" class="factory-de-railbtn" title="History" aria-label="History" :aria-pressed="[[rightFloat() && rightTab() === 'history' ? 'true' : 'false']]" on-click="[[railHistory]]">↺</button>
+      </div>
+    </oj-bind-if>
   </div>
 </div>
