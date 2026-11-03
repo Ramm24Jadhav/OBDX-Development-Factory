@@ -40,8 +40,10 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'analyze' } },
         { path: 'knowledge', detail: { label: 'Knowledge Explorer', icon: 'target', group: 'analyze', parent: 'code' } },
         { path: 'library', detail: { label: 'OBDX Library', icon: 'book', group: 'analyze' } },
-        { path: 'studio', detail: { label: 'UI Design Studio', icon: 'design', group: 'design' } },
-        { path: 'designer', detail: { label: 'Visual Designer', icon: 'edit', group: 'design', parent: 'studio' } },
+        { path: 'studio', detail: { label: 'Design Studio', icon: 'design', group: 'design' } },
+        // The Visual Designer is the Design Studio's Edit mode now: old links open the Studio (a screen asked for with
+        // pageRequests.design opens in Edit)
+        { path: 'designer', redirect: 'studio', detail: { label: 'Design Studio', hidden: true } },
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'deliver' } },
         { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'deliver' } },
         { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'deliver' } },
@@ -59,7 +61,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'about', detail: { label: 'About', icon: 'info', sidebar: false } },
         // Opened from the Changes page
         { path: 'impact', detail: { label: 'Impact Analysis', hidden: true, parent: 'changes' } },
-        // Not in the navigation: the screen preview (shown inside the designer) and the customer review page.
+        // Not in the navigation: the screen preview (shown inside the Design Studio) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
         { path: 'review', detail: { label: 'Review', hidden: true } }
       ];

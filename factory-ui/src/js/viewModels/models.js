@@ -309,7 +309,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             now: (p.chatAllowed ? 'Sent to the chat model at ' : 'Not sent: the chat model is at ') + where(p.chatHost, p.chatInside)
               + '; ' + (p.embeddingAllowed ? 'embedded at ' : 'not embedded: the embedding model is at ') + where(p.embeddingHost, p.embeddingInside),
             pill: p.externalAllowed ? ui.status('WARNING', 'Not enforced') : ui.status('SUCCEEDED', 'Enforced') },
-          { kind: 'Bank code, specifications and screen designs (analysis, generation, designer, assistant panels)',
+          { kind: 'Bank code, specifications and screen designs (analysis, generation, the Design Studio, assistant panels)',
             rule: 'Sent to the configured chat model wherever it is; the factory does not block an outside server for code',
             now: 'Chat model at ' + where(p.chatHost, p.chatInside) + '; code search embeddings at ' + where(p.embeddingHost, p.embeddingInside),
             pill: p.chatInside && p.embeddingInside ? ui.status('SUCCEEDED', 'Inside the bank') : ui.status('WARNING', 'Goes outside') }

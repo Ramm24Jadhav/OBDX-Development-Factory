@@ -219,7 +219,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             'Requirement "' + r.title + '" ' + (r.status === 'APPROVED' ? 'approved' : 'updated'), w.name, r.updatedAt,
             dashboard.openRecord('requirements', w.id, 'requirement', r.id)));
           d.designs.forEach((s) => add(s.status === 'APPROVED' ? 'done' : 'none', 'monitor', 'Screen "' + s.name + '" ' + (s.status === 'APPROVED' ? 'approved' : 'updated'),
-            w.name, s.updatedAt, s.requirementId ? dashboard.openRecord('studio', w.id, 'studio', s.requirementId) : dashboard.openRecord('designer', w.id, 'design', s.id)));
+            w.name, s.updatedAt, s.requirementId ? dashboard.openRecord('studio', w.id, 'studio', s.requirementId) : dashboard.openRecord('studio', w.id, 'design', s.id)));
           d.changes.forEach((c) => add(c.status === 'FAILED' ? 'failed' : (c.status === 'DELIVERED' || c.status === 'MERGED' ? 'done' : 'none'), 'code',
             'Change "' + c.title + '" ' + c.status.toLowerCase().replace(/_/g, ' '), w.name, c.updatedAt, dashboard.openRecord('changes', w.id, 'change', c.id)));
           d.builds.forEach((b) => add(b.result === 'SUCCESS' ? 'done' : (b.result ? 'failed' : 'running'), b.result === 'SUCCESS' ? 'check' : (b.result ? 'x' : 'refresh'),

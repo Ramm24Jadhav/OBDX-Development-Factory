@@ -1,5 +1,5 @@
 /*
- * UI Design Studio: the workspace from a BRD to approved screens. A workflow bar that stays at the top (the BRD, five
+ * Design Studio: the workspace from a BRD to approved screens. A workflow bar that stays at the top (the BRD, five
  * stages and the next action); the BRD's functional requirements with their screens and what is still open; the
  * selected requirement's screen flow; and the selected screen's preview as a phone, tablet or desktop, with the
  * acceptance criteria it helps meet, values the BRD leaves to an analyst, refining it (the AI, back to the generated
@@ -1097,10 +1097,90 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         reloadFlow().catch(showError).finally(() => this.loading(false));
         poll();
       });
-      /** The BRD to open: asked for by another page, the last one used here, or the newest with screens or an approved spec. */
-      const pickRequirement = (list) => {
-        const wanted = pageRequests.studio();
+      // The address the page was opened with (?ojr=studio&requirement=<id>&screen=<id>), read once
+      let fromAddress = (() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('ojr') === 'studio' ? { requirement: params.get('requirement'), screen: params.get('screen') } : null;
+      })();
+      // A screen asked for: by another page (pageRequests.design, from the old designer links: opens in Edit) or by the
+      // address (Review); kept while the workspace is switched to the screen's own
+      let pendingScreen = null;
+      /** Resolves with the BRD of the screen asked for (NONE without one), or undefined when none is asked for. */
+      const screenRequest = (list) => {
+        const requested = pageRequests.design();
+        pageRequests.design(null);
+        // A BRD asked for by another page wins over the address
+        const wanted = requested ? { id: requested, edit: true } : pendingScreen
+          || (fromAddress && fromAddress.screen && !pageRequests.studio() ? { id: fromAddress.screen, edit: false } : null);
+        pendingScreen = null;
+        if (!wanted) {
+          return Promise.resolve(undefined);
+        }
+        return api.get('designs/' + wanted.id).then((d) => {
+          if (d.workspaceId && d.workspaceId !== this.workspaceId()) {
+            pendingScreen = wanted;
+            workspaceSelection.selectedId(d.workspaceId);
+            return null;
+          }
+          openAfterLoad = { id: d.id, edit: wanted.edit, then: null };
+          return d.requirementId && list.some((r) => r.id === d.requirementId) ? d.requirementId : NONE;
+        }).catch(() => {
+          toast.warning('That screen is not there any more. It may have been deleted.');
+          return undefined;
+        });
+      };
+      // A screen asked for while the Studio is already open (an old designer link from the command palette or a toast)
+      const onDesignRequest = (id) => {
+        if (!id || !this.workspaceId()) {
+          return;
+        }
+        guard().then((ok) => {
+          if (!ok) {
+            pageRequests.design(null);
+            return null;
+          }
+          return screenRequest(this.requirements()).then((forScreen) => {
+            if (forScreen === null || forScreen === undefined) {
+              return;
+            }
+            if (forScreen === this.requirementId()) {
+              openPending();
+            } else {
+              this.requirementId(forScreen);
+            }
+          });
+        }).catch(showError);
+      };
+      // The address follows the selected BRD and screen, so a copied link opens them (replaceState: no history entry)
+      const showInAddress = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ojr') !== 'studio' || !window.history.replaceState) {
+          return;
+        }
+        const rid = this.requirementId();
+        const sid = this.selectedScreenId();
+        const url = window.location.pathname + '?ojr=studio' + (rid ? '&requirement=' + encodeURIComponent(rid) : '')
+          + (sid ? '&screen=' + encodeURIComponent(sid) : '');
+        if (url !== window.location.pathname + window.location.search) {
+          window.history.replaceState(window.history.state, '', url);
+        }
+      };
+      this.selectedScreenId.subscribe(showInAddress);
+      this.requirementId.subscribe(showInAddress);
+      // The router keeps other parameters on the next page's address, so they go when the Studio does
+      const clearAddress = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ojr') !== 'studio' && (params.has('requirement') || params.has('screen')) && window.history.replaceState) {
+          params.delete('requirement');
+          params.delete('screen');
+          window.history.replaceState(window.history.state, '', window.location.pathname + '?' + params.toString());
+        }
+      };
+      /** The BRD to open: a screen's, one asked for by another page or the address, the last one used here, or the newest. */
+      const pickRequirement = (list, forScreen) => {
+        const wanted = forScreen || pageRequests.studio() || (fromAddress && fromAddress.requirement);
         pageRequests.studio(null);
+        fromAddress = null;
         const remembered = recall(storageKey(this.workspaceId()));
         const known = (id) => id && (list.some((r) => r.id === id) || (id === NONE && this.looseDesigns().length > 0));
         const choice = [wanted, remembered].find(known)
@@ -1124,13 +1204,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return Promise.resolve();
         }
         loadTarget(id);
-        return loadRequirements().then(pickRequirement).catch(showError);
+        return loadRequirements()
+          .then((list) => screenRequest(list).then((forScreen) => {
+            // null: switching to the screen's workspace, which loads again
+            if (forScreen !== null && id === this.workspaceId()) {
+              pickRequirement(list, forScreen);
+            }
+          }))
+          .catch(showError);
       };
 
       let subscription = null;
       this.connected = () => {
-        accUtils.announce('UI Design Studio loaded.');
-        document.title = 'UI Design Studio';
+        accUtils.announce('Design Studio loaded.');
+        document.title = 'Design Studio';
         window.addEventListener('message', onMessage);
         phoneQuery.addEventListener('change', onNarrow);
         if (window.ResizeObserver) {
@@ -1142,16 +1229,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         workspaceSelection.load().then((list) => {
           list.forEach((w) => { bankNames[w.id] = w.bankName; indexed[w.id] = w.indexedRevision !== null && w.indexedRevision !== undefined; });
           return loadWorkspace();
-        }).catch(showError);
+        }).then(() => { designRequests = pageRequests.design.subscribe(onDesignRequest); }).catch(showError);
       };
+      let designRequests = null;
       // Leaving the page with unsaved changes in Edit asks first (the editor's own guard)
       this.canExit = () => (this.editor() ? this.editor().canExit() : Promise.resolve());
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
         phoneQuery.removeEventListener('change', onNarrow);
+        if (this.editor()) {
+          this.editor().clear();
+        }
         this.editor(null);
         this.mode('review');
         clearTimeout(pollTimer);
+        if (designRequests) {
+          designRequests.dispose();
+        }
+        clearAddress();
+        window.setTimeout(clearAddress, 0);
         if (stageObserver) {
           stageObserver.disconnect();
         }

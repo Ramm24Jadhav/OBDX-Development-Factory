@@ -10,7 +10,10 @@
 //    selected goes back to Review; at 390 px Edit says to use a wider screen and Review still works;
 //  - + New screen offers a blank screen (asks for its name; Cancel creates nothing) and an import; the screen's More
 //    menu has share, import and delete, and Delete asks first;
-//  - "Screens without a BRD" (in a workspace that has some) lists them without stages, and approving one asks first.
+//  - "Screens without a BRD" (in a workspace that has some) lists them without stages, and approving one asks first;
+//  - old links: the designer route opens the Studio, and a screen asked for with pageRequests.design opens in Edit; the
+//    menu says Design Studio; ?ojr=studio&requirement=<id>&screen=<id> opens that screen, the address follows the
+//    selection, and another page's address keeps none of it.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-studio.js --url http://localhost:8080 [--workspace <id>]
 //
@@ -251,6 +254,46 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
   await sleep(1500);
   record('Review works at 390 px', JSON.stringify(await frames()) === JSON.stringify({ review: 1, editor: 0, all: 1 }), await frames());
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+
+  // ---------- Old links and real links ----------
+  // The designer route redirects; a screen asked for by another page (pageRequests.design) opens in Edit
+  const target = await run(async (id) => {
+    const flow = await fetch('api/requirements/' + id + '/design-flow', { credentials: 'same-origin' }).then((r) => r.json());
+    return flow.screens[flow.screens.length - 1];
+  }, brd.id);
+  await run((id) => new Promise((r) => window.require(['services/pageRequests'], (pr) => { pr.design(id); r(1); })), target.id);
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'designer' })); return 1; });
+  await sleep(7000);
+  const old = await run(() => ({
+    page: new URLSearchParams(location.search).get('ojr'),
+    heading: (document.querySelector('.factory-page h1') || {}).textContent || '',
+    edit: (document.getElementById('studioMode-edit') || { getAttribute: () => null }).getAttribute('aria-pressed'),
+    name: ((document.querySelector('#studioEditor .factory-dz-cardname') || {}).textContent || '').trim(),
+    nav: [...document.querySelectorAll('.factory-nav-link .factory-nav-label')].map((x) => x.textContent.trim()).filter((t) => /Design/.test(t))
+  }));
+  record('the designer route opens the Design Studio', old.page === 'studio' && /Design Studio/.test(old.heading), old);
+  record('a screen asked for by another page opens in Edit', old.edit === 'true' && old.name.length > 0, old.name);
+  record('the menu says Design Studio, with no Visual Designer', old.nav.indexOf('Design Studio') >= 0 && old.nav.indexOf('Visual Designer') < 0, old.nav);
+  await run(() => { const b = document.getElementById('studioMode-review'); if (b) { b.click(); } return 1; });
+  await sleep(1200);
+  // A real link: ?ojr=studio&requirement=&screen= opens that screen, and the address follows the selection
+  await open(BASE + '/?ojr=studio&requirement=' + brd.id + '&screen=' + target.id);
+  await sleep(5000);
+  const link = await run(() => ({
+    pressed: (document.querySelector('.factory-studio-node[aria-pressed="true"]') || { getAttribute: () => null }).getAttribute('data-studio-node'),
+    search: location.search
+  }));
+  record('?ojr=studio&screen= opens that screen', link.pressed === target.id, link);
+  await run(() => { const n = document.querySelector('.factory-studio-node'); if (n) { n.click(); } return 1; });
+  await sleep(800);
+  const followed = await run(() => ({ first: document.querySelector('.factory-studio-node').getAttribute('data-studio-node'), search: location.search }));
+  record('the address follows the selected screen', followed.search.indexOf('screen=' + followed.first) >= 0 && followed.search.indexOf('ojr=studio') >= 0, followed.search);
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'overview' })); return 1; });
+  await sleep(2000);
+  const after = await run(() => location.search);
+  record('another page\'s address keeps no screen of the Studio', !/screen=|requirement=/.test(after), after);
+  await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'studio' })); return 1; });
+  await sleep(4500);
 
   // ---------- + New screen and the selected screen's More menu ----------
   const menu = async (sel) => {
