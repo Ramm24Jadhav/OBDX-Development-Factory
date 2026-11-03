@@ -7,7 +7,7 @@
 //  - the selected screen: "Requirement … · Step x of n · stage · Version v", the whole-BRD switcher, More, Approve or
 //    Reopen, and Expand (hides the Screens panel and the readiness panel; "Exit full view"); Review | Edit tabs move with
 //    the arrow keys;
-//  - Ready to approve?: four checks as an accordion (one open at a time) with a summary; » folds it to a 56 px rail and
+//  - Ready to approve?: five checks as an accordion (one open at a time) with a summary; » folds it to a 56 px rail and
 //    « brings it back (kept per user);
 //  - Approve All, Approve screen and Reopen each ask first (Approve All says how many screens have open checks), and
 //    Cancel changes nothing;
@@ -262,9 +262,10 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
     open: [...document.querySelectorAll('.factory-studio-check-row[aria-expanded="true"]')].length,
     refine: !!document.querySelector('#studioRefine') && !!document.getElementById('studioRefineButton'), compare: !!document.getElementById('studioCompareLink')
   }));
-  record('Ready to approve? with its summary', ready.title === 'Ready to approve?' && /^(All checks pass|\d of 4 checks? needs? attention)$/.test(ready.summary), ready.summary);
-  record('the four checks in order', ready.checks.join(',') === 'studioCheck-criteria,studioCheck-decisions,studioCheck-values,studioCheck-compat'
-    && ready.titles[0] === 'Acceptance criteria' && ready.titles[1] === 'Open decisions' && ready.titles[2] === 'Values to confirm' && /^OBDX .+ compatibility$/.test(ready.titles[3]), ready.titles);
+  record('Ready to approve? with its summary', ready.title === 'Ready to approve?' && /^(All checks pass|\d of 5 checks? needs? attention)$/.test(ready.summary), ready.summary);
+  record('the five checks in order', ready.checks.join(',') === 'studioCheck-fields,studioCheck-criteria,studioCheck-decisions,studioCheck-values,studioCheck-compat'
+    && ready.titles[0] === 'Fields from the requirement' && ready.titles[1] === 'Acceptance criteria' && ready.titles[2] === 'Open decisions'
+    && ready.titles[3] === 'Values to confirm' && /^OBDX .+ compatibility$/.test(ready.titles[4]), ready.titles);
   record('one check is open, and the footer has Refine with AI and Compare versions', ready.open === 1 && ready.refine && ready.compare, ready);
   await click('studioCheck-values');
   await sleep(500);

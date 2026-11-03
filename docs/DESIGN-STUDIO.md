@@ -134,8 +134,8 @@ One reading order, from context to decision, with the factory's own elements (`f
    right the ‹ 1 / 5 › switcher (whole BRD), More, Approve screen or Reopen, and ⤢ Expand, which hides the Screens
    panel and the readiness panel ("Exit full view"). Then Review | Edit, and in Review the Phone/Tablet/Desktop
    switch.
-4. **Ready to approve?** beside the Review preview: "3 of 4 checks need attention"; an accordion (one row open) of
-   Acceptance criteria (Add it), Open decisions (Resolve), Values to confirm (Confirm) and OBDX compatibility (from
+4. **Ready to approve?** beside the Review preview: "3 of 5 checks need attention"; an accordion (one row open) of
+   Fields from the requirement (the editor's rule: Open in Edit), Acceptance criteria (Add it), Open decisions (Resolve), Values to confirm (Confirm) and OBDX compatibility (from
    `design-compatibility`); Refine with AI and Compare versions at its foot. » folds it to a 56 px rail with the count.
    It uses the data the server already gives (the flow, the spec, the compatibility evidence).
 5. **Edit** opens expanded, with the app menu folded to icons; ⤡ Show the screens brings the panel back. One 48 px

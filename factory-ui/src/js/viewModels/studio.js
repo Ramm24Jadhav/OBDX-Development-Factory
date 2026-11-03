@@ -473,6 +473,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then((report) => { if (compatFor === key) { compat({ version: report.obdxVersion, elements: report.elements }); } })
           .catch(() => { if (compatFor === key) { compatFor = null; } });
       });
+      // The spec's screens (their fields): a field of the requirement missing from the screen is an open check, the same
+      // rule as the editor's Checks
+      const specScreens = ko.observable([]);
+      const norm = (text) => (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const missingFields = ko.pureComputed(() => {
+        const s = this.screen();
+        const spec = s && !s.loose && s.model ? specScreens().find((x) => norm(x.name) === norm(s.name) || norm(x.name) === norm(s.model.name)) : null;
+        if (!spec) {
+          return null;
+        }
+        const components = fieldsOf(s.model);
+        return (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name) || (f.label && norm(c.label) === norm(f.label))));
+      });
       this.openCheck = ko.observable('criteria');
       // "Add it" asks the AI (the Refine box) for what a criterion needs; "Resolve" opens the spec; "Confirm" opens the field
       const askFor = (text) => {
@@ -493,7 +506,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const unsupported = report ? report.elements.filter((e) => e.status === 'UNSUPPORTED') : [];
         const verified = report ? report.elements.filter((e) => e.status === 'VERIFIED').length : 0;
         const unverified = report ? report.elements.filter((e) => e.status === 'UNVERIFIED').length : 0;
+        const fields = missingFields();
         const list = [
+          { key: 'fields', title: 'Fields from the requirement', ok: !fields || fields.length === 0,
+            count: !fields ? 'Not compared' : fields.length ? fields.length + ' missing' : 'All on the screen',
+            items: !fields ? [{ text: s.loose ? 'A screen without a BRD has no fields to compare.' : 'The spec has no screen with this name, so its fields cannot be compared.', action: '' }]
+              : fields.length ? fields.map((f) => ({ text: '"' + (f.label || f.name) + '" is not on the screen', action: this.screenEditable() && !this.narrow() ? 'Open in Edit' : '',
+                run: () => inEditor((vm) => vm.showChecks()) }))
+                : [{ text: 'Every field of the requirement is on the screen.', action: '' }] },
           { key: 'criteria', title: 'Acceptance criteria', ok: missing.length === 0,
             count: s.loose ? 'No BRD' : missing.length ? missing.length + ' missing' : covered.length ? 'All covered' : 'None linked',
             items: (covered.length ? [{ text: (covered.length === 1 ? covered[0] + ' is' : covered.slice(0, -1).join(', ') + ' and ' + covered[covered.length - 1] + ' are') + ' on this screen', action: '' }]
@@ -1150,11 +1170,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const mine = ++token;
         return Promise.all([id === NONE ? Promise.resolve(emptyFlow) : api.get('requirements/' + encodeURIComponent(id) + '/design-flow'),
           looseScreens().catch(() => []),
-          id === NONE ? Promise.resolve([]) : api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
-          .then(([flow, loose, changes]) => {
+          id === NONE ? Promise.resolve([]) : api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => []),
+          id === NONE ? Promise.resolve(null) : api.get('requirements/' + encodeURIComponent(id)).catch(() => null)])
+          .then(([flow, loose, changes, requirement]) => {
             if (mine !== token) {
               return;
             }
+            specScreens(requirement && requirement.spec ? requirement.spec.screens || [] : []);
             this.changes(changes.filter((c) => c.requirementId === id && c.status !== 'CLOSED')
               .concat(changes.filter((c) => c.requirementId === id && c.status === 'CLOSED')));
             setFlow(Object.assign({}, flow, { screens: flow.screens.concat(loose) }));
