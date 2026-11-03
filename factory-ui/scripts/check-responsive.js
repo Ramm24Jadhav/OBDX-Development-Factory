@@ -20,7 +20,7 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]; }
 const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'responsive-report');
-const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,designer,changes,impact,build,models,'
+const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,studio,changes,impact,build,models,'
   + 'modernization,agents,admin,reviews,integrations,packs,knowledge,prompts,notifications,account,about,design').split(',');
 // The device classes, plus 1280x800 and 1440x900 at 200% browser zoom (the same CSS width as 640 and 720 pixels).
 const SIZES = (args.sizes || '320x568,375x667,430x932,768x1024,1024x768,1280x800,1440x900,1920x1080,640x400@2,720x450@2')

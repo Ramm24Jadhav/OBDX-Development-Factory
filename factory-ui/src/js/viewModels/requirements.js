@@ -789,7 +789,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const tip = (allowed, who) => (!approved ? 'Approve the specification first' : allowed ? null : 'Only ' + who + ' can do this');
         // Editing the JSON is rarely needed, so it waits here rather than beside Approve
         return [
-          { value: 'screens', label: 'Make screens in the designer', disabled: !this.canMakeScreens(), title: tip(this.canMakeScreens(), 'analysts, developers and leads') },
+          { value: 'screens', label: 'Make screens in the Design Studio', disabled: !this.canMakeScreens(), title: tip(this.canMakeScreens(), 'analysts, developers and leads') },
           { value: 'change', label: 'Plan the change', disabled: !this.canPlanChange(), title: tip(this.canPlanChange(), 'developers and leads') },
           { separator: true },
           { value: 'json', label: this.editingJson() ? 'Close the JSON editor' : 'Edit the specification (JSON)', id: 'editJsonButton',

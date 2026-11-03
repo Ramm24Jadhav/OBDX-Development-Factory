@@ -28,6 +28,12 @@ The OBDX Library (knowledge base, `knowledge` package, V17): Oracle's 22.2 and 2
 key PDFs are downloaded to `oracle-docs/` in the main checkout, not in Git), the bank's own documents per workspace,
 cited answers in the Library and the AI Assistant panels, notes that users and agents suggest and approvers trust, and
 the manuals and approved notes in impact analysis, code generation and requirement drafting. See DEVELOPMENT.md.
+The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
+merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
+Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in
+Edit, and `?ojr=studio&requirement=<id>&screen=<id>` is a real link. Every approve, group approve and reopen asks first
+(`services/designActions`). `scripts/check-studio.js` and `scripts/check-designer.js` (which now opens the designer
+through the Studio) check it.
 
 ## The user's installation
 
@@ -48,7 +54,7 @@ the manuals and approved notes in impact analysis, code generation and requireme
 2. Open `http://localhost:8080/` in the built-in browser and check the Models page: Ollama should be listed under
    "On this computer"; choose the chat model (a coder model) and `nomic-embed-text`, "Use these models", then
    "Try a prompt". If Ollama is not found: is it running (`ollama list`, `http://localhost:11434/v1/models`)?
-3. Retry the user's requirement ("Draft again from document") and walk them through spec approval, the designer,
+3. Retry the user's requirement ("Draft again from document") and walk them through spec approval, the Design Studio,
    the change plan and generated code. Note what is slow or unclear for them.
 
 ## Not yet verified on Windows (tested on Linux only)

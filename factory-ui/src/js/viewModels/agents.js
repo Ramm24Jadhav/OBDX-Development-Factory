@@ -115,7 +115,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
               message: list.length + ' screens designed', page: 'studio', model: chatModel(), reason: '',
               events: list.map((s) => ({ at: s.updatedAt, text: s.name + ': version ' + s.currentVersion + ', ' + words(s.status) + ' (last update)' })),
               inputs: req ? [openRequirement(req, w)] : [],
-              outputs: list.map((s) => link('Design', s.name + ' (v' + s.currentVersion + ', ' + words(s.status) + ')', w.id, () => { pageRequests.design(s.id); navigate('designer'); })),
+              outputs: list.map((s) => link('Design', s.name + ' (v' + s.currentVersion + ', ' + words(s.status) + ')', w.id, () => { pageRequests.design(s.id); navigate('studio'); })),
               retry: null,
               notRecorded: 'Screen generation keeps each screen\'s latest version and status, so the times are the last updates and the run has no duration.'
             });

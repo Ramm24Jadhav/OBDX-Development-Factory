@@ -4,6 +4,13 @@ Status: approved 3 Nov 2026 with the recommended answers in section 6 (1 yes, 2 
 asks, 3 BRD values only in Edit, 4 drop the quick Edit tab, board and Designer screen list, 5 Edit on phones shows
 "use a wider screen", 6 add `?ojr=studio&screen=<id>`). Line numbers are at commit 2e40660.
 
+Status: **done** on branch `design-studio-merge`, one commit per step S0 to S6. Two things moved earlier than the
+table says: check-designer opens its screen through the Studio's Edit from S3 (S3 removed the board it opened screens
+from) and the redirect check came with S4. Coverage shows "Open the checks" (it opens Edit on the checks) without a
+count: the checks are the editor's and run only while it is open. Share stays in the editor's card head, next to its
+review link drawer; the Studio's header has Approve or Reopen, Review | Edit and More (share, import, review and
+confirmation screens, delete).
+
 ## 1. The two pages today
 
 | | UI Design Studio (`studio`) | Visual Designer (`designer`) |

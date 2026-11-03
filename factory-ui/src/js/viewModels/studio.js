@@ -1,13 +1,18 @@
 /*
- * UI Design Studio: the workspace from a BRD to approved screens. A workflow bar that stays at the top (the BRD, five
+ * Design Studio: the workspace from a BRD to approved screens. A workflow bar that stays at the top (the BRD, five
  * stages and the next action); the BRD's functional requirements with their screens and what is still open; the
  * selected requirement's screen flow; and the selected screen's preview as a phone, tablet or desktop, with the
  * acceptance criteria it helps meet, values the BRD leaves to an analyst, refining it (the AI, back to the generated
- * version, a quick edit), comparing versions and approving it. The Visual Designer stays for detailed work on one screen.
+ * version), comparing versions and approving it. Review is the default mode; Edit draws the Visual Designer
+ * (viewModels/designer, embedded) for the selected screen in its place, one editor and one preview at a time, and every
+ * way out of Edit asks first about unsaved changes. The Studio loads the component catalog and the workspace's UI
+ * target once and hands them to the editor (host.catalog, host.target).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog) {
+        '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', '../services/designActions',
+        '../services/designDiff', './designer', 'ojs/ojmodule-element-utils', 'ojs/ojknockout', 'ojs/ojmodule-element'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog, designActions, designDiff,
+            DesignerViewModel, moduleUtils) {
     const POLL_MS = 4000;
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In review', APPROVED: 'Approved' };
@@ -29,52 +34,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
     const criterionKey = (c) => (c.id && c.id.trim() ? c.id : String(c.description));
-
-    /** What changed from one version of a screen to another, in plain words. */
-    const differences = (from, to) => {
-      const out = [];
-      const add = (kind, text) => out.push({ kind: kind, text: text, css: 'factory-studio-diff-' + kind.toLowerCase() });
-      const name = (c) => '"' + (c.label || c.name || c.id) + '"';
-      const words = (list) => (list && list.length ? list.join(', ') : 'none');
-      if ((from.title || '') !== (to.title || '')) {
-        add('Changed', 'Title: "' + (from.title || '') + '" to "' + (to.title || '') + '"');
-      }
-      const sectionsFrom = from.sections.map((s) => s.title || '');
-      const sectionsTo = to.sections.map((s) => s.title || '');
-      sectionsTo.filter((t) => t && sectionsFrom.indexOf(t) < 0).forEach((t) => add('Added', 'Section "' + t + '"'));
-      sectionsFrom.filter((t) => t && sectionsTo.indexOf(t) < 0).forEach((t) => add('Removed', 'Section "' + t + '"'));
-      const key = (c) => c.id || c.name;
-      const before = {};
-      fieldsOf(from).forEach((c) => { before[key(c)] = c; });
-      const after = {};
-      fieldsOf(to).forEach((c) => { after[key(c)] = c; });
-      Object.keys(after).filter((k) => !before[k]).forEach((k) => add('Added', 'Field ' + name(after[k]) + ' (' + after[k].type + ')'));
-      Object.keys(before).filter((k) => !after[k]).forEach((k) => add('Removed', 'Field ' + name(before[k])));
-      Object.keys(after).filter((k) => before[k]).forEach((k) => {
-        const a = before[k];
-        const b = after[k];
-        if ((a.label || '') !== (b.label || '')) { add('Changed', 'Label: "' + (a.label || '') + '" to "' + (b.label || '') + '"'); }
-        if (a.type !== b.type) { add('Changed', name(b) + ' type: ' + a.type + ' to ' + b.type); }
-        if ((a.required === true) !== (b.required === true)) { add('Changed', name(b) + (b.required === true ? ' is now mandatory' : ' is now optional')); }
-        if ((a.readonly === true) !== (b.readonly === true)) { add('Changed', name(b) + (b.readonly === true ? ' is now shown only' : ' can now be entered')); }
-        if (words(a.options) !== words(b.options)) { add('Changed', name(b) + ' values: ' + words(a.options) + ' to ' + words(b.options)); }
-        if ((a.defaultValue || '') !== (b.defaultValue || '')) { add('Changed', name(b) + ' default: ' + (a.defaultValue || 'none') + ' to ' + (b.defaultValue || 'none')); }
-        if ((a.maxLength || null) !== (b.maxLength || null)) { add('Changed', name(b) + ' maximum length: ' + (a.maxLength || 'none') + ' to ' + (b.maxLength || 'none')); }
-        if (words(a.validations) !== words(b.validations)) { add('Changed', name(b) + ' checks: ' + words(a.validations) + ' to ' + words(b.validations)); }
-      });
-      const actionsFrom = {};
-      from.actions.forEach((a) => { actionsFrom[a.id] = a; });
-      const actionsTo = {};
-      to.actions.forEach((a) => { actionsTo[a.id] = a; });
-      Object.keys(actionsTo).filter((k) => !actionsFrom[k]).forEach((k) => add('Added', 'Button "' + actionsTo[k].label + '"'));
-      Object.keys(actionsFrom).filter((k) => !actionsTo[k]).forEach((k) => add('Removed', 'Button "' + actionsFrom[k].label + '"'));
-      Object.keys(actionsTo).filter((k) => actionsFrom[k] && actionsFrom[k].label !== actionsTo[k].label)
-        .forEach((k) => add('Changed', 'Button "' + actionsFrom[k].label + '" to "' + actionsTo[k].label + '"'));
-      if (out.length === 0) {
-        add('Same', 'No differences in the title, sections, fields or buttons.');
-      }
-      return out;
-    };
+    // The "BRD" of the screens that have none
+    const NONE = 'none';
+    /** What changed from one version of a screen to another, in plain words (the same words as the editor's History). */
+    const differences = (from, to) => designDiff(from, to).map((d) => ({ kind: d.kind, text: d.text, css: 'factory-studio-diff-' + d.kind.toLowerCase() }));
 
     function StudioViewModel() {
       const self = this;
@@ -92,13 +55,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       this.requirements = ko.observableArray([]);
       this.requirementId = ko.observable(null);
+      // Blank and imported screens, and screens whose BRD is gone: picked as "Screens without a BRD" (requirementId NONE)
+      this.looseDesigns = ko.observableArray([]);
+      this.loose = ko.pureComputed(() => this.requirementId() === NONE);
       this.requirementOptions = ko.pureComputed(() => this.requirements().map((r) => ({
         value: r.id, label: r.title, description: (r.fileName || 'Text request') + ' · ' + ui.status(r.status).text
-      })));
+      })).concat(this.looseDesigns().length ? [{ value: NONE, label: 'Screens without a BRD', description: plural(this.looseDesigns().length, 'blank or imported screen', 'blank or imported screens') }] : []));
       this.summary = ko.pureComputed(() => this.requirements().find((r) => r.id === this.requirementId()) || null);
       this.flow = ko.observable(null);
       this.changes = ko.observableArray([]);
+      // The component catalog (type → label) and each workspace's UI target, loaded once for the Studio and its editor
       const catalog = {};
+      let catalogLoad = null;
+      const catalogTypes = () => {
+        if (!catalogLoad) {
+          catalogLoad = api.get('design/catalog').catch((error) => { catalogLoad = null; throw error; });
+        }
+        return catalogLoad;
+      };
+      const targets = {};
+      const targetOf = (workspaceId) => {
+        if (!targets[workspaceId]) {
+          targets[workspaceId] = api.get('workspaces/' + workspaceId + '/target').catch((error) => { delete targets[workspaceId]; throw error; });
+        }
+        return targets[workspaceId];
+      };
 
       // --- the screens, by id, and the groups (each functional requirement, all screens, the others) ---
 
@@ -245,7 +226,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             statusText: ko.pureComputed(() => status().text), statusIcon: ko.pureComputed(() => status().iconCss),
             css: ko.pureComputed(() => 'factory-studio-node' + (this.selectedScreenId() === id ? ' is-selected' : '') + (approved() ? ' is-approved' : '')),
             pressed: ko.pureComputed(() => (this.selectedScreenId() === id ? 'true' : 'false')),
-            pick: () => this.selectedScreenId(id)
+            pick: () => this.selectScreen(id)
           };
         }
         return items[id];
@@ -297,7 +278,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         event.preventDefault();
         const to = list[Math.max(0, Math.min(list.length - 1, moves[event.key]))];
-        this.selectedScreenId(to.id);
+        this.selectScreen(to.id);
         const node = document.querySelector('[data-studio-node="' + to.id + '"]');
         if (node) {
           node.focus();
@@ -331,16 +312,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ? this.flow().questions.filter((q) => q.screens.indexOf(this.screen().id) >= 0).map(questionView)
           .concat((this.screen().decisions || []).map((text) => ({ question: text, detail: '', scope: '' }))) : []));
       this.screenIndex = ko.pureComputed(() => this.flowScreens().findIndex((s) => s.id === this.selectedScreenId()));
-      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { this.selectedScreenId(this.flowScreens()[i - 1].id); } };
-      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < this.flowScreens().length - 1) { this.selectedScreenId(this.flowScreens()[i + 1].id); } };
+      this.previousScreen = () => { const i = this.screenIndex(); if (i > 0) { this.selectScreen(this.flowScreens()[i - 1].id); } };
+      this.nextScreen = () => { const i = this.screenIndex(); if (i >= 0 && i < this.flowScreens().length - 1) { this.selectScreen(this.flowScreens()[i + 1].id); } };
       this.hasPrevious = ko.pureComputed(() => this.screenIndex() > 0);
       this.hasNext = ko.pureComputed(() => this.screenIndex() >= 0 && this.screenIndex() < this.flowScreens().length - 1);
       this.position = ko.pureComputed(() => (this.screenIndex() < 0 ? '' : 'Screen ' + (this.screenIndex() + 1) + ' of ' + this.flowScreens().length));
 
-      // One tab level for the selected screen; Refine and Edit only for those who may change screens
+      // One tab level for the selected screen in Review; Refine only for those who may change screens (Edit is the mode)
       this.tab = ko.observable('coverage');
       this.tabs = ko.pureComputed(() => ui.tabs(this.tab, [{ value: 'coverage', label: 'Coverage' }]
-        .concat(this.canDesign() ? [{ value: 'refine', label: 'Refine' }, { value: 'edit', label: 'Edit' }] : [])
+        .concat(this.canDesign() ? [{ value: 'refine', label: 'Refine' }] : [])
         .concat([{ value: 'compare', label: 'Compare versions' }])));
       this.tabKey = (event) => {
         const list = this.tabs();
@@ -358,53 +339,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return false;
       };
-      this.canDesign.subscribe((can) => { if (!can && (this.tab() === 'refine' || this.tab() === 'edit')) { this.tab('coverage'); } });
-
-      // Quick edit: the screen's title and each field's label and mandatory flag
-      this.editTitle = ko.observable('');
-      this.editFields = ko.observableArray([]);
-      const resetEdit = () => {
-        const s = this.screen();
-        this.editTitle(s && s.model ? s.model.title || '' : '');
-        this.editFields(fieldsOf(s && s.model).filter((c) => c.type !== 'table').map((c) => {
-          const required = ko.observable(c.required === true);
-          return {
-            id: c.id, type: catalog[c.type] || c.type, label: ko.observable(c.label || c.name), required: required,
-            readonly: c.readonly === true || c.type === 'display',
-            requiredLabel: 'Mandatory: ' + (c.label || c.name),
-            toggleRequired: (data, event) => { required(event.target.checked); return true; }
-          };
-        }));
-      };
-      this.screen.subscribe(resetEdit);
-      this.editDirty = ko.pureComputed(() => {
-        const s = this.screen();
-        if (!s || !s.model) {
-          return false;
-        }
-        const fields = fieldsOf(s.model);
-        return (this.editTitle() || '') !== (s.model.title || '') || this.editFields().some((f) => {
-          const c = fields.find((x) => x.id === f.id);
-          return c && ((f.label() || '') !== (c.label || c.name) || f.required() !== (c.required === true));
-        });
-      });
-      this.resetEdit = resetEdit;
-      this.saveEdit = () => {
-        const s = this.screen();
-        const model = clone(s.model);
-        model.title = this.editTitle().trim() || model.title;
-        model.sections.forEach((section) => section.components.forEach((c) => {
-          const f = this.editFields().find((x) => x.id === c.id);
-          if (f) {
-            c.label = (f.label() || '').trim() || c.label;
-            c.required = f.required() ? true : null;
-          }
-        }));
-        return api.put('designs/' + s.id + '/model', { model: model, note: 'Quick edit in the Design Studio' })
-          .then(() => reloadFlow())
-          .then(() => toast.success('Saved as version ' + (screenById(s.id) ? screenById(s.id).currentVersion : '') + '.'))
-          .catch(actionError);
-      };
+      this.canDesign.subscribe((can) => { if (!can && this.tab() === 'refine') { this.tab('coverage'); } });
 
       // Refine with the AI: a plain-language change to the whole screen
       this.instruction = ko.observable('');
@@ -417,7 +352,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.refining(true);
-        api.post('designs/' + s.id + '/ai-change', { instruction: text, targetId: null })
+        api.post('designs/' + encodeURIComponent(s.id) + '/ai-change', { instruction: text, targetId: null })
           .then(() => { this.instruction(''); return reloadFlow(); })
           .then(() => toast.success('The screen was changed. Check the preview.'))
           .catch(actionError)
@@ -439,7 +374,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         versionsOf = wanted;
-        api.get('designs/' + s.id).then((detail) => {
+        designActions.detail(s.id).then((detail) => {
           if (versionsOf === wanted) {
             this.versions(detail.versions || []);
           }
@@ -478,7 +413,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           title: 'Regenerate this screen?',
           message: '"' + s.name + '" is made again from the approved spec and saved as a new version. Changes since version ' + g + ' stay in its history.',
           confirmLabel: 'Regenerate'
-        }).then((ok) => ok && api.post('designs/' + s.id + '/restore', { version: g })
+        }).then((ok) => ok && api.post('designs/' + encodeURIComponent(s.id) + '/restore', { version: g })
           .then(() => reloadFlow())
           .then(() => toast.success('Regenerated as version ' + (screenById(s.id) ? screenById(s.id).currentVersion : '') + '.'))
           .catch(actionError));
@@ -492,17 +427,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.compareTo(s ? s.currentVersion : numbers[numbers.length - 1] || null);
         this.compareFrom(numbers.length > 1 ? numbers[numbers.length - 2] : null);
       });
-      const models = {};
       const modelOf = (id, version) => {
         const s = screenById(id);
-        if (s && s.currentVersion === version) {
-          return Promise.resolve(s.model);
-        }
-        const key = id + '@' + version;
-        if (!models[key]) {
-          models[key] = api.get('designs/' + id + '/versions/' + version).catch((error) => { delete models[key]; throw error; });
-        }
-        return models[key];
+        return s && s.currentVersion === version ? Promise.resolve(s.model) : designActions.versionModel(id, version);
       };
       this.differences = ko.observableArray([]);
       ko.computed(() => {
@@ -538,19 +465,212 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       this.showCurrent = () => { this.shownVersion(null); sendAll(); };
 
-      this.openInDesigner = () => {
-        if (this.screen()) {
-          pageRequests.design(this.screen().id);
+      // --- Review or Edit: Edit draws the designer (viewModels/designer, embedded) for the selected screen ---
+
+      this.mode = ko.observable('review');
+      this.editing = ko.pureComputed(() => this.mode() === 'edit');
+      // Phones get Review only: the editor needs a wider screen
+      const phoneQuery = window.matchMedia('(max-width: 767px)');
+      this.narrow = ko.observable(phoneQuery.matches);
+      const onNarrow = (event) => this.narrow(event.matches);
+      // The editor while Edit is open; its preview is the only one then (Review's frame is not drawn). One designer view
+      // model serves every Edit of this page, emptied when Edit closes, so closed editors leave nothing behind.
+      this.editor = ko.observable(null);
+      let editorVm = null;
+      // A fresh view for every oj-module: crossing 768 px draws the module again, and view nodes are not reused
+      this.editorConfig = ko.pureComputed(() => {
+        const vm = this.editor();
+        return vm && !this.narrow() ? moduleUtils.createView({ viewPath: 'views/designer.html' }).then((view) => ({ view: view, viewModel: vm })) : { view: [] };
+      });
+      // The editor's tools in the Studio's header (save, undo, design or code, preview): bound to the editor itself
+      this.editorTools = ko.pureComputed(() => (this.editor() && !this.narrow() ? [this.editor()] : []));
+      /** Asks before the editor's unsaved changes are lost (another screen, Review, another BRD); true when they may go. */
+      const guard = () => (this.editor() ? this.editor().confirmDiscard() : Promise.resolve(true));
+      this.selectScreen = (id) => guard().then((ok) => {
+        if (ok && id && id !== this.selectedScreenId()) {
+          this.selectedScreenId(id);
         }
-        navigate('designer');
+        return ok;
+      });
+      const host = {
+        select: (id) => this.selectScreen(id),
+        changed: () => reloadFlow().catch(actionError),
+        deleted: () => { closeEditor(); Promise.all([loadRequirements(), reloadFlow()]).catch(actionError); },
+        leave: () => this.showReview(),
+        element: () => document.getElementById('studioEditor'),
+        // The editor's tools in the Studio's header count as inside the editor (Ctrl+Z there undoes in it)
+        contains: (node) => { const tools = document.getElementById('studioEditTools'); return !!tools && tools.contains(node); },
+        catalog: catalogTypes,
+        target: targetOf,
+        // The journey strip follows the server's flow order (each review and confirmation after its initiate screen)
+        order: () => this.screens().map((s) => s.id)
       };
-      this.addSteps = () => api.post('designs/' + this.screen().id + '/flow-screens')
+      /** Runs fn with the editor once it shows the selected screen (Edit is opened first). */
+      const inEditor = (fn) => {
+        this.showEdit();
+        const vm = this.editor();
+        // On a phone Edit has no editor to run it in
+        if (!vm || this.narrow()) {
+          return;
+        }
+        const ready = () => vm.detail() && vm.detail().id === this.selectedScreenId();
+        if (ready()) {
+          fn(vm);
+          return;
+        }
+        // Waits for the screen; gives up when it cannot be opened, Edit closes, another screen is chosen or the page narrows
+        const watches = [];
+        const stop = () => watches.splice(0).forEach((w) => w.dispose());
+        watches.push(vm.detail.subscribe(() => { if (ready()) { stop(); window.setTimeout(() => fn(vm), 0); } }));
+        watches.push(vm.loadFailures.subscribe(stop));
+        watches.push(this.editor.subscribe((now) => { if (now !== vm) { stop(); } }));
+        watches.push(this.selectedScreenId.subscribe(stop));
+        watches.push(this.narrow.subscribe(stop));
+      };
+      const closeEditor = () => {
+        const wasOpen = this.editing();
+        if (this.editor()) {
+          this.editor().clear();
+        }
+        this.mode('review');
+        this.editor(null);
+        if (wasOpen) {
+          window.setTimeout(() => { observeStage(); sendAll(); }, 0);
+        }
+      };
+      this.showEdit = () => {
+        const s = this.screen();
+        if (!s || this.editor()) {
+          return;
+        }
+        if (editorVm) {
+          editorVm.load(s.id);
+        } else {
+          editorVm = new DesignerViewModel({ embedded: true, designId: s.id, host: host });
+        }
+        this.editor(editorVm);
+        this.mode('edit');
+      };
+      this.showReview = () => (this.editing() ? guard().then((ok) => { if (ok) { closeEditor(); } return ok; }) : Promise.resolve(true));
+      // The editor follows the selected screen
+      this.selectedScreenId.subscribe((id) => {
+        const vm = this.editor();
+        if (!vm) {
+          return;
+        }
+        if (!id) {
+          closeEditor();
+        } else if (!vm.detail() || vm.detail().id !== id) {
+          vm.load(id);
+        }
+      });
+      this.modes = [['review', 'Review'], ['edit', 'Edit']].map(([value, label]) => ({
+        value: value, label: label, id: 'studioMode-' + value,
+        pressed: ko.pureComputed(() => (this.mode() === value ? 'true' : 'false')),
+        tabindex: ko.pureComputed(() => (this.mode() === value ? '0' : '-1')),
+        pick: () => (value === 'edit' ? this.showEdit() : this.showReview())
+      }));
+      // Arrow keys, Home and End move between Review and Edit
+      this.modeKey = (event) => {
+        const to = { ArrowRight: 'edit', ArrowLeft: 'review', Home: 'review', End: 'edit' }[event.key];
+        if (!to) {
+          return true;
+        }
+        event.preventDefault();
+        Promise.resolve(to === 'edit' ? this.showEdit() : this.showReview()).then(() => {
+          const button = document.getElementById('studioMode-' + this.mode());
+          if (button) {
+            button.focus();
+          }
+        });
+        return false;
+      };
+      // The editor's own checks (fields placed, placeholder values, buttons, compatibility) are in Edit
+      this.openChecks = () => inEditor((vm) => vm.showChecks());
+      /** Approval locks a saved version: with unsaved changes in Edit, saves them first when the user agrees. */
+      const savedFirst = () => {
+        const vm = this.editor();
+        if (!vm || !vm.dirty()) {
+          return Promise.resolve(true);
+        }
+        return dialog.confirm({
+          title: 'Save the changes first?', confirmLabel: 'Save and approve',
+          message: 'Approval locks a saved version. Your changes are saved as a new version, then you approve it.'
+        }).then((ok) => ok && vm.save().then(() => !vm.dirty()));
+      };
+      // After an approval or reopening, the editor shows the screen's new state (locked or open)
+      const refreshEditor = () => {
+        const vm = this.editor();
+        if (vm && this.selectedScreenId()) {
+          vm.load(this.selectedScreenId());
+        }
+      };
+      this.addSteps = () => api.post('designs/' + encodeURIComponent(this.screen().id) + '/flow-screens')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens added after "' + this.screen().name + '".')))
         .catch(actionError);
-      this.approveScreen = () => approve([this.screen().id]);
-      this.reopenScreen = () => dialog.confirm({
-        title: 'Reopen this screen?', message: 'It can be changed again, and has to be approved again before code is generated.', confirmLabel: 'Reopen'
-      }).then((ok) => ok && api.post('designs/' + this.screen().id + '/reopen').then(() => reloadFlow()).catch(actionError));
+      this.approveScreen = () => savedFirst().then((ok) => {
+        const s = this.screen();
+        const vm = this.editor();
+        const version = vm && vm.detail() ? vm.detail().currentVersion : s && s.currentVersion;
+        if (!ok || !s) {
+          return null;
+        }
+        // A screen without a BRD is approved on its own
+        return this.loose()
+          ? designActions.approveScreen(s.id, s.name, version)
+            .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is approved for development.'); }))
+            .catch(actionError)
+          : approve([s.id], { count: 1, name: s.name, version: version });
+      });
+      this.reopenScreen = () => designActions.reopen(this.screen().id, this.screen().name)
+        .then((detail) => detail && reloadFlow().then(() => { refreshEditor(); toast.success('"' + detail.name + '" is reopened for changes.'); }))
+        .catch(actionError);
+
+      // The selected screen's More menu: share for review, import into it, its review and confirmation screens, delete
+      this.screenMenuItems = ko.pureComputed(() => {
+        const s = this.screen();
+        return [
+          // A review link shows a saved version, so it waits for unsaved changes to be saved
+          { value: 'share', label: 'Share for review', icon: 'link', disabled: !this.screenEditable() || this.narrow() || (!!this.editor() && this.editor().dirty()),
+            title: this.editor() && this.editor().dirty() ? 'Save the changes first: the link shows a saved version.' : null },
+          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.screenEditable() || this.narrow() },
+          { value: 'flow', label: 'Add review and confirmation screens', disabled: !this.screenEditable() || !s || (!!s.stage && s.stage !== 'initiate') },
+          { value: 'comment', label: 'Comment on the screen', icon: 'edit', disabled: this.narrow() },
+          { separator: true },
+          { value: 'delete', label: 'Delete screen', icon: 'trash', danger: true, disabled: !this.canDesign() }
+        ];
+      });
+      this.screenMenu = (event) => {
+        const value = event.detail.value;
+        if (value === 'share') {
+          inEditor((vm) => vm.showDrawer('share'));
+        } else if (value === 'import') {
+          inEditor((vm) => vm.showDrawer('import'));
+        } else if (value === 'comment') {
+          inEditor((vm) => vm.commentOnScreen());
+        } else if (value === 'flow') {
+          this.addSteps();
+        } else if (value === 'delete') {
+          this.deleteScreen();
+        }
+      };
+      this.deleteScreen = () => {
+        const s = this.screen();
+        const vm = this.editor();
+        if (vm && vm.detail() && vm.detail().id === s.id) {
+          // The editor asks, deletes and tells the Studio (host.deleted)
+          vm.remove();
+          return Promise.resolve();
+        }
+        // Review, or Edit on a phone (an editor that never opened the screen): the Studio's own delete; Edit closes after
+        return dialog.confirm({
+          title: 'Delete this screen?', danger: true, confirmLabel: 'Delete',
+          message: '"' + s.name + '", all its versions and its comments are deleted. This cannot be undone.'
+        }).then((ok) => ok && api.del('designs/' + encodeURIComponent(s.id))
+          .then(() => { closeEditor(); return Promise.all([loadRequirements(), reloadFlow()]); })
+          .then(() => toast.success('"' + s.name + '" is deleted.')))
+          .catch(actionError);
+      };
 
       // --- summary of the selected group: channels, screens, fields and the components used ---
 
@@ -586,6 +706,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const allApproved = ko.pureComputed(() => this.screens().length > 0 && this.screens().every((s) => s.status === 'APPROVED'));
       this.stage = ko.pureComputed(() => {
         const r = this.summary();
+        // Screens without a BRD have no stages: no spec, and their code comes with a change started elsewhere
+        if (this.loose()) {
+          return 0;
+        }
         if (!r) {
           return 1;
         }
@@ -621,6 +745,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.next = ko.pureComputed(() => {
         const r = this.summary();
         switch (this.stage()) {
+          case 0:
+            return { title: 'Screens without a BRD', text: 'Blank and imported screens, and screens whose BRD was deleted. Review, edit and approve them here; their code comes with a change on the Changes page.', action: null };
           case 1:
             return { title: 'Start with a BRD', text: 'Upload the business requirements document. The AI drafts its specification: screens, fields, rules and questions.', action: null };
           case 2:
@@ -657,7 +783,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             return { title: 'Code is under way', text: change().title + ': ' + ui.status(change().status).text + '.', label: 'Open the change', action: this.openChange, tone: 'success' };
         }
       });
-      this.barCss = ko.pureComputed(() => 'fx-card factory-studio-bar' + (this.next().tone ? ' factory-studio-bar--' + this.next().tone : ''));
+      // In Edit (on a wide screen) the bar is one line: the BRD and where it stands, so the canvas gets the room
+      this.compactBar = ko.pureComputed(() => this.editing() && !this.narrow());
+      this.barCss = ko.pureComputed(() => 'fx-card factory-studio-bar' + (this.next().tone ? ' factory-studio-bar--' + this.next().tone : '')
+        + (this.compactBar() ? ' is-compact' : ''));
+      this.stageChip = ko.pureComputed(() => {
+        const st = this.steps().find((x) => x.current);
+        return this.loose() ? 'Screens without a BRD' : st ? 'Step ' + st.number + ' of 5 · ' + st.label + ' · ' + st.sub : 'Code is under way';
+      });
       this.nextButtonCss = ko.pureComputed(() => 'fx-btn ' + (this.next().secondary ? 'fx-btn--secondary' : this.next().tone === 'success' ? 'fx-btn--success' : 'fx-btn--primary'));
       this.hasScreens = ko.pureComputed(() => this.screens().length > 0);
 
@@ -671,30 +804,100 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         pageRequests.change(change().id);
         navigate('changes');
       };
-      this.generate = () => api.post('requirements/' + this.requirementId() + '/designs')
+      this.generate = () => api.post('requirements/' + encodeURIComponent(this.requirementId()) + '/designs')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens generated. Review them below.')))
         .catch(actionError);
-      // Screens with elements the version pack forbids are refused (409 "Unsupported components: ..."): approving them is confirmed
-      const UNSUPPORTED = 'Unsupported components: ';
-      const approve = (ids, confirmed) => api.post('requirements/' + this.requirementId() + '/designs/approve' + (confirmed ? '?unsupported=true' : ''), { designIds: ids })
+
+      // + New screen: generate them from the approved spec, or a blank screen, or one imported from a design tool (a
+      // blank screen first, then the editor's import); blank and imported screens are under "Screens without a BRD"
+      this.newKind = ko.observable(null);
+      this.newName = ko.observable('');
+      this.newMenuItems = ko.pureComputed(() => (this.stage() === 3 ? [{ value: 'generate', label: 'Generate screens from the spec', icon: 'wand' }] : [])
+        .concat([
+          { value: 'blank', label: 'Blank screen', icon: 'plus' },
+          { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: this.narrow() }
+        ]));
+      this.newMenu = (event) => {
+        const value = event.detail.value;
+        if (value === 'generate') {
+          this.generate();
+        } else {
+          this.newKind(value);
+          window.setTimeout(() => { const box = document.querySelector('#studioNewName input'); if (box) { box.focus(); } }, 50);
+        }
+      };
+      this.newTitle = ko.pureComputed(() => (this.newKind() === 'import' ? 'Import a screen' : 'Blank screen'));
+      this.newHint = ko.pureComputed(() => (this.newKind() === 'import'
+        ? 'Name the screen, then choose the Figma frame, image or PDF. The import becomes its first designed version.'
+        : 'An empty screen to build from the components. It is listed under Screens without a BRD.'));
+      this.cancelNew = () => { this.newKind(null); this.newName(''); };
+      this.createNew = () => {
+        const name = (this.newName() || '').trim();
+        const kind = this.newKind();
+        if (!name) {
+          toast.info('Name the screen first, for example "Fixed deposit opening".');
+          return Promise.resolve();
+        }
+        return guard().then((ok) => ok && api.post('workspaces/' + this.workspaceId() + '/designs', { name: name })
+          .then((detail) => {
+            this.cancelNew();
+            // Opened in Edit under Screens without a BRD; an import continues in the editor's import drawer
+            openAfterLoad = { id: detail.id, edit: true, then: kind === 'import' ? (vm) => vm.openImport() : null };
+            return loadRequirements().then(() => {
+              closeEditor();
+              if (this.requirementId() === NONE) {
+                return reloadFlow();
+              }
+              this.requirementId(NONE);
+              return null;
+            });
+          })
+          .then(() => toast.success('"' + name + '" is created.')))
+          .catch(actionError);
+      };
+      // A screen to select (and open in Edit) once the flow it is in has loaded
+      let openAfterLoad = null;
+      const openPending = () => {
+        const wanted = openAfterLoad;
+        if (!wanted || !screenById(wanted.id)) {
+          return;
+        }
+        openAfterLoad = null;
+        const current = this.group();
+        if (!current || current.screens.indexOf(wanted.id) < 0) {
+          this.groupKey('all');
+        }
+        this.selectedScreenId(wanted.id);
+        if (wanted.edit && !this.narrow()) {
+          inEditor((vm) => { if (wanted.then) { wanted.then(vm); } });
+        }
+      };
+      // Every approval asks first, and again for elements the version pack forbids (services/designActions)
+      const approve = (ids, question) => designActions.approveScreens(this.requirementId(), ids, question)
         .then((flow) => {
+          if (!flow) {
+            return;
+          }
           const before = this.screens().filter((s) => s.status === 'APPROVED').length;
+          // A flow still loading (after Save and approve saved first) is older than this one: it is not shown
+          token++;
           setFlow(flow);
+          refreshEditor();
           const now = flow.screens.filter((s) => s.status === 'APPROVED').length;
           toast.success((now - before) + (now - before === 1 ? ' screen' : ' screens') + ' approved.'
             + (now === flow.screens.length ? ' Every screen is approved: you can generate the code.' : ''));
         })
-        .catch((error) => (!confirmed && error.status === 409 && String(error.message).indexOf(UNSUPPORTED) === 0
-          ? dialog.confirm({ title: 'Approve unsupported components?', message: error.message.substring(UNSUPPORTED.length).replace(/^./, (c) => c.toUpperCase()),
-            confirmLabel: 'Approve Anyway', danger: true }).then((ok) => ok && approve(ids, true))
-          : actionError(error)));
-      this.approveGroup = () => approve(this.groupUnapproved());
-      this.approveAll = () => dialog.confirm({
-        title: 'Approve every screen?',
-        message: 'All ' + this.screens().filter((s) => s.status !== 'APPROVED').length + ' remaining screens of this BRD are locked for development. You can reopen a screen later.',
-        confirmLabel: 'Approve all'
-      }).then((ok) => ok && approve(null));
-      this.generateCode = () => api.post('requirements/' + this.requirementId() + '/changes')
+        .catch(actionError);
+      this.approveGroup = () => savedFirst().then((ok) => ok && approveGroupNow());
+      const approveGroupNow = () => {
+        const ids = this.groupUnapproved();
+        const only = ids.length === 1 ? screenById(ids[0]) : null;
+        const g = this.group();
+        return approve(ids, { count: ids.length, name: only ? only.name : '', version: only ? only.currentVersion : null,
+          group: g && g.key !== 'all' ? (g.id ? g.id + ' ' : '') + '"' + g.title + '"' : 'this BRD' });
+      };
+      this.approveAll = () => savedFirst().then((ok) => ok && approve(null, { every: true, count: this.screens().filter((s) => s.status !== 'APPROVED').length }));
+      this.generateCode = () => api.post('requirements/' + encodeURIComponent(this.requirementId()) + '/changes')
         .then((created) => {
           toast.success('The change was started. The factory is analysing the impact on the code.');
           pageRequests.change(created.id);
@@ -716,17 +919,41 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then((detail) => {
             this.chosenFile(null);
             toast.success('BRD uploaded. The AI is drafting its specification.');
-            return loadRequirements().then(() => this.requirementId(detail.id));
+            return loadRequirements().then(() => switchBrd(detail.id)).then((ok) => {
+              if (!ok) {
+                toast.info('"' + (detail.title || 'The BRD') + '" is in the BRD picker when you are done editing.');
+              }
+            });
           })
           .catch(actionError);
       };
       this.cancelUpload = () => this.chosenFile(null);
 
-      this.pickGroup = (key) => {
+      this.pickGroup = (key) => guard().then((ok) => {
+        if (!ok) {
+          return;
+        }
         this.groupKey(key);
         const g = this.group();
         this.selectedScreenId(g && g.screens.length ? g.screens[0] : null);
-      };
+      });
+      // The BRD picker: another BRD asks first about the editor's unsaved changes, and stays on this one when kept
+      // Every change of the BRD the user starts (the picker, an upload, a screen asked for) goes through switchBrd
+      this.brdPick = ko.observable(null);
+      this.requirementId.subscribe((id) => this.brdPick(id));
+      const switchBrd = (id) => (id === this.requirementId() ? Promise.resolve(true) : guard().then((ok) => {
+        if (ok) {
+          this.requirementId(id);
+        } else {
+          this.brdPick(this.requirementId());
+        }
+        return ok;
+      }));
+      this.brdPick.subscribe((id) => {
+        if (id !== this.requirementId()) {
+          switchBrd(id);
+        }
+      });
 
       // --- the preview: one frame showing the selected screen as a phone, tablet or desktop ---
 
@@ -808,12 +1035,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!this.selectedScreenId() || !screenById(this.selectedScreenId()) || ids.indexOf(this.selectedScreenId()) < 0) {
           this.selectedScreenId(this.group() && this.group().screens.length ? this.group().screens[0] : null);
         }
-        resetEdit();
         loadVersions();
         // A change shows the current version again; the frame gets the new model (a new frame asks when ready)
         this.shownVersion(null);
         window.setTimeout(() => { observeStage(); sendAll(); }, 0);
+        openPending();
       };
+      /** Screens without a BRD as a flow of their own: no requirements, criteria or questions; in the order they were made. */
+      const looseFlow = () => api.get('workspaces/' + this.workspaceId() + '/designs').then((list) => {
+        const ids = this.requirements().map((r) => r.id);
+        const loose = list.filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0);
+        this.looseDesigns(loose);
+        return Promise.all(loose.map((d) => api.get('designs/' + encodeURIComponent(d.id)))).then((details) => ({
+          title: 'Screens without a BRD', requirements: [], others: [], rules: [], criteria: [], uncovered: [], questions: [],
+          screens: details.map((d) => ({
+            id: d.id, name: d.name, status: d.status, currentVersion: d.currentVersion, approvedBy: d.approvedBy, model: d.model,
+            stage: d.model ? d.model.stage : null, channels: d.model ? d.model.channels || [] : [], criteria: [], unconfirmed: [], decisions: [], needsSteps: false
+          }))
+        }));
+      });
       const reloadFlow = () => {
         const id = this.requirementId();
         if (!id) {
@@ -822,7 +1062,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return Promise.resolve();
         }
         const mine = ++token;
-        return Promise.all([api.get('requirements/' + id + '/design-flow'), api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
+        return Promise.all([id === NONE ? looseFlow() : api.get('requirements/' + encodeURIComponent(id) + '/design-flow'),
+          id === NONE ? Promise.resolve([]) : api.get('workspaces/' + this.workspaceId() + '/changes/details').catch(() => [])])
           .then(([flow, changes]) => {
             if (mine !== token) {
               return;
@@ -838,10 +1079,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.requirements([]);
           return Promise.resolve();
         }
-        return api.get('workspaces/' + id + '/requirements').then((list) => {
-          this.requirements(list);
-          return list;
-        });
+        return Promise.all([api.get('workspaces/' + id + '/requirements'), api.get('workspaces/' + id + '/designs').catch(() => [])])
+          .then(([list, designs]) => {
+            this.requirements(list);
+            const ids = list.map((r) => r.id);
+            this.looseDesigns(designs.filter((d) => !d.requirementId || ids.indexOf(d.requirementId) < 0));
+            return list;
+          });
       };
       const poll = () => {
         clearTimeout(pollTimer);
@@ -866,53 +1110,185 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         reloadFlow().catch(showError).finally(() => this.loading(false));
         poll();
       });
-      /** The BRD to open: asked for by another page, the last one used here, or the newest with screens or an approved spec. */
-      const pickRequirement = (list) => {
-        const wanted = pageRequests.studio();
+      // The address the page was opened with (?ojr=studio&requirement=<id>&screen=<id>), read once
+      // Only ids that look like ids are used (UUIDs, or "none" for Screens without a BRD); anything else is ignored
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const idOrNull = (value, allowNone) => (value && (UUID.test(value) || (allowNone && value === NONE)) ? value : null);
+      let fromAddress = (() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('ojr') === 'studio' ? { requirement: idOrNull(params.get('requirement'), true), screen: idOrNull(params.get('screen'), false) } : null;
+      })();
+      // A screen asked for: by another page (pageRequests.design, from the old designer links: opens in Edit) or by the
+      // address (Review); kept while the workspace is switched to the screen's own
+      let pendingScreen = null;
+      /** Resolves with the BRD of the screen asked for (NONE without one), or undefined when none is asked for. */
+      const screenRequest = (list) => {
+        const requested = idOrNull(pageRequests.design(), false);
+        pageRequests.design(null);
+        // A screen waiting for its workspace counts only once that workspace is the selected one (a refused switch drops it)
+        const waiting = pendingScreen && pendingScreen.workspace === this.workspaceId() ? pendingScreen : null;
+        // A BRD asked for by another page wins over the address
+        const wanted = requested ? { id: requested, edit: true } : waiting
+          || (fromAddress && fromAddress.screen && !pageRequests.studio() ? { id: fromAddress.screen, edit: false } : null);
+        pendingScreen = null;
+        if (!wanted) {
+          return Promise.resolve(undefined);
+        }
+        return api.get('designs/' + encodeURIComponent(wanted.id)).then((d) => {
+          if (d.workspaceId && d.workspaceId !== this.workspaceId()) {
+            // The switch asks first when Edit has unsaved changes (workspaceSelection's guard)
+            pendingScreen = { id: wanted.id, edit: wanted.edit, workspace: d.workspaceId };
+            workspaceSelection.selectedId(d.workspaceId);
+            return null;
+          }
+          openAfterLoad = { id: d.id, edit: wanted.edit, then: null };
+          return d.requirementId && list.some((r) => r.id === d.requirementId) ? d.requirementId : NONE;
+        }).catch((error) => {
+          toast.warning(error.status === 403 ? 'You don\'t have access to that screen.'
+            : 'That screen is not there any more. It may have been deleted.');
+          return undefined;
+        });
+      };
+      // A screen asked for while the Studio is already open (an old designer link from the command palette or a toast)
+      const onDesignRequest = (id) => {
+        if (!id || !this.workspaceId()) {
+          return;
+        }
+        guard().then((ok) => {
+          if (!ok) {
+            pageRequests.design(null);
+            return null;
+          }
+          return screenRequest(this.requirements()).then((forScreen) => {
+            if (forScreen === null || forScreen === undefined) {
+              return;
+            }
+            if (forScreen === this.requirementId()) {
+              openPending();
+            } else {
+              this.requirementId(forScreen);
+            }
+          });
+        }).catch(showError);
+      };
+      // The address follows the selected BRD and screen, so a copied link opens them (replaceState: no history entry)
+      const showInAddress = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ojr') !== 'studio' || !window.history.replaceState) {
+          return;
+        }
+        const rid = this.requirementId();
+        const sid = this.selectedScreenId();
+        const url = window.location.pathname + '?ojr=studio' + (rid ? '&requirement=' + encodeURIComponent(rid) : '')
+          + (sid ? '&screen=' + encodeURIComponent(sid) : '');
+        if (url !== window.location.pathname + window.location.search) {
+          window.history.replaceState(window.history.state, '', url);
+        }
+      };
+      this.selectedScreenId.subscribe(showInAddress);
+      this.requirementId.subscribe(showInAddress);
+      // The router keeps other parameters on the next page's address, so they go when the Studio does
+      const clearAddress = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ojr') !== 'studio' && (params.has('requirement') || params.has('screen')) && window.history.replaceState) {
+          params.delete('requirement');
+          params.delete('screen');
+          window.history.replaceState(window.history.state, '', window.location.pathname + '?' + params.toString());
+        }
+      };
+      /** The BRD to open: a screen's, one asked for by another page or the address, the last one used here, or the newest. */
+      const pickRequirement = (list, forScreen) => {
+        const wanted = forScreen || pageRequests.studio() || (fromAddress && fromAddress.requirement);
         pageRequests.studio(null);
+        fromAddress = null;
         const remembered = recall(storageKey(this.workspaceId()));
-        const choice = [wanted, remembered].find((id) => id && list.some((r) => r.id === id))
-          || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || null;
+        const known = (id) => id && (list.some((r) => r.id === id) || (id === NONE && this.looseDesigns().length > 0));
+        const choice = [wanted, remembered].find(known)
+          || (list.find((r) => r.status === 'APPROVED') || list[0] || {}).id || (this.looseDesigns().length ? NONE : null);
         if (choice === this.requirementId()) {
           this.requirementId.valueHasMutated();
         } else {
           this.requirementId(choice);
         }
       };
-      const loadTarget = (id) => api.get('workspaces/' + id + '/target')
+      const loadTarget = (id) => targetOf(id)
         .then((target) => { if (id === this.workspaceId() && target.preview) { this.previewKind(target.preview); } })
         .catch(() => null);
       const loadWorkspace = () => {
         const id = this.workspaceId();
+        closeEditor();
         this.flow(null);
         this.requirementId(null);
         if (!id) {
           this.requirements([]);
           return Promise.resolve();
         }
+        // Asked again on each workspace load (the target may have changed on another page), then shared with the editor
+        delete targets[id];
         loadTarget(id);
-        return loadRequirements().then(pickRequirement).catch(showError);
+        return loadRequirements()
+          .then((list) => screenRequest(list).then((forScreen) => {
+            // null: switching to the screen's workspace, which loads again
+            if (forScreen !== null && id === this.workspaceId()) {
+              pickRequirement(list, forScreen);
+            }
+          }))
+          .catch(showError);
       };
 
       let subscription = null;
       this.connected = () => {
-        accUtils.announce('UI Design Studio loaded.');
-        document.title = 'UI Design Studio';
+        accUtils.announce('Design Studio loaded.');
+        document.title = 'Design Studio';
         window.addEventListener('message', onMessage);
+        phoneQuery.addEventListener('change', onNarrow);
         if (window.ResizeObserver) {
           stageObserver = new ResizeObserver((entries) => this.stageWidth(entries[0].contentRect.width));
           observeStage();
         }
-        api.get('design/catalog').then((types) => types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); })).catch(() => null);
+        catalogTypes().then((types) => types.forEach((t) => { catalog[t.type] = t.label.replace(/ \(.*\)$/, ''); })).catch(() => null);
+        alive = true;
         subscription = this.workspaceId.subscribe(loadWorkspace);
+        // Another workspace asks first while Edit has unsaved changes (the top bar, the bell, a link to another workspace)
+        unguard = workspaceSelection.guardChange({ blocks: () => !!this.editor() && this.editor().dirty(), confirm: guard });
         workspaceSelection.load().then((list) => {
           list.forEach((w) => { bankNames[w.id] = w.bankName; indexed[w.id] = w.indexedRevision !== null && w.indexedRevision !== undefined; });
           return loadWorkspace();
+        }).then(() => {
+          // Not when the page was left while it loaded
+          if (alive) {
+            if (designRequests) {
+              designRequests.dispose();
+            }
+            designRequests = pageRequests.design.subscribe(onDesignRequest);
+          }
         }).catch(showError);
       };
+      let designRequests = null;
+      let alive = false;
+      let unguard = null;
+      // Leaving the page with unsaved changes in Edit asks first (the editor's own guard)
+      this.canExit = () => (this.editor() ? this.editor().canExit() : Promise.resolve());
       this.disconnected = () => {
         window.removeEventListener('message', onMessage);
+        phoneQuery.removeEventListener('change', onNarrow);
+        if (this.editor()) {
+          this.editor().clear();
+        }
+        this.editor(null);
+        this.mode('review');
         clearTimeout(pollTimer);
+        alive = false;
+        if (designRequests) {
+          designRequests.dispose();
+          designRequests = null;
+        }
+        if (unguard) {
+          unguard();
+          unguard = null;
+        }
+        clearAddress();
+        window.setTimeout(clearAddress, 0);
         if (stageObserver) {
           stageObserver.disconnect();
         }

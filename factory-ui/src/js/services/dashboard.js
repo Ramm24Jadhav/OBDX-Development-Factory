@@ -203,7 +203,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     const target = s.target || (s.open === openChange ? 'change' : 'requirement');
     return Object.assign(s, {
       designs: own, change: c, target: target,
-      place: { requirement: 'the requirement', studio: 'the UI Design Studio', change: 'the change' }[target],
+      place: { requirement: 'the requirement', studio: 'the Design Studio', change: 'the change' }[target],
       stepText: s.finished ? 'All 4 steps done' : 'Step ' + s.step + ' of 4 · ' + STEPS[s.step - 1],
       steps: STEPS.map((name, i) => ({ name: name, state: s.finished || i + 1 < s.step ? 'done' : (i + 1 === s.step ? 'current' : 'todo') }))
     });
@@ -244,7 +244,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
             action: can('APPROVE') ? 'Review and approve the spec' : 'Waiting for someone who can approve', at: r.updatedAt, open: openIt });
         }
       });
-      // Screens in review, one item per requirement (a screen without one opens in the Visual Designer)
+      // Screens in review, one item per requirement (a screen without one opens in the Design Studio's editor)
       const review = {};
       d.designs.filter((s) => s.status === 'IN_REVIEW').forEach((s) => {
         const group = s.requirementId || 'design:' + s.id;
@@ -258,7 +258,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
           title: first.requirementId ? (titles[first.requirementId] || first.name) : first.name,
           text: w.name + ': ' + (list.length === 1 ? 'a screen is' : list.length + ' screens are') + ' waiting for approval.',
           action: can('APPROVE') ? 'Review and approve' : 'Waiting for someone who can approve', at: at,
-          open: first.requirementId ? openRecord('studio', w.id, 'studio', first.requirementId) : openRecord('designer', w.id, 'design', first.id) });
+          open: first.requirementId ? openRecord('studio', w.id, 'studio', first.requirementId) : openRecord('studio', w.id, 'design', first.id) });
       });
       const details = {};
       d.changeDetails.forEach((c) => { details[c.id] = c; });

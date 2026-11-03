@@ -1,48 +1,3 @@
-<div class="factory-pg-head factory-dz-pagehead">
-  <div class="factory-dz-pagetitle">
-    <h1 class="fx-visually-hidden">Visual Designer</h1>
-  </div>
-  <!-- Title row actions: design or code, more, preview, save -->
-  <oj-bind-if test="[[detail()]]">
-    <div class="factory-dz-headactions">
-      <div class="fx-toggle-group factory-dz-modes" role="group" aria-label="Design or code">
-        <button type="button" id="designModeButton" :aria-pressed="[[mode() === 'design' ? 'true' : 'false']]" on-click="[[setDesignMode]]">Design</button>
-        <button type="button" id="codeModeButton" :aria-pressed="[[mode() === 'code' ? 'true' : 'false']]" on-click="[[setCodeMode]]">Code</button>
-      </div>
-      <fx-menu-button id="designerMore" class="factory-dz-morebtn" label="More" icon="more" icon-only variant="secondary"
-                      items="[[pageMenuItems]]" on-fx-action="[[pageMenu]]"></fx-menu-button>
-      <oj-bind-if test="[[!previewMode()]]">
-        <button type="button" id="previewButton" class="fx-btn fx-btn--secondary" on-click="[[togglePreview]]" data-fx-tip="See the screen without the panels">
-          <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>Preview</button>
-      </oj-bind-if>
-      <oj-bind-if test="[[previewMode()]]">
-        <button type="button" id="exitPreviewButton" class="fx-btn fx-btn--secondary factory-dz-hbtn-on" aria-pressed="true" on-click="[[togglePreview]]">
-          <span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Exit preview</button>
-      </oj-bind-if>
-      <div class="fx-split factory-dz-savesplit">
-        <span class="factory-dz-savemain" :title="[[saveTitle]]"><button type="button" id="saveDesignButton" class="fx-btn fx-btn--primary" on-click="[[save]]" :disabled="[[!dirty() || !editable()]]">
-          <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save Version</button></span>
-        <button type="button" id="saveMore" class="fx-btn fx-btn--primary fx-split-toggle" aria-haspopup="menu" :aria-expanded="[[saveSplit.open() ? 'true' : 'false']]"
-                aria-label="Save options" on-click="[[saveSplit.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
-        <oj-bind-if test="[[saveSplit.open()]]">
-          <div class="fx-menu" role="menu" id="saveMoreMenu" aria-label="Save options" on-keydown="[[saveSplit.key]]">
-            <button type="button" role="menuitem" on-click="[[saveDo('save')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save as a new version</button>
-            <button type="button" role="menuitem" on-click="[[saveDo('discard')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Discard the changes</button>
-            <div class="fx-menu-sep" role="separator"></div>
-            <button type="button" role="menuitem" on-click="[[saveDo('previous')]]" :disabled="[[!canRestorePrevious()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Bring back the previous version</button>
-            <button type="button" role="menuitem" on-click="[[saveDo('history')]]"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>Version history and compare</button>
-          </div>
-        </oj-bind-if>
-      </div>
-    </div>
-  </oj-bind-if>
-  <oj-bind-if test="[[!detail() && workspaceId() && canDesign()]]">
-    <div class="factory-dz-headactions">
-      <button type="button" id="newScreenButton" class="fx-btn fx-btn--primary" on-click="[[openNew]]">
-        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New screen</button>
-    </div>
-  </oj-bind-if>
-</div>
 <div class="factory-dz">
   <!-- Messages -->
   <oj-bind-if test="[[errorMessage()]]">
@@ -59,30 +14,6 @@
   </oj-bind-if>
 
   <!-- Drawers opened from the menus -->
-  <oj-bind-if test="[[drawer() === 'new']]">
-    <div class="factory-dz-drawer" id="newScreenDrawer">
-      <div class="factory-dz-drawer-col">
-        <h3>From an approved requirement</h3>
-        <p class="factory-dz-hint">One screen for each screen of its spec, with every field.</p>
-        <div class="factory-dz-row">
-          <fx-select id="requirementSelect" class="factory-dz-grow" label="Approved requirement" hide-label
-                     options="[[requirementOptions]]" value="{{requirementId}}" placeholder="Choose an approved requirement" searchable></fx-select>
-          <button type="button" id="fromRequirementButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[createFromRequirement]]"
-                  :disabled="[[!requirementId()]]">Create screens</button>
-        </div>
-      </div>
-      <div class="factory-dz-drawer-col">
-        <h3>Blank screen</h3>
-        <p class="factory-dz-hint">Start empty and build it from the components.</p>
-        <div class="factory-dz-row">
-          <fx-input id="blankName" class="factory-dz-grow" label="Screen name" hide-label placeholder="Fixed deposit opening"
-                    value="{{blankName}}"></fx-input>
-          <button type="button" id="blankButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[createBlank]]" :disabled="[[!blankName()]]">Create</button>
-        </div>
-      </div>
-      <button type="button" class="factory-dz-icon factory-dz-drawer-close" aria-label="Close" on-click="[[closeDrawer]]">✕</button>
-    </div>
-  </oj-bind-if>
   <oj-bind-if test="[[drawer() === 'import' && editable()]]">
     <div class="factory-dz-drawer" id="importDrawer">
       <div class="factory-dz-drawer-col">
@@ -181,7 +112,6 @@
     <div id="leftRail" class="factory-dz-rail factory-dz-rail-left" :style.display="[[detail() && !leftOpen() ? 'flex' : 'none']]">
       <button type="button" class="factory-dz-rail-btn" title="Components" aria-label="Show components" on-click="[[railComponents]]">⧉<span>Components</span></button>
       <button type="button" class="factory-dz-rail-btn" title="Layers" aria-label="Show the layers" on-click="[[railLayers]]">☰<span>Layers</span></button>
-      <button type="button" class="factory-dz-rail-btn" title="Screens" aria-label="Show the screens" on-click="[[railScreens]]">▭<span>Screens</span></button>
     </div>
     <div id="rightRail" class="factory-dz-rail factory-dz-rail-right" :style.display="[[detail() && !rightOpen() ? 'flex' : 'none']]">
       <button type="button" class="factory-dz-rail-btn" title="Inspector" aria-label="Show the inspector" on-click="[[railProperties]]">⚙<span>Inspector</span></button>
@@ -320,27 +250,6 @@
             </oj-bind-if>
           </div>
         </oj-bind-if>
-        <oj-bind-if test="[[leftTab() === 'screens']]">
-          <div>
-            <div class="factory-dz-lhead">Screens in this workspace
-              <button type="button" class="factory-dz-link" on-click="[[backToBoard]]">All screens</button></div>
-            <div class="factory-dz-screens" id="designScreens">
-              <oj-bind-for-each data="[[screenList]]" as="sc">
-                <template>
-                  <button type="button" :class="[[sc.data.css]]" on-click="[[sc.data.openAction]]" :title="[[sc.data.name]]">
-                    <span class="factory-dz-scr-icon" aria-hidden="true">▭</span>
-                    <span class="factory-dz-scr-text"><span class="factory-dz-scr-name"><oj-bind-text value="[[sc.data.name]]"></oj-bind-text></span>
-                      <span class="factory-dz-hint"><oj-bind-text value="[[sc.data.meta]]"></oj-bind-text></span></span>
-                    <span :class="[[sc.data.status.css]]"><span :class="[[sc.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sc.data.status.text]]"></oj-bind-text></span>
-                  </button>
-                </template>
-              </oj-bind-for-each>
-            </div>
-            <oj-bind-if test="[[canDesign()]]">
-              <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block factory-dz-btn-full" on-click="[[openNew]]">+ New screen</button>
-            </oj-bind-if>
-          </div>
-        </oj-bind-if>
       </div>
     </aside>
     <fx-resizer class="factory-dz-resizer" storage-key="designer-left" min="200" max="420" label="Resize the components panel"
@@ -348,82 +257,9 @@
     <!-- Centre: the canvas -->
     <main class="factory-dz-canvas">
       <oj-bind-if test="[[!detail()]]">
-        <div class="factory-dz-empty">
-          <h2>Design a screen</h2>
-          <oj-bind-if test="[[!workspaceId()]]">
-            <p>Choose a workspace in the top bar.</p>
-          </oj-bind-if>
-          <oj-bind-if test="[[workspaceId()]]">
-            <p>Each approved requirement and its screens. Open a screen to design it; when all of a requirement's screens are
-              approved, its change can be planned on the Changes page.</p>
-            <div id="designBoard" class="factory-dz-board">
-              <oj-bind-for-each data="[[board]]" as="g">
-                <template>
-                  <section class="factory-dz-board-group">
-                    <div class="factory-dz-board-head">
-                      <h3><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h3>
-                      <span class="factory-dz-hint"><oj-bind-text value="[[g.data.progressText]]"></oj-bind-text></span>
-                    </div>
-                    <div class="factory-dz-progress" aria-hidden="true"><span :style.width="[[g.data.progressWidth]]"></span></div>
-                    <div class="factory-dz-screen-list">
-                      <oj-bind-for-each data="[[g.data.screens]]" as="d">
-                        <template>
-                          <button type="button" class="factory-dz-screen-card" on-click="[[d.data.openAction]]">
-                            <span class="factory-dz-screen-name"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></span>
-                            <span class="factory-dz-hint"><oj-bind-text value="[[d.data.meta]]"></oj-bind-text></span>
-                            <span :class="[[d.data.status.css]]"><span :class="[[d.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[d.data.status.text]]"></oj-bind-text></span>
-                          </button>
-                        </template>
-                      </oj-bind-for-each>
-                    </div>
-                    <oj-bind-if test="[[g.data.canCreate]]">
-                      <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[g.data.createAction]]">Create its screens</button>
-                    </oj-bind-if>
-                    <oj-bind-if test="[[g.data.done]]">
-                      <a class="fx-btn fx-btn--primary fx-btn--sm factory-dz-btn-link" href="?ojr=changes">All approved · plan the change</a>
-                    </oj-bind-if>
-                  </section>
-                </template>
-              </oj-bind-for-each>
-            </div>
-            <oj-bind-if test="[[board().length === 0]]">
-              <p class="factory-dz-hint">No approved requirements yet. Approve one on the Requirements page, or start a blank screen.</p>
-            </oj-bind-if>
-          </oj-bind-if>
-        </div>
+        <p class="factory-dz-hint factory-dz-opening">Opening the screen…</p>
       </oj-bind-if>
       <oj-bind-if test="[[detail()]]">
-        <div class="factory-dz-cardhead">
-          <span class="factory-dz-cardicon" aria-hidden="true"><span class="factory-nav-icon factory-ico-design"></span></span>
-          <strong class="factory-dz-cardname" :title="[[screenHeading]]"><oj-bind-text value="[[screenHeading]]"></oj-bind-text></strong>
-          <span id="screenStatus" :class="[[headerStatus().css]]"><span :class="[[headerStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[headerStatus().text]]"></oj-bind-text></span>
-          <oj-bind-if test="[[dirty()]]">
-            <span class="fx-badge fx-badge--warning factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
-          </oj-bind-if>
-          <button type="button" id="checksChip" :class="[['factory-dz-checks-chip' + (openChecks() === 0 ? ' factory-dz-checks-ok' : ' factory-dz-checks-open')]]"
-                  on-click="[[showChecks]]" title="Show the checks"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></button>
-          <span class="factory-dz-spacer"></span>
-          <oj-bind-if test="[[editable()]]">
-            <div class="factory-dz-segmented" role="group" aria-label="Undo and redo">
-              <button type="button" id="undoButton" class="factory-dz-seg" title="Undo (Ctrl+Z)" aria-label="Undo" on-click="[[undo]]" :disabled="[[!canUndo()]]">↶ Undo</button>
-              <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
-            </div>
-          </oj-bind-if>
-          <!-- Approval: kept apart from Save Version and Ask AI -->
-          <span class="fx-approval factory-dz-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
-            <span class="fx-tip-wrap" :tabindex="[[shareBlocked() ? 0 : null]]" :data-fx-tip="[[shareBlocked() || 'Create or copy a link the customer can open to comment and approve']]">
-              <button type="button" id="reviewLinkButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openShare]]" :disabled="[[!!shareBlocked()]]"
-                      :aria-expanded="[[shareOpen() ? 'true' : 'false']]" aria-controls="shareDrawer">
-                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Review link</button></span>
-            <oj-bind-if test="[[!isApproved()]]">
-              <span class="fx-tip-wrap" :tabindex="[[approveBlocked() ? 0 : null]]" :data-fx-tip="[[approveBlocked() || 'Approve this version for development; its components are then locked']]">
-                <button type="button" id="approveScreenButton" class="fx-btn fx-btn--secondary fx-btn--sm factory-dz-approvebtn" on-click="[[approve]]" :disabled="[[!!approveBlocked()]]">
-                  <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve screen</button></span>
-            </oj-bind-if>
-          </span>
-          <fx-menu-button id="screenMore" class="factory-dz-cardmore" label="Screen actions" icon="more" icon-only variant="ghost" size="sm"
-                          items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
-        </div>
         <div id="journeyStrip" class="factory-dz-journey2">
           <ol class="factory-dz-stepper">
             <oj-bind-for-each data="[[journeySteps]]" as="st">

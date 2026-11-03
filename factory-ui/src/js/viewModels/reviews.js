@@ -15,7 +15,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
     const DEVICE_WIDTH = { phone: '375px', tablet: '768px', desktop: '100%' };
     const HISTORY_WORDS = {
-      REVIEW_LINK_CREATED: 'Review link created', REVIEW_LINK_CLOSED: 'Review link revoked', DESIGN_APPROVED: 'Approved in the designer',
+      REVIEW_LINK_CREATED: 'Review link created', REVIEW_LINK_CLOSED: 'Review link revoked', DESIGN_APPROVED: 'Approved in the Design Studio',
       DESIGN_APPROVED_BY_REVIEWER: 'Approved by a reviewer through the link', DESIGN_REOPENED: 'Reopened for changes',
       REVIEW_COMMENT_RESOLVED: 'Comment marked resolved', REVIEW_COMMENT_REOPENED: 'Comment opened again'
     };
@@ -91,7 +91,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       this.emptyText = ko.pureComputed(() => (this.loading() ? 'Loading…'
         : !this.workspaceId() ? 'Choose a workspace to see its review links.'
-          : designs().length === 0 ? 'This workspace has no screen designs yet. Design screens in the UI Design Studio, then share them here.'
+          : designs().length === 0 ? 'This workspace has no screen designs yet. Design screens in the Design Studio, then share them here.'
             : this.listFilter() === 'shared' ? 'No screen is shared yet. Use New review link, or show all screens.' : 'No screen matches the search.'));
 
       // --- summary line (real counts only) ---
@@ -130,7 +130,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const byLink = d.approvedAt && approvals.some((c) => c.author === d.approvedBy && c.version === d.approvedVersion);
         const decisions = approvals.map((c) => ({ text: c.author + ' approved v' + c.version + ' through the review link', when: ui.when(c.createdAt), at: c.createdAt }));
         if (d.approvedAt && !byLink) {
-          decisions.push({ text: d.approvedBy + ' approved v' + d.approvedVersion + ' in the designer', when: ui.when(d.approvedAt), at: d.approvedAt });
+          decisions.push({ text: d.approvedBy + ' approved v' + d.approvedVersion + ' in the Design Studio', when: ui.when(d.approvedAt), at: d.approvedAt });
         }
         decisions.sort((a, b) => new Date(b.at) - new Date(a.at));
         return {
@@ -229,7 +229,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (this.selected()) {
           pageRequests.design(this.selected().id);
         }
-        navigate('designer');
+        navigate('studio');
       };
       this.openRequirement = () => {
         if (this.selected() && this.selected().requirementId) {
@@ -242,7 +242,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const l = live(d);
         return [
           { value: 'open', label: 'Open as a reviewer', icon: 'user', disabled: !l },
-          { value: 'designer', label: 'Open in the designer', icon: 'design' },
+          { value: 'designer', label: 'Edit in the Design Studio', icon: 'design' },
           { separator: true },
           { value: 'expiry', label: l ? 'Change expiry (new link)' : 'Create review link', icon: 'plus', disabled: !this.canEdit() || !d || d.status === 'APPROVED' },
           { value: 'revoke', label: 'Revoke link', icon: 'x', danger: true, disabled: !this.canEdit() || !d || !d.reviewToken,

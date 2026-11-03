@@ -1,5 +1,5 @@
 /*
- * What changed from one saved version of a screen to another, in plain words, for the Visual Designer's compare.
+ * What changed from one saved version of a screen to another, in plain words, for the Design Studio's Compare versions and its editor's History.
  * Fields and buttons are matched by their ids, so a renamed field shows as changed rather than removed and added.
  */
 define([], function () {
