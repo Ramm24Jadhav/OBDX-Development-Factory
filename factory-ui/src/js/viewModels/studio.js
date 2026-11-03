@@ -6,8 +6,9 @@
  * version, a quick edit), comparing versions and approving it. The Visual Designer stays for detailed work on one screen.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog) {
+        '../services/previewFrame', '../services/pageRequests', '../services/toast', '../services/dialog', '../services/designActions',
+        '../services/designDiff', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, PreviewFrame, pageRequests, toast, dialog, designActions, designDiff) {
     const POLL_MS = 4000;
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const DESIGN_WORDS = { DRAFT: 'Draft', IN_REVIEW: 'In review', APPROVED: 'Approved' };
@@ -30,51 +31,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
     const criterionKey = (c) => (c.id && c.id.trim() ? c.id : String(c.description));
 
-    /** What changed from one version of a screen to another, in plain words. */
-    const differences = (from, to) => {
-      const out = [];
-      const add = (kind, text) => out.push({ kind: kind, text: text, css: 'factory-studio-diff-' + kind.toLowerCase() });
-      const name = (c) => '"' + (c.label || c.name || c.id) + '"';
-      const words = (list) => (list && list.length ? list.join(', ') : 'none');
-      if ((from.title || '') !== (to.title || '')) {
-        add('Changed', 'Title: "' + (from.title || '') + '" to "' + (to.title || '') + '"');
-      }
-      const sectionsFrom = from.sections.map((s) => s.title || '');
-      const sectionsTo = to.sections.map((s) => s.title || '');
-      sectionsTo.filter((t) => t && sectionsFrom.indexOf(t) < 0).forEach((t) => add('Added', 'Section "' + t + '"'));
-      sectionsFrom.filter((t) => t && sectionsTo.indexOf(t) < 0).forEach((t) => add('Removed', 'Section "' + t + '"'));
-      const key = (c) => c.id || c.name;
-      const before = {};
-      fieldsOf(from).forEach((c) => { before[key(c)] = c; });
-      const after = {};
-      fieldsOf(to).forEach((c) => { after[key(c)] = c; });
-      Object.keys(after).filter((k) => !before[k]).forEach((k) => add('Added', 'Field ' + name(after[k]) + ' (' + after[k].type + ')'));
-      Object.keys(before).filter((k) => !after[k]).forEach((k) => add('Removed', 'Field ' + name(before[k])));
-      Object.keys(after).filter((k) => before[k]).forEach((k) => {
-        const a = before[k];
-        const b = after[k];
-        if ((a.label || '') !== (b.label || '')) { add('Changed', 'Label: "' + (a.label || '') + '" to "' + (b.label || '') + '"'); }
-        if (a.type !== b.type) { add('Changed', name(b) + ' type: ' + a.type + ' to ' + b.type); }
-        if ((a.required === true) !== (b.required === true)) { add('Changed', name(b) + (b.required === true ? ' is now mandatory' : ' is now optional')); }
-        if ((a.readonly === true) !== (b.readonly === true)) { add('Changed', name(b) + (b.readonly === true ? ' is now shown only' : ' can now be entered')); }
-        if (words(a.options) !== words(b.options)) { add('Changed', name(b) + ' values: ' + words(a.options) + ' to ' + words(b.options)); }
-        if ((a.defaultValue || '') !== (b.defaultValue || '')) { add('Changed', name(b) + ' default: ' + (a.defaultValue || 'none') + ' to ' + (b.defaultValue || 'none')); }
-        if ((a.maxLength || null) !== (b.maxLength || null)) { add('Changed', name(b) + ' maximum length: ' + (a.maxLength || 'none') + ' to ' + (b.maxLength || 'none')); }
-        if (words(a.validations) !== words(b.validations)) { add('Changed', name(b) + ' checks: ' + words(a.validations) + ' to ' + words(b.validations)); }
-      });
-      const actionsFrom = {};
-      from.actions.forEach((a) => { actionsFrom[a.id] = a; });
-      const actionsTo = {};
-      to.actions.forEach((a) => { actionsTo[a.id] = a; });
-      Object.keys(actionsTo).filter((k) => !actionsFrom[k]).forEach((k) => add('Added', 'Button "' + actionsTo[k].label + '"'));
-      Object.keys(actionsFrom).filter((k) => !actionsTo[k]).forEach((k) => add('Removed', 'Button "' + actionsFrom[k].label + '"'));
-      Object.keys(actionsTo).filter((k) => actionsFrom[k] && actionsFrom[k].label !== actionsTo[k].label)
-        .forEach((k) => add('Changed', 'Button "' + actionsFrom[k].label + '" to "' + actionsTo[k].label + '"'));
-      if (out.length === 0) {
-        add('Same', 'No differences in the title, sections, fields or buttons.');
-      }
-      return out;
-    };
+    /** What changed from one version of a screen to another, in plain words (the same words as the editor's History). */
+    const differences = (from, to) => designDiff(from, to).map((d) => ({ kind: d.kind, text: d.text, css: 'factory-studio-diff-' + d.kind.toLowerCase() }));
 
     function StudioViewModel() {
       const self = this;
@@ -439,7 +397,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         versionsOf = wanted;
-        api.get('designs/' + s.id).then((detail) => {
+        designActions.detail(s.id).then((detail) => {
           if (versionsOf === wanted) {
             this.versions(detail.versions || []);
           }
@@ -492,17 +450,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.compareTo(s ? s.currentVersion : numbers[numbers.length - 1] || null);
         this.compareFrom(numbers.length > 1 ? numbers[numbers.length - 2] : null);
       });
-      const models = {};
       const modelOf = (id, version) => {
         const s = screenById(id);
-        if (s && s.currentVersion === version) {
-          return Promise.resolve(s.model);
-        }
-        const key = id + '@' + version;
-        if (!models[key]) {
-          models[key] = api.get('designs/' + id + '/versions/' + version).catch((error) => { delete models[key]; throw error; });
-        }
-        return models[key];
+        return s && s.currentVersion === version ? Promise.resolve(s.model) : designActions.versionModel(id, version);
       };
       this.differences = ko.observableArray([]);
       ko.computed(() => {
@@ -547,10 +497,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.addSteps = () => api.post('designs/' + this.screen().id + '/flow-screens')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens added after "' + this.screen().name + '".')))
         .catch(actionError);
-      this.approveScreen = () => approve([this.screen().id]);
-      this.reopenScreen = () => dialog.confirm({
-        title: 'Reopen this screen?', message: 'It can be changed again, and has to be approved again before code is generated.', confirmLabel: 'Reopen'
-      }).then((ok) => ok && api.post('designs/' + this.screen().id + '/reopen').then(() => reloadFlow()).catch(actionError));
+      this.approveScreen = () => approve([this.screen().id], { count: 1, name: this.screen().name, version: this.screen().currentVersion });
+      this.reopenScreen = () => designActions.reopen(this.screen().id, this.screen().name)
+        .then((detail) => detail && reloadFlow().then(() => toast.success('"' + detail.name + '" is reopened for changes.')))
+        .catch(actionError);
 
       // --- summary of the selected group: channels, screens, fields and the components used ---
 
@@ -674,26 +624,27 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.generate = () => api.post('requirements/' + this.requirementId() + '/designs')
         .then((created) => reloadFlow().then(() => toast.success(created.length + ' screens generated. Review them below.')))
         .catch(actionError);
-      // Screens with elements the version pack forbids are refused (409 "Unsupported components: ..."): approving them is confirmed
-      const UNSUPPORTED = 'Unsupported components: ';
-      const approve = (ids, confirmed) => api.post('requirements/' + this.requirementId() + '/designs/approve' + (confirmed ? '?unsupported=true' : ''), { designIds: ids })
+      // Every approval asks first, and again for elements the version pack forbids (services/designActions)
+      const approve = (ids, question) => designActions.approveScreens(this.requirementId(), ids, question)
         .then((flow) => {
+          if (!flow) {
+            return;
+          }
           const before = this.screens().filter((s) => s.status === 'APPROVED').length;
           setFlow(flow);
           const now = flow.screens.filter((s) => s.status === 'APPROVED').length;
           toast.success((now - before) + (now - before === 1 ? ' screen' : ' screens') + ' approved.'
             + (now === flow.screens.length ? ' Every screen is approved: you can generate the code.' : ''));
         })
-        .catch((error) => (!confirmed && error.status === 409 && String(error.message).indexOf(UNSUPPORTED) === 0
-          ? dialog.confirm({ title: 'Approve unsupported components?', message: error.message.substring(UNSUPPORTED.length).replace(/^./, (c) => c.toUpperCase()),
-            confirmLabel: 'Approve Anyway', danger: true }).then((ok) => ok && approve(ids, true))
-          : actionError(error)));
-      this.approveGroup = () => approve(this.groupUnapproved());
-      this.approveAll = () => dialog.confirm({
-        title: 'Approve every screen?',
-        message: 'All ' + this.screens().filter((s) => s.status !== 'APPROVED').length + ' remaining screens of this BRD are locked for development. You can reopen a screen later.',
-        confirmLabel: 'Approve all'
-      }).then((ok) => ok && approve(null));
+        .catch(actionError);
+      this.approveGroup = () => {
+        const ids = this.groupUnapproved();
+        const only = ids.length === 1 ? screenById(ids[0]) : null;
+        const g = this.group();
+        return approve(ids, { count: ids.length, name: only ? only.name : '', version: only ? only.currentVersion : null,
+          group: g && g.key !== 'all' ? (g.id ? g.id + ' ' : '') + '"' + g.title + '"' : 'this BRD' });
+      };
+      this.approveAll = () => approve(null, { every: true, count: this.screens().filter((s) => s.status !== 'APPROVED').length });
       this.generateCode = () => api.post('requirements/' + this.requirementId() + '/changes')
         .then((created) => {
           toast.success('The change was started. The factory is analysing the impact on the code.');

@@ -8,8 +8,8 @@
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/previewFrame', '../services/session',
         '../services/assistant', '../services/ui', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/designDiff',
-        'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast, pageRequests, designDiff) {
+        '../services/designActions', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, PreviewFrame, session, assistant, ui, dialog, toast, pageRequests, designDiff, designActions) {
     // Asks before an action (design system dialog); resolves true when confirmed
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
     // A screen's status in the shared categories (ui.status): {text, css, iconCss}
@@ -1931,18 +1931,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }));
         return this.dirty() ? [{ value: 'working', label: 'Unsaved changes' }].concat(options) : options;
       });
-      const versionModels = {};
       const modelOf = (key) => {
         if (key === 'working') {
           return Promise.resolve(this.working());
         }
-        const id = this.detail().id;
         if (Number(key) === this.detail().currentVersion) {
           return Promise.resolve(this.detail().model);
         }
-        const cacheKey = id + ':' + key;
-        return versionModels[cacheKey] ? Promise.resolve(versionModels[cacheKey])
-          : api.get('designs/' + id + '/versions/' + key).then((model) => { versionModels[cacheKey] = model; return model; });
+        return designActions.versionModel(this.detail().id, Number(key));
       };
       this.differences = ko.observableArray([]);
       this.compareNote = ko.observable('');
@@ -2197,21 +2193,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           .then(() => showInfo('Review link copied.'))
           .catch(() => showInfo('Select the link and copy it.'));
       };
-      this.approve = () => ask('Approve this screen?', 'Version ' + this.detail().currentVersion + ' is approved for development and its components are locked.', 'Approve').then((ok) => {
-        if (!ok) {
-          return;
-        }
-        // Elements the version pack forbids are refused (409 "Unsupported components: ..."): approving them is confirmed
-        const UNSUPPORTED = 'Unsupported components: ';
-        const post = (confirmed) => api.post(base() + '/approve' + (confirmed ? '?unsupported=true' : ''))
-          .then((detail) => { show(detail, true); showInfo('Screen approved for development.'); })
-          .catch((error) => (!confirmed && error.status === 409 && String(error.message).indexOf(UNSUPPORTED) === 0
-            ? ask('Approve unsupported components?', error.message.substring(UNSUPPORTED.length).replace(/^./, (c) => c.toUpperCase()),
-              'Approve Anyway', true).then((yes) => (yes ? post(true) : null))
-            : showError(error)));
-        post(false);
-      });
-      this.reopen = () => api.post(base() + '/reopen').then((detail) => { show(detail, true); showInfo('Screen reopened for changes.'); }).catch(showError);
+      // Approve and reopen ask first, as in the Design Studio (services/designActions)
+      this.approve = () => designActions.approveScreen(this.detail().id, this.detail().name, this.detail().currentVersion)
+        .then((detail) => { if (detail) { show(detail, true); showInfo('Screen approved for development.'); } })
+        .catch(showError);
+      this.reopen = () => designActions.reopen(this.detail().id, this.detail().name)
+        .then((detail) => { if (detail) { show(detail, true); showInfo('Screen reopened for changes.'); } })
+        .catch(showError);
       this.remove = () => ask('Delete this screen?', 'The screen, all its versions and its comments are deleted. This cannot be undone.', 'Delete', true).then((ok) => {
         if (!ok) {
           return;

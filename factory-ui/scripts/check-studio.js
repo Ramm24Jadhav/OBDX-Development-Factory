@@ -2,7 +2,8 @@
 //  - the workflow bar has its five stages, one of them current;
 //  - arrow keys, Home and End move through the flow's nodes, and the screen under the focus is shown;
 //  - arrow keys move through the selected screen's tabs, each with its own panel;
-//  - approving all screens asks first, and Cancel changes nothing.
+//  - approving all screens, one screen or a requirement's screens, and reopening a screen, each ask first, and Cancel
+//    changes nothing.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-studio.js --url http://localhost:8080 [--workspace <id>]
 //
@@ -116,6 +117,16 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
     record('cancelling approves nothing', (await statuses()) === before && !(await dialog()));
   } else {
     record('every screen is approved or you cannot approve: Approve all not checked', true);
+  }
+  // Approving one screen and a requirement's screens ask first too (services/designActions)
+  for (const [id, what] of [['studioApproveScreen', 'Approve screen'], ['studioApproveGroup', 'Approving the group']]) {
+    const clicked = await run((b) => { const e = document.getElementById(b); if (e) { e.click(); } return !!e; }, id);
+    if (!clicked) { record(what + ' is not offered here: not checked', true); continue; }
+    await sleep(600);
+    const asked = await dialog();
+    record(what + ' asks first', !!asked, asked);
+    await cancel();
+    record(what + ': cancelling approves nothing', (await statuses()) === before && !(await dialog()));
   }
   // Reopen asks first: a BRD with an approved screen
   if (brd.approvedBrd) {
