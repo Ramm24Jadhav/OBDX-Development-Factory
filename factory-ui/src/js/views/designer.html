@@ -1,39 +1,3 @@
-<div class="factory-pg-head factory-dz-pagehead">
-  <!-- Title row actions: design or code, more, preview, save -->
-  <oj-bind-if test="[[detail()]]">
-    <div class="factory-dz-headactions">
-      <div class="fx-toggle-group factory-dz-modes" role="group" aria-label="Design or code">
-        <button type="button" id="designModeButton" :aria-pressed="[[mode() === 'design' ? 'true' : 'false']]" on-click="[[setDesignMode]]">Design</button>
-        <button type="button" id="codeModeButton" :aria-pressed="[[mode() === 'code' ? 'true' : 'false']]" on-click="[[setCodeMode]]">Code</button>
-      </div>
-      <fx-menu-button id="designerMore" class="factory-dz-morebtn" label="More" icon="more" icon-only variant="secondary"
-                      items="[[pageMenuItems]]" on-fx-action="[[pageMenu]]"></fx-menu-button>
-      <oj-bind-if test="[[!previewMode()]]">
-        <button type="button" id="previewButton" class="fx-btn fx-btn--secondary" on-click="[[togglePreview]]" data-fx-tip="See the screen without the panels">
-          <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>Preview</button>
-      </oj-bind-if>
-      <oj-bind-if test="[[previewMode()]]">
-        <button type="button" id="exitPreviewButton" class="fx-btn fx-btn--secondary factory-dz-hbtn-on" aria-pressed="true" on-click="[[togglePreview]]">
-          <span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Exit preview</button>
-      </oj-bind-if>
-      <div class="fx-split factory-dz-savesplit">
-        <span class="factory-dz-savemain" :title="[[saveTitle]]"><button type="button" id="saveDesignButton" class="fx-btn fx-btn--primary" on-click="[[save]]" :disabled="[[!dirty() || !editable()]]">
-          <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save Version</button></span>
-        <button type="button" id="saveMore" class="fx-btn fx-btn--primary fx-split-toggle" aria-haspopup="menu" :aria-expanded="[[saveSplit.open() ? 'true' : 'false']]"
-                aria-label="Save options" on-click="[[saveSplit.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
-        <oj-bind-if test="[[saveSplit.open()]]">
-          <div class="fx-menu" role="menu" id="saveMoreMenu" aria-label="Save options" on-keydown="[[saveSplit.key]]">
-            <button type="button" role="menuitem" on-click="[[saveDo('save')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save as a new version</button>
-            <button type="button" role="menuitem" on-click="[[saveDo('discard')]]" :disabled="[[!dirty() || !editable()]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Discard the changes</button>
-            <div class="fx-menu-sep" role="separator"></div>
-            <button type="button" role="menuitem" on-click="[[saveDo('previous')]]" :disabled="[[!canRestorePrevious()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Bring back the previous version</button>
-            <button type="button" role="menuitem" on-click="[[saveDo('history')]]"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>Version history and compare</button>
-          </div>
-        </oj-bind-if>
-      </div>
-    </div>
-  </oj-bind-if>
-</div>
 <div class="factory-dz">
   <!-- Messages -->
   <oj-bind-if test="[[errorMessage()]]">
@@ -296,32 +260,6 @@
         <p class="factory-dz-hint factory-dz-opening">Opening the screen…</p>
       </oj-bind-if>
       <oj-bind-if test="[[detail()]]">
-        <div class="factory-dz-cardhead">
-          <span class="factory-dz-cardicon" aria-hidden="true"><span class="factory-nav-icon factory-ico-design"></span></span>
-          <strong class="factory-dz-cardname" :title="[[screenHeading]]"><oj-bind-text value="[[screenHeading]]"></oj-bind-text></strong>
-          <span id="screenStatus" :class="[[headerStatus().css]]"><span :class="[[headerStatus().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[headerStatus().text]]"></oj-bind-text></span>
-          <oj-bind-if test="[[dirty()]]">
-            <span class="fx-badge fx-badge--warning factory-dz-unsaved" title="Unsaved changes">Unsaved</span>
-          </oj-bind-if>
-          <button type="button" id="checksChip" :class="[['factory-dz-checks-chip' + (openChecks() === 0 ? ' factory-dz-checks-ok' : ' factory-dz-checks-open')]]"
-                  on-click="[[showChecks]]" title="Show the checks"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></button>
-          <span class="factory-dz-spacer"></span>
-          <oj-bind-if test="[[editable()]]">
-            <div class="factory-dz-segmented" role="group" aria-label="Undo and redo">
-              <button type="button" id="undoButton" class="factory-dz-seg" title="Undo (Ctrl+Z)" aria-label="Undo" on-click="[[undo]]" :disabled="[[!canUndo()]]">↶ Undo</button>
-              <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[redo]]" :disabled="[[!canRedo()]]">↷</button>
-            </div>
-          </oj-bind-if>
-          <!-- Approval: kept apart from Save Version and Ask AI -->
-          <span class="fx-approval factory-dz-approval" role="group" aria-label="Approval"><span class="fx-approval-label">Approval</span>
-            <span class="fx-tip-wrap" :tabindex="[[shareBlocked() ? 0 : null]]" :data-fx-tip="[[shareBlocked() || 'Create or copy a link the customer can open to comment and approve']]">
-              <button type="button" id="reviewLinkButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openShare]]" :disabled="[[!!shareBlocked()]]"
-                      :aria-expanded="[[shareOpen() ? 'true' : 'false']]" aria-controls="shareDrawer">
-                <span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>Review link</button></span>
-          </span>
-          <fx-menu-button id="screenMore" class="factory-dz-cardmore" label="Screen actions" icon="more" icon-only variant="ghost" size="sm"
-                          items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
-        </div>
         <div id="journeyStrip" class="factory-dz-journey2">
           <ol class="factory-dz-stepper">
             <oj-bind-for-each data="[[journeySteps]]" as="st">

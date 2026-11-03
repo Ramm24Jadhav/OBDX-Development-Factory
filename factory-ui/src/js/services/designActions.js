@@ -45,12 +45,12 @@ define(['./api', './dialog'], function (api, dialog) {
      * version, group, every }. Resolves with the BRD's design flow, or null when cancelled.
      */
     approveScreens: (requirementId, ids, o) => dialog.confirm(approveQuestion(o)).then((ok) => (ok
-      ? allowingUnsupported((confirmed) => api.post('requirements/' + requirementId + '/designs/approve' + (confirmed ? '?unsupported=true' : ''), { designIds: ids }))
+      ? allowingUnsupported((confirmed) => api.post('requirements/' + encodeURIComponent(requirementId) + '/designs/approve' + (confirmed ? '?unsupported=true' : ''), { designIds: ids }))
       : null)),
 
     /** Approves one screen (also one without a BRD). Resolves with the screen's details, or null when cancelled. */
     approveScreen: (designId, name, version) => dialog.confirm(approveQuestion({ count: 1, name: name, version: version })).then((ok) => (ok
-      ? allowingUnsupported((confirmed) => api.post('designs/' + designId + '/approve' + (confirmed ? '?unsupported=true' : '')))
+      ? allowingUnsupported((confirmed) => api.post('designs/' + encodeURIComponent(designId) + '/approve' + (confirmed ? '?unsupported=true' : '')))
       : null)),
 
     /** Reopens an approved screen. Resolves with the screen's details, or null when cancelled. */
@@ -58,10 +58,10 @@ define(['./api', './dialog'], function (api, dialog) {
       title: 'Reopen this screen?',
       message: (name ? '"' + name + '"' : 'It') + ' can be changed again, and has to be approved again before code is generated.',
       confirmLabel: 'Reopen'
-    }).then((ok) => (ok ? api.post('designs/' + designId + '/reopen') : null)),
+    }).then((ok) => (ok ? api.post('designs/' + encodeURIComponent(designId) + '/reopen') : null)),
 
     /** A screen's details with its versions. */
-    detail: (designId) => api.get('designs/' + designId),
+    detail: (designId) => api.get('designs/' + encodeURIComponent(designId)),
 
     /** One saved version's Screen Model; asked once per screen and version while the page is open. */
     versionModel: (() => {
@@ -69,7 +69,7 @@ define(['./api', './dialog'], function (api, dialog) {
       return (designId, version) => {
         const key = designId + '@' + version;
         if (!models[key]) {
-          models[key] = api.get('designs/' + designId + '/versions/' + version).catch((error) => { delete models[key]; throw error; });
+          models[key] = api.get('designs/' + encodeURIComponent(designId) + '/versions/' + encodeURIComponent(version)).catch((error) => { delete models[key]; throw error; });
         }
         return models[key];
       };

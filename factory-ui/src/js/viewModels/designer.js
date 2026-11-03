@@ -146,6 +146,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.toggleDrawer = (name) => () => this.drawer(this.drawer() === name ? null : name);
       this.openImport = this.toggleDrawer('import');
       this.openShare = this.toggleDrawer('share');
+      // The Studio's More menu opens a drawer (choosing it again keeps it open, unlike the toggles here)
+      this.showDrawer = (name) => this.drawer(name);
       this.closeDrawer = () => this.drawer(null);
       this.showComments = () => { this.contextTab('comments'); this.contextOpen(true); };
       this.showHistory = () => { this.contextTab('history'); this.contextOpen(true); };
@@ -400,7 +402,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Code the design becomes in a React Native or React app (current saved version)
       this.codeModule = ko.observable('app');
       this.codeFiles = ko.observableArray([]);
-      this.showCode = () => api.get('designs/' + this.detail().id + '/code?module=' + encodeURIComponent(this.codeModule() || 'app'))
+      this.showCode = () => api.get('designs/' + encodeURIComponent(this.detail().id) + '/code?module=' + encodeURIComponent(this.codeModule() || 'app'))
         .then((files) => this.codeFiles(files)).catch(showError);
 
       // --- editing the working model ---
@@ -454,7 +456,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Escape with nothing selected leaves the editor
       const onKeydown = (event) => {
         const typing = event.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable);
-        const inside = root === document || event.target === document.body || (root.contains && root.contains(event.target));
+        const inside = root === document || event.target === document.body || (root.contains && root.contains(event.target))
+          || (!!host.contains && host.contains(event.target));
         if (!inside || event.defaultPrevented || document.querySelector('.fx-dialog')) {
           return;
         }
@@ -1307,8 +1310,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return;
         }
         this.busy(true);
-        api.post('designs/' + this.detail().id + '/flow-screens')
-          .then((created) => api.get('designs/' + this.detail().id).then((detail) => {
+        api.post('designs/' + encodeURIComponent(this.detail().id) + '/flow-screens')
+          .then((created) => api.get('designs/' + encodeURIComponent(this.detail().id)).then((detail) => {
             show(detail, true);
             showInfo('Made ' + created.map((d) => '"' + d.name + '"').join(' and ') + ' from this screen. Open them in the journey above.');
           }))
@@ -1502,47 +1505,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return list;
       });
       this.openChecks = ko.pureComputed(() => this.checks().filter((c) => c.level === 'warn').length);
-      // The title row's More menu and the screen card's actions menu (new screens and the list of all screens are the
-      // Studio's)
-      this.pageMenuItems = ko.pureComputed(() => [
-        { value: 'component', label: 'Create a component', icon: 'cube', disabled: !this.canDesign() },
-        { value: 'import', label: 'Import from Figma, an image or a PDF', icon: 'upload', disabled: !this.editable() }
-      ]);
-      this.screenMenuItems = ko.pureComputed(() => {
-        const approved = !!this.detail() && this.detail().status === 'APPROVED';
-        return [
-          { value: 'reopen', label: 'Reopen for changes', disabled: !(approved && this.canApprove()) },
-          { value: 'flow', label: 'Create review and confirmation screens', disabled: !this.canMakeFlow() || this.busy() },
-          { value: 'comment', label: 'Comment on the screen' },
-          { separator: true },
-          { value: 'delete', label: 'Delete screen', icon: 'trash', danger: true, disabled: !this.canDesign() }
-        ];
-      });
-      this.pageMenu = (event) => {
-        const value = event.detail.value;
-        if (value === 'component') {
-          this.openNewComponent();
-        } else if (value === 'import') {
-          this.openImport();
-        }
-      };
-      this.screenMenu = (event) => {
-        const value = event.detail.value;
-        if (value === 'share') {
-          this.openShare();
-        } else if (value === 'approve') {
-          this.approve();
-        } else if (value === 'reopen') {
-          this.reopen();
-        } else if (value === 'flow') {
-          this.makeFlowScreens();
-        } else if (value === 'comment') {
-          this.selectedId(null);
-          this.showComments();
-          setTimeout(() => { const box = find('#commentText'); if (box) { box.focus(); } }, 50);
-        } else if (value === 'delete') {
-          this.remove();
-        }
+      /** The comments drawer, for a comment on the whole screen (the Studio's More menu). */
+      this.commentOnScreen = () => {
+        this.selectedId(null);
+        this.showComments();
+        setTimeout(() => { const box = find('#commentText'); if (box) { box.focus(); } }, 50);
       };
       this.saveMenu = (event) => {
         const value = event.detail.value;
@@ -1864,11 +1831,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             showError(new Error('Save or discard your changes first.'));
             return;
           }
-          api.post('designs/' + this.detail().id + '/restore', { version: v.version })
+          api.post('designs/' + encodeURIComponent(this.detail().id) + '/restore', { version: v.version })
             .then((detail) => { show(detail, true); showInfo('Version ' + v.version + ' restored as version ' + detail.currentVersion + '.'); })
             .catch(showError);
         },
-        previewAction: () => api.get('designs/' + this.detail().id + '/versions/' + v.version).then((model) => {
+        previewAction: () => api.get('designs/' + encodeURIComponent(this.detail().id) + '/versions/' + v.version).then((model) => {
           undoStack.push(this.working());
           redoStack([]);
           this.working(model);
@@ -2030,6 +1997,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       const show = (detail, keepSelection) => {
         if (!this.detail() || this.detail().id !== detail.id) {
+          // Another screen: what was typed for the last one does not carry over
+          this.commentText('');
+          this.aiInstruction('');
           this.codeFiles([]);
           this.ai.clear();
           loadRequirement(detail.requirementId);
@@ -2055,7 +2025,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       /** Asks before unsaved changes are lost; resolves true when there are none or they may go. */
-      this.confirmDiscard = () => (this.dirty() ? ask.apply(null, DISCARD) : Promise.resolve(true));
+      // One question at a time: a workspace change and the page leave it causes share it. Discard drops the changes at
+      // once, so whatever asks next finds none.
+      let discarding = null;
+      this.confirmDiscard = () => {
+        if (!this.dirty()) {
+          return Promise.resolve(true);
+        }
+        if (!discarding) {
+          discarding = ask.apply(null, DISCARD).then((ok) => {
+            if (ok) {
+              this.discard();
+            }
+            return ok;
+          }).finally(() => { discarding = null; });
+        }
+        return discarding;
+      };
       /** Empties the designer when the Studio closes Edit: no screen, no unsaved changes, nothing left to check. */
       this.clear = () => {
         this.detail(null);
@@ -2069,14 +2055,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       /** Opens a screen without asking (the caller has asked: the Studio's guard). */
       let loading = null;
+      // Counts screens that could not be opened, for the Studio to stop waiting for one
+      this.loadFailures = ko.observable(0);
       this.load = (id) => {
         options.designId = id;
         loading = id;
         this.clearMessages();
         this.drawer(null);
         // Only the screen asked for last is shown, whichever answer comes first
-        return api.get('designs/' + id).then((detail) => { if (options.designId === id) { show(detail); } })
-          .catch(showError).finally(() => { if (loading === id) { loading = null; } });
+        return api.get('designs/' + encodeURIComponent(id)).then((detail) => { if (options.designId === id) { show(detail); } })
+          .catch((error) => { this.loadFailures(this.loadFailures() + 1); showError(error); })
+          .finally(() => { if (loading === id) { loading = null; } });
       };
       this.open = (id) => this.confirmDiscard().then((ok) => {
         if (!ok) {
@@ -2093,7 +2082,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       });
 
-      const base = () => 'designs/' + this.detail().id;
+      const base = () => 'designs/' + encodeURIComponent(this.detail().id);
 
       this.save = () => api.put(base() + '/model', { model: this.working(), note: null })
         .then((detail) => { show(detail, true); showInfo('Saved as version ' + detail.currentVersion + '.'); })
@@ -2326,8 +2315,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Leaving the page for another one asks first when there are unsaved changes; the router stays when the promise
       // is rejected (ModuleRouterAdapter), so Cancel rejects
       const STAY = 'Unsaved changes kept';
-      this.canExit = () => (this.dirty() ? ask.apply(null, DISCARD).then((ok) => (ok ? undefined : Promise.reject(new Error(STAY))))
-        : Promise.resolve());
+      this.canExit = () => this.confirmDiscard().then((ok) => (ok ? undefined : Promise.reject(new Error(STAY))));
       // The pages that navigate do not catch the router's rejection; staying is expected, so it is not an error
       const keptChanges = (event) => {
         if (event.reason && event.reason.message === STAY) {

@@ -113,6 +113,12 @@ two version compares and two screen orders. They are one page now (`docs/DESIGN-
 - **Entry points** that were the designer's: **+ New screen** (generate, blank, import), **Screens without a BRD** in
   the BRD picker (blank and imported screens, approved one at a time), and the screen's **More** menu (share, import,
   review and confirmation screens, delete).
+- **One header in Edit:** the workflow bar is one line (BRD and stage chip); one row holds ← Flow, the screen's name,
+  status and checks, the editor's tools (undo, Design or Code, Preview, Save), Approve or Reopen, Review | Edit and
+  More (share, import, review and confirmation screens, comment, delete). The designer has no title, card head or
+  approval row of its own, so the canvas starts about 420 px from the top at 1440 × 900.
+- **Workspace changes ask too** (`workspaceSelection.guardChange`), as do the BRD picker, an upload and Back; a
+  workspace change and a page leave that come together share one question.
 - **Phones:** below 768 px Edit says "Use a wider screen to edit this screen"; Review works.
 - **Links:** the `designer` route redirects to `studio`; `pageRequests.design(id)` opens the screen in Edit;
   `?ojr=studio&requirement=<id>&screen=<id>` opens that screen, and the address follows the selection.

@@ -5045,7 +5045,7 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 /* ---------- Designer page, design system ---------- */
 /* The designer's own colours come from the tokens, so its panels, palette, toolbars and bottom panel follow the theme.
    The bank's screen in the canvas iframe stays light by design. */
-.factory-dz.factory-dz, .factory-dz {
+.factory-dz.factory-dz, .factory-dz, .factory-studio-edittools {
     --dz-border: var(--fx-border);
     --dz-muted: var(--fx-text-muted);
     --dz-accent: var(--fx-primary);
@@ -7374,10 +7374,7 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 /* The designer brings its own panels, so the card around it gives up its frame and padding to the canvas */
 .factory-studio-work.is-editing .factory-studio-canvas { padding: 4px 0 0; border-color: transparent; background: transparent; box-shadow: none; }
 .factory-studio-modes button { min-width: 72px; }
-.factory-studio-editbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); }
-.factory-studio-editbar .fx-card-sub { margin: 0; }
 .factory-studio-editor { display: block; min-width: 0; }
-.factory-studio-editor .factory-dz-pagehead { padding: 0; margin-bottom: 8px; }
 .factory-studio-checks-link { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); padding-top: 10px; border-top: var(--fx-border-width) solid var(--fx-border); }
 .factory-studio-checks-link .fx-card-sub { flex: 1 1 260px; margin: 0; }
 .factory-studio-narrow { padding: 28px 16px; }
@@ -7391,9 +7388,60 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-studio-new-name { flex: 1 1 220px; min-width: 0; }
 .factory-studio-empty fx-menu-button { margin-top: var(--fx-space-2); }
 .factory-dz-opening { margin: 0; padding: 24px; }
+/* Edit: the workflow bar is one line (the BRD and a chip with its stage) */
+.factory-studio-bar.is-compact { padding: 6px 12px; gap: 0; }
+.factory-studio-bar.is-compact .factory-studio-stepper,
+.factory-studio-bar.is-compact .factory-studio-bar-actions,
+.factory-studio-bar.is-compact .factory-studio-bar-status { display: none; }
+.factory-studio-bar.is-compact .factory-studio-bar-row { flex-wrap: nowrap; gap: var(--fx-space-3); }
+.factory-studio-stagechip { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Edit: one header row with ← Flow, the screen, the editor's tools, approval, Review | Edit and More */
+.factory-studio-canvas-head.is-editing { align-items: center; gap: var(--fx-space-2) var(--fx-space-3); }
+.factory-studio-canvas-head.is-editing { flex-wrap: nowrap; justify-content: flex-start; }
+.factory-studio-canvas-head.is-editing .factory-studio-canvas-title { flex: 1 1 160px; display: flex; align-items: center; gap: var(--fx-space-2); min-width: 0; }
+.factory-studio-canvas-head.is-editing .factory-studio-canvas-title h2 { margin: 0; min-width: 0; font-size: var(--fx-text-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.factory-studio-canvas-head.is-editing .factory-studio-canvas-title .fx-card-sub { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; white-space: nowrap; }
+.factory-studio-canvas-head.is-editing .factory-studio-canvas-actions { flex: 0 0 auto; flex-wrap: nowrap; }
+@media (max-width: 1250px) {
+  /* Narrower windows: the header wraps, the screen's name on its own line first */
+  .factory-studio-canvas-head.is-editing { flex-wrap: wrap; }
+}
+.factory-studio-back { flex: 0 0 auto; }
+.factory-studio-edittools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); }
+.factory-studio-edittools .fx-split { position: relative; }
+.factory-studio-edittools .factory-dz-savesplit .fx-split-toggle { height: auto; }
 @media (min-width: 1251px) {
-  /* Below the Studio's bar and the screen's header: the designer fills the window once scrolled to (not 100vh of its own) */
-  .factory-studio-editor .factory-dz { height: calc(100vh - 170px); min-height: 680px; }
+  /* Below the compact bar and the header row: the designer fills the rest of the window */
+  .factory-studio-editor .factory-dz { height: calc(100vh - 240px); min-height: 600px; }
+}
+/* Tablets and small laptops (768 to 1250 px): the three zones stay side by side with narrower panels, instead of the
+   components, the canvas and the inspector stacked a page apart */
+@media (min-width: 768px) and (max-width: 1250px) {
+  .factory-studio-editor .factory-dz { height: calc(100vh - 230px); min-height: 560px; }
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-nodetail):not(.factory-dz-previewing) {
+    grid-template-columns: 196px minmax(0, 1fr) 236px; grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: "left canvas right" "left ctx right"; gap: 8px;
+  }
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-left-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: 50px minmax(0, 1fr) 236px; }
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: 196px minmax(0, 1fr) 50px; }
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-left-open):not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) { grid-template-columns: 50px minmax(0, 1fr) 50px; }
+  .factory-studio-editor .factory-dz-body .factory-dz-canvas { min-height: 0; }
+  .factory-studio-editor .factory-dz-body .factory-dz-rail { flex-direction: column; }
+}
+/* Tablets in portrait (768 to 1023 px): the canvas takes the full width, the components and the inspector sit side by
+   side below it */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .factory-studio-editor .factory-dz { height: auto; min-height: 0; }
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-nodetail):not(.factory-dz-previewing),
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-left-open):not(.factory-dz-nodetail):not(.factory-dz-previewing),
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing),
+  .factory-studio-editor .factory-dz-body.factory-dz-body:not(.factory-dz-left-open):not(.factory-dz-right-open):not(.factory-dz-nodetail):not(.factory-dz-previewing) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto;
+    grid-template-areas: "canvas canvas" "ctx ctx" "left right";
+  }
+  .factory-studio-editor .factory-dz-body .factory-dz-canvas { min-height: 600px; }
+  .factory-studio-editor .factory-dz-body .factory-dz-left, .factory-studio-editor .factory-dz-body .factory-dz-right { max-height: 640px; }
+  .factory-studio-editor .factory-dz-body .factory-dz-rail { flex-direction: row; }
 }
 
 /* ---------- Shell: six menu sections, the collapsed menu's tooltip, the breadcrumb and the workspace version ---------- */

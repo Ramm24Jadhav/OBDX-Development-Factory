@@ -55,7 +55,7 @@ const SECTIONS = ['properties', 'binding', 'validation', 'visibility', 'events',
   await sleep(1000);
   await run(() => { document.getElementById('studioMode-edit').click(); return 1; });
   await sleep(6000);
-  const picked = await run(() => (document.querySelector('#studioEditor .factory-dz-cardname') || {}).textContent || null);
+  const picked = await run(() => (document.querySelector('#studioScreenTitle') || {}).textContent || null);
   record('the screen opens in Edit', !!picked && picked.trim().length > 0, picked);
 
   const layout = await run(() => ({

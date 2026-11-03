@@ -11,6 +11,10 @@
         <fx-select id="studioBrd" class="factory-studio-brd" label="BRD" hide-label placeholder="Choose a BRD" searchable
                    options="[[requirementOptions]]" value="{{brdPick}}"></fx-select>
       </oj-bind-if>
+      <!-- In Edit the bar is one line: the BRD and where it stands -->
+      <oj-bind-if test="[[compactBar()]]">
+        <span class="fx-badge fx-badge--plain fx-badge--info factory-studio-stagechip" id="studioStageChip"><oj-bind-text value="[[stageChip]]"></oj-bind-text></span>
+      </oj-bind-if>
       <oj-bind-if test="[[!loose()]]"><ol class="factory-studio-stepper" aria-label="From BRD to code">
         <oj-bind-for-each data="[[steps]]" as="st">
           <template>
@@ -242,34 +246,83 @@
           <p class="fx-card-sub" id="studioScreenTitle">Pick a screen in the flow to preview it.</p>
         </oj-bind-if>
         <oj-bind-if test="[[screen()]]">
-          <div class="factory-studio-canvas-head">
+          <!-- One header for the screen in both modes: its name and status, the editor's tools in Edit, approval, Review | Edit, More -->
+          <div :class="[[editing() ? 'factory-studio-canvas-head is-editing' : 'factory-studio-canvas-head']]">
+            <oj-bind-if test="[[editing()]]">
+              <button type="button" id="studioBackToFlow" class="fx-btn fx-btn--ghost fx-btn--sm factory-studio-back" on-click="[[showReview]]"
+                      title="Back to Review, with the requirements and the flow"><span aria-hidden="true">←</span> Flow</button>
+            </oj-bind-if>
             <div class="factory-studio-canvas-title">
               <h2 id="studioScreenTitle"><oj-bind-text value="[[screen().name]]"></oj-bind-text></h2>
               <p class="fx-card-sub"><span :class="[[screenStatus().css]]"><oj-bind-text value="[[screenStatus().text]]"></oj-bind-text></span>
-                <oj-bind-text value="[[screenMeta]]"></oj-bind-text></p>
+                <oj-bind-if test="[[!editing()]]"><oj-bind-text value="[[screenMeta]]"></oj-bind-text></oj-bind-if>
+                <oj-bind-for-each data="[[editorTools]]" as="ed">
+                  <template>
+                    <oj-bind-if test="[[ed.data.dirty()]]"><span class="fx-badge fx-badge--warning factory-dz-unsaved" title="Unsaved changes">Unsaved</span></oj-bind-if>
+                    <oj-bind-if test="[[ed.data.detail()]]">
+                      <button type="button" id="checksChip" :class="[['factory-dz-checks-chip' + (ed.data.openChecks() === 0 ? ' factory-dz-checks-ok' : ' factory-dz-checks-open')]]"
+                              on-click="[[ed.data.showChecks]]" title="Show the checks"><oj-bind-text value="[[ed.data.checksSummary]]"></oj-bind-text></button>
+                    </oj-bind-if>
+                  </template>
+                </oj-bind-for-each></p>
             </div>
+            <!-- The editor's own tools: undo, design or code, preview, save -->
+            <oj-bind-for-each data="[[editorTools]]" as="ed">
+              <template>
+                <div class="factory-studio-edittools" id="studioEditTools" role="toolbar" aria-label="Editor">
+                  <oj-bind-if test="[[ed.data.detail()]]">
+                    <oj-bind-if test="[[ed.data.editable()]]">
+                      <div class="factory-dz-segmented" role="group" aria-label="Undo and redo">
+                        <button type="button" id="undoButton" class="factory-dz-seg" title="Undo (Ctrl+Z)" aria-label="Undo" on-click="[[ed.data.undo]]" :disabled="[[!ed.data.canUndo()]]">↶</button>
+                        <button type="button" id="redoButton" class="factory-dz-seg" title="Redo (Ctrl+Y)" aria-label="Redo" on-click="[[ed.data.redo]]" :disabled="[[!ed.data.canRedo()]]">↷</button>
+                      </div>
+                    </oj-bind-if>
+                    <div class="fx-toggle-group factory-dz-modes" role="group" aria-label="Design or code">
+                      <button type="button" id="designModeButton" :aria-pressed="[[ed.data.mode() === 'design' ? 'true' : 'false']]" on-click="[[ed.data.setDesignMode]]">Design</button>
+                      <button type="button" id="codeModeButton" :aria-pressed="[[ed.data.mode() === 'code' ? 'true' : 'false']]" on-click="[[ed.data.setCodeMode]]">Code</button>
+                    </div>
+                    <button type="button" id="previewButton" class="fx-btn fx-btn--secondary fx-btn--sm" :aria-pressed="[[ed.data.previewMode() ? 'true' : 'false']]"
+                            on-click="[[ed.data.togglePreview]]" title="See the screen without the panels">
+                      <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span><oj-bind-text value="[[ed.data.previewMode() ? 'Exit preview' : 'Preview']]"></oj-bind-text></button>
+                    <div class="fx-split factory-dz-savesplit">
+                      <span class="factory-dz-savemain" :title="[[ed.data.saveTitle]]"><button type="button" id="saveDesignButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[ed.data.save]]" :disabled="[[!ed.data.dirty() || !ed.data.editable()]]">
+                        <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save</button></span>
+                      <button type="button" id="saveMore" class="fx-btn fx-btn--secondary fx-btn--sm fx-split-toggle" aria-haspopup="menu" :aria-expanded="[[ed.data.saveSplit.open() ? 'true' : 'false']]"
+                              aria-label="Save options" on-click="[[ed.data.saveSplit.toggle]]"><span class="fx-caret" aria-hidden="true"></span></button>
+                      <oj-bind-if test="[[ed.data.saveSplit.open()]]">
+                        <div class="fx-menu" role="menu" id="saveMoreMenu" aria-label="Save options" on-keydown="[[ed.data.saveSplit.key]]">
+                          <button type="button" role="menuitem" on-click="[[ed.data.saveDo('save')]]" :disabled="[[!ed.data.dirty() || !ed.data.editable()]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Save as a new version</button>
+                          <button type="button" role="menuitem" on-click="[[ed.data.saveDo('discard')]]" :disabled="[[!ed.data.dirty() || !ed.data.editable()]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span>Discard the changes</button>
+                          <div class="fx-menu-sep" role="separator"></div>
+                          <button type="button" role="menuitem" on-click="[[ed.data.saveDo('previous')]]" :disabled="[[!ed.data.canRestorePrevious()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Bring back the previous version</button>
+                          <button type="button" role="menuitem" on-click="[[ed.data.saveDo('history')]]"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span>Version history and compare</button>
+                        </div>
+                      </oj-bind-if>
+                    </div>
+                  </oj-bind-if>
+                </div>
+              </template>
+            </oj-bind-for-each>
             <div class="factory-studio-canvas-actions">
               <oj-bind-if test="[[canApprove() && !screenLocked()]]">
-                <button type="button" id="studioApproveScreen" class="fx-btn fx-btn--primary" on-click="[[approveScreen]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve screen</button>
+                <button type="button" id="studioApproveScreen" class="fx-btn fx-btn--primary" on-click="[[approveScreen]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[editing() ? 'Approve' : 'Approve screen']]"></oj-bind-text></button>
               </oj-bind-if>
               <oj-bind-if test="[[canApprove() && screenLocked()]]">
                 <button type="button" id="studioReopenScreen" class="fx-btn fx-btn--ghost" on-click="[[reopenScreen]]">Reopen</button>
               </oj-bind-if>
-              <div class="fx-toggle-group factory-studio-modes" role="group" aria-label="Review or edit the screen" on-keydown="[[modeKey]]">
+              <div class="fx-toggle-group factory-studio-modes" role="group" aria-label="Review or edit the screen" aria-describedby="studioModeHint" on-keydown="[[modeKey]]"
+                   title="In Edit, Esc with nothing selected goes back to Review">
                 <oj-bind-for-each data="[[modes]]" as="m">
                   <template><button type="button" :id="[[m.data.id]]" :aria-pressed="[[m.data.pressed]]" :tabindex="[[m.data.tabindex]]" on-click="[[m.data.pick]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></template>
                 </oj-bind-for-each>
               </div>
+              <span id="studioModeHint" class="fx-visually-hidden">In Edit, Esc with nothing selected goes back to Review.</span>
               <fx-menu-button id="studioScreenMore" label="Screen actions" icon="more" icon-only variant="secondary" items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
             </div>
           </div>
 
           <!-- Edit: the designer for this screen; the requirements and the flow fold away (the journey strip shows the flow) -->
           <oj-bind-if test="[[editing()]]">
-            <div class="factory-studio-editbar">
-              <button type="button" id="studioBackToFlow" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showReview]]"><span aria-hidden="true">←</span> Flow</button>
-              <oj-bind-if test="[[!narrow()]]"><span class="fx-card-sub">Esc with nothing selected goes back to Review.</span></oj-bind-if>
-            </div>
             <oj-bind-if test="[[narrow()]]">
               <div class="fx-card fx-empty factory-studio-narrow" id="studioEditNarrow">
                 <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>

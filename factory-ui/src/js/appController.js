@@ -285,7 +285,11 @@ define(['knockout', './services/session', './services/updates', './services/dash
       // Top bar: the workspace the pages work on (shared with their own pickers), the page and workspace as a breadcrumb,
       // search of the workspace's code (opens the Code page's Search tab), what needs attention, and help.
       this.workspaceOptions = workspaceSelection.options;
-      this.workspaceId = workspaceSelection.selectedId;
+      // The picker's own value: a change a page's guard refuses (unsaved work) shows the selected workspace again
+      this.workspaceId = ko.observable(workspaceSelection.selectedId());
+      workspaceSelection.selectedId.subscribe((id) => this.workspaceId(id));
+      workspaceSelection.refused.subscribe(() => this.workspaceId(workspaceSelection.selectedId()));
+      this.workspaceId.subscribe((id) => { if (id !== workspaceSelection.selectedId()) { workspaceSelection.selectedId(id); } });
       this.workspaceVersion = ko.pureComputed(() => (workspaceSelection.selectedVersion() ? 'OBDX ' + workspaceSelection.selectedVersion() : ''));
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
       // Search and jump: the command palette (Ctrl K, '/', or the top bar search button)
