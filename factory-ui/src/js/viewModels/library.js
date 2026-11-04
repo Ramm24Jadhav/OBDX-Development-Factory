@@ -1,13 +1,16 @@
 /*
- * OBDX Library page: the knowledge base the AI chat and code generation use. Ask (answers with numbered citations
- * that open the manual at the page, feedback, save an answer as a note), Documents (Oracle's manuals per OBDX version
- * and the bank's own and patchset documents, with their import progress, older revisions and the watched folders that
- * keep them current) and Notes (knowledge users and agents add; suggested until approved, and only approved notes reach
- * code generation; notes whose cited sections changed in a newer revision come back for review). It is about documents,
- * not the bank's code (Code and Knowledge Explorer search that). A status line shows what is indexed, failed, in progress
- * and stale; documents filter by OBDX version, type and source; a question can be asked for another OBDX version; an
- * answer lists the sources it cites (title, version, section, pages, a preview at the page), and says plainly when the
- * documents hold too little, keeping the model's general answer folded away.
+ * OBDX Library page: the knowledge base the AI chat and code generation use. One header (title, Add documents), at most
+ * one library problem bar under it (search by meaning is off, or embedding in progress), then three tabs:
+ *  - Ask: a conversation panel (the question, the answer with numbered citations, feedback, save as a note; Improve my
+ *    question, the answer length and an expanded editor in the composer pinned to its bottom) beside a Sources rail
+ *    (title, kind, version, section, pages, a preview at the page); it says plainly when the documents hold too little,
+ *    keeping the model's general answer folded away.
+ *  - Documents: where the documents come from (Oracle's site and watched folders, one strip), then one table grouped by
+ *    OBDX version with filters (title, version, type, source, state), older revisions on request and a menu per row.
+ *    Documents are added in a side sheet: uploaded files, a watched folder or Oracle's site.
+ *  - Notes: knowledge users and agents add, as a review queue in one column: notes whose cited sections changed in a newer
+ *    revision first, then by origin. Suggested until approved; only approved notes reach code generation.
+ * It is about documents, not the bank's code (Code and Knowledge Explorer search that).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/ui',
         '../services/toast', '../services/dialog', '../services/markdown', 'ojs/ojknockout'],
@@ -17,8 +20,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       SUPERSEDED: ['CLOSED', 'Older revision'] };
     const NOTE_STATUS = { SUGGESTED: ['IN_REVIEW', 'Suggested'], TRUSTED: ['APPROVED', 'Approved'], REJECTED: ['CLOSED', 'Rejected'] };
     const ORIGIN = { USER: 'Written by a user', AGENT: 'Learned from a change', SUMMARY: 'Summarised from the manuals' };
+    // The Notes queue's groups after "Check after a manual changed"
+    const ORIGIN_GROUP = { USER: 'Written by users', AGENT: 'Learned from delivered changes', SUMMARY: 'Drafted from the manuals' };
     const when = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+    const day = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '');
     const pages = (s) => (s.pageFrom ? (s.pageFrom === s.pageTo ? 'p. ' + s.pageFrom : 'pp. ' + s.pageFrom + '–' + s.pageTo) : '');
+    const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
     // A link only to web pages or the factory's own files: a stored source URL could be javascript:
     const safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/?api\/)/i.test(u.trim()) ? u.trim() : null);
     // How well the sources support an answer (the check after the model has written it)
@@ -29,33 +36,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     };
     // What a document or a cited source is
     const KIND = (s) => (s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved note' : 'Suggested note') : s.bank ? 'Bank document' : 'Oracle manual');
-    const STYLES = [{ value: 'CONCISE', label: 'Concise' }, { value: 'DETAILED', label: 'Detailed' }, { value: 'DEEP_DIVE', label: 'Technical deep dive' }];
+    // The answer length: the server's styles, named for what they give
+    const STYLES = [
+      { value: 'CONCISE', label: 'Short', description: 'A few lines: the direct answer' },
+      { value: 'DETAILED', label: 'Detailed', description: 'Steps to follow, with the sources cited' },
+      { value: 'DEEP_DIVE', label: 'Deep dive', description: 'Every step, with code and the files to change' }
+    ];
+    // A document's message saying it is searched by keywords only: the problem bar says that once for the library
+    const KEYWORDS_ONLY = /^Searched by keywords only[\s\S]*?(Use Embed again when it is back\.|factory\.knowledge\.internal-hosts\.|$)\s*/;
     const copy = (text, what) => {
       if (!navigator.clipboard) { toast.error('Copying is not available in this browser.'); return; }
       navigator.clipboard.writeText(text).then(() => toast.success(what + ' copied.'), () => toast.error('Could not copy.'));
     };
+    const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
+    const focusLater = (id) => window.setTimeout(() => { const el = document.getElementById(id); if (el) { el.focus(); } }, 0);
+    const PAGE = 25;
 
     function LibraryViewModel() {
       this.isAdmin = session.isAdmin;
       this.workspaceId = workspaceSelection.selectedId;
       this.workspaceName = ko.pureComputed(() => {
         const o = workspaceSelection.options().find((x) => x.value === this.workspaceId());
-        return o ? o.label : 'no workspace';
+        // The workspace's name, without the bank and version the picker adds in brackets
+        return o ? o.label.replace(/\s*\([^)]*\)$/, '') : 'no workspace';
       });
       this.errorMessage = ko.observable('');
       this.overview = ko.observable(null);
       // Administrators add Oracle's manuals; a workspace's managers add the bank's own documents for it
       this.canImport = ko.pureComputed(() => session.isAdmin() || (!!this.workspaceId() && session.can(this.workspaceId(), 'MANAGE_CODE')));
+      this.canAdd = this.canImport;
 
       this.tab = ko.observable('ask');
-      this.tabs = [['ask', 'Ask', 'sparkle'], ['documents', 'Documents', 'doc'], ['notes', 'Notes', 'list']].map(([value, text, icon]) => ({
-        value: value, text: text, iconClass: 'factory-nav-icon factory-ico-' + icon,
+      this.tabs = [['ask', 'Ask'], ['documents', 'Documents'], ['notes', 'Notes']].map(([value, text]) => ({
+        value: value, text: text,
         count: ko.pureComputed(() => {
           const s = (this.overview() || {}).stats || {};
-          return value === 'documents' ? (s.documents ? ' (' + s.documents + ')' : '') : value === 'notes' ? ((s.trustedNotes || 0) + (s.suggestedNotes || 0) ? ' (' + ((s.trustedNotes || 0) + (s.suggestedNotes || 0)) + ')' : '') : '';
+          if (value === 'documents') { return this.documents().filter((d) => !d.older).length ? String(this.documents().filter((d) => !d.older).length) : ''; }
+          if (value === 'notes') {
+            const total = (s.trustedNotes || 0) + (s.suggestedNotes || 0);
+            return s.suggestedNotes ? String(s.suggestedNotes) : total ? String(total) : '';
+          }
+          return '';
         }),
+        // "to review" after the Notes count (hidden on phones)
+        countMore: ko.pureComputed(() => (value === 'notes' && ((this.overview() || {}).stats || {}).suggestedNotes ? ' to review' : '')),
+        countCss: ko.pureComputed(() => 'factory-lb-cnt' + (value === 'notes' && ((this.overview() || {}).stats || {}).suggestedNotes ? ' is-warn' : '')),
         selected: ko.pureComputed(() => this.tab() === value),
-        css: ko.pureComputed(() => (this.tab() === value ? 'factory-tab factory-tab-on' : 'factory-tab')),
         pick: () => { this.tab(value); if (value === 'notes') { this.loadNotes(); } }
       }));
       // Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern)
@@ -77,54 +103,53 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
 
       // --- overview ---
-      // The library's state in one line: what is indexed, what failed, what is still running and what is stale. Each
-      // part with documents behind it filters the Documents tab to them.
-      this.health = ko.pureComputed(() => {
-        const s = (this.overview() || {}).stats || {};
-        const docs = this.documents().filter((d) => !d.older);
-        const failed = docs.filter((d) => d.status === 'FAILED').length;
-        const running = docs.filter((d) => d.busy).length;
-        const partial = docs.filter((d) => d.status === 'READY' && d.sections > d.embedded).length;
-        const ready = docs.filter((d) => d.status === 'READY');
-        const last = ready.map((d) => d.updatedAt).sort().pop();
-        const rated = (s.helpful || 0) + (s.notHelpful || 0);
-        const show = (status) => () => { this.tab('documents'); this.docStatus(status); };
-        return [
-          { key: 'ready', text: ready.length + ' of ' + docs.length + ' documents indexed', tone: 'SUCCEEDED', go: show('') },
-          { key: 'last', text: last ? 'last indexed ' + when(last) : 'nothing indexed yet', tone: '', go: null },
-          { key: 'failed', text: failed + ' failed', tone: 'FAILED', go: show('FAILED'), hide: !failed },
-          { key: 'running', text: running + ' in progress', tone: 'RUNNING', go: show('RUNNING'), hide: !running },
-          { key: 'partial', text: partial + ' not fully searchable by meaning', tone: 'WARNING', go: show('PARTIAL'), hide: !partial },
-          { key: 'older', text: (s.revised || 0) + ' older revisions kept', tone: '', go: show('OLDER'), hide: !s.revised },
-          { key: 'notes', text: (s.notesToCheck || 0) + ' notes to check after updates', tone: 'WARNING', go: () => { this.tab('notes'); this.noteFilter('CHECK'); }, hide: !s.notesToCheck },
-          { key: 'helpful', text: rated ? Math.round(100 * (s.helpful || 0) / rated) + '% of ' + rated + ' rated answers helpful' : 'no answers rated yet', tone: '', go: null }
-        ].filter((p) => !p.hide).map((p) => Object.assign(p, { css: 'factory-lb-hpart' + (p.tone ? ' is-' + p.tone.toLowerCase() : ''), id: 'libraryHealth-' + p.key }));
-      });
       const oracleSite = ko.pureComputed(() => (this.overview() || {}).fromOracleSite || []);
-      this.documents = ko.pureComputed(() => ((this.overview() || {}).documents || []).map((d) => {
-        const st = DOC_STATUS[d.status] || [d.status, d.status];
-        const s = ui.status(st[0], st[1]);
-        const older = d.status === 'SUPERSEDED';
-        return Object.assign({}, d, {
-          statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, older: older, rowCss: older ? 'is-older' : '',
-          scope: (d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
-            + (older ? ' · replaced ' + when(d.supersededAt) : ''),
-          progress: d.sections ? Math.round((d.embedded / d.sections) * 100) : 0,
-          progressStyle: { width: (d.sections ? Math.round((d.embedded / d.sections) * 100) : 0) + '%' },
-          // Only a document still being read or embedded animates; the list reloads every few seconds while one is
-          progressCss: 'fx-progress factory-lb-progress' + (d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING' ? ' is-running' : ''),
-          busy: d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING',
-          canEmbed: (d.status === 'READY' || d.status === 'FAILED') && d.sections > d.embedded,
-          url: 'api/knowledge/documents/' + d.id + '/file',
-          admin: d.workspaceId ? session.can(d.workspaceId, 'MANAGE_CODE') : session.isAdmin(),
-          type: d.workspaceId ? 'BANK' : 'ORACLE', patch: !!d.patchset,
-          source: oracleSite().indexOf(d.id) >= 0 ? 'SITE' : d.sourceId ? 'FOLDER' : 'UPLOAD',
-          sourceText: oracleSite().indexOf(d.id) >= 0 ? 'From Oracle\'s site' : d.sourceId ? 'From a watched folder' : 'Uploaded' + (d.importedBy ? ' by ' + d.importedBy : ''),
-          partial: d.status === 'READY' && d.sections > d.embedded,
-          embed: () => this.embedAgain(d), remove: () => this.removeDocument(d),
-          when: when(d.updatedAt)
+      this.documents = ko.pureComputed(() => {
+        const list = (this.overview() || {}).documents || [];
+        // Which documents have older revisions kept (same version, owner and file)
+        const key = (d) => d.obdxVersion + '|' + (d.workspaceId || '') + '|' + d.fileName;
+        const withOlder = new Set(list.filter((d) => d.status === 'SUPERSEDED').map(key));
+        return list.map((d) => {
+          const older = d.status === 'SUPERSEDED';
+          const partial = d.status === 'READY' && d.sections > d.embedded;
+          const busy = d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING';
+          const progress = d.sections ? Math.round((d.embedded / d.sections) * 100) : 0;
+          const st = DOC_STATUS[d.status] || [d.status, d.status];
+          const s = partial ? ui.status('WARNING', 'Ready · keywords only') : ui.status(st[0], d.status === 'EMBEDDING' && d.sections ? 'Embedding · ' + progress + '%' : st[1]);
+          const source = oracleSite().indexOf(d.id) >= 0 ? 'SITE' : d.sourceId ? 'FOLDER' : 'UPLOAD';
+          const admin = d.workspaceId ? session.can(d.workspaceId, 'MANAGE_CODE') : session.isAdmin();
+          const canEmbed = (d.status === 'READY' || d.status === 'FAILED') && d.sections > d.embedded;
+          const hasOlder = !older && withOlder.has(key(d));
+          // A message every partial row shares (the embedding model is unavailable) is said once, in the problem bar
+          const rowMessage = d.status === 'FAILED' ? (d.message || 'It could not be read.') : (d.message || '').replace(KEYWORDS_ONLY, '').trim();
+          const menu = [];
+          if (canEmbed && admin) { menu.push({ value: 'embed', label: 'Embed again', icon: 'refresh' }); }
+          if (hasOlder) { menu.push({ value: 'older', label: 'Show older revisions', icon: 'clock' }); }
+          if (admin) { menu.push({ value: 'remove', label: 'Remove…', icon: 'trash', danger: true }); }
+          const row = Object.assign({}, d, {
+            statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, older: older, rowCss: older ? 'is-older' : '',
+            scope: (d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
+              + (older ? ' · replaced ' + when(d.supersededAt) : ''),
+            subtitle: (d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
+              + (older ? ' · replaced ' + when(d.supersededAt) : '') + (source === 'UPLOAD' && d.importedBy ? ' · uploaded by ' + d.importedBy : ''),
+            progress: progress, busy: busy, canEmbed: canEmbed,
+            url: 'api/knowledge/documents/' + d.id + '/file',
+            admin: admin,
+            type: d.workspaceId ? 'BANK' : 'ORACLE', patch: !!d.patchset,
+            source: source,
+            sourceChip: source === 'SITE' ? 'Oracle\'s site' : source === 'FOLDER' ? 'Folder' : 'Uploaded',
+            sourceCss: 'fx-badge fx-badge--plain ' + (source === 'SITE' ? 'fx-badge--primary' : d.workspaceId ? 'fx-badge--success' : 'fx-badge--neutral'),
+            sourceText: source === 'SITE' ? 'From Oracle\'s site' : source === 'FOLDER' ? 'From a watched folder' : 'Uploaded' + (d.importedBy ? ' by ' + d.importedBy : ''),
+            partial: partial, rowMessage: rowMessage, menu: menu,
+            when: when(d.updatedAt)
+          });
+          row.act = (event) => {
+            const v = event.detail.value;
+            if (v === 'embed') { this.embedAgain(row); } else if (v === 'remove') { this.removeDocument(row); } else if (v === 'older') { this.showOlderOf(row); }
+          };
+          return row;
         });
-      }));
+      });
       // How much of the library is searchable by meaning, and one button to embed the rest
       this.embedding = ko.pureComputed(() => {
         const current = this.documents().filter((d) => !d.older && d.sections > 0);
@@ -133,13 +158,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const waiting = current.filter((d) => d.embedded < d.sections).length;
         const percent = sections ? Math.floor((embedded / sections) * 100) : 0;
         return {
-          show: current.length > 0, sections: sections, waiting: waiting, percent: percent,
+          show: current.length > 0, documents: current.length, sections: sections, waiting: waiting, percent: percent,
+          partial: current.filter((d) => d.partial).length,
           running: current.some((d) => d.status === 'EMBEDDING' || d.status === 'QUEUED' || d.status === 'READING'),
+          unreachable: current.some((d) => d.partial && /unavailable|not reachable/i.test(d.message || '')),
           text: embedded.toLocaleString() + ' of ' + sections.toLocaleString() + ' sections searchable by meaning',
-          sub: waiting ? waiting + ' document' + (waiting === 1 ? '' : 's') + ' not fully embedded' : 'Every document is embedded',
           barStyle: { width: percent + '%' }
         };
       });
+      // The library's one problem, said once with its fix: search by meaning is off, or the embedding is still running
+      this.problem = ko.pureComputed(() => {
+        const e = this.embedding();
+        if (e.running && e.waiting > 0) {
+          return { show: true, running: true, css: 'factory-lb-problem is-running', lead: 'Embedding.', percent: e.percent, barStyle: e.barStyle,
+            text: e.text + '. Answers use keywords until it is done.' };
+        }
+        if (e.partial > 0) {
+          const which = e.partial === e.documents ? 'all ' + plural(e.partial, 'document') : plural(e.partial, 'document') + ' of ' + e.documents;
+          return { show: true, running: false, css: 'factory-lb-problem', lead: 'Keywords only.', percent: e.percent,
+            text: (e.unreachable ? 'The embedding model is not reachable, so search by meaning is off for ' : 'Search by meaning is off for ') + which + '.' };
+        }
+        return { show: false };
+      });
+      this.openModels = (event) => { if (event && event.preventDefault) { event.preventDefault(); } navigate('models'); return false; };
       this.embedAllBusy = ko.observable(false);
       this.embedAll = () => {
         this.embedAllBusy(true);
@@ -147,7 +188,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .then((r) => {
             toast.success(r.queued ? r.queued + ' document' + (r.queued === 1 ? '' : 's') + ' are being embedded in the background, one at a time.'
               : 'Every document is already embedded with the current model.');
-            return this.load();
+            return this.load().then(poll);
           })
           .catch((e) => toast.error(ui.errorText(e)))
           .finally(() => this.embedAllBusy(false));
@@ -168,13 +209,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.docTypeOptions = [{ value: '', label: 'All types' }, { value: 'ORACLE', label: 'Oracle manuals' }, { value: 'BANK', label: 'Bank documents' }, { value: 'PATCH', label: 'Patchset documents' }];
       this.docSourceOptions = [{ value: '', label: 'All sources' }, { value: 'SITE', label: 'Oracle\'s site' }, { value: 'FOLDER', label: 'Watched folders' }, { value: 'UPLOAD', label: 'Uploaded' }];
       this.docStatusOptions = [{ value: '', label: 'Any state' }, { value: 'FAILED', label: 'Failed' }, { value: 'RUNNING', label: 'In progress' },
-        { value: 'PARTIAL', label: 'Not fully searchable' }, { value: 'OLDER', label: 'Older revisions' }];
+        { value: 'PARTIAL', label: 'Keywords only' }, { value: 'OLDER', label: 'Older revisions' }];
       this.docFiltered = ko.pureComputed(() => !!(this.docSearch() || this.docVersion() || this.docType() || this.docSource() || this.docStatus()));
+      const setSearchBox = (text) => { const el = document.getElementById('docSearch'); if (el) { el.value = text; } this.docSearch(text); };
       this.resetDocFilters = () => {
-        const el = document.getElementById('docSearch');
-        if (el) { el.value = ''; }
-        this.docSearch(''); this.docVersion(''); this.docType(''); this.docSource(''); this.docStatus('');
+        setSearchBox('');
+        this.docVersion(''); this.docType(''); this.docSource(''); this.docStatus('');
       };
+      this.showOlderOf = (d) => { this.showOlder(true); setSearchBox(d.title); };
       const docMatches = (d) => {
         const text = this.docSearch().trim().toLowerCase();
         const st = this.docStatus();
@@ -183,23 +225,53 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           && (st === 'OLDER' ? d.older : (this.showOlder() || !d.older) && (!st || (st === 'FAILED' && d.status === 'FAILED') || (st === 'RUNNING' && d.busy) || (st === 'PARTIAL' && d.partial)));
       };
       this.shownCount = ko.pureComputed(() => this.documents().filter(docMatches).length);
+      // Long lists show a page at a time ("Show more"); a change of filter starts again from the first page
+      this.pageSize = PAGE;
+      this.docLimit = ko.observable(PAGE);
+      ko.computed(() => { this.docSearch(); this.docVersion(); this.docType(); this.docSource(); this.docStatus(); this.showOlder(); this.docLimit(PAGE); });
+      this.showMore = () => this.docLimit(this.docLimit() + PAGE);
+      this.moreCount = ko.pureComputed(() => Math.max(0, this.shownCount() - this.docLimit()));
+      this.moreLabel = ko.pureComputed(() => 'Show ' + Math.min(this.moreCount(), PAGE) + ' more');
+      this.pageText = ko.pureComputed(() => {
+        const n = this.shownCount();
+        return n <= this.docLimit() ? plural(n, 'document') : '1–' + this.docLimit() + ' of ' + n;
+      });
       this.versions = ko.pureComputed(() => {
         const by = {};
-        this.documents().filter(docMatches).forEach((d) => { (by[d.obdxVersion] = by[d.obdxVersion] || []).push(d); });
-        return Object.keys(by).sort().reverse().map((v) => {
-          const current = by[v].filter((d) => !d.older);
+        const all = this.documents().filter(docMatches);
+        const counts = {};
+        all.forEach((d) => { counts[d.obdxVersion] = counts[d.obdxVersion] || []; counts[d.obdxVersion].push(d); });
+        const ordered = Object.keys(counts).sort().reverse();
+        let left = this.docLimit();
+        ordered.forEach((v) => {
+          const take = counts[v].slice(0, Math.max(0, left));
+          left -= take.length;
+          if (take.length) { by[v] = take; }
+        });
+        return ordered.filter((v) => by[v]).map((v) => {
+          const current = counts[v].filter((d) => !d.older);
           return { version: v, documents: by[v], summary: current.filter((d) => d.status === 'READY').length + ' of ' + current.length + ' ready' };
         });
       });
       // Folders the documents came from: checked again on a schedule for Oracle's and the bank's updated files
       this.folders = ko.pureComputed(() => ((this.overview() || {}).folders || []).map((f) => ({
-        id: f.id, folder: f.folder,
+        id: f.id, folder: f.folder, bank: !!f.workspaceId,
         about: 'OBDX ' + f.obdxVersion + (f.patchset ? ' · patchset ' + f.patchset : '') + ' · ' + (f.workspaceId ? 'This bank' : 'Oracle manuals'),
         last: f.lastScanAt ? 'Checked ' + when(f.lastScanAt) + (f.lastResult ? ': ' + f.lastResult : '') : 'Not checked yet',
         canManage: f.workspaceId ? session.can(f.workspaceId, 'MANAGE_CODE') : session.isAdmin(),
         busy: ko.observable(false),
         check: null, stop: null
       })).map((f) => Object.assign(f, { check: () => this.checkFolder(f), stop: () => this.stopFolder(f) })));
+      // The Sources strip: Oracle's site followed per version, then the watched folders
+      this.sourceCards = ko.pureComputed(() => this.oracleFollows().map((o) => ({
+        key: 'oracle-' + o.version, chip: 'Oracle\'s site', chipCss: 'fx-badge fx-badge--plain fx-badge--primary', name: 'OBDX ' + o.version,
+        sub: o.about + ' · ' + o.last, canManage: session.isAdmin(), busy: o.busy, check: o.check,
+        menu: [{ value: 'stop', label: 'Stop following', icon: 'x', danger: true }], act: () => o.stop()
+      })).concat(this.folders().map((f) => ({
+        key: 'folder-' + f.id, chip: f.bank ? 'This bank' : 'Folder', chipCss: 'fx-badge fx-badge--plain ' + (f.bank ? 'fx-badge--success' : 'fx-badge--neutral'),
+        name: f.folder, sub: f.about + ' · ' + f.last, canManage: f.canManage, busy: f.busy, check: f.check,
+        menu: [{ value: 'stop', label: 'Stop watching', icon: 'x', danger: true }], act: () => f.stop()
+      }))));
       this.importing = ko.pureComputed(() => this.documents().some((d) => d.busy));
       this.folderImport = ko.pureComputed(() => !!(this.overview() || {}).folderImport);
       // Set when the configured models are outside the bank: the knowledge is then not sent to them
@@ -229,10 +301,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.oracleRunning = ko.pureComputed(() => this.oracle().follows.some((f) => f.running));
       this.oracleFollows = ko.pureComputed(() => this.oracle().follows.map((f) => ({
         version: f.obdxVersion,
-        about: (f.scope === 'ALL' ? 'All manuals' : 'Technical guides') + (f.release ? ' · release ' + f.release : '') + ' · ' + f.files + ' file' + (f.files === 1 ? '' : 's'),
+        about: (f.scope === 'ALL' ? 'All manuals' : 'Technical guides') + (f.release ? ' · release ' + f.release : '') + ' · ' + plural(f.files, 'file'),
         last: f.running ? 'Checking Oracle’s site now…' : f.lastCheckAt ? 'Checked ' + when(f.lastCheckAt) + (f.lastResult ? ': ' + f.lastResult : '') : 'Not checked yet',
         running: f.running,
-        checkCss: f.running ? 'fx-btn fx-btn--secondary fx-btn--sm is-busy' : 'fx-btn fx-btn--secondary fx-btn--sm',
+        busy: ko.observable(!!f.running),
         check: () => this.checkOracle(f.obdxVersion), stop: () => this.stopOracle(f.obdxVersion)
       })));
       this.loadOracle = () => api.get('knowledge/oracle').then((o) => this.oracle(o)).catch(() => null);
@@ -252,6 +324,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         api.post('knowledge/oracle/follow', { obdxVersion: this.oracleVersion(), scope: this.oracleScope() })
           .then((f) => {
             toast.success('Checking Oracle’s site for the OBDX ' + f.obdxVersion + ' manuals. New and changed ones are imported in the background.');
+            this.addOpen(false);
             return this.loadOracle().then(poll);
           })
           .catch((e) => toast.error(ui.errorText(e))).finally(() => this.oracleBusy(false));
@@ -263,13 +336,29 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         message: 'The manuals already imported stay in the library; Oracle’s new patchsets and fixes are no longer picked up.', confirmLabel: 'Stop following' })
         .then((ok) => (ok ? api.del('knowledge/oracle/' + version).then(() => { toast.success('No longer following OBDX ' + version); return this.loadOracle(); }) : null))
         .catch((e) => toast.error(ui.errorText(e)));
-      this.tab.subscribe((t) => { if (t === 'documents') { this.loadOracleVersions(); } });
 
-      // --- import ---
+      // --- Add documents: the side sheet (upload files, watch a folder, Oracle's site) ---
+      this.addOpen = ko.observable(false);
+      this.addMode = ko.observable('UPLOAD');
+      this.addModeOptions = ko.pureComputed(() => [{ value: 'UPLOAD', label: 'Upload files' }]
+        .concat(this.folderImport() ? [{ value: 'FOLDER', label: 'Watch a folder' }] : [])
+        .concat(session.isAdmin() && this.oracle().enabled ? [{ value: 'ORACLE', label: 'Oracle\'s site' }] : []));
+      this.addMode.subscribe((m) => { if (m === 'ORACLE') { this.loadOracleVersions(); } });
+      this.openAddSheet = () => {
+        if (!this.addModeOptions().some((o) => o.value === this.addMode())) { this.addMode('UPLOAD'); }
+        this.addOpen(true);
+      };
+      this.closeAddSheet = () => this.addOpen(false);
       this.importVersion = ko.observable('25.2');
       this.importPatchset = ko.observable('');
       this.importFolder = ko.observable('');
       this.importForBank = ko.observable(false);
+      // Whose documents (administrators): Oracle's, shared by every workspace, or the bank's own for this workspace
+      this.importWho = ko.pureComputed({ read: () => (this.importForBank() ? 'BANK' : 'ORACLE'), write: (v) => this.importForBank(v === 'BANK') });
+      this.whoOptions = ko.pureComputed(() => [
+        { value: 'ORACLE', label: 'Oracle\'s', description: 'Shared by every workspace on this version' },
+        { value: 'BANK', label: 'The bank\'s own, for ' + this.workspaceName() + ' only', description: 'Used for this workspace\'s answers and code' }
+      ]);
       // Only administrators add the shared Oracle manuals
       this.forBank = () => this.importForBank() || !session.isAdmin();
       this.importBusy = ko.observable(false);
@@ -277,17 +366,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const n = r.queued.length;
         if (n) { toast.success(n + ' document' + (n === 1 ? '' : 's') + ' queued. They are read and embedded in the background.'); }
         if (r.skipped.length) { toast.info('Skipped: ' + r.skipped.join('; ')); }
-        return this.load();
+        return this.load().then(poll);
       };
       this.runFolderImport = () => {
         this.importBusy(true);
         api.post('knowledge/import', { folder: this.importFolder(), obdxVersion: this.importVersion(), patchset: this.importPatchset() || null,
           workspaceId: this.forBank() ? this.workspaceId() : null })
-          .then(reportImport).catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
+          .then((r) => { this.addOpen(false); return reportImport(r); }).catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
       };
-      this.upload = (event) => {
-        const files = Array.from(event.target.files || []);
-        event.target.value = '';
+      // The files chosen or dropped, added with the sheet's main button
+      const sizeText = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+      this.chosenFiles = ko.observableArray([]);
+      const choose = (files) => {
+        const known = new Set(this.chosenFiles().map((f) => f.name + '|' + f.file.size));
+        files.filter((f) => !known.has(f.name + '|' + f.size)).forEach((f) => {
+          const row = { name: f.name, size: sizeText(f.size), file: f };
+          row.remove = () => this.chosenFiles.remove(row);
+          this.chosenFiles.push(row);
+        });
+      };
+      this.pickFiles = (event) => { choose(Array.from(event.target.files || [])); event.target.value = ''; };
+      this.dropOver = ko.observable(false);
+      this.dragOver = (event) => { event.preventDefault(); this.dropOver(true); return false; };
+      this.dragLeave = () => { this.dropOver(false); return true; };
+      this.dropFiles = (event) => { event.preventDefault(); this.dropOver(false); choose(Array.from((event.dataTransfer && event.dataTransfer.files) || [])); return false; };
+      this.addLabel = ko.pureComputed(() => {
+        const n = this.chosenFiles().length;
+        return n ? 'Add ' + plural(n, 'document') : 'Add documents';
+      });
+      this.addChosen = () => {
+        const files = this.chosenFiles().map((f) => f.file);
         if (!files.length) { return; }
         this.importBusy(true);
         files.reduce((p, f) => p.then(() => {
@@ -297,7 +405,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           if (this.importPatchset()) { form.append('patchset', this.importPatchset()); }
           if (this.forBank() && this.workspaceId()) { form.append('workspaceId', this.workspaceId()); }
           return api.upload('knowledge/documents', form).then(reportImport);
-        }), Promise.resolve()).catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
+        }), Promise.resolve()).then(() => { this.chosenFiles([]); this.addOpen(false); })
+          .catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));
       };
       this.checkFolder = (f) => {
         f.busy(true);
@@ -309,7 +418,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         .then((ok) => (ok ? api.del('knowledge/folders/' + f.id).then(() => { toast.success('No longer watching ' + f.folder); return this.load(); }) : null))
         .catch((e) => toast.error(ui.errorText(e)));
       this.chooseFiles = () => { const input = document.getElementById('libraryUpload'); if (input) { input.click(); } };
-      this.embedAgain = (d) => api.post('knowledge/documents/' + d.id + '/embed').then(() => { toast.info('Embedding again: ' + d.title); return this.load(); }).catch((e) => toast.error(ui.errorText(e)));
+      this.embedAgain = (d) => api.post('knowledge/documents/' + d.id + '/embed').then(() => { toast.info('Embedding again: ' + d.title); return this.load().then(poll); }).catch((e) => toast.error(ui.errorText(e)));
       this.removeDocument = (d) => dialog.confirm({ title: 'Remove "' + d.title + '"?', message: 'Its sections leave the knowledge base. Notes stay.', confirmLabel: 'Remove', danger: true })
         .then((ok) => (ok ? api.del('knowledge/documents/' + d.id).then(() => { toast.success('Removed ' + d.title); return this.load(); }) : null))
         .catch((e) => toast.error(ui.errorText(e)));
@@ -318,20 +427,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.question = ko.observable('');
       this.asking = ko.observable(false);
       this.answer = ko.observable(null);
+      // The question the panel shows while it is answered and after
+      this.askedQuestion = ko.observable('');
+      this.answeredAt = ko.observable(0);
+      const now = ko.observable(Date.now());
+      let clock = null;
       // The answer as the model writes it; the sources come first, from the search
       this.answerText = ko.observable('');
       this.thinking = ko.observable('');
       this.rated = ko.observable(null);
-      // How much detail the answer has
+      // How much detail the answer has: a menu in the composer
       this.styleOptions = STYLES;
       this.style = ko.observable('DETAILED');
+      this.styleLabel = ko.pureComputed(() => (STYLES.find((s) => s.value === this.style()) || STYLES[1]).label);
+      this.styleItems = ko.pureComputed(() => STYLES.map((s) => ({ value: s.value, label: s.label, description: s.description, checked: s.value === this.style() })));
+      this.onStyle = (event) => this.style(event.detail.value);
       // The OBDX version the answer is for: the workspace's, or a version line the library has documents for
       this.askVersion = ko.observable('');
+      const wsLine = () => { const v = workspaceSelection.selectedVersion(); return v ? String(v).split('.')[0] : ''; };
       this.askVersionOptions = ko.pureComputed(() => {
-        const ws = workspaceSelection.selectedVersion();
         const lines = Array.from(new Set(this.documents().filter((d) => !d.older).map((d) => d.versionLine).filter(Boolean))).sort().reverse();
-        return [{ value: '', label: ws ? 'The workspace\'s OBDX ' + ws : 'The workspace\'s OBDX version' }].concat(lines.map((l) => ({ value: l, label: 'OBDX ' + l + '.x' })));
+        return [{ value: '', label: (wsLine() ? 'OBDX ' + wsLine() + '.x' : 'The workspace\'s OBDX version') + ' · ' + this.workspaceName() }]
+          .concat(lines.filter((l) => l !== wsLine()).map((l) => ({ value: l, label: 'OBDX ' + l + '.x' })));
       });
+      this.scopeText = ko.pureComputed(() => (this.askVersion() ? 'OBDX ' + this.askVersion() + '.x' : (wsLine() ? 'OBDX ' + wsLine() + '.x' : 'the workspace\'s OBDX version') + ' · ' + this.workspaceName()));
       // An answer without sources is folded away until asked for
       this.showUngrounded = ko.observable(false);
       this.toggleUngrounded = () => this.showUngrounded(!this.showUngrounded());
@@ -360,6 +479,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           : a.quality && a.quality.status === 'INSUFFICIENT_EVIDENCE' ? 'The indexed documents do not hold enough to answer this fully. Parts the sources do not support are not facts.'
             : this.answerText().trim() ? 'The answer cites none of the sources found, so it is not supported by the documents.'
               : 'The model wrote no answer from the sources found.';
+      });
+      // The line under the question: what the answer stands on, its length, its version and when
+      this.answerMeta = ko.pureComputed(() => {
+        const a = this.answer();
+        if (!a || this.asking()) {
+          return { show: !!a, css: 'fx-badge fx-badge--plain fx-badge--primary', icon: 'factory-nav-icon factory-ico-sparkle', chip: 'Writing the answer', detail: this.styleLabel() };
+        }
+        const n = this.citedRows().length;
+        const grounded = a.grounded && n > 0;
+        const minutes = Math.floor((now() - this.answeredAt()) / 60000);
+        const ago = minutes < 1 ? 'just now' : minutes === 1 ? 'a minute ago' : minutes < 60 ? minutes + ' minutes ago' : when(new Date(this.answeredAt()).toISOString());
+        return {
+          show: true,
+          css: 'fx-badge fx-badge--plain ' + (grounded ? (a.quality && a.quality.status === 'PARTIALLY_VERIFIED' ? 'fx-badge--warning' : 'fx-badge--success') : 'fx-badge--warning'),
+          icon: 'factory-nav-icon ' + (grounded ? 'factory-ico-check' : 'factory-ico-alert'),
+          chip: grounded ? 'Grounded in ' + plural(n, 'source') : 'Not grounded in the documents',
+          detail: [(STYLES.find((s) => s.value === a.style) || {}).label || '', a.versionLine ? 'OBDX ' + a.versionLine + '.x' : '', ago]
+            .filter(Boolean).join(' · ')
+        };
       });
 
       // Improve My Question: the question rewritten precisely (or what to clarify), to edit and approve before asking
@@ -398,11 +536,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.turns = ko.observableArray([]);
       this.followingUp = ko.pureComputed(() => this.turns().length > 0);
       this.lastQuestion = ko.pureComputed(() => (this.turns().length ? this.turns()[this.turns().length - 1].question : ''));
-      this.newConversation = () => { this.turns([]); this.answer(null); this.answerText(''); this.question(''); };
+      this.newConversation = () => { this.turns([]); this.answer(null); this.answerText(''); this.question(''); this.askedQuestion(''); focusLater('libraryQuestion'); };
       this.examples = ['How do I add a field to an existing OBDX transaction screen?', 'How is a fund transfer sent to the host?',
         'Where are UI components extended without changing the product code?', 'What does the Extensibility API toolkit provide?'];
       this.exampleRows = this.examples.map((text) => ({ text: text, ask: () => { this.question(text); this.ask(); } }));
-      this.setImportForBank = (event) => this.importForBank(!!event.target.checked);
       this.setNewForBank = (event) => this.newForBank(!!event.target.checked);
       this.ask = () => this.askWith({});
       // The last question again (with the detail now chosen), in place of its answer
@@ -419,16 +556,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const q = (this.question() || '').trim();
         if (!q || this.asking()) { return; }
         const improved = opts.improved || null;
+        const style = this.style();
         this.improvement(null);
         this.asking(true);
         this.rated(null);
         this.answer(null);
         this.answerText('');
+        this.askedQuestion(q);
         this.showUngrounded(false);
         this.thinking('Searching the manuals and notes…');
         const shown = (a) => Object.assign({}, a, {
           question: q,
           improved: improved,
+          style: style,
           quality: a.report ? {
             css: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[0],
             label: (QUALITY[a.report.quality.status] || QUALITY.PARTIALLY_VERIFIED)[1],
@@ -439,12 +579,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             corrected: a.report.corrected,
             details: (a.report.quality.findings || []).length > 0
           } : null,
-          meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' + (a.versionLine ? ' · OBDX ' + a.versionLine + '.x' : '') : '',
+          meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' : '',
           sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
             url: safeUrl(s.url), oracleUrl: safeUrl(s.oracleUrl),
             label: '[' + s.n + ']', kindText: KIND(s),
             version: s.kind === 'NOTE' ? '' : 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : ''),
             section: s.heading || '', pagesText: pages(s),
+            metaText: [KIND(s), s.kind === 'NOTE' ? '' : s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : ''), s.heading || '', pages(s)].filter(Boolean).join(' · '),
             previewLabel: s.pageFrom ? 'Open at page ' + s.pageFrom : 'Open the document',
             where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
               : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
@@ -458,7 +599,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         let diagnostics = null;
         let failed = null;
         const history = this.turns().slice(-3);
-        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history, style: this.style(), improved: improved,
+        api.stream('knowledge/ask/stream', { question: q, workspaceId: this.workspaceId() || null, history: history, style: style, improved: improved,
           version: this.askVersion() || null }, (event) => {
           if (event.type === 'status') {
             this.thinking(event.text);
@@ -474,6 +615,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           } else if (event.type === 'done') {
             this.answer(shown(Object.assign({}, event.answer, { diagnostics: diagnostics })));
             this.answerText(event.answer.answer);
+            this.answeredAt(Date.now());
+            now(Date.now());
             this.turns.push({ question: q, answer: event.answer.answer, improved: improved });
             this.question('');
           } else if (event.type === 'error') {
@@ -483,11 +626,63 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .then(() => {
             if (failed) {
               toast.error('Not answered: ' + ui.errorText(failed));
-              if (!this.answerText()) { this.answer(null); }
+              if (!this.answerText()) { this.answer(null); this.question(q); }
             }
           })
-          .catch((e) => { this.answer(null); toast.error('Not answered: ' + ui.errorText(e)); })
+          .catch((e) => { this.answer(null); this.question(q); toast.error('Not answered: ' + ui.errorText(e)); })
           .finally(() => this.asking(false));
+      };
+      // Enter asks, Shift+Enter is a new line; Ctrl+Shift+E opens the expanded editor
+      this.composerKey = (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && !event.isComposing
+          && event.target && event.target.tagName === 'TEXTAREA') {
+          event.preventDefault();
+          this.ask();
+          return false;
+        }
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'E' || event.key === 'e')) {
+          event.preventDefault();
+          this.openEditor();
+          return false;
+        }
+        return true;
+      };
+      // The expanded question editor: a modal over the page; focus stays in it, Escape closes it, Ctrl+Enter asks
+      this.expanded = ko.observable(false);
+      let editorOpener = null;
+      this.openEditor = () => {
+        editorOpener = document.activeElement && document.activeElement.id !== 'libraryQuestion' ? document.activeElement : document.getElementById('libraryExpand');
+        this.expanded(true);
+        window.setTimeout(() => {
+          const area = document.querySelector('#libraryQuestionLarge textarea');
+          if (area) { area.focus(); area.setSelectionRange(area.value.length, area.value.length); }
+        }, 0);
+      };
+      this.closeEditor = () => {
+        this.expanded(false);
+        window.setTimeout(() => {
+          const back = editorOpener && document.body.contains(editorOpener) ? editorOpener : document.getElementById('libraryExpand');
+          if (back) { back.focus(); }
+        }, 0);
+      };
+      this.editorBackdrop = (event) => { if (event.target === event.currentTarget) { this.closeEditor(); } return true; };
+      this.askFromEditor = () => { if (!(this.question() || '').trim()) { return; } this.closeEditor(); this.ask(); };
+      this.improveFromEditor = () => { this.closeEditor(); this.improve(); };
+      this.editorKey = (event) => {
+        if (event.defaultPrevented) { return true; }
+        if (event.key === 'Escape') { event.preventDefault(); this.closeEditor(); return false; }
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); this.askFromEditor(); return false; }
+        if (event.key === 'Tab') {
+          const box = document.getElementById('libraryEditor');
+          const items = box ? Array.from(box.querySelectorAll('button, textarea, a[href], input, [tabindex="0"]')).filter((x) => !x.disabled && x.offsetParent !== null && !x.closest('.fx-menu')) : [];
+          if (items.length) {
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); return false; }
+            if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); return false; }
+          }
+        }
+        return true;
       };
       this.rate = (helpful) => () => {
         const a = this.answer();
@@ -504,54 +699,153 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
 
       // --- notes ---
-      this.noteFilter = ko.observable('');
-      // CHECK: notes whose cited sections changed in a newer revision of the document
-      this.noteFilters = [['', 'All'], ['CHECK', 'To check after updates'], ['SUGGESTED', 'Suggested'], ['TRUSTED', 'Approved'], ['REJECTED', 'Rejected']].map(([value, label]) => ({
-        value: value, label: label, pick: () => this.noteFilter(value),
-        css: ko.pureComputed(() => (this.noteFilter() === value ? 'fx-chip is-selected' : 'fx-chip')),
-        pressed: ko.pureComputed(() => (this.noteFilter() === value ? 'true' : 'false'))
-      }));
+      // The queue opens on To review: suggested notes, those to check after a manual changed first
+      this.noteFilter = ko.observable('SUGGESTED');
       this.notesRaw = ko.observableArray([]);
-      this.notes = ko.pureComputed(() => this.notesRaw().filter((n) => this.noteFilter() !== 'CHECK' || (n.needsReview && n.status !== 'REJECTED')).map((n) => {
-        const st = NOTE_STATUS[n.status] || [n.status, n.status];
-        const s = ui.status(st[0], st[1]);
-        let sources = [];
-        try { sources = JSON.parse(n.sources || '[]'); } catch (e) { sources = []; }
-        return Object.assign({}, n, {
-          statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, origin: ORIGIN[n.origin] || n.origin,
-          scope: (n.workspaceId ? 'This bank' : 'All banks') + (n.versionLine ? ' · OBDX ' + n.versionLine + '.x' : ' · every version'),
-          when: when(n.updatedAt), by: n.createdBy, sourceRows: sources.map((x, i) => ({ text: '[' + (i + 1) + '] ' + x.title + (x.heading ? ' · ' + x.heading : '') + (x.pageFrom ? ' · ' + pages(x) : ''), url: safeUrl(x.url) })),
-          canReview: n.workspaceId ? session.can(n.workspaceId, 'APPROVE') : session.isAdmin(),
-          isSuggested: n.status === 'SUGGESTED', isTrusted: n.status === 'TRUSTED',
-          approve: this.review(n, 'TRUSTED'), reject: this.review(n, 'REJECTED'), unreview: this.review(n, 'SUGGESTED'), remove: this.removeNote(n)
+      this.noteSearch = ko.observable('');
+      this.noteSearchInput = ui.value(this.noteSearch);
+      const NOTE_FILTERS = [['SUGGESTED', 'To review'], ['TRUSTED', 'Approved'], ['REJECTED', 'Rejected'], ['', 'All']];
+      this.noteFilterOptions = ko.pureComputed(() => NOTE_FILTERS.map(([value, label]) => ({
+        value: value, label: label + ' ' + this.notesRaw().filter((n) => !value || n.status === value).length
+      })));
+      this.noteFilters = this.noteFilterOptions;
+      this.openNote = ko.observable(null);
+      this.groupMore = ko.observable({});
+      // Files a delivered change touched, and what it did, from the note the factory wrote
+      const filesOf = (body) => {
+        const m = /\n\nFiles it changed:\n([\s\S]*)$/.exec(body || '');
+        return m ? m[1].split('\n').map((l) => l.replace(/^- /, '').trim()).filter(Boolean) : [];
+      };
+      const textOf = (body) => (body || '').replace(/\n\nFiles it changed:\n[\s\S]*$/, '');
+      const summaryOf = (n) => {
+        const did = /What it did: ([^\n]+)/.exec(n.body || '');
+        const first = (did ? did[1] : textOf(n.body).split('\n').find((l) => l.trim()) || '').trim();
+        return first.length > 160 ? first.slice(0, 157) + '…' : first;
+      };
+      this.notes = ko.pureComputed(() => {
+        const text = this.noteSearch().trim().toLowerCase();
+        return this.notesRaw().filter((n) => (!this.noteFilter() || n.status === this.noteFilter())
+          && (!text || ((n.title || '') + ' ' + (n.body || '') + ' ' + (n.topic || '')).toLowerCase().indexOf(text) >= 0)).map((n) => {
+          const st = NOTE_STATUS[n.status] || [n.status, n.status];
+          const s = ui.status(st[0], st[1]);
+          let sources = [];
+          try { sources = JSON.parse(n.sources || '[]'); } catch (e) { sources = []; }
+          const files = filesOf(n.body);
+          const check = !!n.needsReview && n.status !== 'REJECTED';
+          const canReview = n.workspaceId ? session.can(n.workspaceId, 'APPROVE') : session.isAdmin();
+          const scope = (n.workspaceId ? 'Only for ' + this.workspaceName() : 'All banks') + (n.versionLine ? ' · OBDX ' + n.versionLine + '.x' : ' · every version');
+          const chips = [];
+          if (check) { chips.push({ css: 'fx-badge fx-badge--plain fx-badge--warning', text: 'Source changed' }); }
+          if (files.length) { chips.push({ css: 'fx-badge fx-badge--plain fx-badge--neutral', text: plural(files.length, 'file') }); }
+          if (n.status !== 'SUGGESTED') { chips.push({ css: s.css, text: s.text }); }
+          const more = [];
+          if (n.status !== 'SUGGESTED') { more.push({ value: 'unreview', label: 'Back to suggested', icon: 'refresh' }); }
+          more.push({ value: 'delete', label: 'Delete', icon: 'trash', danger: true });
+          const row = Object.assign({}, n, {
+            statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, origin: ORIGIN[n.origin] || n.origin,
+            scope: scope, check: check, files: files, text: textOf(n.body), chips: chips,
+            line: [summaryOf(n), (n.createdBy && n.origin === 'USER' ? 'Written by ' + n.createdBy : ''), scope, day(n.updatedAt)].filter(Boolean).join(' · '),
+            when: when(n.updatedAt), by: n.createdBy, sourceRows: sources.map((x, i) => ({ text: '[' + (i + 1) + '] ' + x.title + (x.heading ? ' · ' + x.heading : '') + (x.pageFrom ? ' · ' + pages(x) : ''), url: safeUrl(x.url) })),
+            canReview: canReview,
+            isSuggested: n.status === 'SUGGESTED', isTrusted: n.status === 'TRUSTED',
+            open: ko.pureComputed(() => this.openNote() === n.id),
+            approve: this.review(n, 'TRUSTED'), reject: this.review(n, 'REJECTED'), unreview: this.review(n, 'SUGGESTED'), remove: this.removeNote(n),
+            approveNext: () => this.approveAndNext(n),
+            edit: () => this.editNote(n),
+            toggle: () => this.toggleNote(n.id),
+            menu: [{ value: 'edit', label: 'Edit', icon: 'edit' }].concat(more),
+            openMenu: more
+          });
+          row.css = ko.pureComputed(() => 'factory-lb-note' + (row.open() ? ' is-open' : ''));
+          row.act = (event) => {
+            const v = event.detail.value;
+            if (v === 'edit') { row.edit(); } else if (v === 'unreview') { row.unreview(); } else if (v === 'delete') { row.remove(); }
+          };
+          return row;
         });
-      }));
-      this.loadNotes = () => api.get('knowledge/notes' + (this.noteFilter() && this.noteFilter() !== 'CHECK' ? '?status=' + this.noteFilter() : '')).then((list) => this.notesRaw(list))
+      });
+      // One column: the notes to check after a manual changed first, then the rest by origin
+      const GROUP_SIZE = 8;
+      this.noteGroups = ko.pureComputed(() => {
+        const list = this.notes();
+        const groups = [];
+        const add = (key, title, rows, css) => {
+          if (!rows.length) { return; }
+          const all = !!this.groupMore()[key];
+          const shown = all ? rows : rows.slice(0, GROUP_SIZE);
+          // The open note is always shown, even past the first rows
+          const open = rows.find((r) => r.id === this.openNote());
+          if (open && shown.indexOf(open) < 0) { shown.push(open); }
+          groups.push({ key: key, title: title, count: rows.length, rows: shown, hidden: rows.length - shown.length, css: css,
+            more: () => this.groupMore(Object.assign({}, this.groupMore(), { [key]: true })) });
+        };
+        add('check', 'Check after a manual changed', list.filter((n) => n.check), 'factory-lb-group is-check');
+        ['AGENT', 'SUMMARY', 'USER'].forEach((o) => add(o.toLowerCase(), ORIGIN_GROUP[o], list.filter((n) => !n.check && n.origin === ORIGIN[o]), 'factory-lb-group'));
+        add('other', 'Other notes', list.filter((n) => !n.check && Object.keys(ORIGIN).every((o) => ORIGIN[o] !== n.origin)), 'factory-lb-group');
+        return groups;
+      });
+      // The queue in reading order, for Approve and next
+      const queue = () => this.noteGroups().reduce((all, g) => all.concat(g.rows.map((r) => r.id)), []);
+      this.noteEmpty = ko.pureComputed(() => (this.noteSearch().trim() ? { title: 'No notes match', text: 'Change the search or show all notes.' }
+        : this.noteFilter() === 'SUGGESTED' && this.notesRaw().length ? { title: 'Nothing to review', text: 'Every note is approved or rejected. New suggestions appear here.' }
+          : { title: 'No notes here yet', text: 'Save a good answer, write what you know, draft one from the manuals, or deliver a change: each becomes a suggested note.' }));
+      this.toggleNote = (id) => this.openNote(this.openNote() === id ? null : id);
+      this.loadNotes = () => api.get('knowledge/notes').then((list) => this.notesRaw(list))
         .catch((e) => toast.error('Could not load the notes: ' + ui.errorText(e)));
-      this.noteFilter.subscribe(() => this.loadNotes());
       this.review = (n, status) => () => api.post('knowledge/notes/' + n.id + '/review', { status: status })
-        .then(() => { toast.success(status === 'TRUSTED' ? 'Approved: code generation uses it now.' : status === 'REJECTED' ? 'Rejected.' : 'Back to suggested.'); this.loadNotes(); this.load(); })
+        .then(() => { toast.success(status === 'TRUSTED' ? 'Approved: code generation uses it now.' : status === 'REJECTED' ? 'Rejected.' : 'Back to suggested.'); this.load(); return this.loadNotes(); })
         .catch((e) => toast.error(ui.errorText(e)));
+      // Approves the open note and opens the next one in the queue
+      this.approveAndNext = (n) => {
+        const ids = queue();
+        const at = ids.indexOf(n.id);
+        const next = ids.slice(at + 1).concat(ids.slice(0, Math.max(0, at))).find((id) => id !== n.id) || null;
+        return api.post('knowledge/notes/' + n.id + '/review', { status: 'TRUSTED' })
+          .then(() => { toast.success('Approved: code generation uses it now.'); this.load(); return this.loadNotes(); })
+          .then(() => {
+            const still = next && this.notes().some((x) => x.id === next) ? next : null;
+            this.openNote(still);
+            if (still) {
+              window.setTimeout(() => {
+                const row = document.getElementById('lbNoteRow-' + still);
+                const b = row && row.querySelector('.factory-lb-noteopen');
+                if (b) { b.focus({ preventScroll: true }); row.scrollIntoView({ block: 'nearest' }); }
+              }, 0);
+            }
+          })
+          .catch((e) => toast.error(ui.errorText(e)));
+      };
       this.removeNote = (n) => () => dialog.confirm({ title: 'Delete the note "' + n.title + '"?', message: 'It leaves the knowledge base.', confirmLabel: 'Delete', danger: true })
         .then((ok) => (ok ? api.del('knowledge/notes/' + n.id).then(() => { this.loadNotes(); this.load(); }) : null)).catch((e) => toast.error(ui.errorText(e)));
 
+      // Write a note, or edit one: the same side sheet
       this.newOpen = ko.observable(false);
+      this.editingNote = ko.observable(null);
       this.newTitle = ko.observable('');
       this.newTopic = ko.observable('');
       this.newBody = ko.observable('');
       this.newForBank = ko.observable(false);
-      this.toggleNew = () => this.newOpen(!this.newOpen());
-      this.saveNew = () => api.post('knowledge/notes', { workspaceId: this.newForBank() ? this.workspaceId() : null, versionLine: null, topic: this.newTopic(), title: this.newTitle(), body: this.newBody(), sources: [] })
-        .then(() => { toast.success('Saved as a suggested note.'); this.newTitle(''); this.newTopic(''); this.newBody(''); this.newOpen(false); this.loadNotes(); this.load(); })
-        .catch((e) => toast.error(ui.errorText(e)));
+      this.openNewNote = () => { this.editingNote(null); this.newTitle(''); this.newTopic(''); this.newBody(''); this.newOpen(true); };
+      this.toggleNew = () => (this.newOpen() ? this.closeNewNote() : this.openNewNote());
+      this.closeNewNote = () => this.newOpen(false);
+      this.editNote = (n) => { this.editingNote(n); this.newTitle(n.title || ''); this.newTopic(n.topic || ''); this.newBody(n.body || ''); this.newOpen(true); };
+      this.saveNew = () => {
+        const editing = this.editingNote();
+        const request = editing
+          ? api.put('knowledge/notes/' + editing.id, { workspaceId: editing.workspaceId, versionLine: editing.versionLine, topic: this.newTopic(), title: this.newTitle(), body: this.newBody(), sources: [] })
+          : api.post('knowledge/notes', { workspaceId: this.newForBank() ? this.workspaceId() : null, versionLine: null, topic: this.newTopic(), title: this.newTitle(), body: this.newBody(), sources: [] });
+        return request
+          .then(() => { toast.success(editing ? 'Saved the note.' : 'Saved as a suggested note.'); this.newTitle(''); this.newTopic(''); this.newBody(''); this.newOpen(false); this.loadNotes(); this.load(); })
+          .catch((e) => toast.error(ui.errorText(e)));
+      };
 
       this.summaryTopic = ko.observable('');
       this.summarising = ko.observable(false);
       this.summarise = () => {
-        if (!(this.summaryTopic() || '').trim()) { return; }
+        if (!(this.summaryTopic() || '').trim() || this.summarising()) { return; }
         this.summarising(true);
         api.post('knowledge/summaries', { topic: this.summaryTopic(), workspaceId: this.workspaceId() || null })
-          .then(() => { toast.success('Drafted a note from the manuals. Review it below.'); this.summaryTopic(''); this.noteFilter('SUGGESTED'); this.loadNotes(); this.load(); })
+          .then((n) => { toast.success('Drafted a note from the manuals. Review it below.'); this.summaryTopic(''); this.noteFilter('SUGGESTED'); if (n && n.id) { this.openNote(n.id); } this.loadNotes(); this.load(); })
           .catch((e) => toast.error(ui.errorText(e))).finally(() => this.summarising(false));
       };
 
@@ -559,10 +853,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         accUtils.announce('OBDX Library page loaded.');
         document.title = 'OBDX Library';
         this.load();
-        this.loadOracle().then(() => { if (this.tab() === 'documents') { this.loadOracleVersions(); } });
+        this.loadOracle();
+        this.loadNotes();
         poll();
+        clock = window.setInterval(() => now(Date.now()), 30000);
       };
-      this.disconnected = () => window.clearTimeout(timer);
+      this.disconnected = () => { window.clearTimeout(timer); window.clearInterval(clock); };
     }
 
     return LibraryViewModel;

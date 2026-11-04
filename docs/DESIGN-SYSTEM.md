@@ -150,7 +150,7 @@ exception: it renders the bank's OBDX screens, which are built with JET, so it k
 | `fx-date` | a date (`yyyy-mm-dd`) with a calendar | `value`, `min`, `max`, `label`; typing a date also works; arrow keys move in the calendar |
 | `fx-time` | a time (`hh:mm`; keeps JET's `Thh:mm:ss` if that is what it was given) | `value`, `label` |
 | `fx-switch` | on / off | `value` (boolean), `label` or `aria-label`, `disabled` |
-| `fx-menu-button` | a button with a menu of actions | `label`, `icon`, `icon-only`, `variant`, `size`, `align`, `items` (`[{value, label, icon?, disabled?, danger?, separator?, title?}]`); event `fxAction` (`on-fx-action`, `event.detail.value`) |
+| `fx-menu-button` | a button with a menu of actions | `label`, `icon`, `icon-only`, `variant`, `size`, `align`, `items` (`[{value, label, icon?, description?, checked?, disabled?, danger?, separator?, title?}]`; an item with `checked` is a choice, shown with a tick), `heading`; event `fxAction` (`on-fx-action`, `event.detail.value`) |
 
 Buttons are plain `<button class="fx-btn fx-btn--primary|secondary|tertiary|ghost|link|danger|success">`; form layouts
 are `<div class="fx-form fx-form--2">`; file pickers are a native file input with a button label; tables are `fx-table`.

@@ -333,15 +333,47 @@ Limitations: the preview uses this factory's JET version and the Redwood theme, 
 
 The **OBDX Library** page (Workflow menu) holds Oracle's OBDX manuals per version, a bank's own documents for one
 workspace, and knowledge notes. Code generation, impact analysis, requirement drafting and the AI Assistant panels use it.
-It is about documents, not the bank's code (Code and Knowledge Explorer search that). A status line gives how many documents are
-indexed, when the last one was, and the failed, running, not fully searchable and older ones and the notes to check, each
-opening the Documents tab filtered to them. Documents filter by title, OBDX version, type (Oracle manual, bank document, patchset)
-and source (Oracle's site, a watched folder, an upload), and show when each was last indexed and why a failed one failed. **Ask**
-keeps Improve My Question and the answer detail and adds the OBDX version to answer for (the workspace's by default). An answer lists
-the sources it cites (title, kind, OBDX version and patchset, section, pages) with **Open at page N** (the factory's copy) and Oracle's
-page when known, and folds the sources searched but not cited. When the documents hold nothing on the question, an answer cites none
-of them, or the check finds the evidence insufficient, the page says so first; an answer with no sources at all stays folded until
-asked for.
+It is about documents, not the bank's code (Code and Knowledge Explorer search that).
+
+The page, top to bottom:
+- **Header**: Analyze, OBDX Library, one line on what it holds, and **Add documents** (a side sheet). The error and
+  privacy alerts follow it.
+- **One problem bar**, only when there is a problem: "Keywords only" when documents are not embedded (the embedding
+  model is not reachable, or outside the bank), with **Check the model** (the Models page) and, for administrators,
+  **Embed all**; while embedding runs it shows the percentage instead. A message every row shares is said once here, not
+  in each row; a failed document keeps its own message on its row.
+- **Tabs**: Ask | Documents (count) | Notes ("N to review"). Arrow keys, Home and End move between them. On Ask the tab
+  line ends with **Search in** (the workspace's OBDX version line, or another the library has documents for).
+- **Ask**: a conversation panel beside a 360 px Sources rail (under the answer below 1280 px). The panel shows the
+  question as its heading, "Grounded in N sources · check · length · version · when", **New conversation**, the answer
+  (Markdown with citations), the not-enough-evidence warning and the model's general answer folded away, the check's
+  label, reason and findings, limitations, the administrators' "How the sources were found", and a feedback row
+  (thumbs up or down, Copy, Regenerate, Save as a note). The composer is pinned to the panel's bottom: Enter asks,
+  Shift+Enter is a new line; the answer-length menu (Short, Detailed, Deep dive: the `CONCISE`, `DETAILED` and
+  `DEEP_DIVE` styles), **Improve my question** (its result shows above the composer) and **Ask**; Expand (Ctrl+Shift+E)
+  opens a larger editor as a modal (Ctrl+Enter asks, Escape closes). The rail lists each cited source (title, kind,
+  version, section, pages, Preview at the page, Oracle's page when known, what it says) and folds "Searched and not
+  used". Before a first question the panel shows examples to try.
+- **Documents**: a Sources strip (each Oracle version followed and watched folder, with Check now and a menu with Stop
+  following or Stop watching, plus Add a source), then one toolbar (title, version, type, source, state, Older
+  revisions, count) and one table grouped by OBDX version: Document, Source, Status (Ready, Ready · keywords only,
+  Embedding · n%, Failed with its reason), Pages, Sections, Indexed, and a row menu (Embed again, Show older revisions,
+  Remove…; administrators or the workspace's managers). Long lists show 25 rows at a time (Show more).
+- **Add documents** (side sheet): Upload files (drop zone and the chosen files), Watch a folder (administrators, when
+  folder import is on) or Oracle's site (administrators), the OBDX version and patchset, and for administrators whose
+  documents they are (Oracle's, or the bank's own for the workspace).
+- **Notes**: To review, Approved, Rejected or All (with counts), search, **Draft from the manuals** (a topic, then a
+  suggested note) and **Write a note** (a side sheet, also used to edit). One column: "Check after a manual changed"
+  first, then the notes by origin. A row shows the title, a one-line summary, scope and date, a chip (Source changed,
+  N files, Approved, Rejected) and Approve, Reject and a menu (Edit, Back to suggested, Delete) for reviewers. Opening a
+  note expands it in place, one at a time: why to check it, the note, the files a delivered change touched and its
+  sources, with Edit, Reject and **Approve and next** (approves it and opens the next in the queue).
+
+Documents filter by title, OBDX version, type (Oracle manual, bank document, patchset) and source (Oracle's site, a watched
+folder, an upload). When the documents hold nothing on the question, an answer cites none of them, or the check finds the
+evidence insufficient, the page says so first; an answer with no sources at all stays folded until asked for.
+`scripts/check-library.js` checks the page (header, problem bar, tabs, composer, menu and editor, sources, the Documents
+strip, table, menus and sheet, the Notes queue, widths from 390 to 1440 px).
 
 - **Import**: an administrator imports Oracle's manuals of a version from a folder on the factory's computer (needs
   `factory.local-folders.enabled`; folder import and **Check now** are for administrators only, and the factory's own
@@ -365,7 +397,7 @@ asked for.
 - **Keeping it current**: Oracle republishes manuals for patchsets and fixes, and banks update their own documents. A
   file already imported (same content) is skipped. A changed file with the name of one already imported for that
   version and owner is a **newer revision**: the older one answers until the newer one is ready, then it is kept as
-  history (Show older revisions) without its sections. Notes citing it move to the newer revision; a note whose cited
+  history (Older revisions on the Documents tab) without its sections. Notes citing it move to the newer revision; a note whose cited
   section changed or is gone gets a "to check after updates" reason, and an approved one goes back to suggested, so code
   generation does not follow outdated guidance until someone approves it again. Every imported folder is **watched**:
   checked again every `factory.knowledge.folder-check-interval` (default 6 hours, `FACTORY_KNOWLEDGE_FOLDER_CHECK_INTERVAL`)
@@ -438,12 +470,12 @@ asked for.
   question and those headings do not have, and says more than the question; otherwise the factory improves it
   without the model. A one- or two-word question whose sections fall in three or more chapters asks which is meant.
   The user edits the improved question and asks it (`improved` on the ask request), or cancels; their own question
-  stays. Answers come **Concise**, **Detailed** (default) or **Technical deep dive** (`style`), laid out for the kind of
+  stays. Answers come concise, detailed (default) or as a technical deep dive (`style`; Short, Detailed and Deep dive on the Library page), laid out for the kind of
   question (procedure, configuration, troubleshooting, comparison, API, architecture ...), in Markdown, which the page
   renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, and each citation as
   a link named after the section it cites ("User Management - Search and View, p. 79"; the whole reference on hover)
   that opens the manual at the page, the factory's copy or Oracle's; a note opens in the list of all sources, folded
-  under the answer. Copy answer writes each citation out in full. Before it is shown, every answer is checked against its sources without a model: citations
+  under the answer. Copy writes each citation out in full. Before it is shown, every answer is checked against its sources without a model: citations
   to sources that do not exist are removed ("[1, 3]" becomes [1][3]), identifiers, menu paths and code examples the
   sources do not have are marked, sentences about other vendors' products go, OBDX versions other than the
   workspace's are noted, each statement is compared with the words of the source it cites, statements and steps
@@ -456,8 +488,8 @@ asked for.
   `report` carries its kind, detail, summary, sections, code, tables, cited sources, limitations and the check. The
   checks find unsupported details; they cannot prove an answer right, and a statement that uses the sources' words
   for a wrong conclusion passes them.
-- **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Summarise a
-  topic**), or suggested by the factory after a change is delivered (what changed, which files). They start as
+- **Notes** are the knowledge that improves over time: written by users, drafted from the manuals (**Draft from the
+  manuals**), or suggested by the factory after a change is delivered (what changed, which files). They start as
   *suggested*; an administrator (shared notes) or an Approver of the workspace (its own notes) approves or rejects them.
   A note's source links are kept only when they go to a web page (http, https) or one of the factory's documents
   (`api/knowledge/documents/...`), and the page shows only such links, so a stored `javascript:` link cannot run.

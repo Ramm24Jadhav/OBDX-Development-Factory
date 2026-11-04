@@ -509,7 +509,7 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
   });
 
   /* ---------- fx-menu-button: a button with a menu of actions ---------- */
-  // items: [{value, label, icon?, disabled?, danger?, separator?, title?, id?}]; fires fxAction with detail {value}; button-id names the toggle
+  // items: [{value, label, icon?, description?, checked?, disabled?, danger?, separator?, title?, id?}] (checked makes a choice); fires fxAction with detail {value}; button-id names the toggle
   class MenuButtonModel {
     constructor(context) {
       this.props = context.properties;
@@ -521,13 +521,15 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
       this.iconCss = ko.pureComputed(() => 'factory-nav-icon factory-ico-' + this.props.icon);
       this.rows = ko.pureComputed(() => (this.props.items || []).map((it) => ({
         separator: !!it.separator, label: it.label, value: it.value, disabled: !!it.disabled, title: it.title || null, itemId: it.id || null,
-        css: it.danger ? 'fx-menu-danger' : '',
+        css: (it.danger ? 'fx-menu-danger' : '') + (it.description ? ' fx-menu-rich' : ''), description: it.description || '',
+        // An item with checked (true or false) is one of a choice: a menuitemradio with a tick on the current one
+        role: it.checked === undefined ? 'menuitem' : 'menuitemradio', checked: it.checked === undefined ? null : (it.checked ? 'true' : 'false'),
         iconCss: it.icon ? 'factory-nav-icon factory-ico-' + it.icon : '',
         run: () => this.choose(it)
       })));
       this.toggle = () => (this.open() ? this.close(true) : this.show());
       this.onKey = (event) => {
-        const items = Array.from(this.element.querySelectorAll('.fx-menu [role="menuitem"]:not([disabled])'));
+        const items = Array.from(this.element.querySelectorAll('.fx-menu [role^="menuitem"]:not([disabled])'));
         const at = items.indexOf(document.activeElement);
         if (event.key === 'ArrowDown') { event.preventDefault(); if (!this.open()) { this.show(); } else if (items.length) { items[(at + 1) % items.length].focus(); } }
         else if (event.key === 'ArrowUp') { event.preventDefault(); if (items.length) { items[(at - 1 + items.length) % items.length].focus(); } }
@@ -546,7 +548,7 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
       window.setTimeout(() => {
         const pop = this.element.querySelector('.fx-menu');
         if (pop) { place(pop, this.element.querySelector('.fx-menu-toggle'), this.props.align || 'end'); }
-        const first = this.element.querySelector('.fx-menu [role="menuitem"]:not([disabled])');
+        const first = this.element.querySelector('.fx-menu [aria-checked="true"]:not([disabled])') || this.element.querySelector('.fx-menu [role^="menuitem"]:not([disabled])');
         if (first) { first.focus({ preventScroll: true }); }
       }, 0);
     }
@@ -565,11 +567,15 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
       + ' :aria-label="[[$properties.iconOnly ? $properties.label : null]]" :title="[[$properties.iconOnly ? $properties.label : null]]" :disabled="[[$properties.disabled]]" on-click="[[toggle]]" on-keydown="[[onKey]]">'
       + '<oj-bind-if test="[[$properties.icon]]"><span :class="[[iconCss]]" aria-hidden="true"></span></oj-bind-if>'
       + '<oj-bind-if test="[[!$properties.iconOnly]]"><span><oj-bind-text value="[[$properties.label]]"></oj-bind-text></span><span class="fx-caret" aria-hidden="true"></span></oj-bind-if></button>'
-      + '<oj-bind-if test="[[open()]]"><div class="fx-menu fx-menu--fixed" role="menu" :id="[[id + \'-menu\']]" :aria-labelledby="[[id]]" on-keydown="[[onKey]]">'
+      + '<oj-bind-if test="[[open()]]"><div class="fx-menu fx-menu--fixed" role="menu" :id="[[id + \'-menu\']]" :aria-label="[[$properties.heading || null]]" :aria-labelledby="[[$properties.heading ? null : id]]" on-keydown="[[onKey]]">'
+      + '<oj-bind-if test="[[$properties.heading]]"><span class="fx-menu-heading" aria-hidden="true"><oj-bind-text value="[[$properties.heading]]"></oj-bind-text></span></oj-bind-if>'
       + '<oj-bind-for-each data="[[rows]]" as="m"><template>'
       + '<oj-bind-if test="[[m.data.separator]]"><div class="fx-menu-sep" role="separator"></div></oj-bind-if>'
-      + '<oj-bind-if test="[[!m.data.separator]]"><button type="button" role="menuitem" tabindex="-1" :id="[[m.data.itemId]]" :class="[[m.data.css]]" :disabled="[[m.data.disabled]]" :title="[[m.data.title]]" on-click="[[m.data.run]]">'
-      + '<oj-bind-if test="[[m.data.iconCss]]"><span :class="[[m.data.iconCss]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></oj-bind-if>'
+      + '<oj-bind-if test="[[!m.data.separator]]"><button type="button" :role="[[m.data.role]]" :aria-checked="[[m.data.checked]]" tabindex="-1" :id="[[m.data.itemId]]" :class="[[m.data.css]]" :disabled="[[m.data.disabled]]" :title="[[m.data.title]]" on-click="[[m.data.run]]">'
+      + '<oj-bind-if test="[[m.data.iconCss]]"><span :class="[[m.data.iconCss]]" aria-hidden="true"></span></oj-bind-if>'
+      + '<oj-bind-if test="[[!m.data.description]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></oj-bind-if>'
+      + '<oj-bind-if test="[[m.data.description]]"><span class="fx-menu-text"><strong><oj-bind-text value="[[m.data.label]]"></oj-bind-text></strong><span class="fx-menu-desc"><oj-bind-text value="[[m.data.description]]"></oj-bind-text></span></span></oj-bind-if>'
+      + '<oj-bind-if test="[[m.data.checked !== null]]"><span :class="[[m.data.checked === \'true\' ? \'fx-menu-tick is-on\' : \'fx-menu-tick\']]" aria-hidden="true"></span></oj-bind-if></button></oj-bind-if>'
       + '</template></oj-bind-for-each></div></oj-bind-if></span>',
     viewModel: MenuButtonModel,
     metadata: {
@@ -582,7 +588,8 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
         size: { type: 'string', value: '' },
         align: { type: 'string', value: 'end' },
         disabled: { type: 'boolean', value: false },
-        buttonId: { type: 'string', value: '' }
+        buttonId: { type: 'string', value: '' },
+        heading: { type: 'string', value: '' }
       },
       events: { fxAction: {} }
     }
