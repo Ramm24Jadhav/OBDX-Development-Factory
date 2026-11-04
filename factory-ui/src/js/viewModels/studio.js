@@ -484,7 +484,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return null;
         }
         const components = fieldsOf(s.model);
-        return (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name) || (f.label && norm(c.label) === norm(f.label))));
+        // A field shown as a table's column is on the screen too
+        const matches = (text, f) => norm(text) === norm(f.name) || (!!f.label && norm(text) === norm(f.label));
+        return (spec.fields || []).filter((f) => !components.some((c) => matches(c.name, f) || (!!f.label && norm(c.label) === norm(f.label))
+          || (c.type === 'table' && (c.options || []).some((o) => matches(o, f)))));
       });
       // The open row: the first that needs attention ('auto', again for every screen) until the user opens or closes one
       this.openCheck = ko.observable('auto');

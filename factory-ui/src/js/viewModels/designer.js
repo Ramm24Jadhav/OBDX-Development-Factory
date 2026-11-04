@@ -1518,8 +1518,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const components = allComponents(model);
         const spec = this.specScreen();
         if (spec) {
+          // A field shown as a table's column is on the screen too
           const missing = (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name)
-            || (f.label && norm(c.label) === norm(f.label))));
+            || (f.label && norm(c.label) === norm(f.label))
+            || (c.type === 'table' && (c.options || []).some((o) => norm(o) === norm(f.name) || (f.label && norm(o) === norm(f.label))))));
           if (missing.length === 0 && (spec.fields || []).length > 0) {
             add('ok', 'All ' + spec.fields.length + ' fields of the requirement are on the screen');
           }
