@@ -1,5 +1,7 @@
 /*
- * Workspaces page: the list of workspaces, one workspace's details in a side sheet, and a guided new-workspace flow.
+ * Workspaces page: the list of workspaces (filter chips with counts, each row with its code state and its SVN and
+ * Jenkins health from the results Integrations uses, services/connectionHealth), one workspace's details in a side
+ * sheet, and a guided new-workspace flow, one step per screen.
  * A new workspace's code comes from an SVN URL or a folder on the computer the factory runs on (/api/sources): the
  * factory checks it and suggests the name, bank and OBDX version from the code, the user confirms them, then the
  * workspace is created (/api/workspaces) and its code imported (/imports). The import checks out from SVN, indexes the
@@ -7,8 +9,8 @@
  * the server says so.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
-        '../services/pageRequests', '../services/ui', '../services/toast', '../services/dialog', 'ojs/ojknockout'],
-  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog) {
+        '../services/pageRequests', '../services/ui', '../services/toast', '../services/dialog', '../services/connectionHealth', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, workspaceSelection, dashboard, pageRequests, ui, toast, dialog, health) {
     const KIND_LABELS = { WORKING_COPY: 'SVN checkout', REPOSITORY: 'SVN repository' };
     const POLL_MS = 3000;
     // A workspace's code state as a design-system status (ui.status), in the page's own words
@@ -27,6 +29,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       return text.length <= limit ? text : text.slice(0, 12) + '…' + text.slice(text.length - (limit - 13));
     };
     const plural = (n, word) => n.toLocaleString() + ' ' + word + (n === 1 ? '' : 's');
+    // A health chip (connectionHealth) with its newest result and when, or a quiet chip while it loads
+    const LOADING = ui.status('NOT_CHECKED', 'Checking...');
+    const chip = (h) => {
+      if (!h) {
+        return Object.assign({}, LOADING, { when: '', title: 'Reading the connection history.', last: 'Not loaded yet' });
+      }
+      return Object.assign({}, h.pill, {
+        when: h.last ? dashboard.ago(h.last.at) : '',
+        title: (h.note ? h.note + ' ' : '') + (h.last ? h.last.source + ': ' + h.last.text : ''),
+        last: h.last ? h.last.text + ' · ' + dashboard.when(h.last.at) : (h.note || 'Nothing recorded yet')
+      });
+    };
+    // Status filters as chips, with the dot of their status
+    const FILTERS = [['', 'All', ''], ['ready', 'Indexed', 'is-success'], ['importing', 'Importing', 'is-primary'], ['failed', 'Import failed', 'is-danger'], ['new', 'Not imported', 'is-muted']];
     const ROLE_TEXT = (role) => role.charAt(0) + role.slice(1).toLowerCase();
     const stopping = (handler) => (event) => {
       if (event && event.stopPropagation) {
@@ -79,14 +95,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         pending[id] = Promise.all([
           noProfile ? Promise.resolve(null) : api.get('workspaces/' + id + '/profile').catch(() => null),
           api.get('workspaces/' + id + '/inventory').catch(() => null),
-          api.get('workspaces/' + id + '/members').catch(() => null)
-        ]).then(([profile, inventory, members]) => {
+          api.get('workspaces/' + id + '/members').catch(() => null),
+          // Jenkins settings and the connection history, as Integrations reads them (undefined: could not be read)
+          api.get('workspaces/' + id + '/jenkins').then((j) => j || null).catch(() => undefined),
+          api.get('workspaces/' + id + '/integrations/activity').catch(() => undefined)
+        ]).then(([profile, inventory, members, jenkins, activity]) => {
           const m = Object.assign({}, wsDetails());
-          m[id] = { profile: profile, inventory: inventory, members: members };
+          m[id] = { profile: profile, inventory: inventory, members: members, jenkins: jenkins, activity: activity, healthLoaded: true };
           wsDetails(m);
           return m[id];
         }).finally(() => { delete pending[id]; });
         return pending[id];
+      };
+      // After a connection test (the server records it) the history is read again, so the health follows
+      const reloadActivity = (id) => api.get('workspaces/' + id + '/integrations/activity').then((activity) => {
+        const m = Object.assign({}, wsDetails());
+        m[id] = Object.assign({}, m[id] || {}, { activity: activity });
+        wsDetails(m);
+      }).catch(() => null);
+      // SVN and Jenkins health of one workspace, from the same results Integrations uses
+      const healthOf = (entry) => {
+        const extra = wsDetails()[entry.workspace.id];
+        if (!extra || !extra.healthLoaded) {
+          return { svn: null, jenkins: null, jenkinsSettings: undefined };
+        }
+        const h = health.summary(entry, extra.jenkins, extra.activity);
+        const unread = { key: 'none', pill: health.HEALTH.none.pill, note: 'Could not read the Jenkins settings. Refresh to try again.', last: null };
+        return { svn: h.svn, jenkins: h.jenkins || unread, jenkinsSettings: extra.jenkins };
       };
       const setProfile = (id, profile) => {
         const m = Object.assign({}, wsDetails());
@@ -173,7 +208,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.filterText = ko.observable('');
       this.filterStatus = ko.observable('');
       this.filterTextInput = ui.value(this.filterText);
-      this.filterStatusChange = ui.value(this.filterStatus);
+      this.statusFilters = ko.pureComputed(() => {
+        const states = data().map((d) => stateOf(d));
+        // All, then each status that some workspace has (or that is chosen)
+        return FILTERS.map((f) => ({ f: f, n: f[0] ? states.filter((s) => s === f[0]).length : states.length }))
+          .filter((x) => !x.f[0] || x.n > 0 || this.filterStatus() === x.f[0]).map((x) => ({
+            value: x.f[0], text: x.f[1] + ' ' + x.n,
+            dot: x.f[2] ? 'factory-wsp-fdot ' + x.f[2] : '',
+            pressed: ko.pureComputed(() => String(this.filterStatus() === x.f[0])),
+            pick: () => this.filterStatus(x.f[0])
+          }));
+      });
+      this.clearFilters = () => {
+        this.filterStatus('');
+        this.filterText('');
+        const input = document.getElementById('workspaceSearch');
+        if (input) {
+          input.value = '';
+        }
+      };
       const lastActivity = (d) => {
         const dates = [d.workspace.createdAt];
         d.imports.forEach((j) => dates.push(j.finishedAt || j.startedAt || j.createdAt));
@@ -193,15 +246,42 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const at = lastActivity(d);
         const version = versionOf(w.id);
         const local = /^file:/i.test(w.svnUrl || '');
+        const h = healthOf(d);
+        const canUpdate = session.can(w.id, 'MANAGE_CODE') && state !== 'importing' && !!w.svnUrl;
+        const indexed = w.indexedRevision !== null && w.indexedRevision !== undefined;
         return {
           id: w.id, name: w.name, bank: w.bankName, version: 'OBDX ' + w.obdxVersion, svnUrl: w.svnUrl || '', shortUrl: midUrl(w.svnUrl, 44) || 'No SVN URL',
           sourceKind: w.svnUrl ? (local ? 'SVN on this computer' : 'SVN server') : 'Not set',
           versionNote: version && version.mismatch ? 'Code looks like ' + version.value : '',
-          revision: w.indexedRevision !== null && w.indexedRevision !== undefined ? 'r' + w.indexedRevision : 'Not indexed',
+          revision: indexed ? 'r' + w.indexedRevision : 'Not indexed',
           state: state, status: STATUS[state], progress: state === 'importing' ? jobProgress(job) : '',
+          svn: chip(h.svn), jenkins: chip(h.jenkins),
           when: at ? dashboard.ago(at) : '', whenTitle: at ? 'Last activity ' + dashboard.when(at) : '',
+          // The ⋯ menu: what the sheet and other pages offer for this workspace
+          menuItems: [{ value: 'details', label: 'Details', icon: 'info' }, { value: 'code', label: 'Open the code', icon: 'code' },
+            { value: 'code:facts', label: 'Codebase facts', icon: 'doc' },
+            { value: 'update', label: indexed ? 'Update code' : 'Import code', icon: 'refresh', disabled: !canUpdate,
+              title: canUpdate ? null : (!w.svnUrl ? 'Set the SVN URL on the Code page first.' : (state === 'importing' ? 'An import is running.' : 'Needs the right to manage the code of this workspace.')) },
+            { separator: true }, { value: 'code:settings', label: 'Code settings (SVN, Jenkins)', icon: 'cog' }, { value: 'integrations', label: 'Integrations', icon: 'plug' }],
+          menu: (event) => {
+            const value = event.detail.value;
+            if (value === 'details') {
+              this.openSheet(w.id);
+            } else if (value === 'update') {
+              this.sheetId(w.id);
+              this.updateCode();
+            } else {
+              dashboard.open(value, w.id)();
+            }
+          },
           open: stopping(() => this.openSheet(w.id)),
-          select: () => this.openSheet(w.id)
+          // A click on the row opens the details; a click on its ⋯ menu does not
+          select: (event) => {
+            if (event && event.target && event.target.closest && event.target.closest('fx-menu-button, .fx-menu')) {
+              return;
+            }
+            this.openSheet(w.id);
+          }
         };
       }).filter((r) => {
         const text = this.filterText().trim().toLowerCase();
@@ -265,7 +345,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           initials: ui.initials(m.displayName), avatar: ui.avatarTone(m.displayName) + ' fx-avatar--sm', name: m.displayName, role: ROLE_TEXT(m.role)
         }));
         const test = this.svnTest();
+        const h = healthOf(entry);
+        const j = h.jenkinsSettings;
         return {
+          // SVN and Jenkins health (the same results as Integrations) and the Jenkins settings as stored or not
+          svnHealth: chip(h.svn), jenkinsHealth: chip(h.jenkins), jenkinsSet: !!j,
+          jenkinsFacts: j ? [{ k: 'Jenkins URL', v: j.url }, { k: 'Jobs', v: j.jobs || 'None' }, { k: 'Builds', v: j.mode === 'BRANCH' ? 'Branch builds' : 'Patch builds' },
+            { k: 'Login', v: (j.username ? 'User ' + j.username : 'No user') + ' · ' + (j.tokenSet ? 'API token stored (encrypted)' : 'no API token stored') },
+            { k: 'Last result', v: chip(h.jenkins).last }]
+            : [{ k: 'Jenkins', v: j === null ? 'Not set up for this workspace. Builds and tests of generated changes run only on Jenkins.' : (extra.healthLoaded ? 'Could not read the Jenkins settings. Refresh to try again.' : 'Loading...') }],
           id: w.id, name: w.name, subtitle: w.bankName + ' · OBDX ' + w.obdxVersion,
           state: stateOf(entry), status: STATUS[stateOf(entry)], running: running, progress: running ? jobProgress(job) : '',
           // The last import: what the server reported, in full
@@ -305,6 +393,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         };
       });
       this.closeSheet = () => this.sheetOpen(false);
+      // The row redraws when its health changes (a connection test), so the sheet's own focus return can find the
+      // old row gone: focus goes back to the workspace's row then
+      this.sheetOpen.subscribe((open) => {
+        if (open) {
+          return;
+        }
+        window.setTimeout(() => {
+          const a = document.activeElement;
+          if (a && a !== document.body && document.contains(a)) {
+            return;
+          }
+          const tr = document.querySelector('#workspaceTable tbody tr[data-id="' + this.sheetId() + '"]');
+          if (tr) {
+            tr.focus();
+          }
+        }, 50);
+      });
       this.updateCode = () => {
         const s = this.sheet();
         if (!s) {
@@ -344,7 +449,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             this.svnTest({ ok: true, text: 'Connected. The latest revision is r' + r.headRevision
               + (behind === null ? '.' : (behind > 0 ? '; the index is ' + plural(behind, 'revision') + ' behind.' : '; the index is up to date.')) });
           })
-          .catch((error) => this.svnTest({ ok: false, text: said(error, 'Check the URL and sign-in on the Code page, then test again.') }));
+          .catch((error) => this.svnTest({ ok: false, text: said(error, 'Check the URL and sign-in on the Code page, then test again.') }))
+          .then(() => reloadActivity(s.id));
       };
       this.copyUrl = () => {
         const s = this.sheet();
@@ -362,6 +468,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.sheetOpen(false);
         pageRequests.codeFact(key);
         dashboard.open('code', s ? s.id : undefined)();
+      };
+      // The SVN and Jenkins settings are edited on Code › Settings
+      this.sheetSettings = (event) => {
+        pageRequests.codeTab('settings');
+        return this.sheetGo('code')(event);
       };
       this.sheetGo = (page) => (event) => {
         if (event && event.preventDefault) {
@@ -523,9 +634,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         return localLoaded;
       };
       this.sourceTabs = [
-        { value: 'folder', label: 'Folder on this computer' },
-        { value: 'url', label: 'SVN server (URL)' }
+        { value: 'folder', label: 'Folder on this computer', help: 'A checkout, an SVN repository or a plain folder', icon: 'folder' },
+        { value: 'url', label: 'SVN server (URL)', help: 'The repository folder on the bank\'s SVN server', icon: 'branch' }
       ].map((t) => Object.assign(t, {
+        iconCss: 'factory-nav-icon factory-ico-' + t.icon,
         pressed: ko.pureComputed(() => String(this.sourceKind() === t.value)),
         hidden: ko.pureComputed(() => t.value === 'folder' && !this.localEnabled()),
         pick: () => this.sourceKind(t.value)
@@ -569,6 +681,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           current: i === current ? 'step' : null,
           dot: i < current ? '✓' : String(i + 1)
         }));
+      });
+      // The current step's title and one line on what happens in it, with "Step n of 5" above
+      const STAGE_TEXT = {
+        source: ['Where is the code?', 'Choose the folder or the SVN URL with the bank\'s OBDX code, then check it.'],
+        check: ['Checking the code', 'The factory connects, reads the code and looks for the bank and OBDX version.'],
+        details: ['Confirm the details', 'The check suggested these from the code. Change anything that is wrong.'],
+        import: ['Import and index', 'Each stage shows what the server reports. You can close this; the import goes on.'],
+        profile: ['Review the detected facts', 'The import is done. Check the OBDX version the code shows.']
+      };
+      this.stageInfo = ko.pureComputed(() => {
+        const key = this.stage();
+        const n = STAGES.findIndex((s) => s[0] === key) + 1;
+        return { eyebrow: 'New workspace · Step ' + n + ' of ' + STAGES.length, title: STAGE_TEXT[key][0], help: STAGE_TEXT[key][1] };
       });
 
       // The import stages after Create, from the workspace's latest import job

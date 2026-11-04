@@ -1,7 +1,10 @@
 // Workspaces page check: drives a running factory in headless Edge or Chrome and checks what the page promises:
-//  - the list shows one row per workspace with its version, source, indexed revision, indexing status and last activity;
-//  - a row opens the workspace's details in a side sheet (version evidence and confidence, repository, members), and
-//    Escape closes it with focus back on the row;
+//  - the list shows one row per workspace with its version, source, indexed revision, code state, SVN and Jenkins
+//    health (the same results as Integrations) and last activity; filter chips with counts narrow it; the ⋯ menu
+//    offers the workspace's pages and does not open the sheet;
+//  - a row opens the workspace's details in a side sheet (at a glance, version evidence and confidence, connections,
+//    members), and Escape closes it with focus back on the row;
+//  - New workspace shows one step per screen with "Step n of 5" on top;
 //  - Test the connection answers with the latest revision (it only reads SVN);
 //  - Delete asks first and names what goes with the workspace (the check always cancels);
 //  - New workspace shows the steps; Home's "Connect a code base" opens it; a source that cannot be read says so;
@@ -65,10 +68,56 @@ const OUT = args.out ? path.resolve(args.out) : null;
     head: [...document.querySelectorAll('#workspaceTable thead th')].map((th) => th.textContent.trim())
   }))));
   record('one row per workspace', list.rows.length === list.expected.length && list.expected.length > 0, { rows: list.rows.length, workspaces: list.expected.length });
-  record('columns: workspace, version, source, revision, indexing, last activity',
-    JSON.stringify(list.head) === JSON.stringify(['Workspace', 'OBDX version', 'Source', 'Indexed revision', 'Indexing', 'Last activity']), list.head);
-  record('indexed revision matches the server', list.expected.every((w) => list.rows.some((r) => r[0].indexOf(w.name) === 0 && r[3] === (w.revision === null ? 'Not indexed' : 'r' + w.revision))), list.rows.map((r) => r[3]));
-  record('every row has a status and a last activity', list.rows.every((r) => r[4] && r[5]), list.rows.map((r) => [r[4], r[5]]));
+  record('columns: workspace, version, code, SVN, Jenkins, last activity, actions',
+    JSON.stringify(list.head) === JSON.stringify(['Workspace', 'OBDX version', 'Code', 'SVN', 'Jenkins', 'Last activity', 'Actions']), list.head);
+  record('indexed revision matches the server', list.expected.every((w) => list.rows.some((r) => r[0].indexOf(w.name) === 0 && r[2].indexOf(w.revision === null ? 'Not indexed' : 'r' + w.revision) >= 0)), list.rows.map((r) => r[2]));
+  record('every row has a code state and a last activity', list.rows.every((r) => r[2] && r[5]), list.rows.map((r) => [r[2], r[5]]));
+  record('the source sits under the name in mono', await run(() => [...document.querySelectorAll('#workspaceTable tbody tr')].every((tr) => !!tr.querySelector('.factory-wsp-mono'))));
+
+  // Filter chips with counts (All, then each status some workspace has) and that they filter
+  const chips = await run(() => new Promise((resolve) => window.require(['services/dashboard'], (d) => resolve({
+    chips: [...document.querySelectorAll('#statusFilters .fx-chip')].map((c) => ({ id: c.id, n: +(c.textContent.trim().match(/(\d+)$/) || [0, 0])[1] })),
+    total: d.data().length
+  }))));
+  record('filter chips: All counts every workspace, the others add up to it', chips.chips.length > 0 && chips.chips[0].n === chips.total
+    && chips.chips.slice(1).reduce((a, c) => a + c.n, 0) === chips.total, chips);
+  if (chips.chips.length > 1) {
+    const one = chips.chips[1];
+    await run((id) => { document.getElementById(id).click(); return 1; }, one.id);
+    await sleep(300);
+    const shown = await run(() => document.querySelectorAll('#workspaceTable tbody tr').length);
+    record('a status chip filters the rows', shown === one.n, { chip: one, rows: shown });
+    await run(() => { document.getElementById('wsFilter-all').click(); return 1; });
+    await sleep(300);
+  }
+
+  // SVN and Jenkins health come from the same results as Integrations (services/connectionHealth)
+  await waitFor(() => ![...document.querySelectorAll('#workspaceTable tbody tr')].some((tr) => /Checking\.\.\./.test(tr.textContent)), null, 20);
+  const healthRows = await run(() => new Promise((resolve) => window.require(['knockout', 'services/dashboard', 'services/api', 'services/connectionHealth'], (ko, d, api, h) => {
+    Promise.all(d.data().map((e) => Promise.all([api.get('workspaces/' + e.workspace.id + '/jenkins').then((j) => j || null).catch(() => undefined),
+      api.get('workspaces/' + e.workspace.id + '/integrations/activity').catch(() => undefined)]).then(([j, a]) => {
+      const s = h.summary(e, j, a);
+      return { name: e.workspace.name, svn: s.svn.pill.text, jenkins: s.jenkins ? s.jenkins.pill.text : 'Not recorded' };
+    }))).then((expected) => resolve({
+      expected: expected,
+      shown: [...document.querySelectorAll('#workspaceTable tbody tr')].map((tr) => ({ name: tr.querySelector('.factory-wsp-name').textContent.trim(),
+        svn: tr.cells[3].querySelector('.fx-badge').textContent.trim(), jenkins: tr.cells[4].querySelector('.fx-badge').textContent.trim() }))
+    }));
+  })));
+  record('SVN and Jenkins health match the recorded results', healthRows.expected.every((e) => healthRows.shown.some((r) => r.name === e.name && r.svn === e.svn && r.jenkins === e.jenkins)), healthRows);
+
+  // The ⋯ menu: its items, and opening it does not open the sheet
+  const menuId = await run(() => (document.querySelector('#workspaceTable tbody tr fx-menu-button') || {}).id || null);
+  if (menuId) {
+    await click('#' + menuId + ' button');
+    await sleep(500);
+    const menu = await run(() => ({ items: [...document.querySelectorAll('.fx-menu [role^="menuitem"]')].map((e) => e.textContent.trim()), sheet: !!document.querySelector('#workspaceSheet .fx-sheet') }));
+    record('the ⋯ menu offers details, code, facts, update and settings', ['Details', 'Open the code', 'Codebase facts', 'Code settings (SVN, Jenkins)', 'Integrations'].every((x) => menu.items.indexOf(x) >= 0)
+      && menu.items.some((x) => /^(Update|Import) code$/.test(x)), menu.items);
+    record('opening the ⋯ menu does not open the sheet', !menu.sheet);
+    await key('Escape', 27);
+    await sleep(300);
+  }
   record('no tiles, KPI cards or second registry screen', await run(() => !document.querySelector('.factory-ws-tile, .factory-kpi, #registryKpis, #openRegistry')));
   const loadErrors = s.errors.filter((e) => !/auth\/me/.test(e));
   record('no console errors on load', loadErrors.length === 0, loadErrors.slice(0, 3));
@@ -83,6 +132,15 @@ const OUT = args.out ? path.resolve(args.out) : null;
   record('the sheet shows the detected version with its confidence', /confidence|No OBDX version found|No codebase facts/.test(version || ''), version);
   record('version evidence can be opened', await run(() => !!document.querySelector('#sheetEvidence summary') || !/confidence/.test(document.querySelector('#sheetVersion').textContent)));
   record('the password stays masked', await run(() => !/password:/i.test(document.querySelector('#workspaceSheet').textContent) && /Saved|Not saved/.test(document.querySelector('#workspaceSheet').textContent)));
+  const parts = await run(() => ({
+    glance: [...document.querySelectorAll('#sheetGlance .factory-wsp-glance-k')].map((e) => e.textContent.trim()),
+    sections: [...document.querySelectorAll('#workspaceSheet .factory-wsp-part h3')].map((e) => e.textContent.trim()),
+    svn: !!document.querySelector('#sheetSvn .fx-badge'), jenkins: !!document.querySelector('#sheetJenkins .fx-badge'),
+    jenkinsLink: (document.getElementById('jenkinsSettingsLink') || {}).textContent || ''
+  }));
+  record('the sheet opens on code, SVN and Jenkins at a glance', JSON.stringify(parts.glance) === JSON.stringify(['Code', 'SVN', 'Jenkins']), parts.glance);
+  record('the sheet\'s sections: code and index, version, connections, members', ['Code and index', 'OBDX version', 'Connections', 'Members'].every((x) => parts.sections.indexOf(x) >= 0), parts.sections);
+  record('connections show SVN and Jenkins health with where to change them', parts.svn && parts.jenkins && /Code › Settings/.test(parts.jenkinsLink), parts);
   await shot('sheet');
   if (await run(() => !!document.getElementById('testConnectionButton'))) {
     await click('#testConnectionButton');
@@ -120,6 +178,9 @@ const OUT = args.out ? path.resolve(args.out) : null;
   await waitFor(() => !!document.getElementById('createWorkspaceCard'));
   const steps = await run(() => [...document.querySelectorAll('#createSteps li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()));
   record('New workspace shows the five steps', steps.length === 5, steps);
+  const wiz = await run(() => ({ stepOf: (document.getElementById('createStepOf') || {}).textContent || '', title: (document.getElementById('createTitle') || {}).textContent || '',
+    list: !!document.getElementById('workspaceTable'), current: document.querySelectorAll('#createSteps li[aria-current="step"]').length }));
+  record('one step per screen: "Step 1 of 5" and its title on top, the list out of the way', /Step 1 of 5/.test(wiz.stepOf) && !!wiz.title.trim() && !wiz.list && wiz.current === 1, wiz);
   record('the source field has focus', await waitFor(() => !!document.activeElement && !!document.activeElement.closest('#folderPath, #svnUrl'), null, 6));
   await shot('create-source');
   // A source that cannot be read says what to do

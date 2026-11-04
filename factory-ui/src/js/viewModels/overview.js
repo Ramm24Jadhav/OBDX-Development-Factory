@@ -1,9 +1,10 @@
 /*
- * Home: what to do next in the workspace chosen in the top bar (or in all workspaces). First the work to continue
- * (each requirement's workflow that is not delivered or closed, newest first) and what needs someone (failed or
- * interrupted work, approvals, open questions); then progress with what each number counts, recent requirements,
- * activity, builds and the workspaces. With no workspace yet it shows only the setup. The data comes from the
- * dashboard service (the same endpoints the other pages use); every item opens its own record.
+ * Home: what needs the user now and how the work is going, in the workspace chosen in the top bar (or in all
+ * workspaces). First what needs someone (failed or interrupted work, approvals, open questions; filter chips by kind),
+ * then the work in progress by stage (each requirement's workflow that is not delivered or closed, under its step,
+ * with what the factory recorded for each stage), one Recent card (activity, requirements, builds) and the workspaces
+ * as small cards. With no workspace yet it shows only the setup. The data comes from the dashboard service (the same
+ * endpoints the other pages use); every item opens its own record.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard',
         '../services/pageRequests', '../services/ui', '../services/workspaceSelection'],
@@ -11,10 +12,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     const WEEK_MS = 7 * 24 * 3600 * 1000;
     // Status chips of the design system (ui.status: one colour and icon per category, the page's own words)
     const REQUIREMENT_WORDS = { PROCESSING: 'Drafting', READY: 'Review', APPROVED: 'Approved', FAILED: 'Failed' };
+    // The same words as the Workspaces page
     const CODE = {
-      ready: ui.status('SUCCEEDED', 'Ready'), importing: ui.status('IMPORTING', 'Indexing'),
-      failed: ui.status('FAILED', 'Check Required'), new: ui.status('NEW', 'Not imported')
+      ready: ui.status('SUCCEEDED', 'Indexed'), importing: ui.status('IMPORTING', 'Importing'),
+      failed: ui.status('FAILED', 'Import failed'), new: ui.status('NEW', 'Not imported')
     };
+    const WORK_SHOWN = 8;
+    // Attention kinds as filter chips, in this order, with the dot colour of their tone
+    const KIND_CHIPS = [['failed', 'Failed', 'red'], ['approval', 'Approvals', 'amber'], ['questions', 'Questions', 'amber'],
+      ['review', 'To review', 'amber'], ['setup', 'Setup', 'amber']];
     // What an attention item is, as a status chip
     const KIND = {
       failed: ui.status('FAILED', 'Failed'), approval: ui.status('IN_REVIEW', 'Approval'), questions: ui.status('READY', 'Questions'),
@@ -105,17 +111,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             const at = newest([r.updatedAt, s.change && s.change.updatedAt].concat(s.designs.map((x) => x.updatedAt)));
             rows.push({
               key: r.id, title: r.title, workspace: w.name, at: at, when: dashboard.ago(at), whenTitle: dashboard.when(at),
-              stepText: s.stepText, status: s.status,
+              step: s.step, stepText: s.stepText, status: s.status,
               next: s.perm && !can(s.perm) ? waiting(s.next, s.who) : s.next,
-              steps: s.steps.map((st) => ({ name: st.name, css: 'factory-home-step' + (st.state === 'done' ? ' is-done' : (st.state === 'current' ? ' is-current' : '')) })),
               open: s.open
             });
           });
         });
-        return rows.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 4);
+        // Newest first; the newest is marked as the one last worked on
+        return rows.sort((a, b) => new Date(b.at) - new Date(a.at))
+          .map((r, i) => Object.assign(r, { latest: i === 0, domId: i === 0 ? 'continueFirst' : null }));
       });
-      this.continueFirst = ko.pureComputed(() => this.continueItems()[0] || null);
-      this.continueMore = ko.pureComputed(() => this.continueItems().slice(1));
+      // The rows by stage (Spec, Screens, Plan, Code), the newest first within each; only stages that have work
+      this.workShown = ko.pureComputed(() => this.continueItems().slice(0, WORK_SHOWN));
+      this.workHidden = ko.pureComputed(() => Math.max(0, this.continueItems().length - WORK_SHOWN));
+      this.workGroups = ko.pureComputed(() => dashboard.steps.map((name, i) => ({
+        key: 'step' + (i + 1), label: (i + 1) + ' · ' + name, rows: this.workShown().filter((r) => r.step === i + 1)
+      })).filter((g) => g.rows.length));
 
       // ---------- Attention required ----------
       const TONE_ORDER = { red: 0, amber: 1 };
@@ -131,8 +142,25 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             chip: a.kind === 'failed' && /interrupted/.test(a.title + a.text) ? ui.status('FAILED', 'Interrupted') : KIND[a.kind]
           }));
       });
-      this.attention = ko.pureComputed(() => (this.attentionExpanded() ? this.attentionAll() : this.attentionAll().slice(0, ATTENTION_SHOWN)));
-      this.attentionHidden = ko.pureComputed(() => Math.max(0, this.attentionAll().length - ATTENTION_SHOWN));
+      // Filter chips by kind (All, Failed, Approvals ...), each with its count; only kinds that have items
+      this.attentionKind = ko.observable('');
+      this.attentionKinds = ko.pureComputed(() => {
+        const items = this.attentionAll();
+        const chip = (value, label, tone, n) => ({
+          text: label + ' ' + n, dot: tone ? 'factory-home-dot factory-home-dot-' + tone : 'factory-home-dot is-none',
+          pressed: ko.pureComputed(() => String(this.attentionKind() === value)),
+          pick: () => { this.attentionKind(value); this.attentionExpanded(false); }
+        });
+        return [chip('', 'All', '', items.length)].concat(KIND_CHIPS
+          .map((k) => [k, count(items, (a) => a.kind === k[0])]).filter((x) => x[1] > 0).map((x) => chip(x[0][0], x[0][1], x[0][2], x[1])));
+      });
+      this.attentionFiltered = ko.pureComputed(() => {
+        const kind = this.attentionKind();
+        const list = this.attentionAll().filter((a) => !kind || a.kind === kind);
+        return list.length || !kind ? list : this.attentionAll();
+      });
+      this.attention = ko.pureComputed(() => (this.attentionExpanded() ? this.attentionFiltered() : this.attentionFiltered().slice(0, ATTENTION_SHOWN)));
+      this.attentionHidden = ko.pureComputed(() => Math.max(0, this.attentionFiltered().length - ATTENTION_SHOWN));
       this.toggleAttention = () => this.attentionExpanded(!this.attentionExpanded());
       this.attentionToggleText = ko.pureComputed(() => (this.attentionExpanded() ? 'Show fewer' : 'Show ' + this.attentionHidden() + ' more'));
       // Items in the other workspaces, so nothing is hidden by the workspace choice
@@ -149,8 +177,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
       });
 
-      // ---------- Progress: each number says what it counts ----------
-      this.progress = ko.pureComputed(() => {
+      // ---------- Progress by stage: the work at each step, and what the factory recorded for it ----------
+      // Each figure says what it counts (in its tooltip, with the breakdown); none is shown that the factory does not record.
+      this.stages = ko.pureComputed(() => {
         const d = this.scoped();
         const requirements = all(d, 'requirements');
         const designs = all(d, 'designs');
@@ -158,30 +187,38 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const builds = all(d, 'builds');
         const parts = (list) => list.filter((p) => p[0] > 0).map((p) => p[0] + ' ' + p[1]).join(' · ');
         const closed = count(changes, (c) => c.status === 'CLOSED');
-        const row = (key, label, icon, tone, done, total, doneWord, definition, sub, page) => {
+        const figure = (key, label, done, total, doneWord, definition, sub, page) => {
           const percent = total ? Math.round(100 * done / total) : 0;
           return {
-            key: key, label: label, iconClass: 'factory-nav-icon factory-ico-' + icon, iconCss: 'factory-home-metric-icon factory-ov2-icon-' + tone,
-            value: total ? done + ' of ' + total : 'None yet', doneWord: total ? doneWord : '', definition: definition, sub: sub, hasBar: total > 0,
-            barCss: 'fx-progress factory-home-bar factory-home-bar-' + tone, percent: percent, width: percent + '%',
+            key: key, page: page, text: total ? done + ' of ' + total + ' ' + label.toLowerCase() + ' ' + doneWord : 'No ' + label.toLowerCase() + ' yet',
+            title: definition + (sub ? ' ' + sub + '.' : ''), hasBar: total > 0, percent: percent, width: percent + '%',
             barLabel: label + ': ' + done + ' of ' + total + ' ' + doneWord, open: this.go(page)
           };
         };
-        return [
-          row('requirements', 'Requirements', 'doc', 'blue', count(requirements, (r) => r.status === 'APPROVED'), requirements.length, 'approved',
+        const figures = [
+          [figure('requirements', 'Requirements', count(requirements, (r) => r.status === 'APPROVED'), requirements.length, 'approved',
             'Requirements whose spec is approved, of all requirements.',
             parts([[count(requirements, (r) => r.status === 'PROCESSING'), 'being drafted'], [count(requirements, (r) => r.status === 'READY'), 'waiting for answers or approval'],
-              [count(requirements, (r) => r.status === 'FAILED'), 'failed']]), 'requirements'),
-          row('screens', 'Screens', 'monitor', 'green', count(designs, (s) => s.status === 'APPROVED'), designs.length, 'approved',
+              [count(requirements, (r) => r.status === 'FAILED'), 'failed']]), 'requirements')],
+          [figure('screens', 'Screens', count(designs, (s) => s.status === 'APPROVED'), designs.length, 'approved',
             'Screen designs approved, of all screen designs.',
-            parts([[count(designs, (s) => s.status === 'IN_REVIEW'), 'in review'], [count(designs, (s) => s.status === 'DRAFT'), 'draft']]), 'studio'),
-          row('changes', 'Code changes', 'code', 'amber', count(changes, (c) => c.status === 'DELIVERED'), changes.length - closed, 'delivered',
+            parts([[count(designs, (s) => s.status === 'IN_REVIEW'), 'in review'], [count(designs, (s) => s.status === 'DRAFT'), 'draft']]), 'studio')],
+          [],
+          [figure('changes', 'Changes', count(changes, (c) => c.status === 'DELIVERED'), changes.length - closed, 'delivered',
             'Changes delivered to SVN, of all changes that are not closed.',
             parts([[count(changes, (c) => dashboard.openChanges.indexOf(c.status) >= 0), 'open'], [count(changes, (c) => c.status === 'FAILED'), 'failed'], [closed, 'closed']]), 'changes'),
-          row('builds', 'Builds', 'flask', 'violet', count(builds, (b) => b.result === 'SUCCESS'), builds.length, 'passed',
+          figure('builds', 'Builds', count(builds, (b) => b.result === 'SUCCESS'), builds.length, 'passed',
             'Jenkins builds of changes that passed, of all builds.',
-            parts([[count(builds, (b) => b.result && b.result !== 'SUCCESS'), 'failed'], [count(builds, (b) => !b.result), 'running']]), 'build')
+            parts([[count(builds, (b) => b.result && b.result !== 'SUCCESS'), 'failed'], [count(builds, (b) => !b.result), 'running']]), 'build')]
         ];
+        const items = this.continueItems();
+        return dashboard.steps.map((name, i) => {
+          const n = count(items, (r) => r.step === i + 1);
+          return {
+            n: i + 1, name: name, count: n ? n + ' in progress' : 'None now', countLabel: name + ': ' + (n ? n + ' in progress' : 'nothing in progress'),
+            css: 'factory-home-stage' + (n ? ' has-work' : ''), figures: figures[i]
+          };
+        });
       });
 
       // ---------- Recent requirements, builds and activity (in the scope) ----------
@@ -228,6 +265,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         });
         return items.filter((i) => i.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
       });
+      // One Recent card: activity, requirements or builds, each with its own View all
+      this.recentTab = ko.observable('activity');
+      const RECENT = { activity: ['notifications', 'All activity'], requirements: ['requirements', 'All requirements'], builds: ['build', 'All builds'] };
+      this.recentTabs = [{ value: 'activity', label: 'Activity' }, { value: 'requirements', label: 'Requirements' }, { value: 'builds', label: 'Builds' }].map((t) => Object.assign(t, {
+        pressed: ko.pureComputed(() => String(this.recentTab() === t.value)),
+        pick: () => this.recentTab(t.value)
+      }));
+      this.recentLink = ko.pureComputed(() => ({ page: RECENT[this.recentTab()][0], label: RECENT[this.recentTab()][1] }));
+      this.openRecentLink = (event) => this.go(this.recentLink().page)(event);
 
       // ---------- Workspaces (all of them), each with a menu of its pages ----------
       this.workspaceSummary = ko.pureComputed(() => {
@@ -240,14 +286,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const w = d.workspace;
         const job = d.imports.length ? d.imports[0] : null;
         const updated = job ? (job.finishedAt || job.createdAt) : w.createdAt;
+        const state = dashboard.codeState(d).key;
+        const current = w.id === (this.entry() && this.entry().workspace.id);
         return {
           id: w.id, name: w.name, meta: w.bankName + ' · OBDX ' + w.obdxVersion, location: w.svnUrl || '',
-          status: CODE[dashboard.codeState(d).key], when: dashboard.ago(updated), whenTitle: 'Code last updated ' + dashboard.when(updated), at: updated,
-          current: w.id === (this.entry() && this.entry().workspace.id) ? 'true' : 'false',
+          status: state === 'ready' ? ui.status('SUCCEEDED', 'Indexed · r' + w.indexedRevision) : CODE[state],
+          when: dashboard.ago(updated), whenTitle: 'Code last updated ' + dashboard.when(updated), at: updated,
+          current: current ? 'true' : 'false', css: 'factory-home-ws' + (current ? ' is-current' : ''),
           open: dashboard.open('code', w.id),
           menu: (event) => dashboard.open(event.detail.value, w.id)()
         };
       }).sort((a, b) => new Date(b.at) - new Date(a.at)));
+      this.carousel = ui.carousel();
       this.connectCodeBase = () => {
         pageRequests.newWorkspace({ kind: 'folder', value: '' });
         dashboard.open('workspaces')();
@@ -283,7 +333,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.connected = () => {
         accUtils.announce('Home page loaded.');
         document.title = 'Home';
-        dashboard.load().then(() => loadedOnce(true));
+        dashboard.load().then(() => { loadedOnce(true); this.carousel.attach('homeWorkspaceTrack'); });
+        this.carousel.attach('homeWorkspaceTrack');
         if (session.isAdmin()) {
           api.get('sources/local').then((local) => {
             this.localEnabled(!!local.enabled);

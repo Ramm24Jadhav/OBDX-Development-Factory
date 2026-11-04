@@ -19,7 +19,7 @@
         </oj-bind-if>
         <oj-bind-if test="[[canAddRequirement()]]">
           <button type="button" id="overviewRequirement" class="fx-btn fx-btn--primary" on-click="[[newRequirement]]">
-            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New Requirement
+            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New requirement
           </button>
         </oj-bind-if>
       </div>
@@ -41,8 +41,8 @@
 
   <!-- Loading: the first time only; later visits show the data at once while it refreshes -->
   <oj-bind-if test="[[starting()]]">
-    <div class="factory-home-main" id="homeLoading" aria-busy="true" aria-label="Loading the dashboard">
-      <section class="fx-card factory-home-card"><span class="fx-skeleton factory-home-skel"></span><span class="fx-skeleton"></span><span class="fx-skeleton factory-home-skel-short"></span></section>
+    <div class="factory-home-loading" id="homeLoading" aria-busy="true" aria-label="Loading the dashboard">
+      <section class="fx-card factory-home-card"><span class="fx-skeleton factory-home-skel"></span><span class="fx-skeleton"></span></section>
       <section class="fx-card factory-home-card"><span class="fx-skeleton factory-home-skel"></span><span class="fx-skeleton"></span><span class="fx-skeleton factory-home-skel-short"></span></section>
     </div>
   </oj-bind-if>
@@ -90,96 +90,55 @@
   </oj-bind-if>
 
   <oj-bind-if test="[[ready()]]">
-    <!-- What to do next -->
-    <div class="factory-home-main">
-      <section class="fx-card factory-home-card" id="homeContinue" aria-labelledby="continueTitle">
-        <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="continueTitle">Continue where you left off</h2>
-        </div>
-        <oj-bind-if test="[[continueFirst()]]">
-          <button type="button" class="factory-home-next" id="continueFirst" on-click="[[continueFirst().open]]">
-            <span class="factory-home-next-top">
-              <span class="factory-home-step-text"><oj-bind-text value="[[continueFirst().stepText]]"></oj-bind-text></span>
-              <span :class="[[continueFirst().status.css]]"><span :class="[[continueFirst().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[continueFirst().status.text]]"></oj-bind-text></span>
-            </span>
-            <span class="factory-home-next-title"><oj-bind-text value="[[continueFirst().title]]"></oj-bind-text></span>
-            <span class="factory-home-steps" aria-hidden="true">
-              <oj-bind-for-each data="[[continueFirst().steps]]" as="st">
-                <template><span :class="[[st.data.css]]"><oj-bind-text value="[[st.data.name]]"></oj-bind-text></span></template>
+    <!-- What needs a person now -->
+    <oj-bind-if test="[[attentionAll().length > 0]]">
+      <section class="fx-card factory-home-card factory-home-attn" id="homeAttention" aria-labelledby="attentionTitle">
+        <div class="factory-home-card-head factory-home-attn-head">
+          <h2 class="fx-card-title" id="attentionTitle">Needs you
+            <span class="fx-badge fx-badge--danger factory-home-count" :aria-label="[[attentionAll().length + ' items']]"><oj-bind-text value="[[attentionAll().length]]"></oj-bind-text></span></h2>
+          <oj-bind-if test="[[attentionKinds().length > 2]]">
+            <div class="factory-home-chips" role="group" aria-label="Show" id="attentionFilters">
+              <oj-bind-for-each data="[[attentionKinds]]" as="k">
+                <template><button type="button" class="fx-chip" :aria-pressed="[[k.data.pressed]]" on-click="[[k.data.pick]]"><span :class="[[k.data.dot]]" aria-hidden="true"></span><oj-bind-text value="[[k.data.text]]"></oj-bind-text></button></template>
               </oj-bind-for-each>
-            </span>
-            <span class="factory-home-next-text"><oj-bind-text value="[[continueFirst().next]]"></oj-bind-text></span>
-            <span class="factory-home-next-foot">
-              <span class="factory-home-muted" :title="[[continueFirst().whenTitle]]"><oj-bind-text value="[[(allScope() ? continueFirst().workspace + ' · ' : '') + 'updated ' + continueFirst().when]]"></oj-bind-text></span>
-              <span class="factory-home-go">Continue<span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></span>
-            </span>
-          </button>
-          <oj-bind-if test="[[continueMore().length > 0]]">
-            <ul class="factory-home-list" aria-label="Other work in progress">
-              <oj-bind-for-each data="[[continueMore]]" as="item">
-                <template>
-                  <li>
-                    <button type="button" class="factory-home-row" on-click="[[item.data.open]]">
-                      <span class="factory-home-row-main">
-                        <span class="factory-home-row-title"><oj-bind-text value="[[item.data.title]]"></oj-bind-text></span>
-                        <span class="factory-home-row-text"><oj-bind-text value="[[item.data.stepText + ' · ' + item.data.next]]"></oj-bind-text></span>
-                      </span>
-                      <span :class="[[item.data.status.css]]"><span :class="[[item.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[item.data.status.text]]"></oj-bind-text></span>
-                    </button>
-                  </li>
-                </template>
-              </oj-bind-for-each>
-            </ul>
-          </oj-bind-if>
-        </oj-bind-if>
-        <oj-bind-if test="[[!continueFirst()]]">
-          <div class="fx-empty factory-home-empty" id="continueEmpty">
-            <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
-            <strong>Nothing in progress</strong>
-            <span>Every requirement in <oj-bind-text value="[[scopeName]]"></oj-bind-text> is delivered or closed, or there are none yet.</span>
-            <oj-bind-if test="[[canAddRequirement()]]">
-              <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[newRequirement]]">Start a requirement</button>
-            </oj-bind-if>
-          </div>
-        </oj-bind-if>
-      </section>
-
-      <section class="fx-card factory-home-card" id="homeAttention" aria-labelledby="attentionTitle">
-        <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="attentionTitle">Attention required</h2>
-          <oj-bind-if test="[[attentionAll().length > 0]]">
-            <span class="fx-badge fx-badge--danger factory-home-count" :aria-label="[[attentionAll().length + ' items']]"><oj-bind-text value="[[attentionAll().length]]"></oj-bind-text></span>
+            </div>
           </oj-bind-if>
         </div>
-        <oj-bind-if test="[[attentionAll().length > 0]]">
-          <ul class="factory-home-list" id="attentionList">
-            <oj-bind-for-each data="[[attention]]" as="item">
-              <template>
-                <li>
-                  <button type="button" class="factory-home-row" on-click="[[item.data.open]]">
-                    <span :class="[['factory-home-dot factory-home-dot-' + item.data.tone]]" aria-hidden="true"></span>
-                    <span class="factory-home-row-main">
-                      <span class="factory-home-row-title"><oj-bind-text value="[[item.data.title]]"></oj-bind-text></span>
-                      <span class="factory-home-row-text"><oj-bind-text value="[[item.data.text]]"></oj-bind-text></span>
-                      <span class="factory-home-row-action"><oj-bind-text value="[[item.data.action]]"></oj-bind-text><oj-bind-if test="[[item.data.when]]"><span class="factory-home-muted"> · <oj-bind-text value="[[item.data.when]]"></oj-bind-text></span></oj-bind-if></span>
-                    </span>
-                    <span :class="[[item.data.chip.css]]"><span :class="[[item.data.chip.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[item.data.chip.text]]"></oj-bind-text></span>
-                  </button>
-                </li>
-              </template>
-            </oj-bind-for-each>
-          </ul>
-          <oj-bind-if test="[[attentionHidden() > 0]]">
+        <ul class="factory-home-list factory-home-attn-list" id="attentionList">
+          <oj-bind-for-each data="[[attention]]" as="item">
+            <template>
+              <li>
+                <button type="button" class="factory-home-row" on-click="[[item.data.open]]">
+                  <span :class="[['factory-home-dot factory-home-dot-' + item.data.tone]]" aria-hidden="true"></span>
+                  <span class="factory-home-row-main">
+                    <span class="factory-home-row-title"><oj-bind-text value="[[item.data.title]]"></oj-bind-text></span>
+                    <span class="factory-home-row-text"><oj-bind-text value="[[item.data.text]]"></oj-bind-text></span>
+                    <span class="factory-home-row-action"><oj-bind-text value="[[item.data.action]]"></oj-bind-text><oj-bind-if test="[[item.data.when]]"><span class="factory-home-muted"> · <oj-bind-text value="[[item.data.when]]"></oj-bind-text></span></oj-bind-if></span>
+                  </span>
+                  <span :class="[[item.data.chip.css]]"><span :class="[[item.data.chip.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[item.data.chip.text]]"></oj-bind-text></span>
+                </button>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ul>
+        <div class="factory-home-attn-foot">
+          <oj-bind-if test="[[attentionHidden() > 0 || attentionExpanded()]]">
             <button type="button" class="fx-btn fx-btn--link factory-home-more" id="attentionMore" on-click="[[toggleAttention]]" :aria-expanded="[[attentionExpanded() ? 'true' : 'false']]"><oj-bind-text value="[[attentionToggleText]]"></oj-bind-text></button>
           </oj-bind-if>
-        </oj-bind-if>
-        <oj-bind-if test="[[attentionAll().length === 0]]">
-          <div class="fx-empty factory-home-empty" id="attentionEmpty">
-            <span class="fx-empty-icon factory-home-ok"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
-            <strong>Nothing needs attention</strong>
-            <span>No failed work, approvals or open questions in <oj-bind-text value="[[scopeName]]"></oj-bind-text>.</span>
-          </div>
-        </oj-bind-if>
+          <oj-bind-if test="[[attentionElsewhere().length > 0]]">
+            <p class="factory-home-elsewhere" id="attentionElsewhere">Also in
+              <oj-bind-for-each data="[[attentionElsewhere]]" as="ws">
+                <template><button type="button" class="fx-btn fx-btn--link" on-click="[[ws.data.pick]]"><oj-bind-text value="[[ws.data.label]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </p>
+          </oj-bind-if>
+        </div>
+      </section>
+    </oj-bind-if>
+    <oj-bind-if test="[[attentionAll().length === 0]]">
+      <section class="factory-home-clear" id="homeAttention" aria-label="Needs you">
+        <p id="attentionEmpty"><span class="factory-home-clear-icon" aria-hidden="true"><span class="factory-nav-icon factory-ico-check"></span></span>
+          <span><strong>Nothing needs you.</strong> No failed work, approvals or open questions in <oj-bind-text value="[[scopeName]]"></oj-bind-text>.</span></p>
         <oj-bind-if test="[[attentionElsewhere().length > 0]]">
           <p class="factory-home-elsewhere" id="attentionElsewhere">Also in
             <oj-bind-for-each data="[[attentionElsewhere]]" as="ws">
@@ -188,146 +147,197 @@
           </p>
         </oj-bind-if>
       </section>
-    </div>
+    </oj-bind-if>
 
-    <!-- Progress: each number with what it counts -->
-    <section class="fx-card factory-home-card factory-home-progress" id="developmentProgress" aria-labelledby="progressTitle">
-      <div class="factory-home-card-head">
-        <h2 class="fx-card-title" id="progressTitle">Progress <span class="factory-home-muted factory-home-scope-name" id="progressScope">in <oj-bind-text value="[[scopeName]]"></oj-bind-text></span></h2>
-      </div>
-      <ul class="factory-home-metrics">
-        <oj-bind-for-each data="[[progress]]" as="m">
-          <template>
-            <li>
-              <a :href="[['?ojr=' + m.data.key]]" class="factory-home-metric" on-click="[[m.data.open]]" :id="[['metric-' + m.data.key]]">
-                <span class="factory-home-metric-top">
-                  <span :class="[[m.data.iconCss]]"><span :class="[[m.data.iconClass]]" aria-hidden="true"></span></span>
-                  <span class="factory-home-metric-label"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></span>
-                </span>
-                <span class="factory-home-metric-value"><oj-bind-text value="[[m.data.value]]"></oj-bind-text> <span class="factory-home-metric-word"><oj-bind-text value="[[m.data.doneWord]]"></oj-bind-text></span></span>
-                <oj-bind-if test="[[m.data.hasBar]]">
-                  <span :class="[[m.data.barCss]]" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[m.data.percent]]" :aria-label="[[m.data.barLabel]]"><span :style.width="[[m.data.width]]"></span></span>
-                </oj-bind-if>
-                <span class="factory-home-metric-def"><oj-bind-text value="[[m.data.definition]]"></oj-bind-text></span>
-                <oj-bind-if test="[[m.data.sub]]">
-                  <span class="factory-home-metric-sub"><oj-bind-text value="[[m.data.sub]]"></oj-bind-text></span>
-                </oj-bind-if>
-              </a>
-            </li>
-          </template>
-        </oj-bind-for-each>
-      </ul>
-    </section>
-
-    <!-- Recent work: secondary -->
-    <div class="factory-home-grid">
-      <section class="fx-card factory-home-card" id="recentRequirements" aria-labelledby="recentReqTitle">
+    <div class="factory-home-main">
+      <!-- The work in progress, by stage: how it is going, then each requirement at its step -->
+      <section class="fx-card factory-home-card" id="homeContinue" aria-labelledby="continueTitle">
         <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="recentReqTitle">Recent requirements</h2>
-          <a href="?ojr=requirements" class="factory-home-link" on-click="[[go('requirements')]]">View all</a>
+          <h2 class="fx-card-title" id="continueTitle">Work in progress <span class="factory-home-muted factory-home-scope-name" id="progressScope">in <oj-bind-text value="[[scopeName]]"></oj-bind-text></span></h2>
+          <a href="?ojr=requirements" class="factory-home-link" on-click="[[go('requirements')]]">All requirements</a>
         </div>
-        <oj-bind-if test="[[recentRequirements().length > 0]]">
-          <ul class="factory-home-list factory-home-list--compact">
-            <oj-bind-for-each data="[[recentRequirements]]" as="r">
+        <ol class="factory-home-stages" id="developmentProgress" aria-label="Progress by stage">
+          <oj-bind-for-each data="[[stages]]" as="st">
+            <template>
+              <li :class="[[st.data.css]]">
+                <span class="factory-home-stage-top"><span class="factory-home-stage-n" aria-hidden="true"><oj-bind-text value="[[st.data.n]]"></oj-bind-text></span>
+                  <span class="factory-home-stage-name"><oj-bind-text value="[[st.data.name]]"></oj-bind-text></span>
+                  <span class="factory-home-stage-count" :aria-label="[[st.data.countLabel]]"><oj-bind-text value="[[st.data.count]]"></oj-bind-text></span></span>
+                <oj-bind-for-each data="[[st.data.figures]]" as="m">
+                  <template>
+                    <a :href="[['?ojr=' + m.data.page]]" class="factory-home-figure" on-click="[[m.data.open]]" :id="[['metric-' + m.data.key]]" :title="[[m.data.title]]">
+                      <span class="factory-home-figure-text"><oj-bind-text value="[[m.data.text]]"></oj-bind-text></span>
+                      <oj-bind-if test="[[m.data.hasBar]]">
+                        <span class="fx-progress factory-home-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[m.data.percent]]" :aria-label="[[m.data.barLabel]]"><span :style.width="[[m.data.width]]"></span></span>
+                      </oj-bind-if>
+                    </a>
+                  </template>
+                </oj-bind-for-each>
+              </li>
+            </template>
+          </oj-bind-for-each>
+        </ol>
+        <oj-bind-if test="[[workGroups().length > 0]]">
+          <div class="factory-home-groups" id="workList">
+            <oj-bind-for-each data="[[workGroups]]" as="g">
               <template>
-                <li>
-                  <button type="button" class="factory-home-row" on-click="[[r.data.open]]">
-                    <span class="factory-home-row-main">
-                      <span class="factory-home-row-title"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></span>
-                      <span class="factory-home-row-text" :title="[[r.data.whenTitle]]"><oj-bind-text value="[[(allScope() ? r.data.workspace + ' · ' : '') + r.data.type + ' · updated ' + r.data.when]]"></oj-bind-text></span>
-                    </span>
-                    <span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span>
-                  </button>
-                </li>
+                <div class="factory-home-group">
+                  <h3 class="factory-home-group-label" :id="[['work-' + g.data.key]]"><oj-bind-text value="[[g.data.label]]"></oj-bind-text></h3>
+                  <ul class="factory-home-list" :aria-labelledby="[['work-' + g.data.key]]">
+                    <oj-bind-for-each data="[[g.data.rows]]" as="item">
+                      <template>
+                        <li>
+                          <button type="button" class="factory-home-row factory-home-work-row" :id="[[item.data.domId]]" on-click="[[item.data.open]]">
+                            <span class="factory-home-row-main">
+                              <span class="factory-home-row-title"><oj-bind-text value="[[item.data.title]]"></oj-bind-text><oj-bind-if test="[[item.data.latest]]"><span class="fx-badge fx-badge--primary factory-home-latest">Latest</span></oj-bind-if></span>
+                              <span class="factory-home-row-text factory-home-next-text"><oj-bind-text value="[[item.data.next]]"></oj-bind-text></span>
+                              <span class="factory-home-row-meta" :title="[[item.data.whenTitle]]"><oj-bind-text value="[[(allScope() ? item.data.workspace + ' · ' : '') + 'updated ' + item.data.when]]"></oj-bind-text></span>
+                            </span>
+                            <span :class="[[item.data.status.css]]"><span :class="[[item.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[item.data.status.text]]"></oj-bind-text></span>
+                          </button>
+                        </li>
+                      </template>
+                    </oj-bind-for-each>
+                  </ul>
+                </div>
               </template>
             </oj-bind-for-each>
-          </ul>
+          </div>
+          <oj-bind-if test="[[workHidden() > 0]]">
+            <a href="?ojr=requirements" class="factory-home-link factory-home-more" id="workMore" on-click="[[go('requirements')]]"><oj-bind-text value="[[workHidden() + ' more on Requirements']]"></oj-bind-text></a>
+          </oj-bind-if>
         </oj-bind-if>
-        <oj-bind-if test="[[recentRequirements().length === 0]]">
-          <p class="factory-home-muted factory-home-none">No requirements yet. Describe one or upload a BRD on the Requirements page.</p>
+        <oj-bind-if test="[[workGroups().length === 0]]">
+          <div class="fx-empty factory-home-empty" id="continueEmpty">
+            <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
+            <span>Every requirement in <oj-bind-text value="[[scopeName]]"></oj-bind-text> is delivered or closed, or there are none yet.</span>
+            <oj-bind-if test="[[canAddRequirement()]]">
+              <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[newRequirement]]">Start a requirement</button>
+            </oj-bind-if>
+          </div>
         </oj-bind-if>
       </section>
 
+      <!-- Recent: activity, requirements and builds in one card -->
       <section class="fx-card factory-home-card" id="recentActivity" aria-labelledby="activityTitle">
         <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="activityTitle">Recent activity</h2>
-          <a href="?ojr=notifications" class="factory-home-link" on-click="[[go('notifications')]]">View all</a>
+          <h2 class="fx-card-title" id="activityTitle">Recent</h2>
+          <a :href="[['?ojr=' + recentLink().page]]" class="factory-home-link" id="recentViewAll" on-click="[[openRecentLink]]"><oj-bind-text value="[[recentLink().label]]"></oj-bind-text></a>
         </div>
-        <oj-bind-if test="[[activity().length > 0]]">
-          <ol class="fx-timeline factory-ov5-timeline">
-            <oj-bind-for-each data="[[activity]]" as="a">
-              <template>
-                <li>
-                  <span :class="[[a.data.dotCss]]"><span :class="[[a.data.iconClass]]" aria-hidden="true"></span></span>
-                  <span class="factory-ov5-event">
-                    <button type="button" class="factory-ov2-activity-text" on-click="[[a.data.open]]"><oj-bind-text value="[[a.data.text]]"></oj-bind-text></button>
-                    <oj-bind-if test="[[allScope()]]"><span class="factory-ov2-ws"><oj-bind-text value="[[a.data.workspace]]"></oj-bind-text></span></oj-bind-if>
-                  </span>
-                  <time class="fx-timeline-time" :title="[[a.data.whenTitle]]"><oj-bind-text value="[[a.data.when]]"></oj-bind-text></time>
-                </li>
-              </template>
-            </oj-bind-for-each>
-          </ol>
-        </oj-bind-if>
-        <oj-bind-if test="[[activity().length === 0]]">
-          <p class="factory-home-muted factory-home-none">Nothing yet.</p>
-        </oj-bind-if>
-      </section>
-
-      <section class="fx-card factory-home-card" id="recentBuilds" aria-labelledby="buildsTitle">
-        <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="buildsTitle">Recent builds</h2>
-          <a href="?ojr=build" class="factory-home-link" on-click="[[go('build')]]">View all</a>
+        <div class="fx-toggle-group factory-home-recent-tabs" role="group" aria-label="Show recent">
+          <oj-bind-for-each data="[[recentTabs]]" as="t">
+            <template><button type="button" :id="[['recent-' + t.data.value]]" :aria-pressed="[[t.data.pressed]]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button></template>
+          </oj-bind-for-each>
         </div>
-        <oj-bind-if test="[[recentBuilds().length > 0]]">
-          <ul class="factory-home-list factory-home-list--compact">
-            <oj-bind-for-each data="[[recentBuilds]]" as="b">
-              <template>
-                <li>
-                  <button type="button" class="factory-home-row" on-click="[[b.data.open]]">
-                    <span class="factory-home-row-main">
-                      <span class="factory-home-row-title"><oj-bind-text value="[[b.data.title]]"></oj-bind-text></span>
-                      <span class="factory-home-row-text" :title="[[b.data.whenTitle]]"><oj-bind-text value="[[(allScope() ? b.data.workspace + ' · ' : '') + (b.data.duration ? b.data.duration + ' · ' : '') + b.data.when]]"></oj-bind-text></span>
+        <oj-bind-if test="[[recentTab() === 'activity']]">
+          <oj-bind-if test="[[activity().length > 0]]">
+            <ol class="fx-timeline factory-ov5-timeline">
+              <oj-bind-for-each data="[[activity]]" as="a">
+                <template>
+                  <li>
+                    <span :class="[[a.data.dotCss]]"><span :class="[[a.data.iconClass]]" aria-hidden="true"></span></span>
+                    <span class="factory-ov5-event">
+                      <button type="button" class="factory-ov2-activity-text" on-click="[[a.data.open]]"><oj-bind-text value="[[a.data.text]]"></oj-bind-text></button>
+                      <oj-bind-if test="[[allScope()]]"><span class="factory-ov2-ws"><oj-bind-text value="[[a.data.workspace]]"></oj-bind-text></span></oj-bind-if>
                     </span>
-                    <span :class="[[b.data.status.css]]"><span :class="[[b.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[b.data.status.text]]"></oj-bind-text></span>
-                  </button>
-                </li>
-              </template>
-            </oj-bind-for-each>
-          </ul>
+                    <time class="fx-timeline-time" :title="[[a.data.whenTitle]]"><oj-bind-text value="[[a.data.when]]"></oj-bind-text></time>
+                  </li>
+                </template>
+              </oj-bind-for-each>
+            </ol>
+          </oj-bind-if>
+          <oj-bind-if test="[[activity().length === 0]]">
+            <p class="factory-home-muted factory-home-none">Nothing yet.</p>
+          </oj-bind-if>
         </oj-bind-if>
-        <oj-bind-if test="[[recentBuilds().length === 0]]">
-          <p class="factory-home-muted factory-home-none">No builds yet. Changes are built with Jenkins from the Changes page once Jenkins is set up on the Code page.</p>
+        <oj-bind-if test="[[recentTab() === 'requirements']]">
+          <div id="recentRequirements">
+            <oj-bind-if test="[[recentRequirements().length > 0]]">
+              <ul class="factory-home-list factory-home-list--compact">
+                <oj-bind-for-each data="[[recentRequirements]]" as="r">
+                  <template>
+                    <li>
+                      <button type="button" class="factory-home-row" on-click="[[r.data.open]]">
+                        <span class="factory-home-row-main">
+                          <span class="factory-home-row-title"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></span>
+                          <span class="factory-home-row-meta" :title="[[r.data.whenTitle]]"><oj-bind-text value="[[(allScope() ? r.data.workspace + ' · ' : '') + r.data.type + ' · updated ' + r.data.when]]"></oj-bind-text></span>
+                        </span>
+                        <span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span>
+                      </button>
+                    </li>
+                  </template>
+                </oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[recentRequirements().length === 0]]">
+              <p class="factory-home-muted factory-home-none">No requirements yet. Describe one or upload a BRD on the Requirements page.</p>
+            </oj-bind-if>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[recentTab() === 'builds']]">
+          <div id="recentBuilds">
+            <oj-bind-if test="[[recentBuilds().length > 0]]">
+              <ul class="factory-home-list factory-home-list--compact">
+                <oj-bind-for-each data="[[recentBuilds]]" as="b">
+                  <template>
+                    <li>
+                      <button type="button" class="factory-home-row" on-click="[[b.data.open]]">
+                        <span class="factory-home-row-main">
+                          <span class="factory-home-row-title"><oj-bind-text value="[[b.data.title]]"></oj-bind-text></span>
+                          <span class="factory-home-row-meta" :title="[[b.data.whenTitle]]"><oj-bind-text value="[[(allScope() ? b.data.workspace + ' · ' : '') + (b.data.duration ? b.data.duration + ' · ' : '') + b.data.when]]"></oj-bind-text></span>
+                        </span>
+                        <span :class="[[b.data.status.css]]"><span :class="[[b.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[b.data.status.text]]"></oj-bind-text></span>
+                      </button>
+                    </li>
+                  </template>
+                </oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[recentBuilds().length === 0]]">
+              <p class="factory-home-muted factory-home-none">No builds yet. Changes are built with Jenkins from the Changes page once Jenkins is set up on the Code page.</p>
+            </oj-bind-if>
+          </div>
         </oj-bind-if>
       </section>
+    </div>
 
-      <section class="fx-card factory-home-card" id="recentWorkspaces" aria-labelledby="workspacesTitle">
-        <div class="factory-home-card-head">
-          <h2 class="fx-card-title" id="workspacesTitle">Workspaces <span class="factory-home-muted factory-home-scope-name"><oj-bind-text value="[[workspaceSummary]]"></oj-bind-text></span></h2>
-          <a href="?ojr=workspaces" class="factory-home-link" on-click="[[go('workspaces')]]">Manage</a>
-        </div>
-        <ul class="factory-home-list factory-home-list--compact">
+    <!-- The workspaces as small cards -->
+    <section class="factory-home-wsp" id="recentWorkspaces" aria-labelledby="workspacesTitle">
+      <div class="factory-home-card-head">
+        <h2 class="factory-home-section" id="workspacesTitle">Workspaces <span class="factory-home-muted factory-home-scope-name"><oj-bind-text value="[[workspaceSummary]]"></oj-bind-text></span></h2>
+        <a href="?ojr=workspaces" class="factory-home-link" on-click="[[go('workspaces')]]">Manage</a>
+      </div>
+      <div class="fx-carousel factory-home-carousel">
+        <button type="button" class="fx-carousel-btn fx-carousel-btn--prev" aria-label="Previous workspaces" on-click="[[carousel.prev]]" :disabled="[[!carousel.canPrev()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
+        <ul class="fx-carousel-track factory-home-ws-track" id="homeWorkspaceTrack" tabindex="0" aria-label="Workspaces, use the arrow keys to scroll">
           <oj-bind-for-each data="[[workspaces]]" as="ws">
             <template>
-              <li class="factory-home-ws" :aria-current="[[ws.data.current === 'true' ? 'true' : null]]">
-                <a href="?ojr=code" class="factory-home-row factory-home-ws-open" on-click="[[ws.data.open]]" :title="[[ws.data.location]]">
-                  <span class="factory-home-row-main">
-                    <span class="factory-home-row-title"><oj-bind-text value="[[ws.data.name]]"></oj-bind-text></span>
-                    <span class="factory-home-row-text" :title="[[ws.data.whenTitle]]"><oj-bind-text value="[[ws.data.meta + ' · ' + ws.data.when]]"></oj-bind-text></span>
+              <li :class="[[ws.data.css]]" :aria-current="[[ws.data.current === 'true' ? 'true' : null]]">
+                <a href="?ojr=code" class="factory-home-ws-open" on-click="[[ws.data.open]]" :title="[[ws.data.location]]">
+                  <span class="factory-home-ws-name"><oj-bind-text value="[[ws.data.name]]"></oj-bind-text></span>
+                  <span class="factory-home-ws-meta"><oj-bind-text value="[[ws.data.meta]]"></oj-bind-text></span>
+                  <span class="factory-home-ws-foot">
+                    <span :class="[[ws.data.status.css]]"><span :class="[[ws.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[ws.data.status.text]]"></oj-bind-text></span>
+                    <span class="factory-home-ws-when" :title="[[ws.data.whenTitle]]"><oj-bind-text value="[[ws.data.when]]"></oj-bind-text></span>
                   </span>
-                  <span :class="[[ws.data.status.css]]"><span :class="[[ws.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[ws.data.status.text]]"></oj-bind-text></span>
                 </a>
-                <fx-menu-button :id="[['wsActions-' + ws.data.id]]" class="factory-ov2-more" variant="ghost" size="sm" icon="more" icon-only
+                <fx-menu-button :id="[['wsActions-' + ws.data.id]]" class="factory-home-ws-more" variant="ghost" size="sm" icon="more" icon-only
                                 :label="[['Actions for ' + ws.data.name]]" items="[[workspaceActions]]" on-fx-action="[[ws.data.menu]]"></fx-menu-button>
               </li>
             </template>
           </oj-bind-for-each>
+          <oj-bind-if test="[[isAdmin()]]">
+            <li class="factory-home-ws factory-home-ws-add">
+              <button type="button" class="factory-home-ws-open" id="connectCodeBase" on-click="[[connectCodeBase]]">
+                <span class="factory-home-ws-plus" aria-hidden="true"><span class="factory-nav-icon factory-ico-plus"></span></span>
+                <span class="factory-home-ws-name">Connect a code base</span>
+                <span class="factory-home-ws-meta">From an SVN URL or a folder</span>
+              </button>
+            </li>
+          </oj-bind-if>
         </ul>
-        <oj-bind-if test="[[isAdmin()]]">
-          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-home-connect" id="connectCodeBase" on-click="[[connectCodeBase]]">
-            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Connect a code base</button>
-        </oj-bind-if>
-      </section>
-    </div>
+        <button type="button" class="fx-carousel-btn fx-carousel-btn--next" aria-label="Next workspaces" on-click="[[carousel.next]]" :disabled="[[!carousel.canNext()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span></button>
+      </div>
+    </section>
   </oj-bind-if>
 </div>

@@ -4,9 +4,15 @@
       <h1>Workspaces</h1>
       <p class="factory-wsp-lead" id="workspacesLead"><oj-bind-text value="[[lead]]"></oj-bind-text></p>
     </div>
-    <oj-bind-if test="[[isAdmin() && !creating()]]">
-      <button type="button" id="newWorkspaceButton" class="fx-btn fx-btn--primary" on-click="[[openCreate]]">
-        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New workspace</button>
+    <oj-bind-if test="[[!creating()]]">
+      <div class="factory-wsp-headbar">
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--icon" id="refreshWorkspaces" data-fx-tip="Refresh" aria-label="Refresh" on-click="[[refresh]]">
+          <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></button>
+        <oj-bind-if test="[[isAdmin()]]">
+          <button type="button" id="newWorkspaceButton" class="fx-btn fx-btn--primary" on-click="[[openCreate]]">
+            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New workspace</button>
+        </oj-bind-if>
+      </div>
     </oj-bind-if>
   </div>
 
@@ -17,19 +23,23 @@
     </div>
   </oj-bind-if>
 
-  <!-- New workspace: source, check, details, import and index, profile -->
+  <!-- New workspace: one step per screen (source, check, details, import and index, profile), the progress on top -->
   <oj-bind-if test="[[creating()]]">
     <section class="fx-card factory-wsp-create" id="createWorkspaceCard" aria-labelledby="createTitle">
-      <div class="factory-wsp-card-head">
-        <h2 class="fx-card-title" id="createTitle">New workspace</h2>
+      <div class="factory-wsp-wiz-top">
+        <div class="factory-wsp-wiz-title">
+          <span class="factory-wsp-eyebrow" id="createStepOf"><oj-bind-text value="[[stageInfo().eyebrow]]"></oj-bind-text></span>
+          <h2 id="createTitle"><oj-bind-text value="[[stageInfo().title]]"></oj-bind-text></h2>
+          <p class="factory-wsp-muted"><oj-bind-text value="[[stageInfo().help]]"></oj-bind-text></p>
+        </div>
         <button type="button" id="closeCreateButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[closeCreate]]">
           <oj-bind-text value="[[run() && run().done ? 'Close' : (run() && run().create === 'done' ? 'Close (the import goes on)' : 'Cancel')]]"></oj-bind-text></button>
       </div>
-      <ol class="fx-steps factory-wsp-steps" id="createSteps" aria-label="Steps">
+      <ol class="factory-wsp-steps" id="createSteps" aria-label="Steps">
         <oj-bind-for-each data="[[stages]]" as="s">
           <template>
-            <li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="fx-step-dot" aria-hidden="true"><oj-bind-text value="[[s.data.dot]]"></oj-bind-text></span>
-              <span class="factory-wsp-step-label"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></li>
+            <li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-wsp-step-bar" aria-hidden="true"></span>
+              <span class="factory-wsp-step-label"><span class="factory-wsp-step-n" aria-hidden="true"><oj-bind-text value="[[s.data.dot]]"></oj-bind-text></span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></li>
           </template>
         </oj-bind-for-each>
       </ol>
@@ -38,10 +48,12 @@
       <oj-bind-if test="[[!run() && !(inspection() && inspection().svnUrl)]]">
         <div class="factory-wsp-stage" id="sourceStage">
           <oj-bind-if test="[[localEnabled()]]">
-            <div class="fx-toggle-group factory-wsp-source" role="group" aria-label="Where is the code?">
+            <div class="factory-wsp-source" role="group" aria-label="Where is the code?">
               <oj-bind-for-each data="[[sourceTabs]]" as="t">
                 <template>
-                  <button type="button" :id="[['source-' + t.data.value]]" :aria-pressed="[[t.data.pressed]]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button>
+                  <button type="button" class="factory-wsp-choice" :id="[['source-' + t.data.value]]" :aria-pressed="[[t.data.pressed]]" on-click="[[t.data.pick]]">
+                    <span :class="[[t.data.iconCss]]" aria-hidden="true"></span>
+                    <span class="factory-wsp-choice-text"><strong><oj-bind-text value="[[t.data.label]]"></oj-bind-text></strong><span><oj-bind-text value="[[t.data.help]]"></oj-bind-text></span></span></button>
                 </template>
               </oj-bind-for-each>
             </div>
@@ -116,10 +128,10 @@
               </oj-bind-if>
             </div>
           </oj-bind-if>
-          <div class="factory-wsp-actions">
+          <div class="factory-wsp-actions factory-wsp-foot">
+            <span class="factory-wsp-muted"><oj-bind-text value="[[checking() ? 'Connecting and reading the code; a large repository takes a few seconds.' : 'Connects, reads the code and suggests the name, bank and OBDX version.']]"></oj-bind-text></span>
             <button type="button" id="checkSourceButton" class="fx-btn fx-btn--primary" :disabled="[[checking]]" on-click="[[checkSource]]">
               <oj-bind-text value="[[checking() ? 'Checking...' : (checkError() ? 'Check again' : 'Check the code')]]"></oj-bind-text></button>
-            <span class="factory-wsp-muted"><oj-bind-text value="[[checking() ? 'Connecting and reading the code; a large repository takes a few seconds.' : 'Connects, reads the code and suggests the name, bank and OBDX version.']]"></oj-bind-text></span>
           </div>
         </div>
       </oj-bind-if>
@@ -129,7 +141,6 @@
         <div class="factory-wsp-stage" id="detailsStage">
           <div class="fx-alert fx-alert--success" id="checkMessage" role="status"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>
             <span class="fx-alert-text"><oj-bind-text value="[[inspection().message]]"></oj-bind-text></span>
-            <button type="button" id="changeSourceButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[changeSource]]">Change source</button>
           </div>
           <div id="workspaceForm" class="fx-form fx-form--3">
             <fx-input id="name" label="Workspace name" value="{{name}}" required error="[[nameError]]"></fx-input>
@@ -149,10 +160,11 @@
               </div>
             </details>
           </oj-bind-if>
-          <div class="factory-wsp-actions">
+          <fx-switch id="importNow" label="Import and index the code now" value="{{importNow}}"></fx-switch>
+          <div class="factory-wsp-actions factory-wsp-foot">
+            <button type="button" id="changeSourceButton" class="fx-btn fx-btn--secondary" on-click="[[changeSource]]">Back: change source</button>
             <button type="button" id="createButton" class="fx-btn fx-btn--primary" on-click="[[createWorkspace]]">
               <oj-bind-text value="[[importNow() ? 'Create and import' : 'Create workspace']]"></oj-bind-text></button>
-            <fx-switch id="importNow" label="Import and index the code now" value="{{importNow}}"></fx-switch>
           </div>
         </div>
       </oj-bind-if>
@@ -175,7 +187,7 @@
             </oj-bind-for-each>
           </ol>
           <oj-bind-if test="[[createFailed()]]">
-            <div class="factory-wsp-actions"><button type="button" id="backToDetailsButton" class="fx-btn fx-btn--secondary" on-click="[[backToDetails]]">Change the details</button></div>
+            <div class="factory-wsp-actions factory-wsp-foot"><button type="button" id="backToDetailsButton" class="fx-btn fx-btn--secondary" on-click="[[backToDetails]]">Change the details</button></div>
           </oj-bind-if>
 
           <oj-bind-if test="[[runProfile()]]">
@@ -183,7 +195,7 @@
               <h3>Detected codebase facts</h3>
               <oj-bind-if test="[[!runProfile().loaded]]"><p class="factory-wsp-muted">Reading the codebase facts...</p></oj-bind-if>
               <oj-bind-if test="[[runProfile().loaded && runProfile().version]]">
-                <dl class="factory-kv factory-wsp-kv">
+                <dl class="factory-wsp-kv">
                   <dt>Workspace version</dt><dd><oj-bind-text value="[[runProfile().declared]]"></oj-bind-text></dd>
                   <dt>The code shows</dt><dd><oj-bind-text value="[[runProfile().version.shown]]"></oj-bind-text></dd>
                 </dl>
@@ -197,12 +209,12 @@
                   </details>
                 </oj-bind-if>
               </oj-bind-if>
-              <div class="factory-wsp-actions">
+              <div class="factory-wsp-actions factory-wsp-foot">
                 <oj-bind-if test="[[runProfile().canConfirm]]">
                   <button type="button" id="confirmRunVersion" class="fx-btn fx-btn--secondary" on-click="[[confirmRunVersion]]">Confirm the detected version</button>
                 </oj-bind-if>
-                <button type="button" id="openCodeButton" class="fx-btn fx-btn--primary" on-click="[[runGo('code')]]">Open the code</button>
                 <button type="button" id="openProfileButton" class="fx-btn fx-btn--tertiary" on-click="[[runGo('code:facts')]]">Review all codebase facts</button>
+                <button type="button" id="openCodeButton" class="fx-btn fx-btn--primary" on-click="[[runGo('code')]]">Open the code</button>
               </div>
             </div>
           </oj-bind-if>
@@ -211,63 +223,72 @@
     </section>
   </oj-bind-if>
 
-  <!-- The workspaces -->
-  <section class="fx-card factory-wsp-list" id="allWorkspaces" aria-labelledby="listTitle">
-    <div class="factory-wsp-card-head">
-      <h2 class="fx-card-title" id="listTitle">All workspaces
-        <oj-bind-if test="[[runningCount() > 0]]"><span class="fx-live"><oj-bind-text value="[[runningCount() === 1 ? '1 import running' : runningCount() + ' imports running']]"></oj-bind-text></span></oj-bind-if></h2>
-      <div class="factory-wsp-filters">
-        <span class="fx-control factory-wsp-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
-          <input id="workspaceSearch" class="fx-input" type="search" placeholder="Search name, bank, version or URL" aria-label="Search workspaces" on-input="[[filterTextInput]]"></span>
-        <select id="statusFilter" class="fx-select factory-wsp-select" aria-label="Indexing status" on-change="[[filterStatusChange]]">
-          <option value="">Any status</option>
-          <option value="ready">Indexed</option>
-          <option value="importing">Importing</option>
-          <option value="failed">Import failed</option>
-          <option value="new">Not imported</option>
-        </select>
-        <button type="button" class="fx-btn fx-btn--tertiary fx-btn--icon" id="refreshWorkspaces" data-fx-tip="Refresh" aria-label="Refresh" on-click="[[refresh]]">
-          <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></button>
+  <!-- The workspaces: filter chips with counts, a search, compact rows -->
+  <oj-bind-if test="[[!creating()]]">
+    <div class="factory-wsp-toolbar">
+      <div class="factory-wsp-filters" role="group" aria-label="Show" id="statusFilters">
+        <oj-bind-for-each data="[[statusFilters]]" as="f">
+          <template><button type="button" class="fx-chip" :id="[['wsFilter-' + (f.data.value || 'all')]]" :aria-pressed="[[f.data.pressed]]" on-click="[[f.data.pick]]">
+            <oj-bind-if test="[[f.data.dot]]"><span :class="[[f.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[f.data.text]]"></oj-bind-text></button></template>
+        </oj-bind-for-each>
       </div>
+      <oj-bind-if test="[[runningCount() > 0]]"><span class="fx-live" id="importsRunning"><oj-bind-text value="[[runningCount() === 1 ? '1 import running' : runningCount() + ' imports running']]"></oj-bind-text></span></oj-bind-if>
+      <span class="fx-control factory-wsp-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+        <input id="workspaceSearch" class="fx-input" type="search" placeholder="Search name, bank, version or URL" aria-label="Search workspaces" on-input="[[filterTextInput]]"></span>
     </div>
-    <div class="fx-table-wrap">
-      <table class="fx-table factory-wsp-table" id="workspaceTable">
-        <thead><tr><th scope="col">Workspace</th><th scope="col">OBDX version</th><th scope="col">Source</th><th scope="col">Indexed revision</th><th scope="col">Indexing</th><th scope="col">Last activity</th></tr></thead>
+
+    <section class="fx-card factory-wsp-list" id="allWorkspaces" aria-label="All workspaces">
+      <table class="factory-wsp-table" id="workspaceTable">
+        <thead><tr><th scope="col">Workspace</th><th scope="col">OBDX version</th><th scope="col">Code</th><th scope="col">SVN</th><th scope="col">Jenkins</th><th scope="col">Last activity</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
         <tbody on-keydown="[[wsKey]]">
           <oj-bind-for-each data="[[rows]]" as="r">
             <template>
-              <tr :class="[[r.data.css]]" tabindex="0" title="Open the workspace's details (Enter)" on-click="[[r.data.select]]" on-focus="[[r.data.focus]]">
-                <td><button type="button" class="factory-wsp-name" on-click="[[r.data.open]]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></button>
-                  <span class="factory-wsp-sub"><oj-bind-text value="[[r.data.bank]]"></oj-bind-text></span></td>
-                <td class="factory-wsp-nowrap" data-label="OBDX version"><oj-bind-text value="[[r.data.version]]"></oj-bind-text>
+              <tr :class="[[r.data.css]]" :data-id="[[r.data.id]]" tabindex="0" title="Open the workspace's details (Enter)" on-click="[[r.data.select]]" on-focus="[[r.data.focus]]">
+                <td class="factory-wsp-cell-name"><span class="factory-wsp-icon" aria-hidden="true"><span class="factory-nav-icon factory-ico-folder"></span></span>
+                  <span class="factory-wsp-namebox"><button type="button" class="factory-wsp-name" on-click="[[r.data.open]]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></button>
+                    <span class="factory-wsp-sub factory-wsp-mono" :title="[[r.data.svnUrl]]"><oj-bind-text value="[[r.data.bank + ' · ' + r.data.shortUrl]]"></oj-bind-text></span>
+                    <span class="factory-wsp-sub"><oj-bind-text value="[[r.data.sourceKind]]"></oj-bind-text></span></span></td>
+                <td data-label="OBDX version"><span class="fx-badge fx-badge--plain fx-badge--neutral factory-wsp-ver"><oj-bind-text value="[[r.data.version]]"></oj-bind-text></span>
                   <oj-bind-if test="[[r.data.versionNote]]"><span class="factory-wsp-sub factory-wsp-warn"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[r.data.versionNote]]"></oj-bind-text></span></oj-bind-if></td>
-                <td class="factory-wsp-url" data-label="Source" :title="[[r.data.svnUrl]]"><oj-bind-text value="[[r.data.shortUrl]]"></oj-bind-text>
-                  <span class="factory-wsp-sub"><oj-bind-text value="[[r.data.sourceKind]]"></oj-bind-text></span></td>
-                <td class="factory-wsp-nowrap" data-label="Indexed revision"><oj-bind-text value="[[r.data.revision]]"></oj-bind-text></td>
-                <td data-label="Indexing"><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span>
+                <td data-label="Code"><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span>
+                  <span class="factory-wsp-sub factory-wsp-mono factory-wsp-rev"><oj-bind-text value="[[r.data.revision]]"></oj-bind-text></span>
                   <oj-bind-if test="[[r.data.progress]]"><span class="factory-wsp-sub"><oj-bind-text value="[[r.data.progress]]"></oj-bind-text></span></oj-bind-if></td>
+                <td data-label="SVN" :title="[[r.data.svn.title]]"><span :class="[[r.data.svn.css]]"><span :class="[[r.data.svn.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.svn.text]]"></oj-bind-text></span>
+                  <oj-bind-if test="[[r.data.svn.when]]"><span class="factory-wsp-sub"><oj-bind-text value="[[r.data.svn.when]]"></oj-bind-text></span></oj-bind-if></td>
+                <td data-label="Jenkins" :title="[[r.data.jenkins.title]]"><span :class="[[r.data.jenkins.css]]"><span :class="[[r.data.jenkins.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.jenkins.text]]"></oj-bind-text></span>
+                  <oj-bind-if test="[[r.data.jenkins.when]]"><span class="factory-wsp-sub"><oj-bind-text value="[[r.data.jenkins.when]]"></oj-bind-text></span></oj-bind-if></td>
                 <td class="factory-wsp-nowrap" data-label="Last activity" :title="[[r.data.whenTitle]]"><oj-bind-text value="[[r.data.when]]"></oj-bind-text></td>
+                <td class="factory-wsp-cell-more">
+                  <fx-menu-button :id="[['wsMenu-' + r.data.id]]" variant="ghost" size="sm" icon="more" icon-only
+                                  :label="[['More for ' + r.data.name]]" items="[[r.data.menuItems]]" on-fx-action="[[r.data.menu]]"></fx-menu-button></td>
               </tr>
             </template>
           </oj-bind-for-each>
         </tbody>
       </table>
-    </div>
-    <oj-bind-if test="[[loading()]]"><p class="factory-wsp-muted" id="workspacesLoading">Loading the workspaces...</p></oj-bind-if>
-    <oj-bind-if test="[[!loading() && rows().length === 0]]">
-      <div class="fx-empty" id="workspacesEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>
-        <oj-bind-text value="[[total() > 0 ? 'No workspaces match.' : (isAdmin() ? 'No workspaces yet. Choose New workspace to connect a code base.' : 'You are not a member of a workspace yet. Ask an administrator to add you.')]]"></oj-bind-text></div>
-    </oj-bind-if>
-  </section>
+      <oj-bind-if test="[[loading()]]"><p class="factory-wsp-muted factory-wsp-pad" id="workspacesLoading">Loading the workspaces...</p></oj-bind-if>
+      <oj-bind-if test="[[!loading() && rows().length === 0]]">
+        <div class="fx-empty" id="workspacesEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>
+          <oj-bind-text value="[[total() > 0 ? 'No workspaces match.' : (isAdmin() ? 'No workspaces yet. Choose New workspace to connect a code base.' : 'You are not a member of a workspace yet. Ask an administrator to add you.')]]"></oj-bind-text>
+          <oj-bind-if test="[[total() > 0]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="clearFilters" on-click="[[clearFilters]]">Show all</button></oj-bind-if>
+        </div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
 
   <!-- One workspace -->
   <fx-sheet id="workspaceSheet" open="{{sheetOpen}}" heading="[[sheet() ? sheet().name : '']]" subtitle="[[sheet() ? sheet().subtitle : '']]" wide>
     <div class="factory-wsp-sheet">
       <oj-bind-if test="[[sheet()]]">
+        <div class="factory-wsp-glance" id="sheetGlance" aria-label="At a glance">
+          <span class="factory-wsp-glance-item"><span class="factory-wsp-glance-k">Code</span><span :class="[[sheet().status.css]]"><span :class="[[sheet().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().status.text]]"></oj-bind-text></span></span>
+          <span class="factory-wsp-glance-item"><span class="factory-wsp-glance-k">SVN</span><span :class="[[sheet().svnHealth.css]]"><span :class="[[sheet().svnHealth.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().svnHealth.text]]"></oj-bind-text></span></span>
+          <span class="factory-wsp-glance-item"><span class="factory-wsp-glance-k">Jenkins</span><span :class="[[sheet().jenkinsHealth.css]]"><span :class="[[sheet().jenkinsHealth.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().jenkinsHealth.text]]"></oj-bind-text></span></span>
+        </div>
+
         <section class="factory-wsp-part" aria-labelledby="sheetCodeTitle">
           <div class="factory-wsp-part-head">
-            <h3 id="sheetCodeTitle">Code and index</h3>
-            <span :class="[[sheet().status.css]]"><span :class="[[sheet().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().status.text]]"></oj-bind-text></span>
+            <h3 id="sheetCodeTitle"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span>Code and index</h3>
           </div>
           <p class="factory-wsp-muted" id="sheetJob"><oj-bind-text value="[[sheet().running ? sheet().progress : sheet().jobText]]"></oj-bind-text></p>
           <oj-bind-if test="[[sheet().jobMessage]]">
@@ -278,19 +299,19 @@
           </dl>
           <div class="factory-wsp-actions">
             <span class="factory-wsp-tipwrap" :tabindex="[[sheet().canManage ? null : '0']]" :data-fx-tip="[[sheet().manageTip]]">
-              <button type="button" id="updateCodeButton" class="fx-btn fx-btn--primary" :disabled="[[!sheet().canUpdate]]" on-click="[[updateCode]]">
+              <button type="button" id="updateCodeButton" class="fx-btn fx-btn--primary fx-btn--sm" :disabled="[[!sheet().canUpdate]]" on-click="[[updateCode]]">
                 <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[sheet().updateLabel]]"></oj-bind-text></button></span>
             <oj-bind-if test="[[sheet().canCheckOutAgain]]">
-              <button type="button" id="checkOutAgainButton" class="fx-btn fx-btn--secondary" on-click="[[checkOutAgain]]">Check out again</button>
+              <button type="button" id="checkOutAgainButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[checkOutAgain]]">Check out again</button>
             </oj-bind-if>
-            <a href="?ojr=code" class="fx-btn fx-btn--tertiary" on-click="[[sheetGo('code')]]">Open the code</a>
+            <a href="?ojr=code" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[sheetGo('code')]]">Open the code</a>
           </div>
           <p class="factory-wsp-muted"><oj-bind-text value="[[sheet().updateHelp]]"></oj-bind-text></p>
         </section>
 
         <section class="factory-wsp-part" aria-labelledby="sheetVersionTitle" id="sheetVersion">
-          <h3 id="sheetVersionTitle">OBDX version</h3>
-          <dl class="factory-kv factory-wsp-kv">
+          <h3 id="sheetVersionTitle"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>OBDX version</h3>
+          <dl class="factory-wsp-kv">
             <dt>Workspace version</dt><dd><oj-bind-text value="[[sheet().declared]]"></oj-bind-text></dd>
             <dt>The code shows</dt>
             <dd>
@@ -313,51 +334,67 @@
           </oj-bind-if>
           <div class="factory-wsp-actions">
             <oj-bind-if test="[[sheet().canConfirm]]">
-              <button type="button" id="confirmVersionButton" class="fx-btn fx-btn--secondary" on-click="[[confirmVersion]]">Confirm the detected version</button>
+              <button type="button" id="confirmVersionButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[confirmVersion]]">Confirm the detected version</button>
             </oj-bind-if>
-            <a href="?ojr=code&amp;tab=facts" class="fx-btn fx-btn--tertiary" id="correctVersionLink" on-click="[[sheetFact('obdx.version')]]">Correct it on Codebase facts</a>
+            <a href="?ojr=code&amp;tab=facts" class="fx-btn fx-btn--secondary fx-btn--sm" id="correctVersionLink" on-click="[[sheetFact('obdx.version')]]">Correct it on Codebase facts</a>
           </div>
         </section>
 
-        <section class="factory-wsp-part" aria-labelledby="sheetRepoTitle">
-          <h3 id="sheetRepoTitle">Repository</h3>
-          <dl class="factory-kv factory-wsp-kv">
-            <dt>SVN URL</dt><dd><span class="factory-wsp-copyrow"><span class="factory-mono factory-wsp-break"><oj-bind-text value="[[sheet().svnUrl]]"></oj-bind-text></span>
-              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" data-fx-tip="Copy the URL" aria-label="Copy the repository URL" on-click="[[copyUrl]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></dd>
-            <dt>Username</dt><dd><oj-bind-text value="[[sheet().svnUser]]"></oj-bind-text></dd>
-            <dt>Password</dt><dd><oj-bind-text value="[[sheet().svnPassword]]"></oj-bind-text></dd>
-          </dl>
-          <oj-bind-if test="[[sheet().testText]]">
-            <p :class="[[sheet().testOk ? 'factory-wsp-msg' : 'factory-wsp-run-error']]" id="svnTestResult" role="status"><oj-bind-text value="[[sheet().testText]]"></oj-bind-text></p>
-          </oj-bind-if>
-          <div class="factory-wsp-actions">
-            <oj-bind-if test="[[sheet().canTest]]">
-              <button type="button" id="testConnectionButton" class="fx-btn fx-btn--secondary" on-click="[[testConnection]]">Test the connection</button>
+        <section class="factory-wsp-part" aria-labelledby="sheetRepoTitle" id="sheetConnections">
+          <h3 id="sheetRepoTitle"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span>Connections</h3>
+          <div class="factory-wsp-conn" id="sheetSvn">
+            <div class="factory-wsp-conn-head"><strong>SVN repository</strong>
+              <span :class="[[sheet().svnHealth.css]]"><span :class="[[sheet().svnHealth.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().svnHealth.text]]"></oj-bind-text></span></div>
+            <dl class="factory-wsp-kv">
+              <dt>SVN URL</dt><dd><span class="factory-wsp-copyrow"><span class="factory-mono factory-wsp-break"><oj-bind-text value="[[sheet().svnUrl]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" data-fx-tip="Copy the URL" aria-label="Copy the repository URL" on-click="[[copyUrl]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span></button></span></dd>
+              <dt>Username</dt><dd><oj-bind-text value="[[sheet().svnUser]]"></oj-bind-text></dd>
+              <dt>Password</dt><dd><oj-bind-text value="[[sheet().svnPassword]]"></oj-bind-text></dd>
+              <dt>Last result</dt><dd><oj-bind-text value="[[sheet().svnHealth.last]]"></oj-bind-text></dd>
+            </dl>
+            <oj-bind-if test="[[sheet().testText]]">
+              <p :class="[[sheet().testOk ? 'factory-wsp-msg' : 'factory-wsp-run-error']]" id="svnTestResult" role="status"><oj-bind-text value="[[sheet().testText]]"></oj-bind-text></p>
             </oj-bind-if>
-            <a href="?ojr=code" class="fx-btn fx-btn--tertiary" on-click="[[sheetGo('code')]]">Change on the Code page</a>
+            <div class="factory-wsp-actions">
+              <oj-bind-if test="[[sheet().canTest]]">
+                <button type="button" id="testConnectionButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[testConnection]]">Test the connection</button>
+              </oj-bind-if>
+              <a href="?ojr=code" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[sheetSettings]]">Change on the Code page</a>
+            </div>
+          </div>
+          <div class="factory-wsp-conn" id="sheetJenkins">
+            <div class="factory-wsp-conn-head"><strong>Jenkins</strong>
+              <span :class="[[sheet().jenkinsHealth.css]]"><span :class="[[sheet().jenkinsHealth.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[sheet().jenkinsHealth.text]]"></oj-bind-text></span></div>
+            <dl class="factory-wsp-kv">
+              <oj-bind-for-each data="[[sheet().jenkinsFacts]]" as="f"><template><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each>
+            </dl>
+            <div class="factory-wsp-actions">
+              <a href="?ojr=code" class="fx-btn fx-btn--secondary fx-btn--sm" id="jenkinsSettingsLink" on-click="[[sheetSettings]]"><oj-bind-text value="[[sheet().jenkinsSet ? 'Edit in Code › Settings' : 'Set up in Code › Settings']]"></oj-bind-text></a>
+              <a href="?ojr=integrations" class="fx-btn fx-btn--ghost fx-btn--sm" id="openIntegrationsLink" on-click="[[sheetGo('integrations')]]">History on Integrations</a>
+            </div>
           </div>
         </section>
 
         <section class="factory-wsp-part" aria-labelledby="sheetMembersTitle">
-          <h3 id="sheetMembersTitle">Members</h3>
+          <h3 id="sheetMembersTitle"><span class="factory-nav-icon factory-ico-users" aria-hidden="true"></span>Members</h3>
           <oj-bind-if test="[[sheet().membersLoaded && sheet().members.length > 0]]">
             <ul class="factory-wsp-members">
               <oj-bind-for-each data="[[sheet().members]]" as="m">
                 <template><li><span :class="[[m.data.avatar]]" aria-hidden="true"><oj-bind-text value="[[m.data.initials]]"></oj-bind-text></span>
-                  <span><oj-bind-text value="[[m.data.name]]"></oj-bind-text></span><span class="factory-wsp-muted"><oj-bind-text value="[[m.data.role]]"></oj-bind-text></span></li></template>
+                  <span><oj-bind-text value="[[m.data.name]]"></oj-bind-text></span><span class="fx-badge fx-badge--neutral"><oj-bind-text value="[[m.data.role]]"></oj-bind-text></span></li></template>
               </oj-bind-for-each>
             </ul>
           </oj-bind-if>
           <oj-bind-if test="[[sheet().membersLoaded && sheet().members.length === 0]]"><p class="factory-wsp-muted">No members; administrators can open it.</p></oj-bind-if>
           <oj-bind-if test="[[!sheet().membersLoaded]]"><p class="factory-wsp-muted">Loading...</p></oj-bind-if>
-          <oj-bind-if test="[[isAdmin()]]"><a href="?ojr=admin" class="factory-home-link" on-click="[[sheetGo('admin')]]">Manage members on Administration</a></oj-bind-if>
+          <oj-bind-if test="[[isAdmin()]]"><a href="?ojr=admin" class="factory-wsp-link" on-click="[[sheetGo('admin')]]">Manage members on Administration</a></oj-bind-if>
         </section>
 
         <oj-bind-if test="[[sheet().canDelete]]">
           <section class="factory-wsp-part factory-wsp-danger" aria-labelledby="sheetDeleteTitle">
             <h3 id="sheetDeleteTitle">Delete the workspace</h3>
             <p class="factory-wsp-muted">Removes the workspace and everything made in it from the factory. The SVN repository is not changed.</p>
-            <div class="factory-wsp-actions"><button type="button" id="deleteWorkspaceButton" class="fx-btn fx-btn--danger" on-click="[[deleteWorkspace]]">Delete workspace...</button></div>
+            <div class="factory-wsp-actions"><button type="button" id="deleteWorkspaceButton" class="fx-btn fx-btn--danger fx-btn--sm" on-click="[[deleteWorkspace]]">Delete workspace...</button></div>
           </section>
         </oj-bind-if>
       </oj-bind-if>

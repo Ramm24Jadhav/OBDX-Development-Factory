@@ -9,8 +9,8 @@
  * Settings, Models & AI); credentials stay on the server and are only ever shown as stored or not.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/dashboard', '../services/workspaceSelection',
-        '../services/pageRequests', '../services/ui', '../services/toast', '../services/modelServers', 'ojs/ojknockout'],
-  function (ko, accUtils, api, session, dashboard, workspaceSelection, pageRequests, ui, toast, servers) {
+        '../services/pageRequests', '../services/ui', '../services/toast', '../services/modelServers', '../services/connectionHealth', 'ojs/ojknockout'],
+  function (ko, accUtils, api, session, dashboard, workspaceSelection, pageRequests, ui, toast, servers, health) {
     const GROUPS = [
       { type: 'svn', title: 'Source control', icon: 'branch' },
       { type: 'jenkins', title: 'Builds', icon: 'flask' },
@@ -18,27 +18,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       { type: 'signin', title: 'Sign-in', icon: 'shield' },
       { type: 'updates', title: 'Updates', icon: 'refresh' }
     ];
-    // Health words; the status category gives the colour (only a real result is green). Filter: which chip counts it.
-    const HEALTH = {
-      ok: { pill: ui.status('PASSED', 'Working'), filter: 'working' },
-      warning: { pill: ui.status('WARNING', 'Warnings'), filter: 'test' },
-      failed: { pill: ui.status('FAILED', 'Failed'), filter: 'test' },
-      partial: { pill: ui.status('WARNING', 'Partly tested'), filter: 'test' },
-      untested: { pill: ui.status('WARNING', 'Needs a test'), filter: 'test' },
-      notset: { pill: ui.status('DRAFT', 'Not set up'), filter: 'notset' },
-      none: { pill: ui.status('NOT_CHECKED', 'Not recorded'), filter: '' },
-      inuse: { pill: ui.status('NOT_CHECKED', 'In use'), filter: '' },
-      off: { pill: ui.status('CLOSED', 'Off'), filter: '' }
-    };
-    const BUILD_REACHED = ['SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED'];
+    // Health words and how a result counts: shared with the Workspaces page (services/connectionHealth)
+    const HEALTH = health.HEALTH;
+    const BUILD_REACHED = health.BUILD_REACHED;
     const AUDIT_WORDS = {
       WORKSPACE_CREATED: 'Workspace created', SVN_SETTINGS_CHANGED: 'SVN settings changed', JENKINS_SETTINGS_CHANGED: 'Jenkins settings changed'
     };
     const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     const time = (value) => (value ? new Date(value).getTime() : 0);
-    const newest = (list) => list.filter(Boolean).sort((a, b) => time(b.at) - time(a.at))[0] || null;
-    // A one-line version of a server message; the whole message stays in the tooltip
-    const first = (text) => { const t = String(text || '').trim().replace(/\s+/g, ' '); return t.length > 140 ? t.slice(0, 139) + '…' : t; };
+    const newest = health.newest;
+    const first = health.first;
     // The server part of an SVN URL: workspaces on the same server are one integration. A file: URL is a folder on
     // the factory's own computer, so it stands alone.
     const svnServer = (url) => {
@@ -47,17 +36,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     };
     const hostOf = (url) => { const m = /^[a-z+]+:\/\/([^/]+)/i.exec(url || ''); return m && m[1] ? m[1] : 'folder ' + String(url || '').split('/').filter(Boolean).slice(-2).join('/'); };
 
-    /** A connection's health from its newest result; settings changed after it make it need a test again. */
-    function healthOf(results, changedAt) {
-      const last = newest(results);
-      if (!last) {
-        return { key: 'untested', note: 'No connection test recorded yet.' };
-      }
-      if (changedAt && time(changedAt) > time(last.at)) {
-        return { key: 'untested', note: 'The settings changed after the last result. Test the connection again.' };
-      }
-      return { key: last.kind, note: '' };
-    }
+    const healthOf = health.healthOf;
 
     function IntegrationsViewModel() {
       this.errorMessage = ko.observable('');
@@ -80,17 +59,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const svnMember = (d) => {
         const w = d.workspace;
         const events = activity()[w.id] || [];
-        const tests = events.filter((e) => /^SVN_TEST_/.test(e.action)).map((e) => ({
-          at: e.at, kind: e.action === 'SVN_TEST_PASSED' ? 'ok' : 'failed', source: 'Connection test',
-          text: (e.action === 'SVN_TEST_PASSED' ? 'Connected, ' + (e.detail || 'repository read') : first(e.detail) || 'Connection failed'), full: e.detail, by: e.username
-        }));
-        const imports = d.imports.filter((j) => j.status === 'SUCCEEDED' || j.status === 'FAILED').map((j) => ({
-          at: j.finishedAt || j.createdAt, kind: j.status === 'SUCCEEDED' ? 'ok' : 'failed', source: 'Import',
-          text: j.status === 'SUCCEEDED' ? 'Imported' + (j.toRevision ? ' revision ' + j.toRevision : '') : 'Import failed: ' + (first(j.message) || 'no reason given'), full: j.message
-        }));
-        const changed = newest(events.filter((e) => e.action === 'SVN_SETTINGS_CHANGED'));
+        const own = health.svnResults(d, events);
         return {
-          workspace: w.name, workspaceId: w.id, target: w.svnUrl, results: tests.concat(imports), tests: tests, changedAt: changed ? changed.at : null,
+          workspace: w.name, workspaceId: w.id, target: w.svnUrl, results: own.results, tests: own.tests, changedAt: own.changedAt,
           canTest: session.can(w.id, 'MANAGE_CODE'), testPath: 'workspaces/' + w.id + '/svn/test',
           facts: [{ k: 'Repository', v: w.svnUrl }, { k: 'Workspace', v: w.name + (w.bankName ? ' (' + w.bankName + (w.obdxVersion ? ', ' + w.obdxVersion : '') + ')' : '') },
             { k: 'OBDX version', v: w.obdxVersion || '–' },
@@ -104,18 +75,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const jenkinsMember = (d, j) => {
         const w = d.workspace;
         const events = activity()[w.id] || [];
-        const tests = events.filter((e) => /^JENKINS_TEST_/.test(e.action)).map((e) => ({
-          at: e.at, kind: e.action === 'JENKINS_TEST_PASSED' ? 'ok' : e.action === 'JENKINS_TEST_WARNING' ? 'warning' : 'failed', source: 'Connection test',
-          text: e.action === 'JENKINS_TEST_FAILED' ? first(e.detail) || 'Connection failed' : 'Connected, ' + first(e.detail), full: e.detail, by: e.username
-        }));
-        const builds = d.builds.filter((b) => BUILD_REACHED.indexOf(b.result) >= 0 || b.result === 'NOT_BUILT').map((b) => ({
-          at: b.finishedAt || b.startedAt, kind: b.result === 'NOT_BUILT' ? 'failed' : 'ok', source: 'Build',
-          text: (b.buildNumber ? 'Build #' + b.buildNumber + ' ' : 'Build ') + (b.result === 'NOT_BUILT' ? 'not run: ' + first((b.errors || [])[0] || 'Jenkins was not reached') : 'ran (' + b.result.toLowerCase() + ')'),
-          full: b.result === 'NOT_BUILT' ? (b.errors || []).join(' ') : b.changeTitle
-        }));
-        const changed = newest(events.filter((e) => e.action === 'JENKINS_SETTINGS_CHANGED'));
+        const own = health.jenkinsResults(d, events);
         return {
-          workspace: w.name, workspaceId: w.id, target: j.url, results: tests.concat(builds), tests: tests, changedAt: changed ? changed.at : null,
+          workspace: w.name, workspaceId: w.id, target: j.url, results: own.results, tests: own.tests, changedAt: own.changedAt,
           canTest: session.can(w.id, 'MANAGE_CODE'), testPath: 'workspaces/' + w.id + '/jenkins/test',
           facts: [{ k: 'Jenkins URL', v: j.url }, { k: 'Jobs', v: j.jobs || 'None' }, { k: 'Builds', v: j.mode === 'BRANCH' ? 'Branch builds' : 'Patch builds' },
             { k: 'Login', v: (j.username ? 'User ' + j.username : 'No user') + ' · ' + (j.tokenSet ? 'API token stored (encrypted)' : 'no API token stored') }],

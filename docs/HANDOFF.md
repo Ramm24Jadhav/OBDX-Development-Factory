@@ -55,6 +55,7 @@ provider rows with a side panel (address, key, Use for writing / Use for search)
 Try a prompt; Usage & Cost and the capability table are gone. Integrations groups everything it connects to (Source
 control, Builds with a Set up row per workspace, AI model servers with the same test record as Models & AI, Sign-in,
 Updates) with filter chips and a detail of Connection, History and Used by. `services/modelServers.js` is shared.
+**Home** and **Workspaces** were redesigned (branch `redesign-home`): Home leads with Needs you (kind chips), then Work in progress by stage with the recorded figures, one Recent card and workspace cards; Workspaces has filter chips, rows with SVN and Jenkins health (`services/connectionHealth.js`, shared with Integrations), a sectioned side sheet and a one-step-per-screen wizard.
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
 Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in
