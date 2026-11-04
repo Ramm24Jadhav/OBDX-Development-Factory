@@ -503,60 +503,62 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         };
       });
 
-      // Improve My Question: the question rewritten precisely (or what to clarify), to edit and approve before asking
+      // Improve My Question: the question in the box is rewritten precisely, with one line saying what to clarify and Undo.
+      // Asking it sends the user's own question with the improved one, as before.
       this.improvement = ko.observable(null);
       this.improving = ko.observable(false);
-      this.improvedText = ko.observable('');
       this.improve = () => {
         const q = (this.question() || '').trim();
         if (!q) { toast.info('Write a question first, even a few words.'); return; }
+        const original = this.improvement() ? this.improvement().original : q;
         this.improving(true);
         api.post('knowledge/improve-question', { question: q, workspaceId: this.workspaceId() || null, history: this.turns().slice(-3) })
           .then((r) => {
             const ready = r.status === 'READY';
-            this.improvedText(r.enhancedQuery || q);
-            this.improvement(Object.assign({}, r, {
-              ready: ready,
-              title: ready ? 'Improved question' : r.status === 'AMBIGUOUS' ? 'The question can mean different things' : 'Something is missing first',
-              lead: ready ? 'Edit it if needed, then ask it. Your own question stays as you wrote it.'
-                : 'Answer these in your question, or edit the improved one and ask it anyway.',
-              facts: [['Kind', r.detectedIntent], ['Area', r.detectedModule], ['Version', r.detectedVersion]].filter(([, v]) => !!v).map(([k, v]) => ({ k: k, v: v })),
-              made: r.byModel ? '' : 'Improved without the model (none available or its reply could not be used).'
-            }));
+            const clarify = r.clarificationQuestions || [];
+            this.question(r.enhancedQuery || q);
+            this.improvement({
+              original: original,
+              lead: ready ? 'Improved. Edit it if needed, then ask.'
+                : (r.status === 'AMBIGUOUS' ? 'It can mean different things. ' : 'Something is missing. ') + 'Add it to the question, or ask anyway.',
+              clarify: clarify.join(' · '),
+              assumes: (r.assumptions || []).length ? 'Assumes ' + r.assumptions.join('; ') : '',
+              made: r.byModel ? '' : 'Improved without the model.'
+            });
+            focusLater('libraryQuestion');
           })
           .catch((e) => toast.error('Not improved: ' + ui.errorText(e)))
           .finally(() => this.improving(false));
       };
-      this.cancelImprove = () => { this.improvement(null); this.improvedText(''); };
-      this.copyImproved = () => copy(this.improvedText(), 'The improved question is');
-      this.useImproved = () => {
-        const text = (this.improvedText() || '').trim();
-        if (!text) { return; }
-        this.improvement(null);
-        this.askWith({ improved: text });
+      this.undoImprove = () => {
+        const imp = this.improvement();
+        if (imp) { this.question(imp.original); this.improvement(null); focusLater('libraryQuestion'); }
       };
       // The conversation so far (questions and answers), so a follow-up such as "and how do I clone one?" is understood
       this.turns = ko.observableArray([]);
       this.followingUp = ko.pureComputed(() => this.turns().length > 0);
       this.lastQuestion = ko.pureComputed(() => (this.turns().length ? this.turns()[this.turns().length - 1].question : ''));
-      this.newConversation = () => { this.turns([]); this.answer(null); this.answerText(''); this.question(''); this.askedQuestion(''); focusLater('libraryQuestion'); };
+      this.newConversation = () => { this.turns([]); this.improvement(null); this.answer(null); this.answerText(''); this.question(''); this.askedQuestion(''); focusLater('libraryQuestion'); };
       this.examples = ['How do I add a field to an existing OBDX transaction screen?', 'How is a fund transfer sent to the host?',
         'Where are UI components extended without changing the product code?', 'What does the Extensibility API toolkit provide?'];
       this.exampleRows = this.examples.map((text) => ({ text: text, ask: () => { this.question(text); this.ask(); } }));
       this.setNewForBank = (event) => this.newForBank(!!event.target.checked);
-      this.ask = () => this.askWith({});
+      this.ask = () => {
+        const imp = this.improvement();
+        const text = (this.question() || '').trim();
+        this.askWith(imp && text && text !== imp.original ? { question: imp.original, improved: text } : {});
+      };
       // The last question again (with the detail now chosen), in place of its answer
       this.regenerate = () => {
         const last = this.turns().length ? this.turns()[this.turns().length - 1] : null;
         if (!last || this.asking()) { return; }
         this.turns.pop();
-        this.question(last.question);
-        this.askWith({ improved: last.improved || null });
+        this.askWith({ question: last.question, improved: last.improved || null });
       };
       // Copied with each citation written out (manual, version, section, page) in place of its number
       this.copyAnswer = () => copy(markdown.plain(this.answerText(), (this.answer() || {}).sources), 'The answer is');
       this.askWith = (opts) => {
-        const q = (this.question() || '').trim();
+        const q = (opts.question || this.question() || '').trim();
         if (!q || this.asking()) { return; }
         const improved = opts.improved || null;
         const style = this.style();
@@ -629,10 +631,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .then(() => {
             if (failed) {
               toast.error('Not answered: ' + ui.errorText(failed));
-              if (!this.answerText()) { this.answer(null); this.question(q); }
+              if (!this.answerText()) { this.answer(null); this.question(improved || q); }
             }
           })
-          .catch((e) => { this.answer(null); this.question(q); toast.error('Not answered: ' + ui.errorText(e)); })
+          .catch((e) => { this.answer(null); this.question(improved || q); toast.error('Not answered: ' + ui.errorText(e)); })
           .finally(() => this.asking(false));
       };
       // Enter asks, Shift+Enter is a new line; Ctrl+Shift+E opens the expanded editor
@@ -670,7 +672,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       };
       this.editorBackdrop = (event) => { if (event.target === event.currentTarget) { this.closeEditor(); } return true; };
       this.askFromEditor = () => { if (!(this.question() || '').trim()) { return; } this.closeEditor(); this.ask(); };
-      this.improveFromEditor = () => { this.closeEditor(); this.improve(); };
+      this.improveFromEditor = () => this.improve();
       this.editorKey = (event) => {
         if (event.defaultPrevented) { return true; }
         if (event.key === 'Escape') { event.preventDefault(); this.closeEditor(); return false; }

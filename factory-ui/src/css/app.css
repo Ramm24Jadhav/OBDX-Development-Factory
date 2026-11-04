@@ -7091,14 +7091,12 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb .factory-lb-composehint { font-size: var(--fx-text-caption); }
 .factory-lb .factory-lb-followup { margin: 0; font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
 .factory-lb .factory-lb-style .fx-menu { min-width: 288px; }
-.factory-lb .factory-lb-improve { padding: 14px 16px; border: var(--fx-border-width) solid var(--fx-primary-border); border-radius: var(--fx-radius-lg); background: linear-gradient(180deg, var(--fx-primary-soft), var(--fx-surface) 70%); display: grid; gap: 10px; }
-.factory-lb .factory-lb-improvehead { display: grid; gap: 2px; }
+.factory-lb-improved { display: flex; align-items: flex-start; gap: var(--fx-space-2); margin: 0 var(--fx-space-3); padding: 6px 4px 6px 10px; border-radius: var(--fx-radius-sm); background: var(--fx-primary-soft); color: var(--fx-text); font-size: var(--fx-text-sm); line-height: 1.45; }
+.factory-lb-improved > .factory-nav-icon { flex: none; margin-top: 2px; color: var(--fx-primary-text); }
+.factory-lb-improvedtext { flex: 1; min-width: 0; padding-top: 2px; overflow-wrap: anywhere; }
+.factory-lb-improved .fx-btn { flex: none; margin: -2px 0; }
+.factory-lb-xbody .factory-lb-improved { flex: none; margin: 0 var(--fx-space-6) var(--fx-space-3); }
 .factory-lb .factory-lb-h3 { display: flex; align-items: center; gap: var(--fx-space-2); margin: 0; font-size: var(--fx-text-h5); color: var(--fx-text); }
-.factory-lb .factory-lb-improvehead .fx-muted { font-size: var(--fx-text-sm); }
-.factory-lb .factory-lb-clarify { margin: 0; padding-left: 1.3em; display: grid; gap: var(--fx-space-1); color: var(--fx-text); }
-.factory-lb .factory-lb-improvefacts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: var(--fx-text-sm); }
-.factory-lb .factory-lb-assume { font-size: var(--fx-text-caption); }
-.factory-lb .factory-lb-improvebar { display: flex; flex-wrap: wrap; gap: var(--fx-space-2); }
 /* The Sources rail */
 .factory-lb .factory-lb-rail { min-width: 0; display: flex; flex-direction: column; gap: var(--fx-space-3); }
 .factory-lb .factory-lb-railhead, .factory-lb .factory-lb-striphead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--fx-space-2); font-size: var(--fx-text-caption); }
@@ -7127,7 +7125,7 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb-xhead { display: flex; align-items: center; gap: var(--fx-space-3); padding: var(--fx-space-4) var(--fx-space-4) var(--fx-space-4) var(--fx-space-6); border-bottom: var(--fx-border-width) solid var(--fx-border); }
 .factory-lb-xheadtext { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: var(--fx-text-caption); }
 .factory-lb-xtitle { margin: 0; font-size: var(--fx-text-h4); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-.factory-lb-xbody { flex: 1 1 auto; min-height: 0; display: flex; }
+.factory-lb-xbody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .factory-lb-xbody > fx-textarea { flex: 1 1 auto; display: flex; }
 .factory-lb-xbody .fx-field { flex: 1 1 auto; }
 .factory-lb-xbody .fx-textarea { flex: 1 1 auto; height: 100%; border: 0; border-radius: 0; box-shadow: none; padding: var(--fx-space-5) var(--fx-space-6); font-size: var(--fx-text-md); line-height: 24px; resize: none; }

@@ -3,7 +3,8 @@
 //    message is not repeated in the document rows;
 //  - Ask, Documents and Notes are tabs (arrow keys move between them); Search in sits on the Ask tab's line;
 //  - Ask: the empty panel with examples, the composer (Enter asks, Shift+Enter is a new line), the answer-length menu,
-//    the expanded editor (modal, focus kept in it, Escape closes it and focus goes back), an answer with its sources in
+//    the expanded editor (modal, focus kept in it, Escape closes it and focus goes back), Improve my question (the question
+//    rewritten in the box with one line and Undo, then asked with the improved one), an answer with its sources in
 //    the rail, the sources searched and not used, and the feedback row. The answer is streamed by a stand-in for the
 //    server's stream in the page, so no model is needed;
 //  - Documents: the Sources strip, the toolbar filters, the six columns, a row menu, the Add documents side sheet;
@@ -166,6 +167,36 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   await key('Escape', 'Escape', 27);
   await sleep(300);
   record('Escape closes the editor and focus goes back to Expand', await run(() => !document.getElementById('libraryEditor')) && (await active()) === 'libraryExpand', await active());
+
+  // Improve my question rewrites the question in the box, with one line and Undo (the server's reply is stood in for)
+  await run(() => new Promise((r) => window.require(['services/api'], (api) => {
+    const post = api.post;
+    api.post = (path, body) => (path === 'knowledge/improve-question'
+      ? Promise.resolve({ status: 'NEEDS_CLARIFICATION', enhancedQuery: 'How do I add a Purpose of payment field to the OBDX fund transfer screen?', clarificationQuestions: ['Retail or corporate users?'], assumptions: [], byModel: true })
+      : post(path, body));
+    r(1);
+  })));
+  await vm((m) => { m.question('purpose field on transfer'); return 1; });
+  await click('#libraryImprove');
+  await sleep(800);
+  const improved = await run(() => ({
+    value: document.querySelector('#libraryQuestion textarea').value, line: ((document.getElementById('libraryImproved') || {}).textContent || '').replace(/s+/g, ' ').trim(),
+    card: !!document.querySelector('.factory-lb-improve, #libraryUseImproved, #libraryCancelImprove'), undo: !!document.getElementById('libraryUndoImprove')
+  }));
+  record('Improve my question rewrites the question in the box, with one line saying what to add and Undo, and no separate card',
+    /Purpose of payment/.test(improved.value) && /Retail or corporate/.test(improved.line) && improved.undo && !improved.card, improved);
+  await click('#libraryUndoImprove');
+  await sleep(300);
+  const undone = await run(() => ({ value: document.querySelector('#libraryQuestion textarea').value, line: !!document.getElementById('libraryImproved') }));
+  record('Undo puts back the question as it was written', undone.value === 'purpose field on transfer' && !undone.line, undone);
+  await click('#libraryImprove');
+  await sleep(800);
+  await click('#libraryAsk');
+  await sleep(1200);
+  const askedImproved = await run(() => ({ body: window.__lbAsked[window.__lbAsked.length - 1] || {}, line: !!document.getElementById('libraryImproved'),
+    askedAs: ((document.querySelector('.factory-lb-askedas') || {}).textContent || '').trim() }));
+  record('Ask sends the question as written with the improved one, and the answer says what it was asked as',
+    askedImproved.body.question === 'purpose field on transfer' && /Purpose of payment/.test(askedImproved.body.improved || '') && !askedImproved.line && /Purpose of payment/.test(askedImproved.askedAs), askedImproved);
 
   // At 1279 px and below the sources go under the answer
   await size(1280, 900);

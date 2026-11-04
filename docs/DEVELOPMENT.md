@@ -350,7 +350,8 @@ The page, top to bottom:
   label, reason and findings, limitations, the administrators' "How the sources were found", and a feedback row
   (thumbs up or down, Copy, Regenerate, Save as a note). The composer sits at the panel's bottom and scrolls with the page: Enter asks,
   Shift+Enter is a new line; the answer-length menu (Short, Detailed, Deep dive: the `CONCISE`, `DETAILED` and
-  `DEEP_DIVE` styles), **Improve my question** (its result shows above the composer) and **Ask**; Expand (Ctrl+Shift+E)
+  `DEEP_DIVE` styles), **Improve my question** (rewrites the question in the box, with one line
+  saying what to add and Undo; also in the larger editor) and **Ask**; Expand (Ctrl+Shift+E)
   opens a larger editor as a modal (Ctrl+Enter asks, Escape closes). The rail lists each cited source (title, kind,
   version, section, pages, Preview at the page, Oracle's page when known, what it says) and folds "Searched and not
   used". Before a first question the panel shows examples to try.
@@ -469,8 +470,8 @@ strip, table, menus and sheet, the Notes queue, widths from 390 to 1440 px).
   Its reply is used only when it is JSON, keeps every identifier of the question exactly, brings in no name the
   question and those headings do not have, and says more than the question; otherwise the factory improves it
   without the model. A one- or two-word question whose sections fall in three or more chapters asks which is meant.
-  The user edits the improved question and asks it (`improved` on the ask request), or cancels; their own question
-  stays. Answers come concise, detailed (default) or as a technical deep dive (`style`; Short, Detailed and Deep dive on the Library page), laid out for the kind of
+  The page puts the improved question in the question box; the user edits it and asks it (the question as written,
+  with `improved` on the ask request), or Undo puts their own question back. Answers come concise, detailed (default) or as a technical deep dive (`style`; Short, Detailed and Deep dive on the Library page), laid out for the kind of
   question (procedure, configuration, troubleshooting, comparison, API, architecture ...), in Markdown, which the page
   renders itself (no HTML from the model): headings, lists, tables, code blocks with a copy button, and each citation as
   a link named after the section it cites ("User Management - Search and View, p. 79"; the whole reference on hover)

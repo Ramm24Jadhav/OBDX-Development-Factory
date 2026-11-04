@@ -133,33 +133,8 @@
           </oj-bind-if>
         </div>
 
-        <!-- The composer, pinned to the bottom of the panel: a follow-up continues the conversation -->
+        <!-- The composer at the bottom of the panel: a follow-up continues the conversation; Improve rewrites the question in place -->
         <div class="factory-lb-composer">
-          <oj-bind-if test="[[improvement()]]">
-            <section class="factory-lb-improve" aria-labelledby="lbImproveTitle">
-              <div class="factory-lb-improvehead">
-                <h3 class="factory-lb-h3" id="lbImproveTitle"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span><oj-bind-text value="[[improvement().title]]"></oj-bind-text></h3>
-                <span class="fx-muted"><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></span>
-              </div>
-              <oj-bind-if test="[[improvement().clarificationQuestions.length > 0]]">
-                <ul class="factory-lb-clarify"><oj-bind-for-each data="[[improvement().clarificationQuestions]]" as="c"><template><li><oj-bind-text value="[[c.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-              </oj-bind-if>
-              <fx-textarea id="libraryImproved" label="Improved question" hide-label rows="3" value="{{improvedText}}"></fx-textarea>
-              <oj-bind-if test="[[improvement().facts.length > 0 || improvement().assumptions.length > 0]]">
-                <div class="factory-lb-improvefacts">
-                  <oj-bind-for-each data="[[improvement().facts]]" as="f"><template><span class="fx-chip is-static"><span class="fx-muted"><oj-bind-text value="[[f.data.k + ':']]"></oj-bind-text></span> <oj-bind-text value="[[f.data.v]]"></oj-bind-text></span></template></oj-bind-for-each>
-                  <oj-bind-for-each data="[[improvement().assumptions]]" as="a"><template><span class="fx-muted factory-lb-assume"><oj-bind-text value="[['Assumes: ' + a.data]]"></oj-bind-text></span></template></oj-bind-for-each>
-                </div>
-              </oj-bind-if>
-              <oj-bind-if test="[[improvement().made]]"><p class="fx-help"><oj-bind-text value="[[improvement().made]]"></oj-bind-text></p></oj-bind-if>
-              <div class="factory-lb-improvebar">
-                <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="libraryUseImproved" on-click="[[useImproved]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Use improved question</button>
-                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="libraryRegenerateImproved" on-click="[[improve]]" :disabled="[[improving()]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCopyImproved" on-click="[[copyImproved]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy</button>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryCancelImprove" on-click="[[cancelImprove]]">Cancel</button>
-              </div>
-            </section>
-          </oj-bind-if>
           <oj-bind-if test="[[followingUp()]]">
             <p class="fx-muted factory-lb-followup">Follow-up questions continue from: <strong><oj-bind-text value="[[lastQuestion]]"></oj-bind-text></strong></p>
           </oj-bind-if>
@@ -168,6 +143,16 @@
               <fx-textarea id="libraryQuestion" label="Question" hide-label rows="2" placeholder="[[followingUp() ? 'Ask a follow-up, or start a new question' : 'Ask about OBDX: for example, how do I add a field to the fund transfer screen?']]" value="{{question}}"></fx-textarea>
               <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-lb-expand" id="libraryExpand" aria-label="Expand the question editor" title="Expand (Ctrl+Shift+E)" on-click="[[openEditor]]" aria-haspopup="dialog"><span class="factory-nav-icon factory-ico-expand" aria-hidden="true"></span></button>
             </div>
+            <oj-bind-if test="[[improvement()]]">
+              <div class="factory-lb-improved" id="libraryImproved" role="status">
+                <span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>
+                <span class="factory-lb-improvedtext"><strong><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></strong>
+                  <oj-bind-if test="[[improvement().clarify]]"><span> <oj-bind-text value="[[improvement().clarify]]"></oj-bind-text></span></oj-bind-if>
+                  <oj-bind-if test="[[improvement().assumes]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().assumes]]"></oj-bind-text>.</span></oj-bind-if>
+                  <oj-bind-if test="[[improvement().made]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().made]]"></oj-bind-text></span></oj-bind-if></span>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryUndoImprove" on-click="[[undoImprove]]" title="Back to the question as you wrote it">Undo</button>
+              </div>
+            </oj-bind-if>
             <div class="factory-lb-composebar">
               <fx-menu-button button-id="libraryStyle" class="factory-lb-style" label="[[styleLabel]]" icon="lines" size="sm" variant="secondary" align="start" heading="Answer length" items="[[styleItems]]" on-fx-action="[[onStyle]]"></fx-menu-button>
               <span class="factory-grow"></span>
@@ -233,12 +218,22 @@
           </header>
           <div class="factory-lb-xbody">
             <fx-textarea id="libraryQuestionLarge" label="Question" hide-label rows="14" placeholder="Describe what you want to know. Paste an error, a file path or the BRD text if it helps." value="{{question}}"></fx-textarea>
+            <oj-bind-if test="[[improvement()]]">
+              <div class="factory-lb-improved" id="libraryImprovedLarge" role="status">
+                <span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>
+                <span class="factory-lb-improvedtext"><strong><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></strong>
+                  <oj-bind-if test="[[improvement().clarify]]"><span> <oj-bind-text value="[[improvement().clarify]]"></oj-bind-text></span></oj-bind-if>
+                  <oj-bind-if test="[[improvement().assumes]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().assumes]]"></oj-bind-text>.</span></oj-bind-if>
+                  <oj-bind-if test="[[improvement().made]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().made]]"></oj-bind-text></span></oj-bind-if></span>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryUndoImproveLarge" on-click="[[undoImprove]]" title="Back to the question as you wrote it">Undo</button>
+              </div>
+            </oj-bind-if>
           </div>
           <footer class="factory-lb-xfoot">
             <fx-menu-button button-id="libraryStyleLarge" class="factory-lb-style" label="[[styleLabel]]" icon="lines" size="sm" variant="secondary" align="start" heading="Answer length" items="[[styleItems]]" on-fx-action="[[onStyle]]"></fx-menu-button>
             <span class="fx-muted factory-lb-xhint">Ctrl+Enter to ask · Esc to collapse</span>
             <span class="factory-grow"></span>
-            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn" id="libraryImproveLarge" on-click="[[improveFromEditor]]" :disabled="[[improving() || asking()]]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>Improve my question</button>
+            <button type="button" :class="[[improving() ? 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn is-busy' : 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn']]" id="libraryImproveLarge" on-click="[[improveFromEditor]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>Improve my question</button>
             <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="libraryAskLarge" on-click="[[askFromEditor]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Ask</button>
           </footer>
         </div>
