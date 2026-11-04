@@ -186,6 +186,8 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
     rows: document.querySelectorAll('.factory-lb-table tbody tr:not(.factory-lb-grouprow)').length,
     keywordRows: [...document.querySelectorAll('.factory-lb-docmsg')].filter((m) => /keywords only/i.test(m.textContent)).length,
     meaningCard: !!document.querySelector('.factory-lb-embedding'),
+    keywordStatus: [...document.querySelectorAll('.factory-lb-table tbody td')].filter((t) => /Ready · keywords only/.test(t.textContent)).length,
+    allPartial: /for all /.test((document.querySelector('.factory-lb-problem') || {}).textContent || ''),
     toolbar: ['docSearch', 'docVersion', 'docType', 'docSource', 'docStatus'].filter((id) => !document.getElementById(id))
   }));
   const counts = await vm((m) => ({ sources: m.sourceCards().length, shown: m.shownCount(), failed: m.documents().filter((d) => d.status === 'FAILED' && !d.older).length, canAdd: m.canAdd() }));
@@ -194,7 +196,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   record('the toolbar has search, version, type, source and state', docs.toolbar.length === 0, docs.toolbar);
   record('the table has six columns and a menu column, grouped by version', !counts.shown || (docs.head.join('|') === 'Document|Source|Status|Pages|Sections|Indexed|Actions' && docs.groups.length > 0), docs);
   record('a long list shows a page at a time', !counts.shown || docs.rows === Math.min(counts.shown, 25), { rows: docs.rows, shown: counts.shown });
-  record('no row repeats the keywords-only message; the Search by meaning card is gone', docs.keywordRows === 0 && !docs.meaningCard, docs.keywordRows);
+  record('no row repeats the keywords-only message; the Search by meaning card is gone', docs.keywordRows === 0 && !docs.meaningCard && (!docs.allPartial || docs.keywordStatus === 0), docs);
 
   // Document filters
   const filters = await vm((m) => {

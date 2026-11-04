@@ -356,7 +356,7 @@ The page, top to bottom:
   used". Before a first question the panel shows examples to try.
 - **Documents**: a Sources strip (each Oracle version followed and watched folder, with Check now and a menu with Stop
   following or Stop watching, plus Add a source), then one toolbar (title, version, type, source, state, Older
-  revisions, count) and one table grouped by OBDX version: Document, Source, Status (Ready, Ready · keywords only,
+  revisions, count) and one table grouped by OBDX version: Document, Source, Status (Ready, or Ready · keywords only when only some are,
   Embedding · n%, Failed with its reason), Pages, Sections, Indexed, and a row menu (Embed again, Show older revisions,
   Remove…; administrators or the workspace's managers). Long lists show 25 rows at a time (Show more).
 - **Add documents** (side sheet): Upload files (drop zone and the chosen files), Watch a folder (administrators, when

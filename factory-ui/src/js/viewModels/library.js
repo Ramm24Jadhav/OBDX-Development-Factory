@@ -79,7 +79,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           return '';
         }),
         // "to review" after the Notes count (hidden on phones)
-        countMore: ko.pureComputed(() => (value === 'notes' && ((this.overview() || {}).stats || {}).suggestedNotes ? ' to review' : '')),
+        countMore: ko.pureComputed(() => (value === 'notes' && ((this.overview() || {}).stats || {}).suggestedNotes ? ' to review' : '')),
         countCss: ko.pureComputed(() => 'factory-lb-cnt' + (value === 'notes' && ((this.overview() || {}).stats || {}).suggestedNotes ? ' is-warn' : '')),
         selected: ko.pureComputed(() => this.tab() === value),
         pick: () => { this.tab(value); if (value === 'notes') { this.loadNotes(); } }
@@ -109,13 +109,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         // Which documents have older revisions kept (same version, owner and file)
         const key = (d) => d.obdxVersion + '|' + (d.workspaceId || '') + '|' + d.fileName;
         const withOlder = new Set(list.filter((d) => d.status === 'SUPERSEDED').map(key));
+        // When every document is searched by keywords only, the problem bar says so and the rows just say Ready
+        const current = list.filter((d) => d.status !== 'SUPERSEDED' && d.sections > 0);
+        const allPartial = current.length > 0 && current.every((d) => d.status === 'READY' && d.sections > d.embedded);
         return list.map((d) => {
           const older = d.status === 'SUPERSEDED';
           const partial = d.status === 'READY' && d.sections > d.embedded;
           const busy = d.status === 'QUEUED' || d.status === 'READING' || d.status === 'EMBEDDING';
           const progress = d.sections ? Math.round((d.embedded / d.sections) * 100) : 0;
           const st = DOC_STATUS[d.status] || [d.status, d.status];
-          const s = partial ? ui.status('WARNING', 'Ready · keywords only') : ui.status(st[0], d.status === 'EMBEDDING' && d.sections ? 'Embedding · ' + progress + '%' : st[1]);
+          const s = partial && !allPartial ? ui.status('WARNING', 'Ready · keywords only') : ui.status(st[0], d.status === 'EMBEDDING' && d.sections ? 'Embedding · ' + progress + '%' : st[1]);
           const source = oracleSite().indexOf(d.id) >= 0 ? 'SITE' : d.sourceId ? 'FOLDER' : 'UPLOAD';
           const admin = d.workspaceId ? session.can(d.workspaceId, 'MANAGE_CODE') : session.isAdmin();
           const canEmbed = (d.status === 'READY' || d.status === 'FAILED') && d.sections > d.embedded;
