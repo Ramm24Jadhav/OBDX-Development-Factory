@@ -7,6 +7,10 @@
   </oj-bind-if>
   <oj-bind-if test="[[isAdmin()]]">
   <p class="factory-ad-intro">Users, their roles in each workspace and what those roles allow. Every change is checked on the server and recorded in the audit log.</p>
+  <p class="factory-ad-refs" id="adminReferences">For developers:
+    <a href="?ojr=prompts" id="openPrompts" class="factory-ad-ref" on-click="[[openReference]]" data-page="prompts">Prompts the factory uses</a>
+    <span aria-hidden="true">·</span>
+    <a href="?ojr=design" id="openDesignSystem" class="factory-ad-ref" on-click="[[openReference]]" data-page="design">Design system reference</a></p>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-ad-alert" id="adminError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
     <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>

@@ -188,7 +188,7 @@
           <oj-bind-if test="[[crumbs()]]">
             <nav class="factory-crumbs" aria-label="Breadcrumb">
               <ol class="fx-breadcrumb">
-                <li><oj-bind-text value="[[crumbs().section]]"></oj-bind-text></li>
+                <oj-bind-if test="[[crumbs().section]]"><li><oj-bind-text value="[[crumbs().section]]"></oj-bind-text></li></oj-bind-if>
                 <oj-bind-if test="[[crumbs().parent]]">
                   <li><a :href="[[crumbs().parent.href]]" on-click="[[crumbs().parent.open]]"><oj-bind-text value="[[crumbs().parent.label]]"></oj-bind-text></a></li>
                 </oj-bind-if>

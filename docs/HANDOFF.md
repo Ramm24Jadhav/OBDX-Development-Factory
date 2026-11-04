@@ -22,8 +22,13 @@ workspace from an SVN URL or a local folder with bank and OBDX version detected 
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
 that finds model servers on this computer or another server and switches models without a restart. The UI was
 redesigned to the 23 screens in `design/design and implementation plan.docx` (sidebar shell, Home, every work and setup
-page, plus Impact Analysis, Agent Runs, External Review, Integrations, Version Packs, Prompt Library,
-Notifications, Account and About); pages use real data only and leave out what the factory does not record.
+page, plus Impact Analysis, External Review, Integrations, Prompt Library, Notifications, Account and About); pages use
+real data only and leave out what the factory does not record.
+Page cleanup (branch `page-cleanup`): Agent Runs and Version Packs are gone (`?ojr=agents` opens Home, `?ojr=packs`
+Code › Quick checks). Quick checks now shows each rule's source and file, a Source filter, who turned a rule off and
+when, and its findings in the workspace's changes; Code › Settings shows every UI target's reusable components. The
+Design System and AI Prompt Library are out of the sidebar and palette but open by address; Administration links to
+both. The notification category "Agent Runs" reads "AI work" (stored key `agent` kept).
 The OBDX Library (knowledge base, `knowledge` package, V17): Oracle's 22.2 and 25.2 manuals imported per version (the
 key PDFs are downloaded to `oracle-docs/` in the main checkout, not in Git), the bank's own documents per workspace,
 cited answers in the Library and the AI Assistant panels, notes that users and agents suggest and approvers trust, and
@@ -42,7 +47,7 @@ Settings; Codebase facts came later); one viewer, one search, one AI panel (Ask 
 `scripts/check-code.js` checks the whole page (check-knowledge.js is gone).
 The Project Profile page is now Code's **Codebase facts** tab, between Index and Settings (branch `code-facts`): the
 same facts, edits, history and reference examples; its warnings feed Code's problem bar; the `profile` route, G P and
-the links from Home, Workspaces, Modernization, Version Packs and the Prompt Library open the tab (check-profile.js is
+the links from Home, Workspaces, Modernization and the Prompt Library open the tab (check-profile.js is
 gone, its checks are in check-code.js).
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and

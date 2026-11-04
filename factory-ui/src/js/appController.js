@@ -52,11 +52,14 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'modernize' } },
         { path: 'models', detail: { label: 'Models & AI Providers', icon: 'chip', group: 'admin' } },
         { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'admin' } },
-        { path: 'agents', detail: { label: 'Agent Runs', icon: 'robot', group: 'admin' } },
-        { path: 'packs', detail: { label: 'Version Packs', icon: 'cube', group: 'admin' } },
-        { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'admin' } },
         { path: 'admin', detail: { label: 'Administration', icon: 'cog', group: 'admin', adminOnly: true } },
-        { path: 'design', detail: { label: 'Design System', icon: 'design', group: 'admin' } },
+        // Agent Runs and Version Packs are gone (their pieces are on Requirements, Changes, Code and the bell; the rules
+        // are Code › Quick checks): old links open Home and Quick checks
+        { path: 'agents', redirect: 'overview', detail: { label: 'Home', hidden: true } },
+        { path: 'packs', redirect: 'code', detail: { label: 'Code', hidden: true } },
+        // Reference pages in no menu, linked from Administration (the Prompt Library also from Models and Quick checks)
+        { path: 'prompts', detail: { label: 'AI Prompt Library', icon: 'sparkle', group: 'admin', hidden: true, parent: 'admin' } },
+        { path: 'design', detail: { label: 'Design System', icon: 'design', group: 'admin', hidden: true, parent: 'admin' } },
         // In the top bar (bell, help, user menu) rather than the sidebar
         { path: 'notifications', detail: { label: 'Notifications', icon: 'bell', sidebar: false } },
         { path: 'account', detail: { label: 'Account', icon: 'user', sidebar: false } },
@@ -170,12 +173,14 @@ define(['knockout', './services/session', './services/updates', './services/dash
       this.crumbs = ko.pureComputed(() => {
         const current = currentRoute();
         if (!current || !current.detail) { return null; }
+        // A parent the user cannot open (Administration for a non-administrator) is left out
         const parent = current.detail.parent && navItems().indexOf(current) < 0
-          ? navData.find((r) => r.path === current.detail.parent) : null;
+          ? navItems().find((r) => r.path === current.detail.parent) || null : null;
         const group = NAV_GROUPS.find((g) => g.key === (current.detail.group || (parent && parent.detail.group)));
         if (!group) { return null; }
         return {
-          section: group.label,
+          // Administration › Administration reads once: the link (the Prompt Library and Design System from Administration)
+          section: parent && parent.detail.label === group.label ? null : group.label,
           parent: parent ? {
             label: parent.detail.label,
             href: '?ojr=' + parent.path,

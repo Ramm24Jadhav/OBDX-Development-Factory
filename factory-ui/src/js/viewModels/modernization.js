@@ -487,7 +487,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: 'findings', label: 'Search for forbidden usage again', disabled: !this.inventory() || this.searchingFindings() },
         { value: 'csv', label: 'Download screens as CSV', disabled: !this.inventory() },
         { value: 'facts', label: 'Open the codebase facts' },
-        { value: 'packs', label: 'Open the Version Packs' }]);
+        { value: 'checks', label: 'Open the quick check rules' }]);
       // The menu of each forbidden usage row (opening the file is its own button)
       this.findingItems = [{ value: 'ask', label: 'Ask the assistant how to replace it' }, { value: 'copy', label: 'Copy the file path' }];
       this.moreAction = (event) => {
@@ -496,8 +496,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.rescanFindings();
         } else if (action === 'csv') {
           window.location.href = this.csvUrl();
-        } else if (action === 'facts') {
-          pageRequests.codeTab('facts');
+        } else if (action === 'facts' || action === 'checks') {
+          pageRequests.codeTab(action);
           go('code');
         } else {
           go(action);

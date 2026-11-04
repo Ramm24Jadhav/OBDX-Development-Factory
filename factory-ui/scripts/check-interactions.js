@@ -24,7 +24,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'interaction-report');
 // page:tab opens a tab of the Code page (code:facts is Codebase facts, the former Project Profile page)
 const PAGES = (args.pages || 'overview,workspaces,code,requirements,code:facts,studio,changes,impact,build,models,'
-  + 'modernization,agents,admin,reviews,integrations,packs,prompts,notifications,account,about,design').split(',');
+  + 'modernization,admin,reviews,integrations,prompts,notifications,account,about,design').split(',');
 const SIZES = (args.sizes || '1440x900,375x667').split(',').map((s) => { const m = /^(\d+)x(\d+)$/.exec(s); return { w: +m[1], h: +m[2], name: s }; });
 const REDUCED = !!args['reduced-motion'];
 
@@ -236,12 +236,12 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
     await record(scope, 'Escape closes the palette and returns focus', !pal.open && pal.focus === 'bellButton', pal);
     await key('k', 2);
     await sleep(300);
-    await type('Agent Runs');
+    await type('Modernization');
     await sleep(300);
     await key('Enter');
     await sleep(2500);
     const where = await run(() => location.search);
-    await record(scope, 'palette opens a page with Enter', /ojr=agents/.test(where), where);
+    await record(scope, 'palette opens a page with Enter', /ojr=modernization/.test(where), where);
     // User menu: Enter opens it with focus on an item, the arrows move, Escape closes it and focus returns
     await run(() => { document.querySelector('#userMenu').focus(); return 1; });
     await key('Enter');
@@ -324,20 +324,22 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
     }
   }
 
-  // ---------- Carousel keys (Version Packs components) ----------
-  await go('packs');
+  // ---------- Carousel keys (the AI Prompt Library's use case templates) ----------
+  // At 768 px the few use case cards of a small factory are wider than the track, so the track scrolls
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 768, height: 1024, deviceScaleFactor: 1, mobile: false });
+  await go('prompts');
   await sleep(3500);
-  await click('#pk-components');
+  await run(() => { window.require('knockout').dataFor(document.querySelector('.factory-pr-page')).tab('usecase'); return 1; });
   // The cards load after the tab opens: a key pressed before they are laid out scrolls by a card of no width (and snaps
   // back). Wait, up to 8 seconds, until the cards are drawn and the track scrolls, the same for three looks in a row.
   let ready = 0;
   for (let i = 0; i < 40 && ready < 3; i++) {
     await sleep(200);
     const ok = await run(() => {
-      const t = document.querySelector('.factory-pk-carousel .fx-carousel-track');
+      const t = document.querySelector('.factory-pr-carousel .fx-carousel-track');
       const card = t && t.firstElementChild;
       return !!card && t.children.length > 1 && card.getBoundingClientRect().width > 100 && t.scrollWidth > t.clientWidth + 100
-        && document.querySelectorAll('.factory-pk-carousel .fx-carousel-dot').length > 1;
+        && document.querySelectorAll('.factory-pr-carousel .fx-carousel-dot').length > 1;
     });
     ready = ok ? ready + 1 : 0;
   }
@@ -349,7 +351,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   await cdp('Emulation.setFocusEmulationEnabled', { enabled: true });
   await key('Escape'); await key('Escape');
   await run(() => {
-    const t = document.querySelector('.factory-pk-carousel .fx-carousel-track'); t.scrollLeft = 0; t.focus();
+    const t = document.querySelector('.factory-pr-carousel .fx-carousel-track'); t.scrollIntoView({ block: 'center' }); t.scrollLeft = 0; t.focus();
     window.fxKeySeen = [];
     if (!window.fxKeyWatch) { window.fxKeyWatch = true; document.addEventListener('keydown', (e) => (window.fxKeySeen || []).push((e.target.id || e.target.tagName) + (e.defaultPrevented ? ' (taken)' : '')), true); }
     return 1;
@@ -363,14 +365,15 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   let car = null;
   for (let i = 0; i < 20; i++) {
     await sleep(200);
-    car = await run(() => { const c = document.querySelector('.factory-pk-carousel'); return { left: Math.round(c.querySelector('.fx-carousel-track').scrollLeft), current: [...c.querySelectorAll('.fx-carousel-dot')].findIndex((d) => d.classList.contains('is-current')), prevEnabled: !c.querySelector('.fx-carousel-btn--prev').disabled }; });
+    car = await run(() => { const c = document.querySelector('.factory-pr-carousel'); return { left: Math.round(c.querySelector('.fx-carousel-track').scrollLeft), current: [...c.querySelectorAll('.fx-carousel-dot')].findIndex((d) => d.classList.contains('is-current')), prevEnabled: !c.querySelector('.fx-carousel-btn--prev').disabled }; });
     if (car.left > 100 && car.current === 1 && car.prevEnabled) {
       break;
     }
   }
   car.before = pre;
   car.keySeen = await run(() => window.fxKeySeen || []);
-  await record('1440x900 packs', 'carousel moves with the arrow key', car.left > 100 && car.current === 1 && car.prevEnabled, car);
+  await record('768x1024 prompts', 'carousel moves with the arrow key', car.left > 100 && car.current === 1 && car.prevEnabled, car);
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 
   // ---------- Approved assets ----------
   const brand = await run(() => { const m = getComputedStyle(document.querySelector('.factory-brand-mark')); const ai = document.querySelector('.factory-brand-ai'); return { logo: /svg|url/.test(m.backgroundImage), powered: !!ai && ai.textContent.trim() === 'Powered by AI' && ai.getBoundingClientRect().width > 0 }; });

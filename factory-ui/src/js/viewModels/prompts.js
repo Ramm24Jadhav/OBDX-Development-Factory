@@ -26,7 +26,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const masked = (text) => mask(text) !== String(text || '');
     // A file of the bank's pack folder by its name only: the folder is a path on the factory's server
     const sourceName = (source) => (!source || /^packs\//.test(source) ? source : 'bank pack folder: ' + String(source).replace(/\\/g, '/').split('/').pop());
-    // The agent or task each kind of prompt serves (the names Agent Runs uses)
+    // The agent or task each kind of prompt serves
     const AGENT = { recipe: 'Code Generator' };
     const CATEGORY = { ui: 'UI Generation', service: 'Code Generation', integration: 'API Generation', data: 'Database Script', test: 'Test Generation', config: 'Configuration' };
     const TONE = { 'UI Generation': 'blue', 'Code Generation': 'blue', 'API Generation': 'violet', 'Database Script': 'amber', 'Test Generation': 'red', Configuration: 'grey', 'Built-in Task': 'green', 'Business Logic': 'violet' };
@@ -273,7 +273,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.menuCopy = () => { const x = this.menuItem(); this.menuKey(null); copy(x ? x.guidance : ''); };
       this.menuUse = () => { this.menuKey(null); this.useTemplate(); };
       this.menuShow = () => { const x = this.menuItem(); this.menuKey(null); if (x) { this.selectedKey(x.key); this.detailTab('overview'); } };
-      this.menuPacks = () => { this.menuKey(null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' })); };
+      // The rules the quick checks apply sit on Code › Quick checks
+      const openChecks = () => { pageRequests.codeTab('checks'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' })); };
+      this.menuChecks = () => { this.menuKey(null); openChecks(); };
 
       this.detailTab = ko.observable('overview');
       this.detailTabs = ui.tabs(this.detailTab, [
@@ -445,7 +447,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Create Prompt / Template: a split button (design system .fx-split)
       this.createSplit = ui.menu();
       this.menuHowTo = () => { this.createSplit.close(); this.howToAdd(true); };
-      this.createPacks = () => { this.createSplit.close(); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' })); };
+      this.createChecks = () => { this.createSplit.close(); openChecks(); };
 
       const load = (id) => {
         recipes(null);

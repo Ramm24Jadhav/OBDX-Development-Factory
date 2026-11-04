@@ -123,7 +123,6 @@
     --fx-control-height-sm: 30px;
     --fx-control-height-lg: 42px;
 
-
     /* Oracle JET (Redwood) components follow the tokens */
     --oj-core-text-color-primary: var(--fx-text);
     --oj-core-text-color-secondary: var(--fx-text-muted);
@@ -759,7 +758,6 @@ input.fx-input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
 .fx-form .fx-form-wide { grid-column: 1 / -1; }
 @media (max-width: 767px) { .fx-form { grid-template-columns: minmax(0, 1fr); } }
 
-
 /* ---------- More elements (js/components/fx-more.js) ---------- */
 fx-multiselect, fx-date-range { display: block; min-width: 0; }
 fx-radio-group, fx-segmented, fx-popover { display: inline-flex; }
@@ -865,7 +863,6 @@ body.fx-compact .factory-card { padding: 14px; }
 .fx-muted { color: var(--fx-text-muted); }
 .fx-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-
 .send-off-screen {
   position: absolute;
   left: -10000px;
@@ -891,7 +888,6 @@ body.fx-compact .factory-card { padding: 14px; }
   }
 }
 
-
 .factory-warning {
     padding: 8px 12px;
     border-left: 4px solid #c35500;
@@ -899,40 +895,14 @@ body.fx-compact .factory-card { padding: 14px; }
     color: #4a2a00;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .factory-code textarea {
     font-family: monospace;
     font-size: var(--fx-text-base);
 }
 
-
-
-
 .factory-grow {
     flex: 1 1 auto;
 }
-
-
-
-
-
-
-
-
 
 .factory-palette-group summary {
     cursor: pointer;
@@ -955,7 +925,6 @@ body.fx-compact .factory-card { padding: 14px; }
     background: var(--fx-primary-soft);
     border-color: var(--fx-primary);
 }
-
 
 /* A component of the bank's code in the preview: OBDX look where known, else a labelled placeholder */
 .factory-code-component {
@@ -986,7 +955,6 @@ body.fx-compact .factory-card { padding: 14px; }
     padding-bottom: 4px;
 }
 
-
 .factory-frame-box {
     border: var(--fx-border-width) solid var(--oj-core-divider-color, var(--fx-border));
     border-radius: var(--fx-radius-sm);
@@ -1003,7 +971,6 @@ body.fx-compact .factory-card { padding: 14px; }
     background: var(--fx-surface);
 }
 
-
 /* Clickable list rows (the designer's lists); other .factory-row elements are the page layout grid */
 .factory-row:has(> .factory-row-label) {
     display: flex;
@@ -1018,16 +985,9 @@ body.fx-compact .factory-card { padding: 14px; }
     background: var(--fx-surface-3);
 }
 
-
-
 .factory-row-label {
     flex: 1 1 auto;
 }
-
-
-
-
-
 
 .factory-comment {
     padding: 6px 0;
@@ -1127,7 +1087,6 @@ body.fx-compact .factory-card { padding: 14px; }
     font-weight: var(--fx-weight-semibold);
 }
 
-
 .factory-preview-section {
     margin-bottom: 16px;
     padding: 16px;
@@ -1208,17 +1167,9 @@ body.fx-compact .factory-card { padding: 14px; }
     margin: 0 auto;
 }
 
-
-
-
 .factory-audit td {
     font-size: var(--fx-text-base);
 }
-
-
-
-
-
 
 .factory-diff {
     font-family: monospace;
@@ -1239,12 +1190,7 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-diff-meta { color: #666; display: block; }
 .factory-diff span { display: block; }
 
-
-
-
-
 .factory-code-file pre { max-height: 420px; overflow: auto; }
-
 
 /* New workspace: folder on this computer */
 
@@ -1279,9 +1225,6 @@ body.fx-compact .factory-card { padding: 14px; }
     gap: var(--fx-space-2);
 }
 
-
-
-
 .factory-update-banner {
     display: flex;
     align-items: center;
@@ -1311,7 +1254,6 @@ body.fx-compact .factory-card { padding: 14px; }
     overflow: hidden;
     margin: 8px 0;
 }
-
 
 .factory-dz-spacer { flex: 1 1 auto; }
 .factory-dz-grow { flex: 1 1 auto; min-width: 0; }
@@ -1381,11 +1323,8 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-dz-seg:last-child { border-right: none; }
 .factory-dz-seg-active { background: var(--dz-accent-soft); color: var(--dz-accent); font-weight: var(--fx-weight-semibold); }
 
-
 .factory-dz-unsaved { font-size: 12px; color: var(--fx-warning-text); }
 .factory-dz-unsaved::before { content: "\25CF  "; }
-
-
 
 .factory-dz-drawer {
     position: relative;
@@ -1469,8 +1408,6 @@ body.fx-compact .factory-card { padding: 14px; }
 
 .factory-dz-count { color: var(--dz-muted); font-weight: 400; }
 
-
-
 .factory-palette-item:hover { border-color: var(--dz-accent); background: var(--dz-accent-soft); }
 
 .factory-palette-icon {
@@ -1485,8 +1422,6 @@ body.fx-compact .factory-card { padding: 14px; }
     font-size: 12px;
     font-weight: var(--fx-weight-semibold);
 }
-
-
 
 .factory-palette-label { font-size: 13px; }
 
@@ -1569,7 +1504,6 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-dz-title { font-size: 15px; font-weight: var(--fx-weight-semibold); word-break: break-word; }
 .factory-dz-tools { display: flex; gap: 2px; }
 
-
 .factory-dz-field-label { font-size: 12px; color: #4b5563; margin: 4px 0; }
 
 .factory-dz-stats {
@@ -1642,7 +1576,6 @@ body.fx-compact .factory-card { padding: 14px; }
     background: var(--dz-canvas);
 }
 
-
 .factory-dz-steps {
     display: flex;
     gap: 6px;
@@ -1696,7 +1629,6 @@ body.fx-compact .factory-card { padding: 14px; }
     border-radius: var(--fx-radius);
     background: #fbfbfc;
 }
-
 
 .factory-dz-check {
     display: flex;
@@ -2029,7 +1961,6 @@ body.fx-compact .factory-card { padding: 14px; }
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-
 /* Icons are masks so they take the text colour */
 .factory-nav-icon {
     flex: 0 0 20px;
@@ -2087,7 +2018,6 @@ body.fx-compact .factory-card { padding: 14px; }
     background: rgba(255, 255, 255, 0.94);
     border-bottom: var(--fx-border-width) solid var(--fx-border);
 }
-
 
 .factory-menu-toggle {
     display: none;
@@ -2264,11 +2194,9 @@ body.fx-compact .factory-card { padding: 14px; }
     .factory-login-card { padding: 26px 20px 22px; }
 }
 
-
 /* ---------- Overview ---------- */
 
 .factory-ov { padding: 16px 12px 8px; }
-
 
 .factory-ov-empty { color: var(--fx-text-muted); margin: 4px 0; }
 
@@ -2280,13 +2208,6 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-ov-pill-blue { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
 .factory-ov-pill-red { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
 .factory-ov-pill-grey { background: var(--fx-surface-3); color: var(--fx-text-body); }
-
-
-
-
-
-
-
 
 /* ---------- Code page ---------- */
 
@@ -2310,7 +2231,6 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-tab:focus-visible { outline: 2px solid var(--fx-primary); outline-offset: -2px; }
 .factory-tab.factory-tab-on { color: var(--fx-primary-text); border-bottom-color: var(--fx-primary); font-weight: var(--fx-weight-semibold); }
 
-
 .factory-cp-h { display: inline-flex; align-items: center; gap: 10px; }
 .factory-cp-h .factory-nav-icon { color: var(--fx-primary-text); }
 
@@ -2327,19 +2247,12 @@ body.fx-compact .factory-card { padding: 14px; }
 }
 .factory-chip:hover { border-color: var(--fx-primary-border); }
 
-
 .factory-cp-h3 { margin: 16px 0 8px; font-size: var(--fx-text-base); color: var(--fx-text); }
 
 .factory-cp-search { display: flex; gap: var(--fx-space-2); align-items: center; margin-bottom: 8px; }
 .factory-cp-result { border-top: var(--fx-border-width) solid var(--fx-border); padding-top: 12px; }
 
-
-
-
-
 /* ---------- Top bar as designed: workspace, breadcrumb, search, bell, help ---------- */
-
-
 
 .factory-topbar { height: 60px; gap: var(--fx-space-4); }
 .factory-topbar-workspace {
@@ -2488,7 +2401,6 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-ov2-icon-amber { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
 .factory-ov2-icon-red { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
 
-
 .factory-ov2-table-wrap { overflow-x: auto; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-sm); }
 .factory-ov2-table { width: 100%; border-collapse: collapse; font-size: var(--fx-text-sm); }
 .factory-ov2-table th { text-align: left; font-weight: var(--fx-weight-medium); color: var(--fx-text-body); background: var(--fx-surface-2); padding: 9px 10px; border-bottom: var(--fx-border-width) solid var(--fx-border); white-space: nowrap; }
@@ -2506,13 +2418,11 @@ body.fx-compact .factory-card { padding: 14px; }
 .factory-ov2-bar-fill { display: block; height: 100%; border-radius: var(--fx-radius-pill); }
 .factory-ov2-fill-blue { background: var(--fx-primary); }
 
-
 .factory-ov2-activity { list-style: none; margin: 0; padding: 0; }
 .factory-ov2-activity li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 110px minmax(0, 150px); gap: var(--fx-space-3); align-items: center; padding: 7px 0; }
 .factory-ov2-activity-text { border: 0; background: none; padding: 0; font: inherit; font-size: var(--fx-text-base); color: var(--fx-text); text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .factory-ov2-activity-text:hover { text-decoration: underline; }
 .factory-ov2-ws { font-size: var(--fx-text-sm); color: var(--fx-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 
 @media (max-width: 600px) {
     .factory-ov2-activity li { grid-template-columns: 26px minmax(0, 1fr) auto; }
@@ -2526,8 +2436,6 @@ body.fx-compact .factory-card { padding: 14px; }
 
 .factory-cp-link { color: var(--fx-primary-text) !important; }
 .factory-cp-nowrap { white-space: nowrap; }
-
-
 
 /* More sidebar icons, and a tighter list so every page fits */
 .factory-ico-robot { --factory-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='8' width='16' height='11' rx='2.5'/%3E%3Cpath d='M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5M2 12.5v3M22 12.5v3'/%3E%3C/svg%3E"); }
@@ -2660,7 +2568,7 @@ button.factory-list-title:hover { text-decoration: underline; }
 .factory-ai-input { display: flex; gap: var(--fx-space-2); align-items: center; }
 .factory-ai-busy { font-size: var(--fx-text-sm); color: var(--fx-text-muted); margin: 0 0 8px; }
 
-/* Plain file lists (Build, Impact, Version Packs, AI Prompt Library) */
+/* Plain file lists (Build, Impact, AI Prompt Library) */
 .factory-pf-evlist { margin: 0; padding-left: 18px; font-size: var(--fx-text-sm); }
 
 /* Requirements (as designed) */
@@ -2735,7 +2643,6 @@ button.factory-list-title:hover { text-decoration: underline; }
 .factory-bt-logline span { display: inline-block; width: 34px; color: var(--fx-text-muted); user-select: none; }
 .factory-bt-logerr { color: #fca5a5; }
 
-
 /* Impact Analysis (as designed) */
 .factory-im-scope { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: var(--fx-text-base); }
 .factory-im-scope li { display: flex; gap: 10px; align-items: center; }
@@ -2779,7 +2686,6 @@ button.factory-list-title:hover { text-decoration: underline; }
 .factory-md-setdefault { height: 28px; padding: 0 10px; color: var(--fx-primary-text); border-color: var(--fx-primary-border); font-size: var(--fx-text-sm); }
 .factory-md-save { width: 100%; margin-top: 12px; }
 .factory-md-policies { margin: 0; padding-left: 18px; display: grid; gap: var(--fx-space-2); font-size: var(--fx-text-base); color: var(--fx-text-body); }
-
 
 /* Modernization (as designed) */
 .factory-mo-ring { width: 64px; height: 64px; flex: 0 0 64px; }
@@ -2831,34 +2737,14 @@ button.factory-list-title:hover { text-decoration: underline; }
 .factory-ad-acticon .factory-nav-icon { width: 18px; height: 18px; }
 .factory-ad-activity li { grid-template-columns: 38px minmax(0, 1fr) auto; }
 
-/* Agent Runs (as designed) */
+/* Notifications: the list and the detail beside it (the layout Agent Runs had) */
 .factory-ag-main { grid-template-columns: minmax(0, 2.1fr) minmax(340px, 1fr); }
 .factory-ag-list { padding-top: 0; }
-.factory-ag-task { max-width: 240px; }
-.factory-ag-task .factory-ov-subtle { display: block; }
-.factory-ag-agentcell { display: inline-flex; align-items: center; gap: var(--fx-space-2); white-space: nowrap; }
-.factory-ag-agent { width: 24px; height: 24px; flex: 0 0 24px; border-radius: var(--fx-radius-sm); }
-.factory-ag-agent .factory-nav-icon { width: 14px; height: 14px; }
-.factory-ag-dhead { display: flex; justify-content: space-between; align-items: center; }
-.factory-ag-dhead h2 { margin: 0; }
-.factory-ag-dtitle { margin: 8px 0 2px; font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
 @media (max-width: 1200px) { .factory-ag-main { grid-template-columns: 1fr; } }
-.factory-ag-agent { display: inline-flex; align-items: center; justify-content: center; }
-.factory-ag-task { min-width: 200px; }
 
 /* External Review (as designed) */
 
-
-
 .factory-in-title { display: block; font-size: var(--fx-text-lg); font-weight: 700; color: var(--fx-text); }
-
-/* Version Packs (as designed) */
-.factory-pk-warn { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: #f59e0b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M12 7v6M12 17v.5'/%3E%3C/svg%3E") center / 12px no-repeat; }
-.factory-pk-hero { display: flex; gap: 14px; align-items: center; margin: 8px 0 14px; }
-.factory-pk-hero > div { display: flex; flex-direction: column; }
-.factory-pk-hero strong { font-size: var(--fx-text-h3); color: var(--fx-text); }
-.factory-pk-mark { width: 64px; height: 64px; flex: 0 0 64px; border-radius: var(--fx-radius-lg); background: #0f1d36 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2360a5fa' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='m12 3 8 4.5v9L12 21l-8-4.5v-9z'/%3E%3Cpath d='m4 7.5 8 4.5 8-4.5M12 12v9'/%3E%3C/svg%3E") center / 38px no-repeat; }
-.factory-pk-features { margin: 0; padding-left: 18px; font-size: var(--fx-text-base); display: grid; gap: var(--fx-space-1); }
 
 /* AI Prompt Library (as designed) */
 .factory-pr-main { grid-template-columns: minmax(200px, 0.55fr) minmax(0, 1.6fr) minmax(320px, 1.1fr); }
@@ -2954,10 +2840,6 @@ body.factory-no-assistant .factory-ai { display: none; }
 
 /* Workspace details (design 17) */
 
-
-.factory-pk-std td:first-child { white-space: normal; max-width: 100px; font-size: var(--fx-text-caption); overflow-wrap: anywhere; }
-.factory-pk-std td:nth-child(3) { min-width: 110px; }
-.factory-pk-std th, .factory-pk-std td { padding-left: 6px; padding-right: 6px; }
 form.factory-topbar-search { margin: 0; }
 
 /* The bell links to the Notification Center */
@@ -2969,7 +2851,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-main h2, .factory-main h3 { font-weight: 650; }
 .factory-main h4, .factory-main h5, .factory-main h6 { font-weight: var(--fx-weight-semibold); }
 
-
 /* ---------- Overview page, as designed ---------- */
 /* Cards in a row share the row height; the tables fill the card and a short note fills what the rows leave */
 #recentWorkspaces .factory-ov2-table-wrap, #recentRequirements .factory-ov2-table-wrap { flex: 1 1 auto; display: flex; flex-direction: column; }
@@ -2979,7 +2860,6 @@ form.factory-topbar-search { margin: 0; }
 #recentWorkspaces .factory-ov2-table th:last-child, #recentWorkspaces .factory-ov2-table td:last-child { text-align: center; }
 
 /* Setup New Workspace: the placeholder fits */
-
 
 /* Recent Activity: solid coloured circles with white glyphs */
 #recentActivity .factory-ov2-icon-blue { background: var(--fx-primary); }
@@ -3006,11 +2886,9 @@ form.factory-topbar-search { margin: 0; }
 #registryKpis { margin-bottom: 14px; }
 #registryKpis .factory-kpi-icon { border-radius: var(--fx-radius-lg); }
 
-
 /* Bottom row: Recent Activity, Project Stack and Indexing Progress side by side */
 
 /* Registry fit: the table fits its card, the sub-tabs fit the panel */
-
 
 /* ---------- Code page, as designed ---------- */
 
@@ -3019,9 +2897,6 @@ form.factory-topbar-search { margin: 0; }
 /* Repository Configuration */
 
 /* Left column: Quick Check Rules over Recent Index Results; right: Indexing, Code Search, AI Assistant */
-
-
-
 
 /* Recent Index Results */
 #recentIndexResults h2 { display: flex; align-items: center; justify-content: space-between; }
@@ -3247,11 +3122,9 @@ form.factory-topbar-search { margin: 0; }
 #designPalette > .factory-dz-note { margin-top: 0; }
 .factory-dz-segmented-full .factory-dz-seg { font-size: var(--fx-text-caption); padding-left: 4px; padding-right: 4px; white-space: nowrap; }
 
-
 /* ---------- Changes page, as designed ---------- */
 /* Title row: heading left, actions right */
 .factory-ch-actions { flex: 0 0 auto; flex-wrap: nowrap; margin-top: 4px; }
-
 
 .factory-ch-pickreq { display: flex; align-items: center; gap: var(--fx-space-2); flex-wrap: wrap; margin-bottom: 14px; }
 @media (max-width: 1300px) { .factory-ch-actions { flex-wrap: wrap; } }
@@ -3260,7 +3133,6 @@ form.factory-topbar-search { margin: 0; }
 
 /* Workbench grid: code and build on the left, the assistant the full height on the right */
 
-
 /* Work head: tabs and the Code / Split / File toggle */
 .factory-ch-mode { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px; border: 0; border-right: var(--fx-border-width) solid var(--fx-border); background: var(--fx-surface); font: inherit; font-size: var(--fx-text-sm); color: var(--fx-text-body); cursor: pointer; }
 .factory-ch-mode:last-child { border-right: 0; }
@@ -3268,7 +3140,6 @@ form.factory-topbar-search { margin: 0; }
 
 /* File tree */
 .factory-ch-treesearch { display: flex; gap: 6px; margin-bottom: 8px; }
-
 
 .factory-ch-tree ul { font-size: var(--fx-text-sm); max-height: 520px; }
 .factory-ch-node { gap: var(--fx-space-1); padding: 3px 4px; }
@@ -3646,59 +3517,11 @@ form.factory-topbar-search { margin: 0; }
 /* Tabs, date range and filters across the page */
 
 /* Table and bottom cards on the left, the inspector down the right */
-.factory-ag-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; align-items: stretch; margin-bottom: 14px; }
 .factory-ag-list { padding-top: 14px; }
-.factory-ag-table { table-layout: fixed; font-size: var(--fx-text-sm); }
-.factory-ag-table th { padding: 9px 6px; }
-.factory-ag-table td { padding: 8px 6px; }
-.factory-ag-table th:first-child, .factory-ag-table td:first-child { padding-left: 10px; }
-.factory-ag-table input[type="checkbox"], .factory-ag-table th input { width: 15px; height: 15px; margin: 0; vertical-align: middle; accent-color: #4338ca; cursor: pointer; }
-
-
-
-
-
-
-
-
-.factory-ag .factory-ag-task { max-width: none; min-width: 0; }
-.factory-ag-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--fx-text); line-height: 1.3; }
-.factory-ag-task .factory-ov-subtle { display: block; font-size: var(--fx-text-caption); }
-.factory-ag-ell { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.factory-ag-table .factory-ag-agentcell { display: flex; max-width: 100%; }
-.factory-ag-table .factory-ov-pill { font-size: var(--fx-text-caption); padding: 2px 7px; }
-.factory-ag-note { margin: 10px 0 0; font-size: var(--fx-text-caption); }
-
 
 /* Inspector */
 .factory-ag-detail { display: flex; flex-direction: column; min-width: 0; }
-.factory-ag-detail > .factory-ag-dhead, .factory-ag-detail .factory-ag-dhead { gap: 10px; }
-.factory-ag-dtitle { line-height: 1.35; }
-.factory-ag-subtabs { scrollbar-width: none; }
-.factory-ag-subtabs .factory-tab { padding: 8px 5px; font-size: var(--fx-text-sm); white-space: nowrap; }
-.factory-ag-dbody { flex: 1 1 auto; min-height: 0; }
-.factory-ag-kv { font-size: var(--fx-text-sm); grid-template-columns: 110px minmax(0, 1fr); }
-.factory-ag-kv dt, .factory-ag-kv dd { padding: 5px 0; }
-.factory-ag-kv .factory-name-cell { gap: var(--fx-space-2); font-weight: var(--fx-weight-medium); }
-.factory-ag-log { max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
-.factory-ag-related { list-style: none; margin: 0; padding: 0; }
-.factory-ag-related li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--fx-space-2); align-items: center; padding: 7px 0; border-bottom: var(--fx-border-width) solid var(--fx-border); font-size: var(--fx-text-sm); }
-.factory-ag-more { margin-left: auto; }
-@media (max-width: 1200px) { .factory-ag-layout { grid-template-columns: 1fr; } }
-.factory-ag-more { --oj-button-height: 38px; white-space: nowrap; }
-.factory-ag-table .factory-ag-agentcell { gap: 6px; }
-.factory-ag-table .factory-ag-agent { width: 22px; height: 22px; flex: 0 0 22px; }
-.factory-ag-table th:nth-child(1) { width: 34px; }
-.factory-ag-table th:nth-child(2) { width: 104px; }
-.factory-ag-table th:nth-child(4) { width: 122px; }
-.factory-ag-table th:nth-child(5) { width: 84px; }
-.factory-ag-table th:nth-child(6) { width: 86px; }
-.factory-ag-table th:nth-child(7) { width: 108px; }
-.factory-ag-table th:nth-child(8) { width: 68px; }
-.factory-ag-table th:nth-child(9) { width: 56px; }
 .factory-ag-detail { padding: 16px 14px; }
-.factory-ag-more { font-size: var(--fx-text-sm); }
-.factory-ag-table th { box-sizing: border-box; }
 
 /* ---------- Reviews page, as designed ---------- */
 
@@ -3706,98 +3529,9 @@ form.factory-topbar-search { margin: 0; }
 
 /* Link settings */
 
-
 /* Preview: a device with only the screen in it */
 
 /* Comments and details */
-
-
-/* ---------- Packs page, as designed ---------- */
-/* Add Version Pack: a solid primary split button */
-
-/* KPI tiles of one height: labels and subtitles stay on one line */
-
-.factory-pk-bar { padding: 0; margin-bottom: 14px; }
-.factory-pk-tabs { margin: 0; border-bottom: 0; }
-
-/* Packs and the 2 x 2 grid on the left, details down the right */
-.factory-pk-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: stretch; margin-bottom: 14px; }
-.factory-pk-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.factory-pk-cardhead { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--fx-space-3); margin-bottom: 10px; }
-.factory-pk-cardhead .factory-card-sub { margin: 0; }
-.factory-pk-tools { display: inline-flex; gap: var(--fx-space-2); align-items: center; flex: 0 0 auto; }
-.factory-pk-search { width: 210px; height: 36px; }
-
-.factory-pk-table { font-size: var(--fx-text-sm); }
-.factory-pk-table th, .factory-pk-table td { padding: 9px 8px; }
-.factory-pk-table th:first-child, .factory-pk-table td:first-child { width: 22px; padding-left: 12px; }
-.factory-pk-table input[type="checkbox"], .factory-pk-table th input { width: 15px; height: 15px; margin: 0; vertical-align: middle; accent-color: #4338ca; cursor: pointer; }
-.factory-pk-ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
-.factory-pk-table .factory-pk-ell { max-width: 190px; }
-
-.factory-pk-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); grid-auto-rows: auto; gap: 14px; align-items: stretch; flex: 1 1 auto; }
-.factory-pk-grid > .factory-card { min-width: 0; margin: 0; }
-.factory-pk-std2 { table-layout: fixed; font-size: var(--fx-text-sm); }
-.factory-pk-std2 th, .factory-pk-std2 td { box-sizing: border-box; padding: 7px 6px; }
-.factory-pk-std2 th:nth-child(1) { width: 28%; }
-.factory-pk-std2 th:nth-child(2) { width: 66px; }
-.factory-pk-std2 th:nth-child(4) { width: 52px; }
-.factory-pk-std2 th:nth-child(5) { width: 62px; }
-.factory-pk-std2 th:nth-child(6) { width: 50px; }
-.factory-pk-std2 td:last-child { padding: 0 3px; }
-.factory-pk-std2 td.factory-mono { font-size: var(--fx-text-caption); }
-.factory-pk-std2 .factory-ov-pill { font-size: var(--fx-text-2xs); padding: 1px 6px; }
-
-.factory-pk-tpl { list-style: none; margin: 10px 0 0; padding: 0; }
-.factory-pk-tpl li { display: grid; grid-template-columns: 26px minmax(0, 1fr) 40px auto; gap: 10px; align-items: center; padding: 7px 4px; border-bottom: var(--fx-border-width) solid var(--fx-border); font-size: var(--fx-text-sm); }
-.factory-pk-tpl li:last-child { border-bottom: 0; }
-.factory-pk-tplicon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--fx-radius-sm); background: #ece5ff; color: var(--fx-violet-text); }
-.factory-pk-tplicon .factory-nav-icon { width: 15px; height: 15px; flex-basis: 15px; }
-.factory-pk-tplname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fx-text); }
-.factory-pk-tplver { color: var(--fx-text-body); font-size: var(--fx-text-sm); }
-.factory-pk-tpl .factory-ov-pill { font-size: var(--fx-text-2xs); padding: 1px 7px; }
-.factory-pk-matrix td, .factory-pk-matrix th { padding: 8px 10px; }
-.factory-pk-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 0; font-size: var(--fx-text-caption); color: var(--fx-text-body); }
-.factory-pk-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.factory-pk-legend i { width: 14px; height: 14px; background-size: 9px; }
-.factory-pk-updates { list-style: none; margin: 8px 0 0; padding: 0; }
-.factory-pk-updates li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: var(--fx-border-width) solid var(--fx-border); font-size: var(--fx-text-sm); }
-.factory-pk-uicon { width: 30px; height: 30px; flex-basis: 30px; border-radius: var(--fx-radius); }
-.factory-pk-uicon .factory-nav-icon { width: 16px; height: 16px; }
-.factory-pk-utext { min-width: 0; }
-.factory-pk-utext .factory-list-sub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Version details */
-.factory-pk-detail { display: flex; flex-direction: column; min-width: 0; }
-.factory-pk .factory-pk-hero { margin: 10px 0 12px; }
-.factory-pk-herosub { color: var(--fx-text); font-size: var(--fx-text-base); }
-.factory-pk-hero .factory-ov-subtle { font-size: var(--fx-text-sm); }
-.factory-pk-dbtns { display: flex; gap: var(--fx-space-2); margin-bottom: 12px; }
-.factory-pk-dbtn { height: 36px; padding: 0 12px; font-size: var(--fx-text-sm); }
-.factory-pk-dbtn:disabled { color: var(--fx-text-faint); cursor: not-allowed; background: var(--fx-surface-2); }
-.factory-pk-dbtn .factory-nav-icon { width: 15px; height: 15px; flex-basis: 15px; }
-
-.factory-pk-dtabs { scrollbar-width: none; }
-.factory-pk-dtabs .factory-tab { padding: 8px 5px; font-size: var(--fx-text-caption); white-space: nowrap; }
-.factory-pk .factory-pk-kv { font-size: var(--fx-text-sm); grid-template-columns: 118px minmax(0, 1fr); }
-.factory-pk-kv dt, .factory-pk-kv dd { padding: 6px 0; }
-.factory-pk-kv .factory-pk-features { font-size: var(--fx-text-sm); gap: 3px; }
-.factory-pk-envs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.factory-pk-mini { list-style: none; margin: 4px 0 10px; padding: 0; font-size: var(--fx-text-sm); }
-.factory-pk-mini li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: var(--fx-border-width) solid var(--fx-border); }
-.factory-pk-mini .factory-pk-ell { max-width: none; flex: 1 1 auto; min-width: 0; }
-.factory-pk-mini b { font-weight: var(--fx-weight-semibold); }
-.factory-pk-notes { display: flex; justify-content: flex-end; margin-top: auto; padding-top: 14px; }
-.factory-pk-notesbtn { color: var(--fx-primary-text); font-weight: var(--fx-weight-medium); }
-.factory-pk-notesbtn .factory-nav-icon { width: 15px; height: 15px; flex-basis: 15px; }
-@media (max-width: 1200px) { .factory-pk-layout, .factory-pk-grid { grid-template-columns: 1fr; } }
-.factory-pk-std2 .factory-ov2-more { margin: -4px 0; }
-.factory-pk-std2 th { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.factory-pk-table td { vertical-align: middle; }
-.factory-pk-std2 th { font-size: var(--fx-text-caption); }
-.factory-pk-tpl li { gap: var(--fx-space-2); }
-.factory-pk-tpl .factory-ov-pill { padding: 1px 6px; }
-.factory-pk-std2 th, .factory-pk-std2 td { padding-left: 5px; padding-right: 5px; }
 
 /* A quiet note when the server cannot list files */
 /* The three columns fill down the page together */
@@ -4096,15 +3830,12 @@ form.factory-topbar-search { margin: 0; }
 .factory-ab-license .factory-ab-rows strong { white-space: normal; line-height: 1.3; }
 .factory-ab-license-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; padding-top: 14px; }
 
-
-
 .factory-ab-phone { right: 21%; top: 44px; }
 #ab-sec-version { display: flex; flex-direction: column; }
 #ab-sec-version .factory-ab-rows { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
 
 /* ---------- Overview page, refinements ---------- */
 /* Open Workspace: the theme has no chevron glyph, so draw one */
-
 
 /* ---------- Workspaces page, refinements ---------- */
 /* Total Repositories: database cylinder icon */
@@ -4116,15 +3847,9 @@ form.factory-topbar-search { margin: 0; }
 /* ---------- Code page, refinements ---------- */
 /* Repository Configuration: single-line fields with their labels above */
 
-
 /* Rules: names show in full (wrap when long) */
 
 /* Enable toggles: rounded blue pills */
-
-
-
-
-
 
 /* ---------- Requirements page, refinements ---------- */
 /* The list panel runs the full height of the detail panel */
@@ -4227,7 +3952,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-bt-ftable td.factory-bt-more { padding: 0; text-align: center; }
 .factory-bt-ftable .factory-ov2-more { --oj-button-height: 26px; max-width: 28px; }
 
-
 /* Failure Details: copy button in the error box */
 .factory-bt-errbox { position: relative; }
 .factory-bt-errbox .factory-bt-err { padding-right: 36px; }
@@ -4268,17 +3992,10 @@ form.factory-topbar-search { margin: 0; }
 /* Provider cards: same field size everywhere, description of a fixed height so rows line up */
 .factory-md-desc { height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
-
-
 .factory-md-url { height: auto; min-height: 32px; box-sizing: border-box; display: flex; align-items: center; padding: 5px 8px; font-family: inherit; font-size: var(--fx-text-caption);
   line-height: 1.25; white-space: normal; overflow-wrap: anywhere; overflow: visible; }
 
 /* Default Model Settings: native selects and oj-select-single look the same */
-
-
-
-
-
 
 /* Model Capabilities Comparison icons */
 .factory-md-ic { display: inline-block; vertical-align: middle; }
@@ -4318,7 +4035,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-mo-table td:nth-child(8) { overflow: visible; }
 .factory-mo-table .factory-mo-more { max-width: 28px; }
 
-
 /* Migration Effort KPI: bar-chart glyph on the right */
 .factory-mo-kpi-glyph { display: inline-flex; margin-left: auto; align-self: center; color: var(--fx-primary-text); }
 .factory-mo-kpi-glyph .factory-nav-icon { display: inline-block; width: 26px; height: 26px; flex: 0 0 26px; }
@@ -4334,18 +4050,6 @@ form.factory-topbar-search { margin: 0; }
 /* ---------- Agents page, refinements ---------- */
 /* agents page: overrides loaded after app.css */
 
-/* Date range: one button that shows the range, with the two date pickers in a popup */
-.factory-ag-range { position: relative; flex: 0 0 auto; }
-
-/* Runs table: Agent and Model wrap instead of being cut off */
-.factory-ag-table th:nth-child(2) { width: 98px; }
-.factory-ag-table th:nth-child(4) { width: 132px; }
-.factory-ag-table th:nth-child(5) { width: 96px; }
-.factory-ag-table th:nth-child(7) { width: 100px; }
-.factory-ag-table td { vertical-align: middle; }
-.factory-ag-table td .factory-ag-ell { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25; }
-.factory-ag-table .factory-ag-agentcell { align-items: center; }
-
 /* Recent Agent Activity: lines wrap */
 
 /* ---------- Reviews page, refinements ---------- */
@@ -4354,30 +4058,6 @@ form.factory-topbar-search { margin: 0; }
 /* Device toggle icons (inline SVG) */
 
 /* Phone status bar: time, notch, then signal, wifi and battery */
-
-/* ---------- Packs page, refinements ---------- */
-/* packs page: overrides loaded after app.css */
-
-/* Version Packs table: cells centred in their row; radio on the row shown in Version Details */
-.factory-pk-table td { vertical-align: middle; }
-.factory-pk-table input[type="radio"] { width: 15px; height: 15px; margin: 0; vertical-align: middle; accent-color: #4338ca; cursor: pointer; }
-
-/* Bank Standards: full descriptions, a smaller ID */
-.factory-pk-std2 th:nth-child(1) { width: 25%; }
-.factory-pk-std2 th { font-size: var(--fx-text-2xs); text-overflow: clip; padding-left: 4px; padding-right: 4px; }
-.factory-pk-std2 th:nth-child(2) { width: 56px; }
-.factory-pk-std2 th:nth-child(4) { width: 50px; }
-.factory-pk-std2 th:nth-child(5) { width: 56px; }
-.factory-pk-std2 th:nth-child(6) { width: 32px; }
-.factory-pk-std2 td { vertical-align: middle; }
-.factory-pk-std2 td.factory-pk-stdid { font-size: var(--fx-text-2xs); line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
-.factory-pk-std2 td.factory-pk-stddesc { white-space: normal; overflow-wrap: anywhere; line-height: 1.3; }
-.factory-pk-std2 .factory-ov2-more { max-width: 28px; }
-
-
-/* Implementation Templates: names wrap */
-.factory-pk-tpl .factory-pk-tplname { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }
-.factory-pk-std2 td { padding-left: 4px; padding-right: 4px; }
 
 /* no hover band behind the card row */
 /* the tree and the code viewer fill their cards */
@@ -4473,8 +4153,6 @@ form.factory-topbar-search { margin: 0; }
 }
 /* the two license buttons fit the narrower card */
 .factory-ab-license-btns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--fx-space-2); }
-
-
 
 /* ---------- Final check ---------- */
 /* Prompt Library: the prompt text and variable names show in full */
@@ -4733,7 +4411,6 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 /* ---------- Overview page, design system ---------- */
 /* Overview page (screen 1) on the design system. Loads after app.css and overrides its older .factory-ov2 rules. */
 
-
 /* KPI tiles: a soft tint of the tile's colour over the surface, so they follow the theme */
 
 /* Icon tints (tiles and progress rows); Recent Activity keeps its solid dots from app.css */
@@ -4764,10 +4441,7 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 /* ---------- Workspaces page, design system ---------- */
 /* Workspaces page (screens 2 and 17) on the design system. Loads after app.css; every rule is scoped to the page. */
 
-
 /* Tiles and KPI cards: token tints in both themes */
-
-/* Cards */
 
 /* Create New Workspace */
 
@@ -4781,10 +4455,8 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 
 /* Folder browser: a long folder name stays inside the card */
 
-
 /* ---------- Code page, design system ---------- */
 /* Code page (screen 4) on the design system. Loads after app.css; every rule is scoped to the page. */
-
 
 /* Status badges with an icon (header, Connected, rule status) */
 
@@ -4813,7 +4485,6 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 /* New requirement: the text box */
 .factory-rq-field { margin: 8px 0 12px; }
 .factory-rq .factory-rq-json .fx-textarea { font-family: var(--fx-font-mono); font-size: var(--fx-text-sm); }
-
 
 /* List: search, filters, items */
 .factory-rq-search { flex: 1 1 auto; min-width: 0; }
@@ -4925,7 +4596,6 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-ch-alert { margin: 0 0 12px; }
 
 /* Header buttons follow the primary tokens */
-
 
 /* Tabs (fx-tabs) inside the cards */
 .factory-ch-tabs { margin: 0 0 12px; overflow-y: hidden; }
@@ -5123,36 +4793,13 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-mo .factory-ov2-icon-red { background: var(--fx-danger-soft); }
 .factory-mo .factory-ov2-bar { background: var(--fx-surface-3); }
 
-/* ---------- Agents page, design system ---------- */
-.factory-ag-alert { margin: 0 0 12px; }
-
 /* Icon tiles shared with other pages (KPIs, agent marks), here on soft tokens so they follow the theme */
-.factory-ag .factory-ov2-icon-blue { background: var(--fx-primary-soft); }
-.factory-ag .factory-ov2-icon-violet { background: var(--fx-violet-soft); }
-.factory-ag .factory-ov2-icon-green { background: var(--fx-success-soft); }
-.factory-ag .factory-ov2-icon-amber { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
-.factory-ag .factory-ov2-icon-red { background: var(--fx-danger-soft); }
 
 /* Filters: search, four selects and Reset on one row */
 
 /* Date range button and its popup */
 
-/* Run table: checkbox column, selected row, compact badges */
-.factory-ag-table.fx-table { font-size: var(--fx-text-sm); }
-.factory-ag-table.fx-table th { padding: 9px 6px; }
-.factory-ag-table.fx-table td { padding: 8px 6px; }
-.factory-ag-table.fx-table th:first-child, .factory-ag-table.fx-table td:first-child { padding-left: 10px; }
-.factory-ag-table.fx-table th.fx-col-check { width: 38px; }
-.factory-ag-table.fx-table tbody tr.factory-clickable { cursor: pointer; }
-.factory-ag-table .fx-check input { margin: 0; }
-.factory-ag-table .fx-badge { height: 20px; padding: 0 7px; font-size: var(--fx-text-2xs); }
-
-/* Pager under the table */
-.factory-ag-pager { margin-top: 10px; }
-.factory-ag-pager .fx-select { width: auto; height: 32px; font-size: var(--fx-text-sm); }
-
 /* Card title links and the inspector's buttons */
-.factory-ag .fx-btn.factory-ag-link { height: 26px; padding: 0 8px; font-size: var(--fx-text-sm); color: var(--fx-primary-text); }
 .factory-ag-detail .fx-badge { flex: 0 0 auto; }
 
 /* ---------- Prompts page, design system ---------- */
@@ -5307,124 +4954,7 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 
 /* Comments */
 
-/* ---------- Packs page, design system ---------- */
-.factory-pk-alert { margin-bottom: 14px; }
-
-/* Tones for icon tiles */
-.factory-pk-tone-primary { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
-.factory-pk-tone-info { background: var(--fx-info-soft); color: var(--fx-info-text); }
-.factory-pk-tone-violet { background: var(--fx-violet-soft); color: var(--fx-violet-text); }
-.factory-pk-tone-success { background: var(--fx-success-soft); color: var(--fx-success-text); }
-.factory-pk-tone-warning { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
-.factory-pk-tone-danger { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
-
 /* KPI tiles */
-
-/* Tab bar */
-.factory-pk .factory-pk-bar { padding: 0 8px; margin-bottom: 14px; }
-.factory-pk .factory-pk-tabs { border-bottom: 0; overflow-y: hidden; }
-.factory-pk .factory-pk-tabs .factory-nav-icon { width: 16px; height: 16px; flex-basis: 16px; }
-
-/* Cards */
-.factory-pk .fx-card { padding: 16px; }
-.factory-pk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.factory-pk-sub { margin-bottom: 10px; }
-.factory-pk-cardhead { margin-bottom: 12px; }
-.factory-pk-search { width: 210px; }
-.factory-pk-search .fx-input { width: 100%; }
-.factory-pk .fx-menu-toggle .fx-caret { margin-left: 2px; }
-.factory-pk-noicon { visibility: hidden; }
-.factory-pk-namebtn { padding: 0; border: 0; background: none; font: inherit; font-weight: var(--fx-weight-semibold); color: var(--fx-text); cursor: pointer; }
-.factory-pk-namebtn:hover { color: var(--fx-primary-text); }
-.factory-pk-namebtn:focus-visible { outline: none; box-shadow: var(--fx-focus); border-radius: 4px; }
-.factory-pk .factory-pk-table th:first-child, .factory-pk .factory-pk-table td:first-child { width: 40px; padding-left: 12px; }
-.factory-pk-table input[type="radio"] { accent-color: var(--fx-primary); }
-@media (min-width: 1100px) {
-    .factory-pk .factory-pk-menuwrap { overflow: visible; }
-}
-
-/* Bank standards card */
-.factory-pk .factory-pk-std2 th:nth-child(6) { width: 44px; }
-.factory-pk .factory-pk-std2 .fx-badge { font-size: var(--fx-text-2xs); padding: 0 7px; }
-
-/* Templates list */
-.factory-pk .factory-pk-tpl li { display: block; padding: 0; }
-.factory-pk-tplrow { display: grid; grid-template-columns: 26px minmax(0, 1fr) 40px auto; gap: 10px; align-items: center; width: 100%; padding: 7px 4px; border: 0; border-radius: var(--fx-radius-sm); background: none; font: inherit; text-align: left; color: inherit; cursor: pointer; }
-.factory-pk-tplrow:hover { background: var(--fx-surface-2); }
-.factory-pk-tplrow:focus-visible { outline: none; box-shadow: var(--fx-focus); }
-.factory-pk .factory-pk-tplicon { background: var(--fx-violet-soft); color: var(--fx-violet-text); }
-.factory-pk .factory-pk-tpl .fx-badge { font-size: var(--fx-text-2xs); padding: 0 7px; }
-
-/* Compatibility marks */
-.factory-pk-matrix th[scope="row"] { background: none; color: var(--fx-text); font-size: var(--fx-text-sm); }
-.factory-pk-matrix td, .factory-pk-matrix thead th:not(:first-child) { text-align: center; }
-.factory-pk .factory-ad-yes, .factory-pk .factory-ad-no, .factory-pk .factory-pk-warn { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; }
-.factory-pk .factory-ad-yes { background: var(--fx-success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 12px no-repeat; }
-.factory-pk .factory-ad-no { background: var(--fx-danger) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M7 12h10'/%3E%3C/svg%3E") center / 12px no-repeat; }
-.factory-pk .factory-pk-warn { background-color: var(--fx-warning); }
-.factory-pk .factory-pk-legend i { width: 14px; height: 14px; background-size: 9px; }
-
-/* Version details */
-.factory-pk-dbtns { align-items: center; }
-.factory-pk .factory-pk-dtabs { margin-bottom: 8px; overflow-y: hidden; scrollbar-width: none; }
-.factory-pk .factory-pk-dtabs > button { padding: 8px 6px; font-size: var(--fx-text-caption); white-space: nowrap; }
-.factory-pk-envs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-.factory-pk .factory-pk-chip { height: 24px; font-size: var(--fx-text-caption); }
-
-/* Templates tab */
-.factory-pk .factory-pk-recipes li { display: block; padding: 0; border-bottom: 0; }
-.factory-pk-recipe { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; padding: 8px; border: var(--fx-border-width) solid transparent; border-radius: var(--fx-radius); background: none; font: inherit; text-align: left; color: inherit; cursor: pointer; }
-.factory-pk-recipe:hover { background: var(--fx-surface-2); }
-.factory-pk-recipe.is-on { border-color: var(--fx-primary-border); background: var(--fx-primary-soft); }
-.factory-pk-recipe:focus-visible { outline: none; box-shadow: var(--fx-focus); }
-.factory-pk-recipe .factory-pk-tplicon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--fx-radius-sm); }
-.factory-pk-part { margin: 14px 0 6px; font-size: var(--fx-text-base); color: var(--fx-text); }
-
-/* Reusable components: carousel of component cards and the chosen card's details */
-.factory-pk-components { display: grid; gap: 14px; margin-bottom: 14px; }
-.factory-pk-carousel { margin: 14px 4px 4px; }
-.factory-pk-track { grid-auto-columns: calc((100% - 48px) / 5); }
-@media (max-width: 1400px) { .factory-pk-track { grid-auto-columns: calc((100% - 36px) / 4); } }
-@media (max-width: 1100px) { .factory-pk-track { grid-auto-columns: calc((100% - 24px) / 3); } }
-@media (max-width: 760px) { .factory-pk-track { grid-auto-columns: calc((100% - 12px) / 2); } }
-@media (max-width: 520px) { .factory-pk-track { grid-auto-columns: 85%; } }
-.factory-pk .factory-pk-slide { display: flex; flex-direction: column; align-items: flex-start; gap: var(--fx-space-1); min-width: 0; padding: 14px; font: inherit; text-align: left; color: var(--fx-text); }
-.factory-pk .factory-pk-slide:focus-visible { outline: none; box-shadow: var(--fx-focus); }
-.factory-pk-slideicon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 6px; border-radius: var(--fx-radius); }
-.factory-pk-slideicon .factory-nav-icon { width: 18px; height: 18px; }
-.factory-pk-slidename { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--fx-font-mono); font-size: var(--fx-text-sm); }
-.factory-pk-slidesub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fx-text-caption); color: var(--fx-text-muted); margin-bottom: 6px; }
-.factory-pk-carddetail { margin-top: 14px; padding: 14px 16px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-lg); background: var(--fx-surface-2); }
-.factory-pk-cdname { margin: 0; font-family: var(--fx-font-mono); font-size: var(--fx-text-h4); color: var(--fx-text); }
-.factory-pk-carddetail .factory-kv { margin-top: 10px; }
-.factory-pk-types { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.factory-pk .fx-card.factory-pk-bar { padding: 0 8px; }
-.factory-pk .factory-pk-dtabs > button { padding: 8px 5px; }
-.factory-pk-carddetail .factory-pk-head .fx-muted { font-size: var(--fx-text-sm); }
-.factory-pk .factory-pk-carousel { margin: 14px 18px 4px; }
-
-/* Version pack governance: rules by source, enforcement and evidence, history and impact (UI declutter step 17) */
-.factory-pk .factory-pk-top { align-items: center; }
-.factory-pk .factory-pk-intro { flex: 1 1 360px; margin: 0; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
-.factory-pk .factory-pk-wrap { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
-.factory-pk .factory-pk-table { table-layout: auto; width: 100%; }
-.factory-pk .factory-pk-rulesnote { margin: 0 0 12px; }
-.factory-pk .factory-pk-rulegroup { margin-bottom: 14px; }
-.factory-pk .factory-pk-rules { font-size: var(--fx-text-sm); }
-.factory-pk .factory-pk-rules td { vertical-align: top; }
-.factory-pk .factory-pk-rulecell { display: flex; flex-direction: column; gap: 2px; min-width: 200px; overflow-wrap: anywhere; }
-.factory-pk .factory-pk-guidance { font-size: var(--fx-text-caption); }
-.factory-pk .factory-pk-inline { padding: 0; min-height: 0; vertical-align: baseline; }
-.factory-pk .factory-pk-silent { margin-bottom: 12px; }
-.factory-pk .factory-pk-impact { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--fx-space-3); }
-.factory-pk .factory-pk-impact > li { padding: 10px 12px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); color: var(--fx-text); }
-.factory-pk .factory-pk-impact p { margin: 4px 0 0; }
-.factory-pk .factory-pk-impactchanges { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--fx-space-1); }
-.factory-pk .factory-pk-impactchanges li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-1) 10px; font-size: var(--fx-text-sm); }
-.factory-pk .factory-pk-histlist { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: var(--fx-space-2); }
-.factory-pk .factory-pk-histlist li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--fx-space-3); padding-bottom: 8px; border-bottom: var(--fx-border-width) solid var(--fx-border); color: var(--fx-text); }
-.factory-pk .factory-pk-histlist .factory-pk-utext { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
-@media (max-width: 767px) { .factory-pk .factory-pk-rules { min-width: 760px; } }
 
 /* ---------- Notifications page, design system ---------- */
 /* Notification Center page (design system): tokens only, so it follows the light and dark themes */
@@ -5686,7 +5216,6 @@ a.fx-btn--primary, a.fx-btn--primary:link, a.fx-btn--primary:visited, a.fx-btn--
 .factory-ch .factory-ch-editor { display: block; width: 100%; }
 .factory-ch .factory-ch-editor .fx-textarea { min-height: 420px; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
 
-
 /* The document picker: a hidden native input with a label styled as a button; the focus ring shows on the label */
 .factory-rq .factory-rq-file label.fx-btn { cursor: pointer; }
 .factory-rq .factory-rq-file input[type="file"]:focus-visible + label.fx-btn { outline: none; box-shadow: var(--fx-focus); }
@@ -5722,8 +5251,6 @@ a.fx-btn--primary, a.fx-btn--primary:link, a.fx-btn--primary:visited, a.fx-btn--
 .factory-bt .factory-bt-ftable .factory-ov2-more .fx-menu-toggle { width: 26px; height: 26px; min-width: 0; padding: 0; }
 
 /* ---------- Agents page, own elements ---------- */
-/* More Actions matches the other footer buttons, and the row fits the panel */
-.factory-ag .factory-ag-more .fx-menu-toggle { font-size: var(--fx-text-sm); padding: 0 8px; gap: 6px; white-space: nowrap; }
 
 /* ---------- Overview page, own elements ---------- */
 /* Browse matches the height of the folder field beside it */
@@ -6004,84 +5531,6 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 }
 
 /* ---------- Agents page, workflow ---------- */
-/* Filters: the status and agent multi-selects sit in the filter row like the selects beside them */
-.factory-ag .factory-ag-multi { flex: 0 1 200px; min-width: 150px; max-width: 280px; }
-.factory-ag .factory-ag-range fx-date-range { min-width: 200px; }
-
-/* Bulk bar: the two actions sit together at the end */
-.factory-ag .factory-ag-bulk .fx-btn { margin-left: 0; }
-.factory-ag .factory-ag-bulk .fx-btn:first-of-type { margin-left: auto; }
-
-/* Runs table: keyboard focus and the cursor row */
-.factory-ag .factory-ag-table tbody tr:focus { outline: none; }
-.factory-ag .factory-ag-table tbody tr:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: -2px; }
-.factory-ag .factory-ag-statuscell { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-1) 6px; }
-.factory-ag .factory-ag-table .fx-live { font-size: var(--fx-text-2xs); }
-
-/* Inspector header: id, status, live, then View log at the end */
-.factory-ag .factory-ag-dhead { justify-content: flex-start; flex-wrap: wrap; }
-.factory-ag .factory-ag-dhead h2 { margin-right: auto; }
-.factory-ag .factory-ag-dhead h2 + span { order: 1; }
-.factory-ag .factory-ag-logbtn { order: 3; margin-left: auto; }
-.factory-ag .factory-ag-dhead .fx-live { order: 2; }
-
-/* Execution steps as a timeline */
-.factory-ag .factory-ag-tl { margin-top: 4px; font-size: var(--fx-text-sm); }
-.factory-ag .factory-ag-tlname { min-width: 0; overflow-wrap: anywhere; color: var(--fx-text); }
-.factory-ag .factory-ag-log { max-height: 260px; }
-
-/* Log sheet */
-.factory-ag-sheet h3 { margin: 16px 0 8px; font-size: var(--fx-text-sm); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-.factory-ag-sheethead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2) var(--fx-space-3); }
-.factory-ag-sheet .fx-log { max-height: 420px; }
-.factory-ag-notrec { margin-top: 16px; }
-.factory-ag-sheet .fx-log { border: var(--fx-border-width) solid var(--fx-border); }
-
-/* Agent Runs as an auditable execution monitor: filters in one row, outcome tabs, a timeline per run (UI declutter step 14) */
-.factory-ag .factory-ag-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2) 10px; margin-bottom: 14px; }
-.factory-ag .factory-ag-top .factory-ag-search { flex: 1 1 260px; min-width: 200px; max-width: 420px; }
-.factory-ag .factory-ag-top .factory-ag-pick { flex: 0 1 200px; min-width: 140px; }
-.factory-ag .factory-ag-spacer { flex: 1 1 0; }
-.factory-ag .factory-ag-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); align-items: start; }
-.factory-ag .factory-ag-list { padding-top: 4px; }
-.factory-ag .factory-ag-tabs { margin-bottom: 8px; overflow-x: auto; }
-.factory-ag .factory-ag-detail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
-.factory-ag .factory-ag-dmeta { margin: 2px 0 8px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); overflow-wrap: anywhere; }
-.factory-ag .factory-ag-reason { margin: 0 0 10px; overflow-wrap: anywhere; }
-.factory-ag .factory-ag-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); margin-bottom: 10px; }
-.factory-ag .factory-ag-actions .factory-ag-more { margin-left: auto; }
-.factory-ag .factory-ag-subtabs { margin-bottom: 10px; overflow-x: auto; }
-.factory-ag .factory-ag-src { margin-right: 4px; font-size: var(--fx-text-2xs); }
-.factory-ag .fx-timeline-dot.factory-ag-dot-audit { background: var(--fx-surface-3); border-color: var(--fx-primary); }
-.factory-ag .factory-ag-h3 { margin: 12px 0 6px; font-size: var(--fx-text-sm); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-.factory-ag .factory-ag-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.factory-ag .factory-ag-links li { display: grid; grid-template-columns: minmax(90px, 30%) minmax(0, 1fr); gap: var(--fx-space-2); align-items: baseline; font-size: var(--fx-text-sm); }
-.factory-ag .factory-ag-kind { color: var(--fx-text-muted); text-transform: capitalize; }
-.factory-ag .factory-ag-plain { overflow-wrap: anywhere; color: var(--fx-text); }
-.factory-ag .factory-ag-linkbtn { justify-self: start; padding: 0; min-height: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
-.factory-ag .factory-ag-related { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--fx-space-1); }
-.factory-ag .factory-ag-relbtn { display: flex; align-items: center; gap: var(--fx-space-2); width: 100%; padding: 6px 8px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface); color: var(--fx-text); font: inherit; font-size: var(--fx-text-sm); text-align: left; cursor: pointer; transition: background var(--fx-dur-hover) var(--fx-ease-out); }
-.factory-ag .factory-ag-relbtn:hover { background: var(--fx-surface-2); }
-.factory-ag .factory-ag-relbtn:focus-visible { outline: 2px solid var(--fx-focus-color); outline-offset: 1px; }
-.factory-ag .factory-ag-relbtn .factory-ag-ell { flex: 1 1 auto; min-width: 0; }
-@media (max-width: 1200px) {
-  .factory-ag .factory-ag-layout { grid-template-columns: 1fr; }
-  .factory-ag .factory-ag-detail { position: static; max-height: none; }
-}
-@media (max-width: 600px) {
-  .factory-ag .factory-ag-top > * { flex: 1 1 100%; max-width: none; }
-  .factory-ag .factory-ag-spacer { display: none; }
-}
-.factory-ag .factory-ag-table th:nth-child(1) { width: 38px; }
-.factory-ag .factory-ag-table th:nth-child(2) { width: 100px; }
-.factory-ag .factory-ag-table th:nth-child(3) { width: auto; }
-.factory-ag .factory-ag-table th:nth-child(4) { width: 40px; }
-.factory-ag .factory-ag-table th:nth-child(5) { width: 150px; }
-.factory-ag .factory-ag-table th:nth-child(6) { width: 104px; }
-.factory-ag .factory-ag-table th:nth-child(7) { width: 76px; }
-.factory-ag .factory-ag-table th:nth-child(8) { width: 44px; }
-.factory-ag .factory-ag-table { min-width: 560px; }
-.factory-ag .factory-ag-sub { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* ---------- Build page, workflow ---------- */
 /* Live state next to the headline and on the stage cards */
@@ -6148,14 +5597,10 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
     .factory-bt .factory-bt-jobs { min-width: 0; }
 }
 
-
 /* Narrower screens: the details go under the tree and the viewer (as designed); the second resizer has nothing to do */
-
-
 
 /* ---------- Code page, workflow ---------- */
 /* Advanced settings (progressive disclosure) under the essential fields */
-
 
 /* Live import progress in Indexing Status */
 
@@ -6320,6 +5765,9 @@ button.factory-topbar-search:focus-visible { outline: none; border-color: var(--
 
 /* Access control: matrix from the role definitions, effective access and privilege history (UI declutter step 21) */
 .factory-ad-intro { margin: 0 0 12px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-ad-refs { margin: -4px 0 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--fx-text-muted); font-size: var(--fx-text-sm); }
+.factory-ad-ref { color: var(--fx-primary-text); font-weight: var(--fx-weight-medium); text-decoration: none; }
+.factory-ad-ref:hover { text-decoration: underline; }
 .factory-ad .factory-ad-matrix th[scope="row"] { min-width: 220px; }
 .factory-ad .factory-ad-perm { display: block; color: var(--fx-text); font-weight: var(--fx-weight-semibold); }
 .factory-ad .factory-ad-permdesc { display: block; font-weight: normal; font-size: var(--fx-text-caption); overflow-wrap: anywhere; }
@@ -6437,10 +5885,10 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
 /* Phones: rows of controls wrap instead of running past the window; tab strips take a full row and scroll on
    their own; steppers scroll sideways instead of breaking words; label/value lists stack */
 @media (max-width: 767px) {
-    .factory-page [class*="-head"]:not(th):not(thead):not(tr), .factory-page :is(div, section, header, span, p):not(.factory-in-detail, .factory-pk-detail):has(> .fx-tabs, > .factory-tabbar, > .factory-im-graphtools, > .factory-bt-logbtns, > .factory-bt-nav) {
+    .factory-page [class*="-head"]:not(th):not(thead):not(tr), .factory-page :is(div, section, header, span, p):not(.factory-in-detail):has(> .fx-tabs, > .factory-tabbar, > .factory-im-graphtools, > .factory-bt-logbtns, > .factory-bt-nav) {
         flex-wrap: wrap;
     }
-    .factory-page :is(.fx-tabs, .factory-tabbar):not(.factory-in-dtabs, .factory-pk-dtabs) { flex: 1 1 100%; min-width: 0; }
+    .factory-page :is(.fx-tabs, .factory-tabbar):not(.factory-in-dtabs) { flex: 1 1 100%; min-width: 0; }
     .factory-pr-dbtns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; }
     .factory-pr-dbtns .fx-btn { white-space: normal; min-width: 0; line-height: 1.2; }
     .factory-im-graphtools, .factory-bt-logbtns { flex-wrap: wrap; }
@@ -6452,18 +5900,12 @@ input, textarea, select, button, .fx-table-wrap, .fx-dialog, .fx-sheet, .fx-popu
     .factory-ac-prefs { grid-template-columns: 1fr; }
     .factory-ac-prefs dt { margin-top: 4px; }
     .factory-page th { overflow-wrap: normal; }
-    .factory-pk-std2 th:nth-child(1) { width: auto; }
 }
 
-/* Version Packs: the list and its detail panel sit side by side only from 1440px, where the list's columns fit;
-   below that the detail goes under the list (the row menus need the list unclipped). */
-@media (max-width: 1439px) { .factory-pk-layout { grid-template-columns: minmax(0, 1fr); } }
 /* Page action rows wrap on every size rather than running past the window */
 .factory-pg-actions { flex-wrap: wrap; }
 /* Changes: the action row may shrink and wrap (it was sized to its widest line) */
 @media (max-width: 1300px) { .factory-ch-actions { flex: 0 1 auto; min-width: 0; max-width: 100%; } }
-/* Version Packs standards: on phones the table keeps readable columns and scrolls inside its box */
-@media (max-width: 767px) { .factory-pk-std2 { min-width: 560px; } }
 
 /* ======================================================================================================
    Motion and interaction. Durations: hover and focus 140ms, press 120ms, menus and tooltips 180ms, panels 240ms,
@@ -8042,6 +7484,12 @@ button.factory-cd-box:focus-visible { outline: none; box-shadow: var(--fx-focus)
 .factory-cd-rule { display: flex; flex-direction: column; gap: 2px; min-width: 220px; }
 .factory-cd-rule strong { color: var(--fx-text); font-weight: var(--fx-weight-semibold); }
 .factory-cd-note { font-style: italic; }
+.factory-cd-rule-source { font-size: var(--fx-text-caption); overflow-wrap: anywhere; }
+.factory-cd-rule-off { font-size: var(--fx-text-caption); color: var(--fx-warning-text); }
+.factory-cd-rule-status { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.factory-cd-evidence { font-size: var(--fx-text-caption); white-space: nowrap; }
+.factory-cd-components { margin-top: var(--fx-space-2); }
+.factory-cd-components code { font-size: var(--fx-text-sm); }
 .factory-cd-files { min-width: 160px; max-width: 280px; font-size: var(--fx-text-sm); color: var(--fx-text-muted); overflow-wrap: anywhere; }
 
 /* Settings */

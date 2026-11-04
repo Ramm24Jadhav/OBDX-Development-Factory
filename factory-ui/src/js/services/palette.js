@@ -7,7 +7,7 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
   function (ko, dashboard, workspaceSelection, pageRequests, preferences, session) {
     // "g" then the letter opens the page (Linear-style two-key shortcuts)
     const GO = { o: 'overview', w: 'workspaces', c: 'code', p: 'code:facts', r: 'requirements', d: 'studio', h: 'changes', b: 'build',
-      m: 'models', a: 'agents', k: 'code:explore', i: 'impact', x: 'modernization', n: 'notifications', s: 'account', y: 'design' };
+      m: 'models', k: 'code:explore', i: 'impact', x: 'modernization', n: 'notifications', s: 'account' };
     // A page's own letter (the first one that opens it); "page:tab" opens a tab of the Code page (G K: Code › Explore,
     // G P: Code › Codebase facts)
     const goKey = Object.keys(GO).reduce((map, k) => { if (!map[GO[k]]) { map[GO[k]] = k; } return map; }, {});

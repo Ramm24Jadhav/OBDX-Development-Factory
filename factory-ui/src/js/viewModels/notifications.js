@@ -6,7 +6,7 @@
 define(['knockout', '../accUtils', '../services/dashboard', '../services/notifications', '../services/workspaceSelection', '../services/ui',
         '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
   function (ko, accUtils, dashboard, notifications, workspaceSelection, ui, toast, pageRequests) {
-    const CATEGORY = { action: 'Action Required', build: 'Build & Test', agent: 'Agent Runs', review: 'Reviews & Approvals', system: 'System' };
+    const CATEGORY = { action: 'Action Required', build: 'Build & Test', agent: 'AI work', review: 'Reviews & Approvals', system: 'System' };
     const PRIORITY = { high: { text: 'High', css: 'fx-badge fx-badge--danger' }, medium: { text: 'Medium', css: 'fx-badge fx-badge--warning' }, low: { text: 'Low', css: 'fx-badge fx-badge--success' } };
     const UNREAD = { text: 'Unread', css: 'fx-badge fx-badge--primary' };
     const READ = { text: 'Read', css: 'fx-badge' };
@@ -38,7 +38,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         { label: 'Total Notifications', value: all().length, sub: '↑ ' + count((n) => n.today) + ' today', css: 'factory-kpi-sub fx-trend fx-trend--up', tone: 'amber', icon: 'bell' },
         { label: 'Action Required', value: count((n) => n.action), sub: 'Needs your attention', css: 'factory-kpi-sub', tone: 'red', icon: 'alert' },
         { label: 'Build & Test', value: count((n) => n.category === 'build'), sub: count((n) => n.category === 'build' && n.tone === 'red') + ' failed, ' + count((n) => n.category === 'build' && n.tone === 'green') + ' completed', css: 'factory-kpi-sub', tone: 'violet', icon: 'cog' },
-        { label: 'Agent Runs', value: count((n) => n.category === 'agent'), sub: count((n) => n.category === 'agent' && n.tone !== 'red') + ' completed, ' + count((n) => n.category === 'agent' && n.tone === 'red') + ' failed', css: 'factory-kpi-sub', tone: 'blue', icon: 'robot' },
+        { label: 'AI work', value: count((n) => n.category === 'agent'), sub: count((n) => n.category === 'agent' && n.tone !== 'red') + ' completed, ' + count((n) => n.category === 'agent' && n.tone === 'red') + ' failed', css: 'factory-kpi-sub', tone: 'blue', icon: 'robot' },
         { label: 'Reviews & Approvals', value: count((n) => n.category === 'review'), sub: count((n) => n.category === 'review' && n.action) + ' pending approval', css: 'factory-kpi-sub', tone: 'violet', icon: 'doc' },
         { label: 'System', value: count((n) => n.category === 'system'), sub: 'General updates', css: 'factory-kpi-sub', tone: 'blue', icon: 'info' }
       ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-no-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon })));
@@ -48,7 +48,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         { value: 'all', label: 'All', icon: 'bell', count: c(() => true) },
         { value: 'action', label: 'Action Required', icon: 'alert', count: c((n) => n.action) },
         { value: 'build', label: 'Build & Test', icon: 'cog', count: c((n) => n.category === 'build') },
-        { value: 'agent', label: 'Agent Runs', icon: 'robot', count: c((n) => n.category === 'agent') },
+        { value: 'agent', label: 'AI work', icon: 'robot', count: c((n) => n.category === 'agent') },
         { value: 'review', label: 'Reviews', icon: 'doc', count: c((n) => n.category === 'review') },
         { value: 'system', label: 'System', icon: 'info', count: c((n) => n.category === 'system') }
       ]);
@@ -169,9 +169,6 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         const related = [{ label: page[0], value: n.related, icon: page[1], run: () => go(n, n.page) }];
         if (n.category === 'build' || n.category === 'agent' || n.page === 'code') {
           related.push({ label: 'The code', value: 'Code › Explore', icon: 'code', run: () => go(n, 'code', 'explore') });
-        }
-        if (n.category === 'agent' || n.category === 'build') {
-          related.push({ label: 'Agent runs', value: '', icon: 'robot', run: () => go(n, 'agents') });
         }
         if (ws) {
           related.push({ label: 'Workspace', value: ws, icon: 'folder', run: () => go(n, 'workspaces') });
