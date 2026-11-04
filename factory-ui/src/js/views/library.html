@@ -48,104 +48,118 @@
   </div>
 
   <div id="libraryPanel" role="tabpanel" :aria-labelledby="[['lb-' + tab()]]">
-  <!-- 4. Ask: the conversation and its sources -->
+  <!-- 4. Ask: one centred question with examples under it; after a question, the thread beside its sources -->
   <oj-bind-if test="[[tab() === 'ask']]">
-    <div class="factory-lb-askgrid">
+    <div :class="[[askEmpty() ? 'factory-lb-askgrid is-empty' : 'factory-lb-askgrid']]">
       <section class="factory-lb-conv" aria-labelledby="lbQuestionTitle">
-        <div class="factory-lb-convbody">
-          <oj-bind-if test="[[!answer() && !asking()]]">
-            <div class="factory-lb-empty">
-              <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span></span>
-              <h2 class="factory-lb-qtitle" id="lbQuestionTitle">Ask the OBDX Library</h2>
-              <p class="fx-muted">Answers come from the manuals, the bank's documents and notes for <oj-bind-text value="[[scopeText]]"></oj-bind-text>, with their sources cited.</p>
-              <div class="factory-lb-examples"><span class="fx-muted">Try:</span>
-                <oj-bind-for-each data="[[exampleRows]]" as="e"><template><button type="button" class="fx-chip" on-click="[[e.data.ask]]"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
-              </div>
+        <oj-bind-if test="[[askEmpty()]]">
+          <div class="factory-lb-hero">
+            <span class="factory-lb-spark is-lg" aria-hidden="true"><span class="factory-nav-icon factory-ico-sparkle"></span></span>
+            <h2 class="factory-lb-herotitle" id="lbQuestionTitle">What do you want to know about OBDX?</h2>
+            <p class="factory-lb-herotext" id="libraryCovers"><oj-bind-text value="[[coverText]]"></oj-bind-text></p>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[!askEmpty()]]">
+          <div class="factory-lb-thread">
+            <div class="factory-lb-convline">
+              <span><oj-bind-text value="[[conversationText]]"></oj-bind-text></span>
+              <span class="factory-grow"></span>
+              <oj-bind-if test="[[followingUp() || answer()]]">
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryNewConversation" on-click="[[newConversation]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New conversation</button>
+              </oj-bind-if>
             </div>
-          </oj-bind-if>
-          <oj-bind-if test="[[answer() || asking()]]">
-            <div class="factory-lb-qhead">
-              <div class="factory-lb-qheadtext">
-                <h2 class="factory-lb-qtitle" id="lbQuestionTitle"><oj-bind-text value="[[askedQuestion]]"></oj-bind-text></h2>
-                <oj-bind-if test="[[answerMeta().show]]">
-                  <div class="factory-lb-qmeta"><span :class="[[answerMeta().css]]"><span :class="[[answerMeta().icon]]" aria-hidden="true"></span><oj-bind-text value="[[answerMeta().chip]]"></oj-bind-text></span>
-                    <span><oj-bind-text value="[[answerMeta().detail]]"></oj-bind-text></span></div>
+            <!-- The question as the user wrote it, and what it was asked as after Improve -->
+            <div class="factory-lb-asked">
+              <h2 class="factory-lb-bubble" id="lbQuestionTitle"><oj-bind-text value="[[askedQuestion]]"></oj-bind-text></h2>
+              <oj-bind-if test="[[askedAs()]]"><p class="factory-lb-askedas">Asked as: <oj-bind-text value="[[askedAs]]"></oj-bind-text></p></oj-bind-if>
+            </div>
+            <!-- The answer beside its mark: one line says what was done, and folds out the detail -->
+            <div class="factory-lb-reply">
+              <span class="factory-lb-spark" aria-hidden="true"><span class="factory-nav-icon factory-ico-sparkle"></span></span>
+              <div class="factory-lb-answer" role="region" aria-label="Answer">
+                <oj-bind-if test="[[asking() && !answerText()]]">
+                  <div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[thinking]]"></oj-bind-text></div>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && asking()]]">
+                  <div class="factory-lb-steps is-writing"><span :class="[[answerMeta().css]]"><span :class="[[answerMeta().icon]]" aria-hidden="true"></span><oj-bind-text value="[[answerMeta().chip]]"></oj-bind-text></span>
+                    <span class="factory-lb-stepstext"><oj-bind-text value="[[answerMeta().detail]]"></oj-bind-text></span></div>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && !asking()]]">
+                  <button type="button" class="factory-lb-steps" id="answerSteps" on-click="[[toggleSteps]]" :aria-expanded="[[stepsOpen() ? 'true' : 'false']]" aria-controls="answerDetail">
+                    <span :class="[[answerMeta().css]]"><span :class="[[answerMeta().icon]]" aria-hidden="true"></span><oj-bind-text value="[[answerMeta().chip]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[answerMeta().detail]]"><span class="factory-lb-stepstext"><oj-bind-text value="[[answerMeta().detail]]"></oj-bind-text></span></oj-bind-if>
+                    <span :class="[[stepsOpen() ? 'factory-lb-chev is-open' : 'factory-lb-chev']]" aria-hidden="true"></span>
+                  </button>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && stepsOpen() && !asking()]]">
+                  <div class="factory-lb-detail" id="answerDetail">
+                    <p class="factory-lb-meta"><oj-bind-text value="[[answerAbout]]"></oj-bind-text></p>
+                    <oj-bind-if test="[[answer().quality]]">
+                      <div class="factory-lb-quality">
+                        <span :class="[[answer().quality.css]]"><oj-bind-text value="[[answer().quality.label]]"></oj-bind-text></span>
+                        <span class="fx-muted"><oj-bind-text value="[[answer().quality.reason]]"></oj-bind-text><oj-bind-if test="[[answer().quality.corrected]]"> The model rewrote it once after the check.</oj-bind-if></span>
+                        <oj-bind-if test="[[answer().quality.details]]">
+                          <details class="factory-lb-findings"><summary>What the check found</summary>
+                            <ul><oj-bind-for-each data="[[answer().quality.findings]]" as="f"><template><li><oj-bind-text value="[[f.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                          </details>
+                        </oj-bind-if>
+                      </div>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[answer().shortList.length > 0]]">
+                      <details class="factory-lb-diagnostics"><summary>How the sources were found (administrators)</summary>
+                        <dl><oj-bind-for-each data="[[answer().diagnosticRows]]" as="d"><template><dt><oj-bind-text value="[[d.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[d.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+                        <p class="fx-muted">The short list, by score; the model kept those marked kept:</p>
+                        <ol class="factory-lb-shortlist"><oj-bind-for-each data="[[answer().shortList]]" as="r"><template><li><oj-bind-text value="[[r.data.text]]"></oj-bind-text> <strong><oj-bind-text value="[[r.data.kept]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ol>
+                      </details>
+                    </oj-bind-if>
+                  </div>
+                </oj-bind-if>
+                <oj-bind-if test="[[insufficient()]]">
+                  <div class="fx-alert fx-alert--warning factory-lb-insufficient" id="answerInsufficient" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+                    <span class="fx-alert-text"><strong>Not enough evidence in the indexed documents.</strong> <oj-bind-text value="[[insufficientText]]"></oj-bind-text>
+                      Add the manual or a note that covers it, or ask for another OBDX version.</span></div>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && !answer().grounded && !asking()]]">
+                  <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-lb-general" id="showUngrounded" on-click="[[toggleUngrounded]]" :aria-expanded="[[showUngrounded() ? 'true' : 'false']]" aria-controls="answerBody">
+                    <oj-bind-text value="[[showUngrounded() ? 'Hide the model\'s general answer' : 'Show the model\'s general answer (not from the documents)']]"></oj-bind-text></button>
+                </oj-bind-if>
+                <oj-bind-if test="[[asking() && answer() && answer().checking]]"><div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[answer().checking]]"></oj-bind-text></div></oj-bind-if>
+                <oj-bind-if test="[[answer() && (answer().grounded || asking() || showUngrounded())]]">
+                  <div id="answerBody" :class="[[asking() ? 'factory-lb-answertext is-writing' : answer().grounded ? 'factory-lb-answertext' : 'factory-lb-answertext is-ungrounded']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sources || []]]" cite-prefix="lbSrc-" cite-style="numbered"></fx-markdown></div>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && answer().quality && answer().quality.limitations.length > 0]]">
+                  <ul class="factory-lb-limits"><oj-bind-for-each data="[[answer().quality.limitations]]" as="l"><template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[l.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                </oj-bind-if>
+                <oj-bind-if test="[[answer() && !asking()]]">
+                  <div class="factory-lb-answerbar">
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="copyAnswer" on-click="[[copyAnswer]]" title="Copy" aria-label="Copy the answer"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span></button>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="regenerateAnswer" on-click="[[regenerate]]" title="Regenerate" aria-label="Regenerate the answer"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></button>
+                    <button type="button" :class="[[rated() === true ? 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon is-on' : 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon']]" id="answerHelpful" on-click="[[rate(true)]]" :disabled="[[rated() !== null]]" aria-label="Helpful" title="Helpful" :aria-pressed="[[rated() === true ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-thumbup" aria-hidden="true"></span></button>
+                    <button type="button" :class="[[rated() === false ? 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon is-on' : 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon']]" id="answerNotHelpful" on-click="[[rate(false)]]" :disabled="[[rated() !== null]]" aria-label="Not helpful" title="Not helpful" :aria-pressed="[[rated() === false ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-thumbdown" aria-hidden="true"></span></button>
+                    <span class="factory-lb-barsep" aria-hidden="true"></span>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-lb-save" id="saveAnswer" on-click="[[saveAnswer]]"><span class="factory-nav-icon factory-ico-bookmark" aria-hidden="true"></span>Save as a note</button>
+                  </div>
+                </oj-bind-if>
+                <!-- Ask next: the questions the model suggests after this answer; one asks it as a follow-up -->
+                <oj-bind-if test="[[nextRows().length > 0 && !asking()]]">
+                  <div class="factory-lb-next" id="libraryAskNext" role="group" aria-labelledby="lbAskNextTitle">
+                    <span class="factory-lb-nexttitle" id="lbAskNextTitle">Ask next</span>
+                    <div class="factory-lb-nextlist">
+                      <oj-bind-for-each data="[[nextRows]]" as="x"><template><button type="button" class="factory-lb-nextchip" on-click="[[x.data.ask]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span><span><oj-bind-text value="[[x.data.text]]"></oj-bind-text></span></button></template></oj-bind-for-each>
+                    </div>
+                  </div>
                 </oj-bind-if>
               </div>
-              <oj-bind-if test="[[followingUp() || answer()]]">
-                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="libraryNewConversation" on-click="[[newConversation]]" :disabled="[[asking()]]">New conversation</button>
-              </oj-bind-if>
             </div>
-            <oj-bind-if test="[[asking() && !answerText()]]">
-              <div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[thinking]]"></oj-bind-text></div>
-            </oj-bind-if>
-          </oj-bind-if>
-          <oj-bind-if test="[[answer()]]">
-            <div class="factory-lb-answer" role="region" aria-label="Answer">
-              <oj-bind-if test="[[insufficient()]]">
-                <div class="fx-alert fx-alert--warning factory-lb-insufficient" id="answerInsufficient" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
-                  <span class="fx-alert-text"><strong>Not enough evidence in the indexed documents.</strong> <oj-bind-text value="[[insufficientText]]"></oj-bind-text>
-                    Add the manual or a note that covers it, or ask for another OBDX version.</span></div>
-              </oj-bind-if>
-              <oj-bind-if test="[[!answer().grounded && !asking()]]">
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="showUngrounded" on-click="[[toggleUngrounded]]" :aria-expanded="[[showUngrounded() ? 'true' : 'false']]" aria-controls="answerBody">
-                  <oj-bind-text value="[[showUngrounded() ? 'Hide the model\'s general answer' : 'Show the model\'s general answer (not from the documents)']]"></oj-bind-text></button>
-              </oj-bind-if>
-              <oj-bind-if test="[[answer().improved]]"><p class="fx-muted factory-lb-askedas">Asked as: <oj-bind-text value="[[answer().improved]]"></oj-bind-text></p></oj-bind-if>
-              <oj-bind-if test="[[answer().quality]]">
-                <div class="factory-lb-quality">
-                  <span :class="[[answer().quality.css]]"><oj-bind-text value="[[answer().quality.label]]"></oj-bind-text></span>
-                  <span class="fx-muted"><oj-bind-text value="[[answer().quality.reason]]"></oj-bind-text><oj-bind-if test="[[answer().quality.corrected]]"> The model rewrote it once after the check.</oj-bind-if></span>
-                  <oj-bind-if test="[[answer().quality.details]]">
-                    <details class="factory-lb-findings"><summary>What the check found</summary>
-                      <ul><oj-bind-for-each data="[[answer().quality.findings]]" as="f"><template><li><oj-bind-text value="[[f.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-                    </details>
-                  </oj-bind-if>
-                </div>
-              </oj-bind-if>
-              <oj-bind-if test="[[asking() && answer().checking]]"><div class="factory-lb-thinking" role="status"><span class="fx-spinner" aria-hidden="true"></span><oj-bind-text value="[[answer().checking]]"></oj-bind-text></div></oj-bind-if>
-              <oj-bind-if test="[[answer().grounded || asking() || showUngrounded()]]">
-                <div id="answerBody" :class="[[asking() ? 'factory-lb-answertext is-writing' : answer().grounded ? 'factory-lb-answertext' : 'factory-lb-answertext is-ungrounded']]" aria-live="polite"><fx-markdown text="[[answerText]]" sources="[[answer().sources || []]]" cite-prefix="lbSrc-"></fx-markdown></div>
-              </oj-bind-if>
-              <oj-bind-if test="[[answer().quality && answer().quality.limitations.length > 0]]">
-                <ul class="factory-lb-limits"><oj-bind-for-each data="[[answer().quality.limitations]]" as="l"><template><li><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[l.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-              </oj-bind-if>
-              <oj-bind-if test="[[answer().meta || answer().note]]">
-                <p class="fx-muted factory-lb-meta"><oj-bind-text value="[[answer().meta]]"></oj-bind-text><oj-bind-if test="[[answer().meta && answer().note]]"> · </oj-bind-if><oj-bind-text value="[[answer().note || '']]"></oj-bind-text></p>
-              </oj-bind-if>
-              <oj-bind-if test="[[answer().shortList.length > 0]]">
-                <details class="factory-lb-diagnostics"><summary>How the sources were found (administrators)</summary>
-                  <dl><oj-bind-for-each data="[[answer().diagnosticRows]]" as="d"><template><dt><oj-bind-text value="[[d.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[d.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
-                  <p class="fx-muted">The short list, by score; the model kept those marked kept:</p>
-                  <ol class="factory-lb-shortlist"><oj-bind-for-each data="[[answer().shortList]]" as="r"><template><li><oj-bind-text value="[[r.data.text]]"></oj-bind-text> <strong><oj-bind-text value="[[r.data.kept]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ol>
-                </details>
-              </oj-bind-if>
-              <oj-bind-if test="[[!asking()]]"><div class="factory-lb-answerbar">
-                <span class="fx-muted factory-lb-helpful">Helpful?</span>
-                <button type="button" :class="[[rated() === true ? 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon is-on' : 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon']]" id="answerHelpful" on-click="[[rate(true)]]" :disabled="[[rated() !== null]]" aria-label="Yes, helpful" title="Helpful" :aria-pressed="[[rated() === true ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-thumbup" aria-hidden="true"></span></button>
-                <button type="button" :class="[[rated() === false ? 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon is-on' : 'fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon']]" id="answerNotHelpful" on-click="[[rate(false)]]" :disabled="[[rated() !== null]]" aria-label="Not helpful" title="Not helpful" :aria-pressed="[[rated() === false ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-thumbdown" aria-hidden="true"></span></button>
-                <span class="factory-grow"></span>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="copyAnswer" on-click="[[copyAnswer]]"><span class="factory-nav-icon factory-ico-copy" aria-hidden="true"></span>Copy</button>
-                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="regenerateAnswer" on-click="[[regenerate]]"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Regenerate</button>
-                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm factory-lb-save" id="saveAnswer" on-click="[[saveAnswer]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Save as a note</button>
-              </div></oj-bind-if>
-            </div>
-          </oj-bind-if>
-        </div>
+          </div>
+        </oj-bind-if>
 
-        <!-- The composer at the bottom of the panel: a follow-up continues the conversation; Improve rewrites the question in place -->
+        <!-- The composer: centred on an empty Ask, under the thread after it; it scrolls with the page -->
         <div class="factory-lb-composer">
-          <oj-bind-if test="[[followingUp()]]">
-            <p class="fx-muted factory-lb-followup">Follow-up questions continue from: <strong><oj-bind-text value="[[lastQuestion]]"></oj-bind-text></strong></p>
-          </oj-bind-if>
-          <div class="factory-lb-compose" on-keydown="[[composerKey]]">
-            <div class="factory-lb-composeinput">
-              <fx-textarea id="libraryQuestion" label="Question" hide-label rows="2" placeholder="[[followingUp() ? 'Ask a follow-up, or start a new question' : 'Ask about OBDX: for example, how do I add a field to the fund transfer screen?']]" value="{{question}}"></fx-textarea>
-              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-lb-expand" id="libraryExpand" aria-label="Expand the question editor" title="Expand (Ctrl+Shift+E)" on-click="[[openEditor]]" aria-haspopup="dialog"><span class="factory-nav-icon factory-ico-expand" aria-hidden="true"></span></button>
-            </div>
+          <div :class="[[improvement() ? 'factory-lb-compose is-improved' : 'factory-lb-compose']]" on-keydown="[[composerKey]]">
             <oj-bind-if test="[[improvement()]]">
               <div class="factory-lb-improved" id="libraryImproved" role="status">
-                <span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>
+                <span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>
                 <span class="factory-lb-improvedtext"><strong><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></strong>
                   <oj-bind-if test="[[improvement().clarify]]"><span> <oj-bind-text value="[[improvement().clarify]]"></oj-bind-text></span></oj-bind-if>
                   <oj-bind-if test="[[improvement().assumes]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().assumes]]"></oj-bind-text>.</span></oj-bind-if>
@@ -153,58 +167,72 @@
                 <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryUndoImprove" on-click="[[undoImprove]]" title="Back to the question as you wrote it">Undo</button>
               </div>
             </oj-bind-if>
+            <div class="factory-lb-composeinput">
+              <fx-textarea id="libraryQuestion" label="Question" hide-label rows="[[askEmpty() ? 3 : 2]]" placeholder="[[followingUp() ? 'Ask a follow-up…' : 'Ask about OBDX: screens, services, configuration, errors…']]" value="{{question}}"></fx-textarea>
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-lb-expand" id="libraryExpand" aria-label="Expand the question editor" title="Expand (Ctrl+Shift+E)" on-click="[[openEditor]]" aria-haspopup="dialog"><span class="factory-nav-icon factory-ico-expand" aria-hidden="true"></span></button>
+            </div>
             <div class="factory-lb-composebar">
               <fx-menu-button button-id="libraryStyle" class="factory-lb-style" label="[[styleLabel]]" icon="lines" size="sm" variant="secondary" align="start" heading="Answer length" items="[[styleItems]]" on-fx-action="[[onStyle]]"></fx-menu-button>
+              <button type="button" :class="[[improveCss]]" id="libraryImprove" on-click="[[improve]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]" aria-label="Improve my question" title="Improve my question"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><span>Improve</span></button>
               <span class="factory-grow"></span>
-              <button type="button" :class="[[improving() ? 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn is-busy' : 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn']]" id="libraryImprove" on-click="[[improve]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span><span class="factory-lb-improvelabel">Improve my question</span></button>
-              <button type="button" :class="[[asking() ? 'fx-btn fx-btn--primary fx-btn--sm is-busy' : 'fx-btn fx-btn--primary fx-btn--sm']]" id="libraryAsk" on-click="[[ask]]" :disabled="[[asking()]]" :aria-busy="[[asking() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Ask</button>
+              <span class="factory-lb-keys" aria-hidden="true"><kbd>Enter</kbd> to ask · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
+              <button type="button" :class="[[askCss]]" id="libraryAsk" on-click="[[ask]]" :disabled="[[asking()]]" :aria-disabled="[[canAsk() ? null : 'true']]" :aria-busy="[[asking() ? 'true' : 'false']]" aria-label="Ask" title="Ask (Enter)"><span class="factory-nav-icon factory-ico-arrowup" aria-hidden="true"></span></button>
             </div>
           </div>
-          <span class="fx-muted factory-lb-composehint">Enter to ask · Shift+Enter for a new line</span>
         </div>
+
+        <oj-bind-if test="[[askEmpty()]]">
+          <div class="factory-lb-examples" role="group" aria-label="Example questions">
+            <oj-bind-for-each data="[[exampleRows]]" as="e"><template><button type="button" class="factory-lb-example" on-click="[[e.data.ask]]">
+              <span class="factory-lb-exicon" aria-hidden="true"><span :class="[[e.data.icon]]"></span></span>
+              <span class="factory-lb-extext"><span class="factory-lb-exkind"><oj-bind-text value="[[e.data.kind]]"></oj-bind-text></span><span class="factory-lb-exq"><oj-bind-text value="[[e.data.text]]"></oj-bind-text></span></span>
+            </button></template></oj-bind-for-each>
+          </div>
+        </oj-bind-if>
       </section>
 
-      <!-- Sources: what the answer stands on -->
-      <aside class="factory-lb-rail" aria-labelledby="citationsTitle">
-        <div class="factory-lb-railhead"><h2 class="factory-lb-railtitle" id="citationsTitle">Sources</h2>
-          <oj-bind-if test="[[citedRows().length > 0]]"><span class="fx-muted"><oj-bind-text value="[[citedRows().length + ' cited']]"></oj-bind-text></span></oj-bind-if></div>
-        <oj-bind-if test="[[!answer()]]">
-          <div class="factory-lb-railempty"><span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span>
-            <span><oj-bind-text value="[[asking() ? 'Searching the manuals, documents and notes…' : 'The sources an answer stands on appear here: the manual, version, section and page, with a preview.']]"></oj-bind-text></span></div>
-        </oj-bind-if>
-        <oj-bind-if test="[[answer() && citedRows().length === 0 && !asking()]]">
-          <div class="factory-lb-railempty"><span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span><span>The answer cites no source.</span></div>
-        </oj-bind-if>
-        <oj-bind-if test="[[citedRows().length > 0]]">
-          <ol class="factory-lb-citations" id="answerCitations" aria-labelledby="citationsTitle">
-            <oj-bind-for-each data="[[citedRows]]" as="c">
-              <template><li :id="[['lbSrc-' + c.data.n]]"><span class="factory-lb-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span>
-                <span class="factory-lb-citebody">
-                  <oj-bind-if test="[[c.data.url]]"><a class="factory-lb-citetitle" :href="[[c.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[c.data.title]]"></oj-bind-text></a></oj-bind-if>
-                  <oj-bind-if test="[[!c.data.url]]"><strong class="factory-lb-citetitle"><oj-bind-text value="[[c.data.title]]"></oj-bind-text></strong></oj-bind-if>
-                  <span class="factory-lb-citemeta"><oj-bind-text value="[[c.data.metaText]]"></oj-bind-text></span>
-                  <span class="factory-lb-citeacts">
-                    <oj-bind-if test="[[c.data.url]]"><a :href="[[c.data.url]]" target="_blank" rel="noopener" :aria-label="[[c.data.previewLabel + ': ' + c.data.title]]"><oj-bind-text value="[[c.data.pageFrom ? 'Preview at p. ' + c.data.pageFrom : 'Preview']]"></oj-bind-text></a></oj-bind-if>
-                    <oj-bind-if test="[[c.data.oracleUrl]]"><a :href="[[c.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
-                  <oj-bind-if test="[[c.data.excerpt]]"><details class="factory-lb-excerpt"><summary>What it says</summary><p><oj-bind-text value="[[c.data.excerpt]]"></oj-bind-text></p></details></oj-bind-if></span></li></template>
-            </oj-bind-for-each>
-          </ol>
-        </oj-bind-if>
-        <oj-bind-if test="[[otherRows().length > 0]]">
-          <details class="factory-lb-allsources" id="librarySearchedNotUsed"><summary><oj-bind-text value="[['Searched and not used (' + otherRows().length + ')']]"></oj-bind-text></summary>
-          <ol class="factory-lb-sources">
-            <oj-bind-for-each data="[[otherRows]]" as="s">
-              <template><li :class="[[s.data.css]]" :id="[['lbOther-' + s.data.n]]"><span class="factory-lb-n"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
-                <span class="factory-lb-sourcebody">
-                  <oj-bind-if test="[[s.data.url]]"><a :href="[[s.data.url]]" target="_blank" rel="noopener"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></a></oj-bind-if>
-                  <oj-bind-if test="[[!s.data.url]]"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></oj-bind-if>
-                  <span class="fx-muted"><oj-bind-text value="[[s.data.where]]"></oj-bind-text><oj-bind-if test="[[s.data.oracleUrl]]"> · <a :href="[[s.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
-                  <oj-bind-if test="[[s.data.excerpt]]"><details class="factory-lb-excerpt"><summary>What it says</summary><p><oj-bind-text value="[[s.data.excerpt]]"></oj-bind-text></p></details></oj-bind-if></span></li></template>
-            </oj-bind-for-each>
-          </ol>
-          </details>
-        </oj-bind-if>
-      </aside>
+      <!-- Sources: what the answer stands on, as compact cards -->
+      <oj-bind-if test="[[!askEmpty()]]">
+        <aside class="factory-lb-rail" aria-labelledby="citationsTitle">
+          <div class="factory-lb-railhead"><h2 class="factory-lb-railtitle" id="citationsTitle">Sources</h2>
+            <oj-bind-if test="[[sourcesText()]]"><span class="fx-muted"><oj-bind-text value="[[sourcesText]]"></oj-bind-text></span></oj-bind-if></div>
+          <oj-bind-if test="[[!answer()]]">
+            <div class="factory-lb-railempty"><span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span>
+              <span><oj-bind-text value="[[asking() ? 'Searching the manuals, documents and notes…' : 'The sources an answer stands on appear here: the manual, version, section and page, with a preview.']]"></oj-bind-text></span></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[answer() && citedRows().length === 0 && !asking()]]">
+            <div class="factory-lb-railempty"><span class="factory-nav-icon factory-ico-book" aria-hidden="true"></span><span>The answer cites no source.</span></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[citedRows().length > 0]]">
+            <ol class="factory-lb-citations" id="answerCitations" aria-labelledby="citationsTitle">
+              <oj-bind-for-each data="[[citedRows]]" as="c">
+                <template><li class="factory-lb-srcitem" :id="[['lbSrc-' + c.data.n]]"><span :class="[[c.data.typeCss]]" aria-hidden="true"><oj-bind-text value="[[c.data.type]]"></oj-bind-text></span>
+                  <span class="factory-lb-itembody">
+                    <span class="factory-lb-itemhead"><span class="factory-lb-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span>
+                      <oj-bind-if test="[[c.data.url]]"><a class="factory-lb-citetitle" :href="[[c.data.url]]" target="_blank" rel="noopener" :title="[[c.data.title]]" :aria-label="[[c.data.previewLabel + ': ' + c.data.title]]"><oj-bind-text value="[[c.data.title]]"></oj-bind-text></a></oj-bind-if>
+                      <oj-bind-if test="[[!c.data.url]]"><strong class="factory-lb-citetitle" :title="[[c.data.title]]"><oj-bind-text value="[[c.data.title]]"></oj-bind-text></strong></oj-bind-if></span>
+                    <span class="factory-lb-citemeta"><oj-bind-text value="[[c.data.metaText]]"></oj-bind-text><oj-bind-if test="[[c.data.oracleUrl]]"> · <a :href="[[c.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
+                    <oj-bind-if test="[[c.data.shortExcerpt]]"><span class="factory-lb-itemquote" :title="[[c.data.excerpt]]"><oj-bind-text value="[[c.data.shortExcerpt]]"></oj-bind-text></span></oj-bind-if></span></li></template>
+              </oj-bind-for-each>
+            </ol>
+          </oj-bind-if>
+          <oj-bind-if test="[[otherRows().length > 0]]">
+            <details class="factory-lb-allsources" id="librarySearchedNotUsed"><summary><oj-bind-text value="[['Searched and not used (' + otherRows().length + ')']]"></oj-bind-text></summary>
+            <ol class="factory-lb-sources">
+              <oj-bind-for-each data="[[otherRows]]" as="s">
+                <template><li :class="[[s.data.css]]" :id="[['lbOther-' + s.data.n]]"><span :class="[[s.data.typeCss]]" aria-hidden="true"><oj-bind-text value="[[s.data.type]]"></oj-bind-text></span>
+                  <span class="factory-lb-itembody">
+                    <span class="factory-lb-itemhead"><span class="factory-lb-n"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+                      <oj-bind-if test="[[s.data.url]]"><a class="factory-lb-citetitle" :href="[[s.data.url]]" target="_blank" rel="noopener" :title="[[s.data.title]]"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></a></oj-bind-if>
+                      <oj-bind-if test="[[!s.data.url]]"><strong class="factory-lb-citetitle" :title="[[s.data.title]]"><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong></oj-bind-if></span>
+                    <span class="factory-lb-citemeta"><oj-bind-text value="[[s.data.where]]"></oj-bind-text><oj-bind-if test="[[s.data.oracleUrl]]"> · <a :href="[[s.data.oracleUrl]]" target="_blank" rel="noopener">On Oracle's site</a></oj-bind-if></span>
+                    <oj-bind-if test="[[s.data.shortExcerpt]]"><span class="factory-lb-itemquote" :title="[[s.data.excerpt]]"><oj-bind-text value="[[s.data.shortExcerpt]]"></oj-bind-text></span></oj-bind-if></span></li></template>
+              </oj-bind-for-each>
+            </ol>
+            </details>
+          </oj-bind-if>
+        </aside>
+      </oj-bind-if>
     </div>
 
     <!-- The expanded question editor: an overlay for long, multi-line questions -->
@@ -217,10 +245,9 @@
             <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--icon" id="libraryCollapse" aria-label="Collapse the question editor" title="Collapse (Esc)" on-click="[[closeEditor]]"><span class="factory-nav-icon factory-ico-shrink" aria-hidden="true"></span></button>
           </header>
           <div class="factory-lb-xbody">
-            <fx-textarea id="libraryQuestionLarge" label="Question" hide-label rows="14" placeholder="Describe what you want to know. Paste an error, a file path or the BRD text if it helps." value="{{question}}"></fx-textarea>
             <oj-bind-if test="[[improvement()]]">
               <div class="factory-lb-improved" id="libraryImprovedLarge" role="status">
-                <span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>
+                <span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>
                 <span class="factory-lb-improvedtext"><strong><oj-bind-text value="[[improvement().lead]]"></oj-bind-text></strong>
                   <oj-bind-if test="[[improvement().clarify]]"><span> <oj-bind-text value="[[improvement().clarify]]"></oj-bind-text></span></oj-bind-if>
                   <oj-bind-if test="[[improvement().assumes]]"><span class="fx-muted"> <oj-bind-text value="[[improvement().assumes]]"></oj-bind-text>.</span></oj-bind-if>
@@ -228,13 +255,14 @@
                 <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="libraryUndoImproveLarge" on-click="[[undoImprove]]" title="Back to the question as you wrote it">Undo</button>
               </div>
             </oj-bind-if>
+            <fx-textarea id="libraryQuestionLarge" label="Question" hide-label rows="14" placeholder="Describe what you want to know. Paste an error, a file path or the BRD text if it helps." value="{{question}}"></fx-textarea>
           </div>
           <footer class="factory-lb-xfoot">
             <fx-menu-button button-id="libraryStyleLarge" class="factory-lb-style" label="[[styleLabel]]" icon="lines" size="sm" variant="secondary" align="start" heading="Answer length" items="[[styleItems]]" on-fx-action="[[onStyle]]"></fx-menu-button>
-            <span class="fx-muted factory-lb-xhint">Ctrl+Enter to ask · Esc to collapse</span>
+            <button type="button" :class="[[improveCss]]" id="libraryImproveLarge" on-click="[[improveFromEditor]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]" aria-label="Improve my question" title="Improve my question"><span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span><span>Improve</span></button>
             <span class="factory-grow"></span>
-            <button type="button" :class="[[improving() ? 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn is-busy' : 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-improvebtn']]" id="libraryImproveLarge" on-click="[[improveFromEditor]]" :disabled="[[improving() || asking()]]" :aria-busy="[[improving() ? 'true' : 'false']]"><span class="factory-nav-icon factory-ico-wand" aria-hidden="true"></span>Improve my question</button>
-            <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" id="libraryAskLarge" on-click="[[askFromEditor]]" :disabled="[[asking()]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Ask</button>
+            <span class="factory-lb-keys factory-lb-xhint" aria-hidden="true"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to ask · <kbd>Esc</kbd> to collapse</span>
+            <button type="button" :class="[[askCss]]" id="libraryAskLarge" on-click="[[askFromEditor]]" :disabled="[[asking()]]" :aria-disabled="[[canAsk() ? null : 'true']]" aria-label="Ask" title="Ask (Ctrl+Enter)"><span class="factory-nav-icon factory-ico-arrowup" aria-hidden="true"></span></button>
           </footer>
         </div>
       </div>

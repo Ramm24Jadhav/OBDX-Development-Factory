@@ -63,6 +63,14 @@ define([], function () {
     return section + (s.pageFrom ? ', p. ' + s.pageFrom : '');
   }
 
+  /** A short name for a numbered citation: the document's title without the product's name, in at most three words. */
+  function citeName(s) {
+    const t = String(s.title || '').replace(/^(Oracle\s+)?Banking\s+Digital\s+Experience\s*[-–:]?\s*/i, '').replace(/^OBDX\s+/i, '')
+      .replace(/\s+(Functionality\s+)?(Guide|Manual|Document)$/i, '').trim() || String(s.title || '');
+    const words = t.split(/\s+/);
+    return words.length > 3 ? words.slice(0, 3).join(' ') : t;
+  }
+
   /** The whole reference, for the tooltip: manual, version, section path, pages. */
   function citeTitle(s) {
     if (s.kind === 'NOTE') { return (s.status === 'TRUSTED' ? 'Approved note: ' : 'Suggested note: ') + s.title; }
@@ -75,9 +83,15 @@ define([], function () {
    * for a note, shows it in the list of sources.
    */
   function citation(s, n, opts) {
-    const a = el('a', 'fx-md-cite' + (s.kind === 'NOTE' ? ' is-note' : ''));
-    a.appendChild(el('span', 'factory-nav-icon factory-ico-' + (s.kind === 'NOTE' ? 'edit' : 'book'))).setAttribute('aria-hidden', 'true');
-    a.appendChild(document.createTextNode(citeLabel(s)));
+    const a = el('a', 'fx-md-cite' + (s.kind === 'NOTE' ? ' is-note' : '') + (opts.citeStyle === 'numbered' ? ' is-numbered' : ''));
+    if (opts.citeStyle === 'numbered') {
+      // The source's number, as in the list of sources, and a short name
+      a.appendChild(el('span', 'fx-md-citen', String(n)));
+      a.appendChild(el('span', 'fx-md-citename', citeName(s)));
+    } else {
+      a.appendChild(el('span', 'factory-nav-icon factory-ico-' + (s.kind === 'NOTE' ? 'edit' : 'book'))).setAttribute('aria-hidden', 'true');
+      a.appendChild(document.createTextNode(citeLabel(s)));
+    }
     a.title = citeTitle(s);
     a.setAttribute('aria-label', 'Source ' + n + ': ' + citeTitle(s));
     const url = s.url || s.oracleUrl;
@@ -176,6 +190,7 @@ define([], function () {
    * Renders Markdown into container (its children are replaced).
    * @param opts.sources     the answer's sources: [n] becomes a link named after source n (see citation)
    * @param opts.citePrefix  the prefix of the sources' element ids
+   * @param opts.citeStyle   'numbered': a citation shows the source's number and a short name; otherwise its section
    */
   function render(container, markdown, opts) {
     const o = Object.assign({ citePrefix: 'src-' }, opts || {});

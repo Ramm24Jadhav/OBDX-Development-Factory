@@ -1,9 +1,11 @@
 /*
  * OBDX Library page: the knowledge base the AI chat and code generation use. One header (title, Add documents), at most
  * one library problem bar under it (search by meaning is off, or embedding in progress), then three tabs:
- *  - Ask: a conversation panel (the question, the answer with numbered citations, feedback, save as a note; Improve my
- *    question, the answer length and an expanded editor in the composer pinned to its bottom) beside a Sources rail
- *    (title, kind, version, section, pages, a preview at the page); it says plainly when the documents hold too little,
+ *  - Ask: empty, one centred question (what the answers cite, the composer, four example cards). After a question, a
+ *    thread: the question as a bubble, the answer beside its mark with one folded line on how it was found and checked,
+ *    citations as numbered pills, icon actions, Save as a note and the questions to ask next; the composer under it
+ *    (the answer length, Improve my question, an expanded editor) scrolls with the page. Beside it a Sources rail of
+ *    compact cards (type, number, title, where, a short excerpt); it says plainly when the documents hold too little,
  *    keeping the model's general answer folded away.
  *  - Documents: where the documents come from (Oracle's site and watched folders, one strip), then one table grouped by
  *    OBDX version with filters (title, version, type, source, state), older revisions on request and a menu per row.
@@ -36,6 +38,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
     };
     // What a document or a cited source is
     const KIND = (s) => (s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved note' : 'Suggested note') : s.bank ? 'Bank document' : 'Oracle manual');
+    // The badge on a source card: the file type of its document, or NOTE
+    const FILE_TYPE = (s, fileName) => {
+      if (s.kind === 'NOTE') { return 'NOTE'; }
+      const ext = String(fileName || '').split('.').pop().toLowerCase();
+      return ext === 'pdf' ? 'PDF' : /^docx?$/.test(ext) ? 'DOC' : /^html?$/.test(ext) ? 'HTML' : /^(md|txt)$/.test(ext) ? 'TXT' : s.pageFrom ? 'PDF' : 'DOC';
+    };
+    // A source's excerpt on its card: the first words, quoted
+    const shortExcerpt = (text) => {
+      const t = String(text || '').replace(/\s+/g, ' ').trim();
+      return t ? '“' + (t.length > 110 ? t.slice(0, 107).replace(/\s+\S*$/, '') + '…' : t) + '”' : '';
+    };
+    // The examples on an empty Ask, each with what kind of question it is
+    const EXAMPLES = [
+      ['Extend a screen', 'monitor', 'How do I add a field to an existing OBDX transaction screen?'],
+      ['Host integration', 'plug', 'How is a fund transfer sent to the host?'],
+      ['Customise safely', 'shield', 'Where are UI components extended without changing the product code?'],
+      ['Toolkit', 'cog', 'What does the Extensibility API toolkit provide?']
+    ];
     // The answer length: the server's styles, named for what they give
     const STYLES = [
       { value: 'CONCISE', label: 'Short', description: 'A few lines: the direct answer' },
@@ -439,6 +459,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.answerText = ko.observable('');
       this.thinking = ko.observable('');
       this.rated = ko.observable(null);
+      // Empty: no answer and nothing being answered; the page shows one centred question
+      this.askEmpty = ko.pureComputed(() => !this.answer() && !this.asking());
+      // The one line above the answer folds out how it was found and checked
+      this.stepsOpen = ko.observable(false);
+      this.toggleSteps = () => this.stepsOpen(!this.stepsOpen());
+      this.canAsk = ko.pureComputed(() => !!(this.question() || '').trim());
+      this.askCss = ko.pureComputed(() => 'fx-btn fx-btn--primary factory-lb-askbtn' + (this.asking() ? ' is-busy' : '') + (this.canAsk() ? '' : ' is-empty'));
       // How much detail the answer has: a menu in the composer
       this.styleOptions = STYLES;
       this.style = ko.observable('DETAILED');
@@ -454,9 +481,42 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           .concat(lines.filter((l) => l !== wsLine()).map((l) => ({ value: l, label: 'OBDX ' + l + '.x' })));
       });
       this.scopeText = ko.pureComputed(() => (this.askVersion() ? 'OBDX ' + this.askVersion() + '.x' : (wsLine() ? 'OBDX ' + wsLine() + '.x' : 'the workspace\'s OBDX version') + ' · ' + this.workspaceName()));
+      // The documents an answer is searched in: the current ones of the version line asked about
+      const searchedDocs = (line) => this.documents().filter((d) => !d.older && d.status !== 'FAILED' && (!line || d.versionLine === line));
+      // Under the empty Ask's heading: what the answers cite, from the library's own counts
+      this.coverText = ko.pureComputed(() => {
+        const line = this.askVersion() || wsLine();
+        const docs = searchedDocs(line);
+        const stats = (this.overview() || {}).stats || {};
+        const notes = (stats.trustedNotes || 0) + (stats.suggestedNotes || 0);
+        const oracle = docs.filter((d) => !d.workspaceId);
+        const versions = Array.from(new Set(oracle.map((d) => d.obdxVersion))).sort().reverse();
+        const parts = [];
+        if (oracle.length) { parts.push('Oracle\'s ' + (versions.length <= 3 ? versions.join(', ') + ' ' : '') + 'manuals'); }
+        const ws = workspaceSelection.options().find((x) => x.value === this.workspaceId());
+        if (docs.some((d) => d.workspaceId)) { parts.push(ws && ws.bankName ? ws.bankName + '\'s own documents' : 'the bank\'s own documents'); }
+        if (notes) { parts.push('notes'); }
+        const what = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
+        if (!docs.length) {
+          return notes ? 'Answers cite the library\'s notes. Add the OBDX manuals on the Documents tab for fuller answers.'
+            : 'The library has no documents for ' + (line ? 'OBDX ' + line + '.x' : 'this version') + ' yet. Add them on the Documents tab.';
+        }
+        return 'Answers cite ' + plural(docs.length, 'document') + ': ' + what + '.';
+      });
+      // Above the thread: how many questions this conversation has
+      this.conversationText = ko.pureComputed(() => 'This conversation · ' + plural(this.turns().length + (this.asking() ? 1 : 0), 'question'));
+      this.askedAs = ko.pureComputed(() => (this.answer() && this.answer().improved) || '');
       // An answer without sources is folded away until asked for
       this.showUngrounded = ko.observable(false);
       this.toggleUngrounded = () => this.showUngrounded(!this.showUngrounded());
+      this.sourcesText = ko.pureComputed(() => {
+        const n = this.citedRows().length;
+        const other = this.otherRows().length;
+        return [n ? n + ' cited' : '', other ? other + ' searched and not used' : ''].filter(Boolean).join(' · ');
+      });
+      // Ask next: the follow-up questions the model suggested; one is asked as a follow-up
+      this.nextRows = ko.pureComputed(() => ((this.answer() || {}).followUps || []).filter((q) => typeof q === 'string' && q.trim()).slice(0, 3)
+        .map((q) => ({ text: q, ask: () => { if (this.asking()) { return; } this.improvement(null); this.question(q); this.ask(); } })));
       this.citedRows = ko.pureComputed(() => {
         const a = this.answer();
         if (!a) {
@@ -483,30 +543,54 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             : this.answerText().trim() ? 'The answer cites none of the sources found, so it is not supported by the documents.'
               : 'The model wrote no answer from the sources found.';
       });
-      // The line under the question: what the answer stands on, its length, its version and when
+      // The one line above the answer: how well the sources support it, then what was searched, read and how long it took
       this.answerMeta = ko.pureComputed(() => {
         const a = this.answer();
-        if (!a || this.asking()) {
-          return { show: !!a, css: 'fx-badge fx-badge--plain fx-badge--primary', icon: 'factory-nav-icon factory-ico-sparkle', chip: 'Writing the answer', detail: this.styleLabel() };
+        if (!a) {
+          return { show: false };
+        }
+        const docs = searchedDocs(a.versionLine).length;
+        const sections = (a.sources || []).length;
+        const steps = [docs ? 'Searched ' + plural(docs, 'document') : '', sections ? 'read ' + plural(sections, 'section') : '',
+          !this.asking() && a.latencyMs ? Math.round(a.latencyMs / 100) / 10 + ' s' : ''].filter(Boolean);
+        const joined = steps.join(' · ');
+        const detail = joined.charAt(0).toUpperCase() + joined.slice(1);
+        if (this.asking()) {
+          return { show: true, css: 'fx-badge fx-badge--plain fx-badge--primary', icon: 'factory-nav-icon factory-ico-sparkle', chip: 'Writing the answer', detail: detail };
         }
         const n = this.citedRows().length;
         const grounded = a.grounded && n > 0;
-        const minutes = Math.floor((now() - this.answeredAt()) / 60000);
-        const ago = minutes < 1 ? 'just now' : minutes === 1 ? 'a minute ago' : minutes < 60 ? minutes + ' minutes ago' : when(new Date(this.answeredAt()).toISOString());
+        const status = a.quality ? a.quality.status : '';
+        const chip = !grounded ? 'Not grounded in the documents'
+          : status === 'VERIFIED' ? 'Verified against ' + plural(n, 'source')
+            : status === 'PARTIALLY_VERIFIED' ? 'Partly verified against ' + plural(n, 'source')
+              : status === 'INSUFFICIENT_EVIDENCE' ? 'Not enough in the manuals' : 'Grounded in ' + plural(n, 'source');
+        const good = grounded && (status === 'VERIFIED' || !status);
         return {
           show: true,
-          css: 'fx-badge fx-badge--plain ' + (grounded ? (a.quality && a.quality.status === 'PARTIALLY_VERIFIED' ? 'fx-badge--warning' : 'fx-badge--success') : 'fx-badge--warning'),
-          icon: 'factory-nav-icon ' + (grounded ? 'factory-ico-check' : 'factory-ico-alert'),
-          chip: grounded ? 'Grounded in ' + plural(n, 'source') : 'Not grounded in the documents',
-          detail: [(STYLES.find((s) => s.value === a.style) || {}).label || '', a.versionLine ? 'OBDX ' + a.versionLine + '.x' : '', ago]
-            .filter(Boolean).join(' · ')
+          css: 'fx-badge fx-badge--plain ' + (good ? 'fx-badge--success' : 'fx-badge--warning'),
+          icon: 'factory-nav-icon ' + (good ? 'factory-ico-check' : 'factory-ico-alert'),
+          chip: chip,
+          detail: detail
         };
+      });
+      // The detail folded under that line: its length, version, when, the model and its time, the search's note
+      this.answerAbout = ko.pureComputed(() => {
+        const a = this.answer();
+        if (!a) {
+          return '';
+        }
+        const minutes = Math.floor((now() - this.answeredAt()) / 60000);
+        const ago = minutes < 1 ? 'just now' : minutes === 1 ? 'a minute ago' : minutes < 60 ? minutes + ' minutes ago' : when(new Date(this.answeredAt()).toISOString());
+        return [(STYLES.find((s) => s.value === a.style) || {}).label || '', a.versionLine ? 'OBDX ' + a.versionLine + '.x' : '', ago, a.meta || '', a.note || '']
+          .filter(Boolean).join(' · ');
       });
 
       // Improve My Question: the question in the box is rewritten precisely, with one line saying what to clarify and Undo.
       // Asking it sends the user's own question with the improved one, as before.
       this.improvement = ko.observable(null);
       this.improving = ko.observable(false);
+      this.improveCss = ko.pureComputed(() => 'fx-btn fx-btn--ghost fx-btn--sm factory-lb-pill factory-lb-improvebtn' + (this.improving() ? ' is-busy' : '') + (this.improvement() ? ' is-on' : ''));
       this.improve = () => {
         const q = (this.question() || '').trim();
         if (!q) { toast.info('Write a question first, even a few words.'); return; }
@@ -539,9 +623,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.followingUp = ko.pureComputed(() => this.turns().length > 0);
       this.lastQuestion = ko.pureComputed(() => (this.turns().length ? this.turns()[this.turns().length - 1].question : ''));
       this.newConversation = () => { this.turns([]); this.improvement(null); this.answer(null); this.answerText(''); this.question(''); this.askedQuestion(''); focusLater('libraryQuestion'); };
-      this.examples = ['How do I add a field to an existing OBDX transaction screen?', 'How is a fund transfer sent to the host?',
-        'Where are UI components extended without changing the product code?', 'What does the Extensibility API toolkit provide?'];
-      this.exampleRows = this.examples.map((text) => ({ text: text, ask: () => { this.question(text); this.ask(); } }));
+      this.examples = EXAMPLES.map((e) => e[2]);
+      this.exampleRows = EXAMPLES.map(([kind, icon, text]) => ({ kind: kind, icon: 'factory-nav-icon factory-ico-' + icon, text: text,
+        ask: () => { this.question(text); this.ask(); } }));
       this.setNewForBank = (event) => this.newForBank(!!event.target.checked);
       this.ask = () => {
         const imp = this.improvement();
@@ -569,6 +653,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         this.answerText('');
         this.askedQuestion(q);
         this.showUngrounded(false);
+        this.stepsOpen(false);
         this.thinking('Searching the manuals and notes…');
         const shown = (a) => Object.assign({}, a, {
           question: q,
@@ -585,7 +670,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             details: (a.report.quality.findings || []).length > 0
           } : null,
           meta: a.model ? a.model + ' · ' + Math.round(a.latencyMs / 100) / 10 + 's' : '',
+          followUps: Array.isArray(a.followUps) ? a.followUps : [],
           sourceRows: (a.sources || []).map((s) => Object.assign({}, s, {
+            type: FILE_TYPE(s, (this.documents().find((d) => d.id === s.documentId) || {}).fileName),
+            typeCss: 'factory-lb-type is-' + FILE_TYPE(s, (this.documents().find((d) => d.id === s.documentId) || {}).fileName).toLowerCase(),
+            shortExcerpt: shortExcerpt(s.excerpt),
             url: safeUrl(s.url), oracleUrl: safeUrl(s.oracleUrl),
             label: '[' + s.n + ']', kindText: KIND(s),
             version: s.kind === 'NOTE' ? '' : 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : ''),
@@ -594,7 +683,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             previewLabel: s.pageFrom ? 'Open at page ' + s.pageFrom : 'Open the document',
             where: s.kind === 'NOTE' ? (s.status === 'TRUSTED' ? 'Approved' : 'Suggested, not approved yet') + (s.bank ? ' bank note' : ' note')
               : (s.bank ? 'Bank document · ' : '') + 'OBDX ' + s.obdxVersion + (s.patchset ? ' · patchset ' + s.patchset : '') + (s.heading ? ' · ' + s.heading : '') + (pages(s) ? ' · ' + pages(s) : ''),
-            css: 'factory-lb-source' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
+            css: 'factory-lb-srcitem is-other' + (s.kind === 'NOTE' && s.status !== 'TRUSTED' ? ' is-suggested' : '')
           })),
           // For administrators: how the sources were found
           diagnosticRows: a.diagnostics ? [['Searched for', a.diagnostics.searched], ['Search', a.diagnostics.searchMillis + ' ms'],

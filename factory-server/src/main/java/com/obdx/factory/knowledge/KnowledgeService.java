@@ -117,10 +117,11 @@ public class KnowledgeService {
 
     /**
      * An answer as checked against its sources (see AnswerPostProcessor): answer is the checked Markdown, report its
-     * structure and how well the sources support it.
+     * structure and how well the sources support it; followUps the two or three questions the model suggests asking
+     * next (see FollowUps), empty when it wrote none.
      */
     public record Answer(String answer, String model, long latencyMs, String versionLine, boolean grounded, List<Source> sources,
-                         String note, Report report) {
+                         String note, Report report, List<String> followUps) {
     }
 
     /**
@@ -176,7 +177,11 @@ public class KnowledgeService {
      * sources; {@code status} hears what is being done after the model has written.
      */
     public Answer answer(Question prepared, Consumer<String> pieces, Consumer<String> status) {
-        return checked(prepared, modelGateway.chatStream(prepared.system(), prepared.prompt(), pieces), status);
+        // The follow-up questions after the answer never reach the pieces: they come with the answer instead
+        FollowUps.Stream answerOnly = new FollowUps.Stream(pieces);
+        ModelGateway.ChatResult result = modelGateway.chatStream(prepared.system(), prepared.prompt(), answerOnly);
+        answerOnly.finish();
+        return checked(prepared, result, status);
     }
 
     /**
@@ -186,7 +191,9 @@ public class KnowledgeService {
      */
     private Answer checked(Question prepared, ModelGateway.ChatResult result, Consumer<String> status) {
         status.accept("Checking the answer against the sources…");
-        AnswerPostProcessor.Checked checked = AnswerPostProcessor.process(result.reply(), prepared.texts(), prepared.asked(), prepared.versionLine());
+        FollowUps.Split first = FollowUps.split(result.reply());
+        List<String> followUps = first.questions();
+        AnswerPostProcessor.Checked checked = AnswerPostProcessor.process(first.answer(), prepared.texts(), prepared.asked(), prepared.versionLine());
         boolean corrected = false;
         long latency = result.latencyMs();
         if (checked.needsCorrection() && properties.correctAnswers() && !prepared.sources().isEmpty()) {
@@ -194,12 +201,16 @@ public class KnowledgeService {
             try {
                 String problems = String.join("\n- ", checked.quality().findings());
                 ModelGateway.ChatResult again = modelGateway.chat(prepared.system() + CORRECT,
-                        prepared.prompt() + "\n\nYour previous answer:\n" + cap(result.reply(), 6000) + "\n\nProblems found:\n- " + problems);
-                AnswerPostProcessor.Checked second = AnswerPostProcessor.process(again.reply(), prepared.texts(), prepared.asked(), prepared.versionLine());
+                        prepared.prompt() + "\n\nYour previous answer:\n" + cap(first.answer(), 6000) + "\n\nProblems found:\n- " + problems);
+                FollowUps.Split rewritten = FollowUps.split(again.reply());
+                AnswerPostProcessor.Checked second = AnswerPostProcessor.process(rewritten.answer(), prepared.texts(), prepared.asked(), prepared.versionLine());
                 latency += again.latencyMs();
                 if (problems(second) <= problems(checked) && !second.answer().isBlank()) {
                     checked = second;
                     corrected = true;
+                    if (!rewritten.questions().isEmpty()) {
+                        followUps = rewritten.questions();
+                    }
                 }
             } catch (RuntimeException e) {
                 log.info("The answer was not corrected: {}", e.getMessage());
@@ -208,7 +219,7 @@ public class KnowledgeService {
         Report report = new Report(prepared.type(), prepared.style(), checked.summary(), checked.sections(), checked.codeExamples(),
                 checked.tables(), checked.cited(), checked.limitations(), checked.quality(), corrected);
         return new Answer(checked.answer(), result.model(), latency, prepared.versionLine(), !prepared.sources().isEmpty(),
-                prepared.sources(), prepared.note(), report);
+                prepared.sources(), prepared.note(), report, followUps);
     }
 
     /** How much is wrong with a checked answer, to keep the better of two: its findings, and citing nothing counts most. */

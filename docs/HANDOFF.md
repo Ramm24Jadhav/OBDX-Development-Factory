@@ -32,6 +32,10 @@ The Library page was redesigned (branch `library-redesign`): a plain header with
 problem bar for the whole library, then Ask (conversation and Sources rail, composer with the answer-length menu and an
 expanded editor), Documents (Sources strip, one table grouped by version, row menus) and Notes (a review queue in one
 column with Approve and next). `scripts/check-library.js` checks it.
+Its Ask tab was modernised after that (branch `ask-modern`, mock-up `AskModern.dc.html`): a centred question with
+example cards when empty; then a thread (question bubble, one folded line on how the answer was found, numbered
+citation pills, icon actions) with compact source cards and **Ask next**: the answer's `followUps`, which the model
+writes after a marker line in the same answer (`knowledge/FollowUps`, taken off the stream and the stored text).
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
 Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in

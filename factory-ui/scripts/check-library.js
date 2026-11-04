@@ -2,11 +2,15 @@
 //  - the header (Analyze, OBDX Library, one line, Add documents) and at most one library problem bar under it, whose
 //    message is not repeated in the document rows;
 //  - Ask, Documents and Notes are tabs (arrow keys move between them); Search in sits on the Ask tab's line;
-//  - Ask: the empty panel with examples, the composer (Enter asks, Shift+Enter is a new line), the answer-length menu,
-//    the expanded editor (modal, focus kept in it, Escape closes it and focus goes back), Improve my question (the question
-//    rewritten in the box with one line and Undo, then asked with the improved one), an answer with its sources in
-//    the rail, the sources searched and not used, and the feedback row. The answer is streamed by a stand-in for the
-//    server's stream in the page, so no model is needed;
+//  - Ask: empty, one centred question (the heading, what the answers cite, four example cards with their kind; a card
+//    asks its question), the composer (rounded, the answer length and Improve as pills, the keys, a round Ask; Enter
+//    asks, Shift+Enter is a new line), the answer-length menu, the expanded editor (modal, focus kept in it, Escape
+//    closes it and focus goes back), Improve my question (the question rewritten in the box with one line and Undo, then
+//    asked with the improved one); after a question the thread: the question as a bubble on the right, one folded line
+//    on how the answer was found that opens the detail, citations as numbered pills, compact source cards in the rail,
+//    the sources searched and not used, icon-only actions with their names, and Ask next (a chip asks it as a
+//    follow-up; none when the answer has no follow-ups). The answer is streamed by a stand-in for the server's stream
+//    in the page, so no model is needed;
 //  - Documents: the Sources strip, the toolbar filters, the six columns, a row menu, the Add documents side sheet;
 //  - Notes: the filter with counts, the queue in groups, one note open at a time, Approve and next (the note is put
 //    back to suggested afterwards);
@@ -84,14 +88,50 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   record('Search in sits on the tab line on Ask', top.scope && top.scopeLine);
 
   // --- Ask: empty state and composer ---
-  const empty = await run(() => ({
-    examples: document.querySelectorAll('.factory-lb-empty .factory-lb-examples .fx-chip').length,
-    rail: (document.querySelector('.factory-lb-railempty') || {}).textContent || '',
-    question: !!document.querySelector('#libraryQuestion textarea'), ask: !!document.getElementById('libraryAsk'),
-    improve: !!document.getElementById('libraryImprove'), expand: !!document.getElementById('libraryExpand'), style: !!document.getElementById('libraryStyle')
-  }));
-  record('an empty Ask shows examples, and the rail says sources appear there', empty.examples === 4 && /appear here/.test(empty.rail), empty);
+  const empty = await run(() => {
+    const css = (el) => (el ? getComputedStyle(el) : {});
+    const ask = document.getElementById('libraryAsk');
+    const improve = document.getElementById('libraryImprove');
+    const compose = document.querySelector('.factory-lb-compose');
+    const hero = document.querySelector('.factory-lb-hero');
+    const panel = document.getElementById('libraryPanel').getBoundingClientRect();
+    const h = hero ? hero.getBoundingClientRect() : null;
+    return {
+      heading: ((hero && hero.querySelector('h2')) || {}).textContent || '',
+      covers: ((document.getElementById('libraryCovers') || {}).textContent || '').trim(),
+      spark: !!(hero && hero.querySelector('.factory-lb-spark.is-lg')),
+      centred: !!h && Math.abs((h.left + h.right) / 2 - (panel.left + panel.right) / 2) < 3,
+      kinds: [...document.querySelectorAll('.factory-lb-examples .factory-lb-example')].map((c) => (c.querySelector('.factory-lb-exkind') || {}).textContent || ''),
+      cardQuestions: [...document.querySelectorAll('.factory-lb-examples .factory-lb-example .factory-lb-exq')].filter((q) => q.textContent.trim().length > 10).length,
+      cardIcons: document.querySelectorAll('.factory-lb-examples .factory-lb-example .factory-lb-exicon .factory-nav-icon').length,
+      columns: new Set([...document.querySelectorAll('.factory-lb-examples .factory-lb-example')].map((c) => Math.round(c.getBoundingClientRect().left))).size,
+      rail: !!document.querySelector('.factory-lb-rail'),
+      question: !!document.querySelector('#libraryQuestion textarea'), ask: !!ask,
+      improve: !!improve, expand: !!document.getElementById('libraryExpand'), style: !!document.getElementById('libraryStyle'),
+      composeWidth: compose ? Math.round(compose.getBoundingClientRect().width) : 0, composeRadius: css(compose).borderTopLeftRadius,
+      sticky: css(document.querySelector('.factory-lb-composer')).position,
+      textSize: css(document.querySelector('#libraryQuestion textarea')).fontSize,
+      stylePill: css(document.getElementById('libraryStyle')).borderTopLeftRadius, improvePill: css(improve).borderTopLeftRadius,
+      improveText: improve ? improve.textContent.trim() : '', improveLabel: improve ? improve.getAttribute('aria-label') : '', improveTitle: improve ? improve.title : '',
+      keys: document.querySelectorAll('.factory-lb-composebar .factory-lb-keys kbd').length,
+      askSize: ask ? Math.round(ask.getBoundingClientRect().width) + 'x' + Math.round(ask.getBoundingClientRect().height) : '', askRadius: css(ask).borderTopLeftRadius,
+      askText: ask ? ask.textContent.trim() : '?', askLabel: ask ? ask.getAttribute('aria-label') : '', askOff: ask ? ask.getAttribute('aria-disabled') : ''
+    };
+  });
+  record('an empty Ask is one centred question: a sparkle, the heading and what the answers cite (no rail)', empty.heading === 'What do you want to know about OBDX?' && empty.spark && empty.centred
+    && /^(Answers cite \d[\d,]* documents?: .+\.|Answers cite the library's notes|The library has no documents)/.test(empty.covers) && !empty.rail, empty);
+  const coverCount = await vm((m) => { const line = m.askVersion() || String(m.answer() ? '' : (require('services/workspaceSelection').selectedVersion() || '')).split('.')[0];
+    return m.documents().filter((d) => !d.older && d.status !== 'FAILED' && (!line || d.versionLine === line)).length; });
+  record('the count of documents the answers cite is the library\'s own', !/^Answers cite \d/.test(empty.covers) || empty.covers.indexOf('Answers cite ' + String(coverCount) + ' document') === 0, { covers: empty.covers, count: coverCount });
+  record('four example cards in two columns, each with an icon, its kind and the question', empty.kinds.join(',') === 'Extend a screen,Host integration,Customise safely,Toolkit'
+    && empty.cardQuestions === 4 && empty.cardIcons === 4 && empty.columns === 2, empty);
   record('the composer has the question, the answer length, Improve my question, Ask and Expand', empty.question && empty.ask && empty.improve && empty.expand && empty.style, empty);
+  record('the composer is centred, at most 760 px, rounded (16 px), 15 px text, and not sticky', empty.composeWidth > 400 && empty.composeWidth <= 760 && empty.composeRadius === '16px'
+    && empty.textSize === '15px' && empty.sticky !== 'sticky' && empty.sticky !== 'fixed', empty);
+  record('the answer length and Improve are pills; Improve says Improve, named Improve my question', parseFloat(empty.stylePill) >= 14 && parseFloat(empty.improvePill) >= 14
+    && empty.improveText === 'Improve' && empty.improveLabel === 'Improve my question' && empty.improveTitle === 'Improve my question', empty);
+  record('the keys are shown as key caps and Ask is a 36 px round icon, off while the question is empty', empty.keys >= 3 && empty.askSize === '36x36' && parseFloat(empty.askRadius) >= 18
+    && empty.askText === '' && empty.askLabel === 'Ask' && empty.askOff === 'true', empty);
 
   // The answer-length menu
   await click('#libraryStyle');
@@ -123,7 +163,9 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
       setTimeout(() => {
         const answer = 'Add the field through the extensibility layer [1].\n\n1. **The screen.** Copy the component into the extension folder [2].\n2. **The labels.** Add them to the resource bundle.';
         onEvent({ type: 'text', text: answer });
+        // The server's follow-up questions (none when window.__lbNoFollow is set)
         onEvent({ type: 'done', answer: { answer: answer, grounded: true, sources: sources, versionLine: '25', latencyMs: 1200,
+          followUps: window.__lbNoFollow ? [] : ['How do I map the field in the host adapter?', 'Where is the resource bundle?'],
           report: { quality: { status: 'VERIFIED', reason: 'Every statement cites a source that says it.', findings: [] }, limitations: [], corrected: false } } });
         resolve();
       }, 300);
@@ -138,29 +180,90 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   record('Shift+Enter is a new line in the composer', typed.value === 'How do I add a field\nto the fund transfer screen?' && typed.asked === 0, typed);
   await key('Enter', 'Enter', 13);
   await sleep(1200);
-  const answered = await run(() => ({
-    asked: window.__lbAsked.length, style: (window.__lbAsked[0] || {}).style,
-    title: (document.getElementById('lbQuestionTitle') || {}).textContent || '',
-    meta: (document.querySelector('.factory-lb-qmeta') || {}).textContent || '',
-    body: !!document.querySelector('#answerBody .fx-md'), cited: document.querySelectorAll('#answerCitations > li').length,
-    other: (document.querySelector('#librarySearchedNotUsed > summary') || {}).textContent || '', otherOpen: !!(document.getElementById('librarySearchedNotUsed') || {}).open,
-    bar: ['answerHelpful', 'answerNotHelpful', 'copyAnswer', 'regenerateAnswer', 'saveAnswer'].filter((id) => !document.getElementById(id)),
-    newConv: !!document.getElementById('libraryNewConversation'), composer: document.querySelector('#libraryQuestion textarea').value,
-    railBeside: (() => { const a = document.querySelector('.factory-lb-conv').getBoundingClientRect(); const b = document.querySelector('.factory-lb-rail').getBoundingClientRect(); return b.left >= a.right - 1 && Math.round(b.width) === 360; })()
-  }));
+  const answered = await run(() => {
+    const conv = document.querySelector('.factory-lb-conv').getBoundingClientRect();
+    const bubble = document.querySelector('.factory-lb-bubble');
+    const b = bubble ? bubble.getBoundingClientRect() : null;
+    const steps = document.getElementById('answerSteps');
+    const icons = ['copyAnswer', 'regenerateAnswer', 'answerHelpful', 'answerNotHelpful'].map((id) => document.getElementById(id));
+    const save = document.getElementById('saveAnswer');
+    return {
+      asked: window.__lbAsked.length, style: (window.__lbAsked[0] || {}).style,
+      title: (document.getElementById('lbQuestionTitle') || {}).textContent || '',
+      bubble: !!b && bubble.id === 'lbQuestionTitle' && Math.abs(b.right - conv.right) < 3 && b.left > conv.left + 40,
+      avatar: !!document.querySelector('.factory-lb-reply > .factory-lb-spark'),
+      steps: steps ? steps.textContent.replace(/\s+/g, ' ').trim() : '', stepsLines: document.querySelectorAll('.factory-lb-steps').length,
+      stepsFolded: !!steps && steps.getAttribute('aria-expanded') === 'false' && !document.getElementById('answerDetail'),
+      body: !!document.querySelector('#answerBody .fx-md'), cited: document.querySelectorAll('#answerCitations > li').length,
+      pills: [...document.querySelectorAll('#answerBody .fx-md-cite.is-numbered')].map((a) => ({ n: (a.querySelector('.fx-md-citen') || {}).textContent || '',
+        name: ((a.querySelector('.fx-md-citename') || {}).textContent || '').trim(), href: !!a.getAttribute('href'), label: /^Source \d/.test(a.getAttribute('aria-label') || '') })),
+      cards: [...document.querySelectorAll('#answerCitations > li.factory-lb-srcitem')].map((c) => ({ type: ((c.querySelector('.factory-lb-type') || {}).textContent || '').trim(),
+        n: ((c.querySelector('.factory-lb-n') || {}).textContent || '').trim(), title: !!c.querySelector('.factory-lb-citetitle'),
+        ellipsis: getComputedStyle(c.querySelector('.factory-lb-citetitle')).textOverflow, meta: !!((c.querySelector('.factory-lb-citemeta') || {}).textContent || '').trim(),
+        quote: !!c.querySelector('.factory-lb-itemquote') })),
+      railHead: ((document.querySelector('.factory-lb-railhead') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+      other: (document.querySelector('#librarySearchedNotUsed > summary') || {}).textContent || '', otherOpen: !!(document.getElementById('librarySearchedNotUsed') || {}).open,
+      bar: ['answerHelpful', 'answerNotHelpful', 'copyAnswer', 'regenerateAnswer', 'saveAnswer'].filter((id) => !document.getElementById(id)),
+      iconOnly: icons.every((x) => x && x.textContent.trim() === '' && !!x.getAttribute('aria-label') && !!x.title),
+      names: icons.map((x) => (x ? x.title : '')),
+      save: save ? save.textContent.trim() : '', divider: !!save && !!save.previousElementSibling && save.previousElementSibling.classList.contains('factory-lb-barsep'),
+      next: [...document.querySelectorAll('#libraryAskNext .factory-lb-nextchip')].map((c) => c.textContent.trim()),
+      nextTitle: ((document.querySelector('#libraryAskNext .factory-lb-nexttitle') || {}).textContent || '').trim(),
+      newConv: !!document.getElementById('libraryNewConversation'), composer: document.querySelector('#libraryQuestion textarea').value,
+      railBeside: (() => { const r = document.querySelector('.factory-lb-rail').getBoundingClientRect(); return r.left >= conv.right - 1 && Math.round(r.width) === 340; })()
+    };
+  });
   record('Enter asks the question with the chosen answer length', answered.asked === 1 && answered.style === 'DETAILED', answered);
-  record('the panel shows the question as its heading and what the answer is grounded in', /fund transfer screen/.test(answered.title) && /Grounded in 2 sources/.test(answered.meta) && /OBDX 25\.x/.test(answered.meta) && /just now/.test(answered.meta), answered);
-  record('the answer is shown, its two cited sources in the rail beside it (360 px)', answered.body && answered.cited === 2 && answered.railBeside, answered);
+  record('the question is a bubble on the right, the answer beside its mark', /fund transfer screen/.test(answered.title) && answered.bubble && answered.avatar, answered);
+  record('one folded line says how well the sources support it and what was searched and read', answered.stepsLines === 1 && answered.stepsFolded
+    && /Verified against 2 sources/.test(answered.steps) && /read 3 sections/i.test(answered.steps) && /1\.2 s/.test(answered.steps), answered.steps);
+  await click('#answerSteps');
+  await sleep(400);
+  const detail = await run(() => ({ open: (document.getElementById('answerSteps') || {}).getAttribute('aria-expanded'), text: ((document.getElementById('answerDetail') || {}).textContent || '').replace(/\s+/g, ' ') }));
+  record('the line opens the detail: the length, the version, when, and the check', detail.open === 'true' && /Detailed · OBDX 25\.x · just now/.test(detail.text) && /Every statement cites/.test(detail.text), detail);
+  await click('#answerSteps');
+  await sleep(300);
+  record('it folds again', await run(() => !document.getElementById('answerDetail') && document.getElementById('answerSteps').getAttribute('aria-expanded') === 'false'));
+  record('citations are pills with the number and a short name, linked', answered.pills.length === 2 && answered.pills.map((p) => p.n).join() === '1,2'
+    && answered.pills.every((p) => p.name.length > 0 && p.name.split(' ').length <= 3 && p.href && p.label), answered.pills);
+  record('the answer is shown, its two cited sources in the rail beside it (340 px)', answered.body && answered.cited === 2 && answered.railBeside, answered);
+  record('the source cards are compact: a type badge, the number, the title on one line, where it is and an excerpt', answered.cards.length === 2
+    && answered.cards.every((c) => /^(PDF|DOC|HTML|TXT|NOTE)$/.test(c.type) && /^\d+$/.test(c.n) && c.title && c.ellipsis === 'ellipsis' && c.meta && c.quote)
+    && /2 cited · 1 searched and not used/.test(answered.railHead), answered.cards);
   record('the source searched and not used is folded away', /Searched and not used \(1\)/.test(answered.other) && !answered.otherOpen, answered.other);
-  record('the feedback row has thumbs, Copy, Regenerate and Save as a note; New conversation is offered', answered.bar.length === 0 && answered.newConv, answered.bar);
+  record('the actions: Copy, Regenerate and the thumbs are icons with their names, a divider, then Save as a note in words; New conversation is offered',
+    answered.bar.length === 0 && answered.iconOnly && answered.names.join() === 'Copy,Regenerate,Helpful,Not helpful' && answered.save === 'Save as a note' && answered.divider && answered.newConv, answered);
+  record('Ask next shows the follow-up questions as chips', answered.nextTitle === 'Ask next' && answered.next.join('|') === 'How do I map the field in the host adapter?|Where is the resource bundle?', answered.next);
   record('the composer is emptied for a follow-up', answered.composer === '');
+
+  // A follow-up chip asks it as a follow-up; an answer without follow-ups shows no Ask next
+  await run(() => { document.querySelector('#libraryAskNext .factory-lb-nextchip').click(); return 1; });
+  await sleep(1200);
+  const followed = await run(() => { const b = window.__lbAsked[window.__lbAsked.length - 1] || {}; return { n: window.__lbAsked.length, question: b.question, history: (b.history || []).length,
+    title: (document.getElementById('lbQuestionTitle') || {}).textContent || '', line: ((document.querySelector('.factory-lb-convline') || {}).textContent || '').replace(/\s+/g, ' ').trim() }; });
+  record('a chip under Ask next asks it as a follow-up', followed.n === 2 && followed.question === 'How do I map the field in the host adapter?' && followed.history === 1
+    && /host adapter/.test(followed.title) && /This conversation · 2 questions/.test(followed.line), followed);
+  await run(() => { window.__lbNoFollow = true; return 1; });
+  await click('#regenerateAnswer');
+  await sleep(1200);
+  const noNext = await run(() => ({ n: window.__lbAsked.length, next: !!document.getElementById('libraryAskNext'), body: !!document.querySelector('#answerBody .fx-md') }));
+  record('an answer without follow-up questions shows no Ask next', noNext.n === 3 && noNext.body && !noNext.next, noNext);
+  await run(() => { window.__lbNoFollow = false; return 1; });
 
   // The expanded editor
   await run(() => { document.getElementById('libraryExpand').focus(); return 1; });
   await click('#libraryExpand');
   await sleep(600);
-  const editor = await run(() => ({ dialog: !!document.querySelector('#libraryEditor[role=dialog][aria-modal=true]'), focus: document.activeElement && document.activeElement.closest('#libraryEditor') ? document.activeElement.tagName : '' }));
+  const editor = await run(() => {
+    const ask = document.getElementById('libraryAskLarge');
+    const improve = document.getElementById('libraryImproveLarge');
+    return { dialog: !!document.querySelector('#libraryEditor[role=dialog][aria-modal=true]'), focus: document.activeElement && document.activeElement.closest('#libraryEditor') ? document.activeElement.tagName : '',
+      ask: ask ? Math.round(ask.getBoundingClientRect().width) + ' ' + getComputedStyle(ask).borderTopLeftRadius + ' ' + ask.getAttribute('aria-label') : '',
+      improve: improve ? improve.textContent.trim() + ' ' + getComputedStyle(improve).borderTopLeftRadius : '', keys: document.querySelectorAll('#libraryEditor .factory-lb-keys kbd').length };
+  });
   record('Expand opens the question editor as a modal with focus in it', editor.dialog && editor.focus === 'TEXTAREA', editor);
+  record('the editor\'s footer looks like the composer: pills, key caps and a round Ask', /^36 \d+px Ask$/.test(editor.ask) && parseFloat(editor.ask.split(' ')[1]) >= 18
+    && /^Improve \d/.test(editor.improve) && editor.keys >= 3, editor);
   let inside = true;
   for (let i = 0; i < 8; i++) { await key('Tab', 'Tab', 9); inside = inside && await run(() => !!(document.activeElement && document.activeElement.closest('#libraryEditor'))); }
   record('Tab keeps the focus in the editor', inside);
@@ -179,12 +282,19 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   await vm((m) => { m.question('purpose field on transfer'); return 1; });
   await click('#libraryImprove');
   await sleep(800);
-  const improved = await run(() => ({
-    value: document.querySelector('#libraryQuestion textarea').value, line: ((document.getElementById('libraryImproved') || {}).textContent || '').replace(/s+/g, ' ').trim(),
-    card: !!document.querySelector('.factory-lb-improve, #libraryUseImproved, #libraryCancelImprove'), undo: !!document.getElementById('libraryUndoImprove')
-  }));
+  const improved = await run(() => {
+    const line = document.getElementById('libraryImproved');
+    const area = document.querySelector('#libraryQuestion textarea');
+    return {
+      value: area.value, line: ((line || {}).textContent || '').replace(/s+/g, ' ').trim(),
+      card: !!document.querySelector('.factory-lb-improve, #libraryUseImproved, #libraryCancelImprove'), undo: !!document.getElementById('libraryUndoImprove'),
+      above: !!line && !!(line.compareDocumentPosition(area) & 4), glow: !!document.querySelector('.factory-lb-compose.is-improved'),
+      pill: (document.getElementById('libraryImprove') || { className: '' }).className.indexOf('is-on') >= 0
+    };
+  });
   record('Improve my question rewrites the question in the box, with one line saying what to add and Undo, and no separate card',
     /Purpose of payment/.test(improved.value) && /Retail or corporate/.test(improved.line) && improved.undo && !improved.card, improved);
+  record('while an improvement shows, its line sits above the question and the composer glows', improved.above && improved.glow && improved.pill, improved);
   await click('#libraryUndoImprove');
   await sleep(300);
   const undone = await run(() => ({ value: document.querySelector('#libraryQuestion textarea').value, line: !!document.getElementById('libraryImproved') }));
@@ -197,6 +307,16 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
     askedAs: ((document.querySelector('.factory-lb-askedas') || {}).textContent || '').trim() }));
   record('Ask sends the question as written with the improved one, and the answer says what it was asked as',
     askedImproved.body.question === 'purpose field on transfer' && /Purpose of payment/.test(askedImproved.body.improved || '') && !askedImproved.line && /Purpose of payment/.test(askedImproved.askedAs), askedImproved);
+
+  // New conversation empties the thread; an example card asks its question
+  await click('#libraryNewConversation');
+  await sleep(600);
+  const fresh = await run(() => ({ hero: !!document.querySelector('.factory-lb-hero'), cards: document.querySelectorAll('.factory-lb-example').length }));
+  await run(() => { const c = document.querySelectorAll('.factory-lb-example')[1]; if (c) { c.click(); } return !!c; });
+  await sleep(1200);
+  const byCard = await run(() => { const b = window.__lbAsked[window.__lbAsked.length - 1] || {}; return { question: b.question, history: (b.history || []).length, answer: !!document.querySelector('#answerBody .fx-md') }; });
+  record('New conversation brings back the empty Ask; an example card asks its question', fresh.hero && fresh.cards === 4 && byCard.question === 'How is a fund transfer sent to the host?'
+    && byCard.history === 0 && byCard.answer, { fresh: fresh, byCard: byCard });
 
   // At 1279 px and below the sources go under the answer
   await size(1280, 900);
@@ -352,11 +472,20 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
     const comp = document.querySelector('.factory-lb-composer');
     const conv = document.querySelector('.factory-lb-conv');
     const text = bar && bar.querySelector('.factory-lb-problemtext');
+    const bubble = document.querySelector('.factory-lb-asked').getBoundingClientRect();
+    const keys = document.querySelector('.factory-lb-composer .factory-lb-keys');
     return { bar: text ? Math.round(text.getBoundingClientRect().height) : 0, oneRow: tabs.every((t) => Math.abs(t - tabs[0]) < 2),
-      composerLast: !!comp && comp === conv.lastElementChild, stacked: document.querySelector('.factory-lb-rail').getBoundingClientRect().top >= conv.getBoundingClientRect().bottom - 1 };
+      composerLast: !!comp && comp === conv.lastElementChild, stacked: document.querySelector('.factory-lb-rail').getBoundingClientRect().top >= conv.getBoundingClientRect().bottom - 1,
+      bubble: Math.round(bubble.width / conv.getBoundingClientRect().width * 100), keysHidden: !keys || keys.offsetParent === null };
   });
   record('on a phone the problem bar is one line, the tabs one row, the sources under the answer and the composer at the bottom',
     (!state.problem || (phone.bar > 0 && phone.bar <= 24)) && phone.oneRow && phone.composerLast && phone.stacked, phone);
+  record('on a phone the question bubble may take most of the width and the keys are hidden', phone.bubble <= 93 && phone.keysHidden, phone);
+  await vm((m) => { m.newConversation(); return 1; });
+  await sleep(800);
+  const phoneEmpty = await run(() => ({ columns: new Set([...document.querySelectorAll('.factory-lb-example')].map((c) => Math.round(c.getBoundingClientRect().left))).size,
+    cards: document.querySelectorAll('.factory-lb-example').length, over: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+  record('on a phone the example cards are one column and nothing scrolls sideways', phoneEmpty.cards === 4 && phoneEmpty.columns === 1 && phoneEmpty.over <= 0, phoneEmpty);
 
   const errors = s.errors.filter((e) => !/auth\/me/.test(e));
   record('no console errors', errors.length === 0, errors.slice(0, 3));

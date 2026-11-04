@@ -24,6 +24,7 @@ strong colour for fills and icons, `-text` for text (WCAG AA on surfaces and tin
 | `--fx-violet-text` | `#6d28d9` | `#c4b5fd` |  |
 | `--fx-violet-soft` | `#f3e8ff` | `rgba(139, 92, 246, 0.18)` |  |
 | `--fx-gradient-brand` | `linear-gradient(135deg, #3b82f6 0%, #4f46e5 55%, #8b5cf6 100%)` | same |  |
+| `--fx-gradient-spark` | `linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #0ea5e9 100%)` | same | The answers' mark on the OBDX Library's Ask tab |
 
 ## Status: the strong colour for fills and icons, -text for text on light surfaces (WCAG AA), -soft for tints
 

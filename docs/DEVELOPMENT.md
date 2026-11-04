@@ -344,17 +344,27 @@ The page, top to bottom:
   in each row; a failed document keeps its own message on its row.
 - **Tabs**: Ask | Documents (count) | Notes ("N to review"). Arrow keys, Home and End move between them. On Ask the tab
   line ends with **Search in** (the workspace's OBDX version line, or another the library has documents for).
-- **Ask**: a conversation panel beside a 360 px Sources rail (under the answer below 1280 px). The panel shows the
-  question as its heading, "Grounded in N sources · check · length · version · when", **New conversation**, the answer
-  (Markdown with citations), the not-enough-evidence warning and the model's general answer folded away, the check's
-  label, reason and findings, limitations, the administrators' "How the sources were found", and a feedback row
-  (thumbs up or down, Copy, Regenerate, Save as a note). The composer sits at the panel's bottom and scrolls with the page: Enter asks,
-  Shift+Enter is a new line; the answer-length menu (Short, Detailed, Deep dive: the `CONCISE`, `DETAILED` and
-  `DEEP_DIVE` styles), **Improve my question** (rewrites the question in the box, with one line
-  saying what to add and Undo; also in the larger editor) and **Ask**; Expand (Ctrl+Shift+E)
-  opens a larger editor as a modal (Ctrl+Enter asks, Escape closes). The rail lists each cited source (title, kind,
-  version, section, pages, Preview at the page, Oracle's page when known, what it says) and folds "Searched and not
-  used". Before a first question the panel shows examples to try.
+- **Ask**: before a first question, one centred question: the sparkle, "What do you want to know about OBDX?", what
+  the answers cite (the library's own count of documents for the version, Oracle's manual versions, the bank's own
+  documents, notes), the composer (at most 760 px) and four example cards (Extend a screen, Host integration,
+  Customise safely, Toolkit) that ask their question. After it, a thread beside a 340 px Sources rail (under the answer
+  below 1280 px): "This conversation · N questions" with **New conversation**; the question as a bubble on the right
+  ("Asked as: …" under it after Improve); the answer beside the sparkle with one line above it: the check as a chip
+  ("Verified against N sources", "Partly verified …", "Not grounded in the documents") and "Searched N documents · read
+  N sections · N s", which folds out the length, version and when, the model and its time, the check's reason and
+  findings and the administrators' "How the sources were found". Then the not-enough-evidence warning and the model's
+  general answer folded away, the answer (Markdown; a citation is a pill with the source's number and a short name,
+  linking to the document at its page or to its card), limitations, the actions (Copy, Regenerate, Helpful, Not
+  helpful as icons with their names; Save as a note) and **Ask next**: the two or three follow-up questions the model
+  suggested (the answer's `followUps`; none shown when there are none), each a chip that asks it as a follow-up. The
+  composer is under the thread and scrolls with the page (it is not pinned): rounded, a glow while focused or while an
+  improvement shows; the answer length (Short, Detailed, Deep dive: the `CONCISE`, `DETAILED` and `DEEP_DIVE` styles)
+  and **Improve** (Improve my question: rewrites the question in the box, with one line above it saying what to add
+  and Undo) as pills, the keys (Enter asks, Shift+Enter is a new line; hidden on phones) and a round **Ask**, which
+  looks off while the question is empty; Expand (Ctrl+Shift+E) opens a larger editor as a modal with the same footer
+  (Ctrl+Enter asks, Escape closes). The rail lists each cited source as a compact card (the file type as a badge: PDF,
+  DOC, HTML, TXT or NOTE; the number and title; kind, version, section and pages, Oracle's page when known; the start
+  of what it says) and folds "Searched and not used".
 - **Documents**: a Sources strip (each Oracle version followed and watched folder, with Check now and a menu with Stop
   following or Stop watching, plus Add a source), then one toolbar (title, version, type, source, state, Older
   revisions, count) and one table grouped by OBDX version: Document, Source, Status (Ready, or Ready · keywords only when only some are,
@@ -894,7 +904,7 @@ object: compute those in the view model.
 | `GET /api/knowledge/documents/{id}/file` | The PDF (cited as `.../file#page=N`) |
 | `GET /api/knowledge/search` | Search the manuals and notes (`q`, `workspaceId`, `versionLine`) |
 | `POST /api/knowledge/ask` | Answer a question with citations (`question`, `workspaceId`, `context`: the page's text; optional `version`: the OBDX version or version line to answer for instead of the workspace's) |
-| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `status` while it is checked, then `done` (the checked answer with its `report`) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first; `style`: `CONCISE`, `DETAILED` (default) or `DEEP_DIVE`; `improved`: the wording the user approved after Improve My Question |
+| `POST /api/knowledge/ask/stream` | The same answer as the model writes it, one JSON object per line (`application/x-ndjson`): `status`, `sources` (with `diagnostics` for administrators), then `text` pieces, then `status` while it is checked, then `done` (the checked answer with its `report` and `followUps`: two or three short questions to ask next, empty when the model wrote none; the model writes them after the answer behind a marker line, which the server takes off the streamed and the final text) or `error`; `history`: the conversation's earlier `{question, answer}` turns, oldest first; `style`: `CONCISE`, `DETAILED` (default) or `DEEP_DIVE`; `improved`: the wording the user approved after Improve My Question |
 | `POST /api/knowledge/improve-question` | Improve My Question (`question`, `workspaceId`, `history`): `status` (`READY`, `NEEDS_CLARIFICATION`, `AMBIGUOUS`), `enhancedQuery`, `detectedIntent`, `detectedModule`, `detectedVersion`, `technicalEntities`, `assumptions`, `clarificationQuestions`, `suggestedScope`, `byModel`; nothing is answered |
 | `POST /api/knowledge/evaluation` | Run the evaluation questions through the Library (`mode`: `SEARCH`, `CHOOSE` or `ANSWER`; administrators; see docs/KNOWLEDGE-AUDIT.md) |
 | `GET /api/knowledge/evaluation` | The running or last evaluation: Recall@5, Recall@15, MRR, answers passed, unanswerable questions refused, each question's row |

@@ -42,9 +42,9 @@ final class AnswerGeneration {
     private AnswerGeneration() {
     }
 
-    /** The whole instruction for the model: the knowledge rules, the format, the detail, the layout. */
+    /** The whole instruction for the model: the knowledge rules, the format, the detail, the layout, then the follow-up questions. */
     static String system(String rules, Style style, QueryUnderstanding.Type type) {
-        return rules + "\n\n" + FORMAT + "\n\n" + detail(style) + "\n\n" + layout(type);
+        return rules + "\n\n" + FORMAT + "\n\n" + detail(style) + "\n\n" + layout(type) + "\n\n" + FollowUps.INSTRUCTION;
     }
 
     static String detail(Style style) {

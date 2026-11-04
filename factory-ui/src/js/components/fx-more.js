@@ -375,7 +375,7 @@ define(['knockout', 'ojs/ojcomposite', './fx-elements', '../services/markdown', 
         done = true;
         this.pending = false;
         const box = this.element.querySelector('.fx-md');
-        if (box) { markdown.render(box, this.props.text, { sources: this.props.sources, citePrefix: this.props.citePrefix }); }
+        if (box) { markdown.render(box, this.props.text, { sources: this.props.sources, citePrefix: this.props.citePrefix, citeStyle: this.props.citeStyle }); }
       };
       // The next frame, or a short timer when there is none (a page in a background tab gets no frames)
       window.requestAnimationFrame(run);
@@ -387,7 +387,8 @@ define(['knockout', 'ojs/ojcomposite', './fx-elements', '../services/markdown', 
   Composite.register('fx-markdown', {
     view: '<div class="fx-md"></div>',
     viewModel: MarkdownModel,
-    metadata: { properties: { text: { type: 'string', value: '' }, sources: { type: 'array', value: [] }, citePrefix: { type: 'string', value: 'src-' } } }
+    metadata: { properties: { text: { type: 'string', value: '' }, sources: { type: 'array', value: [] }, citePrefix: { type: 'string', value: 'src-' },
+      citeStyle: { type: 'string', value: '' } } }
   });
 
   return {};
