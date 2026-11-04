@@ -3,7 +3,7 @@
  * A new workspace's code comes from an SVN URL or a folder on the computer the factory runs on (/api/sources): the
  * factory checks it and suggests the name, bank and OBDX version from the code, the user confirms them, then the
  * workspace is created (/api/workspaces) and its code imported (/imports). The import checks out from SVN, indexes the
- * files and detects the project profile; each stage shows what the server reports, and nothing is called done before
+ * files and detects the codebase facts; each stage shows what the server reports, and nothing is called done before
  * the server says so.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/session', '../services/workspaceSelection', '../services/dashboard',
@@ -66,7 +66,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       const said = (error, next) => ui.errorText(error).replace(/(^|[.!?]\s+)Try again\.$/, '$1').trim() + ' ' + next;
       this.go = (page) => dashboard.open(page);
 
-      // Per workspace, read on demand: project profile, modernization inventory and members. A workspace whose code
+      // Per workspace, read on demand: the codebase facts, modernization inventory and members. A workspace whose code
       // was never indexed has no profile yet, so it is not asked for (force: an import just ended, ask anyway).
       const wsDetails = ko.observable({});
       const pending = {};
@@ -279,7 +279,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           updateLabel: indexed ? 'Update code' : 'Import code',
           updateHelp: !w.svnUrl ? 'Set the SVN URL on the Code page first.'
             : (indexed ? 'Fetches what changed in SVN since r' + w.indexedRevision + ' and indexes again only the files whose content changed.'
-              : 'Checks out the code from SVN, indexes it and detects the project profile.'),
+              : 'Checks out the code from SVN, indexes it and detects the codebase facts.'),
           manageTip: canManage ? null : 'Needs the right to manage the code of this workspace.',
           // Index
           stats: [
@@ -353,6 +353,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             .catch(() => toast.error('The URL could not be copied. Select it and copy it by hand.'));
         }
       };
+      // A fact opens on Code › Codebase facts (the OBDX version: Correct it)
+      this.sheetFact = (key) => (event) => {
+        if (event && event.preventDefault) {
+          event.preventDefault();
+        }
+        const s = this.sheet();
+        this.sheetOpen(false);
+        pageRequests.codeFact(key);
+        dashboard.open('code', s ? s.id : undefined)();
+      };
       this.sheetGo = (page) => (event) => {
         if (event && event.preventDefault) {
           event.preventDefault();
@@ -377,7 +387,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
             plural(entry.designs.length, 'screen design'),
             plural(entry.changes.length, 'change') + (open ? ' (' + open + ' still open)' : ''),
             plural(entry.index ? entry.index.files : 0, 'indexed file'),
-            'the project profile, import history, Jenkins settings and ' + plural(members, 'member') + ' access'
+            'the codebase facts, import history, Jenkins settings and ' + plural(members, 'member') + ' access'
           ];
           return dialog.confirm({
             title: 'Delete ' + s.name + '?',
@@ -550,7 +560,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         }
         return this.checking() || this.inspection() ? 'check' : 'source';
       });
-      const STAGES = [['source', 'Source'], ['check', 'Check'], ['details', 'Confirm details'], ['import', 'Import and index'], ['profile', 'Review profile']];
+      const STAGES = [['source', 'Source'], ['check', 'Check'], ['details', 'Confirm details'], ['import', 'Import and index'], ['profile', 'Review facts']];
       this.stages = ko.pureComputed(() => {
         const current = STAGES.findIndex((s) => s[0] === this.stage());
         return STAGES.map((s, i) => ({
@@ -604,9 +614,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           failed && checkedOut ? message : (succeeded ? plural(ownJob.filesIndexed, 'file') + ' indexed, ' + plural(ownJob.chunksIndexed, 'searchable piece') + '.' : (checkedOut ? jobProgress(ownJob) : '')),
           failed && checkedOut ? retry : null));
         const profileFailed = succeeded && !run.profileRetried && message.indexOf('Project profile could not be updated') >= 0;
-        steps.push(step('profile', 'Detect the OBDX version and project profile',
+        steps.push(step('profile', 'Detect the OBDX version and codebase facts',
           state(false, succeeded && !profileFailed, profileFailed),
-          profileFailed ? message.slice(message.indexOf('Project profile could not be updated')) : (succeeded ? 'Profile detected from revision ' + ownJob.toRevision + '.' : ''),
+          profileFailed ? message.slice(message.indexOf('Project profile could not be updated')) : (succeeded ? 'Facts detected from revision ' + ownJob.toRevision + '.' : ''),
           profileFailed && retry ? this.retryProfile : null));
         return steps;
       });
@@ -676,7 +686,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.retryProfile = () => {
         const run = this.run();
         api.post('workspaces/' + run.id + '/profile/refresh')
-          .then((profile) => { setProfile(run.id, profile); setRun({ profileRetried: true }); toast.success('Project profile detected.'); })
+          .then((profile) => { setProfile(run.id, profile); setRun({ profileRetried: true }); toast.success('Codebase facts detected.'); })
           .catch((error) => toast.error(ui.errorText(error)));
       };
       this.createFailed = ko.pureComputed(() => !!this.run() && this.run().create === 'failed');

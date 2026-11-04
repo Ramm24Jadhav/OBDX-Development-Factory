@@ -36,10 +36,11 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'overview', detail: { label: 'Home', icon: 'home', group: 'overview' } },
         { path: 'workspaces', detail: { label: 'Workspaces', icon: 'folder', group: 'overview' } },
         { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'analyze' } },
-        { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'analyze' } },
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'analyze' } },
-        // Knowledge Explorer is the Code page's Explore tab now: old links and bookmarks open it
+        // Knowledge Explorer is the Code page's Explore tab now, Project Profile its Codebase facts tab: old links and
+        // bookmarks open them
         { path: 'knowledge', redirect: 'code', detail: { label: 'Code', hidden: true } },
+        { path: 'profile', redirect: 'code', detail: { label: 'Code', hidden: true } },
         { path: 'library', detail: { label: 'OBDX Library', icon: 'book', group: 'analyze' } },
         { path: 'studio', detail: { label: 'Design Studio', icon: 'design', group: 'design' } },
         // The Visual Designer is the Design Studio's Edit mode now: old links open the Studio (a screen asked for with

@@ -38,8 +38,12 @@ citation pills, icon actions) with compact source cards and **Ask next**: the an
 writes after a marker line in the same answer (`knowledge/FollowUps`, taken off the stream and the stored text).
 The **Code** page took in the Knowledge Explorer (branch `code-combined`): one header with the index pill, Check for
 new commits and Reindex, one problem bar, and seven tabs (Explore, Search, Map, Business rules, Quick checks, Index,
-Settings); one viewer, one search, one AI panel (Ask about the code). The `knowledge` route redirects to Code › Explore;
+Settings; Codebase facts came later); one viewer, one search, one AI panel (Ask about the code). The `knowledge` route redirects to Code › Explore;
 `scripts/check-code.js` checks the whole page (check-knowledge.js is gone).
+The Project Profile page is now Code's **Codebase facts** tab, between Index and Settings (branch `code-facts`): the
+same facts, edits, history and reference examples; its warnings feed Code's problem bar; the `profile` route, G P and
+the links from Home, Workspaces, Modernization, Version Packs and the Prompt Library open the tab (check-profile.js is
+gone, its checks are in check-code.js).
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
 Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in

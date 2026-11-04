@@ -1,6 +1,6 @@
 /*
  * Modernization page: planning an OBDX upgrade or a new channel from evidence. The inventory scanned from the code
- * (modules, screens and their complexity, services, roles, flows), the stack from the Project Profile, the rules of
+ * (modules, screens and their complexity, services, roles, flows), the stack from the codebase facts, the rules of
  * the workspace's version pack and of the version it moves to (usage of what they forbid is found with code search and
  * checked against each rule's pattern), and the workspace's target channel. Everything on the page is a detected fact
  * with its source, or an estimate said to be one; model-written text appears only in the assistant panel.
@@ -25,7 +25,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     };
     // Where a fact comes from (shown next to it); AI text is only in the assistant panel
     const SOURCE = {
-      scan: 'Detected: code scan', rules: 'Detected: version pack rules', target: 'Detected: target pack check', profile: 'Detected: Project Profile',
+      scan: 'Detected: code scan', rules: 'Detected: version pack rules', target: 'Detected: target pack check', profile: 'Detected: codebase facts',
       setting: 'Workspace setting', pack: 'Version pack', estimate: 'Estimate'
     };
     const source = (key) => ({ text: SOURCE[key], css: 'fx-badge ' + (key === 'estimate' ? 'fx-badge--warning' : key === 'setting' || key === 'pack' ? 'fx-badge--neutral' : 'fx-badge--info') + ' factory-mz-src' });
@@ -97,7 +97,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const java = factOf('backend.javaVersion');
         const channel = this.channel();
         const tech = (f, prefix) => (f ? (prefix || '') + f.value.replace(/\s*\(\d+ files?\)$/, '') : 'Not detected');
-        const factSource = (f) => (f ? { text: 'Project Profile: ' + (f.status === 'detected' ? 'detected, ' + String(f.confidence).toLowerCase() + ' confidence' : f.status),
+        const factSource = (f) => (f ? { text: 'Codebase facts: ' + (f.status === 'detected' ? 'detected, ' + String(f.confidence).toLowerCase() + ' confidence' : f.status),
           css: 'fx-badge fx-badge--info factory-mz-src' } : { text: 'Unknown', css: 'fx-badge fx-badge--neutral factory-mz-src' });
         const targetJava = this.targetChecks() ? this.targetChecks().javaLevel : this.checks() ? this.checks().javaLevel : null;
         return [
@@ -358,8 +358,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           { text: 'Code imported and indexed', detail: w.indexedRevision != null ? 'Indexed at r' + w.indexedRevision + '.' : 'Import the code on the Code page.', state: w.indexedRevision != null ? 'ok' : 'todo' },
           { text: 'Analysis matches the indexed code', detail: w.indexedRevision == null || inv.revision === w.indexedRevision ? 'Analysis of r' + inv.revision + '.'
             : 'Analysis of r' + inv.revision + ', code indexed at r' + w.indexedRevision + '. Run Analysis again.', state: w.indexedRevision == null || inv.revision === w.indexedRevision ? 'ok' : 'todo' },
-          { text: 'Project Profile', detail: this.profile() ? 'Discovered at r' + this.profile().revision + '.' : 'No profile yet: refresh discovery on the Project Profile page.', state: this.profile() ? 'ok' : 'todo' },
-          { text: 'Java ' + (targetJava || '?') + ' for OBDX ' + this.target(), detail: java ? 'This code: Java ' + java + ' (Project Profile).' : 'The Java version is not detected; confirm it on the Project Profile page.',
+          { text: 'Codebase facts', detail: this.profile() ? 'Discovered at r' + this.profile().revision + '.' : 'No codebase facts yet: refresh discovery on Code › Codebase facts.', state: this.profile() ? 'ok' : 'todo' },
+          { text: 'Java ' + (targetJava || '?') + ' for OBDX ' + this.target(), detail: java ? 'This code: Java ' + java + ' (codebase facts).' : 'The Java version is not detected; set it on Code › Codebase facts.',
             state: !java || !targetJava ? 'unknown' : Number(java) >= targetJava ? 'ok' : 'todo' }
         ];
         if (channel && channel.target !== 'jet') {
@@ -486,7 +486,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.moreItems = ko.pureComputed(() => [
         { value: 'findings', label: 'Search for forbidden usage again', disabled: !this.inventory() || this.searchingFindings() },
         { value: 'csv', label: 'Download screens as CSV', disabled: !this.inventory() },
-        { value: 'profile', label: 'Open the Project Profile' },
+        { value: 'facts', label: 'Open the codebase facts' },
         { value: 'packs', label: 'Open the Version Packs' }]);
       // The menu of each forbidden usage row (opening the file is its own button)
       this.findingItems = [{ value: 'ask', label: 'Ask the assistant how to replace it' }, { value: 'copy', label: 'Copy the file path' }];
@@ -496,6 +496,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.rescanFindings();
         } else if (action === 'csv') {
           window.location.href = this.csvUrl();
+        } else if (action === 'facts') {
+          pageRequests.codeTab('facts');
+          go('code');
         } else {
           go(action);
         }

@@ -24,9 +24,12 @@ define(['knockout'], function (ko) {
     /** { path, startLine, endLine } a file the Code page opens on Explore with those lines marked (Modernization findings) */
     codeFile: ko.observable(null),
     /**
-     * A Code page tab to open: 'explore', 'search', 'map', 'rules', 'checks', 'index' or 'settings' (Integrations and
-     * Modernization open Settings, import notifications and Agent Runs open Index, the palette's G K opens Explore)
+     * A Code page tab to open: 'explore', 'search', 'map', 'rules', 'checks', 'index', 'facts' or 'settings' (Integrations
+     * and Modernization open Settings, import notifications and Agent Runs open Index, the palette's G K opens Explore,
+     * G P and the links from Home, Workspaces, Modernization, Version Packs and the AI Prompt Library open Codebase facts)
      */
-    codeTab: ko.observable(null)
+    codeTab: ko.observable(null),
+    /** A fact key the Code page opens on Codebase facts, for example 'obdx.version' (the Workspaces sheet) */
+    codeFact: ko.observable(null)
   };
 });

@@ -145,7 +145,7 @@ The factory does not assume a fixed technology stack for the OBDX code it genera
 - Integration: host systems and adapter patterns in use.
 - Bank conventions: package names, folder layout for customizations, naming, logging, error handling, code style.
 
-The profile is stored with the workspace, shown in the UI for a developer to confirm or correct, and refreshed when the codebase changes. Where the profile and the version pack disagree, the profile wins, because it reflects what the bank actually runs.
+The profile is stored with the workspace, shown in the UI (the Code page's Codebase facts tab) for a developer to confirm or correct, and refreshed when the codebase changes. Where the profile and the version pack disagree, the profile wins, because it reflects what the bank actually runs.
 
 Implementation: rule-based detectors scan the working copy after each import, so results are repeatable, need no model, and every fact lists the files it came from with a confidence level. Developers' confirmed or corrected values are stored separately and survive re-scans. A warning is shown when the detected OBDX version disagrees with the workspace's version.
 

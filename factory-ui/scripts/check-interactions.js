@@ -22,7 +22,8 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]; }
 const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'interaction-report');
-const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,studio,changes,impact,build,models,'
+// page:tab opens a tab of the Code page (code:facts is Codebase facts, the former Project Profile page)
+const PAGES = (args.pages || 'overview,workspaces,code,requirements,code:facts,studio,changes,impact,build,models,'
   + 'modernization,agents,admin,reviews,integrations,packs,prompts,notifications,account,about,design').split(',');
 const SIZES = (args.sizes || '1440x900,375x667').split(',').map((s) => { const m = /^(\d+)x(\d+)$/.exec(s); return { w: +m[1], h: +m[2], name: s }; });
 const REDUCED = !!args['reduced-motion'];
@@ -67,7 +68,13 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   };
   const network = (conditions) => cdp('Network.emulateNetworkConditions', Object.assign({ offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 }, conditions));
   const go = async (page) => {
-    await run((p) => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: p })); window.scrollTo(0, 0); return 1; }, page);
+    await run((p) => {
+      const [path, tab] = p.split(':');
+      if (tab) { window.require('services/pageRequests').codeTab(tab); }
+      window.dispatchEvent(new CustomEvent('factory-navigate', { detail: path }));
+      window.scrollTo(0, 0);
+      return 1;
+    }, page);
   };
   const stuck = () => run(() => ({
     busy: document.querySelectorAll('.is-busy').length,

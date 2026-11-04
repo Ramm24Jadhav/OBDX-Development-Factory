@@ -20,7 +20,8 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]; }
 const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'responsive-report');
-const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,studio,changes,impact,build,models,'
+// page:tab opens a tab of the Code page (code:facts is Codebase facts, the former Project Profile page)
+const PAGES = (args.pages || 'overview,workspaces,code,requirements,code:facts,studio,changes,impact,build,models,'
   + 'modernization,agents,admin,reviews,integrations,packs,prompts,notifications,account,about,design').split(',');
 // The device classes, plus 1280x800 and 1440x900 at 200% browser zoom (the same CSS width as 640 and 720 pixels).
 const SIZES = (args.sizes || '320x568,375x667,430x932,768x1024,1024x768,1280x800,1440x900,1920x1080,640x400@2,720x450@2')
@@ -175,11 +176,17 @@ async function popupsInWindow() {
     fs.mkdirSync(path.join(OUT, size.name), { recursive: true });
     for (const page of PAGES) {
       errors.length = 0;
-      await run((p) => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: p })); window.scrollTo(0, 0); return 1; }, page);
+      await run((p) => {
+        const [path, tab] = p.split(':');
+        if (tab) { window.require('services/pageRequests').codeTab(tab); }
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: path }));
+        window.scrollTo(0, 0);
+        return 1;
+      }, page);
       await sleep(3200);
       const m = await run(measure);
       const shot = await cdp('Page.captureScreenshot', { format: 'png' });
-      fs.writeFileSync(path.join(OUT, size.name, page + '.png'), Buffer.from(shot.result.data, 'base64'));
+      fs.writeFileSync(path.join(OUT, size.name, page.replace(':', '-') + '.png'), Buffer.from(shot.result.data, 'base64'));
       const popups = page === 'overview' ? await run(popupsInWindow) : [];
       const entry = Object.assign({ size: size.name, page: page, errors: errors.slice(0, 5), popups: popups }, m);
       entry.overflow = m.docWidth > m.viewport + 1;

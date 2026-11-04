@@ -650,7 +650,194 @@
       </div>
     </div>
 
-    <!-- 7. Settings: SVN, UI target, Jenkins (read only without Manage code) -->
+    <!-- 7. Codebase facts: what the code is built with, by area, each fact with its evidence; history and reference examples -->
+    <div class="factory-cd-panel" id="panel-facts" role="tabpanel" aria-labelledby="tab-facts" :hidden="[[tab() !== 'facts']]">
+      <section class="fx-card factory-cd-card" id="factsScanCard" aria-labelledby="factsScanTitle">
+        <div class="factory-cd-card-head">
+          <h2 class="fx-card-title" id="factsScanTitle">Discovery</h2>
+          <span class="fx-tip-wrap factory-cd-tipwrap" :tabindex="[[canManage() ? null : '0']]" :data-fx-tip="[[manageTip]]">
+            <button type="button" id="detectButton" :class="[[discovering() ? 'fx-btn fx-btn--secondary fx-btn--sm is-loading' : 'fx-btn fx-btn--secondary fx-btn--sm']]" on-click="[[refreshDiscovery]]"
+                    :disabled="[[!canManage() || discovering() || indexedRevision() === null]]" title="Scan the imported code again for the facts">
+              <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[discovering() ? 'Scanning...' : 'Refresh discovery']]"></oj-bind-text></button></span>
+        </div>
+        <p class="factory-cd-muted">What the code is built with, read from its files after every import. Code generation and the quick checks use these facts; correct one when the code shows it wrongly.</p>
+        <dl class="factory-cd-stats factory-cd-stats--3" id="scanFacts">
+          <oj-bind-for-each data="[[factsScan]]" as="sf">
+            <template><div><dt><oj-bind-text value="[[sf.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[sf.data.value]]"></oj-bind-text></dd></div></template>
+          </oj-bind-for-each>
+        </dl>
+        <oj-bind-if test="[[factsError()]]">
+          <div class="fx-alert fx-alert--danger" id="factsError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[factsError]]"></oj-bind-text></span></div>
+        </oj-bind-if>
+        <oj-bind-if test="[[factsEmpty()]]">
+          <p class="factory-cd-muted" id="factsEmpty" role="status"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span> <oj-bind-text value="[[factsEmpty]]"></oj-bind-text></p>
+        </oj-bind-if>
+        <!-- What needs attention in the facts (the problem bar above shows the most important of the page) -->
+        <oj-bind-if test="[[factsNotes().length > 0]]">
+          <ul class="factory-cd-health-list" id="factsNotes">
+            <oj-bind-for-each data="[[factsNotes]]" as="fn">
+              <template>
+                <li :class="[[fn.data.css]]" :id="[[fn.data.id]]">
+                  <span :class="[[fn.data.icon]]" aria-hidden="true"></span>
+                  <div class="factory-cd-health-main">
+                    <span class="factory-cd-health-text"><oj-bind-text value="[[fn.data.noteText]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[fn.data.missing.length > 0]]">
+                      <span class="factory-cd-fact-missing" id="generationMissing">
+                        <oj-bind-for-each data="[[fn.data.missing]]" as="mf">
+                          <template><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[mf.data.open]]"><oj-bind-text value="[[mf.data.label]]"></oj-bind-text></button></template>
+                        </oj-bind-for-each>
+                      </span>
+                    </oj-bind-if>
+                  </div>
+                </li>
+              </template>
+            </oj-bind-for-each>
+          </ul>
+        </oj-bind-if>
+      </section>
+
+      <oj-bind-if test="[[profile()]]">
+        <div class="factory-cd-toolbar factory-cd-factbar">
+          <fx-select id="factFilter" class="factory-cd-filter" label="Show facts" hide-label options="[[factFilters]]" value="{{factFilter}}"></fx-select>
+          <p class="factory-cd-muted factory-cd-grow" id="factsLegend">Detected: declared in a build or configuration file. Inferred: guessed from code patterns, not verified.</p>
+        </div>
+        <oj-bind-if test="[[factsFilterEmpty()]]">
+          <div class="fx-empty" id="filterEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>No facts of this kind.</div>
+        </oj-bind-if>
+        <div class="factory-cd-areas" id="factGroups">
+          <oj-bind-for-each data="[[factGroups]]" as="g">
+            <template>
+              <section class="fx-card factory-cd-area" :id="[['area-' + g.data.id]]" :aria-labelledby="[[g.data.headingId]]">
+                <div class="factory-cd-card-head">
+                  <h3 class="fx-card-title factory-cd-area-title" :id="[[g.data.headingId]]"><span :class="[[g.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h3>
+                  <span class="factory-cd-muted"><oj-bind-text value="[[g.data.summary]]"></oj-bind-text></span>
+                </div>
+                <oj-bind-if test="[[g.data.note]]"><p class="factory-cd-muted"><oj-bind-text value="[[g.data.note]]"></oj-bind-text></p></oj-bind-if>
+                <ul class="factory-cd-facts">
+                  <oj-bind-for-each data="[[g.data.rows]]" as="f">
+                    <template>
+                      <li :class="[[f.data.open() ? 'factory-cd-fact is-open' : 'factory-cd-fact']]" :data-key="[[f.data.key]]">
+                        <button type="button" class="factory-cd-fact-head" :id="[[f.data.headId]]" :aria-expanded="[[f.data.open() ? 'true' : 'false']]" :aria-controls="[[f.data.bodyId]]" on-click="[[f.data.toggle]]">
+                          <span class="factory-cd-fact-label"><oj-bind-text value="[[f.data.label]]"></oj-bind-text></span>
+                          <span class="factory-cd-fact-main">
+                            <span :class="[[f.data.missing ? 'factory-cd-fact-value is-missing' : 'factory-cd-fact-value']]"><oj-bind-text value="[[f.data.value]]"></oj-bind-text></span>
+                            <span class="factory-cd-fact-tags">
+                              <oj-bind-if test="[[!f.data.missing]]"><span :class="[[f.data.origin.badge.css + ' factory-cd-fact-origin']]"><oj-bind-text value="[[f.data.origin.badge.text]]"></oj-bind-text></span></oj-bind-if>
+                              <oj-bind-if test="[[f.data.generation]]"><span class="fx-badge fx-badge--plain fx-badge--violet factory-cd-fact-gen" title="Code generation uses this fact">Used in generation</span></oj-bind-if>
+                            </span>
+                          </span>
+                          <span class="factory-nav-icon factory-ico-caret factory-cd-fact-caret" aria-hidden="true"></span>
+                        </button>
+                        <div class="factory-cd-fact-body" :id="[[f.data.bodyId]]" :hidden="[[!f.data.open()]]">
+                          <p class="factory-cd-fact-why"><oj-bind-text value="[[f.data.origin.text]]"></oj-bind-text></p>
+                          <dl class="factory-cd-kv">
+                            <dt>Confidence</dt><dd><oj-bind-text value="[[f.data.confidence]]"></oj-bind-text></dd>
+                            <oj-bind-if test="[[f.data.showDetected]]"><dt>Detected value</dt><dd><oj-bind-text value="[[f.data.detected]]"></oj-bind-text></dd></oj-bind-if>
+                            <oj-bind-if test="[[f.data.changed]]"><dt>Last changed</dt><dd><oj-bind-text value="[[f.data.changed]]"></oj-bind-text></dd></oj-bind-if>
+                            <dt>Key</dt><dd class="factory-mono"><oj-bind-text value="[[f.data.key]]"></oj-bind-text></dd>
+                          </dl>
+                          <oj-bind-if test="[[f.data.generation]]">
+                            <p class="factory-cd-fact-genwhy"><strong>Used in generation.</strong> <oj-bind-text value="[[f.data.generation]]"></oj-bind-text></p>
+                          </oj-bind-if>
+                          <h4 class="factory-cd-h3">Evidence</h4>
+                          <oj-bind-if test="[[f.data.evidence.length === 0]]"><p class="factory-cd-muted">No files: nothing in the code showed this fact.</p></oj-bind-if>
+                          <ul class="factory-cd-plain factory-cd-evidence">
+                            <oj-bind-for-each data="[[f.data.evidence]]" as="e">
+                              <template><li><button type="button" class="fx-btn fx-btn--link factory-mono factory-cd-evidence-file" :title="[['Open ' + e.data.path + ' on Explore']]" on-click="[[e.data.open]]"><oj-bind-text value="[[e.data.path]]"></oj-bind-text></button></li></template>
+                            </oj-bind-for-each>
+                          </ul>
+                          <oj-bind-if test="[[f.data.canEdit]]">
+                            <div class="factory-cd-fact-edit">
+                              <fx-input class="factory-cd-grow" label="Correct value" value="{{f.data.edit}}" on-fx-enter="[[f.data.save]]"></fx-input>
+                              <div class="factory-cd-actions">
+                                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[f.data.save]]">Save correction</button>
+                                <oj-bind-if test="[[f.data.canConfirm]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[f.data.confirm]]">Confirm detected value</button></oj-bind-if>
+                                <oj-bind-if test="[[f.data.canReset]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[f.data.reset]]">Reset to detected</button></oj-bind-if>
+                              </div>
+                            </div>
+                          </oj-bind-if>
+                          <oj-bind-if test="[[!f.data.canEdit]]"><p class="factory-cd-muted factory-cd-fact-readonly">Only workspace developers and leads can confirm or correct facts.</p></oj-bind-if>
+                          <oj-bind-if test="[[f.data.changes.length > 0]]">
+                            <h4 class="factory-cd-h3">Changes</h4>
+                            <ul class="factory-cd-plain factory-cd-changes">
+                              <oj-bind-for-each data="[[f.data.changes]]" as="c">
+                                <template><li><span class="factory-cd-muted"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></span> <oj-bind-text value="[[c.data.who + ' ' + c.data.text]]"></oj-bind-text></li></template>
+                              </oj-bind-for-each>
+                            </ul>
+                          </oj-bind-if>
+                        </div>
+                      </li>
+                    </template>
+                  </oj-bind-for-each>
+                </ul>
+              </section>
+            </template>
+          </oj-bind-for-each>
+        </div>
+
+        <details class="fx-disclosure factory-cd-more" id="historyPanel">
+          <summary>Correction history<span class="fx-disclosure-hint"><oj-bind-text value="[[factsHistoryRows().length === 0 ? 'None yet' : factsHistoryRows().length + (factsHistoryRows().length === 1 ? ' change' : ' changes')]]"></oj-bind-text></span></summary>
+          <div class="fx-disclosure-body">
+            <oj-bind-if test="[[factsHistoryError()]]"><p class="factory-cd-muted"><oj-bind-text value="[['Could not load the history: ' + factsHistoryError()]]"></oj-bind-text></p></oj-bind-if>
+            <oj-bind-if test="[[!factsHistoryError() && factsHistoryRows().length === 0]]"><p class="factory-cd-muted">No one has confirmed, corrected or reset a fact yet.</p></oj-bind-if>
+            <ul class="factory-cd-plain factory-cd-changes" id="historyList">
+              <oj-bind-for-each data="[[factsHistoryRows]]" as="h">
+                <template><li><span class="factory-cd-muted"><oj-bind-text value="[[h.data.when]]"></oj-bind-text></span> <strong><oj-bind-text value="[[h.data.label]]"></oj-bind-text></strong> <oj-bind-text value="[[h.data.text + ' by ' + h.data.who]]"></oj-bind-text></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </div>
+        </details>
+      </oj-bind-if>
+
+      <details class="fx-disclosure factory-cd-more" id="patternsPanel">
+        <summary>Reference examples<span class="fx-disclosure-hint"><oj-bind-text value="[[recipes().length + ' recipes from the version pack']]"></oj-bind-text></span></summary>
+        <div class="fx-disclosure-body">
+          <p class="factory-cd-muted" id="recipesNote"><oj-bind-text value="[[recipesNote() || 'Reading the version pack...']]"></oj-bind-text></p>
+          <oj-bind-for-each data="[[recipes]]" as="rc">
+            <template>
+              <details class="factory-cd-recipe" :id="[['recipe-' + rc.data.id]]">
+                <summary><strong><oj-bind-text value="[[rc.data.title]]"></oj-bind-text></strong>
+                  <span class="factory-cd-muted"><oj-bind-text value="[[rc.data.scope]]"></oj-bind-text></span></summary>
+                <oj-bind-if test="[[rc.data.when]]"><p class="factory-cd-muted"><oj-bind-text value="[[rc.data.when]]"></oj-bind-text></p></oj-bind-if>
+                <pre class="factory-code factory-code-light factory-cd-guidance"><oj-bind-text value="[[rc.data.guidance]]"></oj-bind-text></pre>
+                <oj-bind-for-each data="[[rc.data.parts]]" as="part">
+                  <template>
+                    <div class="factory-cd-part" :data-part="[[part.data.id]]">
+                      <h4 class="factory-cd-h3"><oj-bind-text value="[[part.data.name]]"></oj-bind-text> <span class="factory-cd-muted factory-mono"><oj-bind-text value="[[part.data.files]]"></oj-bind-text></span></h4>
+                      <ul class="factory-cd-plain factory-cd-examples">
+                        <oj-bind-for-each data="[[part.data.examples]]" as="ex">
+                          <template>
+                            <li>
+                              <span class="factory-cd-example">
+                                <button type="button" class="fx-btn fx-btn--link factory-mono" :title="[['Open ' + ex.data.path + ' on Explore']]" on-click="[[ex.data.open]]"><oj-bind-text value="[[ex.data.path]]"></oj-bind-text></button>
+                                <span class="factory-cd-muted"><oj-bind-if test="[[ex.data.pinned]]"><span class="fx-badge fx-badge--primary">Pinned</span> </oj-bind-if><oj-bind-text value="[[ex.data.reason]]"></oj-bind-text></span></span>
+                              <oj-bind-if test="[[ex.data.pinned && ex.data.canEdit]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" :aria-label="[['Unpin ' + ex.data.path]]" on-click="[[ex.data.unpin]]">Unpin</button></oj-bind-if>
+                            </li>
+                          </template>
+                        </oj-bind-for-each>
+                      </ul>
+                      <oj-bind-if test="[[part.data.examples.length === 0]]"><p class="factory-cd-muted">No example found in the code yet.</p></oj-bind-if>
+                      <oj-bind-if test="[[part.data.canEdit]]">
+                        <div class="factory-cd-pin">
+                          <fx-input class="factory-cd-grow" label="Pin an example (file path)" hide-label placeholder="Path of a file in the code" value="{{part.data.newPath}}" on-fx-enter="[[part.data.pin]]"></fx-input>
+                          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[part.data.pin]]">Pin example</button>
+                        </div>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[part.data.template]]">
+                        <details class="factory-cd-template"><summary><oj-bind-text value="[['Template: ' + part.data.templateName]]"></oj-bind-text></summary>
+                          <pre class="factory-code"><oj-bind-text value="[[part.data.template]]"></oj-bind-text></pre></details>
+                      </oj-bind-if>
+                    </div>
+                  </template>
+                </oj-bind-for-each>
+              </details>
+            </template>
+          </oj-bind-for-each>
+        </div>
+      </details>
+    </div>
+
+    <!-- 8. Settings: SVN, UI target, Jenkins (read only without Manage code) -->
     <div class="factory-cd-panel factory-cd-settings" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" :hidden="[[tab() !== 'settings']]">
       <oj-bind-if test="[[!canManage()]]">
         <div class="fx-alert fx-alert--info factory-cd-wide" id="settingsReadOnly" role="status"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text">Read only: only workspace developers and leads can change these settings.</span></div>

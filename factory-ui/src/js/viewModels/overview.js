@@ -234,7 +234,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         const added = count(data(), (e) => Date.now() - new Date(e.workspace.createdAt).getTime() < WEEK_MS);
         return plural(data().length, 'workspace') + (added ? ' · ' + added + ' added in the last 7 days' : '');
       });
-      this.workspaceActions = [{ value: 'code', label: 'Open code' }, { value: 'profile', label: 'Project Profile' },
+      this.workspaceActions = [{ value: 'code', label: 'Open code' }, { value: 'code:facts', label: 'Codebase facts' },
         { value: 'requirements', label: 'Requirements' }, { value: 'studio', label: 'Design Studio' }];
       this.workspaces = ko.pureComputed(() => data().map((d) => {
         const w = d.workspace;

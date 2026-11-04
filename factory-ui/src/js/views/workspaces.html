@@ -180,8 +180,8 @@
 
           <oj-bind-if test="[[runProfile()]]">
             <div class="factory-wsp-review" id="profileReview">
-              <h3>Detected project profile</h3>
-              <oj-bind-if test="[[!runProfile().loaded]]"><p class="factory-wsp-muted">Reading the profile...</p></oj-bind-if>
+              <h3>Detected codebase facts</h3>
+              <oj-bind-if test="[[!runProfile().loaded]]"><p class="factory-wsp-muted">Reading the codebase facts...</p></oj-bind-if>
               <oj-bind-if test="[[runProfile().loaded && runProfile().version]]">
                 <dl class="factory-kv factory-wsp-kv">
                   <dt>Workspace version</dt><dd><oj-bind-text value="[[runProfile().declared]]"></oj-bind-text></dd>
@@ -202,7 +202,7 @@
                   <button type="button" id="confirmRunVersion" class="fx-btn fx-btn--secondary" on-click="[[confirmRunVersion]]">Confirm the detected version</button>
                 </oj-bind-if>
                 <button type="button" id="openCodeButton" class="fx-btn fx-btn--primary" on-click="[[runGo('code')]]">Open the code</button>
-                <button type="button" id="openProfileButton" class="fx-btn fx-btn--tertiary" on-click="[[runGo('profile')]]">Review the whole profile</button>
+                <button type="button" id="openProfileButton" class="fx-btn fx-btn--tertiary" on-click="[[runGo('code:facts')]]">Review all codebase facts</button>
               </div>
             </div>
           </oj-bind-if>
@@ -294,7 +294,7 @@
             <dt>Workspace version</dt><dd><oj-bind-text value="[[sheet().declared]]"></oj-bind-text></dd>
             <dt>The code shows</dt>
             <dd>
-              <oj-bind-if test="[[!sheet().profileLoaded]]"><span class="factory-wsp-muted">No project profile yet; it is detected when the code is imported.</span></oj-bind-if>
+              <oj-bind-if test="[[!sheet().profileLoaded]]"><span class="factory-wsp-muted">No codebase facts yet; they are detected when the code is imported.</span></oj-bind-if>
               <oj-bind-if test="[[sheet().version]]">
                 <oj-bind-text value="[[sheet().version.shown]]"></oj-bind-text>
               </oj-bind-if>
@@ -315,7 +315,7 @@
             <oj-bind-if test="[[sheet().canConfirm]]">
               <button type="button" id="confirmVersionButton" class="fx-btn fx-btn--secondary" on-click="[[confirmVersion]]">Confirm the detected version</button>
             </oj-bind-if>
-            <a href="?ojr=profile" class="fx-btn fx-btn--tertiary" on-click="[[sheetGo('profile')]]">Correct it on Project Profile</a>
+            <a href="?ojr=code&amp;tab=facts" class="fx-btn fx-btn--tertiary" id="correctVersionLink" on-click="[[sheetFact('obdx.version')]]">Correct it on Codebase facts</a>
           </div>
         </section>
 

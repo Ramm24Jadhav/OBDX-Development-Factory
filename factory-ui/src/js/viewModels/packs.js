@@ -356,7 +356,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           this.version(w.obdxVersion);
         }
       });
-      this.openProfile = () => navigate('profile');
+      // The reference examples are on Code › Codebase facts
+      this.openProfile = () => { pageRequests.codeTab('facts'); navigate('code'); };
       // The evidence comes from the workspace whose pack is shown
       ko.computed(() => {
         const p = pack();

@@ -2660,11 +2660,8 @@ button.factory-list-title:hover { text-decoration: underline; }
 .factory-ai-input { display: flex; gap: var(--fx-space-2); align-items: center; }
 .factory-ai-busy { font-size: var(--fx-text-sm); color: var(--fx-text-muted); margin: 0 0 8px; }
 
-/* Project Profile (as designed) */
+/* Plain file lists (Build, Impact, Version Packs, AI Prompt Library) */
 .factory-pf-evlist { margin: 0; padding-left: 18px; font-size: var(--fx-text-sm); }
-.factory-pf-recipe { border-top: var(--fx-border-width) solid var(--fx-border); padding: 10px 0; }
-.factory-pf-recipe summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
-.factory-pf-pin { margin: 6px 0 10px; }
 
 /* Requirements (as designed) */
 .factory-rq-layout { grid-template-columns: minmax(300px, 0.75fr) minmax(0, 1.65fr); }
@@ -3039,22 +3036,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-cp2-modules { min-width: 0; width: 120px; height: 32px; font-size: var(--fx-text-sm); }
 
 /* AI Assistant */
-
-/* ---------- Profile page, as designed ---------- */
-/* Header: a wide Refresh Discovery button with the discovery state under it */
-
-/* Summary strip: the workspace on the left, the facts in divided columns on the right, one row */
-
-/* Technology cards: same height in a row, a chevron at the top right, evidence at the bottom */
-
-/* All facts of one section */
-
-/* Bottom row */
-
-/* AI Assistant: mode tabs, a full placeholder, example prompts in two columns */
-
-
-
 
 /* ---------- Requirements page, as designed ---------- */
 /* Header actions */
@@ -4145,14 +4126,6 @@ form.factory-topbar-search { margin: 0; }
 
 
 
-/* ---------- Profile page, refinements ---------- */
-/* Short cards: a one-line muted note instead of a large dashed filler; the evidence footer stays at the bottom */
-
-/* Evidence chips: long file names end with an ellipsis (full path in the title) */
-
-/* Card status pills: leading check or warning icon */
-/* Cards in a row line up at the top; short cards end after their facts instead of growing a blank middle */
-
 /* ---------- Requirements page, refinements ---------- */
 /* The list panel runs the full height of the detail panel */
 .factory-rq-layout { align-items: stretch; }
@@ -4512,7 +4485,6 @@ form.factory-topbar-search { margin: 0; }
 .factory-ab-license-btns { grid-template-columns: minmax(0, 1fr); }
 
 /* Code: Quick Check Rules gives Description the most room */
-/* Project Profile: the cards in a row are one height, with Evidence at the bottom */
 /* Overview: Recent Builds is the wider card, as in the design */
 /* Changes: the file tree shows full names */
 
@@ -4834,20 +4806,6 @@ td.factory-ov-subtle, th.factory-ov-subtle { display: table-cell; }
 .factory-cp .factory-ai-suggest .fx-chip { height: auto; min-height: 28px; padding: 4px 10px; font-size: var(--fx-text-caption); white-space: normal; }
 
 /* Rule descriptions: two lines, the full text in the cell's tooltip */
-
-/* ---------- Profile page, design system ---------- */
-/* Project Profile page (screen 5) on the design system. Loads after app.css; every rule is scoped to the page. */
-
-
-/* Cards and summary */
-
-/* Evidence strips: a brand tint over the surface in both themes */
-
-/* Tables */
-
-/* AI Assistant modes: the shared toggle group, compact */
-
-/* Notes, tags */
 
 /* ---------- Requirements page, design system ---------- */
 .factory-rq-alert { margin: 0 0 12px; }
@@ -5697,8 +5655,6 @@ a.fx-btn--primary, a.fx-btn--primary:link, a.fx-btn--primary:visited, a.fx-btn--
 
 /* ---------- Code page, own elements ---------- */
 .factory-cp .factory-cp-search fx-input, .factory-cp .factory-ai-input fx-input { min-width: 0; }
-
-/* ---------- Profile page, own elements ---------- */
 
 /* ---------- Account page, own elements ---------- */
 /* Password fields keep their labels beside the boxes, as before */
@@ -8171,75 +8127,69 @@ button.factory-cd-box:focus-visible { outline: none; box-shadow: var(--fx-focus)
     .factory-cd-arrow { display: none; }
 }
 
-/* ---------- Project Profile (evidence-backed facts) ---------- */
-.factory-pp { display: flex; flex-direction: column; gap: var(--fx-space-4); padding: 14px 12px 8px; }
-.factory-pp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--fx-space-2) var(--fx-space-4); flex-wrap: wrap; }
-.factory-pp-title { min-width: 0; }
-.factory-pp-head h1 { margin: 0; font-size: var(--fx-text-h1); line-height: 1.15; color: var(--fx-text); }
-.factory-pp-lead { margin: 4px 0 0; color: var(--fx-text-muted); overflow-wrap: anywhere; }
-.factory-pp-head .fx-btn .factory-nav-icon { width: 16px; height: 16px; }
-.factory-pp-scan { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: -6px 0 0; font-size: var(--fx-text-sm); }
-.factory-pp-scan > div { display: flex; gap: 6px; }
-.factory-pp-scan dt { color: var(--fx-text-muted); }
-.factory-pp-scan dd { margin: 0; color: var(--fx-text); font-weight: var(--fx-weight-semibold); }
-.factory-pp-alerts { display: contents; }
-.factory-pp-missing-list { display: flex; flex-wrap: wrap; gap: 2px var(--fx-space-2); margin-top: 4px; }
-.factory-pp-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--fx-space-2) var(--fx-space-4); flex-wrap: wrap; }
-.factory-pp-filters { flex-wrap: wrap; max-width: 100%; }
-.factory-pp-legend { margin: 0; font-size: var(--fx-text-caption); color: var(--fx-text-muted); }
-.factory-pp-muted { color: var(--fx-text-muted); font-size: var(--fx-text-sm); margin: 0; }
-.factory-pp-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fx-space-4); align-items: start; }
-.factory-pp-group { padding: var(--fx-space-4) var(--fx-space-5); }
-.factory-pp-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--fx-space-2); flex-wrap: wrap; }
-.factory-pp-group-head .fx-card-title { display: inline-flex; align-items: center; gap: var(--fx-space-2); }
-.factory-pp-group-head .factory-nav-icon { width: 18px; height: 18px; color: var(--fx-primary-text); }
-.factory-pp-note { margin-top: 4px; }
-.factory-pp-facts { list-style: none; margin: var(--fx-space-2) 0 0; padding: 0; }
-.factory-pp-fact { border-top: var(--fx-border-width) solid var(--fx-border); }
-.factory-pp-fact-head { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) 16px; gap: var(--fx-space-1) var(--fx-space-3); align-items: center; width: 100%;
-    padding: 9px 4px; border: 0; background: none; color: inherit; font: inherit; font-size: var(--fx-text-sm); text-align: left; cursor: pointer;
+/* ---------- Code › Codebase facts: the areas as cards, each fact a compact row that opens ---------- */
+.factory-cd-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.factory-cd-factbar { justify-content: space-between; }
+.factory-cd-factbar .factory-cd-filter { width: 220px; flex: none; }
+.factory-cd-factbar > .factory-cd-muted { font-size: var(--fx-text-caption); }
+.factory-cd-fact-missing { display: flex; flex-wrap: wrap; gap: 2px var(--fx-space-2); }
+.factory-cd-areas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--fx-gap); align-items: start; }
+.factory-cd-area { display: flex; flex-direction: column; gap: var(--fx-space-2); min-width: 0; }
+.factory-cd-area-title { display: inline-flex; align-items: center; gap: var(--fx-space-2); margin: 0; }
+.factory-cd-area-title .factory-nav-icon { width: 18px; height: 18px; color: var(--fx-primary-text); }
+.factory-cd-facts { list-style: none; margin: 0; padding: 0; }
+.factory-cd-fact { border-top: var(--fx-border-width) solid var(--fx-border); }
+.factory-cd-fact-head { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) 16px; gap: var(--fx-space-1) var(--fx-space-3); align-items: center; width: 100%;
+    padding: 8px 4px; border: 0; background: none; color: inherit; font: inherit; font-size: var(--fx-text-sm); text-align: left; cursor: pointer;
     border-radius: var(--fx-radius); transition: background var(--fx-dur-hover) var(--fx-ease-out); }
-.factory-pp-fact-head:hover { background: var(--fx-surface-2); }
-.factory-pp-fact-head:focus-visible { outline: none; box-shadow: var(--fx-focus); }
-.factory-pp-label { color: var(--fx-text-body); }
-.factory-pp-value { color: var(--fx-text); font-weight: var(--fx-weight-semibold); overflow-wrap: anywhere; }
-.factory-pp-value.is-missing { color: var(--fx-text-muted); font-weight: 400; font-style: italic; }
-.factory-pp-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-1) var(--fx-space-2); min-width: 0; }
-.factory-pp-tags { display: inline-flex; flex-wrap: wrap; gap: var(--fx-space-1); }
-.factory-pp-tags:empty { display: none; }
-.factory-pp-caret { width: 16px; height: 16px; color: var(--fx-text-muted); transition: transform var(--fx-dur-hover) var(--fx-ease-out); }
-.factory-pp-fact.is-open .factory-pp-caret { transform: rotate(180deg); }
-.factory-pp-fact-body { padding: 4px 4px 14px; font-size: var(--fx-text-sm); color: var(--fx-text-body); }
-.factory-pp-origin-text { margin: 0 0 8px; color: var(--fx-text); }
-.factory-pp-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--fx-space-1) 14px; margin: 0 0 10px; }
-.factory-pp-kv dt { color: var(--fx-text-muted); }
-.factory-pp-kv dd { margin: 0; overflow-wrap: anywhere; }
-.factory-pp-genwhy { margin: 0 0 10px; padding: 8px 10px; border-radius: var(--fx-radius); background: var(--fx-violet-soft); color: var(--fx-violet-text); }
-.factory-pp-h3 { margin: 10px 0 4px; font-size: var(--fx-text-sm); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-.factory-pp-evidence, .factory-pp-changes { list-style: none; margin: 0; padding: 0; }
-.factory-pp-evidence li { display: flex; align-items: center; justify-content: space-between; gap: var(--fx-space-2); padding: 2px 0; }
-.factory-pp-path { min-width: 0; overflow-wrap: anywhere; font-size: var(--fx-text-caption); }
-.factory-pp-changes li { padding: 3px 0; overflow-wrap: anywhere; }
-.factory-pp-edit { display: flex; flex-direction: column; gap: var(--fx-space-2); margin-top: 12px; padding-top: 12px; border-top: var(--fx-border-width) dashed var(--fx-border); }
-.factory-pp-edit-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.factory-pp-more { background: var(--fx-surface); }
-.factory-pp-more > summary .factory-nav-icon { width: 16px; height: 16px; }
-.factory-pp-ai-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--fx-space-2); flex-wrap: wrap; margin-bottom: 10px; }
-.factory-pp-modes { flex-wrap: wrap; }
+.factory-cd-fact-head:hover { background: var(--fx-surface-2); }
+.factory-cd-fact-head:focus-visible { outline: none; box-shadow: var(--fx-focus); }
+.factory-cd-fact-label { color: var(--fx-text-body); overflow-wrap: anywhere; }
+.factory-cd-fact-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-1) var(--fx-space-2); min-width: 0; }
+.factory-cd-fact-value { color: var(--fx-text); font-weight: var(--fx-weight-semibold); overflow-wrap: anywhere; min-width: 0; }
+.factory-cd-fact-value.is-missing { color: var(--fx-text-muted); font-weight: 400; font-style: italic; }
+.factory-cd-fact-tags { display: inline-flex; flex-wrap: wrap; gap: var(--fx-space-1); }
+.factory-cd-fact-tags:empty { display: none; }
+.factory-cd-fact-caret { width: 16px; height: 16px; color: var(--fx-text-muted); transition: transform var(--fx-dur-hover) var(--fx-ease-out); }
+.factory-cd-fact.is-open .factory-cd-fact-caret { transform: rotate(180deg); }
+.factory-cd-fact-body { display: flex; flex-direction: column; gap: var(--fx-space-2); padding: 4px 4px 14px; font-size: var(--fx-text-sm); color: var(--fx-text-body); }
+.factory-cd-fact-body[hidden] { display: none; }
+.factory-cd-fact-why { margin: 0; color: var(--fx-text); }
+.factory-cd-fact-genwhy { margin: 0; padding: 8px 10px; border-radius: var(--fx-radius); background: var(--fx-violet-soft); color: var(--fx-violet-text); }
+.factory-cd-fact-body .factory-cd-h3 { margin-top: 4px; }
+.factory-cd-evidence, .factory-cd-changes { padding: 0; }
+.factory-cd-evidence .fx-btn--link { font-size: var(--fx-text-caption); }
+.factory-cd-fact-edit { display: flex; flex-direction: column; gap: var(--fx-space-2); margin-top: 4px; padding-top: 12px; border-top: var(--fx-border-width) dashed var(--fx-border); }
+.factory-cd-fact-readonly { font-style: italic; }
+.factory-cd-more { align-self: stretch; background: var(--fx-surface); }
+.factory-cd-recipe { border-top: var(--fx-border-width) solid var(--fx-border); padding: 10px 0; }
+.factory-cd-recipe > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; color: var(--fx-text); }
+.factory-cd-recipe[open] > summary { margin-bottom: var(--fx-space-2); }
+.factory-cd-guidance { white-space: pre-wrap; overflow-wrap: anywhere; }
+.factory-cd-part { display: flex; flex-direction: column; gap: var(--fx-space-2); padding: 10px 0 4px; }
+.factory-cd-examples li { justify-content: space-between; align-items: center; }
+.factory-cd-example { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.factory-cd-pin { display: flex; align-items: center; gap: var(--fx-space-2); }
+.factory-cd-template > summary { cursor: pointer; font-size: var(--fx-text-sm); color: var(--fx-text-body); }
+.factory-cd-template pre { margin-top: var(--fx-space-2); max-height: 360px; overflow: auto; }
+@media (prefers-reduced-motion: reduce) {
+    .factory-cd-fact-head, .factory-cd-fact-caret { transition: none; }
+}
 @media (max-width: 1099px) {
-    .factory-pp-groups { grid-template-columns: minmax(0, 1fr); }
+    .factory-cd-areas { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 767px) {
-    .factory-pp-head h1 { font-size: var(--fx-text-h2); }
-    .factory-pp-head .fx-tip-wrap, .factory-pp-head .fx-btn { width: 100%; justify-content: center; }
-    .factory-pp-fact-head { grid-template-columns: minmax(0, 1fr) 16px; }
-    .factory-pp-fact-head .factory-pp-label { grid-column: 1; font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
-    .factory-pp-fact-head .factory-pp-main { grid-column: 1; }
-    .factory-pp-fact-head .factory-pp-value { font-weight: 400; }
-    .factory-pp-fact-head .factory-pp-caret { grid-column: 2; grid-row: 1; }
-    .factory-pp-kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .factory-pp-kv dd { margin-bottom: 6px; }
-    .factory-pp-evidence li { flex-wrap: wrap; }
+    .factory-cd-stats--3 { grid-template-columns: minmax(0, 1fr); }
+    .factory-cd-factbar .factory-cd-filter { width: 100%; flex: 1 1 100%; }
+    .factory-cd-fact-head { grid-template-columns: minmax(0, 1fr) 16px; }
+    .factory-cd-fact-head .factory-cd-fact-label { grid-column: 1; font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+    .factory-cd-fact-head .factory-cd-fact-main { grid-column: 1; }
+    .factory-cd-fact-head .factory-cd-fact-value { font-weight: 400; }
+    .factory-cd-fact-head .factory-cd-fact-caret { grid-column: 2; grid-row: 1; }
+    .factory-cd-fact-body .factory-cd-kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .factory-cd-fact-body .factory-cd-kv dd { margin-bottom: 6px; }
+    .factory-cd-pin { flex-wrap: wrap; }
+    .factory-cd-pin > .fx-btn { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ---------- Requirements list (master side): source, status, the four workflow steps and the next step ---------- */

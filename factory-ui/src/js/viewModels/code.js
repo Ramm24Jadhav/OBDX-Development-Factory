@@ -1,5 +1,5 @@
 /*
- * Code page for one workspace: the code as the factory indexed it, in seven tabs under one header (the index's revision
+ * Code page for one workspace: the code as the factory indexed it, in eight tabs under one header (the index's revision
  * and freshness, Check for new commits, Reindex) and at most one problem bar (the most important of the Index checks):
  *  - Explore: the files as a tree (docked, hidden to a rail or floating over the code), the one viewer (syntax colours,
  *    Format, language, sub-tabs Code / Dependencies / Mentioned in / Related APIs / Comments, marked lines), and a side
@@ -10,9 +10,11 @@
  *  - Map: APIs, Screens, Service calls and Diagram from the modernization scan; rows open their file on Explore;
  *  - Business rules of the requirements and the code they link;
  *  - Quick checks (the version pack rules), Index (figures, live import, checks with fixes, import history, files by
- *    type) and Settings (SVN, UI target, Jenkins).
+ *    type), Codebase facts (what the code is built with, from the profile detection: the facts by area with their
+ *    evidence, confirmed, corrected or reset by Manage code, their history, and the version pack's reference examples)
+ *    and Settings (SVN, UI target, Jenkins).
  * The file list (files?limit=20000) is loaded once per workspace. ?tab= picks a tab; pageRequests.codeSearch,
- * codeFile and codeTab come from other pages. The repository's latest revision is only known from a check the user runs
+ * codeFile, codeTab and codeFact come from other pages; the old profile route opens Codebase facts. The repository's latest revision is only known from a check the user runs
  * (POST svn/test), kept per workspace for the browser session (workspaceSelection.headChecks).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast',
@@ -33,9 +35,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const AI_CHARS = 15000;
     const plural = (n, word) => n.toLocaleString() + ' ' + word + (n === 1 ? '' : 's');
     const headChecks = workspaceSelection.headChecks;
-    const TABS = ['explore', 'search', 'map', 'rules', 'checks', 'index', 'settings'];
-    // Older names of the tabs (the Code page's and Knowledge Explorer's), for requests from other pages and old links
-    const TAB_ALIASES = { health: 'index', code: 'explore', apis: 'map', ui: 'map', dependencies: 'map', diagrams: 'map', logic: 'rules' };
+    const TABS = ['explore', 'search', 'map', 'rules', 'checks', 'index', 'facts', 'settings'];
+    // Older names of the tabs (the Code page's, Knowledge Explorer's and Project Profile's), for requests and old links
+    const TAB_ALIASES = { health: 'index', code: 'explore', apis: 'map', ui: 'map', dependencies: 'map', diagrams: 'map', logic: 'rules', profile: 'facts' };
     // Line references in an AI answer: "lines 12-20", "line 7", "L12-L20", "path:12-20"
     const CITE = /(?:\blines?\s+|\bL|:)(\d{1,6})(?:\s*(?:-|–|to)\s*L?(\d{1,6}))?/gi;
     const CITE_ASK = ' Base it on the code given, and cite the lines you rely on as "lines N-M" (the numbers before each line).';
@@ -89,6 +91,50 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const linesText = (from, to) => (from === to ? 'line ' + from : 'lines ' + from + '–' + to);
     const LEVELS = { error: { word: 'Error', icon: 'alert', order: 0 }, warning: { word: 'Warning', icon: 'alert', order: 1 }, info: { word: 'Info', icon: 'info', order: 2 } };
     const methodCss = (m) => 'fx-badge factory-cd-method factory-cd-method--' + String(m || '').toLowerCase();
+
+    // Codebase facts: the tab's areas. A fact goes to the area of its key when listed here, else to that of its section.
+    const FACT_GROUPS = [
+      { id: 'obdx', title: 'OBDX framework and version', icon: 'doc' },
+      { id: 'ui', title: 'UI technology', icon: 'monitor' },
+      { id: 'backend', title: 'Backend', icon: 'cog' },
+      { id: 'database', title: 'Database', icon: 'cube' },
+      { id: 'integrations', title: 'Integrations', icon: 'link' },
+      { id: 'dependencies', title: 'Dependencies', icon: 'list' },
+      { id: 'customisations', title: 'Customisations', icon: 'edit' },
+      { id: 'conventions', title: 'Bank conventions', icon: 'shield' }
+    ];
+    const SECTION_GROUP = { OBDX: 'obdx', UI: 'ui', BACKEND: 'backend', DATA: 'database', INTEGRATION: 'integrations', CONVENTIONS: 'conventions' };
+    const KEY_GROUP = {
+      'backend.frameworks': 'dependencies', 'ui.libraries': 'dependencies',
+      'conventions.customizationFolders': 'customisations', 'conventions.packageRoots': 'customisations'
+    };
+    // Facts the code generation path reads by key (besides giving every known fact to the model when it writes a change):
+    // pack/CheckScope and LocalChecks (JET and Java level), the version packs' ifProfile conditions, pack/RecipeService.
+    const GENERATION = {
+      'ui.jetVersion': 'Decides which version pack rules check the generated UI code (some rules need a minimum JET version).',
+      'ui.moduleSystem': 'The RequireJS rules of the version pack check generated code only when this says RequireJS.',
+      'backend.eeNamespace': 'The javax or jakarta rules check generated Java only when this is known.',
+      'backend.javaVersion': 'Generated Java is checked against this Java level; without it the version pack default is used.',
+      'conventions.customizationFolders': 'The change plan\'s reference examples are picked from these folders first.'
+    };
+    // Where a fact's value comes from. Confidence HIGH means it is declared in a build or configuration file; MEDIUM and
+    // LOW mean it was inferred from code patterns, so it is not shown as verified.
+    const CONFIDENCE = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low', NONE: 'None' };
+    const factBadge = (text, variant) => ({ text: text, css: 'fx-badge' + (variant ? ' fx-badge--' + variant : ' fx-badge--neutral') });
+    const factOrigin = (f) => {
+      if (f.status === 'confirmed') {
+        return { id: 'people', badge: factBadge('Confirmed', 'success'), text: 'Confirmed by a person; it matches what was detected.' };
+      }
+      if (f.status === 'corrected') {
+        return { id: 'people', badge: factBadge('Corrected', 'primary'), text: 'Set by a person; it differs from what was detected.' };
+      }
+      if (f.status === 'missing') {
+        return { id: 'missing', badge: factBadge('Not found'), text: 'Nothing in the code showed this.' };
+      }
+      return f.confidence === 'HIGH'
+        ? { id: 'detected', badge: factBadge('Detected', 'info'), text: 'Detected: declared in a build or configuration file. Not yet confirmed by a person.' }
+        : { id: 'inferred', badge: factBadge('Inferred', 'warning'), text: 'Inferred from patterns in the code, not declared anywhere. Confirm or correct it.' };
+    };
 
     // Re-indents brace languages by nesting depth (display only)
     const reindent = (lines, lang) => {
@@ -344,6 +390,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               if (last.status === 'SUCCEEDED') {
                 toast.success('Reindexing finished: ' + last.raw.filesIndexed + ' files indexed, ' + last.raw.filesRemoved + ' removed, revision ' + (last.raw.toRevision === null ? '?' : 'r' + last.raw.toRevision) + '.');
                 loadFiles(id, false);
+                // The import detects the codebase facts again
+                loadProfile(id, indexStatus);
               } else {
                 toast.error('Reindexing failed' + (last.message ? ': ' + last.message : '.'));
               }
@@ -649,7 +697,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           appliesTo: r.appliesTo,
           enabled: r.enabled,
           canManage: canManage,
-          note: r.matchesProfile ? '' : 'Does not apply to this codebase (Project Profile).',
+          note: r.matchesProfile ? '' : 'Does not apply to this codebase (Codebase facts).',
           switchTip: canManage ? null : 'Only workspace developers and leads can turn rules on or off',
           flip: () => setEnabled(r, !r.enabled)
         })));
@@ -663,7 +711,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // ---------- The tabs ----------
       this.tab = ko.observable('explore');
-      const TAB_LABELS = { explore: 'Explore', search: 'Search', map: 'Map', rules: 'Business rules', checks: 'Quick checks', index: 'Index', settings: 'Settings' };
+      const TAB_LABELS = { explore: 'Explore', search: 'Search', map: 'Map', rules: 'Business rules', checks: 'Quick checks', index: 'Index', facts: 'Codebase facts', settings: 'Settings' };
       const tabCount = {
         map: ko.pureComputed(() => (this.inventory() ? plural(this.inventory().endpoints.length, 'API') : '')),
         rules: ko.pureComputed(() => (allBizRules().length ? String(allBizRules().length) : '')),
@@ -1548,6 +1596,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           lines.push('Index: ' + s.files + ' files, ' + s.chunks + ' searchable pieces, revision ' + s.indexedRevision + ', files by language: ' + JSON.stringify(s.filesByLanguage));
         }
         lines.push('Quick check rules: ' + this.checkRules().map((r) => r.title + ' (' + r.severity + (r.enabled ? '' : ', off') + ')').join('; ').slice(0, 1200));
+        if (this.profile()) {
+          lines.push('Codebase facts: ' + this.profile().facts.filter((x) => x.value).map((x) => x.label + ': ' + x.value + ' (' + x.status + ')').join('; ').slice(0, 1500));
+        }
         const both = !!f && this.results().length > 0;
         if (f) {
           const users = this.usedBy() && this.usedBy().length ? '\nFiles that mention it: ' + this.usedBy().map((u) => u.path).join(', ') : '';
@@ -1572,6 +1623,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         if (s && s.indexedRevision !== null) {
           chips.push({ label: 'the index (r' + s.indexedRevision + ')', title: s.files + ' files, ' + s.chunks + ' searchable pieces, and the quick check rules' });
+        }
+        if (this.profile()) {
+          chips.push({ label: 'the codebase facts', title: 'What the code is built with, from the Codebase facts tab' });
         }
         if (f && this.usedBy() && this.usedBy().length) {
           chips.push({ label: plural(this.usedBy().length, 'file') + ' that mention it', title: this.usedBy().map((u) => u.path).join(', ') });
@@ -1701,6 +1755,230 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         });
       });
 
+      // ---------- Codebase facts: what the code is built with, each fact with its evidence ----------
+      // GET profile (the facts and the server's warnings), its history (from the audit log) and the version pack's recipes
+      // with their reference examples. The profile is read with the workspace (its warnings feed the problem bar), the
+      // history and the recipes when the tab first opens.
+      this.profile = ko.observable(null);
+      this.factsHistory = ko.observableArray([]);
+      this.factsHistoryError = ko.observable('');
+      this.factsEmpty = ko.observable('');
+      this.factsError = ko.observable('');
+      this.discovering = ko.observable(false);
+      this.recipes = ko.observableArray([]);
+      this.recipesNote = ko.observable('');
+      this.openKey = ko.observable('');
+      this.editValue = ko.observable('');
+      this.factFilter = ko.observable('all');
+      let factsExtrasFor = null;
+      const facts = ko.pureComputed(() => (this.profile() ? this.profile().facts : []));
+      const profileUrl = () => 'workspaces/' + this.workspaceId() + '/profile';
+      const factId = (key) => key.replace(/\W/g, '-');
+
+      // Scan line: when the facts were detected, at which revision, and whether the index has moved on since
+      this.factsScan = ko.pureComputed(() => {
+        const p = this.profile();
+        const indexed = this.indexedRevision();
+        return [
+          { label: 'Last scan', value: p ? ui.when(p.detectedAt) : 'Not yet' },
+          { label: 'Scanned revision', value: p && p.revision !== null ? 'r' + p.revision : 'Not known' },
+          { label: 'Code index', value: indexed !== null ? 'r' + indexed : 'Not imported' }
+        ];
+      });
+      this.staleScan = ko.pureComputed(() => {
+        const p = this.profile();
+        const indexed = this.indexedRevision();
+        return p && p.revision !== null && indexed !== null && indexed > p.revision ? { scan: p.revision, index: indexed } : null;
+      });
+
+      // Who changed each fact, newest first
+      const lastChange = (key) => this.factsHistory().find((h) => h.key === key) || null;
+      const historyRow = (h) => {
+        const fact = facts().find((f) => f.key === h.key);
+        return {
+          when: ui.when(h.at), who: h.username || 'Unknown user', label: fact ? fact.label : h.key,
+          text: h.action === 'reset' ? 'reset to the detected value' : 'set to "' + (h.value || '') + '"'
+        };
+      };
+      this.factsHistoryRows = ko.pureComputed(() => this.factsHistory().map(historyRow));
+
+      this.openFact = (key) => {
+        const f = facts().find((x) => x.key === key);
+        this.editValue(f ? (f.value || '') : '');
+        this.openKey(key);
+        if (key) {
+          focusLater('#fact-' + factId(key));
+        }
+      };
+      // An evidence file opens on Explore, in the same page
+      const openEvidence = (path) => () => {
+        this.tab('explore');
+        this.openFile(path);
+        focusLater('#fileCode');
+      };
+      const factRow = (f) => {
+        const o = factOrigin(f);
+        const changed = lastChange(f.key);
+        return {
+          key: f.key, label: f.label, value: f.value || 'Not found', missing: !f.value, origin: o,
+          headId: 'fact-' + factId(f.key), bodyId: 'factBody-' + factId(f.key),
+          open: ko.pureComputed(() => this.openKey() === f.key),
+          toggle: () => this.openFact(this.openKey() === f.key ? '' : f.key),
+          confidence: f.confidence === 'NONE' ? 'None: not detected' : CONFIDENCE[f.confidence] || f.confidence,
+          detected: f.detectedValue || 'Nothing detected',
+          showDetected: f.status === 'corrected' || f.status === 'confirmed',
+          changed: changed ? ui.when(changed.at) + ' by ' + (changed.username || 'unknown user') : (f.updatedAt ? ui.when(f.updatedAt) : ''),
+          evidence: (f.evidence || []).map((p) => ({ path: p, name: baseName(p), open: openEvidence(p) })),
+          generation: GENERATION[f.key] || '',
+          canEdit: this.canManage(), edit: this.editValue,
+          canConfirm: !!f.detectedValue && f.status !== 'confirmed',
+          canReset: f.status === 'confirmed' || f.status === 'corrected',
+          changes: this.factsHistory().filter((h) => h.key === f.key).slice(0, 5).map(historyRow),
+          confirm: () => putFact(f, f.detectedValue, f.label + ' confirmed.'),
+          save: () => putFact(f, this.editValue(), f.label + ' corrected.'),
+          reset: () => resetFact(f)
+        };
+      };
+      const factRows = ko.pureComputed(() => facts().map(factRow));
+
+      // One select: every fact, or one kind, with its count
+      const countOf = (id) => factRows().filter((r) => r.origin.id === id).length;
+      this.factFilters = ko.pureComputed(() => [
+        { value: 'all', label: 'All facts (' + factRows().length + ')' },
+        { value: 'inferred', label: 'Inferred (' + countOf('inferred') + ')' },
+        { value: 'detected', label: 'Detected (' + countOf('detected') + ')' },
+        { value: 'missing', label: 'Not found (' + countOf('missing') + ')' },
+        { value: 'people', label: 'Set by people (' + countOf('people') + ')' }
+      ]);
+      // Areas with at least one fact after the filter
+      this.factGroups = ko.pureComputed(() => {
+        const filter = this.factFilter() || 'all';
+        const shown = factRows().filter((r) => filter === 'all' || r.origin.id === filter);
+        return FACT_GROUPS.map((g) => {
+          const all = facts().filter((f) => (KEY_GROUP[f.key] || SECTION_GROUP[f.section] || 'conventions') === g.id);
+          return {
+            id: g.id, title: g.title, iconClass: 'factory-nav-icon factory-ico-' + g.icon, headingId: 'area-' + g.id + '-title',
+            rows: shown.filter((r) => all.some((f) => f.key === r.key)),
+            summary: all.filter((f) => f.value).length + ' of ' + all.length + ' found',
+            note: g.id === 'obdx' && this.profile() ? 'The workspace is set to OBDX ' + this.profile().declaredObdxVersion + '.' : ''
+          };
+        }).filter((g) => g.rows.length > 0);
+      });
+      this.factsFilterEmpty = ko.pureComputed(() => facts().length > 0 && this.factGroups().length === 0);
+
+      // Facts code generation reads that have no value
+      this.generationMissing = ko.pureComputed(() => facts().filter((f) => GENERATION[f.key] && !f.value)
+        .map((f) => ({ key: f.key, label: f.label, open: () => { this.factFilter('all'); this.tab('facts'); this.openFact(f.key); } })));
+
+      // Version pack recipes: each part's reference examples, with Pin and Unpin
+      const showRecipes = (data) => {
+        const id = this.workspaceId();
+        const canEdit = this.canManage();
+        this.recipesNote(data.indexedFiles === 0
+          ? 'Import the code to find reference examples in it.'
+          : 'OBDX ' + data.version + ' pack. Examples are picked from the ' + data.indexedFiles.toLocaleString() + ' indexed files: customization folders first, Oracle product code last.');
+        this.recipes(data.recipes.map((r) => ({
+          id: r.id, title: r.title, when: r.when || '', guidance: r.guidance,
+          scope: (r.actions.length ? r.actions.join(' / ') : 'create / modify') + (r.layers.length ? ' · ' + r.layers.join(' / ') : ''),
+          parts: r.parts.map((p) => {
+            const url = 'workspaces/' + id + '/recipes/' + r.id + '/parts/' + p.id + '/examples';
+            const newPath = ko.observable('');
+            return {
+              id: r.id + '-' + p.id, name: p.name, files: p.files.join(', '),
+              template: p.templateContent || '', templateName: p.template || '', canEdit: canEdit, newPath: newPath,
+              examples: p.examples.map((e) => ({
+                path: e.path, reason: e.reason, pinned: e.pinned, canEdit: canEdit, open: openEvidence(e.path),
+                unpin: () => api.del(url + '?path=' + encodeURIComponent(e.path))
+                  .then((result) => { showRecipes(result); toast.success('Example unpinned.'); }).catch(failed)
+              })),
+              pin: () => {
+                const path = (newPath() || '').trim();
+                if (!path) {
+                  toast.error('Type the path of a file in the code to pin it.');
+                  return null;
+                }
+                return api.post(url, { path: path })
+                  .then((result) => { showRecipes(result); toast.success('Example pinned.'); }).catch(failed);
+              }
+            };
+          })
+        })));
+      };
+      const loadFactsHistory = (id) => api.get('workspaces/' + id + '/profile/history')
+        .then((list) => { if (id === this.workspaceId()) { this.factsHistory(list); this.factsHistoryError(''); } })
+        .catch((error) => { if (id === this.workspaceId()) { this.factsHistoryError(plain(error)); } });
+      const showProfile = (profile) => {
+        this.profile(profile);
+        this.factsError('');
+        this.factsEmpty('');
+        const open = facts().find((f) => f.key === this.openKey());
+        this.editValue(open ? (open.value || '') : '');
+      };
+      const resetFacts = () => {
+        this.profile(null);
+        this.factsHistory([]);
+        this.factsHistoryError('');
+        this.factsEmpty('');
+        this.factsError('');
+        this.recipes([]);
+        this.recipesNote('');
+        this.openKey('');
+        this.factFilter('all');
+        factsExtrasFor = null;
+      };
+      // A workspace whose code was never imported has no facts yet, so they are not asked for
+      const loadProfile = (id, workspace) => {
+        if (workspace.indexedRevision === null || workspace.indexedRevision === undefined) {
+          this.factsEmpty('No codebase facts yet: they are detected when the code is imported. Use Reindex to import it.');
+          return Promise.resolve();
+        }
+        return api.get('workspaces/' + id + '/profile')
+          .then((profile) => { if (id === this.workspaceId()) { showProfile(profile); } })
+          .catch((error) => {
+            if (id === this.workspaceId()) {
+              if (error.status === 404) {
+                this.factsEmpty(plain(error));
+              } else {
+                this.factsError(plain(error));
+              }
+            }
+          });
+      };
+      const loadFactsExtras = () => {
+        const id = this.workspaceId();
+        if (!id || factsExtrasFor === id || this.tab() !== 'facts') {
+          return;
+        }
+        factsExtrasFor = id;
+        loadFactsHistory(id);
+        api.get('workspaces/' + id + '/recipes')
+          .then((data) => { if (id === this.workspaceId()) { showRecipes(data); } })
+          .catch((error) => { if (id === this.workspaceId()) { this.recipesNote('The reference examples could not be loaded: ' + plain(error)); } });
+      };
+      this.tab.subscribe(loadFactsExtras);
+      this.refreshDiscovery = () => {
+        const id = this.workspaceId();
+        if (!id || !this.canManage()) {
+          return;
+        }
+        this.discovering(true);
+        api.post(profileUrl() + '/refresh').then((profile) => {
+          if (id === this.workspaceId()) {
+            showProfile(profile);
+            toast.success('Discovery refreshed.');
+          }
+        }).catch(failed).finally(() => this.discovering(false));
+      };
+      const factChanged = (done) => (profile) => {
+        showProfile(profile);
+        loadFactsHistory(this.workspaceId());
+        toast.success(done);
+      };
+      const putFact = (f, value, done) => api.put(profileUrl() + '/facts/' + encodeURIComponent(f.key), { value: value })
+        .then(factChanged(done)).catch(failed);
+      const resetFact = (f) => api.del(profileUrl() + '/facts/' + encodeURIComponent(f.key))
+        .then(factChanged(f.label + ' reset to the detected value.')).catch(failed);
+
       // ---------- Index: what needs attention, as errors, warnings and information ----------
       const showRules = (statusKey) => () => { this.clearRuleFilters(); this.ruleStatusFilter(statusKey); this.tab('checks'); };
       const toSettings = () => this.tab('settings');
@@ -1754,6 +2032,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (this.targetWarning()) {
           add('warning', 'healthTarget', this.targetMessage(), { label: 'Open settings', run: toSettings }, 'The UI target\'s app is not in the code.', this.targetMessage());
         }
+        // Codebase facts: the server's warnings (an OBDX version that differs from the workspace's, nothing detected), a
+        // scan older than the index, and the facts code generation reads that have no value
+        const toFacts = { label: 'Show facts', run: () => this.tab('facts') };
+        const p = this.profile();
+        (p && p.warnings ? p.warnings : []).forEach((w, i) => add('warning', 'healthFacts' + i, 'Codebase facts: ' + w, toFacts, 'Codebase facts:', w));
+        const stale = this.staleScan();
+        if (stale) {
+          const scanned = 'They were scanned at r' + stale.scan + ', the index is at r' + stale.index + '.';
+          add('warning', 'healthFactsStale', 'The codebase facts are older than the index. ' + scanned + (manage ? ' Refresh discovery to update them.' : ' A developer or lead can refresh discovery.'),
+            manage && !this.discovering() ? { label: 'Refresh discovery', run: this.refreshDiscovery } : toFacts,
+            'The codebase facts are older than the index.', scanned + (manage ? ' Refresh discovery to update them.' : ''));
+        }
+        const missing = this.generationMissing();
+        if (missing.length) {
+          const names = missing.map((m) => m.label).join(', ');
+          add('warning', 'healthFactsMissing', 'Missing information code generation uses: ' + names + '. Correct it on Codebase facts if you know the value.',
+            { label: 'Show facts', run: missing[0].open }, 'Missing information code generation uses:', names + '. Correct it if you know the value.');
+        }
         const off = this.checkRules().length - this.rulesOn();
         if (off > 0) {
           add('info', 'healthRulesOff', plural(off, 'quick check rule') + ' turned off for this workspace.', { label: 'Show rules', run: showRules('OFF') });
@@ -1776,9 +2072,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (count('info')) { parts.push(count('info') + ' info'); }
         return parts.join(', ') || 'Nothing needs attention';
       });
+      // The Codebase facts tab lists its own checks (the problem bar shows the most important of the page): the missing
+      // facts as links that open them; their fixes (Show facts, Refresh discovery) are the tab itself
+      this.factsNotes = ko.pureComputed(() => this.healthItems().filter((i) => i.id.indexOf('healthFacts') === 0).map((i) => Object.assign({}, i, {
+        noteText: i.id === 'healthFactsMissing' ? 'Missing information code generation uses. The checks and reference examples for generated code depend on these facts; correct them if you know the value:' : /^healthFacts\d/.test(i.id) ? i.detail : i.text,
+        missing: i.id === 'healthFactsMissing' ? this.generationMissing() : []
+      })));
       // The one problem bar: the most important error or warning, with its fix; nothing when all is fine
+      // (on Codebase facts, not one the tab already lists)
       this.problem = ko.pureComputed(() => {
-        const top = this.healthItems().find((i) => i.level === 'error' || i.level === 'warning');
+        const onFacts = this.tab() === 'facts';
+        const top = this.healthItems().find((i) => (i.level === 'error' || i.level === 'warning') && !(onFacts && i.id.indexOf('healthFacts') === 0));
         return top ? { css: 'factory-cd-problem is-' + top.level, lead: top.lead, detail: top.detail, action: top.action, id: top.id } : null;
       });
 
@@ -1804,6 +2108,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.ai.clear();
         this.lastQuick('');
         cache.clear();
+        resetFacts();
         this.headCheck(id ? headChecks[id] || null : null);
         if (!id) {
           this.workspace(null);
@@ -1823,7 +2128,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           api.get('workspaces/' + id + '/inventory').then((inv) => { if (id === this.workspaceId()) { this.inventory(inv || null); } }).catch(() => null);
           api.get('workspaces/' + id + '/requirements').then((list) => Promise.all(list.map((r) => api.get('requirements/' + r.id).catch(() => null))))
             .then((list) => { if (id === this.workspaceId()) { requirements(list.filter(Boolean)); } }).catch(() => null);
-          return Promise.all([refreshImports(), loadFiles(id, !pendingFile), api.get('workspaces/' + id + '/jenkins').then(showJenkins),
+          loadFactsExtras();
+          return Promise.all([refreshImports(), loadFiles(id, !pendingFile), loadProfile(id, workspace), api.get('workspaces/' + id + '/jenkins').then(showJenkins),
             api.get('workspaces/' + id + '/checks').then(showChecks),
             api.get('targets').then((list) => {
               packs(list);
@@ -1833,9 +2139,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }).catch(showError);
       };
 
-      // Requests from other pages: a search (the top bar, the palette, Project Profile), a file at its lines
-      // (Modernization, old links), a tab (Integrations, Modernization, notifications, Agent Runs)
+      // Requests from other pages: a search (the top bar, the palette), a file at its lines (Modernization, old links), a
+      // tab (Integrations, Modernization, notifications, Agent Runs, Workspaces, Version Packs, AI Prompt Library), a fact
+      // to open on Codebase facts (the Workspaces sheet's OBDX version)
       let pendingFile = null;
+      let pendingFact = null;
       const takeRequests = () => {
         const search = pageRequests.codeSearch();
         pageRequests.codeSearch('');
@@ -1843,15 +2151,22 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         pageRequests.codeFile(null);
         const wantedTab = pageRequests.codeTab();
         pageRequests.codeTab(null);
+        const wantedFact = pageRequests.codeFact();
+        pageRequests.codeFact(null);
+        // The old profile route (links and bookmarks to the Project Profile page) opens Codebase facts
+        const address = new URLSearchParams(window.location.search);
+        const addressTab = address.get('ojr') === 'profile' ? 'facts' : address.get('tab') || 'explore';
         if (search) {
           this.tab('search');
           this.query(search);
         } else if (wantedFile) {
           this.tab('explore');
+        } else if (wantedFact) {
+          this.tab('facts');
         } else if (!wantedTab || !pickTab(wantedTab)) {
-          pickTab(new URLSearchParams(window.location.search).get('tab') || 'explore');
+          pickTab(addressTab);
         }
-        return { search: search, file: wantedFile };
+        return { search: search, file: wantedFile, fact: wantedFact };
       };
       const openRequestedFile = (wanted) => {
         const line = Math.max(1, wanted.startLine || 1);
@@ -1875,6 +2190,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         document.addEventListener('keydown', escape);
         const requested = takeRequests();
         pendingFile = requested.file;
+        pendingFact = requested.fact;
         subscriptions.push(this.workspaceId.subscribe(loadWorkspace));
         const before = this.workspaceId();
         // If loading the list changed the selection, the subscription has already loaded the workspace.
@@ -1887,6 +2203,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               const wanted = pendingFile;
               pendingFile = null;
               openRequestedFile(wanted);
+            }
+            if (pendingFact) {
+              const key = pendingFact;
+              pendingFact = null;
+              this.openFact(key);
             }
           }).catch(showError);
         // Requests while this page is open (the top bar's search, the palette's G K)
@@ -1909,9 +2230,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             openRequestedFile(f);
           }
         }));
-        // The tab in the address from the start (the subscription only follows changes); an old knowledge link says code
+        subscriptions.push(pageRequests.codeFact.subscribe((key) => {
+          if (key) {
+            pageRequests.codeFact(null);
+            this.tab('facts');
+            this.openFact(key);
+          }
+        }));
+        // The tab in the address from the start (the subscription only follows changes); an old knowledge or profile link
+        // says code
         const params = new URLSearchParams(window.location.search);
-        if (params.get('ojr') === 'knowledge') {
+        if (params.get('ojr') === 'knowledge' || params.get('ojr') === 'profile') {
           params.set('ojr', 'code');
         }
         if (params.get('ojr') === 'code' && params.get('tab') !== this.tab() && window.history.replaceState) {

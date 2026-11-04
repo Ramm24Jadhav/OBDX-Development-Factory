@@ -113,7 +113,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     return pending;
   }
 
-  /** Opens a page, first selecting the workspace when one is given. */
+  /** Opens a page, first selecting the workspace when one is given; 'code:facts' opens a tab of the Code page. */
   function open(page, workspaceId) {
     return (event) => {
       if (event && event.preventDefault && event.type === 'click') {
@@ -122,7 +122,11 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
       if (workspaceId) {
         workspaceSelection.selectedId(workspaceId);
       }
-      window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
+      const [path, tab] = page.split(':');
+      if (tab) {
+        pageRequests.codeTab(tab);
+      }
+      window.dispatchEvent(new CustomEvent('factory-navigate', { detail: path }));
     };
   }
 

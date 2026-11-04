@@ -52,7 +52,7 @@ public class AdminController {
     static final Map<WorkspaceRole.Permission, String> PERMISSION_TEXT = Map.of(
             WorkspaceRole.Permission.VIEW, "Workspace: see its code search, profile, requirements, designs and changes",
             WorkspaceRole.Permission.COMMENT, "Designs and plans: comment",
-            WorkspaceRole.Permission.MANAGE_CODE, "Code: SVN settings, imports, Project Profile, changes, builds and delivery",
+            WorkspaceRole.Permission.MANAGE_CODE, "Code: SVN settings, imports, codebase facts, changes, builds and delivery",
             WorkspaceRole.Permission.EDIT_REQUIREMENTS, "Requirements: create, answer, edit and delete",
             WorkspaceRole.Permission.EDIT_DESIGNS, "Designs: create, change and share review links",
             WorkspaceRole.Permission.APPROVE, "Approvals: requirement specifications, designs and change plans");

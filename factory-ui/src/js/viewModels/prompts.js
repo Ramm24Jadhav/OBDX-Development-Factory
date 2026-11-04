@@ -11,8 +11,8 @@
  * (password, token, key) is masked wherever a prompt is shown or copied.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/updates', '../services/ui', '../services/toast',
-        '../services/preferences', '../services/session', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences, session) {
+        '../services/preferences', '../services/session', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, updates, ui, toast, preferences, session, pageRequests) {
     // Badges (design system .fx-badge): statuses carry a dot, categories are plain labels
     const BADGE = { green: 'success', amber: 'warning', red: 'danger', blue: 'info', violet: 'violet' };
     const badgeCss = (tone) => 'fx-badge' + (BADGE[tone] ? ' fx-badge--' + BADGE[tone] : '');
@@ -33,7 +33,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const BUILT_IN = [
       { title: 'Draft a specification', category: 'Built-in Task', when: 'A BRD, FSD or description is added on the Requirements page', guidance: 'Reads the document and drafts screens, fields, business rules, roles, APIs, host interactions, messages and open questions as JSON.' },
       { title: 'Update a specification with answers', category: 'Built-in Task', when: 'Open questions are answered', guidance: 'Folds the answers into the specification and records them as decisions.' },
-      { title: 'Impact analysis and change plan', category: 'Built-in Task', when: 'A change is planned from an approved requirement', guidance: 'Uses the specification, approved screens, Project Profile and code search to plan the files to create or modify, with risks.' },
+      { title: 'Impact analysis and change plan', category: 'Built-in Task', when: 'A change is planned from an approved requirement', guidance: 'Uses the specification, approved screens, codebase facts and code search to plan the files to create or modify, with risks.' },
       { title: 'Generate one file', category: 'Built-in Task', when: 'The plan is approved', guidance: 'Writes each planned file following the recipe guidance, templates and reference examples; quick check errors go back for a fix.' },
       { title: 'Change a screen with AI', category: 'Built-in Task', when: 'Ask AI in the Design Studio (Refine, or Edit)', guidance: 'Changes the Screen Model (or the selected component) as the instruction says.' },
       { title: 'Import a screen design', category: 'Built-in Task', when: 'An image, PDF or Figma frame is imported in the Design Studio', guidance: 'Reads the design and turns it into a Screen Model.' },
@@ -53,7 +53,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       '- The current content of the file, for a modified file',
       '- The reference examples of the recipe parts, from the bank\'s own code',
       '- The file template of the part, with its <<variables>>',
-      '- The Project Profile: the bank\'s conventions and standards',
+      '- The codebase facts: the bank\'s conventions and standards',
       '- Quick check or build errors, when the file goes back for a fix'
     ].join('\n');
     // Simple client-side preview of an HTML view template: JET elements drawn as plain boxes, no scripts
@@ -396,7 +396,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const el = document.querySelector('.factory-pr-detail');
         if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       };
-      this.openProfile = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'profile' }));
+      // The bank's standards are the codebase facts, on Code › Codebase facts
+      this.openProfile = () => { pageRequests.codeTab('facts'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' })); };
 
       // Prompt Template card
       this.promptTab = ko.observable('system');
