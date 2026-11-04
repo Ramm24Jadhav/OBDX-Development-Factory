@@ -7893,6 +7893,9 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-cd-node:focus-visible { outline: none; box-shadow: var(--fx-focus); }
 .factory-cd-node.is-on { background: var(--fx-primary-soft); color: var(--fx-primary-text); font-weight: var(--fx-weight-semibold); }
 .factory-cd-node .factory-nav-icon { flex: 0 0 14px; width: 14px; height: 14px; }
+.factory-cd-tree-rootrow { display: flex; align-items: center; gap: 2px; }
+.factory-cd-tree-rootrow .factory-cd-node { flex: 1 1 auto; min-width: 0; }
+.factory-cd-tree-fold { flex: 0 0 auto; color: var(--fx-text-muted); }
 .factory-cd-tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .factory-cd .factory-cd-chev { color: var(--fx-text-muted); rotate: none; transition: transform var(--fx-dur-hover) var(--fx-ease-out); }
 .factory-cd-chev.is-closed { transform: rotate(-90deg); }

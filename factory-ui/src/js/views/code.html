@@ -68,8 +68,6 @@
           <div class="factory-cd-pane-head">
             <h2 class="factory-cd-pane-title factory-cd-grow" id="filesTitle">Files</h2>
             <span class="factory-cd-muted"><oj-bind-text value="[[fileCount]]"></oj-bind-text></span>
-            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="collapseTree" on-click="[[collapseTree]]" aria-label="Close all folders" title="Close all folders">
-              <span class="factory-nav-icon factory-ico-shrink" aria-hidden="true"></span></button>
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="filesFloat" on-click="[[floatOrDock]]" :aria-label="[[floatLabel]]" :title="[[floatLabel]]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path :d="[[floatIcon]]"></path></svg></button>
             <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" id="filesHide" on-click="[[railFiles]]" aria-label="Hide the files" title="Hide the files so the code gets the width">
@@ -79,7 +77,10 @@
             <fx-input id="treeFilter" label="Filter files and folders" hide-label placeholder="Filter files and folders" icon="search" value="{{treeFilter}}" clearable></fx-input>
           </div>
           <ul class="factory-cd-tree" id="fileTree" aria-label="Files and folders">
-            <li><button type="button" :class="[[rootCss]]" on-click="[[pickRoot]]" :title="[[workspace() ? workspace().svnUrl : '']]"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span><strong class="factory-cd-tree-name"><oj-bind-text value="[[rootName]]"></oj-bind-text></strong></button></li>
+            <!-- The root line: the whole code, and Close all folders on its right -->
+            <li class="factory-cd-tree-rootrow"><button type="button" :class="[[rootCss]]" on-click="[[pickRoot]]" :title="[[workspace() ? workspace().svnUrl : '']]"><span class="factory-nav-icon factory-ico-bank" aria-hidden="true"></span><strong class="factory-cd-tree-name"><oj-bind-text value="[[rootName]]"></oj-bind-text></strong></button>
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-cd-tree-fold" id="collapseTree" on-click="[[collapseTree]]" aria-label="Close all folders" title="Close all folders">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20l5-5 5 5M7 4l5 5 5-5"></path></svg></button></li>
             <oj-bind-for-each data="[[tree]]" as="n">
               <template><li><button type="button" :class="[[n.data.css]]" :style="[[n.data.style]]" on-click="[[n.data.pick]]" :aria-expanded="[[n.data.expanded]]" :aria-current="[[n.data.current]]" :title="[[n.data.path]]">
                 <span :class="[[n.data.caretCss]]" aria-hidden="true"></span><span :class="[[n.data.iconCss]]" aria-hidden="true"></span><span class="factory-cd-tree-name"><oj-bind-text value="[[n.data.name]]"></oj-bind-text></span></button></li></template>
