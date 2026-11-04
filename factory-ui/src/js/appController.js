@@ -290,7 +290,6 @@ define(['knockout', './services/session', './services/updates', './services/dash
       workspaceSelection.selectedId.subscribe((id) => this.workspaceId(id));
       workspaceSelection.refused.subscribe(() => this.workspaceId(workspaceSelection.selectedId()));
       this.workspaceId.subscribe((id) => { if (id !== workspaceSelection.selectedId()) { workspaceSelection.selectedId(id); } });
-      this.workspaceVersion = ko.pureComputed(() => (workspaceSelection.selectedVersion() ? 'OBDX ' + workspaceSelection.selectedVersion() : ''));
       session.user.subscribe((user) => { if (user) { workspaceSelection.load().catch(() => null); } });
       // Search and jump: the command palette (Ctrl K, '/', or the top bar search button)
       this.palette = palette;

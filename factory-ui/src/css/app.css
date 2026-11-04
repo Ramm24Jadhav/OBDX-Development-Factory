@@ -7079,11 +7079,11 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-lb .factory-lb-save { color: var(--fx-primary-text); border-color: var(--fx-primary-border); }
 .factory-lb .factory-grow { flex: 1 1 auto; }
 /* The composer stays at the bottom of the panel (and of the window while the answer scrolls with the page) */
-.factory-lb .factory-lb-composer { position: sticky; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: var(--fx-space-2); padding: var(--fx-space-4) var(--fx-space-6) var(--fx-space-5); border-top: var(--fx-border-width) solid var(--fx-border); border-radius: 0 0 var(--fx-radius-lg) var(--fx-radius-lg); background: var(--fx-surface-2); }
+.factory-lb .factory-lb-composer { display: flex; flex-direction: column; gap: var(--fx-space-2); padding: var(--fx-space-4) var(--fx-space-6) var(--fx-space-5); border-top: var(--fx-border-width) solid var(--fx-border); border-radius: 0 0 var(--fx-radius-lg) var(--fx-radius-lg); background: var(--fx-surface-2); }
 .factory-lb .factory-lb-compose { display: flex; flex-direction: column; border: var(--fx-border-width) solid var(--fx-border-strong); border-radius: var(--fx-radius-lg); background: var(--fx-surface); box-shadow: var(--fx-shadow-sm); transition: border-color var(--fx-dur-hover) var(--fx-ease-out), box-shadow var(--fx-dur-hover) var(--fx-ease-out); }
 .factory-lb .factory-lb-compose:focus-within { border-color: var(--fx-primary); box-shadow: var(--fx-focus); }
 .factory-lb .factory-lb-composeinput { position: relative; }
-.factory-lb .factory-lb-composeinput .fx-textarea { border: 0; box-shadow: none; background: transparent; padding: 12px 48px 4px 16px; min-height: 0; resize: none; font-size: var(--fx-text-base); line-height: 20px; max-height: 40vh; }
+.factory-lb .factory-lb-composeinput .fx-textarea { border: 0; box-shadow: none; background: transparent; padding: 12px 8px 4px 16px; margin-right: 44px; width: calc(100% - 44px); min-height: 0; resize: none; font-size: var(--fx-text-base); line-height: 20px; max-height: 40vh; }
 .factory-lb .factory-lb-composeinput .fx-textarea:focus { box-shadow: none; outline: none; }
 .factory-lb .factory-lb-expand { position: absolute; top: 8px; right: 8px; color: var(--fx-text-muted); }
 .factory-lb .factory-lb-composebar { display: flex; align-items: center; gap: var(--fx-space-2); padding: var(--fx-space-2); min-width: 0; }
@@ -7741,17 +7741,6 @@ a.fx-card:hover, button.fx-card:hover, .fx-card[tabindex="0"]:hover, .fx-card.is
 .factory-crumbs .fx-breadcrumb li { min-width: 0; overflow-wrap: anywhere; }
 .factory-crumbs + .factory-page { padding-top: 0; }
 @media (max-width: 767px) { .factory-crumbs { padding: 6px 12px 0; } }
-/* The selected workspace's OBDX version beside the picker */
-.factory-topbar-version {
-    flex: 0 0 auto; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; margin-left: -8px;
-    border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-pill); background: var(--fx-surface-2);
-    color: var(--fx-text-body); font-size: var(--fx-text-caption); font-weight: var(--fx-weight-semibold); white-space: nowrap;
-}
-/* Phones: the chip shares the picker's second row */
-@media (max-width: 767px) {
-    .factory-topbar-version { order: 11; margin-left: 0; }
-    .factory-shell .factory-topbar-workspace:has(+ .factory-topbar-version) { flex: 1 1 calc(100% - 96px) !important; }
-}
 
 /* ---------- Home (overview): next action first, then progress and recent work ---------- */
 .factory-home { display: flex; flex-direction: column; gap: var(--fx-gap); padding: 14px 12px 8px; }

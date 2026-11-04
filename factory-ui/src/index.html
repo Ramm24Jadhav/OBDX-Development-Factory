@@ -104,9 +104,6 @@
               <fx-select id="topWorkspace" class="factory-topbar-select" label="Workspace" hide-label searchable
                          options="[[workspaceOptions]]" value="{{workspaceId}}" placeholder="Select a workspace"></fx-select>
             </div>
-            <oj-bind-if test="[[workspaceVersion()]]">
-              <span class="factory-topbar-version" id="workspaceVersion" :title="[['The selected workspace runs ' + workspaceVersion()]]"><oj-bind-text value="[[workspaceVersion]]"></oj-bind-text></span>
-            </oj-bind-if>
             <button type="button" class="factory-topbar-search" id="globalSearch" on-click="[[openPalette]]" aria-haspopup="dialog"
                     aria-label="Search pages, actions, requirements, changes and code (Ctrl K)">
               <span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span>
