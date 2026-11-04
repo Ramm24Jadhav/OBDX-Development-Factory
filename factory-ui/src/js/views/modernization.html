@@ -53,7 +53,7 @@
                 <ul class="factory-mz-evidence">
                   <oj-bind-for-each data="[[o.data.evidence]]" as="ev">
                     <template><li><span class="factory-mz-evtext"><bdi class="factory-mono"><oj-bind-text value="[[ev.data.text]]"></oj-bind-text></bdi><span class="factory-mz-evdetail"><oj-bind-text value="[[ev.data.detail]]"></oj-bind-text></span></span>
-                      <oj-bind-if test="[[ev.data.open]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ev.data.open]]" :aria-label="[['Open ' + ev.data.text + ' in Code']]">Open in Code</button></oj-bind-if></li></template>
+                      <oj-bind-if test="[[ev.data.open]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[ev.data.open]]" :aria-label="[['Show ' + ev.data.text + ' in Code']]">Show in Code</button></oj-bind-if></li></template>
                   </oj-bind-for-each>
                 </ul>
                 <oj-bind-if test="[[o.data.more]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[o.data.showMore]]"><oj-bind-text value="[[o.data.more]]"></oj-bind-text></button></oj-bind-if>
@@ -126,7 +126,7 @@
                   <td class="factory-mz-nowrap"><oj-bind-text value="[[f.data.pack]]"></oj-bind-text></td>
                   <td><span :class="[[f.data.pill.css]]"><oj-bind-text value="[[f.data.pill.text]]"></oj-bind-text></span></td>
                   <td class="factory-mz-wrap"><oj-bind-text value="[[f.data.replacement]]"></oj-bind-text></td>
-                  <td class="fx-table-actions"><span class="factory-mz-rowacts"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[f.data.open]]" :aria-label="[['Open ' + f.data.path + ' in Code at line ' + f.data.startLine]]">Open in Code</button>
+                  <td class="fx-table-actions"><span class="factory-mz-rowacts"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[f.data.open]]" :aria-label="[['Show ' + f.data.path + ' in Code at line ' + f.data.startLine]]">Show in Code</button>
                     <fx-menu-button variant="ghost" size="sm" icon="more" icon-only :label="[['More for ' + f.data.ruleId + ' in ' + f.data.path]]" items="[[findingItems]]" on-fx-action="[[f.data.menuAction]]"></fx-menu-button></span></td></tr></template>
               </oj-bind-for-each>
             </tbody>
@@ -162,29 +162,10 @@
           </table>
         </div>
       </section>
-      <section class="fx-card" aria-labelledby="mzCallTitle">
-        <h2 class="fx-card-title" id="mzCallTitle">Services the screens call</h2>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="callTable">
-            <thead><tr><th>Method</th><th>Path</th><th>Backend</th><th>Screens</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[callRows]]" as="c"><template><tr><td><span class="fx-badge fx-badge--neutral"><oj-bind-text value="[[c.data.method]]"></oj-bind-text></span></td>
-              <td class="factory-mono"><oj-bind-text value="[[c.data.path]]"></oj-bind-text></td><td><span :class="[[c.data.pill.css]]"><oj-bind-text value="[[c.data.pill.text]]"></oj-bind-text></span></td>
-              <td class="factory-mz-wrap"><oj-bind-text value="[[c.data.screens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-          </table>
-        </div>
-      </section>
-      <section class="fx-card" aria-labelledby="mzEndTitle">
-        <h2 class="fx-card-title" id="mzEndTitle">Backend services in this code</h2>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="endpointTable">
-            <thead><tr><th>Method</th><th>Path</th><th>Code</th><th>Owner</th><th>Used by</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[endpointRows]]" as="e"><template><tr><td><span class="fx-badge fx-badge--neutral"><oj-bind-text value="[[e.data.method]]"></oj-bind-text></span></td>
-              <td class="factory-mono"><oj-bind-text value="[[e.data.path]]"></oj-bind-text></td>
-              <td><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mono" on-click="[[e.data.open]]" :aria-label="[['Open ' + e.data.code + ' in Code']]"><oj-bind-text value="[[e.data.code]]"></oj-bind-text></button></td>
-              <td><oj-bind-text value="[[e.data.product]]"></oj-bind-text></td><td class="factory-mz-wrap"><oj-bind-text value="[[e.data.usedBy]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-          </table>
-          <oj-bind-if test="[[endpointRows().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-code" aria-hidden="true"></span></span>No backend services found in this code.</div></oj-bind-if>
-        </div>
+      <section class="fx-card" id="mzServices" aria-labelledby="mzServicesTitle">
+        <h2 class="fx-card-title" id="mzServicesTitle">Services <span class="fx-badge fx-badge--info factory-mz-src">Detected: code scan</span></h2>
+        <p class="factory-mz-note"><oj-bind-text value="[[serviceCounts]]"></oj-bind-text>. Each one, with the file that serves it and the screens that call it, is on Code › Map.</p>
+        <div><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="openCodeMap" on-click="[[openCodeMap]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Open Code › Map</button></div>
       </section>
       <details class="fx-disclosure factory-mz-card" id="mzRoles">
         <summary>Roles and segments<span class="fx-disclosure-hint"><oj-bind-text value="[[roles().length + ' found']]"></oj-bind-text></span></summary>

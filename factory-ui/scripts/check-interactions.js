@@ -6,7 +6,7 @@
 //  - Tab moves focus forward through visible controls, each with a visible focus change, and never gets stuck.
 // and once for the shell: the collapse notch, the phone drawer (keyboard and swipe), the command palette, the user
 // menu, the notification panel, switching workspace, a dialog closing on Escape with focus returning, carousel keys,
-// and three read-only operations (Workspaces refresh, Code search, Knowledge search) on a slow network (success) and
+// and two read-only operations (Workspaces refresh, Code search) on a slow network (success) and
 // offline (failure), each of which must end with nothing left busy. Finally it signs out to check the sign-in page.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-interactions.js --url http://localhost:8080
@@ -23,7 +23,7 @@ for (let i = 2; i < process.argv.length; i += 2) { args[process.argv[i].replace(
 const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'interaction-report');
 const PAGES = (args.pages || 'overview,workspaces,code,profile,requirements,studio,changes,impact,build,models,'
-  + 'modernization,agents,admin,reviews,integrations,packs,knowledge,prompts,notifications,account,about,design').split(',');
+  + 'modernization,agents,admin,reviews,integrations,packs,prompts,notifications,account,about,design').split(',');
 const SIZES = (args.sizes || '1440x900,375x667').split(',').map((s) => { const m = /^(\d+)x(\d+)$/.exec(s); return { w: +m[1], h: +m[2], name: s }; });
 const REDUCED = !!args['reduced-motion'];
 
@@ -292,8 +292,7 @@ const KEYS = { Tab: 9, Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowR
   await sleep(2500);
   const operations = [
     { name: 'Workspaces refresh', page: 'workspaces', prepare: null, button: '#refreshWorkspaces' },
-    { name: 'Code search', page: 'code', prepare: async () => { await click('#tab-search'); await sleep(800); await click('#searchQuery input'); await type('transfer'); }, button: '#searchButton' },
-    { name: 'Knowledge search', page: 'knowledge', prepare: async () => { await click('#kn-search'); await sleep(800); await click('#knowledgeQuery input'); await type('transfer'); }, button: '#knowledgeSearchButton' }
+    { name: 'Code search', page: 'code', prepare: async () => { await click('#tab-search'); await sleep(800); await click('#searchQuery input'); await type('transfer'); }, button: '#searchButton' }
   ];
   for (const op of operations) {
     for (const mode of ['success', 'failure']) {

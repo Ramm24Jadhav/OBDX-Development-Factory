@@ -3,7 +3,7 @@
 //  - health is green only with a recorded result (test, import, build, sign-in or update check), never from settings;
 //  - Test connection on an SVN integration is recorded by the server: after a reload it is still in Tests;
 //  - the detail separates connection, login (authentication), tests, activity and workspaces; credentials show only as
-//    stored or not; a workspace's Settings opens the Code page on Repository settings;
+//    stored or not; a workspace's Settings opens the Code page on Settings;
 //  - tabs work with the arrow keys; nothing scrolls sideways at 390 px; no console errors.
 // It runs "svn info" through Test connection (reads the repository, changes nothing) and opens pages; nothing else.
 //
@@ -108,14 +108,14 @@ const SECRET = /(password|passwd|secret|token|api[_-]?key)\s*[:=]\s*(?!•)[^\s"
   record('no sideways scroll at 390 px', await run(() => document.documentElement.scrollWidth <= 390), await run(() => document.documentElement.scrollWidth));
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
-  // A workspace's Settings opens the Code page on Repository settings
+  // A workspace's Settings opens the Code page on Settings
   if (svnKey) {
     await vm((m, key) => { m.selectedKey(key); m.detailTab('workspaces'); return 1; }, svnKey);
     await sleep(400);
     await run(() => { const b = [...document.querySelectorAll('#integrationWorkspaces button')].find((x) => x.textContent.trim() === 'Settings'); b.click(); return 1; });
     await sleep(3000);
     const code = await run(() => ({ url: location.search, tab: (document.querySelector('[role=tab][aria-selected=true]') || {}).textContent || '' }));
-    record('Settings opens Code > Repository settings', /ojr=code/.test(code.url) && /Repository settings/.test(code.tab), code);
+    record('Settings opens Code > Settings', /ojr=code/.test(code.url) && /^Settings/.test(code.tab.trim()), code);
   }
 
   const errors = s.errors.filter((e) => !/auth\/me/.test(e));

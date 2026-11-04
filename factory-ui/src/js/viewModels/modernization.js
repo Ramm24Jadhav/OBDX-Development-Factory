@@ -308,14 +308,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           };
         });
       });
-      this.endpointRows = ko.pureComputed(() => (this.inventory() ? this.inventory().endpoints : []).map((e) => ({
-        method: e.method, path: e.path, code: e.javaClass + '.' + e.javaMethod, product: e.product ? 'Oracle product' : 'Bank',
-        usedBy: e.usedBy.length ? e.usedBy.map(lastSegment).join(', ') : '-', open: () => openInCode(e.file, 1, 1)
-      })));
-      this.callRows = ko.pureComputed(() => (this.inventory() ? this.inventory().calls : []).map((c) => ({
-        method: c.method, path: c.path,
-        pill: c.endpoint ? pill('In this code', 'green') : pill('Product service', 'amber'), screens: c.screens.map(lastSegment).join(', ')
-      })));
+      // The services the screens call and the backend services are on Code › Map (one list of the same scan)
+      this.serviceCounts = ko.pureComputed(() => {
+        const inv = this.inventory();
+        return inv ? plural(inv.calls.length, 'service call') + ' from the screens (' + inv.calls.filter((c) => !c.endpoint).length + ' outside this code) and '
+          + plural(inv.endpoints.length, 'backend service') + ' in this code' : '';
+      });
+      this.openCodeMap = () => {
+        pageRequests.codeTab('map');
+        go('code');
+      };
       this.roles = ko.pureComputed(() => (this.inventory() ? this.inventory().roles : []).map((r) => ({ name: r.name, source: r.source, evidence: r.evidence.join(', ') })));
 
       // Plan: the screens by phase, prerequisites, validation gates and rollback
