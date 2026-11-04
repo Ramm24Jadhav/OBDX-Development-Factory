@@ -50,7 +50,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'deliver' } },
         { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'deliver' } },
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'modernize' } },
-        { path: 'models', detail: { label: 'Models & AI Providers', icon: 'chip', group: 'admin' } },
+        { path: 'models', detail: { label: 'Models & AI', icon: 'chip', group: 'admin' } },
         { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'admin' } },
         { path: 'agents', detail: { label: 'Agent Runs', icon: 'robot', group: 'admin' } },
         { path: 'packs', detail: { label: 'Version Packs', icon: 'cube', group: 'admin' } },

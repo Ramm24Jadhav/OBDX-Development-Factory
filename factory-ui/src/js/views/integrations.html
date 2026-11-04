@@ -2,8 +2,12 @@
   <div class="factory-pg-head">
     <div>
       <h1>Integrations</h1>
-      <p>The external systems this factory connects to. Health comes from connection tests, imports, builds and sign-ins the factory recorded, never from saved settings alone.</p>
+      <p>Everything the factory connects to. Health comes from tests, imports, builds and sign-ins it recorded, never from saved settings alone.</p>
     </div>
+    <oj-bind-if test="[[canTestAll()]]">
+      <div class="factory-pg-actions"><button type="button" id="testAllIntegrations" :class="[[testing() ? 'fx-btn fx-btn--primary is-loading' : 'fx-btn fx-btn--primary']]" :disabled="[[testing]]" on-click="[[testAll]]">
+        <span class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Test all</button></div>
+    </oj-bind-if>
   </div>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-in-alert" id="integrationsError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
@@ -11,66 +15,62 @@
   <oj-bind-if test="[[missingText()]]"><div class="fx-alert fx-alert--warning factory-in-alert" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
     <span class="fx-alert-text"><oj-bind-text value="[[missingText]]"></oj-bind-text></span></div></oj-bind-if>
 
+  <div class="factory-in-toolbar">
+    <div class="factory-in-filters" role="group" aria-label="Show" id="integrationFilters">
+      <oj-bind-for-each data="[[filters]]" as="f">
+        <template><button type="button" class="fx-chip" :id="[[f.data.id]]" :aria-pressed="[[f.data.pressed]]" on-click="[[f.data.pick]]">
+          <oj-bind-if test="[[f.data.dot]]"><span :class="[[f.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[f.data.text]]"></oj-bind-text></button></template>
+      </oj-bind-for-each>
+    </div>
+    <span class="fx-control factory-in-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
+      <input type="search" class="fx-input" id="intSearch" placeholder="Search by name, server or workspace" aria-label="Search integrations" on-input="[[searchInput]]"></span>
+  </div>
+
   <div class="factory-in-layout">
-    <section class="fx-card factory-in-list" aria-labelledby="integrationListTitle">
-      <div class="factory-in-listhead">
-        <h2 class="fx-card-title" id="integrationListTitle">Connections</h2>
-        <div class="factory-in-filters">
-          <span class="fx-control factory-in-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span>
-            <input type="search" class="fx-input" id="intSearch" placeholder="Search by name, server or workspace" aria-label="Search integrations" on-input="[[searchInput]]"></span>
-          <select class="fx-select" id="intHealth" aria-label="Health" on-change="[[healthChange]]"><option value="">All health</option><option value="attention">Failed or warnings</option>
-            <option value="ok">Reached</option><option value="untested">Not tested</option></select>
-        </div>
-      </div>
-      <div class="factory-in-cols" aria-hidden="true"><span>Integration</span><span>Scope</span><span>Health</span><span>Last success</span><span>Last error</span></div>
-      <ul class="factory-in-entries" id="integrationList" aria-label="Integrations">
-        <oj-bind-for-each data="[[rows]]" as="r">
-          <template><li>
-            <button type="button" :class="[[r.data.css]]" :aria-current="[[r.data.current]]" on-click="[[r.data.pick]]"
-                    :aria-label="[[r.data.name + ', ' + r.data.scope + ', ' + r.data.pill.text + ', last success ' + r.data.successWhen + ', last error ' + r.data.errorWhen]]">
-              <span class="factory-in-name"><span :class="[[r.data.iconCss]]"><span :class="[[r.data.iconClass]]" aria-hidden="true"></span></span>
-                <span class="factory-in-namet"><strong><oj-bind-text value="[[r.data.name]]"></oj-bind-text></strong><span class="factory-in-sub" :title="[[r.data.sub]]"><oj-bind-text value="[[r.data.sub]]"></oj-bind-text></span></span></span>
-              <span class="factory-in-scope"><span class="fx-chip"><oj-bind-text value="[[r.data.scope]]"></oj-bind-text></span></span>
-              <span class="factory-in-health"><span :class="[[r.data.pill.css]]"><span :class="[[r.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></span>
-              <span class="factory-in-when" :title="[[r.data.successTitle]]"><span class="factory-in-lbl">Last success </span><oj-bind-text value="[[r.data.successWhen]]"></oj-bind-text></span>
-              <span class="factory-in-when factory-in-err" :title="[[r.data.errorTitle]]"><span class="factory-in-lbl">Last error </span><oj-bind-text value="[[r.data.errorWhen]]"></oj-bind-text>
-                <oj-bind-if test="[[r.data.errorText]]"><span class="factory-in-errtext"><oj-bind-text value="[[r.data.errorText]]"></oj-bind-text></span></oj-bind-if></span>
-            </button></li></template>
+    <section class="fx-card factory-in-list" aria-label="Connections">
+      <div class="factory-in-cols" aria-hidden="true"><span>Connection</span><span>Health</span><span>Last result</span><span>Action</span></div>
+      <div id="integrationList">
+        <oj-bind-for-each data="[[groups]]" as="g">
+          <template>
+            <h2 class="factory-in-group" :id="[[g.data.id]]"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h2>
+            <ul class="factory-in-entries" :aria-labelledby="[[g.data.id]]">
+              <oj-bind-for-each data="[[g.data.rows]]" as="r">
+                <template><li>
+                  <button type="button" :class="[[r.data.css]]" :aria-current="[[r.data.current]]" on-click="[[r.data.pick]]" :aria-label="[[r.data.label]]">
+                    <span class="factory-in-name"><span class="factory-in-icon" aria-hidden="true"><span :class="[[g.data.iconClass]]"></span></span>
+                      <span class="factory-in-namet"><strong><oj-bind-text value="[[r.data.name]]"></oj-bind-text></strong><span :class="[[r.data.subCss]]" :title="[[r.data.sub]]"><oj-bind-text value="[[r.data.sub]]"></oj-bind-text></span></span></span>
+                    <span class="factory-in-health"><span :class="[[r.data.pill.css]]"><span :class="[[r.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></span>
+                    <span class="factory-in-when" :title="[[r.data.lastTitle]]"><oj-bind-text value="[[r.data.lastText]]"></oj-bind-text></span>
+                    <span class="factory-in-act" aria-hidden="true"><oj-bind-text value="[[r.data.action]]"></oj-bind-text></span>
+                  </button></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </template>
         </oj-bind-for-each>
-      </ul>
-      <oj-bind-if test="[[rows().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span><oj-bind-text value="[[emptyText]]"></oj-bind-text></div></oj-bind-if>
-      <oj-bind-if test="[[notes().length]]">
-        <ul class="factory-in-notes">
-          <oj-bind-for-each data="[[notes]]" as="n">
-            <template><li><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span><oj-bind-text value="[[n.data.text]]"></oj-bind-text>
-              <oj-bind-for-each data="[[n.data.links]]" as="l"><template> <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[l.data.go]]"><oj-bind-text value="[[l.data.label]]"></oj-bind-text></button></template></oj-bind-for-each></span></li></template>
-          </oj-bind-for-each>
-        </ul>
-      </oj-bind-if>
+      </div>
+      <oj-bind-if test="[[groups().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span><oj-bind-text value="[[emptyText]]"></oj-bind-text></div></oj-bind-if>
     </section>
 
-    <section class="fx-card factory-in-detail" id="integrationDetail" aria-label="Integration details">
+    <section class="fx-card factory-in-detail" id="integrationDetail" aria-labelledby="integrationTitle">
       <oj-bind-if test="[[!selected()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-plug" aria-hidden="true"></span></span><oj-bind-text value="[[loading() ? 'Loading…' : 'Choose an integration to see its details.']]"></oj-bind-text></div></oj-bind-if>
       <oj-bind-if test="[[selected()]]">
         <div class="factory-in-dhead">
-          <span :class="[[selected().iconCss]]"><span :class="[[selected().iconClass]]" aria-hidden="true"></span></span>
-          <span class="factory-in-dname"><h2 class="factory-in-title"><oj-bind-text value="[[selected().name]]"></oj-bind-text></h2>
-            <span class="factory-in-sub" :title="[[selected().sub]]"><oj-bind-text value="[[selected().typeLabel + ' · ' + selected().scope]]"></oj-bind-text></span></span>
+          <span class="factory-in-dname"><span class="factory-in-glabel"><oj-bind-text value="[[detail().group]]"></oj-bind-text></span>
+            <h2 class="factory-in-title" id="integrationTitle"><oj-bind-text value="[[selected().name]]"></oj-bind-text></h2></span>
           <span :class="[[selected().pill.css]]"><span :class="[[selected().pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[selected().pill.text]]"></oj-bind-text></span>
         </div>
         <oj-bind-if test="[[selected().note]]"><p class="factory-in-note" id="integrationNote"><oj-bind-text value="[[selected().note]]"></oj-bind-text></p></oj-bind-if>
-        <oj-bind-if test="[[selected().error && selected().health !== 'ok']]">
-          <div class="fx-alert fx-alert--warning factory-in-lasterr" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
-            <span class="fx-alert-text"><strong>Last error</strong> <oj-bind-text value="[[selected().errorTitle]]"></oj-bind-text></span></div>
-        </oj-bind-if>
         <div class="factory-in-btns">
-          <oj-bind-if test="[[selected().canTest]]">
+          <oj-bind-if test="[[detail().primaryTest]]">
             <button type="button" id="testIntegrationButton" :class="[[testCss]]" on-click="[[testSelected]]" :disabled="[[testing()]]">
               <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[detail().testLabel]]"></oj-bind-text></button>
           </oj-bind-if>
-          <oj-bind-if test="[[detail().canOpen]]">
-            <button type="button" id="openIntegrationSettings" class="fx-btn fx-btn--secondary" on-click="[[openSelected]]">
-              <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span><oj-bind-text value="[[detail().openLabel]]"></oj-bind-text></button>
+          <oj-bind-if test="[[detail().primaryOpen]]">
+            <button type="button" id="setUpIntegrationButton" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[openPrimary]]">
+              <span class="factory-nav-icon factory-ico-cog" aria-hidden="true"></span><oj-bind-text value="[[detail().primaryLabel]]"></oj-bind-text></button>
+          </oj-bind-if>
+          <oj-bind-if test="[[detail().secondaryLabel]]">
+            <button type="button" id="openIntegrationSettings" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openSecondary]]"><oj-bind-text value="[[detail().secondaryLabel]]"></oj-bind-text></button>
           </oj-bind-if>
           <oj-bind-if test="[[!selected().canTest && selected().testNote]]"><span class="factory-in-sub factory-in-testnote"><oj-bind-text value="[[selected().testNote]]"></oj-bind-text></span></oj-bind-if>
         </div>
@@ -83,31 +83,20 @@
         </div>
         <div class="factory-in-panel" id="integrationPanel" role="tabpanel" :aria-labelledby="[['in-tab-' + detailTab()]]">
           <oj-bind-if test="[[detailTab() === 'connection']]">
-            <dl class="factory-kv factory-in-kv"><oj-bind-for-each data="[[detail().settings]]" as="c"><template><dt><oj-bind-text value="[[c.data.k]]"></oj-bind-text></dt><dd class="factory-in-val" :title="[[c.data.v]]"><oj-bind-text value="[[c.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
+            <dl class="factory-in-kv" id="integrationFacts"><oj-bind-for-each data="[[selected().facts]]" as="c"><template><dt><oj-bind-text value="[[c.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[c.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each>
+              <oj-bind-if test="[[selected().members.length]]"><dt>Last error</dt><dd><oj-bind-text value="[[detail().lastError || 'None recorded']]"></oj-bind-text></dd></oj-bind-if></dl>
+            <oj-bind-if test="[[selected().where]]"><p class="factory-in-sub factory-in-where"><oj-bind-text value="[[selected().where]]"></oj-bind-text></p></oj-bind-if>
           </oj-bind-if>
-          <oj-bind-if test="[[detailTab() === 'auth']]">
-            <dl class="factory-kv factory-in-kv"><oj-bind-for-each data="[[detail().auth]]" as="c"><template><dt><oj-bind-text value="[[c.data.k]]"></oj-bind-text></dt><dd class="factory-in-val"><oj-bind-text value="[[c.data.v]]"></oj-bind-text></dd></template></oj-bind-for-each></dl>
-            <p class="factory-in-sub">Passwords, tokens and keys stay on the server, encrypted. Change them where the settings are edited.</p>
-          </oj-bind-if>
-          <oj-bind-if test="[[detailTab() === 'tests']]">
-            <oj-bind-if test="[[detail().tests.length]]">
-              <ul class="factory-in-hist" id="integrationTests"><oj-bind-for-each data="[[detail().tests]]" as="h"><template><li :title="[[h.data.title]]"><span :class="[[h.data.dot]]" aria-hidden="true"></span>
-                <span class="factory-in-htext"><oj-bind-text value="[[h.data.text]]"></oj-bind-text><span class="factory-in-sub"><oj-bind-text value="[[h.data.source + (h.data.workspace ? ' · ' + h.data.workspace : '') + (h.data.by ? ' · ' + h.data.by : '')]]"></oj-bind-text></span></span>
-                <span class="factory-in-sub factory-in-hwhen"><oj-bind-text value="[[h.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+          <oj-bind-if test="[[detailTab() === 'history']]">
+            <oj-bind-if test="[[detail().history.length]]">
+              <ol class="factory-in-hist" id="integrationHistory"><oj-bind-for-each data="[[detail().history]]" as="h"><template><li :title="[[h.data.title]]"><span :class="[[h.data.dot]]" aria-hidden="true"></span>
+                <span class="factory-in-htext"><oj-bind-text value="[[h.data.text]]"></oj-bind-text><oj-bind-if test="[[h.data.when || h.data.meta]]"><span class="factory-in-sub"><oj-bind-text value="[[h.data.when + (h.data.when && h.data.meta ? ' · ' : '') + h.data.meta]]"></oj-bind-text></span></oj-bind-if></span></li></template></oj-bind-for-each></ol>
             </oj-bind-if>
-            <oj-bind-if test="[[!detail().tests.length]]"><p class="factory-empty"><oj-bind-text value="[[detail().testsEmpty]]"></oj-bind-text></p></oj-bind-if>
+            <oj-bind-if test="[[!detail().history.length]]"><p class="factory-empty">Nothing recorded yet.</p></oj-bind-if>
           </oj-bind-if>
-          <oj-bind-if test="[[detailTab() === 'activity']]">
-            <oj-bind-if test="[[detail().activity.length]]">
-              <ul class="factory-in-hist"><oj-bind-for-each data="[[detail().activity]]" as="h"><template><li :title="[[h.data.text]]"><span class="factory-in-hdot factory-dot-blue" aria-hidden="true"></span>
-                <span class="factory-in-htext"><oj-bind-text value="[[h.data.text]]"></oj-bind-text><oj-bind-if test="[[h.data.workspace || h.data.by]]"><span class="factory-in-sub"><oj-bind-text value="[[(h.data.workspace || '') + (h.data.workspace && h.data.by ? ' · ' : '') + (h.data.by || '')]]"></oj-bind-text></span></oj-bind-if></span>
-                <span class="factory-in-sub factory-in-hwhen"><oj-bind-text value="[[h.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
-            </oj-bind-if>
-            <oj-bind-if test="[[!detail().activity.length]]"><p class="factory-empty">Nothing recorded yet.</p></oj-bind-if>
-          </oj-bind-if>
-          <oj-bind-if test="[[detailTab() === 'workspaces']]">
-            <p class="factory-in-sub">These workspaces use this server. Each keeps its own settings and login.</p>
-            <ul class="factory-in-ws" id="integrationWorkspaces"><oj-bind-for-each data="[[detail().workspaces]]" as="w"><template><li>
+          <oj-bind-if test="[[detailTab() === 'used']]">
+            <p class="factory-in-sub">These workspaces use this server, each with its own settings and login.</p>
+            <ul class="factory-in-ws" id="integrationWorkspaces"><oj-bind-for-each data="[[detail().usedBy]]" as="w"><template><li>
               <span class="factory-in-htext"><strong><oj-bind-text value="[[w.data.name]]"></oj-bind-text></strong><span class="factory-in-sub"><oj-bind-text value="[[w.data.success]]"></oj-bind-text></span></span>
               <span :class="[[w.data.pill.css]]"><span :class="[[w.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[w.data.pill.text]]"></oj-bind-text></span>
               <span class="factory-in-wsacts">

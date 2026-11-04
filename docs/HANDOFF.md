@@ -44,6 +44,12 @@ The Project Profile page is now Code's **Codebase facts** tab, between Index and
 same facts, edits, history and reference examples; its warnings feed Code's problem bar; the `profile` route, G P and
 the links from Home, Workspaces, Modernization, Version Packs and the Prompt Library open the tab (check-profile.js is
 gone, its checks are in check-code.js).
+**Models & AI** and **Integrations** were redesigned (branch `admin-redesign`, mock-ups in `.admredesign/project/`):
+Models & AI opens on the Writing and Search slots read from the server's settings (one answer to what is in use),
+provider rows with a side panel (address, key, Use for writing / Use for search), then Routing & limits, Privacy and
+Try a prompt; Usage & Cost and the capability table are gone. Integrations groups everything it connects to (Source
+control, Builds with a Set up row per workspace, AI model servers with the same test record as Models & AI, Sign-in,
+Updates) with filter chips and a detail of Connection, History and Used by. `services/modelServers.js` is shared.
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
 Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in
