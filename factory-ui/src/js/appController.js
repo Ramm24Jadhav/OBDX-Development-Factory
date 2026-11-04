@@ -38,7 +38,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'requirements', detail: { label: 'Requirements', icon: 'list', group: 'analyze' } },
         { path: 'profile', detail: { label: 'Project Profile', icon: 'profile', group: 'analyze' } },
         { path: 'code', detail: { label: 'Code', icon: 'code', group: 'analyze' } },
-        { path: 'knowledge', detail: { label: 'Knowledge Explorer', icon: 'target', group: 'analyze', parent: 'code' } },
+        // Knowledge Explorer is the Code page's Explore tab now: old links and bookmarks open it
+        { path: 'knowledge', redirect: 'code', detail: { label: 'Code', hidden: true } },
         { path: 'library', detail: { label: 'OBDX Library', icon: 'book', group: 'analyze' } },
         { path: 'studio', detail: { label: 'Design Studio', icon: 'design', group: 'design' } },
         // The Visual Designer is the Design Studio's Edit mode now: old links open the Studio (a screen asked for with

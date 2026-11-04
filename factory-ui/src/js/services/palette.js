@@ -7,8 +7,14 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
   function (ko, dashboard, workspaceSelection, pageRequests, preferences, session) {
     // "g" then the letter opens the page (Linear-style two-key shortcuts)
     const GO = { o: 'overview', w: 'workspaces', c: 'code', p: 'profile', r: 'requirements', d: 'studio', h: 'changes', b: 'build',
-      m: 'models', a: 'agents', k: 'knowledge', i: 'impact', x: 'modernization', n: 'notifications', s: 'account', y: 'design' };
-    const goKey = Object.keys(GO).reduce((map, k) => { map[GO[k]] = k; return map; }, {});
+      m: 'models', a: 'agents', k: 'code:explore', i: 'impact', x: 'modernization', n: 'notifications', s: 'account', y: 'design' };
+    // A page's own letter (the first one that opens it); "page:tab" opens a tab of the Code page (G K: Code › Explore)
+    const goKey = Object.keys(GO).reduce((map, k) => { if (!map[GO[k]]) { map[GO[k]] = k; } return map; }, {});
+    const goTo = (target) => {
+      const [page, tab] = target.split(':');
+      if (tab) { pageRequests.codeTab(tab); }
+      navigate(page);
+    };
 
     const open = ko.observable(false);
     const query = ko.observable('');
@@ -176,7 +182,7 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
       if (pendingG && Date.now() - pendingG < 1200 && GO[key]) {
         event.preventDefault();
         pendingG = 0;
-        navigate(GO[key]);
+        goTo(GO[key]);
         return;
       }
       pendingG = key === 'g' ? Date.now() : 0;
@@ -184,7 +190,7 @@ define(['knockout', './dashboard', './workspaceSelection', './pageRequests', './
 
     const shortcuts = [{ keys: 'Ctrl K  or  /', label: 'Open the command palette' }, { keys: '?', label: 'Show these shortcuts' },
       { keys: 'Esc', label: 'Close a menu, dialog or the palette' }, { keys: '↑ ↓  Enter', label: 'Move and choose in lists and menus' }]
-      .concat(Object.keys(GO).map((k) => ({ keys: 'G then ' + k.toUpperCase(), label: 'Go to ' + GO[k] })));
+      .concat(Object.keys(GO).map((k) => ({ keys: 'G then ' + k.toUpperCase(), label: 'Go to ' + GO[k].replace(':', ' › ') })));
 
     return {
       open: open, query: query, rows: rows, results: results, activeId: activeId, helpOpen: helpOpen, shortcuts: shortcuts,

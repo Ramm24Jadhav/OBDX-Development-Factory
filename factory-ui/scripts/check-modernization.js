@@ -1,8 +1,8 @@
 // Modernization & Migration check: drives a running factory in headless Edge or Chrome, read-only, for every workspace
 // with an analysis (?ojr=modernization):
 //  - one row of tabs; source and target (version, technology, channel) each say where the value comes from;
-//  - every opportunity says it is detected and where from, and opens to its evidence; an "Open in Code" button opens the
-//    Code page's viewer at that file;
+//  - every opportunity says it is detected and where from, and opens to its evidence; a "Show in Code" button opens the
+//    file on Code › Explore;
 //  - findings carry the rule id and file lines; the plan never says the migration is complete and shows its gates;
 //  - model-written text only in the assistant panel (closed by default, Escape closes it); no model call is made;
 //  - the profile is asked for only when the code is indexed; no failed API calls or console errors; nothing scrolls
@@ -121,15 +121,17 @@ const SHOTS = args.shots ? path.resolve(args.shots) : null;
     await run(() => { document.getElementById('mo-overview').click(); return 1; });
     await shot(w.name + '-overview-390');
 
-    // Open in Code: the first finding's file in the Code page's viewer
+    // Show in Code: the first finding's file on Code › Explore
     await size(1440, 1000);
     await run(() => { document.getElementById('mo-findings').click(); return 1; });
     await sleep(300);
     const target = await run(() => { const b = document.querySelector('#findingTable tbody tr .fx-btn--secondary'); if (!b) { return null; } const p = b.closest('tr').querySelector('.factory-mz-path').textContent.trim(); b.click(); return p; });
     if (target) {
       await sleep(5000);
-      const shown = await run((p) => location.search.indexOf('ojr=code') >= 0 && document.body.textContent.indexOf(p) >= 0, target);
-      record(label + 'Open in Code opens the file in the Code page', shown, target);
+      // Code › Explore: the file's name in the viewer's title, its folder under it
+      const shown = await run((p) => location.search.indexOf('ojr=code') >= 0 && ((document.getElementById('fileTitle') || {}).textContent || '').trim() === p.split('/').pop()
+        && ((document.getElementById('viewerFacts') || {}).textContent || '').indexOf(p.split('/').slice(0, -1).join('/') || 'Top level') === 0, target);
+      record(label + 'Show in Code opens the file on Code › Explore', shown, target);
     }
   }
   s.close();

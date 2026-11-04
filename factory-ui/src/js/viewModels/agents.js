@@ -438,11 +438,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       });
 
       // Actions: open the result; retry or continue only where the server takes it and the user may
-      const open = (r) => { workspaceSelection.selectedId(r.workspaceId); if (r.changeId) { pageRequests.change(r.changeId); } if (r.agent === 'requirements') { pageRequests.requirement(r.requirementId); } navigate(r.page); };
+      const open = (r) => { workspaceSelection.selectedId(r.workspaceId); if (r.changeId) { pageRequests.change(r.changeId); } if (r.agent === 'requirements') { pageRequests.requirement(r.requirementId); } if (r.page === 'code') { pageRequests.codeTab('index'); } navigate(r.page); };
       this.viewResult = () => { if (this.run()) { open(this.run()); } };
       this.resultLabel = ko.pureComputed(() => {
         const page = this.run() ? this.run().page : '';
-        return { requirements: 'Open the requirement', studio: 'Open the Design Studio', impact: 'Open the plan', changes: 'Open the change', build: 'Open the build', code: 'Open Code' }[page] || 'Open the result';
+        return { requirements: 'Open the requirement', studio: 'Open the Design Studio', impact: 'Open the plan', changes: 'Open the change', build: 'Open the build', code: 'Open Code › Index' }[page] || 'Open the result';
       });
       const action = (kind) => ko.pureComputed(() => (this.run() ? this.run()[kind] : null));
       this.retryAction = action('retry');
@@ -481,8 +481,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
         { label: 'Draft a specification from a BRD/FSD', icon: 'doc', page: 'requirements' },
         { label: 'Plan a change (impact analysis)', icon: 'branch', page: 'changes' },
         { label: 'Change a screen with AI', icon: 'design', page: 'studio' },
-        { label: 'Import and index code', icon: 'code', page: 'code' }
-      ].map((t) => Object.assign(t, { iconClass: 'factory-nav-icon factory-ico-' + t.icon, run: () => { this.taskMenu.close(); navigate(t.page); } }));
+        { label: 'Import and index code', icon: 'code', page: 'code', codeTab: 'index' }
+      ].map((t) => Object.assign(t, { iconClass: 'factory-nav-icon factory-ico-' + t.icon, run: () => { this.taskMenu.close(); if (t.codeTab) { pageRequests.codeTab(t.codeTab); } navigate(t.page); } }));
       this.newTaskDefault = () => navigate('requirements');
 
       // Live updates: while a run is queued or running, reload the real data every few seconds; stop when nothing runs

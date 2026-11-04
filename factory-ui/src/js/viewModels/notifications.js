@@ -4,8 +4,8 @@
  * notifications service.
  */
 define(['knockout', '../accUtils', '../services/dashboard', '../services/notifications', '../services/workspaceSelection', '../services/ui',
-        '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, dashboard, notifications, workspaceSelection, ui, toast) {
+        '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, dashboard, notifications, workspaceSelection, ui, toast, pageRequests) {
     const CATEGORY = { action: 'Action Required', build: 'Build & Test', agent: 'Agent Runs', review: 'Reviews & Approvals', system: 'System' };
     const PRIORITY = { high: { text: 'High', css: 'fx-badge fx-badge--danger' }, medium: { text: 'Medium', css: 'fx-badge fx-badge--warning' }, low: { text: 'Low', css: 'fx-badge fx-badge--success' } };
     const UNREAD = { text: 'Unread', css: 'fx-badge fx-badge--primary' };
@@ -140,9 +140,13 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         return true;
       };
 
-      const go = (n, page) => {
+      // An import's notification opens Code › Index; the code itself opens on Code › Explore
+      const go = (n, page, codeTab) => {
         if (n.workspaceId) {
           workspaceSelection.selectedId(n.workspaceId);
+        }
+        if (page === 'code') {
+          pageRequests.codeTab(codeTab || (n.page === 'code' ? 'index' : 'explore'));
         }
         window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
       };
@@ -164,7 +168,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         const ws = (n.details.find((d) => d.label === 'Workspace') || {}).value;
         const related = [{ label: page[0], value: n.related, icon: page[1], run: () => go(n, n.page) }];
         if (n.category === 'build' || n.category === 'agent' || n.page === 'code') {
-          related.push({ label: 'Open in Code Explorer', value: '', icon: 'code', run: () => go(n, 'code') });
+          related.push({ label: 'The code', value: 'Code › Explore', icon: 'code', run: () => go(n, 'code', 'explore') });
         }
         if (n.category === 'agent' || n.category === 'build') {
           related.push({ label: 'Agent runs', value: '', icon: 'robot', run: () => go(n, 'agents') });

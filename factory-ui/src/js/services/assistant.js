@@ -24,19 +24,20 @@ define(['knockout', './api', './workspaceSelection', './ui'], function (ko, api,
       const turns = [];
       for (let i = 0; i < all.length - 1; i++) {
         if (all[i].mine && !all[i + 1].mine && !/factory-ai-error/.test(ko.unwrap(all[i + 1].css))) {
-          turns.push({ question: all[i].text, answer: ko.unwrap(all[i + 1].text) });
+          turns.push({ question: all[i].question || all[i].text, answer: ko.unwrap(all[i + 1].text) });
         }
       }
       return turns.slice(-3);
     };
 
-    const send = (text) => {
+    // label: what the conversation shows for the question (a quick action's name), when it differs from what is sent
+    const send = (text, label) => {
       const question = (typeof text === 'string' ? text : input()).trim();
       if (!question || busy()) {
         return;
       }
       input('');
-      messages.push({ mine: true, text: question, css: 'factory-ai-msg factory-ai-mine' });
+      messages.push({ mine: true, text: label || question, question: question, css: 'factory-ai-msg factory-ai-mine' });
       busy(true);
       waiting(true);
       const page = (context() || '').slice(0, MAX_PROMPT);
@@ -94,7 +95,7 @@ define(['knockout', './api', './workspaceSelection', './ui'], function (ko, api,
       busy: busy,
       waiting: waiting,
       send: () => send(),
-      ask: (text) => send(text),
+      ask: (text, label) => send(text, label),
       clear: () => messages([]),
       suggestions: (suggestions || []).map((s) => ({ text: s, ask: () => send(s) }))
     };

@@ -22,7 +22,7 @@ workspace from an SVN URL or a local folder with bank and OBDX version detected 
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
 that finds model servers on this computer or another server and switches models without a restart. The UI was
 redesigned to the 23 screens in `design/design and implementation plan.docx` (sidebar shell, Home, every work and setup
-page, plus Knowledge Explorer, Impact Analysis, Agent Runs, External Review, Integrations, Version Packs, Prompt Library,
+page, plus Impact Analysis, Agent Runs, External Review, Integrations, Version Packs, Prompt Library,
 Notifications, Account and About); pages use real data only and leave out what the factory does not record.
 The OBDX Library (knowledge base, `knowledge` package, V17): Oracle's 22.2 and 25.2 manuals imported per version (the
 key PDFs are downloaded to `oracle-docs/` in the main checkout, not in Git), the bank's own documents per workspace,
@@ -32,6 +32,10 @@ The Library page was redesigned (branch `library-redesign`): a plain header with
 problem bar for the whole library, then Ask (conversation and Sources rail, composer with the answer-length menu and an
 expanded editor), Documents (Sources strip, one table grouped by version, row menus) and Notes (a review queue in one
 column with Approve and next). `scripts/check-library.js` checks it.
+The **Code** page took in the Knowledge Explorer (branch `code-combined`): one header with the index pill, Check for
+new commits and Reindex, one problem bar, and seven tabs (Explore, Search, Map, Business rules, Quick checks, Index,
+Settings); one viewer, one search, one AI panel (Ask about the code). The `knowledge` route redirects to Code › Explore;
+`scripts/check-code.js` checks the whole page (check-knowledge.js is gone).
 The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
 merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
 Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in

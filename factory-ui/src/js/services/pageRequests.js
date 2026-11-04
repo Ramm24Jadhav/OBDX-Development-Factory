@@ -5,7 +5,7 @@
  */
 define(['knockout'], function (ko) {
   return {
-    /** Text to search the selected workspace's code for. */
+    /** Text to search the selected workspace's code for (the Code page's Search tab). */
     codeSearch: ko.observable(''),
     /** { kind: 'folder' | 'url', value: path or URL, browse: true to open the folder browser } */
     newWorkspace: ko.observable(null),
@@ -21,9 +21,12 @@ define(['knockout'], function (ko) {
     foldMenu: ko.observable(false),
     /** A workspace id whose details the Workspaces page opens in its side sheet (from the Code page) */
     workspace: ko.observable(null),
-    /** { path, startLine, endLine } a file the Code page opens in its viewer at those lines (from Knowledge Explorer) */
+    /** { path, startLine, endLine } a file the Code page opens on Explore with those lines marked (Modernization findings) */
     codeFile: ko.observable(null),
-    /** A Code page tab to open ('settings' from the Integrations page, for a workspace's SVN and Jenkins settings) */
+    /**
+     * A Code page tab to open: 'explore', 'search', 'map', 'rules', 'checks', 'index' or 'settings' (Integrations and
+     * Modernization open Settings, import notifications and Agent Runs open Index, the palette's G K opens Explore)
+     */
     codeTab: ko.observable(null)
   };
 });

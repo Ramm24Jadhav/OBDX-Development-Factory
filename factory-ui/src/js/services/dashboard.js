@@ -225,7 +225,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
           title: w.name + ': ' + (state.key === 'new' ? 'code not imported' : (interrupted(job.message) ? 'code import interrupted' : 'code import failed')),
           text: state.key === 'failed' ? (job.message || 'The last import failed.') : 'Import the code so the factory can search and change it.',
           action: can('MANAGE_CODE') ? 'Import the code' : 'Ask a developer or lead to import it',
-          at: job ? job.createdAt : w.createdAt, open: open('code', w.id) });
+          at: job ? job.createdAt : w.createdAt, open: openRecord('code', w.id, 'codeTab', 'index') });
       }
       const titles = {};
       d.requirements.forEach((r) => {
