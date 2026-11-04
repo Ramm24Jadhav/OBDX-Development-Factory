@@ -256,7 +256,7 @@ to approve?.
   BRD's labels and values only: a choice or table the BRD gives no values for reads "To be confirmed by the analyst"
   and is outlined; other values are left empty for run time.
 - **Ready to approve?** (right of the preview) says how many of its five checks need attention and opens one at a
-  time: **Fields from the requirement** (spec fields not on the screen, the same rule as Edit's Checks: **Open in Edit**),
+  time, the first that needs attention when a screen is shown: **Fields from the requirement** (spec fields not on the screen, the same rule as Edit's Checks: **Open in Edit**),
   **Acceptance criteria** (those this screen does not cover: **Add it** asks AI), **Open decisions** (**Resolve**
   opens the spec), **Values to confirm** (**Confirm** selects the field in Edit) and **OBDX 25.x compatibility** (the
   components the version pack forbids or the bank's code does not show; **Open in Edit** shows the editor's checks).

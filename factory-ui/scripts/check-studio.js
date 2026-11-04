@@ -260,6 +260,9 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
     checks: [...document.querySelectorAll('.factory-studio-check-row')].map((b) => b.id),
     titles: [...document.querySelectorAll('.factory-studio-check-title')].map((b) => b.textContent.trim()),
     open: [...document.querySelectorAll('.factory-studio-check-row[aria-expanded="true"]')].length,
+    openId: ((document.querySelector('.factory-studio-check-row[aria-expanded="true"]') || {}).id || ''),
+    firstWarn: (([...document.querySelectorAll('.factory-studio-check-row')].find((b) => b.querySelector('.factory-studio-check-icon.is-warn')) || {}).id || ''),
+    rowIcons: [...document.querySelectorAll('.factory-studio-check-row')].filter((b) => b.querySelector('.factory-studio-check-icon')).length,
     refine: !!document.querySelector('#studioRefine') && !!document.getElementById('studioRefineButton'), compare: !!document.getElementById('studioCompareLink')
   }));
   record('Ready to approve? with its summary', ready.title === 'Ready to approve?' && /^(All checks pass|\d of 5 checks? needs? attention)$/.test(ready.summary), ready.summary);
@@ -267,6 +270,8 @@ const KEYS = { ArrowRight: 39, ArrowLeft: 37, ArrowDown: 40, ArrowUp: 38, Home: 
     && ready.titles[0] === 'Fields from the requirement' && ready.titles[1] === 'Acceptance criteria' && ready.titles[2] === 'Open decisions'
     && ready.titles[3] === 'Values to confirm' && /^OBDX .+ compatibility$/.test(ready.titles[4]), ready.titles);
   record('one check is open, and the footer has Refine with AI and Compare versions', ready.open === 1 && ready.refine && ready.compare, ready);
+  record('the open check is the first that needs attention (or the first row when all pass)', ready.rowIcons === 5
+    && ready.openId === (ready.firstWarn || 'studioCheck-fields'), { open: ready.openId, firstWarn: ready.firstWarn });
   await click('studioCheck-values');
   await sleep(500);
   const acc = await run(() => [...document.querySelectorAll('.factory-studio-check-row')].filter((b) => b.getAttribute('aria-expanded') === 'true').map((b) => b.id));

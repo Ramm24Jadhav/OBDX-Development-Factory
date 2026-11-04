@@ -486,7 +486,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const components = fieldsOf(s.model);
         return (spec.fields || []).filter((f) => !components.some((c) => norm(c.name) === norm(f.name) || (f.label && norm(c.label) === norm(f.label))));
       });
-      this.openCheck = ko.observable('criteria');
+      // The open row: the first that needs attention ('auto', again for every screen) until the user opens or closes one
+      this.openCheck = ko.observable('auto');
+      this.selectedScreenId.subscribe(() => this.openCheck('auto'));
+      const shownCheck = ko.pureComputed(() => {
+        if (this.openCheck() !== 'auto') {
+          return this.openCheck();
+        }
+        const list = this.checks();
+        const failing = list.find((c) => !c.ok);
+        return failing ? failing.key : list.length ? list[0].key : null;
+      });
       // "Add it" asks the AI (the Refine box) for what a criterion needs; "Resolve" opens the spec; "Confirm" opens the field
       const askFor = (text) => {
         this.instruction(text);
@@ -534,11 +544,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         ];
         return list.map((c) => Object.assign(c, {
           id: 'studioCheck-' + c.key,
-          open: ko.pureComputed(() => this.openCheck() === c.key),
-          expanded: ko.pureComputed(() => (this.openCheck() === c.key ? 'true' : 'false')),
+          open: ko.pureComputed(() => shownCheck() === c.key),
+          expanded: ko.pureComputed(() => (shownCheck() === c.key ? 'true' : 'false')),
           iconCss: 'factory-studio-check-icon' + (c.ok ? ' is-ok' : ' is-warn'),
           countCss: 'factory-studio-check-count' + (c.ok ? ' is-ok' : ' is-warn'),
-          toggle: () => this.openCheck(this.openCheck() === c.key ? null : c.key),
+          toggle: () => this.openCheck(shownCheck() === c.key ? null : c.key),
           items: c.items.map((it) => Object.assign({ detail: '', run: () => {} }, it))
         }));
       });
