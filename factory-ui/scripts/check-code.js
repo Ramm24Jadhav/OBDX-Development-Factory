@@ -3,8 +3,9 @@
 //  - the header: the index's revision and freshness in one pill (never "Up to date" without a check against the
 //    repository), Check for new commits and Reindex (Manage code), and at most one problem bar with its fix;
 //  - eight tabs (Explore, Search, Map, Business rules, Quick checks, Index, Codebase facts, Settings) with the arrow keys,
-//    ?tab= in the address, the old knowledge route opening Explore, and no Knowledge Explorer entry or "Open in Code"
-//    button left;
+//    ?tab= in the address, the old knowledge route opening Explore, the old packs route Quick checks and the old agents
+//    route Home, no Knowledge Explorer, Agent Runs, Version Packs, Design System or AI Prompt Library entry in the
+//    sidebar (the last two still open by address), and no "Open in Code" button left;
 //  - Explore: the tree, a folder's files, the one viewer (coloured, sub-tabs), lines marked from a search hit and from an
 //    AI citation (the AI is stood in for in the page: no model is asked), the files panel docked, hidden to a rail and
 //    floating (Escape closes it, picking a file closes it), the side panel's rail, File details folding, and these
@@ -12,13 +13,16 @@
 //  - Ask about the code: the quick actions, what it answers from, the AI-generated label, cited lines, manuals listed
 //    apart, and the "Not answered" notice;
 //  - Search: one search with every option, file names then the code, Show in Explore, Ctrl K landing on it;
-//  - Map: the four views, a row opening its file on Explore at its lines; Business rules; Quick checks filters; Index;
-//    Settings (stored secrets never filled in); requests from other pages (pageRequests.codeFile, codeTab);
+//  - Map: the four views, a row opening its file on Explore at its lines; Business rules; Quick checks: the filters (the
+//    Source filter too), each rule's source and file, "Turned off by ... on ..." on rules that are off (with --write 1 a
+//    rule is turned off and on again), the findings per rule in the workspace's changes, the link to the AI Prompt
+//    Library and back; Index; Settings (stored secrets never filled in, every UI target's reusable components); requests
+//    from other pages (pageRequests.codeFile, codeTab);
 //  - Codebase facts (the former Project Profile page): every fact once in its area, marked from its status and confidence,
 //    the generation facts and the missing ones, the scan line, its warnings in the one problem bar (not repeated on the
 //    tab), the filter, a fact opened from the keyboard, an evidence file opening on Explore, Manage code's edit and
 //    Refresh discovery (off with a tip without it), the history and reference examples, the old profile route, and the
-//    links from Home, Workspaces, Modernization, Version Packs, the AI Prompt Library and G P landing on the tab;
+//    links from Home, Workspaces, Modernization, the AI Prompt Library and G P landing on the tab;
 //  - no sideways scroll at 1440, 1280, 1024, 768 and 390 px on any tab; offline search says what to do; no console errors.
 //
 //   FACTORY_QA_USER=admin FACTORY_QA_PASSWORD=... node scripts/check-code.js --url http://localhost:8080 [--workspace <id>]
@@ -159,6 +163,24 @@ const TABS = ['Explore', 'Search', 'Map', 'Business rules', 'Quick checks', 'Ind
     sidebar: [...document.querySelectorAll('nav a, .factory-nav a')].map((a) => a.textContent.trim()).filter((t) => /Knowledge Explorer/.test(t)) }));
   record('the old knowledge route opens Code › Explore', /ojr=code/.test(redirect.url) && redirect.explore, redirect);
   record('no Knowledge Explorer entry in the sidebar', redirect.sidebar.length === 0, redirect.sidebar);
+  // Agent Runs and Version Packs are gone, the Design System and the AI Prompt Library are in no menu but still open
+  await s.open(BASE + '/?ojr=packs');
+  await waitFor(() => !!document.getElementById('tab-checks') && document.getElementById('tab-checks').getAttribute('aria-selected') === 'true', null, 20);
+  const fromPacks = await run(() => ({ url: location.search, checks: !!document.getElementById('tab-checks') && document.getElementById('tab-checks').getAttribute('aria-selected') === 'true' }));
+  record('the old packs route opens Code › Quick checks, and the address says so', /ojr=code/.test(fromPacks.url) && /tab=checks/.test(fromPacks.url) && fromPacks.checks, fromPacks);
+  await s.open(BASE + '/?ojr=agents');
+  const fromAgents = await waitFor(() => !!document.getElementById('overviewGreeting'), null, 20);
+  const navNames = await run(() => [...document.querySelectorAll('.factory-nav a')].map((a) => a.textContent.trim()));
+  record('the old agents route opens Home', fromAgents, await run(() => location.search));
+  record('no Agent Runs, Version Packs, Design System or AI Prompt Library entry in the sidebar', navNames.length > 0
+    && !navNames.some((t) => /^(Agent Runs|Version Packs|Design System|AI Prompt Library)$/.test(t)), navNames);
+  for (const [page, probe, label] of [['design', 'dsCrumb', 'Design System'], ['prompts', 'promptGovernance', 'AI Prompt Library']]) {
+    await s.open(BASE + '/?ojr=' + page);
+    const opened = await waitFor((id) => !!document.getElementById(id), probe, 20);
+    const crumb = await run(() => [...document.querySelectorAll('.factory-crumbs li')].map((li) => li.textContent.trim()));
+    record('?ojr=' + page + ' still opens the ' + label + ', under Administration in the breadcrumb', opened && crumb[0] === 'Administration' && crumb[crumb.length - 1] === label, crumb);
+  }
+  await openCode();
   const old = await run(() => [...document.querySelectorAll('button, a')].filter((b) => /^(Open in Code|Code page)$/.test(b.textContent.trim())).map((b) => b.textContent.trim()));
   record('no "Open in Code" or "Code page" buttons', old.length === 0, old);
 
@@ -375,6 +397,63 @@ const TABS = ['Explore', 'Search', 'Map', 'Business rules', 'Quick checks', 'Ind
   record('quick checks list every rule', ruleCheck.all === ruleCheck.total && ruleCheck.total > 0, ruleCheck.total);
   record('status "Turned off" shows only rules that are off', ruleCheck.offRows.every((v) => v === 'false'), ruleCheck.offRows);
   record('a category shows only its rules', !ruleCheck.cat || (ruleCheck.catRows.length > 0 && ruleCheck.catRows.every((c) => c === ruleCheck.cat)), { cat: ruleCheck.cat, rows: ruleCheck.catRows.length });
+  // Each rule's source and file, who turned it off, and its findings in the workspace's changes (what Version Packs showed)
+  const SOURCE = { VERSION_PACK: 'Version pack', BANK: 'Bank standard', TARGET: 'UI target' };
+  const ruleRows = () => run(() => [...document.querySelectorAll('#ruleTable tbody tr')].map((tr) => ({
+    title: tr.querySelector('.factory-cd-rule strong').textContent.trim(),
+    source: ((tr.querySelector('.factory-cd-rule-source') || {}).textContent || '').trim(),
+    off: ((tr.querySelector('.factory-cd-rule-off') || {}).textContent || '').trim(),
+    on: tr.querySelector('[role="switch"]').getAttribute('aria-checked') === 'true',
+    evidence: ((tr.querySelector('.factory-cd-evidence') || {}).textContent || '').trim()
+  })));
+  const serverChecks = () => run((w) => fetch('api/workspaces/' + w + '/checks').then((r) => r.json()), wsId);
+  const sourceText = (r) => (SOURCE[r.origin] || SOURCE.VERSION_PACK) + (r.source ? ' · ' + r.source : '');
+  let checks = await serverChecks();
+  let rows = await ruleRows();
+  record('every rule shows its source and file', rows.length === checks.rules.length && checks.rules.every((r, i) => rows[i].source === sourceText(r)),
+    rows.slice(0, 3).map((r) => r.source));
+  const sourceFilter = await vm((m) => {
+    const out = { select: !!document.getElementById('ruleSource'), by: {} };
+    m.ruleSources.slice(1).forEach((x) => { m.ruleSource(x.value); out.by[x.value] = [...document.querySelectorAll('#ruleTable tbody tr .factory-cd-rule-source')].map((e) => e.textContent.trim()); });
+    m.clearRuleFilters();
+    return out;
+  });
+  record('the Source filter shows only the rules from that source', sourceFilter.select && Object.keys(SOURCE).every((k) => sourceFilter.by[k].length === checks.rules.filter((r) => (r.origin || 'VERSION_PACK') === k).length
+    && sourceFilter.by[k].every((t) => t.indexOf(SOURCE[k]) === 0)), Object.keys(sourceFilter.by).map((k) => k + ' ' + sourceFilter.by[k].length).join(', '));
+  const offWords = (r) => 'Turned off' + (r.disabledBy ? ' by ' + r.disabledBy : '');
+  const offShown = (list, server) => server.rules.every((r, i) => (r.enabled ? list[i].off === '' : list[i].off.indexOf(offWords(r)) === 0 && (!r.disabledAt || / on /.test(list[i].off))));
+  record('rules that are off say who turned them off and when; rules that are on say nothing', offShown(rows, checks), rows.filter((r) => !r.on).map((r) => r.off));
+  if (args.write === '1' && canManage) {
+    // Turn the first rule that is on off, see the line, and turn it on again (only on a factory whose data is a copy)
+    const pick = checks.rules.findIndex((r) => r.enabled);
+    await vm((m, i) => { m.checkRules()[i].flip(); return 1; }, pick);
+    await waitFor((i) => (document.querySelectorAll('#ruleTable tbody tr')[i].querySelector('.factory-cd-rule-off') || {}).textContent, pick, 20);
+    const offServer = await serverChecks();
+    const offRows = await ruleRows();
+    record('a rule turned off says "Turned off by <user> on <date>"', !offServer.rules[pick].enabled && offShown(offRows, offServer) && / by .+ on /.test(offRows[pick].off), offRows[pick].off);
+    await shot('checks-turned-off');
+    await vm((m, i) => { m.checkRules()[i].flip(); return 1; }, pick);
+    await waitFor((i) => !document.querySelectorAll('#ruleTable tbody tr')[i].querySelector('.factory-cd-rule-off'), pick, 20);
+    checks = await serverChecks();
+    rows = await ruleRows();
+    record('turned on again, the line goes', checks.rules[pick].enabled && rows[pick].off === '', rows[pick]);
+  }
+  // Findings per rule: the rule id in the last quick checks of the changes' files, counted per change
+  const expected = await run(async (w) => {
+    const details = await fetch('api/workspaces/' + w + '/changes/details').then((r) => (r.ok ? r.json() : []));
+    const by = {};
+    (details || []).filter(Boolean).forEach((c) => (c.files || []).forEach((f) => {
+      const re = /\(([a-z0-9][a-z0-9-]+), (error|warning)\)/g;
+      let m;
+      while ((m = re.exec(f.checkMessage || '')) !== null) { const e = by[m[1]] = by[m[1]] || { n: 0, changes: {} }; e.n++; e.changes[c.id] = 1; }
+    }));
+    return by;
+  }, wsId);
+  const plural = (n, w) => n.toLocaleString() + ' ' + w + (n === 1 ? '' : 's');
+  const wantEvidence = (id) => (expected[id] ? plural(expected[id].n, 'finding') + ' in ' + plural(Object.keys(expected[id].changes).length, 'change') : '');
+  record('each rule shows its findings in the workspace\'s changes', checks.rules.every((r, i) => rows[i].evidence === wantEvidence(r.id)),
+    rows.filter((r) => r.evidence).map((r) => r.title + ': ' + r.evidence).slice(0, 4).join('; ') || 'no findings in the changes');
+  await shot('checks');
 
   // ---------- Index ----------
   await click('#tab-index');
@@ -397,6 +476,19 @@ const TABS = ['Explore', 'Search', 'Map', 'Business rules', 'Quick checks', 'Ind
     inputsReadOnly: [...document.querySelectorAll('#panel-settings fx-input input')].every((i) => i.readOnly), canManage: m.canManage() }));
   record('stored passwords and tokens are never filled in', st.secrets.every((v) => v === ''), st.secrets.length + ' secret fields');
   record(st.canManage ? 'Settings can be changed with Manage code' : 'Settings are read-only without Manage code', st.canManage ? !st.readOnlyNote : st.readOnlyNote && st.inputsReadOnly, st);
+  // Reusable components: a column per UI target with components, a row per Screen Model type (what Version Packs showed)
+  const comp = await run(async () => {
+    const targets = (await fetch('api/targets').then((r) => r.json())).filter((t) => Object.keys(t.components || {}).length);
+    const types = [...new Set([].concat(...targets.map((t) => Object.keys(t.components))))].sort();
+    const table = document.getElementById('targetComponents');
+    const head = table ? [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim()) : [];
+    const body = table ? [...table.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((td) => td.textContent.trim())) : [];
+    const want = types.map((type) => [type].concat(targets.map((t) => (t.components[type] ? '<' + t.components[type].component + (t.components[type].props ? ' ' + t.components[type].props : '') + '>' : '–'))));
+    return { shown: !!table && table.offsetParent !== null, head: head, targets: targets.map((t) => t.title), same: JSON.stringify(body) === JSON.stringify(want), rows: body.length, types: types.length, first: body[0] };
+  });
+  record('Settings: the reusable components of every UI target, by Screen Model type', comp.shown && comp.rows === comp.types && comp.rows > 0 && comp.same
+    && comp.head.length === comp.targets.length + 1 && comp.targets.every((t, i) => comp.head[i + 1].indexOf(t) === 0), comp);
+  await run(() => { const t = document.getElementById('targetComponents'); if (t) { t.scrollIntoView({ block: 'center' }); } return 1; });
   await shot('settings');
 
   // ---------- Codebase facts (the former Project Profile page) ----------
@@ -557,9 +649,6 @@ const TABS = ['Explore', 'Search', 'Map', 'Business rules', 'Quick checks', 'Ind
   await navTo('modernization');
   await pageVm((m) => { m.moreAction({ detail: { value: 'facts' } }); return 1; });
   record('Modernization: "Open the codebase facts" opens the tab', await landsOnFacts());
-  await navTo('packs');
-  await pageVm((m) => { m.detailDo.profile(); return 1; });
-  record('Version Packs: "Reference examples in Codebase facts" opens the tab', await landsOnFacts());
   await navTo('prompts');
   await pageVm((m) => { m.openProfile(); return 1; });
   record('AI Prompt Library: "Bank standards (Codebase facts)" opens the tab', await landsOnFacts());
@@ -568,6 +657,21 @@ const TABS = ['Explore', 'Search', 'Map', 'Business rules', 'Quick checks', 'Ind
   await key('g');
   await key('p');
   record('G then P opens Code › Codebase facts', await landsOnFacts());
+  // Quick checks links to the AI Prompt Library (the recipes and templates), whose menu comes back to Quick checks
+  await vm((m) => { m.tab('checks'); return 1; });
+  await sleep(300);
+  // The link wraps over two lines: the mouse goes to the middle of its first line
+  const linkAt = await run(() => { const a = document.getElementById('openPromptLibrary'); a.scrollIntoView({ block: 'center' }); const r = a.getClientRects()[0]; return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  for (const t of ['mousePressed', 'mouseReleased']) { await cdp('Input.dispatchMouseEvent', { type: t, x: linkAt.x, y: linkAt.y, button: 'left', clickCount: 1 }); }
+  const toPrompts = await waitFor(() => /ojr=prompts/.test(location.search) && !!document.getElementById('promptGovernance'), null, 20);
+  record('Quick checks: "read the recipes and templates in the AI Prompt Library" opens it', toPrompts, await run(() => location.search));
+  await pageVm((m) => { m.createChecks(); return 1; });
+  record('AI Prompt Library: "Open the quick check rules" opens Code › Quick checks', await waitFor(() => /ojr=code/.test(location.search) && !!document.getElementById('tab-checks')
+    && document.getElementById('tab-checks').getAttribute('aria-selected') === 'true', null, 20));
+  await navTo('modernization');
+  await pageVm((m) => { m.moreAction({ detail: { value: 'checks' } }); return 1; });
+  record('Modernization: "Open the quick check rules" opens Code › Quick checks', await waitFor(() => /ojr=code/.test(location.search) && !!document.getElementById('tab-checks')
+    && document.getElementById('tab-checks').getAttribute('aria-selected') === 'true', null, 20));
   await vm((m) => { m.tab('explore'); return 1; });
   await sleep(300);
 

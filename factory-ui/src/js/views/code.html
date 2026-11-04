@@ -495,7 +495,7 @@
       </section>
     </div>
 
-    <!-- 5. Quick checks: the version pack rules -->
+    <!-- 5. Quick checks: the version pack, bank standard and UI target rules -->
     <div class="factory-cd-panel" id="panel-checks" role="tabpanel" aria-labelledby="tab-checks" :hidden="[[tab() !== 'checks']]">
       <section class="fx-card factory-cd-card" id="quickCheckRules" aria-labelledby="rulesTitle">
         <div class="factory-cd-card-head">
@@ -505,7 +505,8 @@
         <p class="factory-cd-muted">
           They run on every generated file and again before each Jenkins build. Errors go back to the model to fix; warnings are shown
           to reviewers. Status comes from the files the factory generated in this workspace.
-          <a href="?ojr=packs" class="factory-cd-link" on-click="[[openPacks]]">Rules come from the version pack.</a></p>
+          Rules come from the version pack, the bank's standards and the UI target pack;
+          <a href="?ojr=prompts" id="openPromptLibrary" class="factory-cd-link" on-click="[[openPrompts]]">read the recipes and templates in the AI Prompt Library</a>.</p>
         <p id="checksSummary" class="factory-cd-muted"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></p>
         <div class="factory-cd-toolbar">
           <fx-input id="ruleSearch" class="factory-cd-rule-search" label="Search rules" hide-label placeholder="Search rules..." icon="search" value="{{ruleQuery}}" clearable></fx-input>
@@ -518,6 +519,7 @@
           </div>
           <fx-select id="ruleCategory" class="factory-cd-filter" label="Category" hide-label options="[[ruleCategories]]" value="{{ruleCategory}}"></fx-select>
           <fx-select id="ruleStatus" class="factory-cd-filter" label="Status" hide-label options="[[ruleStatuses]]" value="{{ruleStatusFilter}}"></fx-select>
+          <fx-select id="ruleSource" class="factory-cd-filter" label="Source" hide-label options="[[ruleSources]]" value="{{ruleSource}}"></fx-select>
           <oj-bind-if test="[[ruleFiltered()]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" id="clearRuleFilters" on-click="[[clearRuleFilters]]">Clear filters</button></oj-bind-if>
         </div>
         <div class="fx-table-wrap">
@@ -531,10 +533,13 @@
                         :aria-checked="[[r.data.enabled ? 'true' : 'false']]" :aria-label="[[r.data.title]]" :disabled="[[!r.data.canManage]]" on-click="[[r.data.flip]]"></button></span></td>
                     <td data-label="Rule" class="factory-cd-rule"><strong><oj-bind-text value="[[r.data.title]]"></oj-bind-text></strong>
                       <span class="factory-cd-muted"><oj-bind-text value="[[r.data.message]]"></oj-bind-text></span>
+                      <span class="factory-cd-muted factory-cd-rule-source"><oj-bind-text value="[[r.data.sourceLine]]"></oj-bind-text></span>
+                      <oj-bind-if test="[[r.data.offLine]]"><span class="factory-cd-muted factory-cd-rule-off"><oj-bind-text value="[[r.data.offLine]]"></oj-bind-text></span></oj-bind-if>
                       <oj-bind-if test="[[r.data.note]]"><span class="factory-cd-muted factory-cd-note"><oj-bind-text value="[[r.data.note]]"></oj-bind-text></span></oj-bind-if></td>
                     <td data-label="Category" class="factory-cd-nowrap"><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td>
                     <td data-label="Severity"><span :class="[[r.data.severityCss]]"><oj-bind-text value="[[r.data.severityText]]"></oj-bind-text></span></td>
-                    <td data-label="Status"><span :class="[[r.data.enabled ? r.data.status.css : 'fx-badge']]" :title="[[r.data.status.title]]"><span :class="[[r.data.enabled ? r.data.status.iconCss : '']]" aria-hidden="true"></span><oj-bind-text value="[[r.data.enabled ? r.data.status.text : 'Off']]"></oj-bind-text></span></td>
+                    <td data-label="Status"><span class="factory-cd-rule-status"><span :class="[[r.data.enabled ? r.data.status.css : 'fx-badge']]" :title="[[r.data.status.title]]"><span :class="[[r.data.enabled ? r.data.status.iconCss : '']]" aria-hidden="true"></span><oj-bind-text value="[[r.data.enabled ? r.data.status.text : 'Off']]"></oj-bind-text></span>
+                      <oj-bind-if test="[[r.data.evidence.text]]"><span class="factory-cd-muted factory-cd-evidence" :title="[[r.data.evidence.title]]"><oj-bind-text value="[[r.data.evidence.text]]"></oj-bind-text></span></oj-bind-if></span></td>
                     <td data-label="Files" class="factory-cd-files"><oj-bind-text value="[[r.data.files]]"></oj-bind-text></td>
                   </tr>
                 </template>
@@ -904,22 +909,23 @@
         <oj-bind-if test="[[targetMessage()]]">
           <p id="targetMessage" :class="[[targetWarning() ? 'fx-alert fx-alert--warning' : 'factory-cd-muted']]"><oj-bind-text value="[[targetMessage]]"></oj-bind-text></p>
         </oj-bind-if>
-        <oj-bind-if test="[[mappingRows().length > 0]]">
-          <details class="fx-disclosure" id="targetMapping"><summary>How Screen Model components map to the app's components</summary>
-            <div class="fx-disclosure-body fx-table-wrap">
-              <table class="fx-table">
-                <thead><tr><th scope="col">Screen Model type</th><th scope="col">Component</th></tr></thead>
-                <tbody>
-                  <oj-bind-for-each data="[[mappingRows]]" as="m">
-                    <template>
-                      <tr><td><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
-                        <td><code><oj-bind-text value="[[m.data.component]]"></oj-bind-text></code></td></tr>
-                    </template>
-                  </oj-bind-for-each>
-                </tbody>
-              </table>
-            </div>
-          </details>
+        <oj-bind-if test="[[componentRows().length > 0]]">
+          <h3 class="factory-cd-h3" id="componentsTitle">Reusable components</h3>
+          <p class="factory-cd-muted">The component a new app's screen uses for each Screen Model type. Oracle JET screens follow the bank's own code instead.</p>
+          <div class="fx-table-wrap">
+            <table id="targetComponents" class="fx-table factory-cd-components" aria-labelledby="componentsTitle">
+              <thead><tr><th scope="col">Screen Model type</th>
+                <oj-bind-for-each data="[[componentTargets]]" as="t"><template><th scope="col"><oj-bind-text value="[[t.data.title]]"></oj-bind-text></th></template></oj-bind-for-each></tr></thead>
+              <tbody>
+                <oj-bind-for-each data="[[componentRows]]" as="m">
+                  <template>
+                    <tr><td data-label="Screen Model type"><oj-bind-text value="[[m.data.type]]"></oj-bind-text></td>
+                      <oj-bind-for-each data="[[m.data.cells]]" as="c"><template><td :data-label="[[c.data.label]]"><code><oj-bind-text value="[[c.data.text]]"></oj-bind-text></code></td></template></oj-bind-for-each></tr>
+                  </template>
+                </oj-bind-for-each>
+              </tbody>
+            </table>
+          </div>
         </oj-bind-if>
       </section>
 

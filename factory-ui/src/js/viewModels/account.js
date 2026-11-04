@@ -125,7 +125,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       }));
       this.sample = ko.pureComputed(() => ui.when(new Date().toISOString()));
       this.notifyRows = [
-        { label: 'Build Results', icon: 'cog', key: 'build', tone: 'blue' }, { label: 'Agent Run Status', icon: 'robot', key: 'agent', tone: 'violet' },
+        { label: 'Build Results', icon: 'cog', key: 'build', tone: 'blue' }, { label: 'AI Work Status', icon: 'robot', key: 'agent', tone: 'violet' },
         { label: 'Reviews & Approvals', icon: 'doc', key: 'review', tone: 'amber' }, { label: 'System Notifications', icon: 'info', key: 'system', tone: 'green' }
       ].map((r) => Object.assign(r, { value: preferences.notify[r.key], disabled: false, tip: '' }))
         .concat([{ label: 'Security Alerts', icon: 'shield', tone: 'red' }, { label: 'Weekly Summary', icon: 'chart', tone: 'blue' }]

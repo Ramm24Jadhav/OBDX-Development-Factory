@@ -89,7 +89,9 @@ async function start(options) {
   if (!password) { console.error('Set FACTORY_QA_PASSWORD (and FACTORY_QA_USER) for the factory at ' + BASE + '.'); process.exit(2); }
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-qa-'));
   const proc = spawn(browser, ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + profile, '--no-first-run',
-    '--disable-extensions', '--hide-scrollbars=false', 'about:blank'], { stdio: 'ignore' });
+    '--disable-extensions', '--hide-scrollbars=false',
+    // No graphics card: on a laptop with little memory a busy GPU driver can stop the whole machine
+    '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
   let port;
   for (let i = 0; i < 100 && !port; i++) {
     await sleep(200);

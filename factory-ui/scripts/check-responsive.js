@@ -22,7 +22,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
 const OUT = path.resolve(args.out || 'responsive-report');
 // page:tab opens a tab of the Code page (code:facts is Codebase facts, the former Project Profile page)
 const PAGES = (args.pages || 'overview,workspaces,code,requirements,code:facts,studio,changes,impact,build,models,'
-  + 'modernization,agents,admin,reviews,integrations,packs,prompts,notifications,account,about,design').split(',');
+  + 'modernization,admin,reviews,integrations,prompts,notifications,account,about,design').split(',');
 // The device classes, plus 1280x800 and 1440x900 at 200% browser zoom (the same CSS width as 640 and 720 pixels).
 const SIZES = (args.sizes || '320x568,375x667,430x932,768x1024,1024x768,1280x800,1440x900,1920x1080,640x400@2,720x450@2')
   .split(',').map((s) => { const m = /^(\d+)x(\d+)(?:@(\d))?$/.exec(s); return { w: +m[1], h: +m[2], scale: +(m[3] || 1), name: s.replace('@2', '-zoom200') }; });

@@ -631,7 +631,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.get('workspaces/' + id).then((w) => this.workspace(w)).catch(() => null);
         api.get('workspaces/' + id + '/changes').then((list) => {
           this.changes(list.map((c) => ({ id: c.id, label: code('CHG', c.id, 3) + ' – ' + c.title })));
-          // A change another page asked to open (Agent Runs), else the newest
+          // A change another page asked to open (pageRequests.change), else the newest
           const wanted = list.find((c) => c.id === pageRequests.change());
           pageRequests.change(null);
           if (list.length) {

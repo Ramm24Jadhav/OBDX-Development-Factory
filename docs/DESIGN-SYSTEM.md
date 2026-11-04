@@ -28,7 +28,7 @@ How the factory UI looks and which shared pieces pages use. The approved referen
    tables with selection and pagination, cards and KPI cards, progress and steps, alerts, toasts, confirm dialogs,
    tooltips, breadcrumbs, tabs and a horizontal carousel. Behaviour lives in `services/ui.js` (pager, split menu,
    carousel), `services/toast.js` and `services/dialog.js`.
-5. **Design System page** (`?ojr=design`): the tokens and every component, live, so they can be checked in one place.
+5. **Design System page** (`?ojr=design`, in no menu: Administration links to it): the tokens and every component, live, so they can be checked in one place.
 6. **Screens**: each of the 23 screens moves from its own colours and one-off controls to the tokens and shared
    components, keeping its workflows, data and endpoints. `window.confirm` becomes the shared dialog; success and
    failure messages become toasts.
@@ -270,7 +270,7 @@ They were rebuilt rather than cut out of the mockups. A crop would be a 440-pixe
 |---|---|
 | Phones, up to 767px | The menu opens over the page from the top bar's menu button. The top bar keeps every control, with the workspace picker on its own full-width row. Grids are one column, rows of controls wrap, and tab strips take a full row and scroll sideways. |
 | Tablets, 768 to 1099px | The menu starts as icons, and Expand opens it until the window changes size. The breadcrumb and user name hide, and search becomes its icon. |
-| Laptops, 1100 to 1439px | The full menu shows. A list with a detail panel (Integrations, Version Packs) puts the detail under the list. |
+| Laptops, 1100 to 1439px | The full menu shows. A list with a detail panel (Integrations; Notifications below 1200px) puts the detail under the list. |
 | Desktops, 1440px and up | The layouts as designed. |
 
 **Type** is a fluid scale (`--fx-text-*`):

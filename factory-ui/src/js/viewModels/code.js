@@ -9,12 +9,13 @@
  *    a result opens in the same viewer at its lines and Show in Explore opens it there;
  *  - Map: APIs, Screens, Service calls and Diagram from the modernization scan; rows open their file on Explore;
  *  - Business rules of the requirements and the code they link;
- *  - Quick checks (the version pack rules), Index (figures, live import, checks with fixes, import history, files by
+ *  - Quick checks (the version pack, bank standard and UI target rules, with their file, who turned one off and their
+ *    findings in the workspace's changes), Index (figures, live import, checks with fixes, import history, files by
  *    type), Codebase facts (what the code is built with, from the profile detection: the facts by area with their
  *    evidence, confirmed, corrected or reset by Manage code, their history, and the version pack's reference examples)
- *    and Settings (SVN, UI target, Jenkins).
+ *    and Settings (SVN, UI target with every target's reusable components, Jenkins).
  * The file list (files?limit=20000) is loaded once per workspace. ?tab= picks a tab; pageRequests.codeSearch,
- * codeFile, codeTab and codeFact come from other pages; the old profile route opens Codebase facts. The repository's latest revision is only known from a check the user runs
+ * codeFile, codeTab and codeFact come from other pages; the old profile route opens Codebase facts, the old packs route Quick checks. The repository's latest revision is only known from a check the user runs
  * (POST svn/test), kept per workspace for the browser session (workspaceSelection.headChecks).
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/pageRequests', '../services/ui', '../services/assistant', '../services/dashboard', '../services/toast',
@@ -524,12 +525,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.targetMessage = ko.observable('');
       this.targetWarning = ko.observable(false);
       const packs = ko.observableArray([]);
-      this.mappingRows = ko.pureComputed(() => {
-        const pack = packs().find((p) => p.id === this.targetId());
-        return pack ? Object.keys(pack.components).map((type) => ({
+      // Reusable components: the component each UI target's app uses for a Screen Model type, one column per target that
+      // has components (Oracle JET has none: its screens follow the bank's own code)
+      const componentPacks = ko.pureComputed(() => packs().filter((p) => Object.keys(p.components || {}).length));
+      this.componentTargets = ko.pureComputed(() => componentPacks()
+        .map((p) => ({ id: p.id, title: p.title + (p.id === this.targetId() ? ' (this workspace)' : '') })));
+      this.componentRows = ko.pureComputed(() => {
+        const types = Array.from(new Set([].concat.apply([], componentPacks().map((p) => Object.keys(p.components))))).sort();
+        return types.map((type) => ({
           type: type,
-          component: '<' + pack.components[type].component + (pack.components[type].props ? ' ' + pack.components[type].props : '') + '>'
-        })) : [];
+          cells: componentPacks().map((p) => {
+            const c = p.components[type];
+            return { id: p.id, label: p.title, text: c ? '<' + c.component + (c.props ? ' ' + c.props : '') + '>' : '–' };
+          })
+        }));
       });
       this.targetId.subscribe((id) => {
         const pack = packs().find((p) => p.id === id);
@@ -628,6 +637,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.ruleQuery = ko.observable('');
       this.ruleCategory = ko.observable('');
       this.ruleStatusFilter = ko.observable('');
+      this.ruleSource = ko.observable('');
       const ruleCount = (severity) => ko.pureComputed(() => this.checkRules().filter((r) => severity === 'all' || r.severity === severity).length);
       this.ruleFilters = [
         { value: 'all', label: 'All', count: ruleCount('all') },
@@ -643,12 +653,42 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { value: '', label: 'All statuses' }, { value: 'FAILED', label: 'Failed' }, { value: 'WARNING', label: 'Warning' },
         { value: 'PASSED', label: 'Passed' }, { value: 'NOT_CHECKED', label: 'Not run' }, { value: 'OFF', label: 'Turned off' }
       ];
+      // Where a rule comes from: the factory's version pack, the bank's pack folder (FACTORY_PACKS_DIR) or the UI target pack
+      this.ruleSources = [
+        { value: '', label: 'All sources' }, { value: 'VERSION_PACK', label: 'Version pack' },
+        { value: 'BANK', label: 'Bank standard' }, { value: 'TARGET', label: 'UI target' }
+      ];
+      const SOURCE_TEXT = { VERSION_PACK: 'Version pack', BANK: 'Bank standard', TARGET: 'UI target' };
       // A rule's status from the quick checks of the files the factory generated in this workspace
-      const checkedFiles = ko.pureComputed(() => {
+      const changeDetails = ko.pureComputed(() => {
         const entry = dashboard.data().find((d) => d.workspace.id === this.workspaceId());
-        return entry ? (entry.changeDetails || []).filter(Boolean).reduce((list, c) => list.concat((c.files || [])
-          .filter((f) => f.checkStatus && f.checkStatus !== 'NOT_CHECKED')), []) : [];
+        return entry ? (entry.changeDetails || []).filter(Boolean) : [];
       });
+      const checkedFiles = ko.pureComputed(() => changeDetails().reduce((list, c) => list.concat((c.files || [])
+        .filter((f) => f.checkStatus && f.checkStatus !== 'NOT_CHECKED')), []));
+      // Findings per rule in the last quick checks of the changes' files ("Line 12 (rule-id, error): ...")
+      const evidence = ko.pureComputed(() => {
+        const by = {};
+        const finding = /\(([a-z0-9][a-z0-9-]+), (error|warning)\)/g;
+        changeDetails().forEach((c) => (c.files || []).forEach((file) => {
+          let m;
+          finding.lastIndex = 0;
+          while ((m = finding.exec(file.checkMessage || '')) !== null) {
+            const e = by[m[1]] = by[m[1]] || { findings: 0, changes: {} };
+            e.findings += 1;
+            e.changes[c.id] = c.title;
+          }
+        }));
+        return by;
+      });
+      const evidenceText = (id) => {
+        const e = evidence()[id];
+        if (!e) {
+          return { text: '', title: '' };
+        }
+        const titles = Object.keys(e.changes).map((k) => e.changes[k]);
+        return { text: plural(e.findings, 'finding') + ' in ' + plural(titles.length, 'change'), title: titles.join(', ') };
+      };
       const ruleStatus = (r) => {
         const files = checkedFiles().filter((f) => r.include.some((x) => x.test(f.path)) && !r.exclude.some((x) => x.test(f.path)));
         if (!files.length) {
@@ -662,19 +702,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return Object.assign(status('PASSED', 'Passed', plural(files.length, 'generated file') + ' checked'), { key: 'PASSED' });
       };
-      const ratedRules = ko.pureComputed(() => this.checkRules().map((r) => Object.assign({}, r, { status: ruleStatus(r) })));
+      const ratedRules = ko.pureComputed(() => this.checkRules().map((r) => Object.assign({}, r, { status: ruleStatus(r), evidence: evidenceText(r.id) })));
       this.visibleRules = ko.pureComputed(() => {
         const text = this.ruleQuery().trim().toLowerCase();
         const wanted = this.ruleStatusFilter();
         return ratedRules().filter((r) => (this.ruleFilter() === 'all' || r.severity === this.ruleFilter())
           && (!this.ruleCategory() || r.appliesTo === this.ruleCategory())
+          && (!this.ruleSource() || r.origin === this.ruleSource())
           && (!wanted || (wanted === 'OFF' ? !r.enabled : r.enabled && r.status.key === wanted))
-          && (!text || (r.title + ' ' + r.message + ' ' + r.appliesTo + ' ' + r.files).toLowerCase().indexOf(text) >= 0));
+          && (!text || (r.title + ' ' + r.message + ' ' + r.appliesTo + ' ' + r.files + ' ' + r.sourceLine).toLowerCase().indexOf(text) >= 0));
       });
       this.rulesOn = ko.pureComputed(() => this.checkRules().filter((r) => r.enabled).length);
       this.failedRules = ko.pureComputed(() => ratedRules().filter((r) => r.enabled && r.status.key === 'FAILED').length);
-      this.ruleFiltered = ko.pureComputed(() => this.ruleFilter() !== 'all' || !!this.ruleCategory() || !!this.ruleStatusFilter() || !!this.ruleQuery().trim());
-      this.clearRuleFilters = () => { this.ruleFilter('all'); this.ruleCategory(''); this.ruleStatusFilter(''); this.ruleQuery(''); };
+      this.ruleFiltered = ko.pureComputed(() => this.ruleFilter() !== 'all' || !!this.ruleCategory() || !!this.ruleStatusFilter() || !!this.ruleSource() || !!this.ruleQuery().trim());
+      this.clearRuleFilters = () => { this.ruleFilter('all'); this.ruleCategory(''); this.ruleStatusFilter(''); this.ruleSource(''); this.ruleQuery(''); };
       const showChecks = (checks) => {
         const id = this.workspaceId();
         const canManage = this.canManage();
@@ -695,6 +736,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           include: r.files.map(globRegex),
           exclude: r.exclude.map(globRegex),
           appliesTo: r.appliesTo,
+          origin: r.origin || 'VERSION_PACK',
+          sourceLine: (SOURCE_TEXT[r.origin] || SOURCE_TEXT.VERSION_PACK) + (r.source ? ' · ' + r.source : ''),
+          offLine: r.enabled ? '' : 'Turned off' + (r.disabledBy ? ' by ' + r.disabledBy : '') + (r.disabledAt ? ' on ' + ui.when(r.disabledAt) : ''),
           enabled: r.enabled,
           canManage: canManage,
           note: r.matchesProfile ? '' : 'Does not apply to this codebase (Codebase facts).',
@@ -702,11 +746,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           flip: () => setEnabled(r, !r.enabled)
         })));
       };
-      this.openPacks = (event) => {
+      // The recipes and templates behind the rules are read in the AI Prompt Library
+      this.openPrompts = (event) => {
+        if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) {
+          return true;
+        }
         if (event) {
           event.preventDefault();
         }
-        navigate('packs');
+        navigate('prompts');
+        return false;
       };
 
       // ---------- The tabs ----------
@@ -2140,7 +2189,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
 
       // Requests from other pages: a search (the top bar, the palette), a file at its lines (Modernization, old links), a
-      // tab (Integrations, Modernization, notifications, Agent Runs, Workspaces, Version Packs, AI Prompt Library), a fact
+      // tab (Integrations, Modernization, notifications, Workspaces, AI Prompt Library), a fact
       // to open on Codebase facts (the Workspaces sheet's OBDX version)
       let pendingFile = null;
       let pendingFact = null;
@@ -2153,9 +2202,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         pageRequests.codeTab(null);
         const wantedFact = pageRequests.codeFact();
         pageRequests.codeFact(null);
-        // The old profile route (links and bookmarks to the Project Profile page) opens Codebase facts
+        // The old profile route (links and bookmarks to the Project Profile page) opens Codebase facts, the old Version
+        // Packs route Quick checks
         const address = new URLSearchParams(window.location.search);
-        const addressTab = address.get('ojr') === 'profile' ? 'facts' : address.get('tab') || 'explore';
+        const addressTab = address.get('ojr') === 'profile' ? 'facts' : address.get('ojr') === 'packs' ? 'checks' : address.get('tab') || 'explore';
         if (search) {
           this.tab('search');
           this.query(search);
@@ -2237,10 +2287,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             this.openFact(key);
           }
         }));
-        // The tab in the address from the start (the subscription only follows changes); an old knowledge or profile link
-        // says code
+        // The tab in the address from the start (the subscription only follows changes); an old knowledge, profile or
+        // packs link says code
         const params = new URLSearchParams(window.location.search);
-        if (params.get('ojr') === 'knowledge' || params.get('ojr') === 'profile') {
+        if (params.get('ojr') === 'knowledge' || params.get('ojr') === 'profile' || params.get('ojr') === 'packs') {
           params.set('ojr', 'code');
         }
         if (params.get('ojr') === 'code' && params.get('tab') !== this.tab() && window.history.replaceState) {

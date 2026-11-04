@@ -28,7 +28,7 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
       });
       d.requirements.forEach((r) => {
         if (r.status === 'FAILED') {
-          add({ id: 'req-failed-' + r.id + r.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: 'Drafting the specification of ' + r.title + ' failed.',
+          add({ id: 'req-failed-' + r.id + r.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'AI Work Failed', icon: 'robot', tone: 'red', text: 'Drafting the specification of ' + r.title + ' failed.',
             related: r.title, relatedSub: w.name, at: r.updatedAt, priority: 'high', action: true, page: 'requirements', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Message', value: r.message || '' }], errors: [] });
         } else if (r.status === 'READY') {
@@ -49,11 +49,11 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'high', action: true, page: 'impact', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: c.plan ? String(c.plan.items.length) : '0' }], errors: c.plan ? c.plan.risks.slice(0, 3) : [] });
         } else if (c.status === 'GENERATED') {
-          add({ id: 'gen-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'GENERATED', title: 'Agent Run Completed', icon: 'robot', tone: 'violet', text: 'Code generation for ' + c.title + ' completed.',
+          add({ id: 'gen-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'GENERATED', title: 'AI Work Completed', icon: 'robot', tone: 'violet', text: 'Code generation for ' + c.title + ' completed.',
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'medium', action: false, page: 'changes', workspaceId: w.id,
             details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: String(c.files.length) }], errors: [] });
         } else if (c.status === 'FAILED') {
-          add({ id: 'chg-failed-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'Agent Run Failed', icon: 'robot', tone: 'red', text: c.title + ': ' + (c.message || 'the change failed.'),
+          add({ id: 'chg-failed-' + c.id + c.updatedAt, category: 'agent', subjectStatus: 'FAILED', title: 'AI Work Failed', icon: 'robot', tone: 'red', text: c.title + ': ' + (c.message || 'the change failed.'),
             related: c.title, relatedSub: w.name, at: c.updatedAt, priority: 'high', action: true, page: 'changes', workspaceId: w.id, details: [{ label: 'Workspace', value: w.name }], errors: [] });
         }
       });

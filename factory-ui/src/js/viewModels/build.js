@@ -788,7 +788,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             pairs.forEach((p) => { map[p[0]] = p[1]; });
             this.changeRequirement(map);
           });
-          // A change another page asked to open (Agent Runs), else the newest
+          // A change another page asked to open (pageRequests.change), else the newest
           const wanted = list.find((c) => c.id === pageRequests.change());
           pageRequests.change(null);
           if (list.length) {

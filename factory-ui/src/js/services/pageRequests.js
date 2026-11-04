@@ -25,8 +25,9 @@ define(['knockout'], function (ko) {
     codeFile: ko.observable(null),
     /**
      * A Code page tab to open: 'explore', 'search', 'map', 'rules', 'checks', 'index', 'facts' or 'settings' (Integrations
-     * and Modernization open Settings, import notifications and Agent Runs open Index, the palette's G K opens Explore,
-     * G P and the links from Home, Workspaces, Modernization, Version Packs and the AI Prompt Library open Codebase facts)
+     * and Modernization open Settings, import notifications open Index, the palette's G K opens Explore, G P and the
+     * links from Home, Workspaces, Modernization and the AI Prompt Library open Codebase facts, Modernization and the AI
+     * Prompt Library open Quick checks)
      */
     codeTab: ko.observable(null),
     /** A fact key the Code page opens on Codebase facts, for example 'obdx.version' (the Workspaces sheet) */

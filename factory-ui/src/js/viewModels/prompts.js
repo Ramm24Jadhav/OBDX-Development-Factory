@@ -26,7 +26,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const masked = (text) => mask(text) !== String(text || '');
     // A file of the bank's pack folder by its name only: the folder is a path on the factory's server
     const sourceName = (source) => (!source || /^packs\//.test(source) ? source : 'bank pack folder: ' + String(source).replace(/\\/g, '/').split('/').pop());
-    // The agent or task each kind of prompt serves (the names Agent Runs uses)
+    // The agent or task each kind of prompt serves
     const AGENT = { recipe: 'Code Generator' };
     const CATEGORY = { ui: 'UI Generation', service: 'Code Generation', integration: 'API Generation', data: 'Database Script', test: 'Test Generation', config: 'Configuration' };
     const TONE = { 'UI Generation': 'blue', 'Code Generation': 'blue', 'API Generation': 'violet', 'Database Script': 'amber', 'Test Generation': 'red', Configuration: 'grey', 'Built-in Task': 'green', 'Business Logic': 'violet' };
@@ -125,12 +125,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           catCss: badgeCss(TONE[x.category]) + ' fx-badge--plain factory-pr-cat',
           iconCss: 'factory-kpi-icon factory-pr-icon factory-ov2-icon-' + (TONE[x.category] || 'blue'), usageText: x.usage === null ? '–' : x.usage,
           tagPills: x.tags.map((t) => ({ text: t, css: 'fx-chip factory-pr-tag' })),
-          model: model() ? 'Any chat model; in use now: ' + model() : 'Any chat model set on Models & AI Providers',
+          model: model() ? 'Any chat model; in use now: ' + model() : 'Any chat model set on Models & AI',
           kindCss: 'fx-badge fx-badge--plain' + (x.kind === 'system' ? ' fx-badge--info' : ' fx-badge--success')
         }));
       });
 
-      // The model the prompts run on: the one set on Models & AI Providers (no prompt is tied to a model)
+      // The model the prompts run on: the one set on Models & AI (no prompt is tied to a model)
       const model = ko.observable('');
       this.governance = ko.pureComputed(() => {
         const all = this.items();
@@ -138,7 +138,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return {
           templates: templates.length + ' editable templates (version pack recipes' + (templates.some((x) => x.custom) ? ', bank\'s included' : '') + ')',
           system: (all.length - templates.length) + ' protected system prompts (part of the factory)',
-          model: model() ? 'Model in use: ' + model() : 'Model: set on Models & AI Providers'
+          model: model() ? 'Model in use: ' + model() : 'Model: set on Models & AI'
         };
       });
       // Tabs: the design's groups, worked out from what each recipe is
@@ -273,7 +273,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.menuCopy = () => { const x = this.menuItem(); this.menuKey(null); copy(x ? x.guidance : ''); };
       this.menuUse = () => { this.menuKey(null); this.useTemplate(); };
       this.menuShow = () => { const x = this.menuItem(); this.menuKey(null); if (x) { this.selectedKey(x.key); this.detailTab('overview'); } };
-      this.menuPacks = () => { this.menuKey(null); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' })); };
+      // The rules the quick checks apply sit on Code › Quick checks
+      const openChecks = () => { pageRequests.codeTab('checks'); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'code' })); };
+      this.menuChecks = () => { this.menuKey(null); openChecks(); };
 
       this.detailTab = ko.observable('overview');
       this.detailTabs = ui.tabs(this.detailTab, [
@@ -445,7 +447,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // Create Prompt / Template: a split button (design system .fx-split)
       this.createSplit = ui.menu();
       this.menuHowTo = () => { this.createSplit.close(); this.howToAdd(true); };
-      this.createPacks = () => { this.createSplit.close(); window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'packs' })); };
+      this.createChecks = () => { this.createSplit.close(); openChecks(); };
 
       const load = (id) => {
         recipes(null);

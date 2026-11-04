@@ -50,6 +50,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.tab = ko.observable('users');
       // Only administrators see the page; anyone else opening it by URL gets a notice and no admin requests
       this.isAdmin = session.isAdmin;
+      // Reference pages in no menu: the AI Prompt Library and the Design System (Ctrl or Shift click opens a new tab)
+      this.openReference = (event) => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+          return true;
+        }
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: event.currentTarget.getAttribute('data-page') }));
+        return false;
+      };
 
       this.localMode = ko.pureComputed(() => !session.config() || session.config().mode === 'local');
       this.authMode = ko.pureComputed(() => (session.config() ? session.config().mode : 'local'));
