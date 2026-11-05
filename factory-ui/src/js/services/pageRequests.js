@@ -9,7 +9,10 @@ define(['knockout'], function (ko) {
     codeSearch: ko.observable(''),
     /** { kind: 'folder' | 'url', value: path or URL, browse: true to open the folder browser } */
     newWorkspace: ko.observable(null),
-    /** 'upload' or 'text': the Requirements page opens its new-requirement panel (Home and the command palette) */
+    /**
+     * 'upload' or 'text': the Requirements page opens its new-requirement panel (Home and the command palette);
+     * { mode: 'text', title, text } opens it filled in (Modernization's Convert a module)
+     */
     newRequirement: ko.observable(null),
     /** A requirement or change id to open when its page loads (from the command palette) */
     requirement: ko.observable(null),

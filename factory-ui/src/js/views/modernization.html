@@ -1,47 +1,279 @@
 <div class="factory-pg factory-mz">
-  <div class="factory-pg-head">
-    <div>
-      <h1>Modernization &amp; Migration</h1>
-      <p>Plan an OBDX upgrade or a new channel from what the analysis finds in the code.</p>
+  <!-- One header: what was analysed, the actions -->
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Modernization</h1>
+      <p class="factory-rq-lead" id="mzStatus" :hidden="[[!inventory()]]"><oj-bind-text value="[[statusText]]"></oj-bind-text></p>
+      <oj-bind-if test="[[!inventory()]]"><p class="factory-rq-lead">Plan an OBDX upgrade or a new React Native or React app from what the analysis finds in the code.</p></oj-bind-if>
     </div>
-    <div class="factory-pg-actions">
-      <button type="button" class="fx-btn fx-btn--secondary" id="moAssistantButton" on-click="[[openAssistant]]" :disabled="[[!inventory()]]">
-        <span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span>Ask the assistant</button>
-      <button type="button" id="scanButton" class="fx-btn fx-btn--primary" on-click="[[scan]]" :disabled="[[busy() || !canScan() || !workspaceId()]]">
-        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span>Run Analysis</button>
-      <fx-menu-button id="moMoreButton" variant="ghost" icon="more" icon-only label="More actions" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+    <div class="factory-rq-headbar">
+      <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon" id="moAssistantButton" aria-label="Ask the assistant" data-fx-tip="Ask the assistant about the move" aria-controls="moAssistant" on-click="[[openAssistant]]" :disabled="[[!inventory()]]">
+        <span class="factory-nav-icon factory-ico-sparkle" aria-hidden="true"></span></button>
+      <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon" id="mzHistoryButton" aria-label="Last analysis" data-fx-tip="Last analysis and its notes" aria-controls="mzHistory" on-click="[[openHistory]]" :disabled="[[!inventory()]]">
+        <span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></button>
+      <span class="fx-tip-wrap" :tabindex="[[canScan() ? null : '0']]" :data-fx-tip="[[canScan() ? null : 'Running the analysis needs Manage code.']]">
+        <button type="button" id="scanButton" :class="[[inventory() ? 'fx-btn fx-btn--secondary' : 'fx-btn fx-btn--primary']]" on-click="[[scan]]" :disabled="[[busy() || !canScan() || !workspaceId()]]">
+          <span class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Run Analysis</button></span>
+      <oj-bind-if test="[[inventory()]]">
+        <button type="button" id="mzStartButton" class="fx-btn fx-btn--primary" on-click="[[startConversion]]">
+          <span class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Start a conversion</button>
+      </oj-bind-if>
+      <fx-menu-button id="moMoreButton" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
     </div>
   </div>
 
   <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-mz-alert" role="alert" id="modernizationError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
-  <oj-bind-if test="[[emptyMessage()]]"><div class="fx-alert fx-alert--info factory-mz-alert" role="status" id="modernizationEmpty"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></span></div></oj-bind-if>
   <oj-bind-if test="[[loading() && !inventory()]]"><div class="fx-empty" role="status"><span class="fx-skeleton factory-mz-skel"></span>Loading the analysis...</div></oj-bind-if>
 
-  <oj-bind-if test="[[inventory()]]">
-    <p class="factory-mz-status" id="mzStatus"><oj-bind-text value="[[statusText]]"></oj-bind-text></p>
+  <!-- Before the first analysis: three steps -->
+  <oj-bind-if test="[[emptyMessage()]]">
+    <section class="fx-card factory-mz-start" id="modernizationEmpty" aria-labelledby="mzStartTitle">
+      <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span></span>
+      <h2 id="mzStartTitle"><oj-bind-text value="[[emptyMessage]]"></oj-bind-text></h2>
+      <p class="factory-mz-note">The analysis maps the screens, services, roles and flows of the code, so the move can be planned and followed module by module.</p>
+      <ol class="factory-mz-steps">
+        <oj-bind-for-each data="[[startSteps]]" as="s">
+          <template><li><span class="fx-step-dot factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+            <span class="factory-mz-steptext"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></span></span>
+            <span :class="[[s.data.st.css]]"><oj-bind-text value="[[s.data.st.text]]"></oj-bind-text></span></li></template>
+        </oj-bind-for-each>
+      </ol>
+      <div class="factory-btn-row">
+        <button type="button" class="fx-btn fx-btn--primary" id="mzStartScan" on-click="[[scan]]" :disabled="[[busy() || !canScan()]]">Run Analysis</button>
+        <button type="button" class="fx-btn fx-btn--secondary" on-click="[[openCode]]">Open Code</button>
+        <button type="button" class="fx-btn fx-btn--ghost" on-click="[[changeChannel]]">Choose the new app</button>
+      </div>
+    </section>
+  </oj-bind-if>
 
-    <section class="fx-card factory-mz-route" aria-label="Source and target">
+  <oj-bind-if test="[[inventory()]]">
+    <!-- The one problem, or the next step -->
+    <oj-bind-if test="[[problem()]]">
+      <div :class="[[problem().css]]" id="mzProblem" role="status">
+        <span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+        <span class="factory-rqd-problemtext"><strong><oj-bind-text value="[[problem().lead]]"></oj-bind-text></strong><oj-bind-text value="[[' ' + problem().detail]]"></oj-bind-text></span>
+        <oj-bind-if test="[[problem().fix]]">
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mzProblemFix" on-click="[[problem().fix ? problem().fix.run : null]]"><oj-bind-text value="[[problem().fix ? problem().fix.label : '']]"></oj-bind-text></button>
+        </oj-bind-if>
+      </div>
+    </oj-bind-if>
+    <oj-bind-if test="[[!problem() && nextLine()]]">
+      <p class="factory-rqd-next factory-mz-next" id="mzNext" role="status"><span class="factory-rqd-next-k">Next</span> <oj-bind-text value="[[nextLine]]"></oj-bind-text></p>
+    </oj-bind-if>
+
+    <!-- The answer: how far the conversion is (boxes that filter the modules) and the target -->
+    <div :class="[[newApp() ? 'factory-mz-summary' : 'factory-mz-summary is-jet']]" id="mzSummary">
+      <oj-bind-if test="[[newApp()]]">
+        <ol class="factory-rq-stages factory-mz-boxes" id="mzBoxes" aria-label="Modules by conversion">
+          <oj-bind-for-each data="[[boxes]]" as="b">
+            <template><li>
+              <button type="button" :class="[[b.data.css]]" :id="[['mzBox-' + b.data.key]]" :aria-pressed="[[b.data.pressed]]" :aria-label="[[b.data.label]]" on-click="[[b.data.pick]]">
+                <span class="factory-rq-stage-top"><span class="factory-rq-stage-name"><oj-bind-text value="[[b.data.name]]"></oj-bind-text></span>
+                  <span class="factory-rq-stage-count"><oj-bind-text value="[[b.data.count]]"></oj-bind-text></span></span>
+                <span class="factory-rq-stage-sub"><oj-bind-text value="[[b.data.sub]]"></oj-bind-text></span>
+              </button></li></template>
+          </oj-bind-for-each>
+        </ol>
+      </oj-bind-if>
+      <section :class="[[targetCard().css]]" id="mzTargetChannel" aria-label="Target">
+        <span class="factory-mz-targetlabel">Target app</span>
+        <strong class="factory-mz-targetname"><oj-bind-text value="[[targetCard().title]]"></oj-bind-text></strong>
+        <span class="factory-mz-targetsub"><oj-bind-text value="[[targetCard().sub]]"></oj-bind-text></span>
+        <button type="button" :class="[[newApp() ? 'factory-link-sm factory-mz-change' : 'fx-btn fx-btn--secondary fx-btn--sm factory-mz-change']]" id="mzChangeChannel" on-click="[[startConversion]]">
+          <oj-bind-text value="[[newApp() ? 'Change' : 'Choose the new app']]"></oj-bind-text></button>
+      </section>
+    </div>
+
+    <!-- Source and target versions, each with where the value comes from -->
+    <ul class="factory-mz-route" aria-label="Source and target versions">
       <oj-bind-for-each data="[[endpoints]]" as="e">
-        <template><div class="factory-mz-end" :id="[[e.data.id]]">
+        <template><li class="factory-mz-end" :id="[[e.data.id]]">
           <span class="factory-mz-endlabel"><oj-bind-text value="[[e.data.label]]"></oj-bind-text></span>
           <strong class="factory-mz-endvalue"><oj-bind-text value="[[e.data.value]]"></oj-bind-text></strong>
-          <span :class="[[e.data.src.css]]"><oj-bind-text value="[[e.data.src.text]]"></oj-bind-text></span></div></template>
+          <span :class="[[e.data.src.css + ' factory-mz-src']]"><oj-bind-text value="[[e.data.src.text]]"></oj-bind-text></span></li></template>
       </oj-bind-for-each>
-      <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-change" id="mzChangeChannel" on-click="[[changeChannel]]" :disabled="[[!canScan()]]">Change the channel</button>
-    </section>
+    </ul>
 
-    <div class="fx-tabs factory-mz-tabs" role="tablist" aria-label="Modernization">
+    <div class="fx-tabs factory-mz-tabs" role="tablist" aria-label="Modernization" on-keydown="[[tabKey]]">
       <oj-bind-for-each data="[[tabs]]" as="t">
-        <template><button type="button" role="tab" :id="[['mo-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :aria-controls="[['mo-panel-' + t.data.value]]" on-click="[[t.data.pick]]">
-          <oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template>
+        <template><button type="button" role="tab" :id="[['mo-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]"
+                          :aria-controls="[['mo-panel-' + t.data.value]]" on-click="[[t.data.pick]]">
+          <oj-bind-text value="[[t.data.label]]"></oj-bind-text><oj-bind-if test="[[t.data.n !== '']]"><span class="factory-rqd-cnt"><oj-bind-text value="[[t.data.n]]"></oj-bind-text></span></oj-bind-if></button></template>
       </oj-bind-for-each>
     </div>
 
-    <!-- Overview: what to do (detected opportunities with evidence), phases and risks -->
-    <div class="factory-mz-overview" id="mo-panel-overview" role="tabpanel" aria-labelledby="mo-overview" :hidden="[[tab() !== 'overview']]">
-      <section class="fx-card" aria-labelledby="mzOppTitle">
-        <h2 class="fx-card-title" id="mzOppTitle">Opportunities</h2>
-        <p class="fx-card-sub">Each one is detected in this workspace; open it for the evidence. Model-written advice is only in the assistant.</p>
+    <!-- Modules: compact rows, the module beside them -->
+    <div class="factory-rq-layout factory-mz-layout" id="mo-panel-modules" role="tabpanel" aria-labelledby="mo-modules" :hidden="[[tab() !== 'modules']]">
+      <section class="fx-card factory-rq-listcard factory-mz-list" aria-labelledby="mzModulesTitle">
+        <div class="factory-rq-listhead">
+          <h2 id="mzModulesTitle">Modules<oj-bind-if test="[[moduleFilterName()]]"><span class="factory-rq-count"><oj-bind-text value="[[': ' + moduleFilterName().toLowerCase()]]"></oj-bind-text></span></oj-bind-if></h2>
+          <span class="factory-rq-shown" role="status"><oj-bind-text value="[[modulesShown]]"></oj-bind-text></span>
+        </div>
+        <div class="factory-rq-chips" role="group" aria-label="Show modules with" id="mzModuleChips">
+          <oj-bind-for-each data="[[moduleChips]]" as="c">
+            <template><button type="button" class="fx-chip fx-chip--sm" :id="[['mzChip-' + c.data.value]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]">
+              <oj-bind-if test="[[c.data.dot]]"><span :class="[[c.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[c.data.text]]"></oj-bind-text></button></template>
+          </oj-bind-for-each>
+        </div>
+        <div class="factory-rq-searchrow">
+          <fx-input class="factory-rq-search" input-id="moduleSearch" label="Search modules" hide-label icon="search" clearable placeholder="Search modules, screens or files" value="{{moduleSearch}}"></fx-input>
+        </div>
+        <ul class="factory-rq-list factory-mz-modules" id="mzModuleList" aria-label="Modules">
+          <oj-bind-for-each data="[[moduleRows]]" as="r">
+            <template><li :class="[[r.data.css]]">
+              <button type="button" class="factory-rq-open" :aria-current="[[r.data.current]]" :aria-label="[[r.data.label]]" on-click="[[r.data.pick]]">
+                <span class="factory-rq-row-title"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></span>
+                <span class="factory-rq-row-sub"><span><oj-bind-text value="[[r.data.sub]]"></oj-bind-text></span></span>
+                <span class="factory-rq-row-chips">
+                  <oj-bind-if test="[[r.data.showStatus]]"><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></oj-bind-if>
+                  <span :class="[[r.data.size.css]]"><oj-bind-text value="[[r.data.size.text]]"></oj-bind-text></span>
+                  <oj-bind-if test="[[r.data.uses]]"><span class="fx-badge fx-badge--danger"><oj-bind-text value="[[r.data.uses]]"></oj-bind-text></span></oj-bind-if>
+                  <oj-bind-if test="[[r.data.when]]"><span class="factory-rq-when factory-mz-when"><oj-bind-text value="[[r.data.when]]"></oj-bind-text></span></oj-bind-if>
+                </span>
+              </button>
+              <fx-menu-button class="factory-rq-rowmenu" :label="[['More for ' + r.data.name]]" icon="more" icon-only variant="ghost" size="sm" align="end" items="[[r.data.menuItems]]" on-fx-action="[[r.data.menu]]"></fx-menu-button>
+            </li></template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[moduleRows().length === 0]]"><div class="fx-empty" id="mzModulesEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span><span>No modules match.</span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clearModuleFilters]]">Show all modules</button></div></oj-bind-if>
+      </section>
+
+      <div class="factory-rq-side">
+        <oj-bind-if test="[[moduleView()]]">
+          <section class="fx-card factory-rqd factory-mz-detail" id="mzModule" aria-labelledby="mzModuleTitle">
+            <div class="factory-rqd-head">
+              <div class="factory-rqd-titles"><h2 class="factory-rqd-name" id="mzModuleTitle"><oj-bind-text value="[[moduleView().name]]"></oj-bind-text></h2>
+                <p class="factory-rqd-ids"><oj-bind-text value="[[moduleView().sub]]"></oj-bind-text></p></div>
+              <div class="factory-rqd-headside">
+                <oj-bind-if test="[[moduleView().showStatus]]"><span :class="[[moduleView().status.css]]" id="mzModuleStatus"><span :class="[[moduleView().status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[moduleView().status.text]]"></oj-bind-text></span></oj-bind-if>
+                <button type="button" class="fx-btn fx-btn--primary" id="mzConvertButton" on-click="[[moduleView().primary.run]]"><oj-bind-text value="[[moduleView().primary.label]]"></oj-bind-text></button>
+                <fx-menu-button class="factory-rq-more" variant="ghost" icon="more" icon-only label="More for this module" align="end" items="[[moduleView().menuItems]]" on-fx-action="[[moduleView().menu]]"></fx-menu-button>
+              </div>
+            </div>
+            <dl class="factory-ch-facts factory-mz-facts" id="mzModuleFacts">
+              <div><dt>Conversion</dt><dd id="mzModuleConversion"><oj-bind-text value="[[moduleView().conversion]]"></oj-bind-text></dd></div>
+              <div><dt>Phases</dt><dd><oj-bind-text value="[[moduleView().phases]]"></oj-bind-text></dd></div>
+              <div><dt>Services</dt><dd><oj-bind-text value="[[moduleView().services]]"></oj-bind-text></dd></div>
+            </dl>
+            <div class="factory-subtabs factory-mz-subtabs" role="group" aria-label="Show">
+              <oj-bind-for-each data="[[moduleTabs]]" as="t">
+                <template><button type="button" :class="[[t.data.css]]" :id="[['mzSub-' + t.data.value]]" :aria-pressed="[[t.data.selected() ? 'true' : 'false']]" on-click="[[t.data.pick]]">
+                  <oj-bind-text value="[[t.data.label]]"></oj-bind-text><span class="factory-rqd-cnt"><oj-bind-text value="[[t.data.n]]"></oj-bind-text></span></button></template>
+              </oj-bind-for-each>
+            </div>
+            <oj-bind-if test="[[moduleTab() === 'screens']]">
+              <ul class="factory-mz-rows" id="mzScreens" aria-label="Screens of the module">
+                <oj-bind-for-each data="[[moduleScreens]]" as="s">
+                  <template><li class="factory-mz-srow" :title="[[s.data.files]]">
+                    <span class="factory-mz-stop"><strong><oj-bind-text value="[[s.data.name]]"></oj-bind-text></strong>
+                      <span :class="[[s.data.size.css]]"><oj-bind-text value="[[s.data.size.text]]"></oj-bind-text></span><span class="factory-mz-phase"><oj-bind-text value="[[s.data.phase]]"></oj-bind-text></span></span>
+                    <bdi class="factory-mono factory-mz-path"><oj-bind-text value="[[s.data.file]]"></oj-bind-text></bdi>
+                    <span class="factory-mz-evdetail" :title="[[s.data.calls]]"><oj-bind-text value="[[s.data.meta]]"></oj-bind-text></span>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-rowbtn" on-click="[[s.data.open]]" :aria-label="[['Show ' + s.data.name + ' in Code']]">Show in Code</button>
+                  </li></template>
+                </oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[moduleTab() === 'findings']]">
+              <oj-bind-if test="[[moduleFindings().length === 0]]"><p class="factory-rqd-next factory-mz-none"><oj-bind-text value="[[searchingFindings() ? 'Searching the code...' : 'No forbidden usage found in this module.']]"></oj-bind-text></p></oj-bind-if>
+              <ul class="factory-mz-rows" aria-label="Forbidden usage in the module">
+                <oj-bind-for-each data="[[moduleFindings]]" as="f">
+                  <template><li class="factory-mz-frow">
+                    <span class="factory-mz-stop"><span :class="[[f.data.pill.css]]"><oj-bind-text value="[[f.data.pill.text]]"></oj-bind-text></span><strong><oj-bind-text value="[[f.data.rule]]"></oj-bind-text></strong></span>
+                    <bdi class="factory-mono factory-mz-path"><oj-bind-text value="[[f.data.path + ' · lines ' + f.data.lines]]"></oj-bind-text></bdi>
+                    <span class="factory-mz-evdetail"><oj-bind-text value="[[f.data.replacement]]"></oj-bind-text></span>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-rowbtn" on-click="[[f.data.open]]" :aria-label="[['Show ' + f.data.path + ' in Code at line ' + f.data.startLine]]">Show in Code</button>
+                  </li></template>
+                </oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[moduleTab() === 'changes']]">
+              <oj-bind-if test="[[moduleChanges().length === 0]]"><p class="factory-rqd-next factory-mz-none"><oj-bind-text value="[[newApp() ? 'No change writes this module into the app yet.' : 'Changes are counted once a React Native or React app is chosen.']]"></oj-bind-text></p></oj-bind-if>
+              <ul class="factory-mz-rows" aria-label="Changes of the module">
+                <oj-bind-for-each data="[[moduleChanges]]" as="c">
+                  <template><li class="factory-mz-srow">
+                    <span class="factory-mz-stop"><strong><oj-bind-text value="[[c.data.title]]"></oj-bind-text></strong><span :class="[[c.data.status.css]]"><span :class="[[c.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[c.data.status.text]]"></oj-bind-text></span></span>
+                    <span class="factory-mz-evdetail"><oj-bind-text value="[[c.data.sub + ' · ' + c.data.when]]"></oj-bind-text></span>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-rowbtn" on-click="[[c.data.open]]">Open in Changes</button>
+                  </li></template>
+                </oj-bind-for-each>
+              </ul>
+            </oj-bind-if>
+          </section>
+        </oj-bind-if>
+      </div>
+    </div>
+
+    <!-- Findings: forbidden usage as compact rows, the version pack compatibility, the rules -->
+    <div class="factory-mz-stack" id="mo-panel-findings" role="tabpanel" aria-labelledby="mo-findings" :hidden="[[tab() !== 'findings']]">
+      <section class="fx-card factory-mz-list" aria-labelledby="mzFindTitle">
+        <div class="factory-rq-listhead">
+          <h2 id="mzFindTitle">Deprecated and forbidden APIs</h2>
+          <span class="factory-rq-shown" role="status"><oj-bind-text value="[[findingsShown]]"></oj-bind-text></span>
+        </div>
+        <p class="factory-rq-shown factory-mz-sub" id="mzFindSummary"><oj-bind-text value="[[findingsSummary]]"></oj-bind-text> Code search finds up to 20 files per rule; each is checked against the rule's pattern.</p>
+        <oj-bind-if test="[[findings().length > 0]]">
+          <div class="factory-rq-chips" role="group" aria-label="Show findings of" id="mzSeverityChips">
+            <oj-bind-for-each data="[[severityChips]]" as="c">
+              <template><button type="button" class="fx-chip fx-chip--sm" :id="[['mzSev-' + c.data.value]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]">
+                <oj-bind-if test="[[c.data.dot]]"><span :class="[[c.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[c.data.text]]"></oj-bind-text></button></template>
+            </oj-bind-for-each>
+          </div>
+          <div class="factory-rq-searchrow factory-mz-findfilters">
+            <fx-input class="factory-rq-search" input-id="findingSearch" label="Search findings" hide-label icon="search" clearable placeholder="Search rule or file" value="{{findingSearch}}"></fx-input>
+            <fx-select id="findingModule" class="factory-mz-modpick" label="Module" hide-label options="[[findingModuleOptions]]" value="{{findingModule}}"></fx-select>
+          </div>
+        </oj-bind-if>
+        <ul class="factory-mz-rows" id="findingList" aria-label="Forbidden usage">
+          <oj-bind-for-each data="[[visibleFindings]]" as="f">
+            <template><li class="factory-mz-frow" :data-path="[[f.data.path]]">
+              <span class="factory-mz-stop"><span :class="[[f.data.pill.css]]"><oj-bind-text value="[[f.data.pill.text]]"></oj-bind-text></span><strong class="factory-mz-rule"><oj-bind-text value="[[f.data.rule]]"></oj-bind-text></strong>
+                <span class="factory-mz-phase factory-mono"><oj-bind-text value="[[f.data.ruleId]]"></oj-bind-text></span><span class="factory-mz-phase"><oj-bind-text value="[[f.data.pack]]"></oj-bind-text></span></span>
+              <bdi class="factory-mono factory-mz-path"><oj-bind-text value="[[f.data.path]]"></oj-bind-text><span><oj-bind-text value="[[' · lines ' + f.data.lines]]"></oj-bind-text></span></bdi>
+              <span class="factory-mz-evdetail"><oj-bind-text value="[[f.data.replacement]]"></oj-bind-text></span>
+              <span class="factory-mz-rowacts"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[f.data.open]]" :aria-label="[['Show ' + f.data.path + ' in Code at line ' + f.data.startLine]]">Show in Code</button>
+                <fx-menu-button variant="ghost" size="sm" icon="more" icon-only align="end" :label="[['More for ' + f.data.ruleId + ' in ' + f.data.path]]" items="[[findingItems]]" on-fx-action="[[f.data.menuAction]]"></fx-menu-button></span>
+            </li></template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[searchingFindings()]]"><div class="fx-empty" role="status"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>Searching the code...</div></oj-bind-if>
+        <oj-bind-if test="[[!searchingFindings() && visibleFindings().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
+          <span><oj-bind-text value="[[findings().length > 0 ? 'No findings match.' : 'No usage of forbidden APIs in the indexed code.']]"></oj-bind-text></span>
+          <oj-bind-if test="[[findings().length > 0]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clearFindingFilters]]">Clear search and filters</button></oj-bind-if></div></oj-bind-if>
+      </section>
+
+      <section class="fx-card factory-mz-list" aria-labelledby="mzCompatTitle">
+        <div class="factory-rq-listhead"><h2 id="mzCompatTitle">Version pack compatibility</h2><span class="fx-badge fx-badge--neutral factory-mz-src">Version pack</span></div>
+        <dl class="factory-ch-facts factory-mz-facts" id="compatTable">
+          <oj-bind-for-each data="[[compatibility]]" as="c">
+            <template><div><dt><oj-bind-text value="[[c.data.name]]"></oj-bind-text></dt>
+              <dd><oj-bind-text value="[['OBDX ' + version() + ': ' + c.data.now + ' · OBDX ' + target() + ': ' + c.data.then]]"></oj-bind-text></dd></div></template>
+          </oj-bind-for-each>
+        </dl>
+        <oj-bind-if test="[[!upgrade()]]"><p class="factory-mz-note">This workspace is on the newest version pack; there is no version upgrade to check.</p></oj-bind-if>
+      </section>
+
+      <details class="fx-disclosure factory-mz-card" id="mzRules">
+        <summary>Rules checked<span class="fx-disclosure-hint"><oj-bind-text value="[[ruleSummary]]"></oj-bind-text></span></summary>
+        <div class="fx-disclosure-body">
+          <div class="fx-table-wrap">
+            <table class="fx-table" id="ruleTable"><thead><tr><th>Rule</th><th>Pack</th><th>Severity</th><th>Applies to</th><th>On</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[ruleRows]]" as="r"><template><tr :title="[[r.data.message]]"><td><oj-bind-text value="[[r.data.title]]"></oj-bind-text><span class="factory-mz-evdetail factory-mono"><oj-bind-text value="[[r.data.id]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[r.data.pack]]"></oj-bind-text></td><td><span :class="[[r.data.severity.css]]"><oj-bind-text value="[[r.data.severity.text]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.on]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Plan: what to do, the checklist, phases, flows to retest, rollback, services and roles -->
+    <div class="factory-mz-stack" id="mo-panel-plan" role="tabpanel" aria-labelledby="mo-plan" :hidden="[[tab() !== 'plan']]">
+      <p class="factory-rqd-next" id="mzCompletion" role="status"><span class="factory-rqd-next-k">Status</span> <oj-bind-text value="[[gateText]]"></oj-bind-text></p>
+
+      <section class="fx-card factory-mz-list" aria-labelledby="mzOppTitle">
+        <div class="factory-rq-listhead"><h2 id="mzOppTitle">What to do</h2><span class="factory-rq-shown"><oj-bind-text value="[[opportunities().length + ' detected']]"></oj-bind-text></span></div>
+        <p class="factory-rq-shown factory-mz-sub">Each one is detected in this workspace; open it for the evidence. Model-written advice is only in the assistant.</p>
         <div class="factory-mz-opps" id="mzOpportunities">
           <oj-bind-for-each data="[[opportunities]]" as="o">
             <template><details class="fx-disclosure factory-mz-opp" :id="[['mzOpp-' + o.data.id]]">
@@ -60,112 +292,60 @@
               </div>
             </details></template>
           </oj-bind-for-each>
-          <oj-bind-if test="[[opportunities().length === 0 && !searchingFindings()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>Nothing to change</strong>The analysis found no upgrade, forbidden usage, large screens or outside services.</div></oj-bind-if>
+          <oj-bind-if test="[[opportunities().length === 0 && !searchingFindings()]]"><p class="factory-mz-note">Nothing to change: the analysis found no upgrade, forbidden usage, large screens or outside services.</p></oj-bind-if>
           <oj-bind-if test="[[searchingFindings()]]"><p class="factory-mz-note" role="status">Searching the code for forbidden usage...</p></oj-bind-if>
         </div>
       </section>
 
-      <div class="factory-mz-side">
-        <section class="fx-card" aria-labelledby="mzPhasesTitle">
-          <h2 class="fx-card-title" id="mzPhasesTitle">Migration phases <span class="fx-badge fx-badge--warning factory-mz-src">Estimate</span></h2>
-          <ol class="factory-mz-phases" id="mzPhases">
-            <oj-bind-for-each data="[[phases]]" as="p">
-              <template><li><span class="fx-step-dot factory-mz-dot"><oj-bind-text value="[[p.data.n]]"></oj-bind-text></span>
-                <span><strong><oj-bind-text value="[[p.data.name]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[p.data.text]]"></oj-bind-text></span></span></li></template>
+      <div class="factory-mz-two">
+        <section class="fx-card factory-mz-list" aria-labelledby="mzPreTitle">
+          <h2 class="factory-mz-h2" id="mzPreTitle">Prerequisites</h2>
+          <ul class="factory-mz-gates" id="mzPrerequisites">
+            <oj-bind-for-each data="[[prerequisites]]" as="g">
+              <template><li><span :class="[[g.data.st.css]]"><oj-bind-text value="[[g.data.st.text]]"></oj-bind-text></span>
+                <span><strong><oj-bind-text value="[[g.data.text]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[g.data.detail]]"></oj-bind-text></span></span></li></template>
             </oj-bind-for-each>
-          </ol>
-          <p class="factory-mz-note"><oj-bind-text value="[[effortText]]"></oj-bind-text></p>
-          <p class="factory-mz-note"><strong>Progress:</strong> not tracked. The factory does not record migrated screens.</p>
-          <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[goTab('plan')]]">Open the plan</button>
+          </ul>
         </section>
-        <section class="fx-card" aria-labelledby="mzRiskTitle">
-          <h2 class="fx-card-title" id="mzRiskTitle">Risks</h2>
-          <div class="factory-mz-mix" role="img" :aria-label="[[riskLabel]]">
-            <oj-bind-for-each data="[[risk]]" as="r"><template><span :class="[[r.data.css]]" :style="[[r.data.style]]"></span></template></oj-bind-for-each>
-          </div>
-          <p class="factory-mz-legend"><oj-bind-for-each data="[[risk]]" as="r"><template><span><i :class="[[r.data.css]]"></i><oj-bind-text value="[[r.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></p>
-          <ul class="factory-mz-risks">
-            <oj-bind-for-each data="[[riskRows]]" as="r">
-              <template><li><button type="button" class="factory-mz-riskrow" on-click="[[r.data.open]]"><span><oj-bind-text value="[[r.data.text]]"></oj-bind-text></span>
-                <span :class="[[r.data.pill.css]]"><oj-bind-text value="[[r.data.pill.text]]"></oj-bind-text></span></button></li></template>
+        <section class="fx-card factory-mz-list" aria-labelledby="mzGateTitle">
+          <h2 class="factory-mz-h2" id="mzGateTitle">Validation gates</h2>
+          <ul class="factory-mz-gates" id="mzGates">
+            <oj-bind-for-each data="[[gates]]" as="g">
+              <template><li><span :class="[[g.data.st.css]]"><oj-bind-text value="[[g.data.st.text]]"></oj-bind-text></span>
+                <span><strong><oj-bind-text value="[[g.data.text]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[g.data.detail]]"></oj-bind-text></span></span></li></template>
             </oj-bind-for-each>
           </ul>
         </section>
       </div>
-    </div>
 
-    <!-- Findings: compatibility of the version packs, usage of what their rules forbid, the rules -->
-    <div class="factory-mz-stack" id="mo-panel-findings" role="tabpanel" aria-labelledby="mo-findings" :hidden="[[tab() !== 'findings']]">
-      <section class="fx-card" aria-labelledby="mzCompatTitle">
-        <h2 class="fx-card-title" id="mzCompatTitle">Compatibility <span class="fx-badge fx-badge--neutral factory-mz-src">Version pack</span></h2>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="compatTable">
-            <thead><tr><th>Check</th><th><oj-bind-text value="[['OBDX ' + version() + ' (now)']]"></oj-bind-text></th><th><oj-bind-text value="[['OBDX ' + target() + ' (target)']]"></oj-bind-text></th></tr></thead>
-            <tbody><oj-bind-for-each data="[[compatibility]]" as="c"><template><tr><td><oj-bind-text value="[[c.data.name]]"></oj-bind-text></td>
-              <td class="factory-mz-wrap"><oj-bind-text value="[[c.data.now]]"></oj-bind-text></td><td class="factory-mz-wrap"><oj-bind-text value="[[c.data.then]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-          </table>
-        </div>
-        <oj-bind-if test="[[!upgrade()]]"><p class="factory-mz-note">This workspace is on the newest version pack; there is no version upgrade to check.</p></oj-bind-if>
+      <section class="fx-card factory-mz-list" aria-labelledby="mzPhasesTitle">
+        <div class="factory-rq-listhead"><h2 id="mzPhasesTitle">Migration phases <span class="fx-badge fx-badge--warning factory-mz-src">Estimate</span></h2>
+          <a :href="[[csvUrl]]" class="fx-btn fx-btn--secondary fx-btn--sm" id="csvLink"><span class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>Download CSV</a></div>
+        <p class="factory-rq-shown factory-mz-sub">Small screens first, large screens last. <oj-bind-text value="[[effortText]]"></oj-bind-text>. Each module's screens are on Modules.</p>
+        <ol class="factory-mz-phases" id="mzPhases">
+          <oj-bind-for-each data="[[phases]]" as="p">
+            <template><li><span class="fx-step-dot factory-mz-dot"><oj-bind-text value="[[p.data.n]]"></oj-bind-text></span>
+              <span><strong><oj-bind-text value="[[p.data.name]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[p.data.text + ' · ' + p.data.modules]]"></oj-bind-text></span></span></li></template>
+          </oj-bind-for-each>
+        </ol>
       </section>
 
-      <section class="fx-card" aria-labelledby="mzFindTitle">
-        <h2 class="fx-card-title" id="mzFindTitle">Deprecated and forbidden APIs <span class="fx-badge fx-badge--info factory-mz-src">Detected: version pack rules</span></h2>
-        <p class="fx-card-sub" id="mzFindSummary"><oj-bind-text value="[[findingsSummary]]"></oj-bind-text> Code search finds up to 20 files per rule; each is checked against the rule's pattern.</p>
-        <div class="factory-mz-filters">
-          <span class="fx-control factory-mz-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="findingSearch" placeholder="Search rule or file" aria-label="Search findings" on-input="[[findingSearchInput]]"></span>
-          <fx-select id="findingSeverity" label="Severity" hide-label options="[[severityOptions]]" value="{{severityFilter}}"></fx-select>
-          <fx-select id="findingModule" label="Module" hide-label options="[[findingModuleOptions]]" value="{{findingModule}}"></fx-select>
-        </div>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="findingTable">
-            <thead><tr><th>Rule</th><th>File and lines</th><th>Pack</th><th>Severity</th><th>What to do</th><th class="fx-table-actions"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
-            <tbody>
-              <oj-bind-for-each data="[[visibleFindings]]" as="f">
-                <template><tr><td><span class="factory-mz-rule"><oj-bind-text value="[[f.data.rule]]"></oj-bind-text></span><span class="factory-mz-evdetail factory-mono"><oj-bind-text value="[[f.data.ruleId]]"></oj-bind-text></span></td>
-                  <td><bdi class="factory-mono factory-mz-path"><oj-bind-text value="[[f.data.path]]"></oj-bind-text></bdi><span class="factory-mz-evdetail"><oj-bind-text value="[['lines ' + f.data.lines]]"></oj-bind-text></span></td>
-                  <td class="factory-mz-nowrap"><oj-bind-text value="[[f.data.pack]]"></oj-bind-text></td>
-                  <td><span :class="[[f.data.pill.css]]"><oj-bind-text value="[[f.data.pill.text]]"></oj-bind-text></span></td>
-                  <td class="factory-mz-wrap"><oj-bind-text value="[[f.data.replacement]]"></oj-bind-text></td>
-                  <td class="fx-table-actions"><span class="factory-mz-rowacts"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[f.data.open]]" :aria-label="[['Show ' + f.data.path + ' in Code at line ' + f.data.startLine]]">Show in Code</button>
-                    <fx-menu-button variant="ghost" size="sm" icon="more" icon-only :label="[['More for ' + f.data.ruleId + ' in ' + f.data.path]]" items="[[findingItems]]" on-fx-action="[[f.data.menuAction]]"></fx-menu-button></span></td></tr></template>
-              </oj-bind-for-each>
-            </tbody>
-          </table>
-          <oj-bind-if test="[[searchingFindings()]]"><div class="fx-empty" role="status"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>Searching the code...</div></oj-bind-if>
-          <oj-bind-if test="[[!searchingFindings() && visibleFindings().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span><strong>Nothing found</strong>No usage of forbidden APIs in the indexed code<oj-bind-if test="[[findings().length > 0]]"> for these filters</oj-bind-if>.</div></oj-bind-if>
-        </div>
-      </section>
+      <div class="factory-mz-two">
+        <section class="fx-card factory-mz-list" aria-labelledby="mzFlowTitle">
+          <h2 class="factory-mz-h2" id="mzFlowTitle">User flows to retest <span class="fx-badge fx-badge--info factory-mz-src">Detected: code scan</span></h2>
+          <ul class="factory-mz-evidence" id="mzFlows"><oj-bind-for-each data="[[flows]]" as="f"><template><li><span class="factory-mz-evtext"><strong><oj-bind-text value="[[f.data.name]]"></oj-bind-text></strong>
+            <span class="factory-mz-evdetail"><oj-bind-text value="[[f.data.steps]]"></oj-bind-text></span></span></li></template></oj-bind-for-each></ul>
+          <oj-bind-if test="[[flows().length === 0]]"><p class="factory-mz-note">No flows between screens found in the code.</p></oj-bind-if>
+        </section>
+        <section class="fx-card factory-mz-list" aria-labelledby="mzRollTitle">
+          <h2 class="factory-mz-h2" id="mzRollTitle">Rollback</h2>
+          <ul class="factory-mz-bullets" id="mzRollback"><oj-bind-for-each data="[[rollback]]" as="r"><template><li><oj-bind-text value="[[r.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        </section>
+      </div>
 
-      <details class="fx-disclosure factory-mz-card" id="mzRules">
-        <summary>Rules checked<span class="fx-disclosure-hint"><oj-bind-text value="[[ruleSummary]]"></oj-bind-text></span></summary>
-        <div class="fx-disclosure-body">
-          <div class="fx-table-wrap">
-            <table class="fx-table" id="ruleTable"><thead><tr><th>Rule</th><th>Pack</th><th>Severity</th><th>Applies to</th><th>On</th></tr></thead>
-              <tbody><oj-bind-for-each data="[[ruleRows]]" as="r"><template><tr :title="[[r.data.message]]"><td><oj-bind-text value="[[r.data.title]]"></oj-bind-text><span class="factory-mz-evdetail factory-mono"><oj-bind-text value="[[r.data.id]]"></oj-bind-text></span></td>
-                <td><oj-bind-text value="[[r.data.pack]]"></oj-bind-text></td><td><span :class="[[r.data.severity.css]]"><oj-bind-text value="[[r.data.severity.text]]"></oj-bind-text></span></td>
-                <td><oj-bind-text value="[[r.data.appliesTo]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.on]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
-          </div>
-        </div>
-      </details>
-    </div>
-
-    <!-- Dependencies: impact per module, services, roles -->
-    <div class="factory-mz-stack" id="mo-panel-dependencies" role="tabpanel" aria-labelledby="mo-dependencies" :hidden="[[tab() !== 'dependencies']]">
-      <section class="fx-card" aria-labelledby="mzModTitle">
-        <h2 class="fx-card-title" id="mzModTitle">Impact by module <span class="fx-badge fx-badge--info factory-mz-src">Detected: code scan</span></h2>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="moduleTable">
-            <thead><tr><th>Module</th><th>Screens</th><th>Large screens</th><th>Services called</th><th>Outside this code</th><th>Size</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[moduleRows]]" as="m"><template><tr><td><oj-bind-text value="[[m.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.screens]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[m.data.large]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.calls]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.outside]]"></oj-bind-text></td>
-              <td><span :class="[[m.data.pill.css]]"><oj-bind-text value="[[m.data.pill.text]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody>
-          </table>
-        </div>
-      </section>
-      <section class="fx-card" id="mzServices" aria-labelledby="mzServicesTitle">
-        <h2 class="fx-card-title" id="mzServicesTitle">Services <span class="fx-badge fx-badge--info factory-mz-src">Detected: code scan</span></h2>
-        <p class="factory-mz-note"><oj-bind-text value="[[serviceCounts]]"></oj-bind-text>. Each one, with the file that serves it and the screens that call it, is on Code › Map.</p>
-        <div><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="openCodeMap" on-click="[[openCodeMap]]"><span class="factory-nav-icon factory-ico-share" aria-hidden="true"></span>Open Code › Map</button></div>
+      <section class="fx-card factory-mz-list factory-mz-services" id="mzServices" aria-labelledby="mzServicesTitle">
+        <div class="factory-mz-svcline"><span><strong id="mzServicesTitle">Services</strong> <oj-bind-text value="[[serviceCounts]]"></oj-bind-text>. Each one, with the file that serves it and the screens that call it, is on Code › Map.</span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="openCodeMap" on-click="[[openCodeMap]]"><span class="factory-nav-icon factory-ico-share factory-btn-icon" aria-hidden="true"></span>Open Code › Map</button></div>
       </section>
       <details class="fx-disclosure factory-mz-card" id="mzRoles">
         <summary>Roles and segments<span class="fx-disclosure-hint"><oj-bind-text value="[[roles().length + ' found']]"></oj-bind-text></span></summary>
@@ -176,83 +356,67 @@
         </div>
       </details>
     </div>
-
-    <!-- Plan: status and gates, prerequisites, phases with their screens, validation, rollback -->
-    <div class="factory-mz-stack" id="mo-panel-plan" role="tabpanel" aria-labelledby="mo-plan" :hidden="[[tab() !== 'plan']]">
-      <div class="fx-alert fx-alert--info" id="mzCompletion" role="status"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[gateText]]"></oj-bind-text></span></div>
-      <div class="factory-mz-two">
-        <section class="fx-card" aria-labelledby="mzPreTitle">
-          <h2 class="fx-card-title" id="mzPreTitle">Prerequisites</h2>
-          <ul class="factory-mz-gates" id="mzPrerequisites">
-            <oj-bind-for-each data="[[prerequisites]]" as="g">
-              <template><li><span :class="[[g.data.st.css]]"><oj-bind-text value="[[g.data.st.text]]"></oj-bind-text></span>
-                <span><strong><oj-bind-text value="[[g.data.text]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[g.data.detail]]"></oj-bind-text></span></span></li></template>
-            </oj-bind-for-each>
-          </ul>
-        </section>
-        <section class="fx-card" aria-labelledby="mzGateTitle">
-          <h2 class="fx-card-title" id="mzGateTitle">Validation gates</h2>
-          <ul class="factory-mz-gates" id="mzGates">
-            <oj-bind-for-each data="[[gates]]" as="g">
-              <template><li><span :class="[[g.data.st.css]]"><oj-bind-text value="[[g.data.st.text]]"></oj-bind-text></span>
-                <span><strong><oj-bind-text value="[[g.data.text]]"></oj-bind-text></strong><span class="factory-mz-evdetail"><oj-bind-text value="[[g.data.detail]]"></oj-bind-text></span></span></li></template>
-            </oj-bind-for-each>
-          </ul>
-        </section>
-      </div>
-
-      <section class="fx-card" aria-labelledby="mzPlanTitle">
-        <div class="factory-mz-cardhead">
-          <h2 class="fx-card-title" id="mzPlanTitle">Phases and screens <span class="fx-badge fx-badge--warning factory-mz-src">Estimate</span></h2>
-          <a :href="[[csvUrl]]" class="fx-btn fx-btn--secondary fx-btn--sm" id="csvLink"><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>Download CSV</a>
-        </div>
-        <p class="fx-card-sub">Small screens first, large screens last. <oj-bind-text value="[[effortText]]"></oj-bind-text></p>
-        <div class="factory-mz-filters">
-          <span class="fx-control factory-mz-search"><span class="factory-nav-icon factory-ico-search fx-control-icon" aria-hidden="true"></span><input type="search" class="fx-input" id="screenSearch" placeholder="Search screens, files or services" aria-label="Search screens" on-input="[[searchInput]]"></span>
-          <fx-select id="screenModule" label="Module" hide-label options="[[moduleOptions]]" value="{{moduleFilter}}"></fx-select>
-        </div>
-        <div class="fx-table-wrap">
-          <table class="fx-table" id="screenTable">
-            <thead><tr><th>Screen</th><th>Module</th><th>Phase</th><th>Size</th><th>Fields</th><th>Actions</th><th>Calls</th><th>Opens</th></tr></thead>
-            <tbody><oj-bind-for-each data="[[screenRows]]" as="s"><template><tr :title="[[s.data.files]]">
-              <td><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-linkbtn" on-click="[[s.data.open]]" :aria-label="[['Open ' + s.data.name + ' in Code']]"><oj-bind-text value="[[s.data.name]]"></oj-bind-text></button></td>
-              <td><oj-bind-text value="[[s.data.module]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[s.data.wave]]"></oj-bind-text></td><td><span :class="[[s.data.pill.css]]"><oj-bind-text value="[[s.data.pill.text]]"></oj-bind-text></span></td>
-              <td><oj-bind-text value="[[s.data.fields]]"></oj-bind-text></td><td><oj-bind-text value="[[s.data.actions]]"></oj-bind-text></td>
-              <td class="factory-mono factory-mz-wrap"><oj-bind-text value="[[s.data.calls]]"></oj-bind-text></td><td class="factory-mz-wrap"><oj-bind-text value="[[s.data.opens]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
-          </table>
-          <oj-bind-if test="[[screenRows().length === 0]]"><div class="fx-empty">No screens match.</div></oj-bind-if>
-        </div>
-      </section>
-
-      <div class="factory-mz-two">
-        <section class="fx-card" aria-labelledby="mzFlowTitle">
-          <h2 class="fx-card-title" id="mzFlowTitle">User flows to retest <span class="fx-badge fx-badge--info factory-mz-src">Detected: code scan</span></h2>
-          <ul class="factory-mz-evidence" id="mzFlows"><oj-bind-for-each data="[[flows]]" as="f"><template><li><span class="factory-mz-evtext"><strong><oj-bind-text value="[[f.data.name]]"></oj-bind-text></strong>
-            <span class="factory-mz-evdetail"><oj-bind-text value="[[f.data.steps]]"></oj-bind-text></span></span></li></template></oj-bind-for-each></ul>
-          <oj-bind-if test="[[flows().length === 0]]"><p class="factory-mz-note">No flows between screens found in the code.</p></oj-bind-if>
-        </section>
-        <section class="fx-card" aria-labelledby="mzRollTitle">
-          <h2 class="fx-card-title" id="mzRollTitle">Rollback</h2>
-          <ul class="factory-mz-bullets" id="mzRollback"><oj-bind-for-each data="[[rollback]]" as="r"><template><li><oj-bind-text value="[[r.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-        </section>
-      </div>
-    </div>
-
-    <!-- History: the last analysis -->
-    <div class="factory-mz-stack" id="mo-panel-history" role="tabpanel" aria-labelledby="mo-history" :hidden="[[tab() !== 'history']]">
-      <section class="fx-card" aria-labelledby="mzHistTitle">
-        <h2 class="fx-card-title" id="mzHistTitle">Last analysis</h2>
-        <dl class="factory-kv">
-          <dt>When</dt><dd><oj-bind-text value="[[scannedText]]"></oj-bind-text></dd>
-          <dt>Code revision</dt><dd><oj-bind-text value="[[inventory().revision ? 'r' + inventory().revision : '–']]"></oj-bind-text></dd>
-        </dl>
-        <h3>Notes from the analysis</h3>
-        <ul class="factory-mz-bullets"><oj-bind-for-each data="[[notes]]" as="n"><template><li><oj-bind-text value="[[n.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-        <p class="factory-mz-note">Each Run Analysis replaces the inventory with the current code; earlier analyses are not kept.</p>
-      </section>
-    </div>
   </oj-bind-if>
+
+  <!-- Start a conversion: the new app, the app in the code, a requirement per module -->
+  <fx-sheet id="mzStart" open="{{startOpen}}" heading="Start a conversion" subtitle="Choose the new app, check it is in the code, then write a requirement for one module.">
+    <ol class="factory-mz-flow">
+      <li class="factory-mz-flowstep">
+        <span class="fx-step-dot factory-mz-dot">1</span>
+        <div class="factory-mz-flowbody">
+          <strong>The new app</strong>
+          <div class="factory-rq-choices" role="group" aria-label="The new app" id="mzChoices">
+            <oj-bind-for-each data="[[choices]]" as="c">
+              <template><button type="button" class="factory-rq-choice" :id="[['mzChoice-' + c.data.id]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]">
+                <span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>
+                <span class="factory-rq-choice-text"><strong><oj-bind-text value="[[c.data.title]]"></oj-bind-text></strong><oj-bind-text value="[[c.data.description]]"></oj-bind-text>
+                  <oj-bind-if test="[[c.data.current]]"><span class="fx-badge fx-badge--success">This workspace's target</span></oj-bind-if></span></button></template>
+            </oj-bind-for-each>
+          </div>
+          <fx-input id="mzAppFolder" label="App folder in the repository" value="{{draftFolder}}" help="Converted screens are written into this folder."></fx-input>
+          <span class="fx-tip-wrap" :tabindex="[[saveTip() ? '0' : null]]" :data-fx-tip="[[saveTip]]">
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mzSaveTarget" on-click="[[saveTarget]]" :disabled="[[!!saveTip()]]">
+              <oj-bind-text value="[[targetSaved() ? 'Saved as the target' : 'Save as the target']]"></oj-bind-text></button></span>
+        </div>
+      </li>
+      <li class="factory-mz-flowstep">
+        <span class="fx-step-dot factory-mz-dot">2</span>
+        <div class="factory-mz-flowbody">
+          <strong>The app in the code <span :class="[[appStep().st.css]]" id="mzAppState"><oj-bind-text value="[[appStep().st.text]]"></oj-bind-text></span></strong>
+          <span class="factory-mz-evdetail"><oj-bind-text value="[[appStep().text]]"></oj-bind-text></span>
+          <a class="fx-btn fx-btn--ghost fx-btn--sm factory-mz-starter" id="mzStarter" :href="[[starterUrl]]"><span class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>Download the starter project</a>
+        </div>
+      </li>
+      <li class="factory-mz-flowstep">
+        <span class="fx-step-dot factory-mz-dot">3</span>
+        <div class="factory-mz-flowbody">
+          <strong>Convert a module</strong>
+          <fx-select id="mzConvertModule" label="Module" options="[[convertOptions]]" value="{{convertModule}}"></fx-select>
+          <ul class="factory-mz-pickscreens" aria-label="Screens the requirement names">
+            <oj-bind-for-each data="[[convertScreens]]" as="s">
+              <template><li><span><oj-bind-text value="[[s.data.name]]"></oj-bind-text></span><span :class="[[s.data.size.css]]"><oj-bind-text value="[[s.data.size.text]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <span class="factory-mz-evdetail">The Requirements page opens with the requirement filled in from the analysis. Check it and add it: the factory drafts the spec, then Changes plans and writes the screens into the app.</span>
+          <span class="fx-tip-wrap" :tabindex="[[writeTip() ? '0' : null]]" :data-fx-tip="[[writeTip]]">
+            <button type="button" class="fx-btn fx-btn--primary" id="mzWriteRequirement" on-click="[[writeRequirement]]" :disabled="[[!!writeTip()]]">Write the requirement</button></span>
+        </div>
+      </li>
+    </ol>
+  </fx-sheet>
+
+  <!-- The last analysis -->
+  <fx-sheet id="mzHistory" open="{{historyOpen}}" heading="Last analysis" subtitle="Each Run Analysis replaces the inventory with the current code; earlier analyses are not kept.">
+    <div class="factory-mz-history">
+      <dl class="factory-ch-facts" id="mzHistoryFacts">
+        <div><dt>When</dt><dd><oj-bind-text value="[[scannedText]]"></oj-bind-text></dd></div>
+        <div><dt>Code revision</dt><dd><oj-bind-text value="[[inventory() && inventory().revision ? 'r' + inventory().revision : '–']]"></oj-bind-text></dd></div>
+      </dl>
+      <h3 class="factory-mz-h3">Notes from the analysis</h3>
+      <ul class="factory-mz-bullets"><oj-bind-for-each data="[[notes]]" as="n"><template><li><oj-bind-text value="[[n.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+      <oj-bind-if test="[[notes().length === 0]]"><p class="factory-mz-note">No notes.</p></oj-bind-if>
+    </div>
+  </fx-sheet>
 
   <fx-sheet id="moAssistant" open="{{aiOpen}}" heading="Assistant" subtitle="Model-written recommendations from this analysis. Check them against the evidence before acting." wide>
     <div class="factory-mz-ai">

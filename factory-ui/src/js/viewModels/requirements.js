@@ -1057,7 +1057,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           if (create) {
             pageRequests.newRequirement(null);
             if (this.canEdit()) {
-              startCreating(create === 'text' ? 'text' : 'upload');
+              // { mode: 'text', title, text }: a requirement filled in by another page (Modernization's Convert a module)
+              if (typeof create === 'object') {
+                this.newTitle(create.title || '');
+                this.newText(create.text || '');
+              }
+              startCreating(create === 'text' || create.mode === 'text' ? 'text' : 'upload');
             }
           }
         }).catch((error) => { this.listError(error.message); this.listLoading(false); });
