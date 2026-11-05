@@ -2,21 +2,21 @@
   "$comment": "The Technology catalogue of the migration path (docs/MODERNIZATION.md): technologies that keep OBDX as it is. pack names the target pack under target-packs/ that writes it; a technology is ready only when that pack is in the factory. The numbers of rules, templates and starter files are read from the pack itself.",
   "technologies": [
     {
-      "id": "react", "pack": "react", "platform": "web", "name": "React + TypeScript", "logo": "R",
+      "id": "react", "pack": "react", "packVersions": [["1.0.0","2026-10-28","First release: screens, forms, service calls and tests"]], "platform": "web", "name": "React + TypeScript", "logo": "R",
       "text": "Widely used, large ecosystem, runs beside the JET screens module by module.",
       "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "High", "besideJet": true,
       "points": ["Same OBDX REST services, session cookie and nonce", "Strong component libraries and accessibility tooling", "Suits long banking journeys", "Easy to hire for"],
       "limits": [["Charts", "Keep the JET chart in a wrapper, or rebuild it"], ["Print layouts", "Server-side PDF as today"], ["Offline use", "Not supported"]]
     },
     {
-      "id": "react-native", "pack": "react-native", "platform": "mobile", "name": "React Native", "logo": "RN",
+      "id": "react-native", "pack": "react-native", "packVersions": [["1.0.0","2026-10-28","First release: screens, forms, service calls and tests"]], "platform": "mobile", "name": "React Native", "logo": "RN",
       "text": "One code base for iOS and Android, with the same services as internet banking.",
       "meta": "Expo build, app stores", "language": "TypeScript", "usedByBanks": "High", "besideJet": false,
       "points": ["Same OBDX REST services and server-driven 2FA", "Native look on iOS and Android", "Biometric sign-in through the device", "Shares the bank design system's tokens"],
       "limits": [["Charts", "Rebuild with the pack's spending chart"], ["Web screens", "Stay in internet banking"], ["Offline use", "Read-only caches only"]]
     },
     {
-      "id": "angular", "pack": "angular", "platform": "web", "name": "Angular", "logo": "A",
+      "id": "angular", "pack": "angular", "packVersions": [["1.0.0","2026-11-06","First release: standalone screens with signal forms and tests"]], "platform": "web", "name": "Angular", "logo": "A",
       "text": "A full framework with forms, routing and testing built in; suits large teams.",
       "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "High", "besideJet": true,
       "points": ["Same OBDX REST services, session cookie and nonce", "Reactive forms for long journeys", "Material and the CDK for accessible components", "Strong typing and testing built in"],
@@ -62,5 +62,16 @@
     ["Next.js server rendering", "It puts a new server in front of OBDX that would hold the bank's session cookie. A static React build is offered instead."],
     ["Flutter Web", "It draws on a canvas and its screen-reader support is off by default."],
     ["SvelteKit, Blazor, .NET MAUI", "Few bank teams can staff or support them."]
+  ],
+  "capabilities": ["Component conversion","OBDX REST calls","Session and nonce","2FA screens","Masked tokens","Accessibility checks","Responsive layouts","Build templates"],
+  "connects": [
+    ["Services","Calls the same digx/v1 REST services with the same request and response","Unchanged: no new API, no new server"],
+    ["Session","Sends the OBDX session cookie on every call, through OHS","The same login and session as the JET app"],
+    ["Nonce","Asks for a nonce and sends it with every request","Checks the nonce as today"],
+    ["Two-factor","Shows the 2FA screen the server asks for, then retries","Decides when 2FA is needed, as today"],
+    ["Tokens and secrets","Sends masked account tokens back; encrypts the password on screen","Unmasks and decrypts as today"],
+    ["Menus and roles","Shows the menus the server returns for the user","Decides who sees what"],
+    ["Labels and checks","Carries over the labels, languages and field validations","Validates again on the server"],
+    ["Hosting","Built to static files served by OHS beside the JET app","No change to the middleware"]
   ]
 }

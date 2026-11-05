@@ -23,8 +23,13 @@ import java.util.Optional;
 public class TechnologyCatalogue {
 
     /** What a target pack holds, counted from the pack. */
+    /**
+     * stack: the main libraries of the starter project with their versions (from its package.json); build: how it is
+     * built; templateKinds: the code templates by kind; versions: the pack's releases, newest first (version, date, note).
+     */
     public record PackFacts(String id, String title, String description, int rules, int templates, int starterFiles, int components,
-                            String defaultAppFolder, List<String> ruleTitles) {
+                            String defaultAppFolder, List<String> ruleTitles, List<String[]> stack, String build, List<String> templateKinds,
+                            List<String[]> versions) {
     }
 
     /** readiness: ready, in-progress or planned. replaces: premium components of the pack with the JET element they replace. */
@@ -33,8 +38,14 @@ public class TechnologyCatalogue {
                              PackFacts facts, List<String[]> replaces) {
     }
 
-    public record Catalogue(List<Technology> technologies, List<String[]> notOffered, List<String[]> obdxRules) {
+    /** capabilities: what a ready pack does, in order; connects: concern, what the new UI does, what stays on the OBDX side. */
+    public record Catalogue(List<Technology> technologies, List<String[]> notOffered, List<String[]> obdxRules, List<String> capabilities,
+                            List<String[]> connects) {
     }
+
+    /** The libraries named in the catalogue, in the order shown, with the name shown. */
+    private static final List<String[]> LIBRARIES = List.of(new String[]{"react", "React"}, new String[]{"react-native", "React Native"},
+            new String[]{"expo", "Expo"}, new String[]{"@angular/core", "Angular"}, new String[]{"typescript", "TypeScript"}, new String[]{"vite", "Vite"});
 
     private final JsonNode data;
     private final TargetPacks packs;
@@ -60,8 +71,13 @@ public class TechnologyCatalogue {
             Optional<TargetPack> target = packs.find(pack);
             ComponentRegistry.Pack components = registry.pack(pack);
             String readiness = target.isPresent() ? "ready" : components != null ? "in-progress" : "planned";
-            PackFacts facts = target.map(p -> new PackFacts(p.id(), p.title(), p.description(), p.rules().size(), p.templates().size(), p.starter().size(),
-                    p.components().size(), p.defaultAppFolder(), p.rules().stream().map(com.obdx.factory.pack.PackRule::title).limit(12).toList())).orElse(null);
+            List<String[]> versions = triples(t.path("packVersions"));
+            PackFacts facts = target.map(p -> {
+                List<String[]> stack = stack(p.starter().get("package.json"));
+                return new PackFacts(p.id(), p.title(), p.description(), p.rules().size(), p.templates().size(), p.starter().size(),
+                        p.components().size(), p.defaultAppFolder(), p.rules().stream().map(com.obdx.factory.pack.PackRule::title).limit(12).toList(),
+                        stack, build(stack), p.templates().keySet().stream().sorted().toList(), versions);
+            }).orElse(null);
             List<String[]> replaces = new ArrayList<>();
             if (components != null) {
                 registry.categories().stream().flatMap(c -> c.components().stream()).filter(e -> "element".equals(e.workspace().kind()) && e.names().containsKey(pack))
@@ -71,7 +87,35 @@ public class TechnologyCatalogue {
                     t.path("text").asString(), t.path("meta").asString(), t.path("language").asString(), t.path("usedByBanks").asString(),
                     t.path("besideJet").asBoolean(false), strings(t.path("points")), pairs(t.path("limits")), readiness, facts, replaces));
         }
-        return new Catalogue(list, pairs(data.path("notOffered")), RunBriefs.OBDX_RULES);
+        List<String[]> connects = new ArrayList<>();
+        data.path("connects").forEach(v -> connects.add(new String[]{v.path(0).asString(), v.path(1).asString(), v.path(2).asString()}));
+        return new Catalogue(list, pairs(data.path("notOffered")), RunBriefs.OBDX_RULES, strings(data.path("capabilities")), connects);
+    }
+
+    /** The named libraries of a starter's package.json with their versions, without range marks. */
+    static List<String[]> stack(String packageJson) {
+        List<String[]> out = new ArrayList<>();
+        if (packageJson == null) {
+            return out;
+        }
+        for (String[] lib : LIBRARIES) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"" + java.util.regex.Pattern.quote(lib[0]) + "\"\s*:\s*\"([^\"]+)\"").matcher(packageJson);
+            if (m.find()) {
+                out.add(new String[]{lib[1], m.group(1).replaceAll("^[~^>=<\s]+", "")});
+            }
+        }
+        return out;
+    }
+
+    static String build(List<String[]> stack) {
+        List<String> names = stack.stream().map(s -> s[0]).toList();
+        return names.contains("Expo") ? "Expo (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
+    }
+
+    private static List<String[]> triples(JsonNode node) {
+        List<String[]> out = new ArrayList<>();
+        node.forEach(v -> out.add(new String[]{v.path(0).asString(), v.path(1).asString(), v.path(2).asString()}));
+        return out;
     }
 
     public Optional<Technology> find(String id) {

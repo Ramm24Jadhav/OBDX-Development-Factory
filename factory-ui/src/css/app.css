@@ -9486,3 +9486,17 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 
 /* Phones: the action bar of the Modernization steps sits at the end of the page, not over it */
 @media (max-width: 560px) { .factory-mz-actions { position: static; padding: var(--fx-space-3); } .factory-mz-actions-end { width: 100%; } .factory-mz-actions-end > .fx-btn { flex: 1 1 auto; } }
+/* Technology catalogue: readiness chips, the rules meter, capability chips, the comparison's chosen column */
+.factory-mt-ready { display: flex; flex-wrap: wrap; align-items: center; gap: var(--fx-space-2); }
+.factory-mt-ready .fx-chip { display: inline-flex; align-items: center; gap: 6px; }
+.factory-mt-meterrow { display: flex; align-items: center; gap: var(--fx-space-3); }
+.factory-mt-meter { display: inline-flex; gap: 3px; }
+.factory-mt-meter-seg { width: 18px; height: 8px; border-radius: 2px; background: var(--fx-surface-3); }
+.factory-mt-meter-seg.is-on { background: var(--fx-primary); }
+.factory-mt-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.factory-mt-cap { padding: 3px 8px; border-radius: var(--fx-radius-pill); border: var(--fx-border-width) solid var(--fx-border); background: var(--fx-surface-2); color: var(--fx-text-faint); font-size: var(--fx-text-2xs); }
+.factory-mt-cap.is-on { background: var(--fx-surface); color: var(--fx-text); border-color: var(--fx-border-strong); }
+.factory-mt-packbox { background: var(--fx-surface-2); border-radius: var(--fx-radius); padding: var(--fx-space-2) var(--fx-space-3); }
+.factory-mt-detail-foot { display: flex; flex-wrap: wrap; gap: var(--fx-space-2); justify-content: flex-end; border-top: var(--fx-border-width) solid var(--fx-border); padding-top: var(--fx-space-3); margin-top: var(--fx-space-3); }
+.factory-mt-compare .is-picked { background: var(--fx-primary-soft); }
+.factory-mt-compare th.is-picked .fx-btn { font-weight: var(--fx-weight-semibold); }
