@@ -110,6 +110,7 @@ public class TechnologySettings {
         groups.add(new Group("look", "Look", "The component style saved in the Component factory; change it there. New code and pack upgrades use it.", List.of(
                 new Row("look.design", "Design", cap(c.look()) + (own > 0 ? ", " + own + (own == 1 ? " component" : " components") + " with their own design" : ""), false, false, false, "component style"),
                 new Row("look.motion", "Motion", motion(c.motion()), false, false, false, "component style"),
+                new Row("look.fonts", "Fonts", "Inter, then the device's system font (the pack's --bx-font)", false, false, false, "pack"),
                 new Row("look.theme", "Theme", ("workspace".equals(c.brand()) ? "The workspace's brand" : cap(c.brand()) + " brand") + ", " + c.mode(), false, false, false, "component style"),
                 new Row("look.saved", "Saved", style.savedAt() == null ? "Default style, not saved yet" : "By " + style.savedBy(), false, false, false, "component style"))));
         List<Technology> techs = TECHNOLOGIES.stream().map(t -> new Technology(t, NAMES.get(t), packs.find(t).isPresent() ? "ready" : "preview")).toList();

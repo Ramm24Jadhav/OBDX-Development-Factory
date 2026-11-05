@@ -8,6 +8,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
   function (ko, accUtils, api, workspaceSelection, ui, toast, mz) {
     function SettingsViewModel() {
       const self = this;
+      const ICONS = { project: 'folder', obdx: 'plug', rules: 'check', tests: 'flask', look: 'design' };
+      self.groupIcon = (id) => ICONS[id] || 'cog';
       self.workspaceId = workspaceSelection.selectedId;
       self.canManage = mz.canManage;
       self.loading = ko.observable(true);

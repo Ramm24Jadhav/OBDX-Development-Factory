@@ -21,14 +21,14 @@
     <div class="factory-ms-groups">
       <oj-bind-for-each data="[[groups]]" as="g"><template>
         <section class="fx-card factory-ms-group" :aria-labelledby="[['msGroup-' + g.data.id]]">
-          <h2 class="fx-card-title" :id="[['msGroup-' + g.data.id]]"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h2>
+          <h2 class="fx-card-title factory-ms-grouptitle" :id="[['msGroup-' + g.data.id]]"><span :class="[['factory-nav-icon factory-ico-' + groupIcon(g.data.id)]]" aria-hidden="true"></span><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h2>
           <p class="fx-help"><oj-bind-text value="[[g.data.lead]]"></oj-bind-text></p>
           <dl class="factory-ms-rows"><oj-bind-for-each data="[[g.data.rows]]" as="r"><template><div>
             <dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt>
             <dd>
               <oj-bind-if test="[[editing() && r.data.editable]]"><fx-input label="[[r.data.label]]" hide-label value="{{r.data.draft}}"></fx-input></oj-bind-if>
               <oj-bind-if test="[[!(editing() && r.data.editable)]]"><span :class="[[r.data.css]]"><oj-bind-text value="[[r.data.value]]"></oj-bind-text></span>
-                <oj-bind-if test="[[r.data.locked]]"><span class="fx-badge fx-badge--neutral factory-ms-lock">Fixed</span></oj-bind-if>
+                <oj-bind-if test="[[r.data.locked]]"><span class="fx-badge fx-badge--neutral factory-ms-lock" title="Fixed for every technology: changing it would break the bank's session, security or services" tabindex="0">Fixed</span></oj-bind-if>
                 <oj-bind-if test="[[r.data.source]]"><small class="fx-muted"><oj-bind-text value="[[r.data.source]]"></oj-bind-text></small></oj-bind-if></oj-bind-if>
             </dd></div></template></oj-bind-for-each></dl>
           <oj-bind-if test="[[g.data.id === 'look']]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[openFactory]]">Change it in the Component factory</button></oj-bind-if>

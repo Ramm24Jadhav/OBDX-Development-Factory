@@ -9583,3 +9583,5 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 .factory-mp-source { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--fx-space-3); }
 .factory-mp-analysisrow { display: flex; align-items: center; gap: var(--fx-space-3); margin: var(--fx-space-3) 0; }
 @media (max-width: 1100px) { .factory-mp-source { grid-template-columns: minmax(0, 1fr); } }
+.factory-ms-grouptitle { display: flex; align-items: center; gap: var(--fx-space-2); }
+.factory-ms-grouptitle .factory-nav-icon { color: var(--fx-primary); }
