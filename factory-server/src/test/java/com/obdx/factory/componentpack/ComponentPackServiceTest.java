@@ -82,13 +82,41 @@ class ComponentPackServiceTest {
             }
         }
         Pack checked = new Pack("react", "React", "obdx-react", "0.2.0", "migration", "", "starter", "", "", List.of(),
-                List.of(new ComponentRegistry.Built("card", "src", "Card")), Map.of("card", passed));
+                List.of(new ComponentRegistry.Built("card", "src", "Card")), Map.of("card", passed), List.of());
         assertThat(service.inPack(card, checked).readiness()).isEqualTo("available");
         Map<String, Gate> oneFailed = new LinkedHashMap<>(passed);
         oneFailed.put("visual", new Gate("failed", "ci #13"));
         Pack failing = new Pack("react", "React", "obdx-react", "0.2.0", "migration", "", "starter", "", "", List.of(),
-                List.of(new ComponentRegistry.Built("card", "src", "Card")), Map.of("card", oneFailed));
+                List.of(new ComponentRegistry.Built("card", "src", "Card")), Map.of("card", oneFailed), List.of());
         assertThat(service.inPack(card, failing).readiness()).isEqualTo("in-test");
+    }
+
+    @Test
+    void thePremiumJetPackIsBuiltForTheJetVersionFoundInTheCode() {
+        // OBDX 22.1 ships JET 6.2: the classic build, on the workspace's own elements or the JET 6 equivalents
+        ComponentPackService.Catalogue jet6 = service.catalogue(new ComponentPackService.JetFact("JET 6.2.0", "detected", List.of("package.json")));
+        assertThat(jet6.jet().build()).isEqualTo("classic");
+        assertThat(jet6.jet().major()).isEqualTo(6);
+        assertThat(jet6.jet().note()).isEqualTo("Built for JET 6.2.0, found in the code: the Classic JET build.");
+        assertThat(find(jet6, "button").packs().get("jet-premium").builtOn()).isEqualTo("oj-button");
+        assertThat(find(jet6, "card").packs().get("jet-premium").builtOn()).isEqualTo("own card");
+        assertThat(find(jet6, "select").packs().get("jet-premium").builtOn()).isEqualTo("oj-select-one");
+        assertThat(jet6.categories()).allSatisfy((c) -> assertThat(c.components()).allSatisfy((v) ->
+                assertThat(v.packs().get("jet-premium").builtOn()).doesNotContain("oj-c-")));
+
+        // A newer release, set by hand on the Project Profile, gets the Core Pack build
+        ComponentPackService.Catalogue jet19 = service.catalogue(new ComponentPackService.JetFact("JET 19.0.0", "corrected", List.of()));
+        assertThat(jet19.jet().build()).isEqualTo("core-pack");
+        assertThat(jet19.jet().note()).contains("set on the Project Profile");
+        assertThat(find(jet19, "button").packs().get("jet-premium").builtOn()).isEqualTo("oj-c-button");
+
+        // No version found, no workspace, or one older than JET 6: the classic build, and the page says what to do
+        assertThat(service.catalogue(new ComponentPackService.JetFact(null, "missing", List.of())).jet())
+                .satisfies((t) -> assertThat(t.build()).isEqualTo("classic"))
+                .satisfies((t) -> assertThat(t.note()).startsWith("The scan found no Oracle JET version in the code."));
+        assertThat(service.catalogue().jet().status()).isEqualTo("no-workspace");
+        assertThat(service.catalogue(new ComponentPackService.JetFact("JET 5.1.0", "detected", List.of())).jet().note())
+                .contains("older than the pack supports");
     }
 
     @Test

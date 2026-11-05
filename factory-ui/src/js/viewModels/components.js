@@ -62,7 +62,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const total = c.components;
           const pct = (n) => Math.round(n / total * 100) + '%';
           return {
-            id: p.id, name: p.name, pkg: p.packageName + ' ' + p.version, range: p.frameworkRange, state: pill.apply(null, STATE[p.state] || [p.state, 'grey']),
+            id: p.id, name: p.name, pkg: p.packageName + ' ' + p.version,
+            range: p.id === 'jet-premium' && c.jet && c.jet.major ? c.jet.found + ' · ' + c.jet.buildName + ' build' : p.frameworkRange, state: pill.apply(null, STATE[p.state] || [p.state, 'grey']),
             counts: p.counts.available + ' available · ' + p.counts.inTest + ' in test · ' + p.counts.planned + ' planned',
             available: pct(p.counts.available), inTest: pct(p.counts.inTest),
             selected: ko.pureComputed(() => self.packId() === p.id),
@@ -70,6 +71,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             pick: () => self.packId(p.id)
           };
         });
+      });
+
+      // The JET release the premium pack is built for, from the workspace's Project Profile scan
+      self.jet = ko.pureComputed(() => {
+        const c = self.catalogue();
+        if (!c || !c.jet || self.packId() !== 'jet-premium') { return null; }
+        const t = c.jet;
+        const found = !!t.major && t.note.indexOf('older than') < 0;
+        return {
+          note: t.note, detail: t.buildDetail,
+          evidence: t.evidence && t.evidence.length ? 'Seen in ' + t.evidence.slice(0, 2).join(', ') : '',
+          css: 'factory-cf-jet' + (found ? '' : ' is-warn'),
+          showProfile: t.status !== 'no-workspace'
+        };
       });
 
       const all = ko.pureComputed(() => {
@@ -238,14 +253,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           self.draft(clone(s.style));
         });
       };
-      self.workspaceId.subscribe((id) => { loadStyle(id).catch((e) => self.error(ui.errorText(e))); });
+      const loadCatalogue = (id) => api.get(id ? 'workspaces/' + id + '/component-packs' : 'component-packs').then((c) => self.catalogue(c));
+      self.workspaceId.subscribe((id) => { Promise.all([loadCatalogue(id), loadStyle(id)]).catch((e) => self.error(ui.errorText(e))); });
 
       self.connected = () => {
         accUtils.announce('Component factory page loaded.', 'assertive');
         document.title = 'Component factory';
         self.loading(true);
-        Promise.all([api.get('component-packs'), loadStyle(self.workspaceId())]).then((r) => {
-          self.catalogue(r[0]);
+        Promise.all([loadCatalogue(self.workspaceId()), loadStyle(self.workspaceId())]).then(() => {
           self.error(null);
         }).catch((e) => self.error(ui.errorText(e))).then(() => self.loading(false));
       };

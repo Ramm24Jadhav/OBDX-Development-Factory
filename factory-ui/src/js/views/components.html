@@ -30,6 +30,13 @@
       </oj-bind-for-each>
     </div>
     <p class="factory-cf-lead"><strong><oj-bind-text value="[[packName]]"></oj-bind-text>.</strong> <oj-bind-text value="[[packLead]]"></oj-bind-text></p>
+    <oj-bind-if test="[[jet()]]">
+      <div id="cfJet" role="status" :class="[[jet().css]]">
+        <span class="factory-cf-jet-text"><strong><oj-bind-text value="[[jet().note]]"></oj-bind-text></strong> <oj-bind-text value="[[jet().detail]]"></oj-bind-text>
+          <oj-bind-if test="[[jet().evidence]]"><span class="fx-muted factory-cf-mono"><oj-bind-text value="[[jet().evidence]]"></oj-bind-text></span></oj-bind-if></span>
+        <oj-bind-if test="[[jet().showProfile]]"><a id="cfJetProfile" class="fx-btn fx-btn--link" href="?ojr=code">Project Profile</a></oj-bind-if>
+      </div>
+    </oj-bind-if>
 
     <div class="fx-card factory-cf-toolbar">
       <fx-input id="cfSearch" class="factory-cf-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components, elements or what they are built on" value="{{query}}"></fx-input>

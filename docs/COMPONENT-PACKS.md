@@ -2,7 +2,8 @@
 
 Status: decisions agreed (section 13: Angular target pack now, bx- prefix, oldest JET version from a 22.x codebase, pack
 builds as their own CI jobs). Built so far: the registry (`target-packs/components/catalogue.json`, `packs.json`), `GET
-/api/component-packs`, the saved component style and the Component factory page (route `components`). Next: the foundation
+/api/component-packs`, the premium JET builds chosen from the workspace's detected JET version, the saved component style
+and the Component factory page (route `components`). Next: the foundation
 set in each pack, then the explorer's live previews from the built components.
 
 The goal: one design system for the bank's channel UI, implemented four times — Oracle JET (the UI path), React,
@@ -97,8 +98,21 @@ dependency, its licence and attribution.
 | React Native | React Native 0.88, Expo 58 (same as the starter) | jest-expo + React Native Testing Library | New Android and iOS app |
 | Angular | Angular 22, CDK and Material 22.2 | Angular test runner (vitest builder) + Playwright + axe | New web app |
 
-The oldest JET version the JET pack must support is an open question (decision 3): OBDX 22.x and 25.x ship
-different JET releases, and some APIs differ between them.
+The oldest JET version is JET 6 (decision 3): the OBDX 22.1 Licensing Guide lists Oracle JET 6.2.0 (with fourth-party
+libraries from JET 5.1.0 and Knockout 3.4.2), and the 22.1 UX Extensibility Toolkit points at the JET 6.1.0 cookbook.
+The JET pack therefore has builds in `packs.json` (`builds`), each for a range of JET major versions:
+
+| Build | JET | Built on |
+|---|---|---|
+| Classic JET | 6 to 15 | Classic `oj-*` elements in Knockout composites, only APIs JET 6 has; `elements` gives the JET 6 element for each Core Pack element the catalogue names (`own` means no JET element) |
+| JET Core Pack | 16 and later | `oj-c-*` elements in Knockout composites |
+
+The factory picks the build from the workspace's `ui.jetVersion` fact (the Project Profile scan of package.json,
+component.json `jetVersion`, `oj/vX.Y.Z` paths and the JET banner, or a value set on the profile) through `GET
+/api/workspaces/{id}/component-packs`, and the page says which release it built for and where it was seen. With no
+version found it shows the classic build and asks for a scan. The Core Pack start at JET 16 is an assumption (the
+elements the pack uses were all production by then); change `jetFrom` in `packs.json` if a bank's release proves
+otherwise.
 
 ## 6. Initial catalogue
 
@@ -208,6 +222,5 @@ Each pack build writes a compatibility report (component, version, gates, framew
 
 1. Build the Angular target pack (step 2) now, or keep Angular as a preview pack until a bank asks for it?
 2. Element prefix for the bank's JET elements: keep `fx-` (as in the design) or use a distinct one such as `bx-`?
-3. Oldest JET version the JET pack must support (the earliest release across the OBDX 22.x versions the factory
-   supports)?
+3. Oldest JET version the JET pack must support: decided, JET 6 (OBDX 22.1 ships JET 6.2); see section 5.
 4. Pack builds as separate CI jobs (recommended) or inside the factory's Maven build?

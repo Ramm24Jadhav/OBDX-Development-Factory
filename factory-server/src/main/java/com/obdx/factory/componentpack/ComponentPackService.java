@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * What the Component factory shows: each pack with its readiness, and each component with, per pack, its readiness and
@@ -20,6 +22,10 @@ import java.util.Set;
  * In test when the component is built but not every gate is passed, Planned when the pack names it but it is not built,
  * and Not in this pack otherwise. Mapping statuses are proposals from the component's type until a mapping registry
  * entry with evidence exists (there are none yet), and say so.
+ *
+ * The premium JET pack is built for the workspace's JET release, read from the ui.jetVersion fact the Project Profile
+ * scan finds in the code (or the value a user set there): the pack's build that covers that major version gives each
+ * component what it is built on. Without a version the first build, which runs on the oldest supported release, is shown.
  */
 @Service
 public class ComponentPackService {
@@ -34,7 +40,20 @@ public class ComponentPackService {
     }
 
     public record PackView(String id, String name, String packageName, String version, String path, String frameworkRange, String state,
-                           String description, String repository, List<ComponentRegistry.Dependency> dependencies, Counts counts) {
+                           String description, String repository, List<ComponentRegistry.Dependency> dependencies, Counts counts,
+                           List<ComponentRegistry.Build> builds) {
+    }
+
+    /** The workspace's ui.jetVersion fact: its value (null when the scan found none), status and evidence. */
+    public record JetFact(String value, String status, List<String> evidence) {
+    }
+
+    /**
+     * The JET release the premium pack is built for: what was found and where, the build chosen and a note for the page.
+     * status is the Project Profile's (detected, confirmed, corrected), missing, or no-workspace.
+     */
+    public record JetTarget(String found, Integer major, String status, List<String> evidence, String build, String buildName,
+                            String buildDetail, String note) {
     }
 
     /** One component in one pack. */
@@ -49,8 +68,11 @@ public class ComponentPackService {
     public record CategoryView(String id, String name, List<ComponentView> components) {
     }
 
-    public record Catalogue(List<PackView> packs, List<CategoryView> categories, int components) {
+    public record Catalogue(List<PackView> packs, List<CategoryView> categories, int components, JetTarget jet) {
     }
+
+    private static final Pattern MAJOR = Pattern.compile("(\\d+)");
+    private static final Pattern CORE_PACK_ELEMENT = Pattern.compile("oj-c-[a-z]+(?:-[a-z]+)*");
 
     private final ComponentRegistry registry;
 
@@ -58,20 +80,66 @@ public class ComponentPackService {
         this.registry = registry;
     }
 
+    /** The catalogue without a workspace: the premium JET pack shows its first build. */
     public Catalogue catalogue() {
-        List<CategoryView> categories = new ArrayList<>();
-        for (ComponentRegistry.Category c : registry.categories()) {
-            categories.add(new CategoryView(c.id(), c.name(), c.components().stream().map(this::view).toList()));
-        }
-        List<PackView> packs = registry.packs().stream().map((p) -> new PackView(p.id(), p.name(), p.packageName(), p.version(), p.path(),
-                p.frameworkRange(), p.state(), p.description(), p.repository(), p.dependencies(), counts(p, categories))).toList();
-        return new Catalogue(packs, categories, registry.size());
+        return catalogue(null);
     }
 
-    private ComponentView view(Entry e) {
+    /** The catalogue for a workspace whose JET version fact is given (null: no workspace). */
+    public Catalogue catalogue(JetFact fact) {
+        JetTarget jet = jetTarget(fact);
+        ComponentRegistry.Build build = registry.pack("jet-premium").builds().stream().filter((b) -> b.id().equals(jet.build())).findFirst().orElseThrow();
+        List<CategoryView> categories = new ArrayList<>();
+        for (ComponentRegistry.Category c : registry.categories()) {
+            categories.add(new CategoryView(c.id(), c.name(), c.components().stream().map((e) -> view(e, build)).toList()));
+        }
+        List<PackView> packs = registry.packs().stream().map((p) -> new PackView(p.id(), p.name(), p.packageName(), p.version(), p.path(),
+                p.frameworkRange(), p.state(), p.description(), p.repository(), p.dependencies(), counts(p, categories), p.builds())).toList();
+        return new Catalogue(packs, categories, registry.size(), jet);
+    }
+
+    /** Picks the premium JET build for the workspace's JET version and says why. */
+    JetTarget jetTarget(JetFact fact) {
+        List<ComponentRegistry.Build> builds = registry.pack("jet-premium").builds();
+        ComponentRegistry.Build first = builds.getFirst();
+        if (fact == null) {
+            return target(null, null, "no-workspace", List.of(), first,
+                    "Choose a workspace to build the premium JET pack for the JET release in its code. Showing the " + first.name() + " build.");
+        }
+        Integer major = null;
+        if (fact.value() != null) {
+            Matcher m = MAJOR.matcher(fact.value());
+            major = m.find() ? Integer.valueOf(m.group(1)) : null;
+        }
+        if (major == null) {
+            return target(fact.value(), null, "missing", fact.evidence(), first, "The scan found no Oracle JET version in the code. Import the code or "
+                    + "refresh discovery, or enter the version on the Project Profile. Showing the " + first.name() + " build, which runs on JET "
+                    + first.jetFrom() + " and later.");
+        }
+        String from = "corrected".equals(fact.status()) || "confirmed".equals(fact.status()) ? "set on the Project Profile" : "found in the code";
+        if (major < first.jetFrom()) {
+            return target(fact.value(), major, fact.status(), fact.evidence(), first, fact.value() + " (" + from + ") is older than the pack supports: "
+                    + "it needs JET " + first.jetFrom() + " or later. Check the version on the Project Profile.");
+        }
+        int found = major;
+        ComponentRegistry.Build build = builds.stream().filter((b) -> b.covers(found)).findFirst().orElse(builds.getLast());
+        return target(fact.value(), major, fact.status(), fact.evidence(), build,
+                "Built for " + fact.value() + ", " + from + ": the " + build.name() + " build.");
+    }
+
+    private static JetTarget target(String found, Integer major, String status, List<String> evidence, ComponentRegistry.Build build, String note) {
+        return new JetTarget(found, major, status, evidence == null ? List.of() : evidence, build.id(), build.name(), build.builtOn(), note);
+    }
+
+    private ComponentView view(Entry e, ComponentRegistry.Build jetBuild) {
         Map<String, InPack> packs = new LinkedHashMap<>();
         for (Pack p : registry.packs()) {
-            packs.put(p.id(), inPack(e, p));
+            InPack in = inPack(e, p);
+            if ("jet-premium".equals(p.id()) && !jetBuild.elements().isEmpty()) {
+                in = new InPack(in.name(), in.readiness(), olderBuiltOn(e, jetBuild), in.mapping(), in.mappingConfidence(), in.mappingEvidence(),
+                        in.gates(), in.source());
+            }
+            packs.put(p.id(), in);
         }
         return new ComponentView(e.id(), e.name(), e.purpose(), e.kind(), e.foundation(), e.dashboard(), e.workspace().kind(),
                 e.workspace().element(), e.sample(), packs);
@@ -104,6 +172,21 @@ public class ComponentPackService {
         String confidence = "new".equals(mapping) || "unsupported".equals(mapping) ? "high" : "proposed";
         return new InPack(name, readiness, e.builtOn().get(p.id()), mapping, confidence, evidence, gates,
                 built == null ? null : built.source() + (built.export() == null ? "" : "#" + built.export()));
+    }
+
+    /**
+     * What a premium JET component is built on in a build for older JET: the workspace's own classic oj-* element (or
+     * the build's older equivalent, oj-select-single becomes oj-select-one), or the catalogue's Core Pack elements
+     * swapped for the build's equivalents (oj-c-action-card becomes the pack's own card).
+     */
+    static String olderBuiltOn(Entry e, ComponentRegistry.Build build) {
+        String element = e.workspace().element();
+        if ("element".equals(e.workspace().kind()) && element != null && element.startsWith("oj-") && !element.startsWith("oj-c-")) {
+            return build.elements().getOrDefault(element, element);
+        }
+        String core = e.builtOn().get("jet-premium");
+        return core == null ? null : CORE_PACK_ELEMENT.matcher(core)
+                .replaceAll((m) -> Matcher.quoteReplacement(build.elements().getOrDefault(m.group(), m.group())));
     }
 
     /** The mapping a component would have from the workspace's JET element to a pack, before any parity test. */
