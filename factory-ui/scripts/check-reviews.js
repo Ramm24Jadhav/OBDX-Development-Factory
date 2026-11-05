@@ -1,7 +1,9 @@
 // External Review check: drives a running factory in headless Edge or Chrome and checks what the pages promise.
 //  The team's page (?ojr=reviews):
-//  - one row of tabs, a plain summary line, the screens and the selected screen's link: status, expiry, what is shared,
-//    reviewers, requested changes and decisions kept apart;
+//  - a plain summary line, four boxes with real counts (open comments, waiting for approval, active links, approved)
+//    that filter the screens, one row of two tabs (Screens, Comments), the screens as compact rows with a menu and
+//    chips with counts, and the selected screen's link: status, expiry, what is shared, reviewers, requested changes and
+//    the decision kept apart; the history in a side panel;
 //  - revoking a link asks first (the check cancels: the link still works);
 //  - nothing scrolls sideways at 390 px; no console errors.
 //  The reviewer's page (?ojr=review&embed=1&token=..., signed out):
@@ -90,13 +92,33 @@ const WRITE = args.write === '1';
     shared: ([...document.querySelectorAll('#reviewFacts dd')][2] || {}).textContent || '',
     copy: !!document.getElementById('copyLinkButton'),
     sections: [...document.querySelectorAll('.factory-xr-h3')].map((h) => h.textContent.replace(/\s+/g, ' ').trim()),
+    decision: !!document.getElementById('reviewDecisionLine'),
+    tabs: [...document.querySelectorAll('.factory-xr [role="tab"]')].map((x) => x.id),
+    boxes: [...document.querySelectorAll('#reviewBoxes .factory-rq-stage')].map((b) => ({ id: b.id, count: (b.querySelector('.factory-rq-stage-count') || {}).textContent })),
+    rows: document.querySelectorAll('#reviewList > li').length, rowMenus: document.querySelectorAll('#reviewList > li fx-menu-button').length,
+    chips: [...document.querySelectorAll('#reviewListFilter .fx-chip')].map((c) => c.textContent.trim()),
     switches: document.querySelectorAll('.factory-xr .fx-switch').length
   }));
-  record('the page is External Review with one row of tabs and no KPI cards', /External Review/.test(page.h1) && page.tablists === 1 && page.kpis === 0, page);
+  record('the page is External Review with one row of two tabs', /External Review/.test(page.h1) && page.tablists === 1 && page.tabs.join(',') === 'xr-links,xr-comments', page.tabs);
+  record('four boxes lead: open comments, waiting for approval, active links, approved, with counts',
+    page.boxes.map((b) => b.id).join(',') === 'reviewBox-open,reviewBox-waiting,reviewBox-active,reviewBox-approved' && page.boxes.every((b) => /^\d+$/.test((b.count || '').trim())), page.boxes);
+  record('the screens are compact rows, each with a menu, and chips with counts', page.rows > 0 && page.rowMenus === page.rows && page.chips.length > 0 && page.chips.every((c) => /\d+$/.test(c)), page);
   record('the summary line gives real counts', /\d+ active links?/.test(page.summary) && /\d+ open reviewer comments?/.test(page.summary), page.summary.trim());
   record('the link shows its status, expiry, what is shared, reviewers and requirement', ['Link', 'Expires', 'Shared', 'Reviewers', 'Requirement'].every((f) => page.facts.includes(f)), page.facts);
   record('what is shared says reviewers see no code or team comments', /do not see code/.test(page.shared) && /team's comments/.test(page.shared), page.shared.trim());
-  record('requested changes and decisions are kept apart', page.sections.some((t) => /^Requested changes/.test(t)) && page.sections.includes('Decisions'), page.sections);
+  record('requested changes and the decision are kept apart', page.sections.some((t) => /^Requested changes/.test(t)) && page.decision, page.sections);
+  // A box filters the screens; pressing it again shows all
+  await run(() => { document.getElementById('reviewBox-active').click(); return 1; });
+  await sleep(400);
+  const filtered = await vm((m) => ({ filter: m.listFilter(), rows: document.querySelectorAll('#reviewList > li').length, live: m.boxes().find((b) => b.key === 'active').count }));
+  record('the Active links box shows only screens with an active link', filtered.filter === 'active' && filtered.rows === filtered.live, filtered);
+  await run(() => { document.getElementById('reviewBox-active').click(); return 1; });
+  await sleep(300);
+  record('pressing the box again shows all screens', await vm((m) => m.listFilter() === 'all'));
+  await vm((m, id) => { m.selectedId(id); return 1; }, pick.designId);
+  await sleep(300);
+  const rowMenu = await vm((m) => m.rows().find((r) => r.id === m.selectedId()).menuItems.map((x) => x.value).filter(Boolean));
+  record('a row menu has copy, open as a reviewer, Design Studio, expiry and revoke', ['copy', 'open', 'designer', 'expiry', 'revoke'].every((v) => rowMenu.indexOf(v) >= 0), rowMenu);
   record('an active link can be copied', page.copy);
   record('no switches for settings the factory does not have', page.switches === 0);
   await shot('reviews-1440-light');
@@ -114,13 +136,17 @@ const WRITE = args.write === '1';
   // The other tabs
   await run(() => { document.getElementById('xr-comments').click(); return 1; });
   await sleep(600);
-  record('the Comments tab lists comments in a table', await run(() => !!document.querySelector('#allComments thead') && !document.getElementById('xr-panel-comments').hidden));
-  await run(() => { document.getElementById('xr-history').click(); return 1; });
-  await sleep(600);
-  const hist = await run(() => ({ shown: !document.getElementById('xr-panel-history').hidden, rows: document.querySelectorAll('#reviewHistory li').length }));
-  const histServer = await run((ws) => fetch('api/workspaces/' + ws + '/review-history').then((r) => r.json()).then((l) => l.length), pick.workspaceId);
-  record('History shows the recorded link and approval events', hist.shown && hist.rows === histServer, { page: hist.rows, server: histServer });
+  const cm = await run(() => ({ shown: !document.getElementById('xr-panel-comments').hidden, list: !!document.getElementById('allComments'),
+    chips: [...document.querySelectorAll('#commentFilter .fx-chip')].map((c) => c.textContent.trim()) }));
+  record('the Comments tab lists comments as rows with chips with counts', cm.shown && cm.list && cm.chips.length === 4 && cm.chips.every((c) => /\d+$/.test(c)), cm);
   await run(() => { document.getElementById('xr-links').click(); return 1; });
+  await sleep(300);
+  await run(() => { document.getElementById('reviewHistoryButton').click(); return 1; });
+  await sleep(800);
+  const hist = await run(() => ({ shown: !!document.querySelector('#reviewHistorySheet .fx-sheet-backdrop'), rows: document.querySelectorAll('#reviewHistory li').length }));
+  const histServer = await run((ws) => fetch('api/workspaces/' + ws + '/review-history').then((r) => r.json()).then((l) => l.length), pick.workspaceId);
+  record('History opens in a side panel with the recorded link and approval events', hist.shown && hist.rows === histServer, { page: hist.rows, server: histServer });
+  await run(() => { const b = document.querySelector('.fx-sheet-close'); if (b) { b.click(); } return 1; });
   await sleep(400);
 
   for (const t of ['dark', 'light']) {

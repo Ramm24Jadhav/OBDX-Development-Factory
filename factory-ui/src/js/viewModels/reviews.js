@@ -2,7 +2,9 @@
  * External Review page: the workspace's screens shared with business reviewers through review links (one link per
  * screen, valid until its expiry date, ended at once by revoking it), what each link shows, the comments reviewers and the
  * team made (open or resolved, about the whole screen or one part of it), the decisions taken on each screen and the
- * history of links and approvals. Approving a screen does not approve or apply any code.
+ * history of links and approvals. The page leads with four boxes (open comments, waiting for approval, active links,
+ * approved) that filter the list; the screens are compact rows with a menu, the selected one beside them; two tabs
+ * (Screens, Comments) and the history in a side panel. Approving a screen does not approve or apply any code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/previewFrame', '../services/toast', '../services/dialog', '../services/pageRequests', 'ojs/ojknockout'],
@@ -29,6 +31,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const showError = (error) => this.errorMessage(error.message);
       const actionError = (error) => toast.error(error.message);
       const designs = ko.observableArray([]);
+      this.designs = designs;
       const requirements = ko.observable({});
       const history = ko.observableArray([]);
       this.loading = ko.observable(false);
@@ -65,15 +68,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const reviewersOf = (d) => Array.from(new Set(d.comments.filter((c) => c.fromReview).map((c) => c.author)));
 
       // --- the list of screens ---
+      // One filter for the list: the boxes at the top (open comments, waiting, active links, approved) and the chips over the list
+      const FILTERS = {
+        shared: (d) => !!d.reviewToken || d.comments.length > 0,
+        open: (d) => openRequests(d).length > 0,
+        waiting: (d) => d.status === 'IN_REVIEW',
+        active: (d) => live(d),
+        approved: (d) => d.status === 'APPROVED',
+        unshared: (d) => !d.reviewToken && d.status !== 'APPROVED',
+        all: () => true
+      };
       this.listFilter = ko.observable('shared');
-      this.listFilterOptions = [{ value: 'shared', label: 'Shared or with comments' }, { value: 'all', label: 'All screens' }];
       this.search = ko.observable('');
-      this.searchInput = ui.value(this.search);
       this.selectedId = ko.observable(null);
+      const countOf = (key) => designs().filter(FILTERS[key]).length;
+      const pickFilter = (key) => () => { this.listFilter(this.listFilter() === key ? 'all' : key); this.tab('links'); };
+      // The answer first: what waits for the team, in four boxes that filter the list
+      this.boxes = ko.pureComputed(() => {
+        const list = designs();
+        const openComments = list.reduce((n, d) => n + openRequests(d).length, 0);
+        const active = list.filter((d) => live(d));
+        const soon = active.filter((d) => new Date(d.reviewExpiresAt) - new Date() < SOON_MS).length;
+        const expiredN = list.filter((d) => expired(d) && d.status !== 'APPROVED').length;
+        const box = (key, name, count, sub, tone) => ({
+          key: key, name: name, count: count, sub: sub, label: name + ': ' + count + '. ' + sub,
+          css: 'factory-rq-stage factory-xr-box' + (count ? ' ' + tone : ''),
+          pressed: ko.pureComputed(() => String(this.listFilter() === key)), pick: pickFilter(key)
+        });
+        return [
+          box('open', 'Open comments', openComments, openComments ? 'On ' + plural(countOf('open'), 'screen') + '; reviewers wait for an answer' : 'No reviewer comment is open', 'has-mine'),
+          box('waiting', 'Waiting for approval', countOf('waiting'), countOf('waiting') ? 'Shared with reviewers, not approved yet' : 'No screen waits for a decision', 'has-work'),
+          box('active', 'Active links', active.length, soon ? soon + ' ending within 3 days' : expiredN ? plural(expiredN, 'link') + ' expired' : active.length ? 'None ends within 3 days' : 'No screen is shared now', soon ? 'has-mine' : 'has-work'),
+          box('approved', 'Approved', countOf('approved'), 'Of ' + plural(list.length, 'screen') + '; approving a screen approves no code', 'has-done')
+        ];
+      });
+      this.chips = ko.pureComputed(() => [['shared', 'Shared or commented'], ['unshared', 'Not shared'], ['all', 'All screens']]
+        .filter((c) => c[0] === 'all' || countOf(c[0]) > 0 || this.listFilter() === c[0])
+        .map((c) => ({ value: c[0], text: c[1] + ' ' + countOf(c[0]), pressed: ko.pureComputed(() => String(this.listFilter() === c[0])), pick: () => this.listFilter(c[0]) })));
+      this.filterName = ko.pureComputed(() => {
+        const b = this.boxes().find((x) => x.key === this.listFilter());
+        return b ? b.name : '';
+      });
+      this.clearFilters = () => { this.search(''); this.listFilter('all'); };
       this.rows = ko.pureComputed(() => {
-        const text = this.search().trim().toLowerCase();
+        const text = (this.search() || '').trim().toLowerCase();
         return designs()
-          .filter((d) => this.listFilter() === 'all' || !!d.reviewToken || d.comments.length > 0)
+          .filter(FILTERS[this.listFilter()] || FILTERS.all)
           .filter((d) => !text || d.name.toLowerCase().indexOf(text) >= 0)
           .map((d) => {
             const state = linkState(d);
@@ -83,16 +123,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               sub: 'v' + d.currentVersion + ' · ' + (state.key === 'active' || state.key === 'expired' ? (state.key === 'expired' ? 'Expired ' : 'Until ') + day(d.reviewExpiresAt)
                 : state.key === 'approved' ? 'v' + d.approvedVersion + ' approved' : 'No review link'),
               open: open ? plural(open, 'open comment') : '',
-              css: ko.pureComputed(() => 'factory-xr-entry' + (this.selectedId() === d.id ? ' is-selected' : '')),
+              css: ko.pureComputed(() => 'factory-rq-row factory-xr-row' + (this.selectedId() === d.id ? ' is-on' : '')),
               current: ko.pureComputed(() => (this.selectedId() === d.id ? 'true' : null)),
-              pick: () => this.selectedId(d.id)
+              pick: () => this.selectedId(d.id),
+              menuItems: menuFor(d),
+              menu: (event) => { this.selectedId(d.id); runAction(event.detail.value); }
             };
           });
       });
       this.emptyText = ko.pureComputed(() => (this.loading() ? 'Loading…'
         : !this.workspaceId() ? 'Choose a workspace to see its review links.'
           : designs().length === 0 ? 'This workspace has no screen designs yet. Design screens in the Design Studio, then share them here.'
-            : this.listFilter() === 'shared' ? 'No screen is shared yet. Use New review link, or show all screens.' : 'No screen matches the search.'));
+            : this.listFilter() === 'shared' && !(this.search() || '').trim() ? 'No screen is shared yet. Use New review link, or show all screens.' : 'No screen matches.'));
+      this.shownText = ko.pureComputed(() => (this.rows().length < designs().length ? this.rows().length + ' of ' + designs().length + ' shown' : ''));
 
       // --- summary line (real counts only) ---
       this.summary = ko.pureComputed(() => {
@@ -109,9 +152,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.tab = ko.observable('links');
       this.openCount = ko.pureComputed(() => designs().reduce((n, d) => n + openRequests(d).length, 0));
       this.tabs = ui.tabs(this.tab, [
-        { value: 'links', label: 'Review links', icon: 'link' }, { value: 'comments', label: 'Comments', icon: 'doc', count: this.openCount },
-        { value: 'history', label: 'History', icon: 'clock' }
+        { value: 'links', label: 'Screens', icon: 'monitor' }, { value: 'comments', label: 'Comments', icon: 'doc', count: this.openCount }
       ]);
+      // History of links and approvals: a side panel
+      this.historyOpen = ko.observable(false);
+      this.openHistory = () => this.historyOpen(true);
 
       // --- the selected screen ---
       this.selected = ko.pureComputed(() => designs().find((d) => d.id === this.selectedId()) || null);
@@ -237,10 +282,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         navigate('requirements');
       };
-      this.moreItems = ko.pureComputed(() => {
-        const d = this.selected();
+      const menuFor = (d) => {
         const l = live(d);
         return [
+          { value: 'copy', label: 'Copy link', icon: 'link', disabled: !l },
           { value: 'open', label: 'Open as a reviewer', icon: 'user', disabled: !l },
           { value: 'designer', label: 'Edit in the Design Studio', icon: 'design' },
           { separator: true },
@@ -248,14 +293,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           { value: 'revoke', label: 'Revoke link', icon: 'x', danger: true, disabled: !this.canEdit() || !d || !d.reviewToken,
             title: d && d.reviewToken ? null : 'This screen has no review link' }
         ];
-      });
-      this.moreAction = (event) => {
-        const what = event.detail.value;
+      };
+      // The selected screen's menu: Copy link is its primary button already
+      this.moreItems = ko.pureComputed(() => menuFor(this.selected()).filter((x) => x.value !== 'copy'));
+      const runAction = (what) => {
         if (what === 'open') { window.open(this.reviewUrl(), '_blank', 'noopener'); }
         if (what === 'designer') { this.openDesigner(); }
         if (what === 'expiry') { this.changingExpiry(true); window.setTimeout(() => { const f = document.querySelector('#linkExpiry input, #linkExpiry button'); if (f) { f.focus(); } }, 0); }
         if (what === 'revoke') { this.revokeLink(); }
+        if (what === 'copy') { this.copyLink(); }
       };
+      this.moreAction = (event) => runAction(event.detail.value);
       this.showShare = ko.pureComputed(() => {
         const d = this.selected();
         return !!d && this.canEdit() && d.status !== 'APPROVED' && (!live(d) || this.changingExpiry());
@@ -292,16 +340,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- Comments tab: every comment of the workspace ---
       this.commentFilter = ko.observable('open');
-      this.commentFilterOptions = [{ value: 'open', label: 'Open reviewer comments' }, { value: 'resolved', label: 'Resolved' }, { value: 'team', label: 'Team comments' }, { value: 'all', label: 'All comments' }];
-      this.allComments = ko.pureComputed(() => [].concat.apply([], designs().map((d) => feedback(d).map((c) => ({ d: d, c: c }))))
-        .filter((x) => (this.commentFilter() === 'open' ? x.c.fromReview && !x.c.resolvedAt
-          : this.commentFilter() === 'resolved' ? !!x.c.resolvedAt
-            : this.commentFilter() === 'team' ? !x.c.fromReview : true))
+      const COMMENT_FILTERS = { open: (c) => c.fromReview && !c.resolvedAt, resolved: (c) => !!c.resolvedAt, team: (c) => !c.fromReview, all: () => true };
+      const everyComment = ko.pureComputed(() => [].concat.apply([], designs().map((d) => feedback(d).map((c) => ({ d: d, c: c })))));
+      this.commentChips = ko.pureComputed(() => [['open', 'Open from reviewers', 'is-warning'], ['resolved', 'Resolved', 'is-success'], ['team', 'Team notes', 'is-primary'], ['all', 'All', '']]
+        .map((f) => ({ value: f[0], text: f[1] + ' ' + everyComment().filter((x) => COMMENT_FILTERS[f[0]](x.c)).length, dot: f[2] ? 'factory-rq-fdot ' + f[2] : '',
+          pressed: ko.pureComputed(() => String(this.commentFilter() === f[0])), pick: () => this.commentFilter(f[0]) })));
+      this.allComments = ko.pureComputed(() => everyComment()
+        .filter((x) => COMMENT_FILTERS[this.commentFilter()](x.c))
         .sort((a, b) => new Date(b.c.createdAt) - new Date(a.c.createdAt))
         .map((x) => ({
           screen: x.d.name, about: labelOf(x.d, x.c.componentId), author: x.c.author, text: x.c.text, when: ui.when(x.c.createdAt),
           from: x.c.fromReview ? ui.pill('Reviewer', 'amber') : ui.pill('Team', 'blue'),
           state: x.c.resolvedAt ? ui.status('APPROVED', 'Resolved') : ui.status('IN_REVIEW', 'Open'),
+          initials: ui.initials(x.c.author), avatarCss: ui.avatarTone(x.c.author) + ' factory-xr-avatar',
           open: () => { this.selectedId(x.d.id); this.tab('links'); }
         })));
       this.commentsEmpty = ko.pureComputed(() => (this.commentFilter() === 'open' ? 'No open reviewer comments.' : 'No comments to show.'));
@@ -323,7 +374,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         };
       }));
       this.historyFilter = ko.observable('all');
-      this.historyFilterOptions = [{ value: 'all', label: 'Everything' }, { value: 'decisions', label: 'Approvals only' }, { value: 'links', label: 'Links and comments' }];
+      this.historyChips = ko.pureComputed(() => [['all', 'Everything'], ['decisions', 'Approvals'], ['links', 'Links and comments']].map((f) => ({
+        value: f[0], text: f[1] + ' ' + this.historyRows().filter((h) => f[0] === 'all' || (f[0] === 'decisions') === h.decision).length,
+        pressed: ko.pureComputed(() => String(this.historyFilter() === f[0])), pick: () => this.historyFilter(f[0]) })));
       this.visibleHistory = ko.pureComputed(() => this.historyRows().filter((h) => this.historyFilter() === 'all' || (this.historyFilter() === 'decisions') === h.decision));
 
       // --- loading ---

@@ -2,10 +2,12 @@
  * Build, Test & Review page: the quality gates of one change, each from the results the factory has: the Jenkins
  * build, the unit tests Jenkins reports, integration tests (not reported separately), the quick checks (static checks),
  * the version pack's security rules among them, and requirement coverage (the criteria the written tests name). A gate
- * that has not run never shows as passed. Below: the failures with severity, file and line, log and linked criteria;
- * the run history with a comparison of two runs; the logs; the checks per file; and delivery. Actions are those of
- * before (build again, run the quick checks, write a failing file again, submit for review, the patch), offered only
- * when the server allows them.
+ * that has not run never shows as passed. The page leads with one header (the change, its verdict, the one primary
+ * action, the rest in a menu), one problem bar and the gates as cards; then three tabs: the findings as compact rows
+ * with the finding beside them, the runs with their logs and a comparison, and the checks per file with the
+ * coverage. Delivery and approvals, and the assistant, open in side panels. Actions are those of before (build again,
+ * run the quick checks, write a failing file again, submit for review, the patch), offered only when the server
+ * allows them.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/assistant', '../services/toast', '../services/dialog', '../services/pageRequests', 'ojs/ojknockout'],
@@ -56,22 +58,37 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.coverage = ko.observable(null);
       // True while the quick checks request runs (the server checks every file before it answers)
       this.checking = ko.observable(false);
-      this.changeChange = (event) => this.changeId(event.target.value);
       // Requirement picker: narrows the change list to the changes made from one requirement
       this.requirements = ko.observableArray([]);
       this.requirementId = ko.observable('');
       this.changeRequirement = ko.observable({});
+      this.requirementOptions = ko.pureComputed(() => [{ value: '', label: 'All requirements' }]
+        .concat(this.requirements().map((r) => ({ value: r.id, label: r.label }))));
       this.changeOptions = ko.pureComputed(() => {
         const req = this.requirementId();
-        return this.changes().filter((c) => !req || this.changeRequirement()[c.id] === req);
+        return this.changes().filter((c) => !req || this.changeRequirement()[c.id] === req).map((c) => ({ value: c.id, label: c.label }));
       });
-      this.requirementChange = (event) => {
-        this.requirementId(event.target.value);
+      this.requirementId.subscribe(() => {
         const list = this.changeOptions();
-        if (list.length && !list.some((c) => c.id === this.changeId())) {
-          this.changeId(list[0].id);
+        if (list.length && !list.some((c) => c.value === this.changeId())) {
+          this.changeId(list[0].value);
         }
-      };
+      });
+      // Every change of the workspace, for the line that says how many are to review or failed their build
+      this.allChanges = ko.observableArray([]);
+      this.across = ko.pureComputed(() => {
+        const all = this.allChanges();
+        if (!all.length) {
+          return '';
+        }
+        const n = (f) => all.filter(f).length;
+        const built = n((c) => !!c.buildStatus);
+        return [all.length + (all.length === 1 ? ' change' : ' changes'),
+          n((c) => c.status === 'GENERATED') ? n((c) => c.status === 'GENERATED') + ' with code to review' : '',
+          n((c) => c.buildStatus === 'FAILED') ? n((c) => c.buildStatus === 'FAILED') + ' build failed' : '',
+          n((c) => c.buildStatus === 'BUILDING') ? n((c) => c.buildStatus === 'BUILDING') + ' building' : '',
+          built ? '' : 'none built with Jenkins'].filter(Boolean).join(' · ');
+      });
       // Loading problems stay on the page; the result of an action is a toast
       const showError = (error) => this.errorMessage(error.message);
       const actionError = (error) => toast.error(error.message);
@@ -143,7 +160,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return [];
         }
         const gate = (key, title, state, evidence, why) => ({ key: key, title: title, status: gateStatus(state), evidence: evidence, why: why || '',
-          css: 'factory-card factory-bt-gate factory-bt-gate-' + state.toLowerCase().replace('_', '-'), pick: () => this.focusGate(key) });
+          css: 'fx-card factory-bt-gate factory-bt-gate-' + state.toLowerCase().replace('_', '-'), pick: () => this.focusGate(key) });
         const rows = lastJenkins();
         const b = this.lastBuild();
         const run = this.lastRun();
@@ -279,6 +296,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           'The acceptance criteria the written tests name (the generator names each criterion a test checks). Traceability, not a test result.'));
         return list;
       });
+      // The gates shown as cards: integration tests are never reported, so they are one line under the cards instead
+      this.gateCards = ko.pureComputed(() => this.gates().filter((g) => g.key !== 'integration').map((g) => Object.assign({}, g, {
+        count: this.failures().filter((f) => f.check === g.key).length,
+        linkText: ko.pureComputed(() => {
+          const n = this.failures().filter((f) => f.check === g.key).length;
+          return n ? 'Show ' + n + (n === 1 ? ' finding' : ' findings') : '';
+        })
+      })));
+      this.integrationLine = ko.pureComputed(() => {
+        const g = this.gates().find((x) => x.key === 'integration');
+        return g ? 'Integration tests: ' + g.status.text.toLowerCase() + '. ' + g.evidence : '';
+      });
       // The overall verdict: never passed while a gate has not run
       this.verdict = ko.pureComputed(() => {
         const g = this.gates();
@@ -334,10 +363,17 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.gateFilter = ko.observable('all');
       this.focusGate = (key) => {
         this.gateFilter(['build', 'tests', 'static', 'security', 'coverage'].indexOf(key) >= 0 ? key : 'all');
-        const list = document.getElementById('failureTable');
-        if (list) {
-          list.scrollIntoView({ block: 'nearest' });
+        this.tab('findings');
+        const first = this.visibleFailures()[0];
+        if (first) {
+          this.selectedFailure(first.index);
         }
+        window.setTimeout(() => {
+          const list = document.getElementById('failureList');
+          if (list) {
+            list.scrollIntoView({ block: 'nearest' });
+          }
+        }, 0);
       };
       this.failures = ko.pureComputed(() => {
         const list = [];
@@ -378,6 +414,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           linked: x.criterion ? [x.criterion].concat(linkedOf(x.file, x.message).filter((id) => id !== x.criterion)) : linkedOf(x.file, x.message),
           status: x.severity === 'Warning' ? ui.status('WARNING', 'Warning') : ui.status('FAILED', 'Error'),
           name: x.file ? x.file.split('/').pop() : '–',
+          where: x.file ? x.file.split('/').pop() + (x.line ? ':' + x.line : '') : 'No file named',
+          css: ko.pureComputed(() => 'factory-bt-frow' + (this.selectedFailure() === i ? ' is-on' : '') + (x.severity === 'Warning' ? ' is-warning' : ' is-error')),
+          current: ko.pureComputed(() => (this.selectedFailure() === i ? 'true' : null)),
           pick: () => this.selectedFailure(i),
           stop: (event) => event.stopPropagation(),
           action: (event) => {
@@ -390,7 +429,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             } else if (value === 'fix') {
               this.fixWithAi();
             } else if (value === 'ask') {
-              this.aiTab('chat');
+              this.askOpen(true);
               this.ai.ask('Explain this failure and how to fix it: ' + x.message);
             } else {
               this.detailTab('message');
@@ -403,30 +442,28 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.failureItems = ko.pureComputed(() => [{ value: 'details', label: 'View details' }, { value: 'code', label: 'Show the code' },
         { value: 'copy', label: 'Copy error message' }, { value: 'ask', label: 'Ask the AI Assistant' },
         { value: 'fix', label: 'Write the file again with the fix', disabled: !this.canFix() }]);
-      this.failureTabs = ui.tabs(this.gateFilter, [
-        { value: 'all', label: 'All', count: ko.pureComputed(() => this.failures().length) },
-        { value: 'build', label: 'Build', count: ko.pureComputed(() => this.failures().filter((f) => f.check === 'build').length) },
-        { value: 'tests', label: 'Unit tests', count: ko.pureComputed(() => this.failures().filter((f) => f.check === 'tests').length) },
-        { value: 'static', label: 'Static', count: ko.pureComputed(() => this.failures().filter((f) => f.check === 'static').length) },
-        { value: 'security', label: 'Security', count: ko.pureComputed(() => this.failures().filter((f) => f.check === 'security').length) },
-        { value: 'coverage', label: 'Coverage', count: ko.pureComputed(() => this.failures().filter((f) => f.check === 'coverage').length) }
-      ]);
+      // Filter chips with counts: All, then only the checks that have findings (and the one chosen)
+      const CHECKS = [['build', 'Build', 'is-danger'], ['tests', 'Unit tests', 'is-danger'], ['static', 'Static', 'is-warning'],
+        ['security', 'Security', 'is-danger'], ['coverage', 'Coverage', 'is-warning']];
+      this.failureChips = ko.pureComputed(() => {
+        const all = this.failures();
+        const n = (v) => all.filter((f) => f.check === v).length;
+        return [{ value: 'all', text: 'All ' + all.length, dot: '', pressed: ko.pureComputed(() => String(this.gateFilter() === 'all')), pick: () => this.gateFilter('all') }]
+          .concat(CHECKS.filter((c) => n(c[0]) > 0 || this.gateFilter() === c[0]).map((c) => ({
+            value: c[0], text: c[1] + ' ' + n(c[0]), dot: 'factory-rq-fdot ' + c[2],
+            pressed: ko.pureComputed(() => String(this.gateFilter() === c[0])),
+            pick: () => this.gateFilter(this.gateFilter() === c[0] ? 'all' : c[0])
+          })));
+      });
       this.failureSearch = ko.observable('');
-      this.failureSearchInput = ui.value(this.failureSearch);
       this.visibleFailures = ko.pureComputed(() => {
-        const text = this.failureSearch().trim().toLowerCase();
+        const text = (this.failureSearch() || '').trim().toLowerCase();
         return this.failures().filter((f) => (this.gateFilter() === 'all' || f.check === this.gateFilter())
           && (!text || (f.message + ' ' + f.file).toLowerCase().indexOf(text) >= 0));
       });
-      // Enter or Space on a finding row selects it, like a click
-      this.rowKey = (event) => {
-        if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
-          event.preventDefault();
-          event.currentTarget.click();
-          return false;
-        }
-        return true;
-      };
+      this.failuresShown = ko.pureComputed(() => (this.visibleFailures().length < this.failures().length
+        ? this.visibleFailures().length + ' of ' + this.failures().length + ' shown' : ''));
+      this.clearFailureFilters = () => { this.failureSearch(''); this.gateFilter('all'); };
       this.selectedFailure = ko.observable(0);
       this.failure = ko.pureComputed(() => this.failures()[this.selectedFailure()] || null);
       this.failurePosition = ko.pureComputed(() => (this.failures().length ? (this.selectedFailure() + 1) + ' of ' + this.failures().length : ''));
@@ -516,12 +553,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.logRound = ko.observable(-1);
       this.logOptions = ko.pureComputed(() => builds().map((b, i) => ({ value: String(i), label: b.job + (b.buildNumber ? ' #' + b.buildNumber : '') + ' · round ' + b.round + ' · ' + (b.result || 'no result') + ' · ' + ui.when(b.startedAt) }))
         .reverse().concat([{ value: 'obdx', label: 'Quick checks, per file' }]));
-      this.logChoice = ko.pureComputed(() => (this.logRound() === -1 ? (builds().length ? String(builds().length - 1) : 'obdx') : String(this.logRound())));
-      this.logChange = (event) => this.logRound(event.target.value === 'obdx' ? 'obdx' : Number(event.target.value));
+      this.logChoice = ko.pureComputed({
+        read: () => (this.logRound() === -1 ? (builds().length ? String(builds().length - 1) : 'obdx') : String(this.logRound())),
+        write: (value) => this.logRound(value === 'obdx' ? 'obdx' : Number(value))
+      });
       this.logBuild = ko.pureComputed(() => (this.logChoice() === 'obdx' ? null : builds()[Number(this.logChoice())] || null));
       this.logText = ko.pureComputed(() => {
         if (this.logChoice() === 'obdx') {
-          return files().length ? files().map((f) => '[' + (f.checkStatus || 'NOT_CHECKED') + '] ' + f.path + (f.checkMessage ? ' - ' + f.checkMessage : '')).join('\n') : 'No files checked yet.';
+          return checksText();
         }
         const b = this.logBuild();
         return b ? (b.logExcerpt || (b.job === QUICK_CHECKS ? b.errors.join('\n') : '(no log excerpt for this round)')) : 'No builds yet.';
@@ -535,12 +574,38 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- checks per file, coverage, delivery ---
 
-      this.fileRows = ko.pureComputed(() => files().map((f) => ({
-        path: f.path, layer: f.layer,
+      const checkKey = (f) => (!written(f) ? 'unwritten' : { PASSED: 'passed', FAILED: 'failed', WARNING: 'warning' }[f.checkStatus] || 'unchecked');
+      this.allFileRows = ko.pureComputed(() => files().map((f) => ({
+        path: f.path, name: f.path.split('/').pop(), folder: f.path.split('/').slice(0, -1).join('/'), layer: f.layer, key: checkKey(f),
         check: !written(f) ? ui.status('NOT_CHECKED', (f.checkMessage || '').indexOf(CUT_OFF) === 0 ? 'Cut off, not written' : 'Not written')
           : ui.status(f.checkStatus || 'NOT_CHECKED', { PASSED: 'Passed', FAILED: 'Failed', WARNING: 'Warning' }[f.checkStatus] || 'Not checked'),
-        message: f.checkMessage || '', attempts: f.attempts
+        message: f.checkMessage || '', attempts: f.attempts,
+        // A long message shows its first lines; Show all opens the rest
+        long: (f.checkMessage || '').split('\n').length > 3 || (f.checkMessage || '').length > 360,
+        open: ko.observable(false),
+        msgCss: ko.observable('factory-bt-cmsg is-clamped'),
+        attemptsText: f.attempts ? f.attempts + (f.attempts === 1 ? ' attempt' : ' attempts') : ''
+      })).map((r) => Object.assign(r, {
+        toggle: () => { r.open(!r.open()); r.msgCss(r.open() ? 'factory-bt-cmsg' : 'factory-bt-cmsg is-clamped'); },
+        toggleText: ko.pureComputed(() => (r.open() ? 'Show less' : 'Show all ' + r.message.split('\n').length + ' lines'))
       })));
+      // Chips over the files: one per result some file has
+      this.checkFilter = ko.observable('');
+      const CHECK_CHIPS = [['failed', 'Failed', 'is-danger'], ['warning', 'Warnings', 'is-warning'], ['passed', 'Passed', 'is-success'],
+        ['unwritten', 'Not written', ''], ['unchecked', 'Not checked', '']];
+      this.checkChips = ko.pureComputed(() => {
+        const all = this.allFileRows();
+        const n = (v) => all.filter((r) => r.key === v).length;
+        return [{ value: '', text: 'All ' + all.length, dot: '', pressed: ko.pureComputed(() => String(!this.checkFilter())), pick: () => this.checkFilter('') }]
+          .concat(CHECK_CHIPS.filter((c) => n(c[0]) > 0 || this.checkFilter() === c[0]).map((c) => ({
+            value: c[0], text: c[1] + ' ' + n(c[0]), dot: 'factory-rq-fdot ' + c[2],
+            pressed: ko.pureComputed(() => String(this.checkFilter() === c[0])),
+            pick: () => this.checkFilter(this.checkFilter() === c[0] ? '' : c[0])
+          })));
+      });
+      this.fileRows = ko.pureComputed(() => this.allFileRows().filter((r) => !this.checkFilter() || r.key === this.checkFilter()));
+      const checksText = () => (files().length ? files().map((f) => '[' + (f.checkStatus || 'NOT_CHECKED') + '] ' + f.path + (f.checkMessage ? ' - ' + f.checkMessage : '')).join('\n') : 'No files checked yet.');
+      this.checksDownload = ko.pureComputed(() => 'data:text/plain;charset=utf-8,' + encodeURIComponent(checksText()));
       this.coverageRows = ko.pureComputed(() => (this.coverage() ? this.coverage().criteria : []).map((c) => ({
         id: c.id, text: c.text, requirements: c.requirements.join(', '),
         tests: c.tests.map((p) => p.split('/').pop()).join(', ') || '–', code: c.code.map((p) => p.split('/').pop()).join(', ') || '–',
@@ -575,21 +640,36 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
         return {
           code: code('CHG', d.id, 3), title: d.title, status: ui.status(d.status, d.status.charAt(0) + d.status.slice(1).toLowerCase().replace('_', ' ')),
-          meta: [code('REQ', d.requirementId, 4), d.branchUrl ? 'branch ' + d.branchUrl.split('/').slice(-2).join('/') : 'not delivered',
+          meta: [code('CHG', d.id, 3), code('REQ', d.requirementId, 4), d.branchUrl ? 'branch ' + d.branchUrl.split('/').slice(-2).join('/') : 'not delivered',
             this.lastRun() ? 'last run ' + ui.when(this.lastRun().startedAt) : 'not built', this.jenkins() && this.jenkins().jobs ? 'Jenkins: ' + this.jenkins().jobs : 'Jenkins not set up'].join(' · ')
         };
       });
+      // Delivery and approvals (side panel): the facts in rows
+      this.deliveryFacts = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        return [
+          { label: 'Change', value: code('CHG', d.id, 3) + ' · ' + this.summary().status.text, mono: false },
+          { label: 'Delivery', value: d.branchUrl ? 'SVN branch' : 'Patch (download)', mono: false },
+          { label: 'Branch', value: d.branchUrl || 'Not delivered', mono: !!d.branchUrl },
+          { label: 'Delivered revision', value: d.deliveredRevision ? 'r' + d.deliveredRevision : 'Not delivered', mono: false },
+          { label: 'Closed', value: d.closedAt ? (d.closedReason + ' by ' + d.closedBy) : 'Open', mono: false }
+        ];
+      });
+      this.infoOpen = ko.observable(false);
+      this.openInfo = () => this.infoOpen(true);
+      this.askOpen = ko.observable(false);
+      this.openAsk = () => this.askOpen(true);
 
-      // --- actions, offered only when the server takes them ---
+      // --- tabs: findings, runs and logs, checks and coverage ---
 
-      this.tab = ko.observable('gates');
+      this.tab = ko.observable('findings');
       this.tabs = ui.tabs(this.tab, [
-        { value: 'gates', label: 'Quality gates' },
-        { value: 'history', label: 'Runs', count: ko.pureComputed(() => this.runs().length) },
-        { value: 'logs', label: 'Logs' },
-        { value: 'checks', label: 'Checks per file' },
-        { value: 'coverage', label: 'Coverage' },
-        { value: 'delivery', label: 'Delivery' }
+        { value: 'findings', label: 'Findings', n: ko.pureComputed(() => this.failures().length) },
+        { value: 'runs', label: 'Runs and logs', n: ko.pureComputed(() => this.runs().length) },
+        { value: 'checks', label: 'Checks and coverage', n: ko.pureComputed(() => files().length) }
       ]);
       this.tabKey = (event) => {
         const keys = this.tabs.map((t) => t.value);
@@ -663,7 +743,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         api.post(base() + '/regenerate', { path: file.path, note: 'Fix this failure: ' + f.message })
           .then((d) => { show(d); toast.info('Writing ' + file.path.split('/').pop() + ' again with the fix.'); }).catch(actionError);
       };
-      this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      // Opens this change on the Changes page
+      this.openWorkbench = () => {
+        if (this.detail()) {
+          pageRequests.change(this.detail().id);
+        }
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      };
       // Planned files that are not written: delivering or downloading leaves them out, so it asks first (as on Changes)
       const unwritten = ko.pureComputed(() => files().filter((f) => f.status === 'PENDING' || f.status === 'FAILED').map((f) => f.path));
       const incompleteNote = () => unwritten().length + ' planned file(s) are not written and would be left out: '
@@ -680,18 +766,132 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
         });
       };
-      this.moreItems = ko.pureComputed(() => [{ value: 'checks', label: 'Run quick checks', disabled: !this.canCheck() },
-        { value: 'patch', label: 'Download patch' }, { value: 'changes', label: 'Open in Changes' }, { value: 'impact', label: 'Open Impact Analysis' }]);
+      // The one primary action: submit written code for review; else build it; else check it; else Submit, off with its reason
+      this.primary = ko.pureComputed(() => {
+        if (!this.detail()) {
+          return null;
+        }
+        if (this.canDeliver()) {
+          return { id: 'submitReviewButton', label: 'Submit for review', icon: 'share', allowed: true, why: null, run: this.deliver };
+        }
+        if (this.canBuild()) {
+          return { id: 'rebuildButton', label: 'Build with Jenkins', icon: 'refresh', allowed: true, why: null, run: this.rebuild };
+        }
+        if (this.canCheck()) {
+          return { id: 'checkAgainButton', label: 'Run quick checks', icon: 'check', allowed: true, why: null, run: this.checkAgain };
+        }
+        const d = this.detail();
+        return { id: 'submitReviewButton', label: 'Submit for review', icon: 'share', allowed: false, run: this.deliver,
+          why: !this.canManage() ? 'You need the Manage code permission' : building() || this.checking() ? 'Wait until the running check or build ends'
+            : d.status === 'DELIVERED' ? 'Already delivered to a branch' : d.status === 'CLOSED' ? 'The change is closed' : 'Generate the code first, on the Changes page' };
+      });
+      this.moreItems = ko.pureComputed(() => {
+        const p = this.primary() ? this.primary().id : '';
+        return [
+          { value: 'submit', label: 'Submit for review', icon: 'share', disabled: !this.canDeliver(), title: this.canDeliver() ? null : 'Only written code that is not delivered yet' },
+          { value: 'build', label: 'Build with Jenkins', icon: 'refresh', disabled: !this.canBuild(), title: this.rebuildTip() },
+          { value: 'checks', label: 'Run quick checks', icon: 'check', disabled: !this.canCheck(), title: this.checkTip() }
+        ].filter((x) => !(x.value === 'submit' && p === 'submitReviewButton') && !(x.value === 'build' && p === 'rebuildButton')
+          && !(x.value === 'checks' && p === 'checkAgainButton'))
+          .concat([{ separator: true },
+            { value: 'patch', label: 'Download patch', icon: 'download' },
+            { value: 'info', label: 'Delivery and approvals', icon: 'clock' },
+            { value: 'ask', label: 'Ask the assistant', icon: 'sparkle' },
+            { separator: true },
+            { value: 'changes', label: 'Open in Changes', icon: 'branch' }, { value: 'impact', label: 'Open Impact Analysis', icon: 'list' }]);
+      });
       this.moreAction = (event) => {
         const action = event.detail.value;
         if (action === 'checks') {
           this.checkAgain();
+        } else if (action === 'build') {
+          this.rebuild();
+        } else if (action === 'submit') {
+          this.deliver();
         } else if (action === 'patch') {
           downloadPatch();
+        } else if (action === 'info') {
+          this.openInfo();
+        } else if (action === 'ask') {
+          this.openAsk();
         } else {
+          if (this.detail()) {
+            pageRequests.change(this.detail().id);
+          }
           window.dispatchEvent(new CustomEvent('factory-navigate', { detail: action }));
         }
       };
+      // The one problem, the most important first, with its fix; else the next step in one line
+      this.problem = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d || building() || this.checking() || d.status === 'GENERATING') {
+          return null;
+        }
+        const g = {};
+        this.gates().forEach((x) => { g[x.key] = x; });
+        const state = (k) => (g[k] ? g[k].status.state : '');
+        const show = (k, label) => ({ label: label, run: () => this.focusGate(k) });
+        const count = (k) => this.failures().filter((f) => f.check === k).length;
+        const bad = (lead, detail, fix) => ({ css: 'factory-rqd-problem is-error', lead: lead, detail: detail, fix: fix });
+        const warn = (lead, detail, fix) => ({ css: 'factory-rqd-problem', lead: lead, detail: detail, fix: fix });
+        const toChanges = { label: 'Open in Changes', run: () => this.openWorkbench() };
+        if (d.status === 'FAILED') {
+          return bad('This change failed before its code was written.', ui.shortError(d.message || '').text, toChanges);
+        }
+        if (state('build') === 'FAILED') {
+          const first = this.failures().find((f) => f.check === 'build');
+          return bad('The Jenkins build failed.', first ? first.where + ': ' + first.message : g.build.evidence, count('build') ? show('build', 'Show build findings') : null);
+        }
+        if (state('build') === 'BLOCKED' && ['GENERATED', 'DELIVERED'].indexOf(d.status) >= 0) {
+          return bad('The build did not finish.', g.build.evidence, this.canBuild() ? { label: 'Build again', run: this.rebuild } : null);
+        }
+        if (state('tests') === 'FAILED') {
+          return bad(g.tests.evidence, 'Fix the failing tests and build again.', show('tests', 'Show them'));
+        }
+        if (state('static') === 'FAILED' || state('security') === 'FAILED') {
+          const n = files().filter((f) => written(f) && f.checkStatus === 'FAILED').length;
+          return bad(n + (n === 1 ? ' file fails' : ' files fail') + ' the quick checks.', 'Write the file again with the fix, or edit it on the Changes page.',
+            show(state('security') === 'FAILED' ? 'security' : 'static', 'Show them'));
+        }
+        if (unwritten().length && d.status === 'GENERATED') {
+          return warn(unwritten().length + (unwritten().length === 1 ? ' planned file is' : ' planned files are') + ' not written.',
+            'Submitting or downloading the patch leaves them out.', { label: 'Open in Changes', run: () => { pageRequests.change(d.id); this.openWorkbench(); } });
+        }
+        if (state('coverage') === 'FAILED') {
+          return warn(g.coverage.evidence, 'A criterion no written file names may not be built.', show('coverage', 'Show them'));
+        }
+        if (!this.jenkinsSet() && ['GENERATED', 'DELIVERED'].indexOf(d.status) >= 0) {
+          return warn('Jenkins is not set up for this workspace.', 'The build and the unit tests cannot run until it is.',
+            { label: 'Open Integrations', run: () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'integrations' })) });
+        }
+        return null;
+      });
+      this.nextLine = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return '';
+        }
+        if (building()) {
+          return d.buildMessage || 'Building with Jenkins. This page updates when it finishes.';
+        }
+        if (this.checking()) {
+          return 'Running the quick checks on every written file.';
+        }
+        if (d.status === 'GENERATING') {
+          return 'The code is being written. The gates update when it is done.';
+        }
+        if (d.closedAt) {
+          return 'Closed as ' + (d.closedReason || '').toLowerCase() + ' by ' + d.closedBy + ', ' + ui.when(d.closedAt) + '.';
+        }
+        if (d.deliveredRevision) {
+          return 'Delivered to a new SVN branch at r' + d.deliveredRevision + '. The bank merges it with its own review.';
+        }
+        if (this.canDeliver()) {
+          return 'Submit for review: the code is committed to a new SVN branch; trunk is not changed.';
+        }
+        return this.verdict() ? this.verdict().text : '';
+      });
+      this.isNow = ko.pureComputed(() => building() || this.checking() || (!!this.detail() && this.detail().status === 'GENERATING'));
       this.canDeliver = ko.pureComputed(() => !!this.detail() && this.detail().status === 'GENERATED' && this.canManage() && !building());
       this.deliver = () => (unwritten().length
         ? dialog.confirm({ title: 'Submit an incomplete change?', message: incompleteNote() + ' The branch may not build. Write them first with Continue generation or Write again on the Changes page.',
@@ -774,25 +974,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.detail(null);
         if (!id) {
           this.changes([]);
+          this.allChanges([]);
           return;
         }
         this.requirementId('');
         api.get('workspaces/' + id + '/requirements').then((list) => this.requirements(list.map((r) => ({ id: r.id, label: code('REQ', r.id, 4) + ' – ' + r.title }))))
           .catch(() => this.requirements([]));
         api.get('workspaces/' + id + '/jenkins').then((j) => this.jenkins(j || null)).catch(() => this.jenkins(null));
-        api.get('workspaces/' + id + '/changes').then((list) => {
+        // One request for every change with its requirement and build state (newest first, as the change list)
+        api.get('workspaces/' + id + '/changes/details').then((list) => {
+          if (id !== this.workspaceId()) {
+            return;
+          }
+          this.allChanges(list);
           this.changes(list.map((c) => ({ id: c.id, label: code('CHG', c.id, 3) + ' – ' + c.title })));
-          this.changeRequirement({});
-          Promise.all(list.map((c) => api.get('changes/' + c.id).then((d) => [c.id, d.requirementId]).catch(() => [c.id, '']))).then((pairs) => {
-            const map = {};
-            pairs.forEach((p) => { map[p[0]] = p[1]; });
-            this.changeRequirement(map);
-          });
+          const map = {};
+          list.forEach((c) => { map[c.id] = c.requirementId; });
+          this.changeRequirement(map);
           // A change another page asked to open (pageRequests.change), else the newest
           const wanted = list.find((c) => c.id === pageRequests.change());
           pageRequests.change(null);
           if (list.length) {
-            this.changeId((wanted || list[0]).id);
+            const next = (wanted || list[0]).id;
+            if (next === this.changeId()) {
+              this.load();
+            } else {
+              this.changeId(next);
+            }
           }
         }).catch(showError);
       };
