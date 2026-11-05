@@ -52,9 +52,9 @@ class ComponentPackServiceTest {
                 Path folder = Path.of("..").resolve(b.source());
                 assertThat(folder).as(p.id() + " " + b.component()).isDirectory();
                 try (var files = Files.list(folder)) {
-                    // A React or React Native component is an exported function; a premium JET element a registered composite
+                    // A React or React Native component is an exported function, an Angular one an exported class; a premium JET element a registered composite
                     boolean exported = files.filter((f) -> f.toString().endsWith(".tsx") || f.toString().endsWith(".ts") || f.toString().endsWith(".js"))
-                            .anyMatch((f) -> { try { String s = Files.readString(f); return s.contains("export function " + b.export())
+                            .anyMatch((f) -> { try { String s = Files.readString(f); return s.contains("export function " + b.export()) || s.contains("export class " + b.export() + " ")
                                     || s.contains("Composite.register('" + b.export() + "'"); } catch (Exception e) { return false; } });
                     assertThat(exported).as(p.id() + " " + b.component() + " exports " + b.export()).isTrue();
                 }
@@ -65,16 +65,22 @@ class ComponentPackServiceTest {
     @Test
     void readinessComesOnlyFromWhatIsBuiltAndItsChecks() {
         ComponentPackService.Catalogue c = service.catalogue();
-        // React and React Native start from their starters' form components: built, no checks recorded
+        // The foundation set is built in every pack with its unit and accessibility checks passed; the browser gates are not run yet
         assertThat(find(c, "text-field").packs().get("react").readiness()).isEqualTo("in-test");
-        assertThat(find(c, "text-field").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#TextField");
+        assertThat(find(c, "text-field").packs().get("react").source()).isEqualTo("target-packs/components/react/src#TextField");
+        assertThat(find(c, "data-grid").packs().get("angular").source()).isEqualTo("target-packs/components/angular/src#DataTable");
+        assertThat(find(c, "dialog").packs().get("react-native").gates().get("accessibility")).isEqualTo("passed");
+        assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("not-run");
+        // What the starters had beyond the foundation set stays listed from the starter
+        assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#SwitchField");
         assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("in-test");
         assertThat(c.packs().get(0).counts().inTest()).isEqualTo(13);
         // Angular does not carry the widgets
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(176));
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available()).isZero());
-        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(10);
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(16);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(13);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");

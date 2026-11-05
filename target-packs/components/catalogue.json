@@ -24,9 +24,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-button",
-            "react": "shadcn Button (Radix Slot)",
-            "react-native": "Paper Button",
-            "angular": "MatButton"
+            "react": "native button",
+            "react-native": "Pressable",
+            "angular": "native button"
           },
           "sample": {
             "label": "Continue",
@@ -51,9 +51,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-button (icon)",
-            "react": "shadcn Button, size icon",
-            "react-native": "Paper IconButton",
-            "angular": "MatIconButton"
+            "react": "native button",
+            "react-native": "Pressable",
+            "angular": "native button"
           },
           "sample": {
             "label": "Download statement",
@@ -131,9 +131,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-text",
-            "react": "shadcn Input + Field",
-            "react-native": "Paper TextInput",
-            "angular": "MatInput + MatFormField"
+            "react": "native input",
+            "react-native": "TextInput",
+            "angular": "native input, ControlValueAccessor"
           },
           "sample": {
             "label": "Nickname",
@@ -239,9 +239,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-text",
-            "react": "shadcn Input + Field",
-            "react-native": "Paper TextInput",
-            "angular": "MatInput + MatFormField"
+            "react": "native input",
+            "react-native": "TextInput (decimal pad)",
+            "angular": "native input, ControlValueAccessor"
           },
           "sample": {
             "label": "Amount",
@@ -293,9 +293,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-select-single",
-            "react": "Radix Select",
-            "react-native": "Paper Menu",
-            "angular": "MatSelect"
+            "react": "native select",
+            "react-native": "Modal sheet + FlatList",
+            "angular": "native select, ControlValueAccessor"
           },
           "sample": {
             "label": "Purpose",
@@ -402,9 +402,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-checkboxset",
-            "react": "Radix Checkbox",
-            "react-native": "Paper Checkbox.Item",
-            "angular": "MatCheckbox"
+            "react": "native checkboxes in a fieldset",
+            "react-native": "Pressable (checkbox role)",
+            "angular": "native checkboxes, ControlValueAccessor"
           },
           "sample": {
             "label": "Tell me by",
@@ -429,9 +429,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-radioset",
-            "react": "Radix RadioGroup",
-            "react-native": "Paper RadioButton.Group",
-            "angular": "MatRadioGroup"
+            "react": "native radios in a fieldset",
+            "react-native": "Pressable (radio role)",
+            "angular": "native radios, ControlValueAccessor"
           },
           "sample": {
             "label": "Pay to"
@@ -481,9 +481,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-date-picker",
-            "react": "shadcn Date Picker (Calendar + Popover)",
-            "react-native": "Paper TextInput + native picker",
-            "angular": "MatDatepicker"
+            "react": "native date input",
+            "react-native": "TextInput (dd/mm/yyyy)",
+            "angular": "native date input, ControlValueAccessor"
           },
           "sample": {
             "label": "Pay on",
@@ -672,9 +672,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-action-card",
-            "react": "shadcn Card",
-            "react-native": "Paper Card",
-            "angular": "MatCard"
+            "react": "own",
+            "react-native": "View / Pressable",
+            "angular": "own"
           },
           "sample": {
             "label": "Monthly statement",
@@ -702,8 +702,8 @@
           "builtOn": {
             "jet-premium": "oj-c-tab-bar",
             "react": "Radix Tabs",
-            "react-native": "Paper SegmentedButtons / BottomNavigation",
-            "angular": "MatTabGroup"
+            "react-native": "Pressable (tab role)",
+            "angular": "own (roving tabindex)"
           },
           "sample": {
             "value": "Summary|Activity|Details",
@@ -929,14 +929,14 @@
           "names": {
             "jet-premium": "bx-data-grid",
             "react": "DataTable",
-            "react-native": "List",
+            "react-native": "DataTable",
             "angular": "bx-data-grid"
           },
           "builtOn": {
             "jet-premium": "oj-c-table",
-            "react": "shadcn Data Table (TanStack Table)",
-            "react-native": "Paper DataTable",
-            "angular": "MatTable + CDK Table"
+            "react": "native table",
+            "react-native": "rows as cards",
+            "angular": "native table"
           }
         },
         {
@@ -1132,9 +1132,9 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-message-toast",
-            "react": "Radix Toast",
-            "react-native": "Paper Snackbar",
-            "angular": "MatSnackBar"
+            "react": "own (live regions)",
+            "react-native": "own (AccessibilityInfo)",
+            "angular": "own (live regions)"
           },
           "sample": {
             "label": "Payment sent"
@@ -1153,14 +1153,14 @@
           "names": {
             "jet-premium": "bx-dialog",
             "react": "Dialog",
-            "react-native": "Sheet",
+            "react-native": "Dialog",
             "angular": "bx-dialog"
           },
           "builtOn": {
             "jet-premium": "oj-c-dialog",
-            "react": "Radix AlertDialog",
-            "react-native": "Paper Dialog",
-            "angular": "MatDialog (CDK Dialog)"
+            "react": "Radix Dialog",
+            "react-native": "Modal",
+            "angular": "CDK focus trap (cdkTrapFocus)"
           },
           "sample": {
             "label": "Confirm payment"

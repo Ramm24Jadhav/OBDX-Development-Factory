@@ -6,7 +6,7 @@
       "name": "Premium Oracle JET",
       "package": "obdx-jet",
       "version": "0.1.0",
-      "path": "target-packs/components/jet-premium",
+      "path": "ui",
       "frameworkRange": "Oracle JET 6 and later, the release found in the bank’s code",
       "builds": [
         {
@@ -229,7 +229,8 @@
             "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
           }
         }
-      }
+      },
+      "folder": "target-packs/components/jet-premium"
     },
     {
       "id": "react",
@@ -238,8 +239,8 @@
       "version": "0.1.0",
       "path": "migration",
       "frameworkRange": "React 19, TypeScript 5.9, Vite 8",
-      "state": "starter",
-      "description": "Rebuilt when a module moves to React. Behaviour from Radix primitives, components owned in the shadcn/ui way, look from the bank tokens; it calls the same OBDX services.",
+      "state": "preview",
+      "description": "Rebuilt when a module moves to React. Behaviour from Radix primitives (dialog, tabs), native controls elsewhere, the same skin as the premium JET pack; it calls the same OBDX services.",
       "repository": "radix-ui/primitives, shadcn-ui/ui",
       "dependencies": [
         {
@@ -248,26 +249,81 @@
           "licence": "MIT"
         },
         {
-          "name": "@radix-ui/react-*",
+          "name": "@radix-ui/react-dialog",
           "version": "1.3",
           "licence": "MIT"
         },
         {
-          "name": "@tanstack/react-table",
-          "version": "8",
-          "licence": "MIT"
-        },
-        {
-          "name": "recharts (charts)",
-          "version": "3",
+          "name": "@radix-ui/react-tabs",
+          "version": "1.2",
           "licence": "MIT"
         }
       ],
       "built": [
         {
+          "component": "button",
+          "source": "target-packs/components/react/src",
+          "export": "Button"
+        },
+        {
+          "component": "icon-button",
+          "source": "target-packs/components/react/src",
+          "export": "IconButton"
+        },
+        {
           "component": "text-field",
-          "source": "target-packs/react/starter/src/components",
+          "source": "target-packs/components/react/src",
           "export": "TextField"
+        },
+        {
+          "component": "amount",
+          "source": "target-packs/components/react/src",
+          "export": "AmountInput"
+        },
+        {
+          "component": "select",
+          "source": "target-packs/components/react/src",
+          "export": "Dropdown"
+        },
+        {
+          "component": "checkbox-group",
+          "source": "target-packs/components/react/src",
+          "export": "CheckboxGroup"
+        },
+        {
+          "component": "choice-group",
+          "source": "target-packs/components/react/src",
+          "export": "RadioGroup"
+        },
+        {
+          "component": "date",
+          "source": "target-packs/components/react/src",
+          "export": "DatePicker"
+        },
+        {
+          "component": "dialog",
+          "source": "target-packs/components/react/src",
+          "export": "Dialog"
+        },
+        {
+          "component": "toast",
+          "source": "target-packs/components/react/src",
+          "export": "Toast"
+        },
+        {
+          "component": "card",
+          "source": "target-packs/components/react/src",
+          "export": "Card"
+        },
+        {
+          "component": "tabs",
+          "source": "target-packs/components/react/src",
+          "export": "Tabs"
+        },
+        {
+          "component": "data-grid",
+          "source": "target-packs/components/react/src",
+          "export": "DataTable"
         },
         {
           "component": "number-input",
@@ -275,47 +331,149 @@
           "export": "NumberField"
         },
         {
-          "component": "amount",
-          "source": "target-packs/react/starter/src/components",
-          "export": "AmountField"
-        },
-        {
-          "component": "date",
-          "source": "target-packs/react/starter/src/components",
-          "export": "DateField"
-        },
-        {
-          "component": "select",
-          "source": "target-packs/react/starter/src/components",
-          "export": "SelectField"
-        },
-        {
           "component": "account-picker",
           "source": "target-packs/react/starter/src/components",
           "export": "AccountField"
         },
         {
-          "component": "choice-group",
-          "source": "target-packs/react/starter/src/components",
-          "export": "RadioGroup"
-        },
-        {
-          "component": "checkbox-group",
-          "source": "target-packs/react/starter/src/components",
-          "export": "CheckboxGroup"
-        },
-        {
           "component": "switch",
           "source": "target-packs/react/starter/src/components",
           "export": "SwitchField"
-        },
-        {
-          "component": "button",
-          "source": "target-packs/react/starter/src/components",
-          "export": "Button"
         }
       ],
-      "checks": {}
+      "checks": {
+        "button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "icon-button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "text-field": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "amount": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "checkbox-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "choice-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "date": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "dialog": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "toast": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "card": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "tabs": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "data-grid": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        }
+      },
+      "folder": "target-packs/components/react"
     },
     {
       "id": "react-native",
@@ -324,36 +482,81 @@
       "version": "0.1.0",
       "path": "migration",
       "frameworkRange": "React Native 0.88, Expo 58",
-      "state": "starter",
-      "description": "Native Android and iOS controls: React Native Paper where it takes the bank tokens, React Native primitives elsewhere. Same OBDX services, cookie store and SSL pinning.",
+      "state": "preview",
+      "description": "Native Android and iOS controls on React Native primitives, themed from the bank tokens and the saved component style. Same OBDX services, cookie store and SSL pinning.",
       "repository": "callstack/react-native-paper, facebook/react-native",
       "dependencies": [
         {
           "name": "react-native",
           "version": "0.88",
           "licence": "MIT"
-        },
-        {
-          "name": "react-native-paper",
-          "version": "5.15",
-          "licence": "MIT"
-        },
-        {
-          "name": "react-native-svg (charts)",
-          "version": "15",
-          "licence": "MIT"
-        },
-        {
-          "name": "expo-local-authentication",
-          "version": "17",
-          "licence": "MIT"
         }
       ],
       "built": [
         {
+          "component": "button",
+          "source": "target-packs/components/react-native/src",
+          "export": "Button"
+        },
+        {
+          "component": "icon-button",
+          "source": "target-packs/components/react-native/src",
+          "export": "IconButton"
+        },
+        {
           "component": "text-field",
-          "source": "target-packs/react-native/starter/src/components",
+          "source": "target-packs/components/react-native/src",
           "export": "TextField"
+        },
+        {
+          "component": "amount",
+          "source": "target-packs/components/react-native/src",
+          "export": "AmountInput"
+        },
+        {
+          "component": "select",
+          "source": "target-packs/components/react-native/src",
+          "export": "Dropdown"
+        },
+        {
+          "component": "checkbox-group",
+          "source": "target-packs/components/react-native/src",
+          "export": "CheckboxGroup"
+        },
+        {
+          "component": "choice-group",
+          "source": "target-packs/components/react-native/src",
+          "export": "RadioGroup"
+        },
+        {
+          "component": "date",
+          "source": "target-packs/components/react-native/src",
+          "export": "DatePicker"
+        },
+        {
+          "component": "dialog",
+          "source": "target-packs/components/react-native/src",
+          "export": "Dialog"
+        },
+        {
+          "component": "toast",
+          "source": "target-packs/components/react-native/src",
+          "export": "Toast"
+        },
+        {
+          "component": "card",
+          "source": "target-packs/components/react-native/src",
+          "export": "Card"
+        },
+        {
+          "component": "tabs",
+          "source": "target-packs/components/react-native/src",
+          "export": "Tabs"
+        },
+        {
+          "component": "data-grid",
+          "source": "target-packs/components/react-native/src",
+          "export": "DataTable"
         },
         {
           "component": "number-input",
@@ -361,47 +564,149 @@
           "export": "NumberField"
         },
         {
-          "component": "amount",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "AmountField"
-        },
-        {
-          "component": "date",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "DateField"
-        },
-        {
-          "component": "select",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "SelectField"
-        },
-        {
           "component": "account-picker",
           "source": "target-packs/react-native/starter/src/components",
           "export": "AccountField"
         },
         {
-          "component": "choice-group",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "RadioGroup"
-        },
-        {
-          "component": "checkbox-group",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "CheckboxGroup"
-        },
-        {
           "component": "switch",
           "source": "target-packs/react-native/starter/src/components",
           "export": "SwitchField"
-        },
-        {
-          "component": "button",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "Button"
         }
       ],
-      "checks": {}
+      "checks": {
+        "button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "icon-button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "text-field": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "amount": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "checkbox-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "choice-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "date": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "dialog": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "toast": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "card": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "tabs": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "data-grid": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        }
+      },
+      "folder": "target-packs/components/react-native"
     },
     {
       "id": "angular",
@@ -409,9 +714,9 @@
       "package": "obdx-angular",
       "version": "0.1.0",
       "path": "migration",
-      "frameworkRange": "Angular 22, CDK and Material 22.2",
-      "state": "planned",
-      "description": "Preview: standalone components on the Angular CDK, Angular Material only where the bank tokens fully theme it. Installable once its foundation set passes the checks.",
+      "frameworkRange": "Angular 20 and later (built and tested on 22.2), CDK 22.2",
+      "state": "preview",
+      "description": "Standalone components with signal inputs and form-control support, focus handling from the Angular CDK, and the same skin as the premium JET pack; it calls the same OBDX services.",
       "repository": "angular/components",
       "dependencies": [
         {
@@ -423,15 +728,208 @@
           "name": "@angular/cdk",
           "version": "22.2",
           "licence": "MIT"
-        },
-        {
-          "name": "@angular/material",
-          "version": "22.2",
-          "licence": "MIT"
         }
       ],
-      "built": [],
-      "checks": {}
+      "built": [
+        {
+          "component": "button",
+          "source": "target-packs/components/angular/src",
+          "export": "Button"
+        },
+        {
+          "component": "icon-button",
+          "source": "target-packs/components/angular/src",
+          "export": "IconButton"
+        },
+        {
+          "component": "text-field",
+          "source": "target-packs/components/angular/src",
+          "export": "TextField"
+        },
+        {
+          "component": "amount",
+          "source": "target-packs/components/angular/src",
+          "export": "AmountInput"
+        },
+        {
+          "component": "select",
+          "source": "target-packs/components/angular/src",
+          "export": "Dropdown"
+        },
+        {
+          "component": "checkbox-group",
+          "source": "target-packs/components/angular/src",
+          "export": "CheckboxGroup"
+        },
+        {
+          "component": "choice-group",
+          "source": "target-packs/components/angular/src",
+          "export": "RadioGroup"
+        },
+        {
+          "component": "date",
+          "source": "target-packs/components/angular/src",
+          "export": "DatePicker"
+        },
+        {
+          "component": "dialog",
+          "source": "target-packs/components/angular/src",
+          "export": "Dialog"
+        },
+        {
+          "component": "toast",
+          "source": "target-packs/components/angular/src",
+          "export": "Toast"
+        },
+        {
+          "component": "card",
+          "source": "target-packs/components/angular/src",
+          "export": "Card"
+        },
+        {
+          "component": "tabs",
+          "source": "target-packs/components/angular/src",
+          "export": "Tabs"
+        },
+        {
+          "component": "data-grid",
+          "source": "target-packs/components/angular/src",
+          "export": "DataTable"
+        }
+      ],
+      "checks": {
+        "button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "icon-button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "text-field": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "amount": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "checkbox-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "choice-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "date": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "dialog": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "toast": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "card": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "tabs": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        },
+        "data-grid": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: axe-core on the rendered component (contrast is left to the browser gate) on every push"
+          }
+        }
+      },
+      "folder": "target-packs/components/angular"
     }
   ]
 }

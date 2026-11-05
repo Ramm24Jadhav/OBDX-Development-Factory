@@ -80,3 +80,27 @@ jobs:
         with:
           name: test-reports
           path: factory-server/target/*-reports/
+
+  # The premium component packs (target-packs/components): each pack's own typecheck and tests, and the generated tokens
+  # are up to date. Separate from the factory build so a pack's tooling never slows or breaks the downloads.
+  component-packs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: [react, react-native, angular]
+    defaults:
+      run:
+        working-directory: target-packs/components/${{ matrix.pack }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: target-packs/components/${{ matrix.pack }}/package-lock.json
+      - name: Tokens are up to date
+        run: node ../tools/build-tokens.js --check
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck and test
+        run: npm run check

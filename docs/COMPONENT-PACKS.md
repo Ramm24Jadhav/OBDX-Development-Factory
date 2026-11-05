@@ -3,7 +3,15 @@
 Status: decisions agreed (section 13: Angular target pack now, bx- prefix, oldest JET version from a 22.x codebase, pack
 builds as their own CI jobs). Built so far: the registry (`target-packs/components/catalogue.json`, `packs.json`), `GET
 /api/component-packs`, the premium JET builds chosen from the workspace's detected JET version, the saved component style
-and the Component factory page (route `components`). The premium JET pack has its foundation set (13 bx- elements in target-packs/components/jet-premium, unit and markup checks with every build, previewed live on Component mapping). Next: the foundation set in React, React Native and Angular, then the browser gates and parity tests, then the rest of the catalogue in waves.
+and the Component factory page (route `components`). The foundation set (13 components) is built in all four packs: the premium JET pack (bx- elements in
+`target-packs/components/jet-premium`, unit and markup checks with every build, previewed live on Component mapping),
+React (`components/react`: Radix dialog and tabs, the JET pack's skin unchanged, vitest and axe), React Native
+(`components/react-native`: React Native primitives themed from the generated tokens, Jest and role, name and touch
+target checks) and Angular (`components/angular`: standalone components with signal inputs and form-control support,
+the CDK focus trap, the same skin, vitest with the Angular compiler and axe). Each pack's unit and accessibility gates
+pass and run in the `component-packs` CI job; `tools/build-tokens.js` builds the tokens to `tokens/build/tokens.css`
+and `react-native/src/tokens.ts` (`--check` in CI). Next: the browser gates (visual, themes, responsive, contrast) and
+parity tests, the starters switching to the packs, then the rest of the catalogue in waves.
 
 The goal: one design system for the bank's channel UI, implemented four times — Oracle JET (the UI path), React,
 React Native and Angular (the migration path) — with a metadata registry the factory reads to show, compare, map and
