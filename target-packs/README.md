@@ -20,3 +20,6 @@ Each pack folder holds:
 
 This folder is packaged into the factory server and also read by the UI build (for the previews). Teams can override a
 pack without rebuilding by putting a `targets/<id>/target.yml` in `FACTORY_PACKS_DIR` (see docs/DEVELOPMENT.md).
+
+`components/` holds the contracts for the premium component packs (component metadata and JET mapping schemas, with
+examples). The packs themselves are not built yet; see docs/COMPONENT-PACKS.md for the proposal and plan.

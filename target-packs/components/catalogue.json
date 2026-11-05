@@ -1,0 +1,4747 @@
+{
+  "$comment": "The logical components of the bank design system, one entry each, with its name in every pack and what it is built on. Readiness and checks are in packs.json, mapping evidence in mappings/. See docs/COMPONENT-PACKS.md.",
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "foundation",
+      "name": "Foundation",
+      "components": [
+        {
+          "id": "button",
+          "name": "Button",
+          "purpose": "The main action on a form. Variants: default, secondary, outline, ghost, destructive, link.",
+          "kind": "button",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-button"
+          },
+          "names": {
+            "jet-premium": "bx-button",
+            "react": "Button",
+            "react-native": "Button",
+            "angular": "bx-button"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-button",
+            "react": "shadcn Button (Radix Slot)",
+            "react-native": "Paper Button",
+            "angular": "MatButton"
+          },
+          "sample": {
+            "label": "Continue",
+            "value": "primary"
+          }
+        },
+        {
+          "id": "icon-button",
+          "name": "Icon button",
+          "purpose": "A compact action shown as an icon, filled or outlined.",
+          "kind": "iconbtn",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-button"
+          },
+          "names": {
+            "jet-premium": "bx-icon-button",
+            "react": "IconButton",
+            "react-native": "IconButton",
+            "angular": "bx-icon-button"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-button (icon)",
+            "react": "shadcn Button, size icon",
+            "react-native": "Paper IconButton",
+            "angular": "MatIconButton"
+          },
+          "sample": {
+            "label": "Download statement",
+            "extra": "↓"
+          }
+        },
+        {
+          "id": "secondary-button",
+          "name": "Secondary button",
+          "purpose": "A second, quieter action.",
+          "kind": "button",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-button"
+          },
+          "names": {
+            "jet-premium": "bx-secondary-button",
+            "react": "SecondaryButton",
+            "react-native": "SecondaryButton",
+            "angular": "bx-secondary-button"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-button",
+            "react": "shadcn Button (Radix Slot)",
+            "react-native": "Paper Button",
+            "angular": "MatButton"
+          },
+          "sample": {
+            "label": "Save for later",
+            "value": "secondary"
+          }
+        },
+        {
+          "id": "danger-button",
+          "name": "Destructive button",
+          "purpose": "An action that cannot be undone.",
+          "kind": "button",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-button"
+          },
+          "names": {
+            "jet-premium": "bx-danger-button",
+            "react": "DestructiveButton",
+            "react-native": "DestructiveButton"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-button",
+            "react": "shadcn Button (Radix Slot)",
+            "react-native": "Paper Button",
+            "angular": "MatButton"
+          },
+          "sample": {
+            "label": "Cancel payment",
+            "value": "danger"
+          }
+        },
+        {
+          "id": "text-field",
+          "name": "Text field",
+          "purpose": "Single-line entry with label, hint and error.",
+          "kind": "text",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-text"
+          },
+          "names": {
+            "jet-premium": "bx-text-field",
+            "react": "TextField",
+            "react-native": "TextField",
+            "angular": "bx-text-field"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-text",
+            "react": "shadcn Input + Field",
+            "react-native": "Paper TextInput",
+            "angular": "MatInput + MatFormField"
+          },
+          "sample": {
+            "label": "Nickname",
+            "value": "My savings"
+          }
+        },
+        {
+          "id": "text-area",
+          "name": "Text area",
+          "purpose": "Several lines, with a character count.",
+          "kind": "textarea",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-text-area"
+          },
+          "names": {
+            "jet-premium": "bx-text-area",
+            "react": "TextArea",
+            "react-native": "TextArea",
+            "angular": "bx-text-area"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-text-area",
+            "react": "shadcn Textarea",
+            "react-native": "Paper TextInput (multiline)",
+            "angular": "MatInput, textarea"
+          },
+          "sample": {
+            "label": "Note to the payee"
+          }
+        },
+        {
+          "id": "password",
+          "name": "Password field",
+          "purpose": "Hidden entry with show and hide.",
+          "kind": "password",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-password"
+          },
+          "names": {
+            "jet-premium": "bx-password",
+            "react": "PasswordField",
+            "react-native": "PasswordField",
+            "angular": "bx-password"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-password",
+            "react": "Radix PasswordToggleField",
+            "react-native": "Paper TextInput (secure)",
+            "angular": "MatInput, type password"
+          },
+          "sample": {
+            "label": "Password",
+            "value": "secret12"
+          }
+        },
+        {
+          "id": "number-input",
+          "name": "Number input",
+          "purpose": "Whole numbers, for example the number of instalments.",
+          "kind": "text",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-number"
+          },
+          "names": {
+            "jet-premium": "bx-number-input",
+            "react": "NumberInput",
+            "react-native": "NumberInput",
+            "angular": "bx-number-input"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "shadcn Input, numeric",
+            "react-native": "Paper TextInput, numeric",
+            "angular": "MatInput, number"
+          },
+          "sample": {
+            "label": "Instalments",
+            "value": "12",
+            "extra": "#"
+          }
+        },
+        {
+          "id": "amount",
+          "name": "Amount input",
+          "purpose": "Currency amount in the bank format.",
+          "kind": "text",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-number"
+          },
+          "names": {
+            "jet-premium": "bx-amount",
+            "react": "AmountInput",
+            "react-native": "AmountInput",
+            "angular": "bx-amount"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-text",
+            "react": "shadcn Input + Field",
+            "react-native": "Paper TextInput",
+            "angular": "MatInput + MatFormField"
+          },
+          "sample": {
+            "label": "Amount",
+            "value": "1,250.00",
+            "extra": "USD"
+          }
+        },
+        {
+          "id": "currency-picker",
+          "name": "Currency selector",
+          "purpose": "Pick a currency by code and name.",
+          "kind": "select",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-select-single"
+          },
+          "names": {
+            "jet-premium": "bx-currency-picker",
+            "react": "CurrencySelector",
+            "react-native": "CurrencySelector"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-single",
+            "react": "Radix Select",
+            "react-native": "Paper Menu",
+            "angular": "MatSelect"
+          },
+          "sample": {
+            "label": "Currency",
+            "value": "USD · US dollar|EUR · Euro|GBP · Pound|INR · Rupee"
+          }
+        },
+        {
+          "id": "select",
+          "name": "Dropdown",
+          "purpose": "Pick one option from a list.",
+          "kind": "select",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-select-single"
+          },
+          "names": {
+            "jet-premium": "bx-select",
+            "react": "Dropdown",
+            "react-native": "Dropdown",
+            "angular": "bx-select"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-single",
+            "react": "Radix Select",
+            "react-native": "Paper Menu",
+            "angular": "MatSelect"
+          },
+          "sample": {
+            "label": "Purpose",
+            "value": "Family support|Rent|Education"
+          }
+        },
+        {
+          "id": "multi-select",
+          "name": "Multi select",
+          "purpose": "Pick several options, shown as chips.",
+          "kind": "chips",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-select-many"
+          },
+          "names": {
+            "jet-premium": "bx-multi-select",
+            "react": "MultiSelect",
+            "react-native": "MultiSelect",
+            "angular": "bx-multi-select"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-multiple",
+            "react": "shadcn Combobox (multiple)",
+            "react-native": "Paper Chip + Menu",
+            "angular": "MatSelect, multiple"
+          },
+          "sample": {
+            "label": "Accounts in the report",
+            "value": "Savings ·· 4821|Current ·· 7730|Salary ·· 1094"
+          }
+        },
+        {
+          "id": "autocomplete",
+          "name": "Autocomplete",
+          "purpose": "Type to find a bank, branch or payee.",
+          "kind": "select",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-combobox-one"
+          },
+          "names": {
+            "jet-premium": "bx-autocomplete",
+            "react": "Autocomplete",
+            "react-native": "Autocomplete",
+            "angular": "bx-autocomplete"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-search",
+            "react": "shadcn Combobox (Command)",
+            "react-native": "Paper Searchbar + Menu",
+            "angular": "MatAutocomplete"
+          },
+          "sample": {
+            "label": "Bank",
+            "value": "HSBC UK|Barclays|Lloyds Bank|NatWest"
+          }
+        },
+        {
+          "id": "search",
+          "name": "Search field",
+          "purpose": "Find a transaction, payee or page.",
+          "kind": "text",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-text"
+          },
+          "names": {
+            "jet-premium": "bx-search",
+            "react": "SearchField",
+            "react-native": "SearchField",
+            "angular": "bx-search"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-search",
+            "react": "shadcn Input Group",
+            "react-native": "Paper Searchbar",
+            "angular": "MatInput + MatAutocomplete"
+          },
+          "sample": {
+            "label": "Search transactions",
+            "value": "Coffee",
+            "extra": "⌕"
+          }
+        },
+        {
+          "id": "checkbox-group",
+          "name": "Checkbox",
+          "purpose": "Any number of choices.",
+          "kind": "check",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-checkboxset"
+          },
+          "names": {
+            "jet-premium": "bx-checkbox-group",
+            "react": "CheckboxGroup",
+            "react-native": "CheckboxGroup",
+            "angular": "bx-checkbox-group"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-checkboxset",
+            "react": "Radix Checkbox",
+            "react-native": "Paper Checkbox.Item",
+            "angular": "MatCheckbox"
+          },
+          "sample": {
+            "label": "Tell me by",
+            "value": "Email|SMS|Push notification"
+          }
+        },
+        {
+          "id": "choice-group",
+          "name": "Radio group",
+          "purpose": "One choice from a few options.",
+          "kind": "choice",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-radioset"
+          },
+          "names": {
+            "jet-premium": "bx-choice-group",
+            "react": "RadioGroup",
+            "react-native": "RadioGroup",
+            "angular": "bx-choice-group"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-radioset",
+            "react": "Radix RadioGroup",
+            "react-native": "Paper RadioButton.Group",
+            "angular": "MatRadioGroup"
+          },
+          "sample": {
+            "label": "Pay to"
+          }
+        },
+        {
+          "id": "switch",
+          "name": "Toggle",
+          "purpose": "Turn a setting on or off.",
+          "kind": "switch",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-switch"
+          },
+          "names": {
+            "jet-premium": "bx-switch",
+            "react": "Toggle",
+            "react-native": "Toggle",
+            "angular": "bx-switch"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-switch",
+            "react": "Radix Switch",
+            "react-native": "Paper Switch",
+            "angular": "MatSlideToggle"
+          },
+          "sample": {
+            "label": "Save as payee"
+          }
+        },
+        {
+          "id": "date",
+          "name": "Date picker",
+          "purpose": "Pick a date, bank holidays marked.",
+          "kind": "date",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-date"
+          },
+          "names": {
+            "jet-premium": "bx-date",
+            "react": "DatePicker",
+            "react-native": "DatePicker",
+            "angular": "bx-date"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-date-picker",
+            "react": "shadcn Date Picker (Calendar + Popover)",
+            "react-native": "Paper TextInput + native picker",
+            "angular": "MatDatepicker"
+          },
+          "sample": {
+            "label": "Pay on",
+            "value": "2026-01-14"
+          }
+        },
+        {
+          "id": "date-range",
+          "name": "Date range picker",
+          "purpose": "From and to dates, for statements and searches.",
+          "kind": "daterange",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-date"
+          },
+          "names": {
+            "jet-premium": "bx-date-range",
+            "react": "DateRangePicker",
+            "react-native": "DateRangePicker",
+            "angular": "bx-date-range"
+          },
+          "builtOn": {
+            "jet-premium": "two oj-c-input-date-picker",
+            "react": "shadcn Calendar (range)",
+            "react-native": "two native pickers",
+            "angular": "MatDateRangeInput"
+          },
+          "sample": {
+            "label": "Statement period",
+            "value": "2025-12-01|2025-12-31"
+          }
+        },
+        {
+          "id": "savings-slider",
+          "name": "Slider",
+          "purpose": "Choose a value on a scale.",
+          "kind": "slider",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-savings-slider",
+            "react": "Slider",
+            "react-native": "Slider",
+            "angular": "bx-savings-slider"
+          },
+          "builtOn": {
+            "jet-premium": "oj-slider",
+            "react": "Radix Slider",
+            "react-native": "Own, on PanResponder",
+            "angular": "MatSlider"
+          },
+          "sample": {
+            "label": "Monthly saving",
+            "value": "5000",
+            "extra": "USD ",
+            "config": "1500"
+          }
+        },
+        {
+          "id": "segmented",
+          "name": "Toggle group",
+          "purpose": "Switch a view between a few options.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-buttonset-one"
+          },
+          "names": {
+            "jet-premium": "bx-segmented",
+            "react": "ToggleGroup",
+            "react-native": "ToggleGroup",
+            "angular": "bx-segmented"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Show",
+            "value": "Day|Week|Month"
+          }
+        },
+        {
+          "id": "filter-chips",
+          "name": "Filter chips",
+          "purpose": "Narrow a list by several tags.",
+          "kind": "chips",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-filter-chips",
+            "react": "FilterChips",
+            "react-native": "FilterChips"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-multiple",
+            "react": "Radix ToggleGroup (multiple)",
+            "react-native": "Paper Chip",
+            "angular": "MatChipListbox"
+          },
+          "sample": {
+            "label": "Filter",
+            "value": "Card|Transfer|Bills|Salary"
+          }
+        },
+        {
+          "id": "action-menu",
+          "name": "Action menu",
+          "purpose": "More actions behind one button.",
+          "kind": "menu",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-menu-button"
+          },
+          "names": {
+            "jet-premium": "bx-action-menu",
+            "react": "ActionMenu",
+            "react-native": "ActionMenu",
+            "angular": "bx-action-menu"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-menu-button",
+            "react": "Radix DropdownMenu",
+            "react-native": "Paper Menu",
+            "angular": "MatMenu"
+          },
+          "sample": {
+            "label": "More",
+            "value": "Download statement|Set a nickname|Close the account"
+          }
+        },
+        {
+          "id": "document-upload",
+          "name": "File upload",
+          "purpose": "Add an ID or proof of address.",
+          "kind": "upload",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-file-picker"
+          },
+          "names": {
+            "jet-premium": "bx-document-upload",
+            "react": "FileUpload",
+            "react-native": "FileUpload"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-file-picker",
+            "react": "Own, on a file input",
+            "react-native": "expo-document-picker + Paper Button",
+            "angular": "Own, on the CDK"
+          }
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "name": "Layout",
+      "components": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "A titled box that groups related content.",
+          "kind": "card",
+          "foundation": true,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-card",
+            "react": "Card",
+            "react-native": "Card",
+            "angular": "bx-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "Monthly statement",
+            "value": "Savings ·· 4821 · 18 transactions",
+            "extra": "December",
+            "config": "View statement →"
+          }
+        },
+        {
+          "id": "tabs",
+          "name": "Tabs",
+          "purpose": "Switch between views of one thing.",
+          "kind": "tabs",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-tab-bar"
+          },
+          "names": {
+            "jet-premium": "bx-tabs",
+            "react": "Tabs",
+            "react-native": "Tabs",
+            "angular": "bx-tabs"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-tab-bar",
+            "react": "Radix Tabs",
+            "react-native": "Paper SegmentedButtons / BottomNavigation",
+            "angular": "MatTabGroup"
+          },
+          "sample": {
+            "value": "Summary|Activity|Details",
+            "extra": "Balance 12,400.00 and the last 3 payments.|Payments in and out this month.|Account number, branch and holder."
+          }
+        },
+        {
+          "id": "accordion",
+          "name": "Accordion",
+          "purpose": "Questions and details that open in place.",
+          "kind": "accordion",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-collapsible"
+          },
+          "names": {
+            "jet-premium": "bx-accordion",
+            "react": "Accordion",
+            "react-native": "Accordion"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-accordion-item-single",
+            "react": "Radix Accordion",
+            "react-native": "Paper List.Accordion",
+            "angular": "MatExpansionPanel (CDK Accordion)"
+          },
+          "sample": {
+            "value": "How long does a transfer take?|Can I cancel a payment?|Are there fees?",
+            "extra": "Same day inside the bank; up to 2 working days to other banks.|Yes, until it is sent. Scheduled ones any time before the date.|No fees for transfers in the same currency."
+          }
+        },
+        {
+          "id": "stepper",
+          "name": "Stepper",
+          "purpose": "Where you are in a multi-step flow.",
+          "kind": "stepper",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-train"
+          },
+          "names": {
+            "jet-premium": "bx-stepper",
+            "react": "Stepper",
+            "react-native": "Stepper",
+            "angular": "bx-stepper"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-train",
+            "react": "Own (no Radix stepper)",
+            "react-native": "Own, on React Native View",
+            "angular": "MatStepper (CDK Stepper)"
+          },
+          "sample": {
+            "value": "Details|Review|Done"
+          }
+        },
+        {
+          "id": "breadcrumb",
+          "name": "Breadcrumb",
+          "purpose": "Where this page sits.",
+          "kind": "crumbs",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-breadcrumb",
+            "react": "Breadcrumb",
+            "angular": "bx-breadcrumb"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-labelled-link",
+            "react": "shadcn Breadcrumb",
+            "react-native": "Not used on mobile",
+            "angular": "Own, on Router links"
+          },
+          "sample": {
+            "value": "Accounts|Savings ·· 4821|Statement"
+          }
+        },
+        {
+          "id": "side-nav",
+          "name": "Drawer navigation",
+          "purpose": "The menu down the side or in a drawer.",
+          "kind": "nav",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-navigation-list"
+          },
+          "names": {
+            "jet-premium": "bx-side-nav",
+            "react": "SideNav",
+            "react-native": "Drawer",
+            "angular": "bx-side-nav"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-drawer-layout",
+            "react": "shadcn Sidebar",
+            "react-native": "Paper Drawer",
+            "angular": "MatSidenav"
+          },
+          "sample": {
+            "value": "Accounts|Payments|Cards"
+          }
+        },
+        {
+          "id": "sheet",
+          "name": "Drawer and sheet",
+          "purpose": "A panel that slides over the page for filters or details.",
+          "kind": "dialog",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-popup"
+          },
+          "names": {
+            "jet-premium": "bx-sheet",
+            "react": "Sheet",
+            "react-native": "BottomSheet",
+            "angular": "bx-sheet"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-drawer-popup",
+            "react": "shadcn Sheet (Radix Dialog)",
+            "react-native": "Paper Modal",
+            "angular": "MatBottomSheet"
+          },
+          "sample": {
+            "label": "Filter transactions"
+          }
+        },
+        {
+          "id": "grid",
+          "name": "Grid and stack",
+          "purpose": "Lays out content in responsive columns.",
+          "kind": "grid",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-grid",
+            "react": "Grid",
+            "react-native": "Stack",
+            "angular": "bx-grid"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout",
+            "react": "Own CSS grid and stack",
+            "react-native": "React Native View (flex)",
+            "angular": "CDK Layout (BreakpointObserver)"
+          }
+        },
+        {
+          "id": "divider",
+          "name": "Divider",
+          "purpose": "Separates groups of content.",
+          "kind": "divider",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-divider",
+            "react": "Divider",
+            "react-native": "Divider",
+            "angular": "bx-divider"
+          },
+          "builtOn": {
+            "jet-premium": "Own, hr",
+            "react": "Radix Separator",
+            "react-native": "Paper Divider",
+            "angular": "MatDivider"
+          }
+        },
+        {
+          "id": "avatar",
+          "name": "Avatar",
+          "purpose": "Initials or a photo for a person or payee.",
+          "kind": "avatar",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-avatar",
+            "react": "Avatar",
+            "react-native": "Avatar"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-avatar",
+            "react": "Radix Avatar",
+            "react-native": "Paper Avatar",
+            "angular": "Own (Material has none)"
+          },
+          "sample": {
+            "value": "AR|JM|SK"
+          }
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "name": "Data display",
+      "components": [
+        {
+          "id": "data-grid",
+          "name": "Data table",
+          "purpose": "Rows of accounts or transactions, with sorting and paging.",
+          "kind": "table",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-table"
+          },
+          "names": {
+            "jet-premium": "bx-data-grid",
+            "react": "DataTable",
+            "react-native": "List",
+            "angular": "bx-data-grid"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-table",
+            "react": "shadcn Data Table (TanStack Table)",
+            "react-native": "Paper DataTable",
+            "angular": "MatTable + CDK Table"
+          }
+        },
+        {
+          "id": "pagination",
+          "name": "Pagination",
+          "purpose": "Move through long lists page by page.",
+          "kind": "pages",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-paging-control"
+          },
+          "names": {
+            "jet-premium": "bx-pagination",
+            "react": "Pagination",
+            "react-native": "Pagination",
+            "angular": "bx-pagination"
+          },
+          "builtOn": {
+            "jet-premium": "oj-paging-control",
+            "react": "shadcn Pagination",
+            "react-native": "Paper DataTable.Pagination",
+            "angular": "MatPaginator"
+          },
+          "sample": {
+            "value": "1|2|3|4"
+          }
+        },
+        {
+          "id": "status-badge",
+          "name": "Status badge",
+          "purpose": "The state of a payment at a glance.",
+          "kind": "badges",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-status-badge",
+            "react": "StatusBadge",
+            "react-native": "StatusBadge",
+            "angular": "bx-status-badge"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-badge",
+            "react": "shadcn Badge",
+            "react-native": "Paper Chip / Badge",
+            "angular": "MatChip"
+          }
+        },
+        {
+          "id": "timeline",
+          "name": "Timeline",
+          "purpose": "Events in order, for example a payment’s journey.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-timeline",
+            "react": "Timeline",
+            "react-native": "Timeline",
+            "angular": "bx-timeline"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Initiated|09:12 · A. Rao;Approved|10:40 · Priya Nair;Sent to the bank|10:41;Completed|10:44"
+          }
+        },
+        {
+          "id": "spinner",
+          "name": "Progress indicator",
+          "purpose": "Shows that something is loading.",
+          "kind": "spinner",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-spinner",
+            "react": "Spinner",
+            "react-native": "ActivityIndicator",
+            "angular": "bx-spinner"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-progress-circle",
+            "react": "shadcn Spinner",
+            "react-native": "Paper ActivityIndicator",
+            "angular": "MatProgressSpinner"
+          }
+        },
+        {
+          "id": "skeleton",
+          "name": "Skeleton loader",
+          "purpose": "Shows the shape while data loads.",
+          "kind": "skeleton",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-skeleton",
+            "react": "Skeleton",
+            "react-native": "Skeleton"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-skeleton",
+            "react": "shadcn Skeleton",
+            "react-native": "Own, Animated View",
+            "angular": "Own"
+          }
+        },
+        {
+          "id": "empty-state",
+          "name": "Empty state",
+          "purpose": "What to do when there is nothing yet.",
+          "kind": "empty",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-empty-state",
+            "react": "EmptyState",
+            "react-native": "EmptyState",
+            "angular": "bx-empty-state"
+          },
+          "builtOn": {
+            "jet-premium": "Own",
+            "react": "shadcn Empty",
+            "react-native": "Own",
+            "angular": "Own"
+          }
+        },
+        {
+          "id": "tooltip",
+          "name": "Tooltip",
+          "purpose": "A short explanation on demand.",
+          "kind": "tooltip",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-popup"
+          },
+          "names": {
+            "jet-premium": "bx-tooltip",
+            "react": "Tooltip",
+            "react-native": "Tooltip",
+            "angular": "bx-tooltip"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-popup",
+            "react": "Radix Tooltip",
+            "react-native": "Paper Tooltip",
+            "angular": "MatTooltip"
+          },
+          "sample": {
+            "label": "Available balance"
+          }
+        }
+      ]
+    },
+    {
+      "id": "feedback",
+      "name": "Feedback",
+      "components": [
+        {
+          "id": "toast",
+          "name": "Toast",
+          "purpose": "Tell the user what just happened.",
+          "kind": "toast",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-messages"
+          },
+          "names": {
+            "jet-premium": "bx-toast",
+            "react": "Toast",
+            "react-native": "Toast",
+            "angular": "bx-toast"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-toast",
+            "react": "Radix Toast",
+            "react-native": "Paper Snackbar",
+            "angular": "MatSnackBar"
+          },
+          "sample": {
+            "label": "Payment sent"
+          }
+        },
+        {
+          "id": "dialog",
+          "name": "Confirmation dialog",
+          "purpose": "Confirm before something happens.",
+          "kind": "dialog",
+          "foundation": true,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-dialog"
+          },
+          "names": {
+            "jet-premium": "bx-dialog",
+            "react": "Dialog",
+            "react-native": "Sheet",
+            "angular": "bx-dialog"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-dialog",
+            "react": "Radix AlertDialog",
+            "react-native": "Paper Dialog",
+            "angular": "MatDialog (CDK Dialog)"
+          },
+          "sample": {
+            "label": "Confirm payment"
+          }
+        },
+        {
+          "id": "alert-banner",
+          "name": "Alert",
+          "purpose": "Information for everyone on a page.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-messages"
+          },
+          "names": {
+            "jet-premium": "bx-alert-banner",
+            "react": "Alert",
+            "react-native": "Alert",
+            "angular": "bx-alert-banner"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert",
+            "react-native": "Paper Banner",
+            "angular": "Own, on MatCard"
+          },
+          "sample": {
+            "label": "Transfers after 6 pm arrive the next working day.",
+            "value": "info"
+          }
+        },
+        {
+          "id": "error-message",
+          "name": "Error message",
+          "purpose": "What went wrong and what to do next.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-messages"
+          },
+          "names": {
+            "jet-premium": "bx-error-message",
+            "react": "ErrorMessage",
+            "react-native": "ErrorMessage",
+            "angular": "bx-error-message"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert (destructive)",
+            "react-native": "Paper HelperText",
+            "angular": "MatError"
+          },
+          "sample": {
+            "label": "The amount is more than your daily limit of 5,000.00.",
+            "value": "danger",
+            "extra": "Change the amount"
+          }
+        },
+        {
+          "id": "success-message",
+          "name": "Success message",
+          "purpose": "Confirms that an action worked.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-messages"
+          },
+          "names": {
+            "jet-premium": "bx-success-message",
+            "react": "SuccessMessage",
+            "react-native": "SuccessMessage",
+            "angular": "bx-success-message"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert",
+            "react-native": "Paper Banner",
+            "angular": "Own, on MatCard"
+          },
+          "sample": {
+            "label": "Payment sent. Reference FX-20391.",
+            "value": "success",
+            "extra": "View receipt"
+          }
+        },
+        {
+          "id": "notification-panel",
+          "name": "Notification panel",
+          "purpose": "Messages from the bank, newest first.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-notification-panel",
+            "react": "NotificationPanel",
+            "react-native": "NotificationPanel",
+            "angular": "bx-notification-panel"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view in oj-c-popup",
+            "react": "Radix Popover + Item",
+            "react-native": "Paper List in a Portal",
+            "angular": "MatMenu (CDK Overlay)"
+          },
+          "sample": {
+            "value": "Card payment due|Due 18 Jan|640.00;New statement ready|Today|Dec;Login from a new device|Yesterday|Chrome",
+            "extra": "Read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "accounts",
+      "name": "Accounts",
+      "components": [
+        {
+          "id": "account-picker",
+          "name": "Account selector",
+          "purpose": "Pick an account, number masked.",
+          "kind": "select",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-select-single"
+          },
+          "names": {
+            "jet-premium": "bx-account-picker",
+            "react": "AccountSelector",
+            "react-native": "AccountSelector",
+            "angular": "bx-account-picker"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-single",
+            "react": "Radix Select",
+            "react-native": "Paper Menu",
+            "angular": "MatSelect"
+          },
+          "sample": {
+            "label": "From account",
+            "value": "Savings ·· 4821|Current ·· 7730|Salary ·· 1094"
+          }
+        },
+        {
+          "id": "account-summary",
+          "name": "Account summary",
+          "purpose": "Each account type with its total; pick one for detail.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-account-summary",
+            "react": "AccountSummary",
+            "react-native": "AccountSummary",
+            "angular": "bx-account-summary"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "sample": {
+            "value": "Savings|12,400.00|Available 12,150.00;Current|3,210.50|Overdraft 1,000.00;Deposits|25,000.00|Matures 14 Mar"
+          }
+        },
+        {
+          "id": "balance-card",
+          "name": "Account balance",
+          "purpose": "Balance and available funds, hide with one tap.",
+          "kind": "balance",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-balance-card",
+            "react": "AccountBalance",
+            "react-native": "AccountBalance",
+            "angular": "bx-balance-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "Savings ·· 4821",
+            "value": "12,400.00"
+          }
+        },
+        {
+          "id": "account-card",
+          "name": "Account card",
+          "purpose": "One account with its balance and a way in.",
+          "kind": "card",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-account-card",
+            "react": "AccountCard",
+            "react-native": "AccountCard",
+            "angular": "bx-account-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "Savings ·· 4821",
+            "value": "Balance 12,400.00 · Available 12,150.00",
+            "extra": "Primary",
+            "config": "View details →"
+          }
+        },
+        {
+          "id": "account-details",
+          "name": "Account details",
+          "purpose": "Number, branch, IBAN and holder.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-account-details",
+            "react": "AccountDetails",
+            "react-native": "AccountDetails",
+            "angular": "bx-account-details"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Account|Savings ·· 4821;Branch|London Bridge;IBAN|GB29 •••• 9268 19;Holder|A. Rao",
+            "extra": "Download statement"
+          }
+        },
+        {
+          "id": "iban",
+          "name": "Masked account number",
+          "purpose": "Account number or IBAN, checked and masked.",
+          "kind": "text",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-text"
+          },
+          "names": {
+            "jet-premium": "bx-iban",
+            "react": "AccountNumber",
+            "react-native": "AccountNumber",
+            "angular": "bx-iban"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-sensitive-text",
+            "react": "Own, on Input",
+            "react-native": "Paper TextInput",
+            "angular": "MatInput + mask"
+          },
+          "sample": {
+            "label": "Account number (IBAN)",
+            "value": "GB29 NWBK 6016 1331 9268 19",
+            "extra": "✓"
+          }
+        },
+        {
+          "id": "quick-actions",
+          "name": "Quick actions",
+          "purpose": "The everyday tasks, one tap away.",
+          "kind": "quick",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-quick-actions",
+            "react": "QuickActions",
+            "react-native": "QuickActions"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-toolbar + oj-c-button",
+            "react": "shadcn Button Group",
+            "react-native": "Paper IconButton / FAB.Group",
+            "angular": "MatButton grid"
+          },
+          "sample": {
+            "value": "Send|Pay bills|Top up|Scan to pay",
+            "extra": "↗|≡|+|⌗"
+          }
+        }
+      ]
+    },
+    {
+      "id": "payments",
+      "name": "Payments and transactions",
+      "components": [
+        {
+          "id": "payee-list",
+          "name": "Beneficiary selector",
+          "purpose": "Saved payees, pick one or add new.",
+          "kind": "payees",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-list-view"
+          },
+          "names": {
+            "jet-premium": "bx-payee-list",
+            "react": "BeneficiarySelector",
+            "react-native": "BeneficiarySelector",
+            "angular": "bx-payee-list"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "Radix RadioGroup + shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatSelectionList"
+          }
+        },
+        {
+          "id": "beneficiary-card",
+          "name": "Beneficiary card",
+          "purpose": "One payee with their bank and a quick pay.",
+          "kind": "card",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-beneficiary-card",
+            "react": "BeneficiaryCard",
+            "react-native": "BeneficiaryCard",
+            "angular": "bx-beneficiary-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "A. Rao",
+            "value": "GB29 •••• 9268 19 · added 12 Mar",
+            "extra": "HSBC",
+            "config": "Pay now →"
+          }
+        },
+        {
+          "id": "payment-form",
+          "name": "Payment form",
+          "purpose": "Payee and amount, ready to review.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-payment-form",
+            "react": "PaymentForm",
+            "react-native": "PaymentForm",
+            "angular": "bx-payment-form"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Review payment"
+          }
+        },
+        {
+          "id": "transfer-summary",
+          "name": "Transfer summary",
+          "purpose": "Everything about the transfer before it is sent.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-transfer-summary",
+            "react": "TransferSummary",
+            "react-native": "TransferSummary",
+            "angular": "bx-transfer-summary"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "From|Savings ·· 4821;To|A. Rao · HSBC;Amount|1,250.00 USD;Fee|0.00;Arrives|Today",
+            "extra": "Confirm transfer"
+          }
+        },
+        {
+          "id": "payment-status",
+          "name": "Payment status",
+          "purpose": "Where the payment is now.",
+          "kind": "stepper",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-train"
+          },
+          "names": {
+            "jet-premium": "bx-payment-status",
+            "react": "PaymentStatus",
+            "react-native": "PaymentStatus",
+            "angular": "bx-payment-status"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-train",
+            "react": "Own, on Radix Progress",
+            "react-native": "Own",
+            "angular": "MatStepper"
+          },
+          "sample": {
+            "value": "Initiated|Approved|Sent|Completed"
+          }
+        },
+        {
+          "id": "transaction-list",
+          "name": "Transaction history",
+          "purpose": "Recent activity with money in and out filters.",
+          "kind": "txlist",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-list-view"
+          },
+          "names": {
+            "jet-premium": "bx-transaction-list",
+            "react": "TransactionHistory",
+            "react-native": "TransactionHistory",
+            "angular": "bx-transaction-list"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item / Table",
+            "react-native": "Paper List",
+            "angular": "MatList"
+          }
+        },
+        {
+          "id": "transaction-filter",
+          "name": "Transaction filter",
+          "purpose": "Narrow the history by type.",
+          "kind": "chips",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-transaction-filter",
+            "react": "TransactionFilter",
+            "react-native": "TransactionFilter",
+            "angular": "bx-transaction-filter"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-multiple",
+            "react": "Radix ToggleGroup (multiple)",
+            "react-native": "Paper Chip",
+            "angular": "MatChipListbox"
+          },
+          "sample": {
+            "label": "Show",
+            "value": "Money in|Money out|Cards|Transfers"
+          }
+        },
+        {
+          "id": "transaction-details",
+          "name": "Transaction details",
+          "purpose": "One transaction with all its facts.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-transaction-details",
+            "react": "TransactionDetails",
+            "react-native": "TransactionDetails",
+            "angular": "bx-transaction-details"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Description|Coffee House;Date|Today 08:14;Amount|-4.50 USD;Card|·· 4821;Reference|TX-88211",
+            "extra": "Dispute it"
+          }
+        },
+        {
+          "id": "repeat",
+          "name": "Payment schedule",
+          "purpose": "How often a payment repeats.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-buttonset-one"
+          },
+          "names": {
+            "jet-premium": "bx-repeat",
+            "react": "PaymentSchedule",
+            "react-native": "PaymentSchedule"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Repeat",
+            "value": "Once|Weekly|Monthly"
+          }
+        },
+        {
+          "id": "receipt",
+          "name": "Transaction receipt",
+          "purpose": "What was paid, with share and download.",
+          "kind": "receipt",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-receipt",
+            "react": "TransactionReceipt",
+            "react-native": "TransactionReceipt",
+            "angular": "bx-receipt"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "Payment sent",
+            "value": "1,250.00 USD"
+          }
+        },
+        {
+          "id": "upcoming-bills",
+          "name": "Upcoming bills",
+          "purpose": "Bills due soon, pay from the list.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-upcoming-bills",
+            "react": "UpcomingBills",
+            "react-native": "UpcomingBills"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "extra": "Pay"
+          }
+        }
+      ]
+    },
+    {
+      "id": "deposits",
+      "name": "Term deposits",
+      "components": [
+        {
+          "id": "td-summary",
+          "name": "Term deposits summary",
+          "purpose": "All deposits, interest earned and the next maturity.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-td-summary",
+            "react": "DepositsSummary",
+            "react-native": "DepositsSummary",
+            "angular": "bx-td-summary"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "sample": {
+            "value": "Deposits|4|Total 62,500.00;Interest earned|1,840.20|This year;Next maturity|14 Mar|·· 9011 · 25,000.00"
+          }
+        },
+        {
+          "id": "new-td",
+          "name": "Open a term deposit",
+          "purpose": "Amount, tenure and where the money comes from.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-new-td",
+            "react": "NewDepositForm",
+            "react-native": "NewDepositForm",
+            "angular": "bx-new-td"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Review deposit",
+            "value": "From account|Savings ·· 4821;Amount (USD)|10,000.00;Tenure|12 months"
+          }
+        },
+        {
+          "id": "maturity-instructions",
+          "name": "Maturity instructions",
+          "purpose": "What happens when the deposit matures.",
+          "kind": "choice",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-maturity-instructions",
+            "react": "MaturityInstructions",
+            "react-native": "MaturityInstructions",
+            "angular": "bx-maturity-instructions"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-radioset",
+            "react": "Radix RadioGroup",
+            "react-native": "Paper RadioButton.Group",
+            "angular": "MatRadioGroup"
+          },
+          "sample": {
+            "label": "At maturity",
+            "value": "Renew principal and interest|Renew principal, pay out interest|Close and pay out"
+          }
+        },
+        {
+          "id": "td-topup",
+          "name": "Top up a deposit",
+          "purpose": "Add money to a running deposit.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-td-topup",
+            "react": "DepositTopUp",
+            "react-native": "DepositTopUp",
+            "angular": "bx-td-topup"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Deposit|·· 9011;Current amount|25,000.00;Top-up|5,000.00;New maturity value|31,950.00",
+            "extra": "Top up"
+          }
+        },
+        {
+          "id": "td-redemption",
+          "name": "Redeem a deposit",
+          "purpose": "Close early, with the penalty shown first.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-td-redemption",
+            "react": "DepositRedemption",
+            "react-native": "DepositRedemption",
+            "angular": "bx-td-redemption"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Deposit|·· 9011;Principal|25,000.00;Interest to date|612.40;Early penalty|-62.50;You receive|25,549.90",
+            "extra": "Redeem"
+          }
+        }
+      ]
+    },
+    {
+      "id": "loans",
+      "name": "Loans and finances",
+      "components": [
+        {
+          "id": "loan-summary",
+          "name": "Loans summary",
+          "purpose": "Loans, outstanding and the next instalment.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-loan-summary",
+            "react": "LoansSummary",
+            "react-native": "LoansSummary",
+            "angular": "bx-loan-summary"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "sample": {
+            "value": "Home loan|142,300.00|Next 1,240.00 on 5 Feb;Car loan|18,420.00|Next 412.00 on 5 Feb;Overdue|412.00|Car loan · 12 days"
+          }
+        },
+        {
+          "id": "loan-repayment",
+          "name": "Loan repayment",
+          "purpose": "Pay an instalment or a part of the loan.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-loan-repayment",
+            "react": "LoanRepayment",
+            "react-native": "LoanRepayment",
+            "angular": "bx-loan-repayment"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Review repayment",
+            "value": "Loan|Car loan ·· 3310;Amount (USD)|412.00;Pay from|Savings ·· 4821"
+          }
+        },
+        {
+          "id": "loan-schedule",
+          "name": "Repayment schedule",
+          "purpose": "Each instalment with principal and interest.",
+          "kind": "table",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-loan-schedule",
+            "react": "RepaymentSchedule",
+            "react-native": "RepaymentSchedule",
+            "angular": "bx-loan-schedule"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-table",
+            "react": "shadcn Data Table (TanStack Table)",
+            "react-native": "Paper DataTable",
+            "angular": "MatTable + CDK Table"
+          },
+          "sample": {
+            "value": "Due date|Instalment;05 Feb|412.00;05 Mar|412.00;05 Apr|412.00"
+          }
+        },
+        {
+          "id": "promise-to-pay",
+          "name": "Promise to pay",
+          "purpose": "Commit to a date for an overdue amount.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-promise-to-pay",
+            "react": "PromiseToPay",
+            "react-native": "PromiseToPay",
+            "angular": "bx-promise-to-pay"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Overdue|412.00;Promise date|20 Jan;Pay from|Savings ·· 4821",
+            "extra": "Make the promise"
+          }
+        },
+        {
+          "id": "disbursement",
+          "name": "Disbursement inquiry",
+          "purpose": "Each disbursement of the loan, in order.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-disbursement",
+            "react": "DisbursementTimeline",
+            "react-native": "DisbursementTimeline",
+            "angular": "bx-disbursement"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Sanctioned 30,000.00|02 Jan;First disbursement 20,000.00|05 Jan;Second disbursement 10,000.00|Due 05 Mar"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cards",
+      "name": "Cards",
+      "components": [
+        {
+          "id": "card-tile",
+          "name": "Card tile",
+          "purpose": "The card, with freeze and unfreeze.",
+          "kind": "cardtile",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-card-tile",
+            "react": "CardTile",
+            "react-native": "CardTile"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-action-card",
+            "react": "Own, on shadcn Card",
+            "react-native": "Own, on Paper Surface",
+            "angular": "Own, on MatCard"
+          }
+        },
+        {
+          "id": "card-list",
+          "name": "Credit cards list",
+          "purpose": "Each card with its dues and limit.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-card-list",
+            "react": "CardList",
+            "react-native": "CardList",
+            "angular": "bx-card-list"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "sample": {
+            "value": "Platinum ·· 4821|640.00 due|Limit 10,000.00 · due 18 Jan;Classic ·· 7710|0.00 due|Limit 3,000.00"
+          }
+        },
+        {
+          "id": "activate-card",
+          "name": "Activate a card",
+          "purpose": "The code from the letter that came with the card.",
+          "kind": "code",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-activate-card",
+            "react": "ActivateCard",
+            "react-native": "ActivateCard"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-text, one per digit",
+            "react": "Radix OneTimePasswordField",
+            "react-native": "Paper TextInput, one per digit",
+            "angular": "Own, on the CDK"
+          },
+          "sample": {
+            "label": "Enter the activation code"
+          }
+        },
+        {
+          "id": "convert-emi",
+          "name": "Convert to EMI",
+          "purpose": "Spread a purchase over monthly instalments.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-convert-emi",
+            "react": "ConvertToEmi",
+            "react-native": "ConvertToEmi",
+            "angular": "bx-convert-emi"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Pay 1,200.00 over",
+            "value": "3 months|6 months|12 months"
+          }
+        },
+        {
+          "id": "redeem-points",
+          "name": "Redeem reward points",
+          "purpose": "Choose how many points to use.",
+          "kind": "slider",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-redeem-points",
+            "react": "RedeemPoints",
+            "react-native": "RedeemPoints",
+            "angular": "bx-redeem-points"
+          },
+          "builtOn": {
+            "jet-premium": "oj-slider",
+            "react": "Radix Slider",
+            "react-native": "Own, on PanResponder (Paper has none)",
+            "angular": "MatSlider"
+          },
+          "sample": {
+            "label": "Points to redeem",
+            "value": "12400",
+            "config": "5000"
+          }
+        },
+        {
+          "id": "spend-limit",
+          "name": "Card limits",
+          "purpose": "Set the daily card limit.",
+          "kind": "calc",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-spend-limit",
+            "react": "CardLimits",
+            "react-native": "CardLimits"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "Radix Slider",
+            "react-native": "Paper TextInput",
+            "angular": "MatSlider"
+          },
+          "sample": {
+            "config": "limit"
+          }
+        },
+        {
+          "id": "card-controls",
+          "name": "Card controls",
+          "purpose": "Where the card can be used.",
+          "kind": "check",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-card-controls",
+            "react": "CardControls",
+            "react-native": "CardControls"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-checkboxset",
+            "react": "Radix Switch",
+            "react-native": "Paper Switch",
+            "angular": "MatSlideToggle"
+          },
+          "sample": {
+            "label": "Allow",
+            "value": "Online payments|ATM withdrawals|Use abroad"
+          }
+        },
+        {
+          "id": "block-card",
+          "name": "Block or unblock",
+          "purpose": "Stop the card at once if it is lost.",
+          "kind": "switch",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-block-card",
+            "react": "BlockCard",
+            "react-native": "BlockCard",
+            "angular": "bx-block-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-switch",
+            "react": "Radix Switch",
+            "react-native": "Paper Switch",
+            "angular": "MatSlideToggle"
+          },
+          "sample": {
+            "label": "Block the card"
+          }
+        },
+        {
+          "id": "reset-pin",
+          "name": "Reset PIN",
+          "purpose": "A new PIN, confirmed with a code.",
+          "kind": "code",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-reset-pin",
+            "react": "ResetPin",
+            "react-native": "ResetPin"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-text, one per digit",
+            "react": "Radix OneTimePasswordField",
+            "react-native": "Paper TextInput, one per digit",
+            "angular": "Own, on the CDK"
+          },
+          "sample": {
+            "label": "Choose a new PIN"
+          }
+        },
+        {
+          "id": "raise-dispute",
+          "name": "Raise a dispute",
+          "purpose": "Question a card transaction.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-raise-dispute",
+            "react": "RaiseDispute",
+            "react-native": "RaiseDispute",
+            "angular": "bx-raise-dispute"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Raise dispute",
+            "value": "Transaction|Coffee House · 4.50;Reason|Charged twice"
+          }
+        },
+        {
+          "id": "add-on-card",
+          "name": "Apply for an add-on card",
+          "purpose": "A card for a family member on this account.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-add-on-card",
+            "react": "AddOnCard",
+            "react-native": "AddOnCard",
+            "angular": "bx-add-on-card"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Apply",
+            "value": "Name on the card|S. Rao;Relationship|Spouse;Limit (USD)|2,000.00"
+          }
+        },
+        {
+          "id": "card-statements",
+          "name": "Card statements",
+          "purpose": "Past statements, ready to download.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-card-statements",
+            "react": "CardStatements",
+            "react-native": "CardStatements",
+            "angular": "bx-card-statements"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "December statement|Generated 01 Jan|PDF;November statement|Generated 01 Dec|PDF",
+            "extra": "Download"
+          }
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Authentication",
+      "components": [
+        {
+          "id": "otp",
+          "name": "OTP input",
+          "purpose": "One-time code the server asks for.",
+          "kind": "code",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-text"
+          },
+          "names": {
+            "jet-premium": "bx-otp",
+            "react": "OtpInput",
+            "react-native": "OtpInput",
+            "angular": "bx-otp"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-text, one per digit",
+            "react": "Radix OneTimePasswordField",
+            "react-native": "Paper TextInput, one per digit",
+            "angular": "Own, on the CDK"
+          },
+          "sample": {
+            "label": "Enter the code"
+          }
+        },
+        {
+          "id": "biometric",
+          "name": "Authentication challenge",
+          "purpose": "Approve with a fingerprint or face.",
+          "kind": "biometric",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-biometric",
+            "react": "AuthChallenge",
+            "react-native": "AuthChallenge"
+          },
+          "builtOn": {
+            "jet-premium": "WebAuthn, own",
+            "react": "WebAuthn, own",
+            "react-native": "expo-local-authentication",
+            "angular": "WebAuthn, own"
+          }
+        },
+        {
+          "id": "session-timeout",
+          "name": "Session expiry warning",
+          "purpose": "Warns before the session ends.",
+          "kind": "timeout",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-dialog"
+          },
+          "names": {
+            "jet-premium": "bx-session-timeout",
+            "react": "SessionExpiryWarning",
+            "react-native": "SessionExpiryWarning",
+            "angular": "bx-session-timeout"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-dialog",
+            "react": "Radix AlertDialog",
+            "react-native": "Paper Dialog",
+            "angular": "MatDialog"
+          }
+        },
+        {
+          "id": "secure-confirmation",
+          "name": "Secure transaction confirmation",
+          "purpose": "The details and the code step, together.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-secure-confirmation",
+            "react": "SecureConfirmation",
+            "react-native": "SecureConfirmation",
+            "angular": "bx-secure-confirmation"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Pay|A. Rao;Amount|1,250.00 USD;Code sent to|•••• 0123",
+            "extra": "Confirm with the code"
+          }
+        },
+        {
+          "id": "sensitive",
+          "name": "Sensitive information masking",
+          "purpose": "Card and account numbers hidden until shown.",
+          "kind": "password",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-input-text"
+          },
+          "names": {
+            "jet-premium": "bx-sensitive",
+            "react": "SensitiveField",
+            "react-native": "SensitiveField",
+            "angular": "bx-sensitive"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-sensitive-text",
+            "react": "Radix PasswordToggleField",
+            "react-native": "Paper TextInput (secure)",
+            "angular": "MatInput + reveal"
+          },
+          "sample": {
+            "label": "Card number",
+            "value": "4111 1111 1111 4821"
+          }
+        },
+        {
+          "id": "kyc-steps",
+          "name": "Identity check steps",
+          "purpose": "The steps to open an account.",
+          "kind": "stepper",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-train"
+          },
+          "names": {
+            "jet-premium": "bx-kyc-steps",
+            "react": "KycSteps",
+            "react-native": "KycSteps"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-train",
+            "react": "Own (no Radix stepper)",
+            "react-native": "Own, on React Native View",
+            "angular": "MatStepper (CDK Stepper)"
+          },
+          "sample": {
+            "value": "ID|Selfie|Address"
+          }
+        },
+        {
+          "id": "fraud-alert",
+          "name": "Fraud alert",
+          "purpose": "A payment we stopped, and what to do.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-fraud-alert",
+            "react": "FraudAlert",
+            "react-native": "FraudAlert"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert",
+            "react-native": "Paper Banner",
+            "angular": "Own, on MatCard"
+          },
+          "sample": {
+            "label": "We stopped a payment of 899.00 to Unknown Ltd.",
+            "value": "danger"
+          }
+        }
+      ]
+    },
+    {
+      "id": "insights",
+      "name": "Insights",
+      "components": [
+        {
+          "id": "spending-chart",
+          "name": "Chart",
+          "purpose": "Spending by month, tap a bar for the amount.",
+          "kind": "chart",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-chart"
+          },
+          "names": {
+            "jet-premium": "bx-spending-chart",
+            "react": "BarChart",
+            "react-native": "BarChart",
+            "angular": "bx-spending-chart"
+          },
+          "builtOn": {
+            "jet-premium": "oj-chart (bar)",
+            "react": "shadcn Chart (Recharts)",
+            "react-native": "Own, on react-native-svg",
+            "angular": "Own, on the CDK (Material has no chart)"
+          }
+        },
+        {
+          "id": "budget-progress",
+          "name": "Progress bar",
+          "purpose": "How much of each budget is used.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "element",
+            "element": "oj-progress-bar"
+          },
+          "names": {
+            "jet-premium": "bx-budget-progress",
+            "react": "ProgressBar",
+            "react-native": "ProgressBar",
+            "angular": "bx-budget-progress"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "sample": {
+            "value": "Groceries|320|400;Travel|180|300;Eating out|210|200"
+          }
+        },
+        {
+          "id": "savings-goal",
+          "name": "Savings goal",
+          "purpose": "Progress towards a goal.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-savings-goal",
+            "react": "SavingsGoal",
+            "react-native": "SavingsGoal"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "sample": {
+            "value": "Holiday fund|1800|3000"
+          }
+        },
+        {
+          "id": "spend-categories",
+          "name": "Spend categories",
+          "purpose": "Re-categorise or split a transaction.",
+          "kind": "chips",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-spend-categories",
+            "react": "SpendCategories",
+            "react-native": "SpendCategories",
+            "angular": "bx-spend-categories"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-multiple",
+            "react": "Radix ToggleGroup (multiple)",
+            "react-native": "Paper Chip",
+            "angular": "MatChipListbox"
+          },
+          "sample": {
+            "label": "Coffee House · 4.50 is",
+            "value": "Eating out|Groceries|Travel|Shopping"
+          }
+        }
+      ]
+    },
+    {
+      "id": "approvals",
+      "name": "Approvals",
+      "components": [
+        {
+          "id": "approval-queue",
+          "name": "Pending for approval",
+          "purpose": "Approve or reject, prioritized items first.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-approval-queue",
+            "react": "ApprovalQueue",
+            "react-native": "ApprovalQueue",
+            "angular": "bx-approval-queue"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Payroll Feb · prioritized|Financial · 182,400.00|PAY-4410;Vendor ABC Ltd|Financial · 12,000.00|PAY-4412;Add payee J. Mehta|Non-financial|BEN-218",
+            "extra": "Approve"
+          }
+        },
+        {
+          "id": "approval-detail",
+          "name": "Approval details",
+          "purpose": "Everything the approver needs, then one decision.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-approval-detail",
+            "react": "ApprovalDetail",
+            "react-native": "ApprovalDetail",
+            "angular": "bx-approval-detail"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Reference|PAY-4410;Initiated by|A. Rao, maker;Amount|182,400.00 USD;Value date|28 Jan;Your level|2 of 3",
+            "extra": "Approve"
+          }
+        },
+        {
+          "id": "approval-journey",
+          "name": "Approval journey",
+          "purpose": "Who approved, and who is next.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-approval-journey",
+            "react": "ApprovalJourney",
+            "react-native": "ApprovalJourney",
+            "angular": "bx-approval-journey"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Initiated|A. Rao · 09:12;Approved, level 1|P. Nair · 10:40;Waiting, level 2|Finance head;Release|Treasury"
+          }
+        },
+        {
+          "id": "reroute",
+          "name": "Re-route and prioritize",
+          "purpose": "Send it to another approver, or move it up.",
+          "kind": "select",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-reroute",
+            "react": "Reroute",
+            "angular": "bx-reroute"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-single",
+            "react": "Radix Select",
+            "react-native": "Paper Menu",
+            "angular": "MatSelect"
+          },
+          "sample": {
+            "label": "Re-route to",
+            "value": "Finance head|Treasury|CFO"
+          }
+        },
+        {
+          "id": "modification-requested",
+          "name": "Modification requested",
+          "purpose": "Sent back to the maker, with the reason.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-modification-requested",
+            "react": "ModificationNotice",
+            "react-native": "ModificationNotice",
+            "angular": "bx-modification-requested"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert",
+            "react-native": "Paper Banner",
+            "angular": "Own, on MatCard"
+          },
+          "sample": {
+            "label": "PAY-4410 was sent back: change the value date to a working day.",
+            "value": "warning",
+            "extra": "Modify it"
+          }
+        },
+        {
+          "id": "pending-release",
+          "name": "Pending for release",
+          "purpose": "Approved items waiting for the releaser.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-pending-release",
+            "react": "PendingRelease",
+            "angular": "bx-pending-release"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Payroll Jan|Approved 3 of 3|182,400.00;Tax payment|Approved 2 of 2|9,800.00",
+            "extra": "Release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "liquidity",
+      "name": "Liquidity management",
+      "components": [
+        {
+          "id": "structure-type",
+          "name": "Structure type",
+          "purpose": "Sweep, pool or hybrid.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-structure-type",
+            "react": "StructureType",
+            "angular": "bx-structure-type"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Structure",
+            "value": "Sweep|Pool|Hybrid"
+          }
+        },
+        {
+          "id": "account-structure",
+          "name": "Account structure",
+          "purpose": "Header and child accounts, with their rules.",
+          "kind": "accordion",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-account-structure",
+            "react": "AccountStructure",
+            "angular": "bx-account-structure"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-accordion-item-single",
+            "react": "Radix Accordion",
+            "react-native": "Paper List.Accordion",
+            "angular": "MatExpansionPanel (CDK Accordion)"
+          },
+          "sample": {
+            "value": "Header account ·· 1000|Child: Payroll ·· 1010|Child: Vendors ·· 1020",
+            "extra": "Sweeps to zero balance daily at 18:00.|Target balance 50,000.00; tops up from the header.|Threshold 10,000.00; sweeps above it."
+          }
+        },
+        {
+          "id": "structure-simulation",
+          "name": "Structure simulation",
+          "purpose": "What a structure would do before it runs.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-structure-simulation",
+            "react": "StructureSimulation",
+            "angular": "bx-structure-simulation"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Structure|Daily zero balance;Accounts|3;Moved today|182,400.00;Interest benefit|1,210.00 a month",
+            "extra": "Run the simulation"
+          }
+        },
+        {
+          "id": "intercompany-limits",
+          "name": "Intercompany lend limits",
+          "purpose": "How much each company can lend and has lent.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-intercompany-limits",
+            "react": "LendLimits",
+            "angular": "bx-intercompany-limits"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "sample": {
+            "value": "Payroll Ltd|120|500;Vendors Ltd|340|400"
+          }
+        },
+        {
+          "id": "sweep-monitor",
+          "name": "Sweep monitor",
+          "purpose": "Today’s sweeps as they run.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-sweep-monitor",
+            "react": "SweepMonitor",
+            "angular": "bx-sweep-monitor"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Sweep started|18:00;3 of 3 accounts swept|18:02;Interest reallocated|18:05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "name": "Profile and settings",
+      "components": [
+        {
+          "id": "profile",
+          "name": "Profile",
+          "purpose": "Name, contact details and address.",
+          "kind": "kv",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-profile",
+            "react": "Profile",
+            "react-native": "Profile",
+            "angular": "bx-profile"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout (read-only)",
+            "react": "shadcn Card + Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Name|A. Rao;Email|a.rao@mail.example;Mobile|•••• 0123;Address|12 Bridge St, London",
+            "extra": "Edit profile"
+          }
+        },
+        {
+          "id": "sign-in-options",
+          "name": "Sign-in options",
+          "purpose": "Passkey, facial ID, soft token.",
+          "kind": "check",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-sign-in-options",
+            "react": "SignInOptions",
+            "react-native": "SignInOptions",
+            "angular": "bx-sign-in-options"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-checkboxset",
+            "react": "Radix Checkbox",
+            "react-native": "Paper Checkbox.Item",
+            "angular": "MatCheckbox"
+          },
+          "sample": {
+            "label": "Sign in with",
+            "value": "Passkey|Facial ID|Soft token"
+          }
+        },
+        {
+          "id": "otp-delivery",
+          "name": "Code delivery",
+          "purpose": "Where one-time codes are sent.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-otp-delivery",
+            "react": "CodeDelivery",
+            "react-native": "CodeDelivery",
+            "angular": "bx-otp-delivery"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Send codes by",
+            "value": "SMS|Email|App"
+          }
+        },
+        {
+          "id": "devices",
+          "name": "Registered devices",
+          "purpose": "Devices that can sign in, with remove.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-devices",
+            "react": "Devices",
+            "react-native": "Devices",
+            "angular": "bx-devices"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "iPhone 15 · this device|Registered 12 Mar|Active;Chrome on Windows|Last used today|Web",
+            "extra": "Remove"
+          }
+        },
+        {
+          "id": "appearance",
+          "name": "Appearance",
+          "purpose": "Light, dark or as the device.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-appearance",
+            "react": "Appearance",
+            "react-native": "Appearance",
+            "angular": "bx-appearance"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Theme",
+            "value": "Light|Dark|System"
+          }
+        },
+        {
+          "id": "language",
+          "name": "Language",
+          "purpose": "The language of the app.",
+          "kind": "select",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-language",
+            "react": "LanguagePicker",
+            "react-native": "LanguagePicker",
+            "angular": "bx-language"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-select-single",
+            "react": "Radix Select",
+            "react-native": "Paper Menu",
+            "angular": "MatSelect"
+          },
+          "sample": {
+            "label": "Language",
+            "value": "English|العربية|Français|Español"
+          }
+        },
+        {
+          "id": "alerts-subscription",
+          "name": "Alerts",
+          "purpose": "Which alerts to get.",
+          "kind": "check",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-alerts-subscription",
+            "react": "AlertSubscriptions",
+            "react-native": "AlertSubscriptions",
+            "angular": "bx-alerts-subscription"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-checkboxset",
+            "react": "Radix Checkbox",
+            "react-native": "Paper Checkbox.Item",
+            "angular": "MatCheckbox"
+          },
+          "sample": {
+            "label": "Tell me about",
+            "value": "Payments over 500.00|Low balance|Sign-in from a new device"
+          }
+        },
+        {
+          "id": "do-not-disturb",
+          "name": "Do not disturb",
+          "purpose": "Quiet hours for notifications.",
+          "kind": "switch",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-do-not-disturb",
+            "react": "DoNotDisturb",
+            "react-native": "DoNotDisturb",
+            "angular": "bx-do-not-disturb"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-switch",
+            "react": "Radix Switch",
+            "react-native": "Paper Switch",
+            "angular": "MatSlideToggle"
+          },
+          "sample": {
+            "label": "Quiet hours, 22:00 to 07:00"
+          }
+        },
+        {
+          "id": "consents",
+          "name": "Access and consent",
+          "purpose": "Apps that can read accounts, with revoke.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-consents",
+            "react": "Consents",
+            "react-native": "Consents",
+            "angular": "bx-consents"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Budget app (open banking)|Granted 02 Jan · ends 02 Apr|Accounts;Tax filing service|Granted 10 Dec · ends 10 Mar|Statements",
+            "extra": "Revoke"
+          }
+        },
+        {
+          "id": "transaction-limits",
+          "name": "Transaction limits",
+          "purpose": "What is used of each limit today.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-transaction-limits",
+            "react": "TransactionLimits",
+            "react-native": "TransactionLimits",
+            "angular": "bx-transaction-limits"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "sample": {
+            "value": "Daily transfers|1200|5000;Bill payments|300|2000"
+          }
+        },
+        {
+          "id": "session-summary",
+          "name": "Session summary",
+          "purpose": "Recent sign-ins, to spot one that was not you.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-session-summary",
+            "react": "SessionSummary",
+            "react-native": "SessionSummary",
+            "angular": "bx-session-summary"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Today 08:12|iPhone 15 · London;Yesterday 19:40|Chrome on Windows · London;3 Jan 07:55|iPhone 15 · Paris"
+          }
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "name": "Service requests and mailbox",
+      "components": [
+        {
+          "id": "raise-request",
+          "name": "Raise a service request",
+          "purpose": "Cheque book, address change and other requests.",
+          "kind": "form",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-raise-request",
+            "react": "RaiseRequest",
+            "react-native": "RaiseRequest",
+            "angular": "bx-raise-request"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-form-layout + inputs",
+            "react": "shadcn Field + React Hook Form",
+            "react-native": "Paper TextInput set",
+            "angular": "Reactive Forms + MatFormField"
+          },
+          "sample": {
+            "label": "Raise request",
+            "value": "Request|Cheque book;Account|Savings ·· 4821;Leaves|25"
+          }
+        },
+        {
+          "id": "track-requests",
+          "name": "Track requests",
+          "purpose": "Where each request is.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-track-requests",
+            "react": "TrackRequests",
+            "react-native": "TrackRequests",
+            "angular": "bx-track-requests"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Received|SR-2210 · 10 Jan;In progress|Printing the cheque book;Dispatched|Expected 15 Jan"
+          }
+        },
+        {
+          "id": "mailbox",
+          "name": "Mailbox",
+          "purpose": "Mails, alerts and notifications from the bank.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-mailbox",
+            "react": "Mailbox",
+            "react-native": "Mailbox",
+            "angular": "bx-mailbox"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Your cheque book is on the way|Today|Mail;Low balance on Current ·· 7730|Yesterday|Alert;New statement ready|2 days ago|Notice",
+            "extra": "Open"
+          }
+        },
+        {
+          "id": "compose-mail",
+          "name": "Compose a message",
+          "purpose": "Write to the bank securely.",
+          "kind": "textarea",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-compose-mail",
+            "react": "ComposeMessage",
+            "react-native": "ComposeMessage",
+            "angular": "bx-compose-mail"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-text-area",
+            "react": "shadcn Textarea",
+            "react-native": "Paper TextInput (multiline)",
+            "angular": "MatInput, textarea"
+          },
+          "sample": {
+            "label": "Message to the bank"
+          }
+        },
+        {
+          "id": "e-receipts",
+          "name": "E-receipts",
+          "purpose": "Receipts for past transactions.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-e-receipts",
+            "react": "EReceipts",
+            "react-native": "EReceipts",
+            "angular": "bx-e-receipts"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Transfer to A. Rao|14 Jan · 1,250.00|PDF;Electricity bill|10 Jan · 86.20|PDF",
+            "extra": "Download"
+          }
+        }
+      ]
+    },
+    {
+      "id": "documents",
+      "name": "Certificates and documents",
+      "components": [
+        {
+          "id": "certificates",
+          "name": "Certificates",
+          "purpose": "Interest, balance and tax certificates.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-certificates",
+            "react": "Certificates",
+            "react-native": "Certificates",
+            "angular": "bx-certificates"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "Interest certificate|Savings ·· 4821 · 2025|PDF;Balance certificate|As of 31 Dec|PDF;TDS certificate|FY 2025|PDF",
+            "extra": "Download"
+          }
+        },
+        {
+          "id": "statement-request",
+          "name": "Request a statement",
+          "purpose": "Any period, sent to the mailbox.",
+          "kind": "daterange",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-statement-request",
+            "react": "StatementRequest",
+            "react-native": "StatementRequest",
+            "angular": "bx-statement-request"
+          },
+          "builtOn": {
+            "jet-premium": "two oj-c-input-date-picker",
+            "react": "shadcn Calendar (range)",
+            "react-native": "two native pickers",
+            "angular": "MatDateRangeInput"
+          },
+          "sample": {
+            "label": "Statement period",
+            "value": "2025-10-01|2025-12-31"
+          }
+        },
+        {
+          "id": "statement-format",
+          "name": "Statement format",
+          "purpose": "PDF, spreadsheet or both.",
+          "kind": "segmented",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-statement-format",
+            "react": "StatementFormat",
+            "react-native": "StatementFormat",
+            "angular": "bx-statement-format"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-buttonset-single",
+            "react": "Radix ToggleGroup",
+            "react-native": "Paper SegmentedButtons",
+            "angular": "MatButtonToggleGroup"
+          },
+          "sample": {
+            "label": "Format",
+            "value": "PDF|CSV|Both"
+          }
+        }
+      ]
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding and applications",
+      "components": [
+        {
+          "id": "self-register",
+          "name": "Self-registration",
+          "purpose": "Sign up for digital banking.",
+          "kind": "stepper",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-self-register",
+            "react": "SelfRegister",
+            "react-native": "SelfRegister",
+            "angular": "bx-self-register"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-train",
+            "react": "Own (no Radix stepper)",
+            "react-native": "Own, on React Native View",
+            "angular": "MatStepper (CDK Stepper)"
+          },
+          "sample": {
+            "value": "Details|Verify|Password|Done"
+          }
+        },
+        {
+          "id": "fatca-crs",
+          "name": "FATCA and CRS self-certification",
+          "purpose": "Tax residency questions, step by step.",
+          "kind": "stepper",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-fatca-crs",
+            "react": "TaxSelfCertification",
+            "react-native": "TaxSelfCertification",
+            "angular": "bx-fatca-crs"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-train",
+            "react": "Own (no Radix stepper)",
+            "react-native": "Own, on React Native View",
+            "angular": "MatStepper (CDK Stepper)"
+          },
+          "sample": {
+            "value": "Identity|Tax residency|Declaration|Review"
+          }
+        },
+        {
+          "id": "product-showcase",
+          "name": "Product showcase",
+          "purpose": "A product to apply for.",
+          "kind": "card",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-product-showcase",
+            "react": "ProductCard",
+            "react-native": "ProductCard",
+            "angular": "bx-product-showcase"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "sample": {
+            "label": "Platinum credit card",
+            "value": "2% cashback · no annual fee in year one",
+            "extra": "New",
+            "config": "Apply now →"
+          }
+        },
+        {
+          "id": "application-tracker",
+          "name": "Application tracker",
+          "purpose": "Where an application is.",
+          "kind": "timeline",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-application-tracker",
+            "react": "ApplicationTracker",
+            "react-native": "ApplicationTracker",
+            "angular": "bx-application-tracker"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view",
+            "react": "Own (MUI Lab Timeline as reference)",
+            "react-native": "Paper List",
+            "angular": "Own, on MatList"
+          },
+          "sample": {
+            "value": "Submitted|12 Jan;Documents checked|13 Jan;Credit decision|Expected 16 Jan;Card sent|—"
+          }
+        },
+        {
+          "id": "terms-consent",
+          "name": "Terms and consent",
+          "purpose": "What the customer agrees to.",
+          "kind": "check",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-terms-consent",
+            "react": "TermsConsent",
+            "react-native": "TermsConsent",
+            "angular": "bx-terms-consent"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-checkboxset",
+            "react": "Radix Checkbox",
+            "react-native": "Paper Checkbox.Item",
+            "angular": "MatCheckbox"
+          },
+          "sample": {
+            "label": "Before you continue",
+            "value": "I accept the terms and conditions|Send me offers by email"
+          }
+        }
+      ]
+    },
+    {
+      "id": "calculators",
+      "name": "Calculators",
+      "components": [
+        {
+          "id": "loan-calculator",
+          "name": "Loan instalment calculator",
+          "purpose": "Monthly payment for a loan amount.",
+          "kind": "calc",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-loan-calculator",
+            "react": "LoanCalculator",
+            "react-native": "LoanCalculator"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "shadcn Input Group + Button",
+            "react-native": "Paper TextInput + IconButton",
+            "angular": "MatInput + MatButton"
+          },
+          "sample": {
+            "config": "loan"
+          }
+        },
+        {
+          "id": "eligibility-calculator",
+          "name": "Loan eligibility",
+          "purpose": "How much the customer could borrow.",
+          "kind": "slider",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-eligibility-calculator",
+            "react": "EligibilityCalculator",
+            "react-native": "EligibilityCalculator",
+            "angular": "bx-eligibility-calculator"
+          },
+          "builtOn": {
+            "jet-premium": "oj-slider",
+            "react": "Radix Slider",
+            "react-native": "Own, on PanResponder (Paper has none)",
+            "angular": "MatSlider"
+          },
+          "sample": {
+            "label": "Monthly income",
+            "value": "20000",
+            "extra": "USD ",
+            "config": "6000"
+          }
+        },
+        {
+          "id": "td-calculator",
+          "name": "Term deposit calculator",
+          "purpose": "What a deposit is worth at maturity.",
+          "kind": "calc",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-td-calculator",
+            "react": "DepositCalculator",
+            "react-native": "DepositCalculator",
+            "angular": "bx-td-calculator"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "shadcn Input Group + Button",
+            "react-native": "Paper TextInput + IconButton",
+            "angular": "MatInput + MatButton"
+          },
+          "sample": {
+            "config": "td"
+          }
+        },
+        {
+          "id": "currency-converter",
+          "name": "Forex calculator",
+          "purpose": "What the payee gets at the rate today.",
+          "kind": "calc",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-currency-converter",
+            "react": "ForexCalculator",
+            "react-native": "ForexCalculator"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "shadcn Input Group + Button",
+            "react-native": "Paper TextInput + IconButton",
+            "angular": "MatInput + MatButton"
+          },
+          "sample": {
+            "config": "fx"
+          }
+        },
+        {
+          "id": "goal-calculator",
+          "name": "Goal calculator",
+          "purpose": "What to save each month for a goal.",
+          "kind": "slider",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-goal-calculator",
+            "react": "GoalCalculator",
+            "react-native": "GoalCalculator",
+            "angular": "bx-goal-calculator"
+          },
+          "builtOn": {
+            "jet-premium": "oj-slider",
+            "react": "Radix Slider",
+            "react-native": "Own, on PanResponder (Paper has none)",
+            "angular": "MatSlider"
+          },
+          "sample": {
+            "label": "Saving each month",
+            "value": "2000",
+            "extra": "USD ",
+            "config": "400"
+          }
+        }
+      ]
+    },
+    {
+      "id": "help",
+      "name": "Help and support",
+      "components": [
+        {
+          "id": "locator",
+          "name": "ATM and branch locator",
+          "purpose": "Nearby ATMs and branches on a map.",
+          "kind": "locator",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-locator",
+            "react": "Locator",
+            "react-native": "Locator",
+            "angular": "bx-locator"
+          },
+          "builtOn": {
+            "jet-premium": "Own map, on oj-c-list-view",
+            "react": "Own map, on shadcn Item",
+            "react-native": "react-native-maps + Paper List",
+            "angular": "Own map, on MatList"
+          }
+        },
+        {
+          "id": "live-chat",
+          "name": "Live chat",
+          "purpose": "Chat with the bank, with suggested questions.",
+          "kind": "chat",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-live-chat",
+            "react": "LiveChat",
+            "react-native": "LiveChat",
+            "angular": "bx-live-chat"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-list-view + oj-c-input-text",
+            "react": "shadcn Message + Message Scroller",
+            "react-native": "Own, on FlatList + Paper TextInput",
+            "angular": "Own, on CDK Scrolling"
+          }
+        },
+        {
+          "id": "feedback",
+          "name": "Feedback",
+          "purpose": "Rate the experience.",
+          "kind": "rating",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-feedback",
+            "react": "FeedbackRating",
+            "react-native": "FeedbackRating",
+            "angular": "bx-feedback"
+          },
+          "builtOn": {
+            "jet-premium": "Own, on oj-c-rating-gauge",
+            "react": "Own, on Radix ToggleGroup",
+            "react-native": "Own, on Paper IconButton",
+            "angular": "Own, on MatButtonToggle"
+          },
+          "sample": {
+            "label": "How was this payment?"
+          }
+        },
+        {
+          "id": "nominations",
+          "name": "Nominations",
+          "purpose": "Who receives the account, and their share.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-nominations",
+            "react": "Nominations",
+            "react-native": "Nominations",
+            "angular": "bx-nominations"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "sample": {
+            "value": "S. Rao · spouse|Savings ·· 4821|50%;K. Rao · son|Savings ·· 4821|50%",
+            "extra": "Edit"
+          }
+        },
+        {
+          "id": "faq",
+          "name": "Frequently asked questions",
+          "purpose": "Answers that open in place.",
+          "kind": "accordion",
+          "foundation": false,
+          "workspace": {
+            "kind": "screen",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-faq",
+            "react": "Faq",
+            "react-native": "Faq",
+            "angular": "bx-faq"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-accordion-item-single",
+            "react": "Radix Accordion",
+            "react-native": "Paper List.Accordion",
+            "angular": "MatExpansionPanel (CDK Accordion)"
+          },
+          "sample": {
+            "value": "How do I reset my password?|Is mobile banking secure?|How do I block my card?",
+            "extra": "Choose Forgot password on the sign-in page.|Yes: every sign-in and payment is checked, and codes expire.|Settings › Cards › Block, or call the bank."
+          }
+        }
+      ]
+    },
+    {
+      "id": "widgets",
+      "name": "Widgets",
+      "components": [
+        {
+          "id": "overview",
+          "name": "Overview",
+          "purpose": "Holdings by type: current and savings, term deposits, loans, credit cards, mutual funds. Pick one for its summary.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-overview",
+            "react": "OverviewWidget",
+            "react-native": "OverviewWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Current and savings|15,610.50|3 accounts;Term deposits|25,000.00|2 deposits;Loans|18,420.00|1 loan outstanding;Credit cards|640.00 due|2 cards;Mutual funds|4,120.00|1 fund"
+          }
+        },
+        {
+          "id": "quick-insights",
+          "name": "Quick insights",
+          "purpose": "Events that need attention, each with an action.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-quick-insights",
+            "react": "QuickInsightsWidget",
+            "react-native": "QuickInsightsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Term deposit matures|In 5 days · ·· 9011|25,000.00;Card payment due|18 Jan · ·· 4821|640.00;Low balance|Current ·· 7730|210.00",
+            "extra": "Act"
+          }
+        },
+        {
+          "id": "recent-transactions",
+          "name": "Recent transactions",
+          "purpose": "Latest activity, with View all.",
+          "kind": "txlist",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-recent-transactions",
+            "react": "RecentTransactionsWidget",
+            "react-native": "RecentTransactionsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item / Table",
+            "react-native": "Paper List",
+            "angular": "MatList"
+          },
+          "dashboard": "Retail and SMB dashboard"
+        },
+        {
+          "id": "bills-widget",
+          "name": "Bills",
+          "purpose": "Bills due, with Pay now.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-bills-widget",
+            "react": "BillsWidget",
+            "react-native": "BillsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "extra": "Pay now"
+          }
+        },
+        {
+          "id": "spend-analysis",
+          "name": "Spend analysis",
+          "purpose": "Total spend over the past months.",
+          "kind": "chart",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-spend-analysis",
+            "react": "SpendAnalysisWidget",
+            "react-native": "SpendAnalysisWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-chart (bar)",
+            "react": "shadcn Chart (Recharts)",
+            "react-native": "Own, on react-native-svg",
+            "angular": "Own, on the CDK (Material has no chart)"
+          },
+          "dashboard": "Retail and SMB dashboard"
+        },
+        {
+          "id": "goals",
+          "name": "Goals",
+          "purpose": "Active goals and progress, with Add goal.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-goals",
+            "react": "GoalsWidget",
+            "react-native": "GoalsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Holiday fund|1800|3000;New car|4200|15000"
+          }
+        },
+        {
+          "id": "budgets",
+          "name": "Budgets",
+          "purpose": "Budgets and what is used.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-budgets",
+            "react": "BudgetsWidget",
+            "react-native": "BudgetsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Groceries|320|400;Travel|180|300;Eating out|210|200"
+          }
+        },
+        {
+          "id": "calculators",
+          "name": "Calculators",
+          "purpose": "Loan, term deposit and forex calculators.",
+          "kind": "calc",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-calculators",
+            "react": "CalculatorsWidget",
+            "react-native": "CalculatorsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-input-number",
+            "react": "shadcn Input Group + Button",
+            "react-native": "Paper TextInput + IconButton",
+            "angular": "MatInput + MatButton"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "config": "loan"
+          }
+        },
+        {
+          "id": "credit-score",
+          "name": "Credit score",
+          "purpose": "The current credit status.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-credit-score",
+            "react": "CreditScoreWidget",
+            "react-native": "CreditScoreWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-circle",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressSpinner (determinate)"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Credit score|742|900"
+          }
+        },
+        {
+          "id": "rewards",
+          "name": "Rewards",
+          "purpose": "Points, vouchers and cashback to redeem.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-rewards",
+            "react": "RewardsWidget",
+            "react-native": "RewardsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Points|12,400|Redeem for merchandise, vouchers or air miles;Vouchers|3|Expire 31 Mar;Cashback|45.00|Paid on the 1st"
+          }
+        },
+        {
+          "id": "financial-advisor",
+          "name": "Financial advisor",
+          "purpose": "The relationship manager or the bank’s contact details.",
+          "kind": "card",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-financial-advisor",
+            "react": "FinancialAdvisorWidget",
+            "react-native": "FinancialAdvisorWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "label": "Priya Nair",
+            "value": "priya.nair@bank.example · +44 20 7946 0123",
+            "extra": "Relationship manager",
+            "config": "Send a message →"
+          }
+        },
+        {
+          "id": "special-offers",
+          "name": "Special offers",
+          "purpose": "Offers for this customer.",
+          "kind": "card",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-special-offers",
+            "react": "SpecialOffersWidget",
+            "react-native": "SpecialOffersWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card",
+            "react": "shadcn Card",
+            "react-native": "Paper Card",
+            "angular": "MatCard"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "label": "Pre-approved personal loan",
+            "value": "Up to 25,000.00 at 9.5% a year.",
+            "extra": "Offer",
+            "config": "Apply now →"
+          }
+        },
+        {
+          "id": "credit-cards-overview",
+          "name": "Credit cards overview",
+          "purpose": "Total and minimum due, available limit.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-credit-cards-overview",
+            "react": "CreditCardsWidget",
+            "react-native": "CreditCardsWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Total due|640.00|Due 18 Jan;Minimum due|32.00|Pay to avoid charges;Available limit|9,360.00|Of 10,000.00"
+          }
+        },
+        {
+          "id": "loans-overview",
+          "name": "Loans and finances overview",
+          "purpose": "Loan count, outstanding and next instalment.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-loans-overview",
+            "react": "LoansWidget",
+            "react-native": "LoansWidget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "value": "Loans|2|Home and car;Outstanding|18,420.00|Next instalment 5 Feb;Sanctioned|30,000.00|Both loans"
+          }
+        },
+        {
+          "id": "delinquency-notice",
+          "name": "Delinquency notice",
+          "purpose": "Shown only when a loan is overdue.",
+          "kind": "alert",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-delinquency-notice",
+            "react": "DelinquencyNotice",
+            "react-native": "DelinquencyNotice"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-message-banner",
+            "react": "shadcn Alert",
+            "react-native": "Paper Banner",
+            "angular": "Own, on MatCard"
+          },
+          "dashboard": "Retail and SMB dashboard",
+          "sample": {
+            "label": "Your car loan ·· 3310 is 12 days overdue: 412.00.",
+            "value": "danger",
+            "extra": "Pay now"
+          }
+        },
+        {
+          "id": "financial-overview",
+          "name": "Financial overview",
+          "purpose": "Assets, liabilities and net worth.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-financial-overview",
+            "react": "FinancialOverviewWidget",
+            "angular": "bx-financial-overview"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "Assets|4.2M|CASA, deposits;Liabilities|1.1M|Loans;Net worth|3.1M|Assets less liabilities"
+          }
+        },
+        {
+          "id": "position-by-currency",
+          "name": "Position by currency",
+          "purpose": "Assets and liabilities per currency.",
+          "kind": "chart",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-position-by-currency",
+            "react": "CurrencyPositionWidget",
+            "angular": "bx-position-by-currency"
+          },
+          "builtOn": {
+            "jet-premium": "oj-chart (bar)",
+            "react": "shadcn Chart (Recharts)",
+            "react-native": "Own, on react-native-svg",
+            "angular": "Own, on the CDK (Material has no chart)"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "USD|88;EUR|60;GBP|42;INR|30;AED|18",
+            "extra": "in assets"
+          }
+        },
+        {
+          "id": "credit-line-usage",
+          "name": "Credit line usage",
+          "purpose": "Most and least used facilities.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-credit-line-usage",
+            "react": "CreditLineWidget",
+            "angular": "bx-credit-line-usage"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "Working capital|720|1000;Import LC line|300|500;Guarantees|90|400"
+          }
+        },
+        {
+          "id": "bills-receivable-payable",
+          "name": "Bill receivable and payable",
+          "purpose": "Import and export bills, LC and standalone.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-bills-receivable-payable",
+            "react": "TradeBillsWidget",
+            "angular": "bx-bills-receivable-payable"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "Receivable|1.8M|Export bills;Payable|0.9M|Import bills"
+          }
+        },
+        {
+          "id": "trade-instruments",
+          "name": "Trade instruments",
+          "purpose": "LCs and guarantees expiring soon.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-trade-instruments",
+            "react": "TradeInstrumentsWidget",
+            "angular": "bx-trade-instruments"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "LC ILC2201|Expires in 9 days|250,000.00;Guarantee OG118|Expires in 14 days|80,000.00",
+            "extra": "View"
+          }
+        },
+        {
+          "id": "reports",
+          "name": "Reports",
+          "purpose": "The latest generated reports.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-reports",
+            "react": "ReportsWidget",
+            "angular": "bx-reports"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Corporate dashboard · all roles",
+          "sample": {
+            "value": "Account statement · Dec|Generated today|PDF;Payments summary|Yesterday|CSV",
+            "extra": "Download"
+          }
+        },
+        {
+          "id": "accounts-corp",
+          "name": "Current and savings, deposits, loans",
+          "purpose": "Account cards with counts and totals.",
+          "kind": "tabs",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-accounts-corp",
+            "react": "AccountsWidget",
+            "react-native": "AccountsWidget",
+            "angular": "bx-accounts-corp"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-tab-bar",
+            "react": "Radix Tabs",
+            "react-native": "Paper SegmentedButtons / BottomNavigation",
+            "angular": "MatTabGroup"
+          },
+          "dashboard": "Corporate dashboard · all roles",
+          "sample": {
+            "value": "Current and savings|Term deposits|Loans and finances",
+            "extra": "12 accounts · 3.4M|4 deposits · 1.2M|2 loans · 1.1M outstanding"
+          }
+        },
+        {
+          "id": "corporate-limits",
+          "name": "Corporate limits",
+          "purpose": "Daily and monthly limits used and left.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-corporate-limits",
+            "react": "CorporateLimitsWidget",
+            "angular": "bx-corporate-limits"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "dashboard": "Corporate dashboard · Viewer",
+          "sample": {
+            "value": "Daily, own transfers|420|1000;Monthly, payments|6200|20000"
+          }
+        },
+        {
+          "id": "transactions-widget",
+          "name": "Transactions",
+          "purpose": "Pending for approval, my initiated, log, my approved.",
+          "kind": "tabs",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-transactions-widget",
+            "react": "TransactionsWidget",
+            "react-native": "TransactionsWidget",
+            "angular": "bx-transactions-widget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-tab-bar",
+            "react": "Radix Tabs",
+            "react-native": "Paper SegmentedButtons / BottomNavigation",
+            "angular": "MatTabGroup"
+          },
+          "dashboard": "Corporate dashboard · all roles",
+          "sample": {
+            "value": "Pending|Initiated|Log|Approved",
+            "extra": "6 waiting: 4 financial, 2 non-financial|3 initiated today|42 this week|18 approved today"
+          }
+        },
+        {
+          "id": "last-5-payments",
+          "name": "Last 5 payments",
+          "purpose": "The latest payments and their status.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-last-5-payments",
+            "react": "LastPaymentsWidget",
+            "angular": "bx-last-5-payments"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Corporate dashboard · Maker",
+          "sample": {
+            "value": "Payroll Jan|Processed|182,400.00;Vendor ABC Ltd|In progress|12,000.00;Tax|Rejected|9,800.00",
+            "extra": "Repeat"
+          }
+        },
+        {
+          "id": "bulk-file-upload",
+          "name": "Bulk file upload",
+          "purpose": "Upload a payments file to an identifier.",
+          "kind": "upload",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-bulk-file-upload",
+            "react": "BulkUploadWidget",
+            "angular": "bx-bulk-file-upload"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-file-picker",
+            "react": "Own, on a file input",
+            "react-native": "expo-document-picker + Paper Button",
+            "angular": "Own, on the CDK"
+          },
+          "dashboard": "Corporate dashboard · Maker"
+        },
+        {
+          "id": "quick-links-corp",
+          "name": "Quick links",
+          "purpose": "Own account transfer, funds transfer, ad-hoc payment, file upload.",
+          "kind": "quick",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-quick-links-corp",
+            "react": "QuickLinksWidget",
+            "react-native": "QuickLinksWidget",
+            "angular": "bx-quick-links-corp"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-toolbar + oj-c-button",
+            "react": "shadcn Button Group",
+            "react-native": "Paper IconButton / FAB.Group",
+            "angular": "MatButton grid"
+          },
+          "dashboard": "Corporate dashboard · all roles",
+          "sample": {
+            "value": "Own account|Transfer|Ad-hoc|File upload",
+            "extra": "⇄|↗|+|⇪"
+          }
+        },
+        {
+          "id": "work-snapshot",
+          "name": "Work snapshot for today",
+          "purpose": "Processed, in progress and rejected today.",
+          "kind": "tiles",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-work-snapshot",
+            "react": "WorkSnapshotWidget",
+            "react-native": "WorkSnapshotWidget",
+            "angular": "bx-work-snapshot"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-action-card set",
+            "react": "shadcn Card set",
+            "react-native": "Paper Card set",
+            "angular": "MatCard set"
+          },
+          "dashboard": "Corporate dashboard · Maker",
+          "sample": {
+            "value": "Processed|12|Approved today;In progress|4|Initiated today;Rejected|1|Needs a fix"
+          }
+        },
+        {
+          "id": "notifications-widget",
+          "name": "Notifications",
+          "purpose": "The last bank notifications.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-notifications-widget",
+            "react": "NotificationsWidget",
+            "react-native": "NotificationsWidget",
+            "angular": "bx-notifications-widget"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Corporate dashboard · Approver",
+          "sample": {
+            "value": "USD cut-off moves to 3 pm|Today|Bank;New tax form available|2 days ago|Bank",
+            "extra": "Read"
+          }
+        },
+        {
+          "id": "pending-for-action",
+          "name": "Pending for action",
+          "purpose": "Financial and non-financial items by module.",
+          "kind": "chart",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-pending-for-action",
+            "react": "PendingActionWidget",
+            "react-native": "PendingActionWidget",
+            "angular": "bx-pending-for-action"
+          },
+          "builtOn": {
+            "jet-premium": "oj-chart (bar)",
+            "react": "shadcn Chart (Recharts)",
+            "react-native": "Own, on react-native-svg",
+            "angular": "Own, on the CDK (Material has no chart)"
+          },
+          "dashboard": "Corporate dashboard · Approver",
+          "sample": {
+            "value": "Payments|70;Trade|35;Accounts|20;Limits|10",
+            "extra": "pending"
+          }
+        },
+        {
+          "id": "my-limits",
+          "name": "My limits",
+          "purpose": "Limits for initiating and approving.",
+          "kind": "progress",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-my-limits",
+            "react": "MyLimitsWidget",
+            "angular": "bx-my-limits"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-meter-bar",
+            "react": "Radix Progress",
+            "react-native": "Paper ProgressBar",
+            "angular": "MatProgressBar"
+          },
+          "dashboard": "Corporate dashboard · Approver",
+          "sample": {
+            "value": "Initiate, per transaction|50|100;Approve, daily|240|500"
+          }
+        },
+        {
+          "id": "pending-approvals",
+          "name": "Pending for approval",
+          "purpose": "Approve or reject, prioritized items first.",
+          "kind": "bills",
+          "foundation": false,
+          "workspace": {
+            "kind": "widget",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-pending-approvals",
+            "react": "PendingApprovalsWidget",
+            "react-native": "PendingApprovalsWidget",
+            "angular": "bx-pending-approvals"
+          },
+          "builtOn": {
+            "jet-premium": "oj-c-list-view",
+            "react": "shadcn Item",
+            "react-native": "Paper List.Item",
+            "angular": "MatList"
+          },
+          "dashboard": "Corporate dashboard · Approver",
+          "sample": {
+            "value": "Payroll Feb · prioritized|Financial · 182,400.00|PAY-4410;Add payee J. Mehta|Non-financial|BEN-218",
+            "extra": "Approve"
+          }
+        }
+      ]
+    }
+  ]
+}
