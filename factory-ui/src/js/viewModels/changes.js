@@ -1,25 +1,33 @@
 /*
- * Changes page, the implementation workbench, built around reviewing generated code and recovering from a generation
- * that stopped. At the top: the change, its workspace and OBDX version, its status, how many files are created,
- * modified, cut off, failed or not written, the validation state and the next action. Below, three resizable panels:
- * the files as a tree (marked by their state), the selected file's diff or code with line numbers and highlighting, and
- * a side panel with the file's details (requirement, reason, generation, checks), validation, the plan, the assistant
- * and the history. The actions are those of before: plan, approve, continue generation, write again, edit, check,
- * build, deliver as a patch or an SVN branch (asked first; an incomplete one with a warning), close and delete.
+ * Changes page. First the list: what is waiting, as state chips with counts (planning, needs approval, writing code,
+ * code to review, failed, delivered, closed) and a search, then each change as a compact row (state, files written,
+ * build, when, the next step and a menu). A change opens in place of the list: one header (title, its IDs, the status
+ * and the one next action), the five stages (plan, approve, write the code, build, deliver), one problem bar, and
+ * three resizable panels: the files as a tree (marked by their state, with state chips that filter it), the selected
+ * file's diff or code with line numbers and highlighting, and a side panel with the file's details, validation, the
+ * plan and the assistant. The change's facts and history are in a side sheet. The actions are those of before: plan,
+ * approve, continue generation, write again, edit, check, build, deliver as a patch or an SVN branch (asked first; an
+ * incomplete one with a warning), close and delete.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session',
         '../services/ui', '../services/assistant', '../services/dialog', '../services/toast', '../services/pageRequests', '../services/busy',
-        '../services/syntax', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService, highlight) {
+        '../services/syntax', '../services/dashboard', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, assistant, dialog, toast, pageRequests, busyService, highlight, dashboard) {
     const POLL_MS = 2000;
+    const LIST_POLL_MS = 5000;
+    // The list's state chips, in the order of the work; Code to review takes in partly written changes
+    const CHIPS = [
+      ['ANALYZING', 'Planning', 'is-primary'], ['PLAN_READY', 'Needs approval', 'is-warning'], ['GENERATING', 'Writing code', 'is-primary'],
+      ['GENERATED', 'Code to review', 'is-warning'], ['FAILED', 'Failed', 'is-danger'], ['DELIVERED', 'Delivered', 'is-success'], ['CLOSED', 'Closed', '']
+    ];
+    const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+    const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
+    const reqCode = (id) => 'REQ-' + String(id || '').replace(/-/g, '').slice(0, 4).toUpperCase();
+    const navigate = (page) => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
     // A status badge (design system fx-badge, with a dot) from the older tone names
     const TONES = { blue: 'primary', amber: 'warning', green: 'success', red: 'danger', violet: 'violet', grey: '' };
     const pill = (text, tone) => ({ text: text, css: 'fx-badge' + (TONES[tone] ? ' fx-badge--' + TONES[tone] : '') });
     const ask = (title, message, confirmLabel, danger) => dialog.confirm({ title: title, message: message, confirmLabel: confirmLabel, danger: !!danger });
-    const STATUS_LABELS = {
-      ANALYZING: 'analyzing', PLAN_READY: 'plan to review', GENERATING: 'writing code', GENERATED: 'code to review',
-      DELIVERED: 'delivered', FAILED: 'failed', CLOSED: 'closed'
-    };
     // The page's words for a quick check; ui.status gives the colour and the icon
     const CHECK_WORDS = { PASSED: 'Passed', WARNING: 'Warning', FAILED: 'Failed', NOT_CHECKED: 'Not checked' };
     // Jenkins results in the status categories ui.status knows
@@ -74,16 +82,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.editContent = ko.observable('');
       this.regenerateNote = ko.observable('');
 
-      this.statusLabel = ko.pureComputed(() => (this.detail() ? STATUS_LABELS[this.detail().status] : ''));
-      this.facts = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d) {
-          return '';
-        }
-        return ['Requested by ' + (d.createdBy || '?'),
-          d.baseRevision ? 'code at r' + d.baseRevision : null,
-          d.planApprovedBy ? 'plan approved by ' + d.planApprovedBy : null].filter(Boolean).join(' · ');
-      });
       this.risks = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.risks : []));
       this.planRows = ko.pureComputed(() => (this.detail() && this.detail().plan ? this.detail().plan.items : []).map((item) => ({
         action: item.action, layer: item.layer, path: item.path, purpose: item.purpose || '', details: item.details || '',
@@ -116,62 +114,62 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         selected: this.file() !== null && this.file().path === f.path,
         openAction: () => this.openFile(f.path)
       })));
-      this.diffLines = ko.pureComputed(() => {
-        const file = this.file();
-        if (!file || !file.diff) {
-          return [{ text: file && file.generated === null ? '(not written)' : '(no changes)', css: 'factory-diff-meta' }];
-        }
-        return file.diff.replace(/\n$/, '').split('\n').map((line) => ({
-          text: line + '\n',
-          css: line.startsWith('+++') || line.startsWith('---') || line.startsWith('Index:') || line.startsWith('====')
-            ? 'factory-diff-meta' : line.startsWith('@@') ? 'factory-diff-hunk'
-              : line.startsWith('+') ? 'factory-diff-add' : line.startsWith('-') ? 'factory-diff-del' : ''
-        }));
-      });
-
       const showError = (error) => this.errorMessage(error.message);
       // After an action: the error stays on the page and a toast says it failed
       const failed = (error) => { showError(error); toast.error(error.message); };
       const done = (message) => (detail) => { show(detail); toast.success(message); };
       let pollTimer = null;
+      let listTimer = null;
 
+      // The list: every change of the workspace with its files and builds (the same details Home loads), and the
+      // requirements, for their IDs and titles and for New change
+      this.listLoading = ko.observable(true);
+      const requirementTitles = ko.observable({});
       const loadList = () => {
         const id = this.workspaceId();
+        clearTimeout(listTimer);
         if (!id) {
           this.changes([]);
           requirementOptions([]);
+          this.listLoading(false);
           return Promise.resolve();
         }
-        return Promise.all([api.get('workspaces/' + id + '/changes'), api.get('workspaces/' + id + '/requirements'),
+        return Promise.all([api.get('workspaces/' + id + '/changes/details'), api.get('workspaces/' + id + '/requirements'),
           api.get('workspaces/' + id + '/jenkins')])
           .then(([changeList, requirementList, jenkins]) => {
-            this.jenkins(jenkins);
-            const current = this.detail() ? this.detail().id : null;
-            this.changes(changeList.map((c) => ({
-              id: c.id, title: c.title, status: c.status, statusLabel: STATUS_LABELS[c.status], selected: c.id === current,
-              label: 'CHG-' + c.id.replace(/-/g, '').slice(0, 3).toUpperCase() + ' · ' + c.title,
-              openAction: () => this.open(c.id)
-            })));
-            if (!current && changeList.length) {
-              this.open(changeList[0].id);
+            if (id !== this.workspaceId()) {
+              return;
             }
+            this.jenkins(jenkins);
+            const titles = {};
+            requirementList.forEach((r) => { titles[r.id] = r.title; });
+            requirementTitles(titles);
+            this.changes(changeList.slice().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
             requirementOptions(requirementList.filter((r) => r.status === 'APPROVED').map((r) => ({ value: r.id, label: r.title })));
-          }).catch(showError);
+            // While a change in the list is being analyzed or written, the list follows it
+            if (!this.detail() && changeList.some((c) => RUNNING.indexOf(c.status) >= 0 || c.buildStatus === 'BUILDING')) {
+              listTimer = setTimeout(loadList, LIST_POLL_MS);
+            }
+          }).catch(showError).finally(() => this.listLoading(false));
       };
 
       const show = (detail) => {
         const previous = this.detail();
         this.detail(detail);
         this.errorMessage('');
+        clearTimeout(listTimer);
         if (!previous || previous.id !== detail.id) {
           this.file(null);
           this.openTabs([]);
           this.collapsed({});
           this.editingPlan(false);
+          this.treeFilter('all');
+          this.infoOpen(false);
           const first = firstFile(detail);
           if (first) {
             this.openFile(first.path);
           }
+          window.scrollTo(0, 0);
         } else if (this.file()) {
           this.openFile(this.file().path, true);
         }
@@ -189,10 +187,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (detail.status === 'ANALYZING' || detail.status === 'GENERATING' || detail.buildStatus === 'BUILDING') {
           pollTimer = setTimeout(() => this.open(detail.id), POLL_MS);
         }
-        loadList();
       };
 
       this.open = (id) => api.get('changes/' + id).then(show).catch(showError);
+      // Back to the list, which is loaded again (the change may have moved on)
+      this.backToList = () => {
+        clearTimeout(pollTimer);
+        this.detail(null);
+        this.file(null);
+        this.infoOpen(false);
+        loadList();
+        window.scrollTo(0, 0);
+      };
       const base = () => 'changes/' + this.detail().id;
 
       this.create = () => api.post('requirements/' + this.requirementId() + '/changes')
@@ -295,12 +301,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           && ['PLAN_READY', 'GENERATED', 'DELIVERED', 'FAILED'].indexOf(d.status) >= 0;
       });
 
-      this.remove = () => ask('Delete this change?', 'The change, its plan and its generated code are deleted. This cannot be undone.', 'Delete', true).then((ok) => {
+      // Delete, from the change's menu or a row's menu in the list
+      const removeChange = (id) => ask('Delete this change?', 'The change, its plan and its generated code are deleted. This cannot be undone.', 'Delete', true).then((ok) => {
         if (!ok) {
           return;
         }
-        api.del(base()).then(() => { this.detail(null); this.file(null); loadList(); toast.success('Change deleted.'); }).catch(failed);
+        api.del('changes/' + id).then(() => {
+          if (this.detail() && this.detail().id === id) {
+            this.backToList();
+          } else {
+            loadList();
+          }
+          toast.success('Change deleted.');
+        }).catch(failed);
       });
+      this.remove = () => removeChange(this.detail().id);
 
       this.openTabs = ko.observableArray([]);
       this.openFile = (path, keepMode) => api.get(base() + '/file?path=' + encodeURIComponent(path))
@@ -327,103 +342,316 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         .then((detail) => { this.regenerateNote(''); show(detail); toast.info('The model is writing the file again.'); })
         .catch(failed);
 
-      // ---- The workbench layout ----
+      // ---- The status of a change, in the list and in its header ----
       const STATUS_PILLS = {
-        ANALYZING: pill('Analyzing', 'blue'), PLAN_READY: pill('Plan to review', 'amber'), GENERATING: pill('Writing code', 'blue'),
-        GENERATED: pill('In Development', 'green'), DELIVERED: pill('Delivered', 'green'), FAILED: pill('Failed', 'red'), CLOSED: pill('Closed', 'grey')
+        ANALYZING: pill('Planning', 'blue'), PLAN_READY: pill('Needs approval', 'amber'), GENERATING: pill('Writing code', 'blue'),
+        GENERATED: pill('Code to review', 'green'), DELIVERED: pill('Delivered', 'green'), FAILED: pill('Failed', 'red'), CLOSED: pill('Closed', 'grey')
       };
-      const code = (id) => 'CHG-' + id.replace(/-/g, '').slice(0, 3).toUpperCase();
-      this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
+      const unwrittenOf = (c) => c.files.filter((f) => f.status === 'PENDING' || f.status === 'FAILED').length;
       // A written change with planned files missing says so: it is only partly written, and is not delivered
-      this.statusPill = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d) {
-          return ui.status('', '–');
-        }
-        if (d.status === 'GENERATED' && this.unwritten().length) {
-          return ui.status('WARNING', 'Partly written');
-        }
-        return ui.status(d.status, STATUS_PILLS[d.status].text);
-      });
+      const statusOf = (c) => (c.status === 'GENERATED' && unwrittenOf(c) ? ui.status('WARNING', 'Partly written')
+        : ui.status(c.status, c.status === 'CLOSED' && c.closedReason === 'MERGED' ? 'Merged' : c.status === 'CLOSED' && c.closedReason === 'ABANDONED' ? 'Abandoned' : STATUS_PILLS[c.status].text));
+      this.changeCode = ko.pureComputed(() => (this.detail() ? code(this.detail().id) : ''));
+      this.statusPill = ko.pureComputed(() => (this.detail() ? statusOf(this.detail()) : ui.status('', '–')));
 
-      // ---- The summary at the top: counts, validation and the next action ----
-      this.workspaceInfo = ko.observable(null);
-      this.counts = ko.pureComputed(() => {
-        const files = this.detail() ? this.detail().files : [];
-        return STATE_ORDER.map((key) => {
-          const n = files.filter((f) => stateOf(f) === key).length;
-          return { key: key, label: STATES[key].label, n: n, title: STATES[key].tip,
-            css: 'factory-ch-count factory-ch-count-' + key + (n ? '' : ' factory-ch-count-zero'), pick: () => this.treeFilter(key) };
-        });
+      // ---- The list: state chips with counts, a search, compact rows ----
+      this.search = ko.observable('');
+      this.stateFilter = ko.observable('');
+      this.chips = ko.pureComputed(() => {
+        const all = this.changes();
+        const n = (v) => all.filter((c) => c.status === v).length;
+        return [{ value: '', text: 'All ' + all.length, title: 'Every change', dot: '',
+          pressed: ko.pureComputed(() => String(!this.stateFilter())), pick: () => this.stateFilter('') }]
+          .concat(CHIPS.filter((c) => n(c[0]) > 0 || this.stateFilter() === c[0]).map((c) => ({
+            value: c[0], text: c[1] + ' ' + n(c[0]), dot: c[2] ? 'factory-rq-fdot ' + c[2] : 'factory-rq-fdot',
+            title: 'Show only changes that are ' + c[1].toLowerCase(),
+            pressed: ko.pureComputed(() => String(this.stateFilter() === c[0])),
+            pick: () => this.stateFilter(this.stateFilter() === c[0] ? '' : c[0])
+          })));
       });
+      this.clearFilters = () => { this.search(''); this.stateFilter(''); };
+      this.filtered = ko.pureComputed(() => !!(this.search() || '').trim() || !!this.stateFilter());
+      // The next step of a change in the list, in a few words; it opens the change, where the step is done
+      const rowNext = (c) => {
+        if (c.status === 'ANALYZING') {
+          return { text: 'Follow the analysis', label: 'The impact analysis is running. Opens the change.' };
+        }
+        if (c.status === 'PLAN_READY') {
+          return this.canApprove() ? { text: 'Review and approve the plan', label: 'The plan waits for approval. Opens the change.' }
+            : { text: 'Waiting for approval', label: 'The plan waits for someone with the right to approve. Opens the change.' };
+        }
+        if (c.status === 'GENERATING') {
+          return { text: 'Follow the writing', label: 'The model is writing the code. Opens the change.' };
+        }
+        if (c.status === 'GENERATED') {
+          return unwrittenOf(c) ? { text: 'Finish the code', label: 'Planned files are not written yet. Opens the change.' }
+            : { text: 'Review and submit', label: 'Review the code, then submit it for review. Opens the change.' };
+        }
+        if (c.status === 'FAILED') {
+          return { text: 'Analyze again', label: 'The last step failed. Opens the change.' };
+        }
+        if (c.status === 'DELIVERED') {
+          return { text: 'Merge, then close', label: 'Delivered to an SVN branch: merge it, then close the change. Opens the change.' };
+        }
+        return null;
+      };
+      // The last Jenkins result of a change, only when it has one
+      const buildOf = (c) => {
+        if (c.buildStatus === 'BUILDING') {
+          return ui.status('RUNNING', 'Building');
+        }
+        return c.buildStatus === 'PASSED' ? ui.status('PASSED', 'Build passed') : c.buildStatus === 'FAILED' ? ui.status('FAILED', 'Build failed') : null;
+      };
+      this.rows = ko.pureComputed(() => {
+        const text = (this.search() || '').trim().toLowerCase();
+        const titles = requirementTitles();
+        const ws = workspaceName();
+        return this.changes().map((c) => Object.assign({}, c, { code: code(c.id), reqCode: reqCode(c.requirementId), requirementTitle: titles[c.requirementId] || 'Requirement' }))
+          .filter((c) => (!text || (c.code + ' ' + c.title + ' ' + c.reqCode + ' ' + c.requirementTitle).toLowerCase().indexOf(text) >= 0)
+            && (!this.stateFilter() || c.status === this.stateFilter()))
+          .map((c) => {
+            const planned = c.files.length;
+            const written = planned - unwrittenOf(c);
+            const canManage = this.canManage();
+            return {
+              id: c.id, title: c.title, code: c.code, reqCode: c.reqCode, requirementTitle: c.requirementTitle, workspace: ws,
+              status: statusOf(c),
+              files: planned ? { text: written + ' of ' + planned + ' files', title: written + ' of the ' + planned + ' planned files are written',
+                style: { width: Math.round(100 * written / planned) + '%' } } : null,
+              build: buildOf(c),
+              next: rowNext(c),
+              doneText: c.status === 'CLOSED' ? (c.closedReason === 'MERGED' ? 'Closed as merged' : 'Closed') : '',
+              when: dashboard.ago(c.updatedAt),
+              whenTitle: dashboard.when(c.updatedAt),
+              select: () => this.open(c.id),
+              menuItems: [{ value: 'open', label: 'Open' }, { value: 'impact', label: 'Open Impact Analysis', disabled: !c.plan, title: c.plan ? null : 'The change has no plan yet' },
+                { value: 'patch', label: 'Download patch', disabled: !c.files.some((f) => f.status !== 'PENDING'), title: 'Only the files written; an incomplete change asks first in the change' },
+                { separator: true }, { value: 'delete', label: 'Delete', danger: true, disabled: !canManage, title: canManage ? null : 'You need the right to manage code' }],
+              menu: (event) => {
+                const v = event.detail.value;
+                if (v === 'open') {
+                  this.open(c.id);
+                } else if (v === 'impact') {
+                  openImpactOf(c.id);
+                } else if (v === 'patch') {
+                  if (unwrittenOf(c)) {
+                    // An incomplete patch is confirmed in the change, where it says which files are left out
+                    this.open(c.id).then(() => confirmPatch());
+                  } else {
+                    window.location.href = 'api/changes/' + c.id + '/patch';
+                  }
+                } else if (v === 'delete') {
+                  removeChange(c.id);
+                }
+              }
+            };
+          });
+      });
+      this.shownText = ko.pureComputed(() => (this.filtered() ? this.rows().length + ' of ' + this.changes().length + ' shown' : ''));
+      // The page's answer first: how many changes, and how many wait for someone
+      this.lead = ko.pureComputed(() => {
+        const all = this.changes();
+        if (this.listLoading() || !all.length) {
+          return 'Code changes planned from approved requirements, from the plan to the SVN branch';
+        }
+        const n = (s) => all.filter((c) => c.status === s).length;
+        const open = all.filter((c) => c.status !== 'CLOSED').length;
+        return [plural(all.length, 'change') + (open < all.length ? ', ' + open + ' open' : ''),
+          n('PLAN_READY') ? n('PLAN_READY') + ' need' + (n('PLAN_READY') === 1 ? 's' : '') + ' approval' : '',
+          n('GENERATED') ? n('GENERATED') + ' to review' : '',
+          n('ANALYZING') + n('GENERATING') ? (n('ANALYZING') + n('GENERATING')) + ' running' : '',
+          n('FAILED') ? n('FAILED') + ' failed' : ''].filter(Boolean).join(' · ');
+      });
+      this.emptyText = ko.pureComputed(() => (requirementOptions().length
+        ? 'No changes yet. Start one from an approved requirement.'
+        : 'No changes yet. Approve a requirement first; then start a change from it here.'));
+      this.openRequirements = () => navigate('requirements');
+      this.pageMenuItems = ko.pureComputed(() => [{ value: 'refresh', label: 'Refresh the list', icon: 'refresh' }]);
+      this.pageMenu = () => { this.listLoading(true); loadList(); };
+
+      // ---- The change's header: its IDs, the one next action, the stages, the one problem ----
+      this.workspaceInfo = ko.observable(null);
       this.headerMeta = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
           return '';
         }
         const w = this.workspaceInfo();
-        return [w ? w.name + ' · OBDX ' + w.obdxVersion : workspaceName(), 'REQ-' + d.requirementId.replace(/-/g, '').slice(0, 4).toUpperCase(),
-          d.baseRevision ? 'code at r' + d.baseRevision : null, 'requested by ' + (d.createdBy || '?'),
-          d.branchUrl ? 'branch ' + d.branchUrl.split('/').slice(-2).join('/') : null].filter(Boolean).join(' · ');
+        return [code(d.id), reqCode(d.requirementId), w ? w.name + ' · OBDX ' + w.obdxVersion : workspaceName(),
+          d.baseRevision ? 'code at r' + d.baseRevision : null].filter(Boolean).join(' · ');
+      });
+      // The files by state, as chips over the tree (only states some file has); a chip filters the tree
+      this.counts = ko.pureComputed(() => {
+        const files = this.detail() ? this.detail().files : [];
+        return STATE_ORDER.map((key) => {
+          const n = files.filter((f) => stateOf(f) === key).length;
+          return { key: key, label: STATES[key].label, n: n, title: STATES[key].tip + '. Show only these files.',
+            badge: STATES[key].badge.length === 1 ? STATES[key].badge : '', badgeCss: STATES[key].badge.length === 1 ? 'factory-ch-badge factory-ch-badge-' + key : 'factory-ch-fdot factory-ch-fdot-' + key,
+            pressed: ko.pureComputed(() => String(this.treeFilter() === key)),
+            css: 'factory-ch-fstate factory-ch-fstate-' + key, pick: () => this.treeFilter(this.treeFilter() === key ? 'all' : key) };
+        }).filter((c) => c.n > 0);
       });
       // Partial generation: what is written, what the limit cut off, what is not written, and that delivery leaves them out
-      this.partial = ko.pureComputed(() => {
-        const d = this.detail();
-        if (!d || d.status !== 'GENERATED' || !this.unwritten().length) {
-          return null;
-        }
+      const partialText = (d) => {
         const n = (key) => d.files.filter((f) => stateOf(f) === key).length;
         const written = d.files.length - this.unwritten().length;
-        return 'Partial generation: ' + written + ' of ' + d.files.length + ' planned files are written'
+        return written + ' of ' + d.files.length + ' planned files are written'
           + (n('partial') ? '; ' + n('partial') + ' cut off by the model\'s limit (the part written is kept)' : '')
           + (n('failed') ? '; ' + n('failed') + ' failed' : '') + (n('pending') ? '; ' + n('pending') + ' not written yet' : '')
-          + '. The files written are kept. Continue generation goes on from where it stopped; delivering now leaves the others out.';
-      });
-      /** The change's last message below the summary, shortened like the Next box's; not when the Next box shows it (a failure). */
+          + '. Continue generation goes on from where it stopped; delivering now leaves the others out.';
+      };
+      /** The change's last message under the header, shortened; not when the problem bar shows it (a failure). */
       this.lastMessage = ko.pureComputed(() => {
         const d = this.detail();
         return d && d.message && !this.running() && d.status !== 'FAILED' ? ui.shortError(d.message) : null;
       });
-      /** What to do next, from the change's state; action names a function of this page and is shown only when allowed. */
+      const failedChecks = () => (this.detail() ? this.detail().files.filter((f) => f.checkStatus === 'FAILED' && f.status === 'GENERATED').length : 0);
+      const MANAGE = 'You need the right to manage code.';
+      /** The one primary action of the header, from the change's state; shown off with its reason when not allowed. */
+      this.primary = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return null;
+        }
+        const s = d.status;
+        if (s === 'PLAN_READY') {
+          return { label: 'Approve plan', icon: 'check', id: 'approvePlanHeadButton', run: this.approvePlan, allowed: this.canApprove(), why: 'Someone with the right to approve does this.' };
+        }
+        if (s === 'FAILED') {
+          return { label: 'Analyze again', icon: 'refresh', id: 'analyzeAgainButton', run: this.analyzeAgain, allowed: this.canManage(), why: MANAGE };
+        }
+        if (s === 'GENERATED' && this.unwritten().length) {
+          return { label: 'Continue generation', icon: 'refresh', id: 'continueButton', run: this.continueGeneration, allowed: this.canManage(), why: MANAGE };
+        }
+        if (s === 'GENERATED') {
+          return { label: 'Submit for review', icon: 'share', id: 'deliverButton', run: this.deliver, allowed: this.canManage() && !this.busy(), why: MANAGE };
+        }
+        if (s === 'DELIVERED') {
+          return { label: 'Close as merged', icon: 'check', id: 'closeMergedButton', run: this.closeMerged, allowed: this.canClose() && !this.busy(), why: MANAGE };
+        }
+        return null;
+      });
+      /** What comes next, in one line, when there is no problem to show. */
       this.nextAction = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
           return null;
         }
         const s = d.status;
-        const failedChecks = d.files.filter((f) => f.checkStatus === 'FAILED' && f.status === 'GENERATED').length;
         if (s === 'ANALYZING') {
           return { text: 'Wait for the impact analysis; the plan shows here when it is ready.' };
         }
         if (s === 'PLAN_READY') {
-          return { text: 'Review the plan and approve it; no code is written before.', label: 'Approve Plan', id: 'nextApprovePlan', run: this.approvePlan,
-            allowed: this.canApprove(), why: 'Someone with the right to approve does this.' };
+          return { text: 'Review the plan (Plan, or Impact Analysis for the files, risks and review) and approve it; no code is written before.' };
         }
         if (s === 'GENERATING') {
           return { text: 'The model is writing the code. The files already written stay if it stops.' };
         }
-        if (s === 'FAILED') {
-          // A model server's raw error (its JSON, the model's address, the account) as one plain line; the whole text under Details
-          const said = ui.shortError(d.message || 'The last step failed.');
-          return { text: said.text + ' Analyze again to make a new plan.', details: said.details, label: 'Analyze Again', id: 'nextAnalyze',
-            run: this.analyzeAgain, allowed: this.canManage(), why: 'You need the right to manage code.' };
-        }
-        if (s === 'GENERATED' && this.unwritten().length) {
-          return { text: 'Finish the code: Continue generation writes the files not written yet, going on from any part kept.',
-            label: 'Continue generation', id: 'nextContinue', run: this.continueGeneration, allowed: this.canManage(), why: 'You need the right to manage code.' };
-        }
-        if (s === 'GENERATED' && failedChecks) {
-          return { text: failedChecks + ' file(s) failed their quick checks: open them, then Write again or Edit, and Validate.' };
-        }
         if (s === 'GENERATED') {
-          return { text: 'Review the code, then submit it to a new SVN branch for review (you are asked first).', label: 'Submit for Review',
-            id: 'nextDeliver', run: this.deliver, allowed: this.canManage() && !this.busy(), why: 'You need the right to manage code.' };
+          return { text: 'Review the code, then submit it to a new SVN branch for review (you are asked first).' };
         }
         if (s === 'DELIVERED') {
-          return { text: 'Delivered to ' + (d.branchUrl || 'SVN') + '. Merge the branch in SVN, then Close as Merged (you are asked first).' };
+          return { text: 'Delivered to ' + (d.branchUrl || 'SVN') + '. Merge the branch in SVN, then Close as merged (you are asked first).' };
         }
-        return { text: d.closedReason === 'MERGED' ? 'Closed as merged.' : 'Closed.' };
+        if (s === 'CLOSED') {
+          return { text: d.closedReason === 'MERGED' ? 'Closed as merged.' : 'Closed without being merged.' };
+        }
+        return null;
       });
+      /** The one problem: the most important thing that is wrong, with its fix. */
+      this.problem = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return null;
+        }
+        if (d.status === 'FAILED') {
+          // A model server's raw error (its JSON, the model's address, the account) as one plain line; the whole text under Details
+          const said = ui.shortError(d.message || 'The last step failed.');
+          return { css: 'factory-rqd-problem is-error', lead: 'Failed.', detail: said.text + ' Analyze again to make a new plan.', details: said.details };
+        }
+        if (d.status === 'GENERATED' && this.unwritten().length) {
+          return { css: 'factory-rqd-problem', lead: 'Partial generation:', detail: partialText(d), fix: { label: 'Show them', run: () => this.treeFilter('unwritten') } };
+        }
+        if (d.buildStatus === 'FAILED') {
+          const n = this.lastBuild() ? (this.lastBuild().errors || []).length : 0;
+          return { css: 'factory-rqd-problem is-error', lead: 'The Jenkins build failed' + (n ? ' with ' + plural(n, 'error') : '') + '.',
+            detail: d.buildMessage ? ui.shortError(d.buildMessage).text : 'See Validation for the errors and the files they name.', fix: { label: 'Open Validation', run: () => this.tab('validation') } };
+        }
+        if (d.status === 'GENERATED' && failedChecks()) {
+          return { css: 'factory-rqd-problem', lead: plural(failedChecks(), 'file') + ' failed the quick checks:', detail: 'open them, then Write again or Edit, and run the checks again.',
+            fix: { label: 'Show them', run: () => this.treeFilter('warn') } };
+        }
+        if (d.status === 'PLAN_READY' && d.plan && d.plan.incomplete) {
+          return { css: 'factory-rqd-problem', lead: 'Files may be missing from this plan.', detail: 'The analysis did not finish it; approving asks you to confirm that.',
+            fix: { label: 'Open Impact Analysis', run: () => this.openImpact() } };
+        }
+        return null;
+      });
+      // Plan, approve, write the code, build, deliver: each with what the factory recorded for it
+      this.stepper = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const s = d.status;
+        const planned = d.files.length;
+        const written = planned - this.unwritten().length;
+        const codeDone = ['GENERATED', 'DELIVERED', 'CLOSED'].indexOf(s) >= 0 && planned > 0 && !this.unwritten().length;
+        const delivered = !!d.deliveredRevision;
+        const buildBad = d.buildStatus === 'FAILED' || (!d.buildStatus && this.checkSummary().failed > 0);
+        const steps = [
+          { name: 'Plan', state: d.plan ? 'done' : s === 'FAILED' ? 'failed' : s === 'ANALYZING' ? 'current' : 'todo',
+            sub: d.plan ? plural(d.plan.items.length, 'file') + ' planned' : s === 'FAILED' ? 'The analysis failed' : 'Analyzing',
+            go: d.plan ? () => this.tab('plan') : null, goLabel: 'Show the plan' },
+          { name: 'Approve', state: d.planApprovedAt ? 'done' : s === 'PLAN_READY' ? 'current' : 'todo',
+            sub: d.planApprovedAt ? 'By ' + (d.planApprovedBy || 'a lead') + ' · ' + dashboard.ago(d.planApprovedAt) : s === 'PLAN_READY' ? 'Waiting for approval' : 'Not yet',
+            go: d.plan ? () => this.openImpact() : null, goLabel: 'Open Impact Analysis: the files, risks and review of the plan' },
+          { name: 'Write code', state: codeDone ? 'done' : (s === 'GENERATING' || (s === 'GENERATED' && this.unwritten().length)) ? 'current' : 'todo',
+            sub: !planned || !d.planApprovedAt ? 'Not yet' : s === 'GENERATING' ? written + ' of ' + planned + ' written so far' : written + ' of ' + planned + ' files written' },
+          { name: 'Build', state: !codeDone ? 'todo' : buildBad ? 'failed' : this.validationOk() ? 'done' : s === 'GENERATED' ? 'current' : 'todo',
+            sub: !codeDone ? 'Not yet' : this.validationTitle(), go: codeDone ? () => this.tab('validation') : null, goLabel: 'Show the quick checks and builds' },
+          { name: 'Deliver', state: delivered ? 'done' : codeDone && s === 'GENERATED' && this.validationOk() ? 'current' : 'todo',
+            sub: delivered ? 'SVN r' + d.deliveredRevision + (s === 'CLOSED' ? (d.closedReason === 'MERGED' ? ' · merged' : ' · closed') : ' · merge, then close')
+              : s === 'CLOSED' ? 'Closed' : 'Not delivered' }
+        ];
+        return steps.map((st, i) => Object.assign(st, {
+          n: i + 1, go: st.go || null, goLabel: st.goLabel || '',
+          css: 'factory-rqd-step is-' + st.state, current: st.state === 'current' ? 'step' : null
+        }));
+      });
+      this.stepperLabel = ko.pureComputed(() => {
+        const at = this.stepper().find((st) => st.state === 'current' || st.state === 'failed');
+        return 'Stages: ' + (at ? at.name + ', ' + at.sub : this.stepper().every((st) => st.state === 'done') ? 'all done' : 'none started');
+      });
+
+      // ---- Change details and history (side sheet) ----
+      this.infoOpen = ko.observable(false);
+      this.openInfo = () => this.infoOpen(true);
+      this.facts = ko.pureComputed(() => {
+        const d = this.detail();
+        if (!d) {
+          return [];
+        }
+        const w = this.workspaceInfo();
+        const at = (by, value) => (by ? by + ' · ' : '') + ui.when(value);
+        return [
+          { label: 'Requirement', value: reqCode(d.requirementId) + ' · ' + (requirementTitles()[d.requirementId] || 'Requirement') },
+          { label: 'Workspace', value: w ? w.name + ' · OBDX ' + w.obdxVersion : workspaceName() },
+          { label: 'Requested', value: at(d.createdBy || '?', d.createdAt) },
+          d.baseRevision ? { label: 'Code read at', value: 'r' + d.baseRevision, mono: true } : null,
+          d.planApprovedAt ? { label: 'Plan approved', value: at(d.planApprovedBy, d.planApprovedAt) } : null,
+          d.branchUrl ? { label: 'SVN branch', value: d.branchUrl + (d.branchDeletedRevision ? ' (removed at r' + d.branchDeletedRevision + ')' : ''), mono: true } : null,
+          d.deliveredRevision ? { label: 'Delivered at', value: 'r' + d.deliveredRevision, mono: true } : null,
+          d.closedAt ? { label: 'Closed', value: (d.closedReason === 'MERGED' ? 'As merged' : 'Abandoned') + ' · ' + at(d.closedBy, d.closedAt) } : null,
+          { label: 'Last update', value: ui.when(d.updatedAt) }
+        ].filter(Boolean);
+      });
+      this.openRequirement = () => {
+        if (this.detail()) {
+          pageRequests.requirement(this.detail().requirementId);
+        }
+        navigate('requirements');
+      };
 
       // ---- The selected file's details: requirement, reason, generation, validation ----
       this.fileDetail = ko.pureComputed(() => {
@@ -503,32 +731,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           value: written, max: planned, label: 'Files written', style: { width: Math.round(100 * written / planned) + '%' }, note: note
         };
       });
-      // The header menus: switch to another change, start one from an approved requirement, more actions
-      this.changeMenu = ko.pureComputed(() => (this.changes().length
-        ? this.changes().map((c) => ({ value: c.id, label: c.label, icon: c.selected ? 'check' : '' }))
-        : [{ value: '', label: 'No changes yet', disabled: true }]));
-      this.pickChange = (event) => { if (event.detail.value) { this.open(event.detail.value); } };
-      this.choosingRequirement = ko.observable(false);
-      this.cancelChoose = () => this.choosingRequirement(false);
-      this.requirementChoices = ko.pureComputed(() => requirementOptions().map((r) => Object.assign({}, r, {
-        start: () => { this.choosingRequirement(false); this.requirementId(r.value); this.create(); }
-      })));
+      // New change: from an approved requirement (the list's New change menu)
+      this.requirementChoices = requirementOptions;
       this.requirementMenu = ko.pureComputed(() => (requirementOptions().length
         ? requirementOptions().map((r) => ({ value: r.value, label: r.label }))
         : [{ value: '', label: 'No approved requirements yet', disabled: true }]));
       this.startFrom = (event) => { if (event.detail.value) { this.requirementId(event.detail.value); this.create(); } };
-      this.saveDraftTitle = ko.pureComputed(() => (this.fileMode() === 'edit' ? 'Save your edit of the open file'
-        : 'Nothing to save: generated code is saved as it is written. Use Edit on a file to change it, then Save Draft.'));
-      this.requirementTitle = ko.observable('');
 
-      // The side panel: the selected file, validation, the plan, the assistant and the history, one row of tabs
+      // The side panel: the selected file, validation, the plan and the assistant, one row of tabs (the history is in
+      // the change details sheet)
       this.tab = ko.observable('file');
       this.tabs = ui.tabs(this.tab, [
         { value: 'file', label: 'File' },
         { value: 'validation', label: 'Validation' },
         { value: 'plan', label: 'Plan' },
-        { value: 'assistant', label: 'Assistant' },
-        { value: 'history', label: 'History' }
+        { value: 'assistant', label: 'Assistant' }
       ]);
       this.tabKey = (event) => {
         const keys = this.tabs.map((t) => t.value);
@@ -580,7 +797,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const text = this.fileFilter().trim().toLowerCase();
         const filter = this.treeFilter();
         return d.files.filter((f) => (!text || f.path.toLowerCase().indexOf(text) >= 0)
-          && (filter === 'all' || (filter === 'warn' ? (f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED') : stateOf(f) === filter)));
+          && (filter === 'all' || (filter === 'warn' ? (f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED')
+            : filter === 'unwritten' ? (f.status === 'PENDING' || f.status === 'FAILED') : stateOf(f) === filter)));
       };
       /** Files in the order the tree shows them. */
       const orderedFiles = (node) => Object.keys(node.folders).sort().reduce((list, key) => list.concat(orderedFiles(node.folders[key])), [])
@@ -642,7 +860,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       const TREE_FILTERS = [{ value: 'all', label: 'All files' }]
         .concat(STATE_ORDER.map((key) => ({ value: key, label: STATES[key].label + (STATES[key].badge.length === 1 ? ' (' + STATES[key].badge + ')' : '') })))
-        .concat([{ value: 'warn', label: 'With check warnings or failures' }]);
+        .concat([{ value: 'unwritten', label: 'Not written yet, cut off or failed' }, { value: 'warn', label: 'With check warnings or failures' }]);
       /**
        * Keys in the file tree: up and down move between rows, Home and End to the ends, right opens a folder and left
        * closes it, Enter or Space opens the file or folder.
@@ -681,7 +899,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         event.preventDefault();
         return false;
       };
-      this.treeFilterItems = ko.pureComputed(() => TREE_FILTERS.map((f) => ({ value: f.value, label: f.label, icon: this.treeFilter() === f.value ? 'check' : '' }))
+      // (each state is a chip over the tree; the menu has the other filters and the folders)
+      this.treeFilterItems = ko.pureComputed(() => TREE_FILTERS.filter((f) => STATE_ORDER.indexOf(f.value) < 0)
+        .map((f) => ({ value: f.value, label: f.label, icon: this.treeFilter() === f.value ? 'check' : '' }))
         .concat([{ separator: true }, { value: 'expand', label: 'Expand all folders' }, { value: 'collapse', label: 'Collapse all folders' }]));
       this.treeFilterLabel = ko.pureComputed(() => (this.treeFilter() === 'all' ? 'Filter files'
         : 'Filter files: ' + TREE_FILTERS.find((f) => f.value === this.treeFilter()).label));
@@ -813,27 +1033,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }
       };
       this.closeFile = () => (this.file() ? this.closeTab(this.file().path) : null);
-      this.proposed = ko.pureComputed(() => (this.detail() ? this.detail().files : []).filter((f) => f.status === 'GENERATED').map((f) => ({
-        name: f.path.split('/').pop(), path: f.path, added: '+' + f.linesAdded, removed: f.linesRemoved ? '-' + f.linesRemoved : '0',
-        badge: f.action === 'create' ? 'A' : 'M', badgeCss: 'factory-ch-badge factory-ch-badge-' + (f.action === 'create' ? 'a' : 'm'),
-        open: () => this.openFile(f.path)
-      })));
-      this.viewDiff = () => {
-        const target = this.file() || (this.proposed()[0] ? { path: this.proposed()[0].path } : null);
-        if (target) {
-          this.fileMode('diff');
-          if (!this.file() || this.file().path !== target.path) {
-            this.openFile(target.path);
-          }
-        }
-      };
-      // Review notes: the quick checks' warnings and failures
-      this.reviewNotes = ko.pureComputed(() => (this.detail() ? this.detail().files : [])
-        .filter((f) => f.checkStatus === 'WARNING' || f.checkStatus === 'FAILED').map((f) => ({
-          path: f.path, name: f.path.split('/').pop(), message: f.checkMessage || 'No message', level: f.checkStatus === 'FAILED' ? 'Failed' : 'Warning',
-          dot: 'factory-step-dot ' + (f.checkStatus === 'FAILED' ? 'factory-dot-red' : 'factory-dot-amber'),
-          openAction: () => this.openFile(f.path)
-        })));
       this.totals = ko.pureComputed(() => {
         const files = this.detail() ? this.detail().files : [];
         return {
@@ -863,38 +1062,19 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return 'Build running';
         }
         if (d.buildStatus === 'PASSED') {
-          return 'Build Successful';
+          return 'Build passed';
         }
         if (d.buildStatus === 'FAILED') {
-          return 'Build Failed';
+          return 'Build failed';
         }
         const s = this.checkSummary();
         return s.failed ? 'Quick checks failed' : (s.passed ? 'Quick checks passed' : 'Not validated yet');
       });
-      this.validationOk = ko.pureComputed(() => this.validationTitle() === 'Build Successful' || this.validationTitle() === 'Quick checks passed');
+      this.validationOk = ko.pureComputed(() => this.validationTitle() === 'Build passed' || this.validationTitle() === 'Quick checks passed');
       this.validationNote = ko.pureComputed(() => {
         const b = this.lastBuild();
         return b ? (b.job + (b.buildNumber ? ' #' + b.buildNumber : '') + ' · ' + (b.result || '') + ' · ' + ui.when(b.finishedAt || b.startedAt)) : 'Run quick checks, or build with Jenkins once it is set up.';
       });
-      this.validationStages = ko.pureComputed(() => {
-        const s = this.checkSummary();
-        const b = this.lastBuild();
-        const stage = (name, state, detail) => ({
-          name: name, detail: detail, css: 'factory-step-dot factory-dot-' + ({ ok: 'green', bad: 'red', warn: 'amber', run: 'blue' }[state] || 'grey'),
-          icon: 'factory-nav-icon factory-ico-' + (state === 'ok' ? 'check' : state === 'bad' ? 'x' : state === 'warn' ? 'alert' : 'clock')
-        });
-        return [
-          stage('OBDX Quick Checks', s.failed ? 'bad' : s.warning ? 'warn' : s.passed ? 'ok' : 'none', s.passed + ' passed, ' + s.failed + ' failed, ' + s.warning + ' warnings'),
-          stage('Jenkins Build', !b ? 'none' : b.result === 'SUCCESS' ? 'ok' : (b.result === 'RUNNING' || b.result === 'QUEUED') ? 'run' : 'bad',
-            b ? (b.result || '') + (b.finishedAt ? ' · ' + Math.max(1, Math.round((new Date(b.finishedAt) - new Date(b.startedAt)) / 1000)) + 's' : '') : 'Not run'),
-          stage('Fix Rounds', !b ? 'none' : 'ok', (this.detail() ? this.detail().builds.length : 0) + ' rounds')
-        ];
-      });
-      this.bottom = ko.observable('build');
-      this.bottomTabs = ui.tabs(this.bottom, [
-        { value: 'build', label: 'Build & Test' }, { value: 'static', label: 'Static Analysis' }, { value: 'checks', label: 'Quick Checks' },
-        { value: 'tests', label: 'Test Results' }, { value: 'builds', label: 'Build History' }
-      ]);
       // What the last Jenkins build reported, split into test failures and the rest
       const lastErrors = () => (this.lastBuild() ? this.lastBuild().errors || [] : []);
       const isTest = (e) => /test|junit|assert|expected/i.test(e);
@@ -910,14 +1090,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       const seconds = (b) => (b && b.finishedAt && b.startedAt ? Math.max(1, Math.round((new Date(b.finishedAt) - new Date(b.startedAt)) / 1000)) : null);
       const duration = (n) => (n === null ? '' : n >= 60 ? Math.floor(n / 60) + 'm ' + (n % 60) + 's' : n + 's');
-      // The build pipeline as five stages; Jenkins reports one result and one duration for the whole build
+      // The last build as three stages (shown only once there is a build); Jenkins reports one result and one duration
+      // for the whole build, and no integration tests or static analysis of their own, so those are not shown
       this.pipeline = ko.pureComputed(() => {
         const s = this.checkSummary();
         const b = this.lastBuild();
         const running = b && (b.result === 'RUNNING' || b.result === 'QUEUED' || this.detail().buildStatus === 'BUILDING');
         const ok = b && b.result === 'SUCCESS';
         const total = duration(seconds(b));
-        const jenkinsState = !b ? 'none' : running ? 'run' : ok ? 'ok' : 'bad';
         const stage = (name, state, time, title) => ({
           name: name, time: time, title: title,
           css: 'factory-ch-pipe factory-ch-pipe-' + state,
@@ -927,12 +1107,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return [
           stage('Compile', !b ? 'none' : running ? 'run' : this.buildErrors().length ? 'bad' : ok ? 'ok' : 'bad', b ? (total || 'Running') : 'Not run',
             b ? 'The whole Jenkins build took ' + (total || 'not finished yet') + '; Jenkins does not time each stage.' : notRun),
-          stage('Unit Tests', !b ? 'none' : running ? 'run' : this.testErrors().length ? 'bad' : ok ? 'ok' : 'none', b ? 'In the build' : 'Not run',
-            b ? 'Part of the Jenkins build; it has no separate duration.' : notRun),
-          stage('Integration Tests', !b ? 'none' : jenkinsState === 'ok' ? 'ok' : 'none', b ? 'In the build' : 'Not run',
-            b ? 'Part of the Jenkins build, if its job runs them.' : notRun),
-          stage('Static Analysis', 'none', b ? 'Not reported' : 'Not run', 'The Jenkins builds of this workspace do not publish static analysis separately.'),
-          stage('OBDX Checks', s.failed ? 'bad' : s.warning ? 'warn' : s.passed ? 'ok' : 'none', s.passed + ' passed · ' + s.warning + ' warn',
+          stage('Unit tests', !b ? 'none' : running ? 'run' : this.testErrors().length ? 'bad' : ok ? 'ok' : 'none', b ? 'In the build' : 'Not run',
+            b ? 'Part of the Jenkins build; it has no separate duration. Integration tests and static analysis are not reported separately.' : notRun),
+          stage('OBDX checks', s.failed ? 'bad' : s.warning ? 'warn' : s.passed ? 'ok' : 'none', s.passed + ' passed · ' + s.warning + ' warn',
             'Quick checks of each file: ' + s.passed + ' passed, ' + s.warning + ' warnings, ' + s.failed + ' failed. They take no measurable time.')
         ];
       });
@@ -966,19 +1143,33 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return items.sort((a, b) => new Date(a.at) - new Date(b.at)).map((i) => Object.assign(i, { when: ui.when(i.at) }));
       });
       this.patchUrl = ko.pureComputed(() => (this.detail() ? 'api/changes/' + this.detail().id + '/patch' : '#'));
-      this.openImpact = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'impact' }));
-      this.openBuild = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'build' }));
-      this.moreItems = ko.pureComputed(() => [
-        { value: 'analyze', label: 'Analyze again', icon: 'refresh', disabled: !this.canManage() },
-        { value: 'newchange', label: 'New change from a requirement…', icon: 'plus', disabled: !this.canManage() || this.requirementChoices().length === 0 },
-        { value: 'patch', label: 'Download patch', icon: 'doc' },
-        { value: 'impact', label: 'Open Impact Analysis', icon: 'branch' },
-        { value: 'build', label: 'Open Build, Test & Review', icon: 'flask' },
-        { separator: true },
-        { value: 'close', label: 'Close as merged', icon: 'check', disabled: !this.canClose() },
-        { value: 'abandon', label: 'Abandon', icon: 'x', disabled: !this.canClose() },
-        { value: 'remove', label: 'Delete', icon: 'trash', danger: true, disabled: !this.canManage() }
-      ]);
+      // Impact Analysis and Build, Test & Review open on this change
+      const openImpactOf = (id) => { pageRequests.change(id); navigate('impact'); };
+      this.openImpact = () => openImpactOf(this.detail().id);
+      this.openBuild = () => { pageRequests.change(this.detail().id); navigate('build'); };
+      // The change's menu: everything that is not the one primary action, each where the server takes it
+      this.moreItems = ko.pureComputed(() => {
+        const d = this.detail();
+        const s = d ? d.status : '';
+        const primary = this.primary() ? this.primary().id : '';
+        return [
+          { value: 'check', label: 'Run quick checks again', icon: 'check', disabled: !this.hasCode() || !this.canManage() },
+          primary !== 'continueButton' && s === 'GENERATED' && this.unwritten().length ? { value: 'continue', label: 'Continue generation', icon: 'refresh', disabled: !this.canManage() } : null,
+          primary !== 'deliverButton' && s === 'GENERATED' ? { value: 'deliver', label: 'Submit for review…', icon: 'share', id: 'deliverMenuItem', disabled: !this.canManage() || this.busy(),
+            title: this.unwritten().length ? 'Planned files are not written: you are asked first' : null } : null,
+          primary !== 'analyzeAgainButton' ? { value: 'analyze', label: 'Analyze again', icon: 'refresh', disabled: !this.canManage() || ['PLAN_READY', 'FAILED'].indexOf(s) < 0,
+            title: ['PLAN_READY', 'FAILED'].indexOf(s) < 0 ? 'Only a plan that is not approved yet can be analyzed again' : null } : null,
+          { value: 'patch', label: 'Download patch', icon: 'download', disabled: !this.hasCode() },
+          { separator: true },
+          { value: 'impact', label: 'Open Impact Analysis', icon: 'branch', disabled: !(d && d.plan) },
+          { value: 'build', label: 'Open Build, Test & Review', icon: 'flask' },
+          { value: 'info', label: 'Change details and history', icon: 'clock' },
+          { separator: true },
+          primary !== 'closeMergedButton' ? { value: 'close', label: 'Close as merged', icon: 'check', disabled: !this.canClose() } : null,
+          { value: 'abandon', label: 'Abandon', icon: 'x', disabled: !this.canClose() },
+          { value: 'remove', label: 'Delete', icon: 'trash', danger: true, disabled: !this.canManage() }
+        ].filter(Boolean);
+      });
       this.moreAction = (event) => {
         const action = event.detail.value;
         if (action === 'patch') {
@@ -989,18 +1180,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           }
           return;
         }
-        if (action === 'newchange') {
-          this.choosingRequirement(true);
-          return;
-        }
-        ({ analyze: this.analyzeAgain, close: this.closeMerged, abandon: this.abandon, remove: this.remove, impact: this.openImpact, build: this.openBuild })[action]();
+        ({ check: this.checkAgain, continue: this.continueGeneration, deliver: this.deliver, analyze: this.analyzeAgain, close: this.closeMerged,
+          abandon: this.abandon, remove: this.remove, impact: this.openImpact, build: this.openBuild, info: this.openInfo })[action]();
       };
       this.aiTab = ko.observable('chat');
-      this.aiTabs = ui.tabs(this.aiTab, [
-        { value: 'chat', label: 'Chat' },
-        { value: 'suggested', label: 'Suggested Changes', count: ko.pureComputed(() => this.planRows().length) },
-        { value: 'analysis', label: 'Code Analysis' }
-      ]);
       this.analyseFile = () => {
         if (this.file()) {
           this.tab('assistant');
@@ -1047,16 +1230,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             api.get('workspaces/' + this.workspaceId()).then((w) => this.workspaceInfo(w)).catch(() => null);
           }
         };
-        subscription = this.workspaceId.subscribe(() => { this.detail(null); this.file(null); loadWorkspace(); loadList(); });
+        subscription = this.workspaceId.subscribe(() => {
+          clearTimeout(pollTimer);
+          this.detail(null);
+          this.file(null);
+          this.infoOpen(false);
+          this.clearFilters();
+          this.listLoading(true);
+          loadWorkspace();
+          loadList();
+        });
         loadWorkspace();
-        // A change asked for from another page (the command palette)
-        workspaceSelection.load().then(loadList).then(() => {
-          const wanted = pageRequests.change();
-          if (wanted) { pageRequests.change(null); this.open(wanted); }
+        // A change asked for from another page (Home, Requirements, the command palette) opens; else the list shows
+        const wanted = pageRequests.change();
+        pageRequests.change(null);
+        workspaceSelection.load().then(() => {
+          if (wanted) {
+            this.open(wanted);
+          }
+          return loadList();
         }).catch(showError);
       };
       this.disconnected = () => {
         clearTimeout(pollTimer);
+        clearTimeout(listTimer);
         if (subscription) {
           subscription.dispose();
         }

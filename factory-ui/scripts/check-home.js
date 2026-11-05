@@ -60,7 +60,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   })));
   const opened = () => run(() => {
     const page = new URLSearchParams(location.search).get('ojr');
-    const title = document.querySelector('.factory-ch-title') || document.querySelector('.factory-rq-name') || document.querySelector('.factory-page h1');
+    const title = document.getElementById('changeTitle') || document.querySelector('.factory-rq-name') || document.querySelector('.factory-page h1');
     return { page: page, title: title ? title.textContent.trim() : '' };
   });
   const waitOpened = async (title) => {

@@ -1,10 +1,12 @@
 /*
  * Impact Analysis page: the plan of a change, for the developer who approves it before any code is generated. First
- * the change, its plan's status and what approval unblocks; then one row of tabs: the affected files with scope
- * filters, the dependency view (focus on a file, hide layers), the risks the analysis found, the plan's revisions to
- * compare, the review (comments, a request for changes, the approval) and the requirement. Everything comes from the
- * change's plan, its recorded revisions and comments, and its requirement's specification; the lines in the dependency
- * view are inferred from the layers, not read from the code.
+ * one header (the change, its IDs, the plan's status, the one next action) and one line for what approval unblocks or
+ * the one problem; then the answer in four cards: how big the change is (files, by layer, create or modify), which
+ * modules it touches, its risks and its tests. Three tabs follow: the planned files (a compact list with filters, or
+ * the same files by layer: focus on a file, hide layers), the risks and tests, and the review (comments, a request for
+ * changes, the approval, the history and the plan's revisions to compare). The requirement is in a side panel.
+ * Everything comes from the change's plan, its recorded revisions and comments, and its requirement's specification;
+ * the lines in the layer view are inferred from the layers, not read from the code.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
         '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
@@ -160,18 +162,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return null;
         }
         const latest = this.latestRevision();
-        return {
+        const s = {
           title: d.title,
           code: code('CHG', d.id, 3),
           status: ui.status(d.status, STATUS_WORDS[d.status]),
           message: d.message || '',
-          description: d.plan ? d.plan.summary : (d.status === 'FAILED' ? 'The impact analysis failed.' : 'The impact analysis is running.'),
+          description: d.plan ? d.plan.summary : (d.status === 'FAILED' ? 'The impact analysis failed, so there is no plan yet.' : 'The impact analysis is running; the plan shows here when it is ready.'),
           version: this.workspace() ? 'OBDX ' + this.workspace().obdxVersion : '',
-          requirement: (this.requirement() ? this.requirement().title : '') ,
+          requirement: (this.requirement() ? this.requirement().title : ''),
           reqCode: code('REQ', d.requirementId, 4),
           revision: latest ? 'Revision ' + latest.revision + ' · ' + (latest.origin === 'EDITED' ? 'edited' : 'from the impact analysis')
             + (latest.createdBy && latest.origin === 'EDITED' ? ' by ' + latest.createdBy : '') + ' · ' + ui.when(latest.createdAt) : ''
         };
+        // The mono line under the title: the change, its requirement, the version and the plan's revision
+        s.ids = [s.code, s.reqCode + (s.requirement ? ' ' + s.requirement : ''), s.version, s.revision].filter(Boolean).join(' · ');
+        return s;
       });
       this.counts = ko.pureComputed(() => [
         { label: 'files', value: items().length },
@@ -180,29 +185,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         { label: 'tests', value: count((i) => i.layer === 'test') },
         { label: 'risks', value: this.risks().length }
       ]);
-      // The approval gate: what is blocked, who can unblock it, and what happened
+      // The approval gate, as one line: the one problem (an open request for changes, a failure, a plan that may miss
+      // files, or code generation blocked until approval) with its fix, or else what happened
       this.gate = ko.pureComputed(() => {
         const d = this.detail();
         if (!d) {
           return null;
         }
+        const problem = (lead, text, error, fix, details) => ({ problem: true, css: 'factory-rqd-problem' + (error ? ' is-error' : ''), lead: lead, text: text, fix: fix || null, details: details || '' });
+        const line = (icon, text, tone) => ({ problem: false, css: 'factory-rqd-next factory-im-gate' + (tone ? ' is-' + tone : ''), icon: icon, text: text });
+        const request = this.openRequest();
+        if (request) {
+          return problem('Changes requested by ' + request.author + ' (' + request.when + '):', request.text, true,
+            this.canEditPlan() ? { label: 'Edit description', run: () => this.toggleEdit() } : null);
+        }
         if (d.planApprovedAt) {
-          return { css: 'fx-alert fx-alert--success factory-im-gate', icon: 'check',
-            text: 'Plan approved by ' + (d.planApprovedBy || 'a lead') + ' ' + ui.when(d.planApprovedAt) + '. Code generation could start.' };
+          return line('check', 'Plan approved by ' + (d.planApprovedBy || 'a lead') + ' ' + ui.when(d.planApprovedAt) + '. Code generation could start.', 'success');
+        }
+        if (d.status === 'PLAN_READY' && this.planIncomplete()) {
+          return problem('Files may be missing from this plan.', 'The analysis did not finish it; approving asks you to confirm that, or analyze again'
+            + (this.planResumable() ? ' to plan the files left out.' : '.'), false, this.canAnalyze() ? { label: 'Analyze again', run: () => this.analyzeAgain() } : null);
         }
         if (d.status === 'PLAN_READY') {
-          return { css: 'fx-alert fx-alert--warning factory-im-gate', icon: 'alert',
-            text: 'Code generation is blocked until the plan is approved by someone with the right to approve.' };
+          return problem('Code generation is blocked', 'until the plan is approved by someone with the right to approve.', false);
         }
         if (d.status === 'ANALYZING') {
-          return { css: 'fx-alert fx-alert--info factory-im-gate', icon: 'clock', text: 'The impact analysis is running. The plan shows here when it is ready.' };
+          return line('clock', 'The impact analysis is running. The plan shows here when it is ready.');
         }
         // A model server's raw error (its JSON, the model's address, the account) as one plain line; the whole text under Details
         const said = ui.shortError(d.message || (d.status === 'FAILED' ? 'The impact analysis failed.' : ''));
         if (d.status === 'FAILED') {
-          return { css: 'fx-alert fx-alert--danger factory-im-gate', icon: 'alert', text: said.text + ' Analyze again to make a plan.', details: said.details };
+          return problem('Failed.', said.text + ' Analyze again to make a plan.', true, null, said.details);
         }
-        return { css: 'fx-alert fx-alert--info factory-im-gate', icon: 'info', text: said.text, details: said.details };
+        return line('info', said.text || 'The plan of this change.');
       });
 
       // Editing the plan's description; only possible while the plan waits for approval
@@ -227,15 +242,52 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       // --- tabs ---
 
+      // Three tabs: the files (list or by layer), the risks and tests, the review (with the history and revisions)
       this.tab = ko.observable('files');
-      this.tabs = ui.tabs(this.tab, [
-        { value: 'files', label: 'Affected Files', icon: 'doc', count: ko.pureComputed(() => items().length) },
-        { value: 'graph', label: 'Dependencies', icon: 'plug' },
-        { value: 'risks', label: 'Risks', icon: 'alert', count: ko.pureComputed(() => this.risks().length) },
-        { value: 'revisions', label: 'Revisions', icon: 'clock', count: ko.pureComputed(() => this.review().revisions.length) },
-        { value: 'review', label: 'Review', icon: 'check', count: ko.pureComputed(() => this.review().comments.length) },
-        { value: 'requirement', label: 'Requirement', icon: 'list' }
-      ]);
+      this.tabs = [
+        { value: 'files', label: 'Files', n: ko.pureComputed(() => items().length) },
+        { value: 'risks', label: 'Risks and tests', n: ko.pureComputed(() => this.risks().length) },
+        { value: 'review', label: 'Review', n: ko.pureComputed(() => this.review().comments.length + this.review().revisions.length) }
+      ].map((t) => Object.assign(t, { selected: ko.pureComputed(() => this.tab() === t.value), pick: () => this.tab(t.value) }));
+      this.showRisks = () => this.tab('risks');
+
+      // --- the answer first: size, modules, risks, tests ---
+
+      this.size = ko.pureComputed(() => {
+        const n = items().length;
+        const create = count((i) => i.action === 'create');
+        const modify = count((i) => i.action === 'modify');
+        const layers = LAYERS.filter((l) => count((i) => i.layer === l.key) > 0).map((l) => count((i) => i.layer === l.key) + ' ' + l.label.toLowerCase());
+        return { files: n, filesWord: n === 1 ? 'file' : 'files', sub: create + ' to create · ' + modify + ' to modify' + (layers.length ? ' · ' + layers.join(', ') : '') };
+      });
+      // The files by layer as one bar (each layer its share of the files)
+      this.layerBar = ko.pureComputed(() => {
+        const n = Math.max(1, items().length);
+        return LAYERS.concat(items().some((i) => !LAYERS.find((l) => l.key === i.layer)) ? [layerOf('other')] : [])
+          .map((l) => ({ l: l, n: l.key === 'other' ? count((i) => !LAYERS.find((x) => x.key === i.layer)) : count((i) => i.layer === l.key) }))
+          .filter((x) => x.n > 0).map((x) => ({ style: { width: (100 * x.n / n) + '%', background: x.l.color }, title: x.l.label + ': ' + x.n }));
+      });
+      this.modules = ko.pureComputed(() => {
+        const seen = {};
+        items().forEach((i) => { const m = moduleOf(i.path); seen[m] = (seen[m] || 0) + 1; });
+        return Object.keys(seen).map((m) => ({ name: m, n: seen[m] })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+      });
+      // The modules with the most planned files; one shows only its files in the list
+      this.topModules = ko.pureComputed(() => this.modules().slice(0, 4).map((m) => Object.assign({}, m, {
+        label: m.name + ': ' + m.n + (m.n === 1 ? ' planned file' : ' planned files') + '. Show only these files.',
+        pick: () => { this.moduleFilter(m.name); this.view('list'); this.tab('files'); }
+      })));
+      this.riskCard = ko.pureComputed(() => {
+        const groups = this.riskGroups();
+        const named = riskyPaths().length;
+        return {
+          css: 'fx-card factory-im-card' + (this.planIncomplete() ? ' is-danger' : this.risks().length ? ' is-warning' : ' is-ok'),
+          kinds: groups.slice(0, 2).map((g) => g.title + (g.risks.length > 1 ? ' (' + g.risks.length + ')' : '')),
+          sub: this.planIncomplete() ? 'Files may be missing from the plan.' : !this.risks().length ? 'The analysis found no risks.'
+            : (named ? named + (named === 1 ? ' planned file is' : ' planned files are') + ' named in a risk.' : 'No planned file is named in a risk.')
+              + (groups.length > 2 ? ' ' + (groups.length - 2) + ' more kinds.' : '')
+        };
+      });
       // Arrow keys, Home and End move between the tabs
       this.tabKey = (event) => {
         const keys = this.tabs.map((t) => t.value);
@@ -261,43 +313,38 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.actionFilter = ko.observable('');
       this.moduleFilter = ko.observable('');
       this.riskOnly = ko.observable(false);
-      this.fileSearchInput = ui.value(this.fileSearch);
-      this.actionChange = ui.value(this.actionFilter);
-      this.moduleChange = ui.value(this.moduleFilter);
-      this.riskOnlyChange = ui.checked(this.riskOnly);
+      this.toggleRiskOnly = () => this.riskOnly(!this.riskOnly());
       this.moduleOptions = ko.pureComputed(() => Array.from(new Set(items().map((i) => moduleOf(i.path)))).sort());
-      // One chip per layer the plan touches, with its count; a chip filters the table and the dependency view's focus
+      this.actionOptions = ko.pureComputed(() => [{ value: '', label: 'All operations' },
+        { value: 'create', label: 'Create (' + count((i) => i.action === 'create') + ')' }, { value: 'modify', label: 'Modify (' + count((i) => i.action === 'modify') + ')' }]);
+      this.moduleSelect = ko.pureComputed(() => [{ value: '', label: 'All modules' }]
+        .concat(this.modules().map((m) => ({ value: m.name, label: m.name + ' (' + m.n + ')' }))));
+      // One chip per layer the plan touches, with its count; a chip filters the list
       this.scopeChips = ko.pureComputed(() => [{ key: '', label: 'All', n: items().length }]
         .concat(LAYERS.map((l) => ({ key: l.key, label: l.label, n: count((i) => i.layer === l.key) })).filter((c) => c.n))
         .map((c) => ({
           label: c.label + ' ' + c.n,
           pressed: this.layerFilter() === c.key ? 'true' : 'false',
-          css: 'factory-im-scopechip' + (this.layerFilter() === c.key ? ' factory-im-scopechip-on' : ''),
           dot: c.key ? { background: layerOf(c.key).color } : { display: 'none' },
-          pick: () => this.layerFilter(c.key)
+          pick: () => { this.layerFilter(c.key); this.view('list'); }
         })));
       // Files a risk of the analysis names, by their path or file name
       const riskyPaths = ko.pureComputed(() => {
         const risks = this.risks().join('\n');
         return items().filter((i) => risks.indexOf(i.path) >= 0 || risks.indexOf(fileName(i.path)) >= 0).map((i) => i.path);
       });
-      this.filtersOn = ko.pureComputed(() => !!(this.fileSearch() || this.layerFilter() || this.actionFilter() || this.moduleFilter() || this.riskOnly()));
+      this.riskyCount = ko.pureComputed(() => riskyPaths().length);
+      this.filtersOn = ko.pureComputed(() => !!((this.fileSearch() || '').trim() || this.layerFilter() || this.actionFilter() || this.moduleFilter() || this.riskOnly()));
       this.clearFilters = () => {
-        ['impactFileSearch', 'impactAction', 'impactModule'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.value = '';
-          }
-        });
-        const risky = document.getElementById('impactRiskOnly');
-        if (risky) {
-          risky.checked = false;
-        }
         [this.fileSearch, this.layerFilter, this.actionFilter, this.moduleFilter].forEach((o) => o(''));
         this.riskOnly(false);
       };
+      // The list, or the same files by layer
+      this.view = ko.observable('list');
+      this.showList = () => this.view('list');
+      this.showGraph = () => { this.view('graph'); setTimeout(measureGraph, 60); };
       this.files = ko.pureComputed(() => {
-        const text = this.fileSearch().trim().toLowerCase();
+        const text = (this.fileSearch() || '').trim().toLowerCase();
         const reqCode = this.detail() ? code('REQ', this.detail().requirementId, 4) : '';
         const risky = riskyPaths();
         return items().filter((i) => (!text || (i.path + ' ' + (i.purpose || '')).toLowerCase().indexOf(text) >= 0)
@@ -307,7 +354,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const follows = (i.basedOn || []).map(fileName);
           return {
             path: i.path,
-            pathWrap: i.path.replace(/\//g, '/​'),
+            css: 'factory-im-frow' + (risky.indexOf(i.path) >= 0 ? ' is-risk' : ''),
+            folder: i.path.indexOf('/') >= 0 ? i.path.slice(0, i.path.lastIndexOf('/') + 1).replace(/\//g, '/​') : '(top folder)',
             name: fileName(i.path),
             module: moduleOf(i.path),
             layer: layerOf(i.layer).label,
@@ -595,10 +643,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         });
       };
       this.analyzeAgain = () => api.post(base() + '/analyze').then((d) => { this.detail(d); this.errorMessage(''); toast.info('Impact analysis started again.'); }).catch(failed);
-      this.openWorkbench = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      // Changes opens on this change
+      this.openWorkbench = () => {
+        if (this.detail()) {
+          pageRequests.change(this.detail().id);
+        }
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'changes' }));
+      };
+      // The header's menu: what is not the one primary action
+      this.menuItems = ko.pureComputed(() => [
+        { value: 'request', label: 'Request changes…', icon: 'edit', disabled: !this.canRequestChanges(), title: this.canRequestChanges() ? null : this.requestTip() },
+        { value: 'edit', label: this.editing() ? 'Cancel editing the description' : 'Edit the description', icon: 'edit', disabled: !this.canEditPlan(), title: this.canEditPlan() ? null : this.editTitle() },
+        this.detail() && this.detail().status === 'FAILED' ? null
+          : { value: 'analyze', label: 'Analyze again', icon: 'refresh', id: 'analyzeAgainMenuItem', disabled: !this.canAnalyze(), title: this.analyzeTip() },
+        { separator: true },
+        { value: 'changes', label: 'Open in Changes', icon: 'branch' },
+        { value: 'requirement', label: 'The requirement', icon: 'list' }
+      ].filter(Boolean));
+      this.menuAction = (event) => {
+        const v = event.detail.value;
+        ({ request: this.goRequestChanges, edit: this.toggleEdit, analyze: this.analyzeAgain, changes: this.openWorkbench, requirement: this.openRequirement })[v]();
+      };
 
-      // --- the requirement ---
+      // --- the requirement (side panel) ---
 
+      this.requirementOpen = ko.observable(false);
+      this.openRequirement = () => this.requirementOpen(true);
+      this.goRequirement = () => {
+        if (this.detail()) {
+          pageRequests.requirement(this.detail().requirementId);
+        }
+        this.requirementOpen(false);
+        window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'requirements' }));
+      };
       this.reqCode = ko.pureComputed(() => (this.detail() ? code('REQ', this.detail().requirementId, 4) : ''));
       this.specScreens = ko.pureComputed(() => (this.requirement() && this.requirement().spec ? this.requirement().spec.screens : []));
       this.specApis = ko.pureComputed(() => (this.requirement() && this.requirement().spec ? this.requirement().spec.apis : []));
@@ -610,6 +687,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.requirement(null);
         this.review({ revisions: [], comments: [] });
         this.showAll();
+        this.clearFilters();
+        this.requirementOpen(false);
         if (!id) {
           return;
         }
@@ -660,7 +739,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               paneObserver.observe(wrap);
             }
           }, 60);
-          paneWatches = [this.detail.subscribe(watchPanes), this.tab.subscribe(watchPanes)];
+          paneWatches = [this.detail.subscribe(watchPanes), this.tab.subscribe(watchPanes), this.view.subscribe(watchPanes)];
           watchPanes();
         }
       };
