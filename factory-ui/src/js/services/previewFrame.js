@@ -1,13 +1,14 @@
 /*
  * Connects a page to a screen preview running in an iframe: the JET "preview" route (embed=1), or the React Native or
- * React preview page for workspaces with such a UI target. Sends the latest Screen Model once the preview has loaded,
+ * React or Angular preview page for workspaces with such a UI target. Sends the latest Screen Model once the preview has loaded,
  * and reports clicks on components in the preview.
  */
 define([], function () {
   const PAGES = {
     jet: 'index.html?ojr=preview&embed=1',
     'react-native': 'preview-react-native.html',
-    react: 'preview-react.html'
+    react: 'preview-react.html',
+    angular: 'preview-angular.html'
   };
 
   /**

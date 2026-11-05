@@ -100,9 +100,9 @@ Every converted module is checked against the 8 OBDX rules: same digx services, 
 | 0 | Chart parts: `fx-bar-chart`, `fx-timeline-chart`, `fx-dep-graph` on the Design System page | Built |
 | 1 | Menu fold, routes, Overview, Choose a path and its record | Built |
 | 2 | oj-* counts in the analysis; the JET mapping registry; Component inventory; Component mapping | Built |
-| 3 | Component factory (built); the foundation set in each pack; the rest in waves | Registry, page and the premium JET foundation set built; React, React Native and Angular next |
+| 3 | Component factory (built); the foundation set in each pack; the rest in waves | Foundation set built in all four packs with unit, accessibility and browser gates; premium JET Available (parity on JET 6.2 and 21); the rest in waves next |
 | 4 | Technology catalogue and Migration planner | Built |
 | 5 | Workspace, Validation, Review, History; Upgrade plan; Technology settings | Built |
-| 6 | Angular target pack, Flutter for mobile, JET Core Pack | |
+| 6 | Angular target pack, Flutter for mobile, JET Core Pack | Angular target pack built (starter with the Angular pack, templates, `target.yml`, Angular screens from the scaffolder, designer preview); Flutter and the JET Core Pack next |
 
 Deferred: OBDX version upgrades (22.x to 25.x).

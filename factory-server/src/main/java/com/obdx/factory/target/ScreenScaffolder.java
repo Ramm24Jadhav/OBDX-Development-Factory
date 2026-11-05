@@ -51,6 +51,16 @@ public final class ScreenScaffolder {
         return result.isEmpty() || Character.isDigit(result.charAt(0)) ? "Screen" + result : result;
     }
 
+    /** "Fund Transfer" gives fund-transfer: for an Angular element name. */
+    public static String kebab(String text) {
+        Matcher words = WORDS.matcher(text == null ? "" : text);
+        List<String> parts = new ArrayList<>();
+        while (words.find()) {
+            parts.add(words.group().toLowerCase(java.util.Locale.ROOT));
+        }
+        return parts.isEmpty() ? "screen" : String.join("-", parts);
+    }
+
     /** "Fund Transfer" gives fundTransfer. */
     public static String camel(String text) {
         String pascal = pascal(text);
@@ -86,6 +96,9 @@ public final class ScreenScaffolder {
     }
 
     public static Scaffold screen(TargetPack pack, ScreenModel model, String module) {
+        if (pack.isAngular()) {
+            return angularScreen(pack, model, module);
+        }
         Naming names = new Naming(model);
         String key = camel(model.name());
         Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
@@ -155,6 +168,116 @@ public final class ScreenScaffolder {
         values.put("actions", actions.toString());
         values.putAll(common(model, module));
         return new Scaffold("screen", fill(template, values, Map.of()), List.copyOf(ids));
+    }
+
+    /**
+     * An Angular screen: a standalone component whose template uses the pack's elements, with the form values as
+     * signals ([(value)]), the same texts, rules and testIDs as the JSX packs.
+     */
+    static Scaffold angularScreen(TargetPack pack, ScreenModel model, String module) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            sections.append("      <obdx-section").append(section.title() == null || section.title().isBlank() ? ""
+                            : " [title]=\"t('" + key + "." + names.section(section) + "')\"")
+                    .append(" [columns]=\"").append(section.columns() == null ? 1 : section.columns()).append("\">\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                imports.add(mapping.component());
+                ids.add(c.id());
+                initial.append("    ").append(name).append(": ").append(initialValue(mapping, c)).append(",\n");
+                boolean display = "display".equals(c.type()) || "ReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append("    // From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(" (add a check: (value) => message when not valid)\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    rules.append("    ").append(name).append(": { label: t('").append(key).append('.').append(name).append("')")
+                            .append(required ? ", required: true" : "").append(c.maxLength() != null ? ", maxLength: " + c.maxLength() : "")
+                            .append(" },\n");
+                }
+                if (mapping.options()) {
+                    options.append("  protected readonly ").append(name).append("Options");
+                    if ("account".equals(c.type())) {
+                        options.append(": string[] = []; // The customer's accounts (masked numbers): load them with the accounts API.\n");
+                    } else if (c.options() == null || c.options().isEmpty()) {
+                        options.append(": string[] = []; // Options: from the OBDX service or the spec.\n");
+                    } else {
+                        options.append(" = [").append(c.options().stream().map(ScreenScaffolder::quote).collect(Collectors.joining(", "))).append("];\n");
+                    }
+                }
+                sections.append(angularElement(mapping, c, name, key, display));
+            }
+            sections.append("      </obdx-section>\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            String chroming = "primary".equals(kind) ? "callToAction" : "link".equals(kind) ? "borderless" : "outlined";
+            actions.append("        <bx-button testID=").append(attribute(action.id())).append(" [label]=\"t('").append(key).append('.')
+                    .append(names.action(action)).append("')\" chroming=\"").append(chroming).append('"')
+                    .append(submit ? " [busy]=\"busy()\" (action)=\"submit()\"" : " (action)=\"action.emit(" + quote(action.id()) + ")\"")
+                    .append(" />\n");
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("imports", String.join(", ", imports));
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get("screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /** One field in an Angular template: the pack's element with its inputs bound to the form and the texts. */
+    private static String angularElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display) {
+        String pad = "          ";
+        StringBuilder e = new StringBuilder("        <").append(mapping.tag()).append('\n');
+        e.append(pad).append("testID=").append(attribute(c.id())).append('\n');
+        e.append(pad).append("[label]=\"t('").append(key).append('.').append(name).append("')\"\n");
+        if (display) {
+            e.append(pad).append("[value]=\"form.values.").append(name).append("()\"\n");
+        } else {
+            e.append(pad).append("[(value)]=\"form.values.").append(name).append("\"\n");
+            e.append(pad).append("[error]=\"form.errors().").append(name).append(" ?? ''\"\n");
+        }
+        if (mapping.options()) {
+            e.append(pad).append("[options]=\"").append(name).append("Options\"\n");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            e.append(pad).append("[required]=\"true\"\n");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            e.append(pad).append("[readOnly]=\"true\"\n");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())
+                && ("TextField".equals(mapping.component()) || "TextArea".equals(mapping.component()))) {
+            e.append(pad).append("[maxLength]=\"").append(c.maxLength()).append("\"\n");
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            e.append(pad).append("[helpText]=\"t('").append(key).append('.').append(name).append("Help')\"\n");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            e.append(pad).append("[placeholder]=\"t('").append(key).append('.').append(name).append("Placeholder')\"\n");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            e.append(pad).append(mapping.props()).append('\n');
+        }
+        return e.append("        />\n").toString();
     }
 
     public static Scaffold test(TargetPack pack, ScreenModel model) {
@@ -257,6 +380,8 @@ public final class ScreenScaffolder {
         return switch (mapping.value()) {
             // "as boolean" keeps TypeScript from typing the field as the literal true or false.
             case "boolean" -> (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("yes")) + " as boolean";
+            // A number field (an amount) starts empty unless the spec gives a number
+            case "number" -> value.matches("-?[0-9]+(\\.[0-9]+)?") ? value + " as number | null" : "null as number | null";
             case "list" -> value.isEmpty() ? "[] as string[]"
                     : "[" + java.util.Arrays.stream(value.split(",")).map(String::strip).map(ScreenScaffolder::quote).collect(Collectors.joining(", "))
                     + "] as string[]";
@@ -267,6 +392,7 @@ public final class ScreenScaffolder {
     private static Map<String, String> common(ScreenModel model, String module) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("Screen", pascal(model.name()));
+        values.put("selector", kebab(model.name()));
         values.put("screenKey", camel(model.name()));
         values.put("title", oneLine(model.title() == null || model.title().isBlank() ? model.name() : model.title()));
         values.put("modelName", oneLine(model.name()).replace("\"", "'"));

@@ -12,7 +12,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "tsc --noEmit && vitest run"
+    "check": "tsc --noEmit && ngc -p tsconfig.aot.json && vitest run",
+    "aot": "ngc -p tsconfig.aot.json"
   },
   "peerDependencies": {
     "@angular/cdk": ">=20",

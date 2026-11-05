@@ -68,7 +68,7 @@ public class ScreenDesignService {
      * the comments and approval made through review links, and nothing else of the workspace. No ids, no team comments,
      * no names of the team.
      *
-     * @param preview which renderer shows the screen (jet, react-native or react), from the workspace's UI target
+     * @param preview which renderer shows the screen (jet, react-native, react or angular), from the workspace's UI target
      */
     public record ReviewView(String name, ScreenDesign.Status status, int version, ScreenModel model,
                              List<ReviewComment> comments, OffsetDateTime expiresAt, String approvedBy,

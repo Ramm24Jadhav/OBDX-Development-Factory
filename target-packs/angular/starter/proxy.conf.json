@@ -1,0 +1,3 @@
+{
+  "/digx": { "target": "https://obdx.bank.local", "secure": true, "changeOrigin": true }
+}

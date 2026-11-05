@@ -1,0 +1,4 @@
+/* The premium components' skin (the same as the premium JET pack) and the page around the screens. */
+@import './app/components/bx.css';
+html, body { margin: 0; }
+body { background: var(--bx-surface-2); font-family: var(--bx-font); color: var(--bx-text); }

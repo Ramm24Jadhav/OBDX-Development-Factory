@@ -3,14 +3,15 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldMessage, Option, toOptions } from './field';
 
-const TEMPLATE = (type: 'checkbox' | 'radio') => `
+// One template for both groups (the compiler needs a plain string): the input's type comes from the class
+const TEMPLATE = `
   <fieldset [class]="groupClass()" [attr.data-testid]="testID() || null" [attr.aria-describedby]="describedBy()"
             [attr.aria-invalid]="message() ? true : null" [attr.aria-required]="required() || null">
     <legend class="bx-label">{{ label() }}@if (required()) {<span class="bx-req" aria-hidden="true"> *</span>}</legend>
     <div [class]="horizontal() ? 'bx-choices is-row' : 'bx-choices'">
       @for (o of rows(); track o.value; let i = $index) {
         <label [class]="o.css" [attr.for]="id + '-' + i">
-          <input type="${type}" class="bx-choice-input" [id]="id + '-' + i" [name]="id" [value]="o.value" [checked]="o.on" [disabled]="o.off"
+          <input [type]="inputType" class="bx-choice-input" [id]="id + '-' + i" [name]="id" [value]="o.value" [checked]="o.on" [disabled]="o.off"
                  [attr.data-testid]="testID() ? testID() + '-option-' + o.value : null" (change)="pick(o.value)" (blur)="blur()" />
           <span class="bx-choice-mark" aria-hidden="true"></span>
           <span class="bx-choice-label">{{ o.label }}</span>
@@ -42,9 +43,10 @@ abstract class ChoiceBase<T> extends FieldBase<T> {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => CheckboxGroup), multi: true }],
-  template: TEMPLATE('checkbox'),
+  template: TEMPLATE,
 })
 export class CheckboxGroup extends ChoiceBase<string[]> {
+  protected readonly inputType = 'checkbox';
   protected picked(v: string): boolean { return (this.value() ?? []).includes(v); }
 
   protected pick(v: string): void {
@@ -61,9 +63,10 @@ export class CheckboxGroup extends ChoiceBase<string[]> {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => RadioGroup), multi: true }],
-  template: TEMPLATE('radio'),
+  template: TEMPLATE,
 })
 export class RadioGroup extends ChoiceBase<string> {
+  protected readonly inputType = 'radio';
   protected picked(v: string): boolean { return this.value() === v; }
 
   protected pick(v: string): void {

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "node_modules/.aot", "rootDir": "src", "noUnusedLocals": false, "types": [] },
+  "files": ["src/index.ts"],
+  "include": [],
+  "angularCompilerOptions": { "strictTemplates": true, "strictInjectionParameters": true, "strictInputAccessModifiers": true }
+}

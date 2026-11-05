@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Directive, computed, input, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, Signal, computed, input, model, signal } from '@angular/core';
 import { ControlValueAccessor } from '@angular/forms';
 
 let seq = 0;
@@ -99,6 +99,17 @@ export class FieldMessage {
   readonly helpText = input('');
 }
 
+/** What the field shell shows of a field, whatever its value type. */
+export interface FieldView {
+  readonly id: string;
+  readonly testID: Signal<string>;
+  readonly label: Signal<string>;
+  readonly required: Signal<boolean>;
+  readonly helpText: Signal<string>;
+  readonly message: Signal<string>;
+  readonly fieldClass: Signal<string>;
+}
+
 /** The shell of a field, the same markup as the premium JET pack so one skin serves every web pack. */
 @Component({
   selector: 'bx-field-shell',
@@ -116,5 +127,5 @@ export class FieldMessage {
   `,
 })
 export class FieldShell {
-  readonly field = input.required<FieldBase<unknown>>();
+  readonly field = input.required<FieldView>();
 }

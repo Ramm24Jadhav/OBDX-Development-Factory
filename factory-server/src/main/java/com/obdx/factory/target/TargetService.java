@@ -23,7 +23,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Which UI technology a workspace generates screens for, and where its new app lives. With the jet target (default)
- * the factory enhances the bank's OBDX UI; with react-native or react it builds screens of a new app in the app folder,
+ * the factory enhances the bank's OBDX UI; with react-native, react or angular it builds screens of a new app in the app folder,
  * on the same OBDX services.
  */
 @Service
@@ -112,7 +112,7 @@ public class TargetService {
     }
 
     /**
-     * The starting points generated from one Screen Model for the workspace's React Native or React app: screen, test
+     * The starting points generated from one Screen Model for the workspace's app (React Native, React or Angular): screen, test
      * and texts. The designer shows them; code generation starts from the same files.
      */
     @Transactional(readOnly = true)
@@ -120,7 +120,7 @@ public class TargetService {
         Workspace workspace = workspace(workspaceId);
         TargetPack pack = packs.find(workspace.getTarget()).orElse(packs.jet());
         if (pack.isJet() || workspace.getAppFolder() == null) {
-            throw new BadRequestException("Code previews are for React Native and React targets; this workspace enhances the OBDX JET UI");
+            throw new BadRequestException("Code previews are for app targets (React Native, React or Angular); this workspace enhances the OBDX JET UI");
         }
         String folder = module == null || module.isBlank() ? "app" : module.toLowerCase().replaceAll("[^a-z0-9_-]", "");
         String app = workspace.getAppFolder() + "/";

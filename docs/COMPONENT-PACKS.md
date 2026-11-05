@@ -28,7 +28,7 @@ generate with the components.
 | `target-packs/jet` | `target.yml` only: no components; the factory enhances the bank's own JET UI | The premium JET pack is new. It must work with the bank's JET version, which the factory already detects per codebase (`ui.jetVersion` in `profile/UiDetector.java`). |
 | `target-packs/react` | Vite + React 19 + TypeScript starter; `src/components` has TextField, NumberField, AmountField, DateField, SelectField, AccountField, RadioGroup, CheckboxGroup, SwitchField, ReadOnlyField, Button, Section, Screen; vitest tests | These are the seed of the React pack. They already share one prop contract (`FieldProps`: testID, label, value, onChange, error, required, readOnly, helpText, placeholder, maxLength). |
 | `target-packs/react-native` | Expo 58 + React Native 0.88 starter with the same 13 components, `theme.ts`, jest tests | Seed of the React Native pack, native components with the same contract. Colours are a plain `theme` object, not shared tokens. |
-| Angular | Nothing | The Angular target pack (starter, templates, `target.yml`) has to be built before an Angular component pack is useful. |
+| Angular | The Angular target pack (`target-packs/angular`): starter with the Angular pack's components, templates, `target.yml` | Built: generated screens are standalone components with signal form values; the starter builds and the generated test passes. |
 | `target.yml` `components:` | Maps a Screen Model type (text, amount, select ...) to a starter component | This is today's mapping. The registry below extends it; generated screens keep working. |
 | `modernization/InventoryScanner.java` | `FIELD_TAGS`: `oj-*` tag to Screen Model type | The JET side of the mapping registry starts from these tags and the counts the inventory already finds in the bank's code. |
 | `factory-ui/scripts/build-previews.js` | Renders the React and React Native starter components in the designer (React Native Web) | The pack explorer's live previews reuse this: the previews are the real pack components, not drawings. |
@@ -221,7 +221,7 @@ Each pack build writes a compatibility report (component, version, gates, framew
 | Step | Delivers | Done when |
 |---|---|---|
 | 1 | Token source and build; schemas; registry format; this document agreed | Tokens build to CSS and TS; schemas validate an example component and mapping |
-| 2 | Angular target pack (starter, templates, `target.yml`), matching the React one | A generated screen builds and its test passes |
+| 2 | Angular target pack (starter, templates, `target.yml`), matching the React one | Done: a generated screen builds (`ng build`, strict templates) and its test passes (`ng test`) |
 | 3 | Foundation set in React and React Native, starting from the starters' components | Gates pass; starters use the pack |
 | 4 | Foundation set in Angular | Gates pass |
 | 5 | Foundation set in JET (component pack) | Loads in a JET app of the agreed oldest version; gates pass |

@@ -8,6 +8,7 @@ for one UI technology. A workspace uses one version pack (OBDX release) and one 
 | `jet` | Enhancing the bank's existing Oracle JET UI (the default) | Real JET components |
 | `react-native` | A new iOS/Android app on the OBDX REST services (Expo) | The starter's components with React Native Web |
 | `react` | A new web app on the OBDX REST services (Vite) | The starter's components with React |
+| `angular` | A new web app on the OBDX REST services (Angular, standalone components) | The premium components' markup and skin (the same as the Angular pack) |
 
 Each pack folder holds:
 
@@ -21,5 +22,6 @@ Each pack folder holds:
 This folder is packaged into the factory server and also read by the UI build (for the previews). Teams can override a
 pack without rebuilding by putting a `targets/<id>/target.yml` in `FACTORY_PACKS_DIR` (see docs/DEVELOPMENT.md).
 
-`components/` holds the contracts for the premium component packs (component metadata and JET mapping schemas, with
-examples). The packs themselves are not built yet; see docs/COMPONENT-PACKS.md for the proposal and plan.
+`components/` holds the premium component packs (premium JET, React, React Native, Angular), their registry, schemas,
+tokens and browser gates; see docs/COMPONENT-PACKS.md. The Angular starter carries a copy of the Angular pack's
+components (a test keeps them identical).
