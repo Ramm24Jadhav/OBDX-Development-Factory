@@ -196,6 +196,29 @@ The facts are the **Codebase facts** tab of the Code page (`?ojr=code&tab=facts`
    **Use suggested answers** for every empty one, and click **Update spec with answers**: answered questions become decisions, and the model updates the spec with them. The spec can also be edited as JSON. Every change is stored as a new spec version. Updating with answers sends the model the screens, fields, rules and questions only; the document's own lists (scope, requirements, criteria, non-functional) are kept as they are, and its tables are read again, so its open questions that are still unanswered stay open. A requirement being drafted when the server restarts must be drafted again (Retry); one being updated with answers keeps its spec and answers and is ready to update again.
 Saving an edited spec refuses a body with none of a spec's fields ("Send the spec itself"; a body wrapped as {"spec": {...}} is read) and an edit that would replace a spec with an empty one. When a drafted screen has no fields, the spec's message names it ("Screens without fields: ..."), to add them by editing the spec or to draft again. 5. **Approve** locks the spec. It needs no open questions, and screens, or for a backend-only change (a REST API without UI) functional requirements or APIs; such a change is planned without screen designs.
 
+The **Requirements** page leads with what is waiting: one box per stage (Spec, Screens, Plan, Code, Done) with how many
+requirements are at it and how many of them failed or need you (the same `dashboard.workflow` as Home); a box filters
+the list to its stage. The list has chips with counts (All, Needs you, Drafting, Spec in review, Spec approved, Drafting
+failed), a search by ID, title or document, and a filter button for the type and the source document when there is more
+than one; each row is the title, a mono line (ID, type, source), a stage chip with the four steps, the state, You when
+the step is yours, the next step as a link (or who it waits for), when it changed and a ⋯ menu (Open, the screens in the
+Design Studio, the change, Delete). The page ⋯ menu refreshes, downloads the list as CSV and starts an upload or a
+description. **New requirement** opens a side panel: Upload a document (choose or drop a BRD/FSD, with Remove) or
+Describe it, a title, and what happens next. The selected requirement sits beside the list (below it at 1024 px and
+narrower): one header (title; ID, workspace, spec version, source and last change; a pill with the stage and its state;
+the one next action: Try again, Answer the questions, Update the spec with the answers, Approve spec, Make screens, Plan
+the change or open where the step is taken; Source and history; a ⋯ menu with Make screens, Plan the change, Source and
+history, Edit or Copy the JSON and Delete), the four stages with what was recorded at each (who approved the spec and
+when, screens approved, the plan and who approved it, the code and its build; a stage opens the Design Studio or the
+change), one problem bar for the most important blocker (a failed draft, a failed change or build, duplicate IDs, open
+questions, answers not yet in the spec) or else the next step in one line, and the spec in up to six tabs, each only when
+it has something: Overview (summary, scope, out of scope, assumptions, roles), Requirements (functional, acceptance
+criteria and non-functional, linked to each other), Rules and APIs (business rules, messages, APIs, host interfaces),
+Screens (fields and actions), Questions (open questions with their options and answers, decisions) and Traceability
+(designs and changes, requirement to criteria and screens, screen to design, code and change, other requirements on the
+same screens or code). Source and history is a side panel with the document (download, copy or show the text the
+factory read) and every version with the approval.
+
 The spec keeps the document's own structure for traceability: its scope, out of scope and assumptions, its functional requirements (ID, priority, the screens each needs), its acceptance criteria (ID, the requirements each verifies), its non-functional requirements and its business rules, all with the document's own IDs (FR-001, AC-001, NFR-001, BR-001; items without one are numbered after them). The document's own open questions become the spec's. The Requirements page shows them, with a traceability table (requirement, priority, screens, the criteria that verify it), and impact analysis and code generation receive them with the rest of the spec.
 
 Scanned PDFs have no text layer and need OCR before upload. With a local model, drafting a long BRD can take minutes. Drafting, impact analysis and code generation are streamed where the server allows it, so `FACTORY_MODEL_TIMEOUT` counts from the last piece the model wrote, not from the start; a server that refuses JSON in a stream (some cloud APIs) answers JSON calls in one piece. On an Ollama server the factory chats through Ollama's own API and asks for a context large enough for each prompt and its answer (Ollama otherwise runs a model with 4,096 tokens and cuts longer prompts without a word), up to the model's own limit and `FACTORY_MODEL_MAX_CONTEXT` (16,384; a larger context needs more memory on the model server). If Ollama is started after the factory, the factory notices within a minute (or at once when the model settings are saved). Lower `FACTORY_REQUIREMENTS_MAX_CHARS` for models with a small context window. A server that takes too little input to draft from sections of at least 2,000 characters fails the draft with a message to use a model or plan with a larger limit.
@@ -718,17 +741,22 @@ Modernization, the AI Prompt Library and G P. With `--write 1` it also corrects,
 unpins a reference example, checking the history, and turns a quick check rule off and on again; use that only on a
 factory whose data is a copy.
 
-`node scripts/check-requirements.js --url ...` checks the Requirements list: one row per requirement with its ID, title,
-source document, type, spec status and Home's four workflow steps, choosing a row, the next-step links, search and
-filters (only values that exist), the Upload BRD/FSD and New requirement panel (focus, an unreadable file, a document the
-server refuses, Close), the viewer role, keyboard reach, the offline message, and that the Workspaces page asks for no
-profile a workspace cannot have yet. Its only upload is an empty text file, which the server refuses before storing it.
+`node scripts/check-requirements.js --url ...` checks the Requirements list: the stage boxes against Home's workflow and
+their filter, one row per requirement with its ID, title, type, source, stage, state, when and menu, choosing a row, the
+chips and their counts, search, the source filter (only values that exist), the row menu (Open; Delete asks and is
+cancelled), the next-step links, the New requirement panel (focus, an unreadable file chosen or dropped, a readable one
+with Remove, a document the server refuses, Describe it, Close and Escape, the page menu's shortcut), the viewer role,
+keyboard reach, the offline message, and that the Workspaces page asks for no profile a workspace cannot have yet. Its
+only upload is an empty text file, which the server refuses before storing it.
 
 `node scripts/check-requirement-detail.js --url ...` checks the selected requirement, for every requirement of every
-workspace: only the parts the spec has something for, the document's IDs and exact wording, Drafted on exactly the items not
-found word for word in the document, the links between requirements and the criteria that verify them, History against
-`GET /api/requirements/{id}/versions`, Approve offered only when the server would accept it (and, for a spec with open
-questions put into the page, "Answer the questions" instead), and the phone width. It changes nothing.
+workspace: the header (ID line, the stage pill as Home computes it, at most one primary action), the four stages, at most
+one problem bar, only the tabs the spec has something for (at most six) and their arrow keys, the document's IDs and exact
+wording, Drafted on exactly the items not found word for word in the document, the links between requirements and the
+criteria that verify them, Source and history (the document, every version against `GET /api/requirements/{id}/versions`,
+focus back on close), Approve offered only when the server would accept it (and, for a spec with open questions put into
+the page, the problem bar and "Answer the questions" instead; for a failed draft put into the page, its message and Try
+again), and the phone width. It changes nothing.
 
 `node scripts/check-studio.js --url ...` checks the Design Studio on a BRD with screens to approve: the one-row header
 and its stages, the Screens panel (the dropdown, ‹ ›, the dots and ←/→ in step, the cards' keys, hiding it), the screen
