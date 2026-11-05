@@ -9530,3 +9530,24 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 .factory-mpl-node.is-need { background: var(--fx-primary-soft); border-color: var(--fx-primary); }
 .factory-mpl-node.is-dep { background: var(--fx-warning-soft); border-color: var(--fx-warning); border-style: dashed; }
 @media (max-width: 1180px) { .factory-mpl-below { grid-template-columns: minmax(0, 1fr); } }
+/* Migration workspace: the run strip with progress, pane tags, the impact tiles, the conversation, step times */
+.factory-mw-facts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--fx-space-3); margin: 0; }
+.factory-mw-facts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.factory-mw-facts dt { font-size: var(--fx-text-2xs); color: var(--fx-text-muted); }
+.factory-mw-facts dd { margin: 0; font-weight: var(--fx-weight-semibold); color: var(--fx-text); overflow-wrap: anywhere; }
+.factory-mw-facts small { font-size: var(--fx-text-2xs); }
+.factory-mw-progress { margin-top: var(--fx-space-3); }
+.factory-mw-tags { flex: 1; display: inline-flex; flex-wrap: wrap; gap: 4px; margin: 0 var(--fx-space-2); }
+.factory-mw-tag { padding: 1px 6px; border-radius: var(--fx-radius-sm); background: var(--fx-surface-3); color: var(--fx-text-body); font-family: var(--fx-font-mono); font-size: var(--fx-text-2xs); }
+.factory-mw-tag.is-new { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
+.factory-mw-impacts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--fx-space-3); margin: 0; }
+.factory-mw-impact { padding: var(--fx-space-3); border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); display: flex; flex-direction: column; gap: 2px; }
+.factory-mw-impact dt { font-size: var(--fx-text-2xs); color: var(--fx-text-muted); }
+.factory-mw-impact dd { margin: 0; font-size: var(--fx-text-lg); font-weight: var(--fx-weight-semibold); color: var(--fx-text); }
+.factory-mw-impact.is-good dd { color: var(--fx-success-text); }
+.factory-mw-impact.is-warn dd { color: var(--fx-warning-text); }
+.factory-mw-say.is-factory .factory-mr-avatar { background: var(--fx-surface-3); color: var(--fx-text-body); }
+.factory-mw-request { padding: var(--fx-space-2) var(--fx-space-3); border-left: 3px solid var(--fx-primary); background: var(--fx-surface-2); border-radius: var(--fx-radius-sm); }
+.factory-mw-steptime { margin-left: auto; font-size: var(--fx-text-2xs); color: var(--fx-text-muted); white-space: nowrap; }
+.factory-mr-file.is-written .factory-mw-fmark { color: var(--fx-success-text); }
+@media (max-width: 1280px) { .factory-mw-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } .factory-mw-impacts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
