@@ -61,11 +61,13 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   const opened = () => run(() => {
     const page = new URLSearchParams(location.search).get('ojr');
     const title = document.getElementById('changeTitle') || document.querySelector('.factory-rq-name') || document.querySelector('.factory-page h1');
-    return { page: page, title: title ? title.textContent.trim() : '' };
+    // Design Studio has no record title: it opens on the requirement's screens, so its name is somewhere on the page.
+    const text = page === 'studio' ? (document.querySelector('.factory-page') || document.body).innerText : '';
+    return { page: page, title: title ? title.textContent.trim() : '', text: text };
   });
   const waitOpened = async (title) => {
     let o = null;
-    for (let i = 0; i < 20; i++) { await sleep(500); o = await opened(); if (title && o.title.indexOf(title.trim()) >= 0) { break; } }
+    for (let i = 0; i < 20; i++) { await sleep(500); o = await opened(); if (title && (o.title.indexOf(title.trim()) >= 0 || o.text.indexOf(title.trim()) >= 0)) { break; } }
     return o;
   };
 
@@ -174,7 +176,7 @@ const BASE = (args.url || 'http://localhost:8080').replace(/\/$/, '');
   if (st.firstContinue) {
     await click('#continueFirst');
     const o = await waitOpened(st.firstContinue);
-    record('the newest work item opens its record', o.title.indexOf(st.firstContinue.trim()) >= 0, o);
+    record('the newest work item opens its record', o.title.indexOf(st.firstContinue.trim()) >= 0 || o.text.indexOf(st.firstContinue.trim()) >= 0, { page: o.page, title: o.title });
     await home();
   }
 
