@@ -431,7 +431,23 @@
       <h2 class="fx-card-title" id="dsChart">Chart: ring</h2>
       <div class="fx-row"><span class="factory-ring" :style="[[ring().style]]" role="img" :aria-label="[[ring().text]]"><span><oj-bind-text value="[[ring().label]]"></oj-bind-text></span></span>
         <span class="fx-muted"><oj-bind-text value="[[ring().text]]"></oj-bind-text></span></div>
-      <p class="fx-help">The only chart in the factory (Modernization readiness and screen risk). It always has a text equivalent.</p>
+      <p class="fx-help">A share of a whole (Modernization progress, screen risk). It always has a text equivalent.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsBars">
+      <h2 class="fx-card-title" id="dsBars">Chart: stacked bars <code>fx-bar-chart</code></h2>
+      <fx-bar-chart id="dsBarChart" label="Runs per week" period-label="Week" summary="[[barSummary]]" series="[[barSeries]]" bars="[[barData]]"></fx-bar-chart>
+      <p class="fx-help">Counts by state over time (History: runs per week). Colours from the status tokens with a legend in words; axis from 0 with whole-number ticks; bars 20 to 32 px. Arrow keys move bar by bar and the tooltip gives each count; <em>Show as a table</em> gives the values. Example numbers.</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsTimeline">
+      <h2 class="fx-card-title" id="dsTimeline">Chart: timeline <code>fx-timeline-chart</code></h2>
+      <fx-segmented id="dsTimelineScale" label="Scale" options="[[timelineScales]]" value="{{timelineScale}}"></fx-segmented>
+      <fx-timeline-chart id="dsTimelineChart" label="Migration plan" rows="[[timelineRows]]" total="12" today="5" scale="[[timelineScale]]"></fx-timeline-chart>
+      <p class="fx-help">The team's planned weeks per module and what is done (Migration planner). Bar colour by state, and the state written in the row; a Today line; weeks or months. Weeks are edited in the row's menu, not by dragging. Each row reads, for example, "Payments, planned weeks 7 to 10, planned".</p>
+    </section>
+    <section class="fx-card" aria-labelledby="dsDeps">
+      <h2 class="fx-card-title" id="dsDeps">Chart: dependency diagram <code>fx-dep-graph</code></h2>
+      <fx-dep-graph id="dsDepGraph" label="Which module needs which" nodes="[[depNodes]]" edges="[[depEdges]]" selected="{{depSelected}}"></fx-dep-graph>
+      <p class="fx-help">Columns by what each module needs, so lines only go left to right. Nodes are buttons: picking one shows what it needs (solid) and what needs it (dashed). <em>Show as a list</em> gives the same data for screen readers and printing.</p>
     </section>
     <section class="fx-card" aria-labelledby="dsCode">
       <h2 class="fx-card-title" id="dsCode">Code surfaces</h2>

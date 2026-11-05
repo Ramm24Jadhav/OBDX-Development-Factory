@@ -1,0 +1,104 @@
+<div class="factory-pg factory-mpl">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Migration planner</h1>
+      <p class="factory-rq-lead">The order to move the modules in, from what each one needs first. The weeks are the team's own plan.</p>
+    </div>
+    <div class="factory-rq-headbar"><oj-bind-if test="[[data()]]"><span id="mplSaved" role="status" :class="[[savedCss]]"><oj-bind-text value="[[savedText]]"></oj-bind-text></span></oj-bind-if></div>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><oj-bind-text value="[[pathName]]"></oj-bind-text></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mplError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>No plan yet</strong><oj-bind-text value="[[error]]"></oj-bind-text></div></oj-bind-if>
+  <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the planner"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[data()]]">
+    <oj-bind-if test="[[!data().technology]]"><div class="fx-alert fx-alert--warning" role="status" id="mplNoTech"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">Choose the technology in the Technology catalogue first; modules start once it is set. <a href="?ojr=modernization-catalogue" on-click="[[back]]">Open the catalogue</a></span></div></oj-bind-if>
+    <div class="factory-mu-tiles"><oj-bind-for-each data="[[tiles]]" as="t"><template><div class="fx-kpi factory-mu-tile"><span class="fx-kpi-label"><oj-bind-text value="[[t.data.k]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[t.data.v]]"></oj-bind-text></span></div></template></oj-bind-for-each></div>
+
+    <div class="factory-mpl-layout">
+      <section class="fx-card factory-mpl-tablecard" aria-labelledby="mplModulesTitle">
+        <div class="factory-mc-toolbar">
+          <h2 class="fx-card-title" id="mplModulesTitle">Modules</h2>
+          <fx-input id="mplSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search modules" hide-label placeholder="Search modules" value="{{query}}"></fx-input>
+          <fx-popover id="mplFilters" label="[[filterLabel]]" icon="filter" variant="secondary" align="end" title="Filters">
+            <div class="factory-mpl-filters"><fx-select id="mplSize" label="Size" options="[[sizeOptions]]" value="{{sizeFilter}}"></fx-select>
+              <fx-select id="mplState" label="State" options="[[stateOptions]]" value="{{stateFilter}}"></fx-select>
+              <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[clearFilters]]">Clear the filters</button></div>
+          </fx-popover>
+        </div>
+        <div class="fx-table-wrap"><table class="fx-table factory-mpl-table" id="mplTable">
+          <caption class="fx-visually-hidden">Modules in the order they move, with the team's planned weeks</caption>
+          <thead><tr><th scope="col" class="fx-num">#</th><th scope="col">Module</th><th scope="col" class="fx-num">Screens</th><th scope="col" class="fx-num">Comp.</th><th scope="col">Size</th><th scope="col">Needs first</th><th scope="col">Planned weeks</th><th scope="col">State</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+          <tbody><oj-bind-for-each data="[[table]]" as="r"><template><tr :class="[[r.data.css]]">
+            <td class="fx-num"><oj-bind-text value="[[r.data.order]]"></oj-bind-text></td>
+            <th scope="row"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[r.data.pick]]" :aria-label="[['Show ' + r.data.name + ' in the diagram']]"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></button></th>
+            <td class="fx-num"><oj-bind-text value="[[r.data.screens]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[r.data.uses]]"></oj-bind-text></td>
+            <td><span :class="[[r.data.sizeCss]]"><oj-bind-text value="[[r.data.size]]"></oj-bind-text></span></td><td class="fx-muted"><oj-bind-text value="[[r.data.needs]]"></oj-bind-text></td>
+            <td><span class="factory-mpl-weeks">W<input type="number" min="1" max="156" class="fx-input factory-mpl-week" :aria-label="[[r.data.name + ' first week']]" :value="[[r.data.from()]]" on-input="[[r.data.fromInput]]" :disabled="[[!r.data.editable]]"/>
+              to W<input type="number" min="1" max="156" class="fx-input factory-mpl-week" :aria-label="[[r.data.name + ' last week']]" :value="[[r.data.to()]]" on-input="[[r.data.toInput]]" :disabled="[[!r.data.editable]]"/></span></td>
+            <td><span :class="[[r.data.stateCss]]"><oj-bind-text value="[[r.data.state]]"></oj-bind-text></span></td>
+            <td class="fx-table-actions"><fx-menu-button variant="ghost" size="sm" icon="more" icon-only label="[[r.data.name + ' actions']]" align="end" items="[[r.data.menu]]" on-fx-action="[[r.data.menuAction]]"></fx-menu-button></td>
+          </tr></template></oj-bind-for-each></tbody></table></div>
+        <oj-bind-if test="[[table().length === 0]]"><p class="fx-muted factory-mc-none">No module matches. <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[clearFilters]]">Clear the filters</button></p></oj-bind-if>
+      </section>
+
+      <aside class="fx-card factory-mpl-order" aria-labelledby="mplOrderTitle">
+        <div class="fx-card-head"><h2 class="fx-card-title" id="mplOrderTitle">Suggested order</h2><span class="fx-muted">From the dependencies</span></div>
+        <p class="fx-help">Move the modules in this order so each one finds what it needs already moved.</p>
+        <ol class="factory-mpl-suggested"><oj-bind-for-each data="[[suggested]]" as="o"><template><li><span class="factory-mz-dot"><oj-bind-text value="[[o.data.n]]"></oj-bind-text></span><oj-bind-text value="[[o.data.name]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm fx-btn--block" id="mplUseOrder" on-click="[[useSuggested]]" :disabled="[[!canManage()]]">Use this order</button>
+      </aside>
+    </div>
+
+    <section class="fx-card factory-mpl-tabs" aria-label="Plan views">
+      <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Plan views" on-keydown="[[tabKey]]">
+        <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mplTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+      </div>
+      <div role="tabpanel" class="factory-mm-panel">
+        <oj-bind-if test="[[tab() === 'dependencies']]">
+          <div class="factory-mpl-graphhead"><span class="fx-muted">Pick a module to see what it needs (solid) and what needs it (dashed).</span><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mplFull" on-click="[[openFull]]">Full screen</button></div>
+          <fx-dep-graph id="mplGraph" label="Module dependencies" nodes="[[nodes]]" edges="[[edges]]" selected="{{selected}}"></fx-dep-graph>
+          <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">Module</th><th scope="col">Needs first</th><th scope="col">Needed by</th><th scope="col" class="fx-num">Services it calls</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[depRows]]" as="d"><template><tr><th scope="row"><oj-bind-text value="[[d.data.name]]"></oj-bind-text></th><td><oj-bind-text value="[[d.data.needs]]"></oj-bind-text></td><td><oj-bind-text value="[[d.data.neededBy]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[d.data.calls]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+        </oj-bind-if>
+        <oj-bind-if test="[[tab() === 'timeline']]">
+          <fx-segmented id="mplScale" label="Scale" options="[[scaleOptions]]" value="{{scale}}"></fx-segmented>
+          <oj-bind-if test="[[timeline().length === 0]]"><p class="fx-muted">No weeks planned yet: enter the team's weeks in the table.</p></oj-bind-if>
+          <oj-bind-if test="[[timeline().length > 0]]"><fx-timeline-chart id="mplTimeline" label="Planned weeks" rows="[[timeline]]" total="[[timelineTotal]]" today="[[today]]" scale="[[scale]]"></fx-timeline-chart></oj-bind-if>
+          <p class="fx-help">Weeks are the team's plan; a bar turns green when the module's change is delivered.</p>
+        </oj-bind-if>
+        <oj-bind-if test="[[tab() === 'size']]">
+          <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">Module</th><th scope="col" class="fx-num">Screens</th><th scope="col" class="fx-num">Fields</th><th scope="col" class="fx-num">Services</th><th scope="col" class="fx-num">Outside this code</th><th scope="col" class="fx-num">Small</th><th scope="col" class="fx-num">Medium</th><th scope="col" class="fx-num">Large</th><th scope="col">Size</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[sizeRows]]" as="s"><template><tr><th scope="row"><oj-bind-text value="[[s.data.name]]"></oj-bind-text></th><td class="fx-num"><oj-bind-text value="[[s.data.screens]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[s.data.fields]]"></oj-bind-text></td>
+              <td class="fx-num"><oj-bind-text value="[[s.data.calls]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[s.data.outside]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[s.data.small]]"></oj-bind-text></td>
+              <td class="fx-num"><oj-bind-text value="[[s.data.medium]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[s.data.large]]"></oj-bind-text></td><td><span :class="[[s.data.sizeCss]]"><oj-bind-text value="[[s.data.size]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+          <p class="fx-help">Sizes count what the analysis found: screens by their fields, actions, services and lines. No estimate of days.</p>
+        </oj-bind-if>
+        <oj-bind-if test="[[tab() === 'findings']]">
+          <oj-bind-if test="[[findings().length === 0]]"><p class="fx-muted">Nothing to point out.</p></oj-bind-if>
+          <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">Finding</th><th scope="col">Where</th><th scope="col">How bad</th><th scope="col">What to do</th></tr></thead>
+            <tbody><oj-bind-for-each data="[[findings]]" as="f"><template><tr><th scope="row"><oj-bind-text value="[[f.data.text]]"></oj-bind-text></th><td><oj-bind-text value="[[f.data.where]]"></oj-bind-text></td><td><span :class="[[f.data.css]]"><oj-bind-text value="[[f.data.severity]]"></oj-bind-text></span></td><td><oj-bind-text value="[[f.data.todo]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+        </oj-bind-if>
+      </div>
+    </section>
+
+    <div class="factory-mz-actions">
+      <button type="button" class="fx-btn fx-btn--ghost" id="mplBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Technology</button>
+      <div class="factory-mz-actions-end">
+        <fx-menu-button id="mplMore" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="fx-btn fx-btn--secondary" id="mplDraft" on-click="[[saveDraft]]" :disabled="[[!canManage()]]">Save as draft</button>
+        <a class="fx-btn fx-btn--secondary" id="mplCsv" :href="[[csvHref]]">Export the plan</a>
+        <button type="button" class="fx-btn fx-btn--primary" id="mplStart" on-click="[[makeAndStart]]" :disabled="[[!canStart()]]">Make the plan and start<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <fx-sheet id="mplFullSheet" open="{{fullOpen}}" heading="Module dependencies" subtitle="Left needs nothing; each column needs the ones to its left. Read from the code: which module's screens open which.">
+      <div class="factory-cf-detail-wrap"><fx-dep-graph id="mplGraphFull" nodes="[[nodes]]" edges="[[edges]]" selected="{{selected}}"></fx-dep-graph>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--primary" on-click="[[closeFull]]">Close</button></div></div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

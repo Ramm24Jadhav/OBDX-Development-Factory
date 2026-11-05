@@ -52,8 +52,10 @@ class ComponentPackServiceTest {
                 Path folder = Path.of("..").resolve(b.source());
                 assertThat(folder).as(p.id() + " " + b.component()).isDirectory();
                 try (var files = Files.list(folder)) {
-                    boolean exported = files.filter((f) -> f.toString().endsWith(".tsx") || f.toString().endsWith(".ts"))
-                            .anyMatch((f) -> { try { return Files.readString(f).contains("export function " + b.export()); } catch (Exception e) { return false; } });
+                    // A React or React Native component is an exported function; a premium JET element a registered composite
+                    boolean exported = files.filter((f) -> f.toString().endsWith(".tsx") || f.toString().endsWith(".ts") || f.toString().endsWith(".js"))
+                            .anyMatch((f) -> { try { String s = Files.readString(f); return s.contains("export function " + b.export())
+                                    || s.contains("Composite.register('" + b.export() + "'"); } catch (Exception e) { return false; } });
                     assertThat(exported).as(p.id() + " " + b.component() + " exports " + b.export()).isTrue();
                 }
             }
@@ -66,7 +68,8 @@ class ComponentPackServiceTest {
         // React and React Native start from their starters' form components: built, no checks recorded
         assertThat(find(c, "text-field").packs().get("react").readiness()).isEqualTo("in-test");
         assertThat(find(c, "text-field").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#TextField");
-        assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("planned");
+        assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("in-test");
+        assertThat(c.packs().get(0).counts().inTest()).isEqualTo(13);
         // Angular does not carry the widgets
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(176));

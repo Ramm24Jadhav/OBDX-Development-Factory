@@ -3,8 +3,7 @@
 Status: decisions agreed (section 13: Angular target pack now, bx- prefix, oldest JET version from a 22.x codebase, pack
 builds as their own CI jobs). Built so far: the registry (`target-packs/components/catalogue.json`, `packs.json`), `GET
 /api/component-packs`, the premium JET builds chosen from the workspace's detected JET version, the saved component style
-and the Component factory page (route `components`). Next: the foundation
-set in each pack, then the explorer's live previews from the built components.
+and the Component factory page (route `components`). The premium JET pack has its foundation set (13 bx- elements in target-packs/components/jet-premium, unit and markup checks with every build, previewed live on Component mapping). Next: the foundation set in React, React Native and Angular, then the browser gates and parity tests, then the rest of the catalogue in waves.
 
 The goal: one design system for the bank's channel UI, implemented four times — Oracle JET (the UI path), React,
 React Native and Angular (the migration path) — with a metadata registry the factory reads to show, compare, map and

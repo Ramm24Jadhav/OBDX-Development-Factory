@@ -246,6 +246,20 @@ define(['knockout', '../accUtils', '../services/api', '../services/ui', '../serv
         const p = all.length ? Math.round(100 * v22 / all.length) : 0;
         return { style: { '--p': p, '--c': 'var(--fx-primary)' }, label: all.length ? p + '%' : '–', text: v22 + ' of ' + all.length + ' workspaces on OBDX 22.x' };
       });
+      // The chart parts (fx-charts.js), with example numbers
+      this.barSeries = [{ key: 'done', label: 'Delivered', tone: 'done' }, { key: 'warning', label: 'With warnings', tone: 'warning' }, { key: 'failed', label: 'Failed', tone: 'failed' }];
+      this.barData = [[3, 0, 0], [3, 0, 0], [3, 1, 0], [3, 1, 0], [3, 0, 0], [1, 0, 1], [2, 0, 0], [1, 1, 0]]
+        .map((v, i) => ({ label: 'W' + (i + 1), values: { done: v[0], warning: v[1], failed: v[2] } }));
+      this.barSummary = 'Runs per week over 8 weeks: 19 delivered, 3 with warnings, 1 failed';
+      this.timelineScale = ko.observable('weeks');
+      this.timelineScales = [{ value: 'weeks', label: 'Weeks' }, { value: 'months', label: 'Months' }];
+      this.timelineRows = [{ label: 'Dashboard', from: 1, to: 2, state: 'delivered' }, { label: 'Accounts', from: 3, to: 5, state: 'in-progress' },
+        { label: 'Payees', from: 4, to: 6, state: 'planned' }, { label: 'Payments', from: 7, to: 10, state: 'planned' }, { label: 'Cards', from: 10, to: 12, state: 'not-started' }];
+      this.depNodes = [{ id: 'login', label: 'Login' }, { id: 'common', label: 'Common UI' }, { id: 'accounts', label: 'Accounts' }, { id: 'payees', label: 'Payees' },
+        { id: 'cards', label: 'Cards' }, { id: 'payments', label: 'Payments' }, { id: 'reports', label: 'Reports' }];
+      this.depEdges = [{ from: 'accounts', to: 'login' }, { from: 'accounts', to: 'common' }, { from: 'payees', to: 'accounts' }, { from: 'cards', to: 'accounts' },
+        { from: 'payments', to: 'payees' }, { from: 'payments', to: 'accounts' }, { from: 'reports', to: 'cards' }];
+      this.depSelected = ko.observable('payments');
       // Tabs: the tablist pattern (arrow keys, Home, End) every page uses
       this.demoTab = ko.observable('overview');
       this.demoTabs = ui.tabs(this.demoTab, [{ value: 'overview', label: 'Overview' }, { value: 'files', label: 'Files', count: 12 }, { value: 'history', label: 'History' }]);

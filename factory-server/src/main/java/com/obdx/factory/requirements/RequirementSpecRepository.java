@@ -19,7 +19,8 @@ import java.util.UUID;
 public class RequirementSpecRepository {
 
     /** How a version was made: drafted by the model, updated with answers, or edited by hand. */
-    public enum Origin { DRAFTED, REFINED, EDITED, ANSWERED }
+    /** MODERNIZATION: written by Modernization from the code analysis (a run’s brief), not drafted by a model. */
+    public enum Origin { DRAFTED, REFINED, EDITED, ANSWERED, MODERNIZATION }
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;

@@ -680,7 +680,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         DRAFTED: ['Drafted by the factory', ''],
         ANSWERED: ['Answers saved', 'Answers to open questions'],
         REFINED: ['Updated with the answers', 'The factory redrafted it with the answers'],
-        EDITED: ['Edited by hand', 'The specification JSON was edited']
+        EDITED: ['Edited by hand', 'The specification JSON was edited'],
+        MODERNIZATION: ['Written by Modernization', 'A run’s brief, made from the code analysis']
       };
       this.history = ko.pureComputed(() => {
         const d = this.detail();

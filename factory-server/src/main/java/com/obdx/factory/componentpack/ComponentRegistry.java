@@ -16,7 +16,8 @@ import java.util.Map;
 /**
  * The premium component packs' registry, packaged with the factory under target-packs/components: the catalogue (one
  * entry per logical component, with its name in every pack and what it is built on) and the packs (version, framework
- * range, dependencies, which components are built and their quality gate results). Read once at start-up.
+ * range, dependencies, which components are built and their quality gate results), and the JET mapping registry (how
+ * each oj-* element maps to the premium JET pack, part by part). Read once at start-up.
  */
 @Component
 public class ComponentRegistry {
@@ -63,7 +64,21 @@ public class ComponentRegistry {
                        Map<String, Map<String, Gate>> checks, List<Build> builds) {
     }
 
+    /** One property, event or slot of a JET element and what it becomes; to is null when it is not carried over. */
+    public record Part(String from, String to, String conversion) {
+    }
+
+    /**
+     * How one oj-* element maps to the premium JET pack: the target component (null when unsupported, or for a helper
+     * kept as it is), its status, the parts, and what a person has to finish.
+     */
+    public record JetMapping(String source, String target, String status, List<Part> properties, List<Part> events, List<String> slots,
+                             String binding, String accessibility, String styling, List<String> manual, List<String> unsupported,
+                             String confidence, String evidence) {
+    }
+
     private final List<Category> categories;
+    private final Map<String, JetMapping> jetMappings = new LinkedHashMap<>();
     private final List<Pack> packs;
     private final Map<String, Entry> byId = new LinkedHashMap<>();
 
@@ -130,6 +145,16 @@ public class ComponentRegistry {
         if (pack("jet-premium").builds().isEmpty()) {
             throw new IllegalStateException("packs.json: jet-premium needs its JET builds");
         }
+        for (JsonNode m : read(json, "mapping/jet-premium.json").path("entries")) {
+            JetMapping mapping = new JetMapping(text(m, "source"), text(m, "target"), text(m, "status"), parts(m.path("properties")),
+                    parts(m.path("events")), list(m.path("slots")), text(m, "binding"), text(m, "accessibility"), text(m, "styling"),
+                    list(m.path("manual")), list(m.path("unsupported")), text(m, "confidence"), text(m, "evidence"));
+            if (mapping.target() != null && !byId.containsKey(mapping.target())) {
+                throw new IllegalStateException("mapping/jet-premium.json: " + mapping.source() + " maps to " + mapping.target()
+                        + ", which is not in the catalogue");
+            }
+            jetMappings.put(mapping.source(), mapping);
+        }
     }
 
     public List<Category> categories() {
@@ -142,6 +167,15 @@ public class ComponentRegistry {
 
     public Pack pack(String id) {
         return packs.stream().filter((p) -> p.id().equals(id)).findFirst().orElse(null);
+    }
+
+    /** How a JET element maps to the premium JET pack, or null when the registry does not list it. */
+    public JetMapping jetMapping(String element) {
+        return jetMappings.get(element);
+    }
+
+    public Map<String, JetMapping> jetMappings() {
+        return Collections.unmodifiableMap(jetMappings);
     }
 
     public Entry component(String id) {
@@ -166,6 +200,18 @@ public class ComponentRegistry {
     private static String text(JsonNode node, String field) {
         JsonNode value = node.path(field);
         return value.isMissingNode() || value.isNull() ? null : value.asString();
+    }
+
+    private static List<Part> parts(JsonNode node) {
+        List<Part> out = new ArrayList<>();
+        node.forEach((p) -> out.add(new Part(text(p, "from"), text(p, "to"), text(p, "conversion"))));
+        return List.copyOf(out);
+    }
+
+    private static List<String> list(JsonNode node) {
+        List<String> out = new ArrayList<>();
+        node.forEach((v) -> out.add(v.asString()));
+        return List.copyOf(out);
     }
 
     private static Map<String, String> strings(JsonNode node) {

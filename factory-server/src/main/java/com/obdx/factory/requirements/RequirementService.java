@@ -136,6 +136,23 @@ public class RequirementService {
         return startDraft(requirement);
     }
 
+    /**
+     * A requirement Modernization writes for a run (docs/MODERNIZATION.md): the brief as its document and a spec made from
+     * the code analysis, approved at once by the person who started the run. No model drafts it and it needs no screen
+     * designs: it changes existing screens.
+     */
+    public RequirementDetail fromModernization(UUID workspaceId, String title, String brief, RequirementSpec spec, String by) {
+        requireWorkspace(workspaceId);
+        if (!buildable(spec)) {
+            throw new BadRequestException("The brief has nothing to build: no screens or requirements");
+        }
+        Requirement requirement = requirements.save(new Requirement(workspaceId, truncate(title, 300), null, brief.length(), brief));
+        int version = specs.add(requirement.getId(), RequirementSpecRepository.Origin.MODERNIZATION, spec);
+        requirement.ready(version, "Written by Modernization from the code analysis.");
+        requirement.approve(by);
+        return detail(requirements.save(requirement));
+    }
+
     // --- read ---
 
     @Transactional(readOnly = true)

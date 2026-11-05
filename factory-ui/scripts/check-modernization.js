@@ -1,5 +1,5 @@
 // Modernization check: drives a running factory in headless Edge or Chrome, read-only, for every workspace with an
-// analysis (?ojr=modernization):
+// analysis (?ojr=modernization-analysis, the Code analysis page under Modernization):
 //  - one header with Run Analysis and the ⋯ menu; at most one problem bar, else one Next line;
 //  - the answer first: with a React Native or React target, four boxes (converted, in progress, failed, not started)
 //    whose counts add up to the modules and which filter the module list; the target card names the app and its pack;
@@ -59,7 +59,7 @@ const SHOTS = args.shots || args.out ? path.resolve(args.shots || args.out) : nu
     await run((id) => new Promise((r) => window.require(['services/workspaceSelection'], (sel) => { sel.selectedId(id); r(1); })), w.id);
     s.errors.length = 0;
     requests.length = 0;
-    await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'modernization' })); return 1; });
+    await run(() => { window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'modernization-analysis' })); return 1; });
     await sleep(7000);
     const has = await run(() => !!document.querySelector('#mzModuleList'));
     if (!has) {

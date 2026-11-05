@@ -5,44 +5,159 @@
   "description": "How each Oracle JET element in the bank's code maps to a component of one target pack. A status is never set from names alone: every entry needs evidence. See docs/COMPONENT-PACKS.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["target", "packVersion", "entries"],
+  "required": [
+    "target",
+    "packVersion",
+    "entries"
+  ],
   "properties": {
-    "target": { "enum": ["jet-premium", "react", "react-native", "angular"] },
-    "packVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$" },
+    "target": {
+      "enum": [
+        "jet-premium",
+        "react",
+        "react-native",
+        "angular"
+      ]
+    },
+    "packVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+    },
     "entries": {
       "type": "array",
       "items": {
-        "type": "object", "additionalProperties": false,
-        "required": ["source", "target", "status", "confidence", "evidence"],
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "target",
+          "status",
+          "confidence",
+          "evidence"
+        ],
         "properties": {
-          "source": { "type": "string", "pattern": "^oj-[a-z-]+$", "description": "JET element, for example oj-input-number." },
-          "target": { "type": ["string", "null"], "description": "Target component id, or null when unsupported." },
-          "status": { "enum": ["direct-replacement", "property-mapping", "event-mapping", "custom-transformation", "manual-intervention", "unsupported"] },
+          "source": {
+            "type": "string",
+            "pattern": "^oj-[a-z-]+$",
+            "description": "JET element, for example oj-input-number."
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target component id, or null when unsupported."
+          },
+          "status": {
+            "enum": [
+              "direct-replacement",
+              "property-mapping",
+              "event-mapping",
+              "custom-transformation",
+              "manual-intervention",
+              "unsupported"
+            ]
+          },
           "properties": {
             "type": "array",
             "items": {
-              "type": "object", "additionalProperties": false, "required": ["from"],
-              "properties": { "from": { "type": "string" }, "to": { "type": ["string", "null"] }, "conversion": { "type": "string" } }
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "from"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conversion": {
+                  "type": "string"
+                }
+              }
             }
           },
           "events": {
             "type": "array",
             "items": {
-              "type": "object", "additionalProperties": false, "required": ["from"],
-              "properties": { "from": { "type": "string" }, "to": { "type": ["string", "null"] }, "conversion": { "type": "string" } }
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "from"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conversion": {
+                  "type": "string"
+                }
+              }
             }
           },
-          "binding": { "type": "string", "description": "How the Knockout binding converts, for example value=\"{{amount}}\" to value/onChange with useForm." },
-          "validation": { "type": "string" },
-          "accessibility": { "type": "string" },
-          "styling": { "type": "string" },
-          "lifecycle": { "type": "string" },
-          "unsupported": { "type": "array", "items": { "type": "string" } },
-          "manual": { "type": "array", "items": { "type": "string" }, "description": "What a person has to finish." },
-          "confidence": { "enum": ["high", "medium", "low"] },
-          "evidence": { "type": "string", "description": "The parity test or API comparison that supports the status." }
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The JET slots the premium element takes, by name."
+          },
+          "binding": {
+            "type": "string",
+            "description": "How the Knockout binding converts, for example value=\"{{amount}}\" to value/onChange with useForm."
+          },
+          "validation": {
+            "type": "string"
+          },
+          "accessibility": {
+            "type": "string"
+          },
+          "styling": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "unsupported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "manual": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What a person has to finish."
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "description": "The parity test or API comparison that supports the status."
+          }
         }
       }
+    },
+    "$comment": {
+      "type": "string"
     }
   }
 }

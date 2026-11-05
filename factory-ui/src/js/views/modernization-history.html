@@ -1,0 +1,65 @@
+<div class="factory-pg factory-mh">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>History</h1>
+      <p class="factory-rq-lead">Every modernization run in this workspace, with its change and what happened to it.</p>
+    </div>
+    <div class="factory-rq-headbar">
+      <fx-select id="mhRange" label="Period" hide-label options="[[rangeOptions]]" value="{{range}}"></fx-select>
+      <button type="button" class="fx-btn fx-btn--primary" id="mhNew" on-click="[[newRun]]" :disabled="[[!canManage()]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>New modernization</button>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[error()]]"><p class="factory-rqd-next" id="mhError" role="alert"><oj-bind-text value="[[error]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[loading() && runs().length === 0]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the history"><span class="fx-skeleton"></span></div></oj-bind-if>
+  <oj-bind-if test="[[!loading() && runs().length === 0 && !error()]]">
+    <div class="fx-empty" id="mhEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span><strong>No runs yet</strong>Start a wave on the Upgrade plan or a module on the Migration planner; each run shows here.</div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[runs().length > 0]]">
+    <div class="factory-mo-kpis"><oj-bind-for-each data="[[kpis]]" as="k"><template><div class="fx-kpi factory-mu-tile"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.k]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.v]]"></oj-bind-text></span></div></template></oj-bind-for-each></div>
+    <div class="factory-mh-top">
+      <section class="fx-card" aria-label="Runs per week"><fx-bar-chart id="mhBars" label="Runs per week" period-label="Week of" summary="[[barSummary]]" series="[[series]]" bars="[[bars]]"></fx-bar-chart></section>
+      <section class="fx-card" aria-labelledby="mhByTitle">
+        <h2 class="fx-card-title" id="mhByTitle">By result</h2>
+        <ul class="factory-mc-facets"><oj-bind-for-each data="[[byResult]]" as="b"><template><li><button type="button" :class="[[b.data.css]]" :aria-pressed="[[b.data.pressed]]" on-click="[[b.data.pick]]">
+          <span><oj-bind-text value="[[b.data.label]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[b.data.n + ' · ' + b.data.pct]]"></oj-bind-text></span></button></li></template></oj-bind-for-each></ul>
+      </section>
+    </div>
+
+    <section class="fx-card" aria-labelledby="mhRunsTitle">
+      <div class="factory-mc-toolbar"><h2 class="fx-card-title" id="mhRunsTitle">Runs</h2>
+        <fx-input id="mhSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search runs" hide-label placeholder="Search runs" value="{{query}}"></fx-input>
+        <a class="fx-btn fx-btn--secondary fx-btn--sm" id="mhCsv" :href="[[csvHref]]"><span class="factory-nav-icon factory-ico-download" aria-hidden="true"></span>Download report</a>
+        <a class="fx-btn fx-btn--secondary fx-btn--sm" id="mhLogs" :href="[[logsHref]]"><oj-bind-text value="[[logsLabel]]"></oj-bind-text></a></div>
+      <div class="fx-table-wrap"><table class="fx-table" id="mhTable"><caption class="fx-visually-hidden">Modernization runs</caption>
+        <thead><tr><th scope="col" class="fx-col-check"><span class="fx-visually-hidden">Pick</span></th><th scope="col">Run</th><th scope="col">Change</th><th scope="col">Path</th><th scope="col">Technology</th><th scope="col">Started</th><th scope="col">Took</th><th scope="col">Result</th><th scope="col">Outcome</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+        <tbody><oj-bind-for-each data="[[rows]]" as="r"><template><tr>
+          <td class="fx-col-check"><input type="checkbox" class="fx-check" :aria-label="[['Pick ' + r.data.subject]]" :checked="[[r.data.checked]]" on-click="[[r.data.toggle]]"/></td>
+          <th scope="row"><oj-bind-text value="[[r.data.subject]]"></oj-bind-text></th><td class="fx-muted"><oj-bind-text value="[[r.data.change]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[r.data.path]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.technology]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[r.data.when]]"></oj-bind-text><small class="fx-muted factory-mh-by"><oj-bind-text value="[[r.data.by]]"></oj-bind-text></small></td><td><oj-bind-text value="[[r.data.took]]"></oj-bind-text></td>
+          <td><span :class="[[r.data.css]]"><oj-bind-text value="[[r.data.state]]"></oj-bind-text></span></td><td class="fx-muted"><oj-bind-text value="[[r.data.outcome]]"></oj-bind-text></td>
+          <td class="fx-table-actions"><button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" :aria-label="[['Open the details of ' + r.data.subject]]" on-click="[[r.data.open]]"><span class="factory-nav-icon factory-ico-eye" aria-hidden="true"></span></button>
+            <fx-menu-button variant="ghost" size="sm" icon="more" icon-only label="[[r.data.subject + ' actions']]" align="end" items="[[r.data.menu]]" on-fx-action="[[r.data.menuAction]]"></fx-menu-button></td></tr></template></oj-bind-for-each></tbody></table></div>
+      <oj-bind-if test="[[rows().length === 0]]"><p class="fx-muted factory-mc-none">No run matches.</p></oj-bind-if>
+      <div class="fx-pager"><span class="fx-pager-text"><oj-bind-text value="[[pager.text() + ' runs']]"></oj-bind-text></span>
+        <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
+        <oj-bind-for-each data="[[pager.numbers]]" as="n"><template><oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if><oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if></template></oj-bind-for-each>
+        <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button></div>
+    </section>
+
+    <fx-sheet id="mhPanel" open="{{panelOpen}}" heading="[[panelRun() ? panelRun().subject : '']]" subtitle="Steps, files and delivery of this run">
+      <div class="factory-cf-detail-wrap"><div>
+        <div class="fx-tabs" role="tablist" aria-label="Run"><oj-bind-for-each data="[[panelTabs]]" as="t"><template><button type="button" role="tab" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each></div>
+        <div role="tabpanel" class="factory-mm-panel">
+          <oj-bind-if test="[[!panelChange()]]"><p class="fx-muted">No change for this run.</p></oj-bind-if>
+          <oj-bind-if test="[[panelTab() === 'steps']]"><ol class="fx-timeline"><oj-bind-for-each data="[[panelSteps]]" as="e"><template><li><span class="fx-timeline-dot"></span><span><oj-bind-text value="[[e.data.text]]"></oj-bind-text><span class="fx-muted"><oj-bind-text value="[[e.data.by ? ' · ' + e.data.by : '']]"></oj-bind-text></span></span><span class="fx-timeline-time"><oj-bind-text value="[[e.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol></oj-bind-if>
+          <oj-bind-if test="[[panelTab() === 'files']]"><ul class="factory-mm-screens"><oj-bind-for-each data="[[panelFiles]]" as="f"><template><li><span class="factory-mo-mono"><oj-bind-text value="[[f.data.path]]"></oj-bind-text></span> <span class="fx-muted"><oj-bind-text value="[[f.data.action + ' · ' + f.data.check]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul></oj-bind-if>
+          <oj-bind-if test="[[panelTab() === 'delivery']]"><dl class="factory-mp-facts"><oj-bind-for-each data="[[panelDelivery]]" as="d"><template><div><dt><oj-bind-text value="[[d.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[d.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl></oj-bind-if>
+        </div>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[panelLog]]">Download the log</button><button type="button" class="fx-btn fx-btn--primary" on-click="[[panelToReview]]">Open in Review</button></div>
+      </div></div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

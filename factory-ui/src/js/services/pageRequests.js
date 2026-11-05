@@ -34,6 +34,11 @@ define(['knockout'], function (ko) {
      */
     codeTab: ko.observable(null),
     /** A fact key the Code page opens on Codebase facts, for example 'obdx.version' (the Workspaces sheet) */
-    codeFact: ko.observable(null)
+    codeFact: ko.observable(null),
+    /**
+     * What a Modernization page opens on, left by the page before it: { element } (Component mapping), { compatibility }
+     * (Component inventory), { components } (Upgrade plan), { runId } (Workspace, Validation, Review), { tab }
+     */
+    modernization: ko.observable(null)
   };
 });

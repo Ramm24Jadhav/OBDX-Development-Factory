@@ -8,7 +8,7 @@
 /*
  * The application shell: sidebar navigation, top bar, sign-in page and update banner.
  */
-define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', './services/busy', './services/strips', './services/reveal', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more'],
+define(['knockout', './services/session', './services/updates', './services/dashboard', './services/workspaceSelection', './services/pageRequests', './services/preferences', './services/ui', './services/palette', './services/busy', './services/strips', './services/reveal', 'ojs/ojarraydataprovider', 'ojs/ojcontext', 'ojs/ojmodule-element-utils', 'ojs/ojresponsiveutils', 'ojs/ojresponsiveknockoututils', 'ojs/ojcorerouter', 'ojs/ojmodulerouter-adapter', 'ojs/ojknockoutrouteradapter', 'ojs/ojurlparamadapter', 'ojs/ojmodule-element', 'ojs/ojknockout', './components/fx-elements', './components/fx-more', './components/fx-charts'],
   function (ko, session, updates, dashboard, workspaceSelection, pageRequests, preferences, ui, palette, busy, strips, reveal, ArrayDataProvider, Context, moduleUtils, ResponsiveUtils, ResponsiveKnockoutUtils, CoreRouter, ModuleRouterAdapter, KnockoutRouterAdapter, UrlParamAdapter) {
 
      function ControllerViewModel() {
@@ -49,8 +49,22 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'deliver' } },
         { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'deliver' } },
         { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'deliver' } },
-        { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'modernize' } },
-        { path: 'components', detail: { label: 'Component factory', icon: 'cube', group: 'modernize' } },
+        // Modernization folds open its four reference pages (subs); the steps of each path open from the flow, not the menu
+        { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'modernize', subLabel: 'Overview',
+          subs: ['modernization', 'components', 'modernization-settings', 'modernization-history'] } },
+        { path: 'components', detail: { label: 'Component factory', icon: 'cube', group: 'modernize', sub: true, parent: 'modernization' } },
+        { path: 'modernization-settings', detail: { label: 'Technology settings', icon: 'cog', group: 'modernize', sub: true, parent: 'modernization' } },
+        { path: 'modernization-history', detail: { label: 'History', icon: 'clock', group: 'modernize', sub: true, parent: 'modernization' } },
+        { path: 'modernization-path', detail: { label: 'Choose a path', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-components', detail: { label: 'Component inventory', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-mapping', detail: { label: 'Component mapping', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-upgrade', detail: { label: 'Upgrade plan', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-catalogue', detail: { label: 'Technology catalogue', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-planner', detail: { label: 'Migration planner', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-workspace', detail: { label: 'Migration workspace', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-validation', detail: { label: 'Validation', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-review', detail: { label: 'Review and approval', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-analysis', detail: { label: 'Code analysis', hidden: true, parent: 'modernization' } },
         { path: 'models', detail: { label: 'Models & AI', icon: 'chip', group: 'admin' } },
         { path: 'integrations', detail: { label: 'Integrations', icon: 'plug', group: 'admin' } },
         { path: 'admin', detail: { label: 'Administration', icon: 'cog', group: 'admin', adminOnly: true } },
@@ -95,7 +109,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
 
       // The sidebar: the Administration page is shown only to administrators.
       const visibleRoutes = () => navData.slice(1)
-        .filter((route) => !route.detail.hidden && route.detail.sidebar !== false && (!route.detail.adminOnly || session.isAdmin()));
+        .filter((route) => !route.detail.hidden && !route.detail.sub && route.detail.sidebar !== false && (!route.detail.adminOnly || session.isAdmin()));
       const navItems = ko.observableArray(visibleRoutes());
       session.user.subscribe(() => navItems(visibleRoutes()));
       this.sidebarOpen = ko.observable(false);
@@ -106,21 +120,53 @@ define(['knockout', './services/session', './services/updates', './services/dash
         if (!current) { return false; }
         return current.path === path || (current.detail.parent === path && navItems().indexOf(current) < 0);
       };
-      const navGroup = (group) => ko.pureComputed(() => navItems().filter((route) => route.detail.group === group).map((route) => ({
-        label: route.detail.label,
-        href: '?ojr=' + route.path,
-        iconClass: 'factory-nav-icon factory-ico-' + route.detail.icon,
-        active: ko.pureComputed(() => isActive(route.path)),
+      const openPath = (path) => (event) => {
         // A plain click opens the page here; Ctrl or Shift click opens it in a new tab.
-        open: (event) => {
-          if (event.ctrlKey || event.metaKey || event.shiftKey) {
-            return;
-          }
-          event.preventDefault();
-          router.go({ path: route.path });
-          this.sidebarOpen(false);
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+          return;
         }
-      })));
+        event.preventDefault();
+        router.go({ path: path });
+        this.sidebarOpen(false);
+      };
+      // An entry with subs (Modernization) folds them open on any of its pages, or when the user opens it
+      const subsKept = (() => { try { return window.localStorage.getItem('factory.navSubsOpen') === '1'; } catch (e) { return false; } })();
+      const subsOpen = ko.observable(subsKept);
+      subsOpen.subscribe((value) => { try { window.localStorage.setItem('factory.navSubsOpen', value ? '1' : '0'); } catch (e) { /* not kept */ } });
+      const inFamily = (path) => ko.pureComputed(() => {
+        const current = currentRoute();
+        return !!current && (current.path === path || current.detail.parent === path);
+      });
+      const subItem = (owner, path) => {
+        const route = navData.find((r) => r.path === path);
+        return {
+          label: path === owner.path ? owner.detail.subLabel || route.detail.label : route.detail.label,
+          href: '?ojr=' + path,
+          // Overview stays marked on the steps of a path, which are in no menu
+          active: ko.pureComputed(() => {
+            const current = currentRoute();
+            return !!current && (current.path === path || (path === owner.path && current.detail.parent === owner.path && current.detail.hidden));
+          }),
+          open: openPath(path)
+        };
+      };
+      const navGroup = (group) => ko.pureComputed(() => navItems().filter((route) => route.detail.group === group).map((route) => {
+        const subs = (route.detail.subs || []).map((p) => subItem(route, p));
+        const family = inFamily(route.path);
+        const shown = ko.pureComputed(() => subs.length > 0 && !this.sidebarCollapsed() && (family() || subsOpen()));
+        return {
+          label: route.detail.label,
+          href: '?ojr=' + route.path,
+          iconClass: 'factory-nav-icon factory-ico-' + route.detail.icon,
+          active: ko.pureComputed(() => isActive(route.path) || (subs.length > 0 && family())),
+          open: openPath(route.path),
+          hasSubs: subs.length > 0,
+          subs: subs,
+          subsId: 'nav-subs-' + route.path,
+          subsShown: shown,
+          toggleSubs: () => subsOpen(!shown())
+        };
+      }));
       // Administration folds away (remembered in this browser; the key was factory.navSetupOpen when the section was
       // called Setup) and opens by itself on one of its pages. In the collapsed menu every section shows as icons.
       const adminItems = navGroup('admin');

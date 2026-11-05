@@ -1,0 +1,66 @@
+{
+  "$comment": "The Technology catalogue of the migration path (docs/MODERNIZATION.md): technologies that keep OBDX as it is. pack names the target pack under target-packs/ that writes it; a technology is ready only when that pack is in the factory. The numbers of rules, templates and starter files are read from the pack itself.",
+  "technologies": [
+    {
+      "id": "react", "pack": "react", "platform": "web", "name": "React + TypeScript", "logo": "R",
+      "text": "Widely used, large ecosystem, runs beside the JET screens module by module.",
+      "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "High", "besideJet": true,
+      "points": ["Same OBDX REST services, session cookie and nonce", "Strong component libraries and accessibility tooling", "Suits long banking journeys", "Easy to hire for"],
+      "limits": [["Charts", "Keep the JET chart in a wrapper, or rebuild it"], ["Print layouts", "Server-side PDF as today"], ["Offline use", "Not supported"]]
+    },
+    {
+      "id": "react-native", "pack": "react-native", "platform": "mobile", "name": "React Native", "logo": "RN",
+      "text": "One code base for iOS and Android, with the same services as internet banking.",
+      "meta": "Expo build, app stores", "language": "TypeScript", "usedByBanks": "High", "besideJet": false,
+      "points": ["Same OBDX REST services and server-driven 2FA", "Native look on iOS and Android", "Biometric sign-in through the device", "Shares the bank design system's tokens"],
+      "limits": [["Charts", "Rebuild with the pack's spending chart"], ["Web screens", "Stay in internet banking"], ["Offline use", "Read-only caches only"]]
+    },
+    {
+      "id": "angular", "pack": "angular", "platform": "web", "name": "Angular", "logo": "A",
+      "text": "A full framework with forms, routing and testing built in; suits large teams.",
+      "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "High", "besideJet": true,
+      "points": ["Same OBDX REST services, session cookie and nonce", "Reactive forms for long journeys", "Material and the CDK for accessible components", "Strong typing and testing built in"],
+      "limits": [["Charts", "Keep the JET chart in a wrapper"], ["Print layouts", "Server-side PDF as today"]]
+    },
+    {
+      "id": "jet-core-pack", "pack": "jet-core-pack", "platform": "web", "name": "JET Core Pack", "logo": "J",
+      "text": "Oracle JET's newer components, for banks that stay with Oracle JET but leave Knockout.",
+      "meta": "Inside the OBDX UI", "language": "JavaScript", "usedByBanks": "Medium", "besideJet": true,
+      "points": ["Stays inside the OBDX UI", "Oracle-supported components", "The premium JET pack's Core Pack build", "Smallest change for the team"],
+      "limits": [["Older JET releases", "Needs JET 16 or later"]]
+    },
+    {
+      "id": "vue", "pack": "vue", "platform": "web", "name": "Vue 3", "logo": "V",
+      "text": "Light and quick to learn; a good fit for smaller teams.",
+      "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "Medium", "besideJet": true,
+      "points": ["Same OBDX REST services, session cookie and nonce", "Small and fast", "Easy to learn"],
+      "limits": [["Fewer banking component libraries", "The pack's components fill the gap"]]
+    },
+    {
+      "id": "flutter", "pack": "flutter", "platform": "mobile", "name": "Flutter", "logo": "F",
+      "text": "One code base for iOS and Android with its own rendering.",
+      "meta": "App stores", "language": "Dart", "usedByBanks": "Medium", "besideJet": false,
+      "points": ["Same OBDX REST services and server-driven 2FA", "Consistent look on every device", "Fast screens"],
+      "limits": [["Web", "Flutter Web is not offered: see below"], ["Dart", "A new language for most bank teams"]]
+    },
+    {
+      "id": "native", "pack": "native", "platform": "mobile", "name": "Swift and Kotlin", "logo": "S/K",
+      "text": "Fully native iOS and Android apps, two code bases.",
+      "meta": "App stores", "language": "Swift, Kotlin", "usedByBanks": "High", "besideJet": false,
+      "points": ["Same OBDX REST services", "Best device integration", "Platform look and accessibility"],
+      "limits": [["Two code bases", "Twice the screens to build and test"]]
+    },
+    {
+      "id": "capacitor", "pack": "capacitor", "platform": "mobile", "name": "Capacitor", "logo": "C",
+      "text": "Wraps the React or Angular web app as a mobile app.",
+      "meta": "App stores", "language": "TypeScript", "usedByBanks": "Medium", "besideJet": false,
+      "points": ["Reuses the web screens", "One team for web and mobile", "Device features through plugins"],
+      "limits": [["Native feel", "Web screens in a native shell"]]
+    }
+  ],
+  "notOffered": [
+    ["Next.js server rendering", "It puts a new server in front of OBDX that would hold the bank's session cookie. A static React build is offered instead."],
+    ["Flutter Web", "It draws on a canvas and its screen-reader support is off by default."],
+    ["SvelteKit, Blazor, .NET MAUI", "Few bank teams can staff or support them."]
+  ]
+}

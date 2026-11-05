@@ -6,7 +6,7 @@
       "name": "Premium Oracle JET",
       "package": "obdx-jet",
       "version": "0.1.0",
-      "path": "ui",
+      "path": "target-packs/components/jet-premium",
       "frameworkRange": "Oracle JET 6 and later, the release found in the bank’s code",
       "builds": [
         {
@@ -68,7 +68,7 @@
           "notes": "Assumed from JET 16, when the Core Pack elements the pack uses were all production. Change jetFrom here if a bank’s release proves otherwise."
         }
       ],
-      "state": "planned",
+      "state": "preview",
       "description": "Every component as a drop-in for the bank’s JET UI: the Knockout bindings stay, only the element changes. The premium skin adds layered elevation, floating labels with a focus glow, gradient buttons that lift on hover, raised segments, status dots, tabular figures for money and 70 to 150 ms motion. The factory builds it for the JET release it finds when it scans the workspace’s code: classic oj-* elements up to JET 15, the JET Core Pack (oj-c-*) from JET 16.",
       "repository": "oracle/oraclejet, JET Core Pack",
       "dependencies": [
@@ -83,8 +83,153 @@
           "licence": "UPL-1.0"
         }
       ],
-      "built": [],
-      "checks": {}
+      "built": [
+        {
+          "component": "button",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-button"
+        },
+        {
+          "component": "icon-button",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-icon-button"
+        },
+        {
+          "component": "text-field",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-text-field"
+        },
+        {
+          "component": "amount",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-amount"
+        },
+        {
+          "component": "select",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-select"
+        },
+        {
+          "component": "checkbox-group",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-checkbox-group"
+        },
+        {
+          "component": "choice-group",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-choice-group"
+        },
+        {
+          "component": "date",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-date"
+        },
+        {
+          "component": "card",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-card"
+        },
+        {
+          "component": "tabs",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-tabs"
+        },
+        {
+          "component": "data-grid",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-data-grid"
+        },
+        {
+          "component": "toast",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-toast"
+        },
+        {
+          "component": "dialog",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-dialog"
+        }
+      ],
+      "checks": {
+        "button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "icon-button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "text-field": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "amount": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "checkbox-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "choice-group": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "date": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "card": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "tabs": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "data-grid": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "toast": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        },
+        "dialog": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          }
+        }
+      }
     },
     {
       "id": "react",

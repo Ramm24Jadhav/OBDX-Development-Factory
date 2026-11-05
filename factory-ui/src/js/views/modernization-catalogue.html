@@ -1,0 +1,136 @@
+<div class="factory-pg factory-mt">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Technology catalogue</h1>
+      <p class="factory-rq-lead">Technologies that keep OBDX as it is. Pick one to plan the move.</p>
+    </div>
+    <div class="factory-rq-headbar"><span class="fx-muted" id="mtInUse"><oj-bind-text value="[[inUseText]]"></oj-bind-text></span></div>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><oj-bind-text value="[[pathName]]"></oj-bind-text></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[error()]]"><p class="factory-rqd-next" id="mtError" role="alert"><oj-bind-text value="[[error]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the catalogue"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[data()]]">
+    <div class="fx-card factory-mt-filters">
+      <fx-segmented id="mtPlatform" label="Platform" options="[[platformOptions]]" value="{{platform}}"></fx-segmented>
+      <fx-segmented id="mtReadiness" label="Pack readiness" options="[[readinessOptions]]" value="{{readiness}}"></fx-segmented>
+      <fx-input id="mtSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search technologies" hide-label placeholder="Search technologies" value="{{query}}"></fx-input>
+    </div>
+
+    <div class="factory-mt-layout">
+      <div class="factory-mt-main">
+        <h2 class="factory-mo-h2">Web (internet banking)</h2>
+        <div class="factory-mt-cards" role="radiogroup" aria-label="Web technologies">
+          <oj-bind-for-each data="[[web]]" as="t"><template>
+            <div :class="[[t.data.css]]" role="radio" :aria-checked="[[t.data.checked]]" tabindex="0" on-click="[[t.data.pick]]" :id="[['mtCard-' + t.data.id]]">
+              <span class="factory-mt-logo" aria-hidden="true"><oj-bind-text value="[[t.data.logo]]"></oj-bind-text></span>
+              <span class="factory-mt-card-text"><strong><oj-bind-text value="[[t.data.name]]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></span>
+                <small class="fx-muted"><oj-bind-text value="[[t.data.meta]]"></oj-bind-text></small></span>
+              <span class="factory-mt-card-tags"><span :class="[[t.data.readyCss]]"><oj-bind-text value="[[t.data.ready]]"></oj-bind-text></span><oj-bind-if test="[[t.data.inUse]]"><span class="fx-badge fx-badge--primary">In use</span></oj-bind-if></span>
+            </div></template></oj-bind-for-each>
+          <oj-bind-if test="[[web().length === 0]]"><p class="fx-muted">No web technology matches.</p></oj-bind-if>
+        </div>
+        <h2 class="factory-mo-h2">Mobile apps</h2>
+        <div class="factory-mt-cards" role="radiogroup" aria-label="Mobile technologies">
+          <oj-bind-for-each data="[[mobile]]" as="t"><template>
+            <div :class="[[t.data.css]]" role="radio" :aria-checked="[[t.data.checked]]" tabindex="0" on-click="[[t.data.pick]]" :id="[['mtCard-' + t.data.id]]">
+              <span class="factory-mt-logo" aria-hidden="true"><oj-bind-text value="[[t.data.logo]]"></oj-bind-text></span>
+              <span class="factory-mt-card-text"><strong><oj-bind-text value="[[t.data.name]]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></span>
+                <small class="fx-muted"><oj-bind-text value="[[t.data.meta]]"></oj-bind-text></small></span>
+              <span class="factory-mt-card-tags"><span :class="[[t.data.readyCss]]"><oj-bind-text value="[[t.data.ready]]"></oj-bind-text></span><oj-bind-if test="[[t.data.inUse]]"><span class="fx-badge fx-badge--primary">In use</span></oj-bind-if></span>
+            </div></template></oj-bind-for-each>
+          <oj-bind-if test="[[mobile().length === 0]]"><p class="fx-muted">No mobile technology matches.</p></oj-bind-if>
+        </div>
+        <details class="fx-disclosure factory-mt-not">
+          <summary><oj-bind-text value="[['Not offered, and why (' + notOffered().length + ')']]"></oj-bind-text></summary>
+          <ul><oj-bind-for-each data="[[notOffered]]" as="n"><template><li><strong><oj-bind-text value="[[n.data.name]]"></oj-bind-text></strong>: <oj-bind-text value="[[n.data.why]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        </details>
+
+        <section class="fx-card" aria-label="Compare">
+          <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Compare" on-keydown="[[tabKey]]">
+            <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mtTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+          </div>
+          <div role="tabpanel" class="factory-mm-panel">
+            <oj-bind-if test="[[tab() === 'comparison']]">
+              <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">Technology</th><th scope="col">Platform</th><th scope="col">Used by banks</th><th scope="col">Keeps the 8 OBDX rules</th><th scope="col">Beside the JET screens</th><th scope="col">Language</th><th scope="col">Target pack</th></tr></thead>
+                <tbody><oj-bind-for-each data="[[comparison]]" as="c"><template><tr><th scope="row"><oj-bind-text value="[[c.data.name]]"></oj-bind-text></th><td><oj-bind-text value="[[c.data.platform]]"></oj-bind-text></td><td><oj-bind-text value="[[c.data.used]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[c.data.rules]]"></oj-bind-text></td><td><oj-bind-text value="[[c.data.beside]]"></oj-bind-text></td><td><oj-bind-text value="[[c.data.language]]"></oj-bind-text></td><td><span :class="[[c.data.readyCss]]"><oj-bind-text value="[[c.data.ready]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+            </oj-bind-if>
+            <oj-bind-if test="[[tab() === 'packs']]">
+              <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">Pack</th><th scope="col">State</th><th scope="col" class="fx-num">Rules</th><th scope="col" class="fx-num">Templates</th><th scope="col">Starter</th></tr></thead>
+                <tbody><oj-bind-for-each data="[[packRows]]" as="p"><template><tr><th scope="row"><oj-bind-text value="[[p.data.name]]"></oj-bind-text></th><td><span :class="[[p.data.readyCss]]"><oj-bind-text value="[[p.data.ready]]"></oj-bind-text></span></td>
+                  <td class="fx-num"><oj-bind-text value="[[p.data.rules]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[p.data.templates]]"></oj-bind-text></td><td><oj-bind-text value="[[p.data.starter]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+              <p class="fx-help">Packs ship with the factory and update with it. Moving modules to a new pack version is proposed as a change, never applied by itself.</p>
+            </oj-bind-if>
+            <oj-bind-if test="[[tab() === 'obdx']]">
+              <p class="fx-muted">What every new screen keeps, whatever the technology. Each brief carries these rules and Validation checks them.</p>
+              <ol class="factory-mt-rules"><oj-bind-for-each data="[[rules]]" as="r"><template><li><strong><oj-bind-text value="[[r.data.id]]"></oj-bind-text></strong> <oj-bind-text value="[[r.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+            </oj-bind-if>
+          </div>
+        </section>
+      </div>
+
+      <oj-bind-if test="[[detail()]]">
+        <aside class="fx-card factory-mt-detail" aria-labelledby="mtDetailTitle">
+          <div class="factory-mt-detail-head"><span class="factory-mt-logo" aria-hidden="true"><oj-bind-text value="[[detail().logo]]"></oj-bind-text></span>
+            <div><h2 class="fx-card-title" id="mtDetailTitle"><oj-bind-text value="[[detail().name]]"></oj-bind-text></h2><span :class="[[detail().readyCss]]"><oj-bind-text value="[[detail().ready]]"></oj-bind-text></span></div></div>
+          <div class="fx-tabs" role="tablist" aria-label="Details" on-keydown="[[detailKey]]">
+            <oj-bind-for-each data="[[detailTabs]]" as="t"><template><button type="button" role="tab" :id="[['mtDTab-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+          </div>
+          <div role="tabpanel" class="factory-mm-panel">
+            <oj-bind-if test="[[detailTab() === 'overview']]">
+              <h3 class="factory-mm-module">Why it fits</h3>
+              <ul class="factory-mp-points"><oj-bind-for-each data="[[detail().points]]" as="p"><template><li><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[p.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+              <p class="fx-help"><oj-bind-text value="[[detail().besideJet + ' · ' + detail().language]]"></oj-bind-text></p>
+              <h3 class="factory-mm-module">OBDX rules covered</h3>
+              <p><oj-bind-text value="[[detail().rulesText]]"></oj-bind-text></p>
+            </oj-bind-if>
+            <oj-bind-if test="[[detailTab() === 'pack']]">
+              <p class="fx-muted"><oj-bind-text value="[[detail().packNote]]"></oj-bind-text></p>
+              <dl class="factory-mp-facts"><oj-bind-for-each data="[[detail().packFacts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+              <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mtOpenPack" on-click="[[openPack]]" :disabled="[[!detail().isReady]]">The target pack</button>
+            </oj-bind-if>
+            <oj-bind-if test="[[detailTab() === 'components']]">
+              <oj-bind-if test="[[detail().replaces.length === 0]]"><p class="fx-muted">No component pack for this technology yet.</p></oj-bind-if>
+              <ul class="factory-mm-screens"><oj-bind-for-each data="[[detail().replaces]]" as="c"><template><li><span class="factory-mc-el"><oj-bind-text value="[[c.data.component]]"></oj-bind-text></span> <span class="fx-muted">replaces <oj-bind-text value="[[c.data.jet]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            </oj-bind-if>
+            <oj-bind-if test="[[detailTab() === 'limits']]">
+              <ul class="factory-mm-screens"><oj-bind-for-each data="[[detail().limits]]" as="l"><template><li><strong><oj-bind-text value="[[l.data.limit]]"></oj-bind-text></strong> <span class="fx-muted"><oj-bind-text value="[[l.data.workaround]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            </oj-bind-if>
+          </div>
+          <oj-bind-if test="[[detail().isReady]]">
+            <fx-input id="mtAppFolder" label="App folder in the repository" value="{{appFolder}}" error="[[folderError]]" help="The new app is written here, beside the OBDX code." disabled="[[!canManage()]]"></fx-input>
+          </oj-bind-if>
+          <oj-bind-if test="[[!detail().isReady]]"><p class="fx-help">This technology can be used once its target pack is ready.</p></oj-bind-if>
+        </aside>
+      </oj-bind-if>
+    </div>
+
+    <div class="factory-mz-actions">
+      <button type="button" class="fx-btn fx-btn--ghost" id="mtBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Choose a path</button>
+      <div class="factory-mz-actions-end">
+        <button type="button" class="fx-btn fx-btn--primary" id="mtUse" on-click="[[use]]" :disabled="[[!canUse()]]"><oj-bind-text value="[[useLabel]]"></oj-bind-text><span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <fx-sheet id="mtPackSheet" open="{{panelOpen}}" heading="[[detail() ? detail().name + ': target pack' : '']]" subtitle="Rules, templates and the starter project the factory uses to write this technology">
+      <div class="factory-cf-detail-wrap">
+        <oj-bind-if test="[[detail()]]"><div>
+          <dl class="factory-mp-facts"><oj-bind-for-each data="[[detail().packFacts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+          <h3 class="factory-mm-module">Rules it checks</h3>
+          <ul class="factory-mm-screens"><oj-bind-for-each data="[[detail().ruleTitles]]" as="r"><template><li><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span> <oj-bind-text value="[[r.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <h3 class="factory-mm-module">OBDX rules</h3>
+          <ul class="factory-mm-screens"><oj-bind-for-each data="[[rules]]" as="r"><template><li><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span> <oj-bind-text value="[[r.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <p class="fx-help">A factory update can bring a new pack version. Moving modules to it is proposed as a change, never applied by itself.</p>
+          <div class="factory-mm-sheetfoot"><oj-bind-if test="[[detail().starterHref]]"><a class="fx-btn fx-btn--secondary" :href="[[detail().starterHref]]">Download the starter project</a></oj-bind-if>
+            <button type="button" class="fx-btn fx-btn--primary" on-click="[[closePack]]">Close</button></div>
+        </div></oj-bind-if>
+      </div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

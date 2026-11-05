@@ -24,7 +24,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `change/`: impact analysis and code generation. `ImpactAnalyzer` asks the model for a `ChangePlan`; `PlanParser` makes plans safe (paths, create/modify, layers); `CodeGenerator` writes each file and asks for fixes when `FileChecks` fail; `PatchWriter` writes Subversion-style patches; `ChangeService` runs the workflow and commits branches with `svnmucc`; `ChangeBuildService` runs the quick checks and Jenkins builds with the fix loop.
 - `pack/`: version packs. `VersionPacks` loads the YAML rule and recipe files (`RecipeLoader` for recipes and templates); `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings; `RecipeService` finds and pins reference examples.
 - `target/`: UI targets. `TargetPacks` loads `target-packs/`; `ScreenScaffolder` turns an approved Screen Model into a screen, test and texts for React Native or React; `TargetService` holds each workspace's target and app folder, the starter download and the planner's guide.
-- `modernization/`: the modernization inventory. `InventoryScanner` scans a working copy into screens, services, roles and flows; `InventoryService` stores it after each import and exports the screens as CSV.
+- `modernization/`: the modernization inventory and both modernization paths (docs/MODERNIZATION.md). `InventoryScanner` scans a working copy into screens (with each oj-* element counted), services, roles and flows; `InventoryService` stores it after each import and exports the screens as CSV. `ComponentInventory` and `MarkupConverter` give the UI path's inventory and mapping from the JET mapping registry; `UpgradePlans` and `MigrationPlans` the waves and the module order; `RunBriefs` writes a run's brief, which `ModernizationRunService` records as an approved requirement and a change; `TechnologyCatalogue` and `TechnologySettings` the migration's technologies; `ModernizationStore` the V35 and V36 records.
 - `jenkins/`: Jenkins settings, REST client and build log parsing.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC, SAML); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
@@ -595,6 +595,8 @@ Generated screens were checked with the real toolchains: the React Native starte
 
 ## Modernization inventory
 
+The two modernization paths built on this inventory (Overview, Choose a path, Component inventory and mapping, Upgrade plan, Technology catalogue, Migration planner, Workspace, Validation, Review and approval, History, Technology settings) are described in [MODERNIZATION.md](MODERNIZATION.md). The page described below is now **Code analysis** (route `modernization-analysis`), opened from the Overview; route `modernization` is the Overview.
+
 The **Modernization** page shows the migration map of a workspace's OBDX application, for planning a move of its frontend to React Native or React. It is scanned from the imported code after every import (and with **Scan again**), without a model, so the same code always gives the same inventory:
 
 - **Screens**: classic JET views with view models (`views/x.html` + `viewModels/x.js`), OBDX-style component folders (`x/x.html` + `x/x.js`, with `model.js` and the `nls` resource bundle), JET composite components (`component.json`) and VDOM components (`ojs/ojvcomponent`). For each: module (the folder after `modules/`, or the nearest meaningful folder), files, fields (Screen Model type, label binding, value binding), actions (buttons), the services it calls (`baseService.fetch({url: ...})`, `xService.post('payments/transfers/' + id + '/approve')`, `url:` properties; variables become `{}`), the screens it opens (`loadComponent('...')`, router `go`, `navigate`), and a size: S, M or L from fields + 2 x actions + 3 x services + 2 x screens opened + lines / 50.
@@ -927,6 +929,19 @@ object: compute those in the view model.
 | `GET` / `PUT /api/workspaces/{id}/target` | The workspace's UI target and app folder (`target`, `appFolder`) |
 | `GET /api/designs/{id}/code?module=` | The screen, test and texts a design becomes in the workspace's React Native or React app |
 | `GET /api/workspaces/{id}/inventory` | The modernization inventory (204 when not scanned yet) |
+| `GET /api/workspaces/{id}/modernization/overview` | Modernization Overview: the analysis, its numbers, both paths with what is delivered, findings, modules by state, recent activity, the modules |
+| `GET`/`PUT /api/workspaces/{id}/modernization/path` | The path choice (204 when none): path, scope and modules, how it runs, analysis, technology, draft or started (Manage code to save) |
+| `GET /api/workspaces/{id}/modernization/components` | The UI path's component inventory: one row per oj-* element with its premium replacement and mapping, totals, categories, usage by module, the compatibility matrix and findings; `components.csv?compatibility=&category=` as CSV |
+| `GET /api/workspaces/{id}/modernization/mapping?element=` | One element's mapping part by part, where it is used (screens by module, journeys, test files) and the bank's markup beside the premium markup |
+| `GET`/`PUT /api/workspaces/{id}/modernization/upgrade-plan` | The UI path's waves (`add`, and unsaved `grouping`, `components`, `off` on GET); `upgrade-plan.csv`; `POST upgrade-plan/start?wave=` starts a wave as a run |
+| `GET /api/modernization/catalogue` | The Technology catalogue (`target-packs/catalogue.json`) with each technology's readiness from the installed packs |
+| `GET`/`PUT /api/workspaces/{id}/modernization/planner` | The migration planner: modules with their needs, size, order, the team's weeks and state; `planner.csv`; `POST planner/start?module=` starts the next module (or the one named) as a run |
+| `GET`/`POST /api/workspaces/{id}/modernization/runs` | The runs, and start one (`{path, components, screens, wave}` or `{path: 'migration', module}`): its brief becomes an approved requirement and a change (Manage code) |
+| `GET /api/workspaces/{id}/modernization/runs/{runId}` and `/detail` | A run with its state from its change; the detail adds the brief, components, dependencies, the 8 OBDX rules with the check results, service calls and screens |
+| `POST /api/workspaces/{id}/modernization/runs/{runId}/security-review` | Sign off (`{done: true}`) or withdraw the security review (Approve) |
+| `POST /api/workspaces/{id}/modernization/runs/{runId}/reject` | Reject a run with a reason: its change is closed as abandoned (Manage code) |
+| `GET /api/workspaces/{id}/modernization/history.csv` and `history/logs.zip?runs=` | The runs as CSV, and their logs as a zip |
+| `GET /api/workspaces/{id}/modernization/settings?technology=`, `PUT .../settings/{technology}` | Technology settings: defaults from the packs, the workspace's values, the fixed OBDX connection and the Look from the component style (Manage code to save) |
 | `POST /api/workspaces/{id}/inventory/scan` | Scan the imported code again |
 | `GET /api/workspaces/{id}/inventory/screens.csv` | The screens as CSV for planning |
 | `POST /api/changes/{id}/build` | Build the change with Jenkins, fixing build errors in its files (background) |

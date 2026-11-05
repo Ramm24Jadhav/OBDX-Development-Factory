@@ -105,10 +105,10 @@ Status chips themselves use `ui.status(raw, text)` (`fx-badge fx-status` with an
 
 **Components on the page:** buttons and split buttons, fields, selects and multi-select, checks and switches,
 dates, chips, badges and status chips, carousel, cards, tables with pagination, progress and steps, alerts, toasts,
-dialog, sheet (drawer), popover, tooltip, breadcrumb, tabs, empty state, ring chart, code surfaces
+dialog, sheet (drawer), popover, tooltip, breadcrumb, tabs, empty state, ring chart, stacked bars, timeline, dependency diagram, code surfaces
 (`.factory-code`, `.fx-log`, the `--fx-syn-*` syntax colours), range and resizer.
 
-**Not in the product, so not on the page:** charts other than the ring (no bar or line charts), a data grid with
+**Not in the product, so not on the page:** line and pie charts (the ring, stacked bars, timeline and dependency diagram cover the factory's needs), a data grid with
 editable cells, and a date-range picker.
 
 **Accessibility rules:**
@@ -168,6 +168,9 @@ on Escape, an outside click or scrolling.
 | `fx-popover` | a button that opens rich content (slot) next to it; Escape closes |
 | `fx-sheet` | a side panel for details and logs (slot); traps focus, Escape and the backdrop close it |
 | `fx-resizer` | drag or arrow keys to resize the column before it, inside a grid marked `data-fx-panes`; remembered per `storage-key`; double-click or Enter resets |
+| `fx-bar-chart` | stacked bars, counts by state over time: `series` (`[{key, label, tone}]`, tone done, warning, failed, success or a token), `bars` (`[{label, values: {key: n}}]`), `label`, `summary`, `period-label`; axis from 0 with whole-number ticks, legend in words, arrow keys bar by bar with a tooltip, Show as a table (`js/components/fx-charts.js`) |
+| `fx-timeline-chart` | planned weeks per row: `rows` (`[{label, from, to, state}]`, state delivered, in-progress, planned or not-started, written in the row too), `total` weeks, `today` (a week), `scale` weeks or months; no dragging |
+| `fx-dep-graph` | which item needs which: `nodes` (`[{id, label, state?}]`), `edges` (`[{from, to}]`: from needs to), `selected` (writes back); columns by what each needs so lines go left to right, solid needs and dashed needed by for the picked node, Show as a list |
 | `ui.status(serverStatus, words?)` | one look per status category for every page: draft, queued, in progress, needs review, done, closed, failed (icon and words, never colour alone) |
 | `ui.tableKeys(rows, {open, toggle})` | list tables: ↑/↓ or J/K move, Enter opens, X selects |
 | `.fx-bulkbar`, `.fx-approval`, `.fx-context`, `.fx-disclosure`, `.fx-timeline`, `.fx-log`, `.fx-live` | bulk actions on selected rows; approval actions set apart from generate and validate; what the AI assistant answers from; advanced settings folded away; steps and activity; log text; a live indicator while real polling runs |

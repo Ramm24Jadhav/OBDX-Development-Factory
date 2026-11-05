@@ -70,11 +70,25 @@
                   <ul :id="[[grp.data.listId]]" :aria-labelledby="[[grp.data.headingId]]">
                     <oj-bind-for-each data="[[grp.data.items]]" as="item">
                       <template>
-                        <li><a :href="[[item.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': item.data.active()}]]"
-                               :aria-current="[[item.data.active() ? 'page' : null]]" on-click="[[item.data.open]]">
+                        <li :class="[[item.data.hasSubs ? 'factory-nav-has-subs' : null]]"><a :href="[[item.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-active': item.data.active()}]]"
+                               :aria-current="[[item.data.active() && !item.data.hasSubs ? 'page' : null]]" on-click="[[item.data.open]]">
                           <span :class="[[item.data.iconClass]]" aria-hidden="true"></span>
                           <span class="factory-nav-label"><oj-bind-text value="[[item.data.label]]"></oj-bind-text></span>
-                        </a></li>
+                        </a>
+                        <oj-bind-if test="[[item.data.hasSubs]]">
+                          <button type="button" class="factory-nav-subs-toggle" on-click="[[item.data.toggleSubs]]" :aria-controls="[[item.data.subsId]]"
+                                  :aria-expanded="[[item.data.subsShown() ? 'true' : 'false']]" :aria-label="[[(item.data.subsShown() ? 'Fold ' : 'Open ') + item.data.label]]">
+                            <span class="factory-nav-group-chevron" aria-hidden="true"></span></button>
+                          <ul class="factory-nav-subs" :id="[[item.data.subsId]]" :hidden="[[!item.data.subsShown()]]">
+                            <oj-bind-for-each data="[[item.data.subs]]" as="sub">
+                              <template>
+                                <li><a :href="[[sub.data.href]]" :class="[[{'factory-nav-link': true, 'factory-nav-sublink': true, 'factory-nav-active': sub.data.active()}]]"
+                                       :aria-current="[[sub.data.active() ? 'page' : null]]" on-click="[[sub.data.open]]">
+                                  <span class="factory-nav-label"><oj-bind-text value="[[sub.data.label]]"></oj-bind-text></span></a></li>
+                              </template>
+                            </oj-bind-for-each>
+                          </ul>
+                        </oj-bind-if></li>
                       </template>
                     </oj-bind-for-each>
                   </ul>
