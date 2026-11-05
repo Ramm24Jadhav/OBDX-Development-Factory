@@ -31,10 +31,12 @@ public class ModernizationController {
     private final AuditLog audit;
     private final com.obdx.factory.profile.ProjectProfileService profiles;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private final RunValidation validation;
 
     public ModernizationController(ModernizationService service, ModernizationRunService runs, TechnologyCatalogue catalogue, TechnologySettings settings,
                                    AccessGuard guard, AuditLog audit, com.obdx.factory.profile.ProjectProfileService profiles,
-                                   org.springframework.jdbc.core.JdbcTemplate jdbc) {
+                                   org.springframework.jdbc.core.JdbcTemplate jdbc, RunValidation validation) {
+        this.validation = validation;
         this.profiles = profiles;
         this.jdbc = jdbc;
         this.settings = settings;
@@ -135,6 +137,38 @@ public class ModernizationController {
             fact = new com.obdx.factory.componentpack.ComponentPackService.JetFact(null, "missing", List.of());
         }
         return runs.compatibility(workspaceId, packId, fact, jdbc);
+    }
+
+    /** Validation: the run's latest build, its tests by suite, coverage and gate, OBDX rules, service calls and screenshots. */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/validation")
+    public RunValidation.View validation(@PathVariable UUID workspaceId, @PathVariable UUID runId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return validation.view(workspaceId, runId);
+    }
+
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/validation/report.csv")
+    public org.springframework.http.ResponseEntity<String> validationCsv(@PathVariable UUID workspaceId, @PathVariable UUID runId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return org.springframework.http.ResponseEntity.ok().contentType(new org.springframework.http.MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test-report.csv\"").body(validation.reportCsv(workspaceId, runId));
+    }
+
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/validation/evidence.zip")
+    public org.springframework.http.ResponseEntity<byte[]> evidence(@PathVariable UUID workspaceId, @PathVariable UUID runId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.parseMediaType("application/zip"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test-evidence.zip\"").body(validation.evidenceZip(workspaceId, runId));
+    }
+
+    /** One screenshot of the run's build, through the factory. */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/validation/image")
+    public org.springframework.http.ResponseEntity<byte[]> validationImage(@PathVariable UUID workspaceId, @PathVariable UUID runId,
+                                                                         @org.springframework.web.bind.annotation.RequestParam String path) {
+        guard.require(workspaceId, Permission.VIEW);
+        String lower = path.toLowerCase(java.util.Locale.ROOT);
+        String type = lower.endsWith(".png") ? "image/png" : lower.endsWith(".webp") ? "image/webp" : "image/jpeg";
+        return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.parseMediaType(type))
+                .header("Content-Security-Policy", "default-src 'none'").body(validation.image(workspaceId, runId, path));
     }
 
     @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}")

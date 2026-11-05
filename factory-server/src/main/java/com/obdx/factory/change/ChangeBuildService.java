@@ -79,6 +79,39 @@ public class ChangeBuildService {
         this.executor = executor;
     }
 
+    /** The job parameters a job may take to run only some tests (the failed ones), in the order they are looked for. */
+    static final List<String> TEST_FILTERS = List.of("FAILED_TESTS", "TESTS", "TEST_FILTER");
+
+    /** Failed tests to run again, per change, while its build is starting (see startFailed). */
+    private final Map<UUID, List<String>> rerun = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Builds again with only the tests that failed in the last build: when a job takes a test filter parameter
+     * (FAILED_TESTS, TESTS or TEST_FILTER) it gets the failed tests' names; a job without one runs every test, and the
+     * change's message says so.
+     */
+    public ChangeService.ChangeDetail startFailed(UUID changeId) {
+        List<ChangeBuildStore.Build> list = builds.list(changeId);
+        List<String> failed = new ArrayList<>();
+        for (int i = list.size() - 1; i >= 0 && failed.isEmpty(); i--) {
+            ChangeBuildStore.Build b = list.get(i);
+            if (b.buildNumber() == null) {
+                continue;
+            }
+            builds.report(b.id()).cases().stream().filter(c -> "FAILED".equals(c.status())).forEach(c -> failed.add(c.className() + "#" + c.name()));
+        }
+        if (failed.isEmpty()) {
+            throw new com.obdx.factory.common.BadRequestException("The last build has no failed tests to run again. Run the tests instead.");
+        }
+        rerun.put(changeId, List.copyOf(failed));
+        try {
+            return start(changeId);
+        } catch (RuntimeException e) {
+            rerun.remove(changeId);
+            throw e;
+        }
+    }
+
     /** Starts building in the background: the delivered branch (BRANCH mode) or the patch (PATCH mode). */
     public ChangeService.ChangeDetail start(UUID changeId) {
         ChangeRequest change = changes.find(changeId);
@@ -193,6 +226,19 @@ public class ChangeBuildService {
 
     private JobOutcome buildOnce(JenkinsClient client, JenkinsSettings settings, ChangeRequest change, String job, UUID buildId) {
         Map<String, String> parameters = new LinkedHashMap<>();
+        List<String> only = rerun.remove(change.getId());
+        if (only != null) {
+            List<String> accepted = client.job(job).parameters();
+            String filter = TEST_FILTERS.stream().filter(accepted::contains).findFirst().orElse(null);
+            ChangeRequest current = changes.find(change.getId());
+            if (filter != null) {
+                parameters.put(filter, String.join(",", only));
+                current.build("BUILDING", "Running the " + only.size() + " failed test" + (only.size() == 1 ? "" : "s") + " again with Jenkins (" + job + ")...");
+            } else {
+                current.build("BUILDING", job + " takes no test filter parameter (" + String.join(", ", TEST_FILTERS) + "), so it runs every test again...");
+            }
+            repository.save(current);
+        }
         JenkinsClient.FileParameter file = null;
         if (settings.mode() == JenkinsSettings.Mode.BRANCH) {
             ChangeRequest current = changes.find(change.getId());
@@ -211,6 +257,7 @@ public class ChangeBuildService {
         JenkinsClient.BuildRef build = client.waitForStart(queue);
         builds.running(buildId, build.number(), build.url());
         String result = client.waitForResult(build);
+        keepReport(client, build, buildId);
         if ("SUCCESS".equals(result)) {
             builds.finish(buildId, result, List.of(), null);
             return new JobOutcome(true, List.of(), List.of());
@@ -242,6 +289,15 @@ public class ChangeBuildService {
         described.addAll(otherTests);
         builds.finish(buildId, result, described, BuildLogParser.tail(console, 60));
         return new JobOutcome(false, errors, unmatched);
+    }
+
+    /** Keeps the build's whole test report, coverage and images for Validation; a job that publishes none leaves them empty. */
+    private void keepReport(JenkinsClient client, JenkinsClient.BuildRef build, UUID buildId) {
+        try {
+            builds.report(buildId, client.testReport(build), client.lineCoverage(build), client.imageArtifacts(build));
+        } catch (RuntimeException e) {
+            log.warn("Could not read the test report of build {}: {}", build.url(), e.getMessage());
+        }
     }
 
     /** Lets the model fix each file with build errors, saves the fixes and, in BRANCH mode, commits them to the branch. */

@@ -64,6 +64,26 @@ public class ChangeBuildStore {
                 json.writeValueAsString(List.of(reason)), Timestamp.from(java.time.Instant.now()));
     }
 
+    /** Keeps a build's whole test report, line coverage (null: not published) and archived images (V38). */
+    public void report(UUID id, com.obdx.factory.jenkins.JenkinsClient.TestReport report, Double coverage, List<String> images) {
+        jdbc.update("UPDATE change_build SET report = ?::jsonb, coverage = ?, images = ?::jsonb WHERE id = ?",
+                report == null || !report.published() ? null : json.writeValueAsString(report.cases()), coverage, json.writeValueAsString(images), id);
+    }
+
+    /** The test cases of a build (empty: no report) and its coverage and images. */
+    public record Report(List<com.obdx.factory.jenkins.JenkinsClient.TestCase> cases, boolean published, Double coverage, List<String> images) {
+    }
+
+    private static final TypeReference<List<com.obdx.factory.jenkins.JenkinsClient.TestCase>> CASES = new TypeReference<>() {
+    };
+
+    public Report report(UUID id) {
+        return jdbc.query("SELECT report::text AS report, coverage, images::text AS images FROM change_build WHERE id = ?", (rs, n) -> new Report(
+                rs.getString("report") == null ? List.of() : json.readValue(rs.getString("report"), CASES), rs.getString("report") != null,
+                (Double) rs.getObject("coverage"), rs.getString("images") == null ? List.of() : json.readValue(rs.getString("images"), STRINGS)), id)
+                .stream().findFirst().orElse(new Report(List.of(), false, null, List.of()));
+    }
+
     public void fixed(UUID id, List<String> files) {
         jdbc.update("UPDATE change_build SET fixed_files = ? WHERE id = ?", json.writeValueAsString(files), id);
     }

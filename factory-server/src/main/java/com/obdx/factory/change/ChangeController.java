@@ -234,9 +234,9 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/build")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail build(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail build(@PathVariable UUID id, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean failedOnly) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = builds.start(id);
+        ChangeService.ChangeDetail change = failedOnly ? builds.startFailed(id) : builds.start(id);
         audit.record("CHANGE_BUILD_STARTED", change.workspaceId(), change.title(), null);
         return change;
     }
