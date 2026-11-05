@@ -112,8 +112,14 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
         const total = this.total();
         const unit = this.months() ? 4 : 1;
         const out = [];
+        const start = this.props.start ? new Date(this.props.start) : null;
+        const dayOf = (w, d) => { const x = new Date(start); x.setDate(x.getDate() + (w - 1) * 7 + d); return x; };
+        const short = (x) => x.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
         for (let w = 1; w <= total; w += unit) {
-          out.push({ label: this.months() ? 'Month ' + (Math.floor((w - 1) / 4) + 1) : 'W' + w, style: sx('left:' + ((w - 1) / total * 100) + '%;width:' + (Math.min(unit, total - w + 1) / total * 100) + '%') });
+          // with a start date: weeks carry their dates, months their names
+          const label = this.months() ? (start ? dayOf(w, 13).toLocaleDateString(undefined, { month: 'long' }) : 'Month ' + (Math.floor((w - 1) / 4) + 1)) : 'W' + w;
+          out.push({ label: label, dates: !this.months() && start ? short(dayOf(w, 0)) + '–' + short(dayOf(w, 6)) : '',
+            style: sx('left:' + ((w - 1) / total * 100) + '%;width:' + (Math.min(unit, total - w + 1) / total * 100) + '%') });
         }
         return out;
       });
@@ -129,23 +135,24 @@ define(['knockout', 'ojs/ojcomposite', 'ojs/ojknockout'], function (ko, Composit
         return {
           label: r.label, words: words, stateText: STATE_WORDS[state] || state, stateCss: 'fx-tl-state is-' + state,
           barStyle: sx('left:' + ((from - 1) / this.total() * 100) + '%;width:' + ((to - from + 1) / this.total() * 100) + '%;background:' + tone(state)),
-          weeks: from === to ? 'W' + from : 'W' + from + '–' + to,
+          weeks: r.note ? r.note : from === to ? 'W' + from : 'W' + from + '–' + to,
           now: this.today() ? this.today().style : null
         };
       }));
+      this.legend = ['delivered', 'in-progress', 'planned', 'not-started'].map((k) => ({ text: STATE_WORDS[k].charAt(0).toUpperCase() + STATE_WORDS[k].slice(1), style: sx('background:' + tone(k)) }));
     }
   }
   Composite.register('fx-timeline-chart', {
     view: '<figure class="fx-chart fx-timeline-chart">'
       + '<oj-bind-if test="[[$properties.label]]"><figcaption class="fx-chart-title"><oj-bind-text value="[[$properties.label]]"></oj-bind-text></figcaption></oj-bind-if>'
-      + '<div class="fx-tl-grid"><div class="fx-tl-head" aria-hidden="true"><span></span><div class="fx-tl-scale"><oj-bind-for-each data="[[scaleCells]]" as="s"><template><span :style="[[s.data.style]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></template></oj-bind-for-each><oj-bind-if test="[[today()]]"><b class="fx-tl-today-label" :style="[[today().style]]"><oj-bind-text value="[[today().label]]"></oj-bind-text></b></oj-bind-if></div><span></span></div>'
+      + '<div class="fx-tl-grid"><div class="fx-tl-head" aria-hidden="true"><span></span><div class="fx-tl-scale"><oj-bind-for-each data="[[scaleCells]]" as="s"><template><span :style="[[s.data.style]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text><oj-bind-if test="[[s.data.dates]]"><small class="fx-tl-dates"><oj-bind-text value="[[s.data.dates]]"></oj-bind-text></small></oj-bind-if></span></template></oj-bind-for-each><oj-bind-if test="[[today()]]"><b class="fx-tl-today-label" :style="[[today().style]]"><oj-bind-text value="[[today().label]]"></oj-bind-text></b></oj-bind-if></div><span></span></div>'
       + '<ul class="fx-tl-rows"><oj-bind-for-each data="[[rows]]" as="r"><template><li :aria-label="[[r.data.words]]"><span class="fx-tl-name"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></span>'
       + '<span class="fx-tl-track" aria-hidden="true"><i :style="[[r.data.barStyle]]"><oj-bind-text value="[[r.data.weeks]]"></oj-bind-text></i><oj-bind-if test="[[r.data.now]]"><b class="fx-tl-now" :style="[[r.data.now]]"></b></oj-bind-if></span>'
       + '<span :class="[[r.data.stateCss]]"><oj-bind-text value="[[r.data.stateText]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>'
-      + '</div></figure>',
+      + '</div><ul class="fx-chart-legend fx-tl-legend"><oj-bind-for-each data="[[legend]]" as="l"><template><li><i :style="[[l.data.style]]"></i><oj-bind-text value="[[l.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ul></figure>',
     viewModel: TimelineModel,
     metadata: { properties: { label: { type: 'string', value: '' }, rows: { type: 'array', value: [] }, total: { type: 'number', value: 0 },
-      today: { type: 'number', value: 0 }, scale: { type: 'string', value: 'weeks' } } }
+      today: { type: 'number', value: 0 }, scale: { type: 'string', value: 'weeks' }, start: { type: 'string', value: '' } } }
   });
 
   /* ---------- fx-dep-graph: nodes in columns by what they need; lines left to right ---------- */
