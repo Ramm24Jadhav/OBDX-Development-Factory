@@ -102,6 +102,43 @@ public final class RunBriefs {
         return new Brief(title, text.toString(), spec, screens.stream().map(Inventory.Screen::id).toList());
     }
 
+    /**
+     * Installs (or upgrades) the premium JET pack in the bank's UI: its files go in a bx folder beside the UI's other
+     * libraries, exactly as the factory ships them (the change writes them as they are), and the UI loads them once.
+     *
+     * @param from the version in the code before (null for an install)
+     */
+    public static Brief installPack(String packageName, String version, String from, List<String> files, String styleClasses) {
+        boolean upgrade = from != null;
+        String title = (upgrade ? "Upgrade " + packageName + " from " + from + " to " : "Install " + packageName + " ") + version;
+        StringBuilder text = new StringBuilder(title).append("\n\n");
+        text.append(upgrade ? "Replace the premium JET pack's files in the UI with version " + version + "." : "Add the premium JET pack to the bank's OBDX UI.")
+                .append(" Put these files in a folder named bx next to the UI's other JavaScript libraries (where knockout and the oj modules are"
+                        + " mapped in the RequireJS configuration), keeping their names: ")
+                .append(String.join(", ", files)).append(". The factory writes their content exactly as shipped; do not change them.\n");
+        if (!upgrade) {
+            text.append("\nThen, in the UI's own files:\n")
+                    .append("- RequireJS configuration (main.js, or path_mapping.json for an ojet build): add the path bx to the bx folder.\n")
+                    .append("- The page (index.html): link bx/bx.css once, after the theme's stylesheet.\n")
+                    .append("- The app's start (appController.js or main.js): require 'bx/bx' once, after ojs/ojknockout.\n")
+                    .append("- The page's root element (body): add the classes ").append(styleClasses).append(" (the workspace's component style).\n");
+        }
+        text.append("\nNo screen changes in this change: screens move to the premium elements through the upgrade plan's waves.\n");
+        List<RequirementSpec.FunctionalRequirement> requirements = List.of(
+                new RequirementSpec.FunctionalRequirement("FR-1", upgrade ? "Pack files at " + version : "Pack files in the UI",
+                        "The files " + String.join(", ", files) + " in a bx folder, as shipped by the factory.", "must", List.of()),
+                new RequirementSpec.FunctionalRequirement("FR-2", "The UI loads the pack once",
+                        "The bx path in the RequireJS configuration, bx.css linked on the page, bx/bx required at start.", "must", List.of()));
+        List<RequirementSpec.AcceptanceCriterion> criteria = List.of(
+                new RequirementSpec.AcceptanceCriterion("AC-1", "Every screen opens and works as before (no screen uses the pack yet).", List.of()),
+                new RequirementSpec.AcceptanceCriterion("AC-2", "The factory's checks and the Jenkins build pass.", List.of()));
+        RequirementSpec spec = new RequirementSpec(title, (upgrade ? "Upgrade" : "Install") + " the premium JET pack in the OBDX UI.", List.of(),
+                List.of(new RequirementSpec.BusinessRule("PK-1", "The pack's files are written exactly as the factory ships them.", List.of(), null)),
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of("The bx folder, the RequireJS paths, index.html and the app's start"),
+                List.of("Screens, services, models and business logic"), List.of(), requirements, criteria, List.of());
+        return new Brief(title, text.toString(), spec, List.of());
+    }
+
     /** The migration path: rewrite one module's screens in the target app, calling the same OBDX services. */
     public static Brief migration(Inventory inventory, String module, String technologyTitle, String appFolder) {
         List<Inventory.Screen> screens = inventory.screens().stream().filter(s -> s.module().equals(module)).toList();

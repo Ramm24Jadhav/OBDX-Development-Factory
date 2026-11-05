@@ -8,7 +8,7 @@
       <oj-bind-if test="[[styleText()]]"><span id="cfStyleStatus" role="status" :class="[[styleCss]]"><oj-bind-text value="[[styleText]]"></oj-bind-text></span></oj-bind-if>
       <button type="button" id="cfDefaultsButton" class="fx-btn fx-btn--secondary" on-click="[[openDefaults]]" :disabled="[[!draft()]]">Style defaults</button>
       <oj-bind-if test="[[dirty()]]"><button type="button" id="cfDiscardButton" class="fx-btn fx-btn--ghost" on-click="[[discard]]">Discard</button></oj-bind-if>
-      <button type="button" id="cfSaveButton" class="fx-btn fx-btn--primary" on-click="[[save]]" :disabled="[[!dirty()]]">Save component style</button>
+      <button type="button" id="cfSaveButton" class="fx-btn fx-btn--primary" on-click="[[save]]" :disabled="[[!canManage()]]" :title="[[canManage() ? '' : 'Saving the style needs the Manage code permission']]">Save component style</button>
     </div>
   </div>
 
@@ -20,10 +20,10 @@
       <oj-bind-for-each data="[[tiles]]" as="t">
         <template>
           <button type="button" role="tab" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :id="[['cfPack-' + t.data.id]]" :class="[[t.data.css]]" on-click="[[t.data.pick]]">
-            <span class="factory-cf-tile-head"><strong><oj-bind-text value="[[t.data.name]]"></oj-bind-text></strong><span :class="[[t.data.state.css]]"><oj-bind-text value="[[t.data.state.text]]"></oj-bind-text></span></span>
+            <span class="factory-cf-tile-head"><span class="factory-cf-logo" aria-hidden="true"><oj-bind-text value="[[t.data.logo]]"></oj-bind-text></span><strong><oj-bind-text value="[[t.data.name]]"></oj-bind-text></strong><span :class="[[t.data.state.css]]"><oj-bind-text value="[[t.data.state.text]]"></oj-bind-text></span></span>
             <span class="factory-cf-mono"><oj-bind-text value="[[t.data.pkg]]"></oj-bind-text></span>
             <span class="factory-cf-tile-range"><oj-bind-text value="[[t.data.range]]"></oj-bind-text></span>
-            <span class="factory-cf-bar" aria-hidden="true"><i class="factory-cf-bar-ok" :style.width="[[t.data.available]]"></i><i class="factory-cf-bar-test" :style.width="[[t.data.inTest]]"></i></span>
+            <span class="factory-cf-bar" aria-hidden="true"><i class="factory-cf-bar-ok" :style="[[t.data.available]]"></i><i class="factory-cf-bar-test" :style="[[t.data.inTest]]"></i></span>
             <span class="factory-cf-tile-counts"><oj-bind-text value="[[t.data.counts]]"></oj-bind-text></span>
           </button>
         </template>
@@ -38,12 +38,20 @@
       </div>
     </oj-bind-if>
 
-    <div class="fx-card factory-cf-toolbar">
-      <fx-input id="cfSearch" class="factory-cf-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components, elements or what they are built on" value="{{query}}"></fx-input>
-      <fx-segmented id="cfReadiness" label="Readiness" options="[[readinessOptions]]" value="{{readiness}}"></fx-segmented>
-      <fx-select id="cfMapping" label="Mapping" options="[[mappingOptions]]" value="{{mapping}}"></fx-select>
-      <oj-bind-if test="[[filtered()]]"><button type="button" id="cfClear" class="fx-btn fx-btn--link" on-click="[[clearFilters]]">Clear search and filters</button></oj-bind-if>
-    </div>
+    <oj-bind-if test="[[!inCopies()]]">
+      <div class="fx-card factory-cf-toolbar">
+        <fx-input id="cfSearch" class="factory-cf-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components, elements or what they are built on" value="{{query}}"></fx-input>
+        <div class="factory-cf-chips" role="group" aria-label="Version"><span class="factory-cf-chips-label">Version</span>
+          <oj-bind-for-each data="[[versionChips]]" as="v"><template><button type="button" :class="[[v.data.css]]" :aria-pressed="[[v.data.pressed]]" on-click="[[v.data.pick]]"><oj-bind-text value="[[v.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
+        </div>
+        <fx-segmented id="cfReadiness" label="Readiness" options="[[readinessOptions]]" value="{{readiness}}"></fx-segmented>
+        <button type="button" id="cfManage" class="fx-btn fx-btn--secondary" on-click="[[openManage]]">Manage pack</button>
+      </div>
+      <div class="factory-cf-chips factory-cf-mapchips" role="group" aria-label="Mapping"><span class="factory-cf-chips-label">Mapping</span>
+        <oj-bind-for-each data="[[mapChips]]" as="m"><template><button type="button" :class="[[m.data.css]]" :aria-pressed="[[m.data.pressed]]" on-click="[[m.data.pick]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
+        <oj-bind-if test="[[filtered()]]"><button type="button" id="cfClear" class="fx-btn fx-btn--link" on-click="[[clearFilters]]">Clear search and filters</button></oj-bind-if>
+      </div>
+    </oj-bind-if>
 
     <div class="factory-cf-body">
       <nav class="fx-card factory-cf-rail" aria-label="Categories">
@@ -52,76 +60,270 @@
             <button type="button" :id="[['cfCat-' + c.data.id]]" :class="[[c.data.css]]" on-click="[[c.data.pick]]"><span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-cf-count"><oj-bind-text value="[[c.data.count]]"></oj-bind-text></span></button>
           </template>
         </oj-bind-for-each>
+        <hr class="factory-cf-rail-rule"/>
+        <button type="button" id="cfCat-copies" :class="[[copiesCss]]" on-click="[[showCopies]]"><span>My copies</span><span class="factory-cf-count"><oj-bind-text value="[[copiesCount]]"></oj-bind-text></span></button>
       </nav>
 
-      <section class="fx-card factory-cf-list" aria-labelledby="cfResult">
-        <p id="cfResult" class="factory-cf-result" role="status"><oj-bind-text value="[[resultText]]"></oj-bind-text></p>
-        <oj-bind-if test="[[rows().length === 0]]">
-          <div class="fx-empty" id="cfEmpty"><p>No components match the search and filters.</p><button type="button" class="fx-btn fx-btn--secondary" on-click="[[clearFilters]]">Clear search and filters</button></div>
-        </oj-bind-if>
-        <ul class="factory-cf-rows">
-          <oj-bind-for-each data="[[pager.rows]]" as="r">
+      <oj-bind-if test="[[!inCopies()]]">
+        <section class="factory-cf-list" aria-labelledby="cfResult">
+          <oj-bind-if test="[[inWidgets()]]">
+            <div class="factory-cf-chips" role="group" aria-label="Dashboard"><oj-bind-for-each data="[[dashChips]]" as="g"><template><button type="button" :class="[[g.data.css]]" :aria-pressed="[[g.data.pressed]]" on-click="[[g.data.pick]]"><oj-bind-text value="[[g.data.label]]"></oj-bind-text></button></template></oj-bind-for-each></div>
+          </oj-bind-if>
+          <p id="cfResult" class="factory-cf-result" role="status"><oj-bind-text value="[[resultText]]"></oj-bind-text></p>
+          <oj-bind-if test="[[cards().length === 0]]">
+            <div class="fx-empty" id="cfEmpty"><p>No components match the search and filters.</p><button type="button" class="fx-btn fx-btn--secondary" on-click="[[clearFilters]]">Clear search and filters</button></div>
+          </oj-bind-if>
+          <oj-bind-for-each data="[[cards]]" as="c">
             <template>
-              <li>
-                <button type="button" class="factory-cf-row" :id="[['cfRow-' + r.data.id]]" on-click="[[r.data.open]]">
-                  <span class="factory-cf-row-main">
-                    <span class="factory-cf-row-title"><strong><oj-bind-text value="[[r.data.name]]"></oj-bind-text></strong>
-                      <oj-bind-if test="[[r.data.foundation]]"><span class="fx-badge fx-badge--violet">Foundation</span></oj-bind-if>
-                      <oj-bind-if test="[[r.data.category]]"><span class="fx-muted">in <oj-bind-text value="[[r.data.category]]"></oj-bind-text></span></oj-bind-if>
-                      <oj-bind-if test="[[r.data.dashboard]]"><span class="fx-muted"><oj-bind-text value="[[r.data.dashboard]]"></oj-bind-text></span></oj-bind-if></span>
-                    <span class="fx-muted"><oj-bind-text value="[[r.data.purpose]]"></oj-bind-text></span>
-                  </span>
-                  <span class="factory-cf-row-map"><span class="factory-cf-mono"><oj-bind-text value="[[r.data.workspace]]"></oj-bind-text></span><span aria-hidden="true">→</span><span class="factory-cf-mono"><oj-bind-text value="[[r.data.packName]]"></oj-bind-text></span></span>
-                  <span class="factory-cf-row-tags">
-                    <span :class="[[r.data.readiness.css]]"><oj-bind-text value="[[r.data.readiness.text]]"></oj-bind-text></span>
-                    <span :class="[[r.data.mapping.css]]"><oj-bind-text value="[[r.data.mapping.text + (r.data.proposed ? ' · proposed' : '')]]"></oj-bind-text></span>
-                  </span>
-                  <span class="factory-cf-row-built fx-muted"><oj-bind-text value="[['Built on ' + r.data.builtOn]]"></oj-bind-text><br/><oj-bind-text value="[[r.data.styleText]]"></oj-bind-text></span>
-                </button>
-              </li>
+              <article class="fx-card factory-cf-card" :id="[['cfCard-' + c.data.id]]" :aria-labelledby="[['cfCardName-' + c.data.id]]">
+                <header class="factory-cf-card-head">
+                  <h2 :id="[['cfCardName-' + c.data.id]]"><oj-bind-text value="[[c.data.name]]"></oj-bind-text></h2>
+                  <oj-bind-if test="[[c.data.foundation]]"><span class="fx-badge fx-badge--violet">Foundation</span></oj-bind-if>
+                  <span :class="[[c.data.readiness.css]]"><oj-bind-text value="[[c.data.readiness.text]]"></oj-bind-text></span>
+                  <span :class="[[c.data.mapping.css]]"><oj-bind-text value="[[c.data.mapping.text + (c.data.proposed ? ' · proposed' : '')]]"></oj-bind-text></span>
+                  <oj-bind-if test="[[c.data.where]]"><span class="fx-muted"><oj-bind-text value="[[c.data.where]]"></oj-bind-text></span></oj-bind-if>
+                  <span class="fx-muted factory-cf-card-built"><oj-bind-text value="[[c.data.builtOn]]"></oj-bind-text></span>
+                </header>
+                <p class="fx-muted factory-cf-card-purpose"><oj-bind-text value="[[c.data.purpose]]"></oj-bind-text></p>
+                <div class="factory-cf-sides">
+                  <div class="factory-cf-side is-jet">
+                    <span class="factory-cf-side-tag">In your workspace · Oracle JET (stock)</span>
+                    <oj-bind-if test="[[c.data.jetUsed]]"><div class="factory-cf-jetlook">
+              <oj-bind-if test="[[c.data.jetKind === 'button']]"><div class="factory-cf-pv-row"><button type="button" class="factory-cf-j-btn is-cta"><oj-bind-text value="[[c.data.jetLabel]]"></oj-bind-text></button><button type="button" class="factory-cf-j-btn">Cancel</button></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'iconbutton']]"><div class="factory-cf-pv-row"><button type="button" class="factory-cf-j-btn is-icon" aria-label="More actions">⋯</button></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'field' || c.data.jetKind === 'amount' || c.data.jetKind === 'date']]"><label class="factory-cf-j-field"><span><oj-bind-text value="[[c.data.jetLabel]]"></oj-bind-text></span><input class="factory-cf-j-input" :type="[[c.data.jetKind === 'date' ? 'date' : 'text']]" :value="[[c.data.jetKind === 'amount' ? '1,250.00' : c.data.jetKind === 'date' ? '2026-11-12' : 'A. Sharma']]"/></label></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'select']]"><label class="factory-cf-j-field"><span><oj-bind-text value="[[c.data.jetLabel]]"></oj-bind-text></span><select class="factory-cf-j-input"><option>Savings •••• 4521</option><option>Current •••• 0187</option></select></label></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'check' || c.data.jetKind === 'radio']]"><fieldset class="factory-cf-j-set"><legend><oj-bind-text value="[[c.data.jetLabel]]"></oj-bind-text></legend><label><input :type="[[c.data.jetKind === 'check' ? 'checkbox' : 'radio']]" name="cfj" checked/> Email</label><label><input :type="[[c.data.jetKind === 'check' ? 'checkbox' : 'radio']]" name="cfj"/> SMS</label></fieldset></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'tabs']]"><div class="factory-cf-j-tabs"><span class="is-on">Current</span><span>Savings</span><span>Deposits</span></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'table']]"><table class="factory-cf-j-table"><caption class="fx-visually-hidden">Recent transactions</caption><thead><tr><th scope="col">Date</th><th scope="col">Description</th><th scope="col">Amount</th></tr></thead><tbody><tr><td>12 Nov</td><td>Electricity bill</td><td>-1,240.00</td></tr><tr><td>11 Nov</td><td>Salary</td><td>85,000.00</td></tr></tbody></table></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'dialog']]"><div class="factory-cf-j-dialog"><strong><oj-bind-text value="[[c.data.jetLabel]]"></oj-bind-text></strong><span>Transfer 1,240.00 to A. Sharma?</span><div class="factory-cf-pv-row"><button type="button" class="factory-cf-j-btn">Cancel</button><button type="button" class="factory-cf-j-btn is-cta">OK</button></div></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'toast']]"><div class="factory-cf-j-msg">✓ Beneficiary added</div></oj-bind-if>
+              <oj-bind-if test="[[c.data.jetKind === 'card' || c.data.jetKind === 'generic']]"><code class="factory-cf-mono"><oj-bind-text value="[[c.data.jetElement]]"></oj-bind-text></code></oj-bind-if>
+                    </div></oj-bind-if>
+                    <oj-bind-if test="[[!c.data.jetUsed]]"><p class="fx-muted factory-cf-side-empty"><oj-bind-text value="[[c.data.jetNote]]"></oj-bind-text></p></oj-bind-if>
+                  </div>
+                  <span class="factory-cf-arrow" aria-hidden="true">→</span>
+                  <div class="factory-cf-side is-pack">
+                    <span class="factory-cf-side-tag"><span class="fx-badge fx-badge--violet"><oj-bind-text value="[[c.data.tag]]"></oj-bind-text></span> <span class="factory-cf-logo is-sm" aria-hidden="true"><oj-bind-text value="[[c.data.logo]]"></oj-bind-text></span> <oj-bind-text value="[[c.data.packName]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[c.data.live]]"><div :class="[[c.data.css]]" :style="[[c.data.brand]]">
+              <oj-bind-if test="[[c.data.kind === 'button']]"><div class="factory-cf-pv-row"><bx-button label="[[c.data.label]]" chroming="[[c.data.chroming || 'callToAction']]" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'iconbutton']]"><div class="factory-cf-pv-row"><bx-icon-button label="More actions" on-oj-action="[[pv.press]]"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined" on-oj-action="[[pv.press]]"></bx-icon-button></div></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'field']]"><bx-text-field label-hint="[[c.data.label]]" value="{{pv.text}}" required="true" help.instruction="As it appears on the account"></bx-text-field></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'amount']]"><bx-amount label-hint="[[c.data.label]]" currency="INR" value="{{pv.amount}}" help.instruction="Up to 50,000.00 a day"></bx-amount></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'select']]"><bx-select label-hint="[[c.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-select></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'check']]"><bx-checkbox-group label-hint="[[c.data.label]]" options="[[pv.checkOptions]]" value="{{pv.checks}}"></bx-checkbox-group></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'radio']]"><bx-choice-group label-hint="[[c.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-choice-group></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'date']]"><bx-date label-hint="[[c.data.label]]" value="{{pv.day}}"></bx-date></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'dialog']]"><bx-card heading="[[c.data.label]]" subheading="Transfer 1,240.00 to A. Sharma?"><div slot="actions"><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Confirm" on-oj-action="[[pv.press]]"></bx-button></div></bx-card></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'toast']]"><bx-toast display="general" messages="[[pv.messages]]"></bx-toast></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'card']]"><bx-card heading="Savings •••• 4521" subheading="Available balance" interactive="true" on-oj-action="[[pv.press]]">₹85,000.00</bx-card></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'tabs']]"><bx-tabs label="Accounts" options="[[pv.tabs]]" selection="{{pv.tab}}"></bx-tabs></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pv.rows]]" columns="[[pv.columns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'generic']]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
+                    </div></oj-bind-if>
+                    <oj-bind-if test="[[c.data.native]]"><p class="fx-muted factory-cf-side-empty">Built for Android and iOS: React Native renders it with native controls, so it is checked on its own gallery, not in this browser.</p></oj-bind-if>
+                    <oj-bind-if test="[[!c.data.live && !c.data.native]]"><p class="fx-muted factory-cf-side-empty"><oj-bind-text value="[[c.data.emptyText]]"></oj-bind-text></p></oj-bind-if>
+                    <span class="factory-cf-mono factory-cf-side-name"><oj-bind-text value="[[c.data.nameInPack]]"></oj-bind-text></span>
+                  </div>
+                </div>
+                <div class="factory-cf-theme" role="group" :aria-label="[['Preview theme of ' + c.data.name]]">
+                  <span class="factory-cf-chips-label">Preview theme</span>
+                  <fx-segmented label="Theme" hide-label options="[[c.data.modes]]" value="{{c.data.mode}}"></fx-segmented>
+                  <span class="factory-cf-swatches"><oj-bind-for-each data="[[c.data.swatches]]" as="s"><template><button type="button" :class="[[s.data.css]]" :aria-pressed="[[s.data.on]]" :aria-label="[[s.data.label]]" :title="[[s.data.label]]" on-click="[[s.data.pick]]"></button></template></oj-bind-for-each></span>
+                  <span class="fx-muted"><oj-bind-text value="[[c.data.themeText]]"></oj-bind-text></span>
+                  <oj-bind-if test="[[c.data.differsTheme]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[c.data.applyTheme]]">Apply to all components</button></oj-bind-if>
+                </div>
+                <oj-bind-if test="[[c.data.canDesign]]">
+                  <div class="factory-cf-design">
+                    <div class="factory-cf-carousel" role="group" :aria-label="[['Design of ' + c.data.name]]">
+                      <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" aria-label="Previous design" on-click="[[c.data.prevLook]]">‹</button>
+                      <span class="factory-cf-dots" role="tablist" aria-label="Designs"><oj-bind-for-each data="[[c.data.dots]]" as="d"><template><button type="button" role="tab" :class="[[d.data.css]]" :aria-selected="[[d.data.on]]" :aria-label="[[d.data.label]]" :title="[[d.data.label]]" on-click="[[d.data.pick]]"></button></template></oj-bind-for-each></span>
+                      <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" aria-label="Next design" on-click="[[c.data.nextLook]]">›</button>
+                      <span class="factory-cf-look"><oj-bind-text value="[[c.data.lookLabel]]"></oj-bind-text></span>
+                    </div>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" :aria-expanded="[[c.data.motionExpanded]]" :title="[[c.data.motionTitle]]" on-click="[[c.data.toggleMotion]]">Motion ▾</button>
+                    <oj-bind-if test="[[c.data.differsDesign]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[c.data.applyDesign]]">Apply design and motion to all</button></oj-bind-if>
+                    <span class="factory-cf-card-actions"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[c.data.details]]">Details</button><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[c.data.customise]]">Customise</button></span>
+                  </div>
+                  <oj-bind-if test="[[c.data.motionOpen()]]">
+                    <div class="factory-cf-motion">
+                      <oj-bind-for-each data="[[c.data.motionGroups]]" as="g"><template>
+                        <div class="factory-cf-chips" role="group" :aria-label="[[g.data.label]]"><span class="factory-cf-chips-label"><oj-bind-text value="[[g.data.label]]"></oj-bind-text></span>
+                          <oj-bind-for-each data="[[g.data.chips]]" as="x"><template><button type="button" :class="[[x.data.css]]" :aria-pressed="[[x.data.on]]" on-click="[[x.data.pick]]"><oj-bind-text value="[[x.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
+                        </div>
+                      </template></oj-bind-for-each>
+                    </div>
+                  </oj-bind-if>
+                </oj-bind-if>
+                <oj-bind-if test="[[!c.data.canDesign]]"><div class="factory-cf-design"><span class="factory-cf-card-actions"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[c.data.details]]">Details</button></span></div></oj-bind-if>
+              </article>
             </template>
           </oj-bind-for-each>
-        </ul>
-        <oj-bind-if test="[[pager.pages() > 1]]">
-          <div class="factory-cf-pager"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[pager.prev]]" :disabled="[[pager.page() === 1]]">Previous</button><span class="fx-muted"><oj-bind-text value="[[pager.text]]"></oj-bind-text></span><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[pager.next]]" :disabled="[[pager.page() === pager.pages()]]">Next</button></div>
-        </oj-bind-if>
-      </section>
+          <oj-bind-if test="[[moreLeft() > 0]]"><div class="factory-cf-more"><button type="button" id="cfMore" class="fx-btn fx-btn--secondary" on-click="[[showMore]]"><oj-bind-text value="[[moreText]]"></oj-bind-text></button></div></oj-bind-if>
+        </section>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[inCopies()]]">
+        <section class="factory-cf-list" aria-labelledby="cfCopiesTitle">
+          <h2 id="cfCopiesTitle" class="factory-cf-copies-title">My copies</h2>
+          <p class="fx-muted">Your customised components for <oj-bind-text value="[[workspaceName]]"></oj-bind-text>. The modernization steps can use them like any shipped component; the shipped packs stay as they are.</p>
+          <oj-bind-if test="[[copyCards().length === 0]]"><div class="fx-empty" id="cfCopiesEmpty"><p>No copies yet. Open Customise on any new component and save it as a copy.</p></div></oj-bind-if>
+          <oj-bind-for-each data="[[copyCards]]" as="k">
+            <template>
+              <article class="fx-card factory-cf-card" :aria-label="[[k.data.name]]">
+                <header class="factory-cf-card-head"><h2 class="factory-cf-mono"><oj-bind-text value="[[k.data.name]]"></oj-bind-text></h2><span class="fx-badge fx-badge--success">Your copy</span><span class="fx-badge"><oj-bind-text value="[[workspaceName() + ' only']]"></oj-bind-text></span></header>
+                <p class="fx-muted"><oj-bind-text value="[[k.data.note]]"></oj-bind-text> · <oj-bind-text value="[[k.data.from]]"></oj-bind-text></p>
+                <div class="factory-cf-side is-pack is-wide"><span class="factory-cf-side-tag"><span class="fx-badge fx-badge--success">Your copy</span></span>
+                  <oj-bind-if test="[[k.data.live]]"><div :class="[[k.data.css]]" :style="[[k.data.style]]">
+              <oj-bind-if test="[[k.data.kind === 'button']]"><div class="factory-cf-pv-row"><bx-button label="[[k.data.label]]" chroming="[[k.data.chroming || 'callToAction']]" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button></div></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'iconbutton']]"><div class="factory-cf-pv-row"><bx-icon-button label="More actions" on-oj-action="[[pv.press]]"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined" on-oj-action="[[pv.press]]"></bx-icon-button></div></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'field']]"><bx-text-field label-hint="[[k.data.label]]" value="{{pv.text}}" required="true" help.instruction="As it appears on the account"></bx-text-field></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'amount']]"><bx-amount label-hint="[[k.data.label]]" currency="INR" value="{{pv.amount}}" help.instruction="Up to 50,000.00 a day"></bx-amount></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'select']]"><bx-select label-hint="[[k.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-select></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'check']]"><bx-checkbox-group label-hint="[[k.data.label]]" options="[[pv.checkOptions]]" value="{{pv.checks}}"></bx-checkbox-group></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'radio']]"><bx-choice-group label-hint="[[k.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-choice-group></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'date']]"><bx-date label-hint="[[k.data.label]]" value="{{pv.day}}"></bx-date></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'dialog']]"><bx-card heading="[[k.data.label]]" subheading="Transfer 1,240.00 to A. Sharma?"><div slot="actions"><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Confirm" on-oj-action="[[pv.press]]"></bx-button></div></bx-card></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'toast']]"><bx-toast display="general" messages="[[pv.messages]]"></bx-toast></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'card']]"><bx-card heading="Savings •••• 4521" subheading="Available balance" interactive="true" on-oj-action="[[pv.press]]">₹85,000.00</bx-card></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'tabs']]"><bx-tabs label="Accounts" options="[[pv.tabs]]" selection="{{pv.tab}}"></bx-tabs></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pv.rows]]" columns="[[pv.columns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
+              <oj-bind-if test="[[k.data.kind === 'generic']]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
+                  </div></oj-bind-if>
+                  <oj-bind-if test="[[!k.data.live]]"><p class="fx-muted factory-cf-side-empty">Previewed on its device.</p></oj-bind-if>
+                </div>
+                <div class="factory-cf-design"><span class="factory-cf-card-actions"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[k.data.remove]]" :disabled="[[!canManage()]]">Remove</button></span></div>
+              </article>
+            </template>
+          </oj-bind-for-each>
+        </section>
+      </oj-bind-if>
     </div>
   </oj-bind-if>
 
-  <fx-sheet id="cfDetailSheet" open="{{detailOpen}}" heading="[[detail() ? detail().name : '']]" subtitle="[[detail() ? detail().subtitle : '']]">
+  <fx-sheet id="cfDetailSheet" open="{{detailOpen}}" heading="[[detail() ? detail().title : '']]" subtitle="[[detail() ? detail().subtitle : '']]">
     <div class="factory-cf-detail-wrap"><oj-bind-if test="[[detail()]]">
       <div class="factory-cf-detail">
-        <p><oj-bind-text value="[[detail().purpose]]"></oj-bind-text> <oj-bind-text value="[[detail().workspace]]"></oj-bind-text></p>
-        <p class="fx-muted factory-cf-preview-note">The live preview of each design comes with the pack build: this component is not built in a pack the factory can render yet.</p>
-        <h3>In the four packs</h3>
-        <ul class="factory-cf-packs" id="cfPackList">
-          <oj-bind-for-each data="[[detail().packs]]" as="p">
-            <template>
-              <li><div class="factory-cf-packs-head"><strong><oj-bind-text value="[[p.data.pack]]"></oj-bind-text></strong><span class="factory-cf-mono"><oj-bind-text value="[[p.data.name]]"></oj-bind-text></span></div>
-                <div class="factory-cf-packs-tags"><span :class="[[p.data.readiness.css]]"><oj-bind-text value="[[p.data.readiness.text]]"></oj-bind-text></span><span :class="[[p.data.mapping.css]]"><oj-bind-text value="[[p.data.mapping.text + (p.data.proposed ? ' · proposed' : '')]]"></oj-bind-text></span></div>
-                <div class="fx-muted"><oj-bind-text value="[['Built on ' + p.data.builtOn]]"></oj-bind-text><oj-bind-if test="[[p.data.source]]"> · <span class="factory-cf-mono"><oj-bind-text value="[[p.data.source]]"></oj-bind-text></span></oj-bind-if></div></li>
-            </template>
-          </oj-bind-for-each>
-        </ul>
-        <p class="fx-muted"><oj-bind-text value="[[detail().evidence]]"></oj-bind-text></p>
-        <h3>Checks in <oj-bind-text value="[[detail().gatesFor]]"></oj-bind-text></h3>
-        <ul class="factory-cf-gates">
-          <oj-bind-for-each data="[[detail().gates]]" as="g">
-            <template><li><span><oj-bind-text value="[[g.data.name]]"></oj-bind-text></span><span :class="[[g.data.state.css]]"><oj-bind-text value="[[g.data.state.text]]"></oj-bind-text></span></li></template>
-          </oj-bind-for-each>
-        </ul>
-        <h3>Its style</h3>
-        <p class="fx-muted">Leave a choice on the workspace default to follow it.</p>
-        <div class="fx-form fx-form--2">
-          <fx-select id="cfLook" label="Design option" options="[[lookOptions]]" value="{{choice.look}}"></fx-select>
-          <fx-select id="cfHover" label="Hover" options="[[hoverOptions]]" value="{{choice.hover}}"></fx-select>
-          <fx-select id="cfClick" label="Click" options="[[clickOptions]]" value="{{choice.click}}"></fx-select>
-          <fx-select id="cfScroll" label="Scroll" options="[[scrollOptions]]" value="{{choice.scroll}}"></fx-select>
-          <fx-select id="cfMode" label="Theme" options="[[modeOptions]]" value="{{choice.mode}}"></fx-select>
-          <fx-select id="cfBrand" label="Brand" options="[[brandOptions]]" value="{{choice.brand}}"></fx-select>
-        </div>
-        <p class="fx-muted">Changes here are part of the unsaved style until you choose Save component style.</p>
+        <div class="factory-cf-detail-tags"><oj-bind-if test="[[detail().foundation]]"><span class="fx-badge fx-badge--violet">Foundation</span></oj-bind-if><span :class="[[detail().readiness.css]]"><oj-bind-text value="[[detail().readiness.text]]"></oj-bind-text></span><span :class="[[detail().mapping.css]]"><oj-bind-text value="[[detail().mapping.text]]"></oj-bind-text></span></div>
+        <div class="fx-tabs" role="tablist" aria-label="Component"><oj-bind-for-each data="[[detailTabs]]" as="t"><template><button type="button" role="tab" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each></div>
+        <oj-bind-if test="[[(detailTab() === 'overview' || detailTab() === 'customise') && detail().live]]">
+          <oj-bind-for-each data="[[[detail()]]]" as="dd"><template><div :class="[[dd.data.css]]" :style="[[dd.data.style]]">
+              <oj-bind-if test="[[dd.data.kind === 'button']]"><div class="factory-cf-pv-row"><bx-button label="[[dd.data.label]]" chroming="[[dd.data.chroming || 'callToAction']]" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button></div></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'iconbutton']]"><div class="factory-cf-pv-row"><bx-icon-button label="More actions" on-oj-action="[[pv.press]]"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined" on-oj-action="[[pv.press]]"></bx-icon-button></div></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'field']]"><bx-text-field label-hint="[[dd.data.label]]" value="{{pv.text}}" required="true" help.instruction="As it appears on the account"></bx-text-field></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'amount']]"><bx-amount label-hint="[[dd.data.label]]" currency="INR" value="{{pv.amount}}" help.instruction="Up to 50,000.00 a day"></bx-amount></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'select']]"><bx-select label-hint="[[dd.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-select></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'check']]"><bx-checkbox-group label-hint="[[dd.data.label]]" options="[[pv.checkOptions]]" value="{{pv.checks}}"></bx-checkbox-group></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'radio']]"><bx-choice-group label-hint="[[dd.data.label]]" options="[[pv.options]]" value="{{pv.choice}}"></bx-choice-group></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'date']]"><bx-date label-hint="[[dd.data.label]]" value="{{pv.day}}"></bx-date></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'dialog']]"><bx-card heading="[[dd.data.label]]" subheading="Transfer 1,240.00 to A. Sharma?"><div slot="actions"><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Confirm" on-oj-action="[[pv.press]]"></bx-button></div></bx-card></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'toast']]"><bx-toast display="general" messages="[[pv.messages]]"></bx-toast></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'card']]"><bx-card heading="Savings •••• 4521" subheading="Available balance" interactive="true" on-oj-action="[[pv.press]]">₹85,000.00</bx-card></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'tabs']]"><bx-tabs label="Accounts" options="[[pv.tabs]]" selection="{{pv.tab}}"></bx-tabs></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pv.rows]]" columns="[[pv.columns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
+              <oj-bind-if test="[[dd.data.kind === 'generic']]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
+          </div></template></oj-bind-for-each>
+        </oj-bind-if>
+        <oj-bind-if test="[[detailTab() === 'overview']]">
+          <div role="tabpanel">
+            <p><oj-bind-text value="[[detail().purpose]]"></oj-bind-text> <oj-bind-text value="[[detail().workspace]]"></oj-bind-text></p>
+            <h3>Checks for this version</h3>
+            <ul class="factory-cf-gates"><oj-bind-for-each data="[[detail().gates]]" as="g"><template><li><span><oj-bind-text value="[[g.data.name]]"></oj-bind-text></span><span :class="[[g.data.state.css]]"><oj-bind-text value="[[g.data.state.text]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            <h3>Built on</h3>
+            <table class="fx-table factory-cf-table"><thead><tr><th scope="col">Pack</th><th scope="col">Built on</th><th scope="col">Reference repo</th></tr></thead><tbody><oj-bind-for-each data="[[detail().builtOnRows]]" as="r"><template><tr><td><oj-bind-text value="[[r.data.pack]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.builtOn]]"></oj-bind-text></td><td class="factory-cf-mono"><oj-bind-text value="[[r.data.repo]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+            <h3>Accessibility</h3><p><oj-bind-text value="[[detail().accessibility]]"></oj-bind-text></p>
+            <h3>Responsive</h3><p><oj-bind-text value="[[detail().responsive]]"></oj-bind-text></p>
+            <h3>Dependencies</h3>
+            <table class="fx-table factory-cf-table"><thead><tr><th scope="col">Package</th><th scope="col">Version</th><th scope="col">Licence</th></tr></thead><tbody><oj-bind-for-each data="[[detail().deps]]" as="r"><template><tr><td class="factory-cf-mono"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.version]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.licence]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[detailTab() === 'api']]">
+          <div role="tabpanel">
+            <oj-bind-if test="[[!detail().hasApi]]"><p class="fx-muted">Its API is written when the component is built in a pack.</p></oj-bind-if>
+            <oj-bind-if test="[[detail().hasApi]]">
+              <h3>Properties</h3>
+              <table class="fx-table factory-cf-table"><thead><tr><th scope="col">Property</th><th scope="col">Type</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead><tbody><oj-bind-for-each data="[[detail().props]]" as="r"><template><tr><td class="factory-cf-mono"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td class="factory-cf-mono"><oj-bind-text value="[[r.data.type]]"></oj-bind-text></td><td class="factory-cf-mono"><oj-bind-text value="[[r.data.def]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.doc]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              <h3>Events</h3>
+              <table class="fx-table factory-cf-table"><thead><tr><th scope="col">Event</th><th scope="col">Payload</th><th scope="col">When</th></tr></thead><tbody><oj-bind-for-each data="[[detail().events]]" as="r"><template><tr><td class="factory-cf-mono"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.payload]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.when]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              <h3>Example</h3><pre class="factory-cf-code"><oj-bind-text value="[[detail().example]]"></oj-bind-text></pre>
+            </oj-bind-if>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[detailTab() === 'mapping']]">
+          <div role="tabpanel">
+            <oj-bind-if test="[[!detail().hasMapping]]"><p class="fx-muted">Nothing in the workspace to map from: this component is new.</p><p><oj-bind-text value="[[detail().evidence]]"></oj-bind-text></p></oj-bind-if>
+            <oj-bind-if test="[[detail().hasMapping]]">
+              <p class="factory-cf-mapline"><code class="factory-cf-mono"><oj-bind-text value="[[detail().mapFrom]]"></oj-bind-text></code> → <code class="factory-cf-mono"><oj-bind-text value="[[detail().mapTo]]"></oj-bind-text></code> <span :class="[[detail().mapStatus.css]]"><oj-bind-text value="[[detail().mapStatus.text]]"></oj-bind-text></span> <span class="fx-muted"><oj-bind-text value="[[detail().confidence]]"></oj-bind-text></span></p>
+              <p><oj-bind-text value="[[detail().evidence]]"></oj-bind-text></p>
+              <h3>Properties</h3>
+              <table class="fx-table factory-cf-table"><thead><tr><th scope="col">JET</th><th scope="col">Target</th><th scope="col">Conversion</th></tr></thead><tbody><oj-bind-for-each data="[[detail().mapProps]]" as="r"><template><tr><td class="factory-cf-mono"><oj-bind-text value="[[r.data.from]]"></oj-bind-text></td><td class="factory-cf-mono"><oj-bind-text value="[[r.data.to]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.conversion]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+              <h3>Binding</h3><p><oj-bind-text value="[[detail().binding]]"></oj-bind-text></p>
+              <h3>Not carried over</h3><p><oj-bind-text value="[[detail().notCarried]]"></oj-bind-text></p>
+              <h3>What a person does</h3><p><oj-bind-text value="[[detail().person]]"></oj-bind-text></p>
+            </oj-bind-if>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[detailTab() === 'compare']]">
+          <div role="tabpanel">
+            <p>The same logical component in the four packs: what differs and what is the same.</p>
+            <div class="factory-cf-scroll"><table class="fx-table factory-cf-table"><thead><tr><th scope="col"><span class="fx-visually-hidden">Aspect</span></th><oj-bind-for-each data="[[detail().compareHead]]" as="h"><template><th scope="col"><span class="factory-cf-logo is-sm" aria-hidden="true"><oj-bind-text value="[[h.data.logo]]"></oj-bind-text></span> <oj-bind-text value="[[h.data.name]]"></oj-bind-text></th></template></oj-bind-for-each></tr></thead>
+              <tbody><oj-bind-for-each data="[[detail().compareRows]]" as="r"><template><tr><th scope="row"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></th><oj-bind-for-each data="[[r.data.cells]]" as="x"><template><td><oj-bind-text value="[[x.data.text]]"></oj-bind-text></td></template></oj-bind-for-each></tr></template></oj-bind-for-each></tbody></table></div>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[detailTab() === 'customise']]">
+          <div role="tabpanel">
+            <oj-bind-if test="[[!detail().canCustomise]]"><p class="fx-muted">A copy starts from a component the pack has built.</p></oj-bind-if>
+            <oj-bind-if test="[[detail().canCustomise]]">
+              <div class="fx-form fx-form--2">
+                <fx-select id="cfVariant" label="Variant (as in shadcn/ui)" options="[[variantOptions]]" value="{{ed.variant}}"></fx-select>
+                <fx-select id="cfCorners" label="Corners" options="[[cornerOptions]]" value="{{ed.corners}}"></fx-select>
+                <fx-select id="cfSize" label="Size" options="[[sizeOptions]]" value="{{ed.size}}"></fx-select>
+                <fx-select id="cfColour" label="Colour" options="[[colourOptions]]" value="{{ed.colour}}"></fx-select>
+              </div>
+              <h3>Code</h3><pre class="factory-cf-code"><oj-bind-text value="[[detail().code]]"></oj-bind-text></pre>
+              <p class="fx-muted">The copy keeps the shipped component's behaviour, labels and accessibility; only its look changes. A pack upgrade never overwrites your copies.</p>
+              <div class="factory-cf-sheet-actions">
+                <span class="fx-muted"><oj-bind-text value="[[detail().copyLine]]"></oj-bind-text></span>
+                <button type="button" id="cfCancelCopy" class="fx-btn fx-btn--secondary" on-click="[[closeDetail]]">Cancel</button>
+                <button type="button" id="cfSaveCopy" :class="[[detail().changed ? 'fx-btn fx-btn--primary' : 'fx-btn fx-btn--primary is-muted']]" :aria-disabled="[[detail().changed ? 'false' : 'true']]" on-click="[[detail().saveCopy]]" :disabled="[[!canManage()]]">Save as new copy</button>
+              </div>
+            </oj-bind-if>
+          </div>
+        </oj-bind-if>
+      </div>
+    </oj-bind-if></div>
+  </fx-sheet>
+
+  <fx-sheet id="cfManageSheet" open="{{manageOpen}}" heading="[[manage() ? manage().name : '']]" subtitle="[[manage() ? manage().pkg : '']]">
+    <div class="factory-cf-detail-wrap"><oj-bind-if test="[[manage()]]">
+      <div class="factory-cf-detail">
+        <p><span class="factory-cf-logo" aria-hidden="true"><oj-bind-text value="[[manage().logo]]"></oj-bind-text></span> <oj-bind-text value="[[manage().line]]"></oj-bind-text></p>
+        <p class="fx-muted"><oj-bind-text value="[[manage().counts]]"></oj-bind-text></p>
+        <oj-bind-if test="[[manage().pending]]"><p class="factory-cf-note" role="status"><oj-bind-text value="[[manage().pending]]"></oj-bind-text> <a :href="[[manage().pendingChange]]">Open its review</a></p></oj-bind-if>
+        <oj-bind-if test="[[manage().upgradeAvailable]]">
+          <h3>Version <oj-bind-text value="[[manage().upgradeTo]]"></oj-bind-text> is available</h3>
+          <p class="fx-muted">Upgrading opens a change for review; screens move to the new version only when it is approved.</p>
+          <button type="button" id="cfUpgrade" class="fx-btn fx-btn--primary" on-click="[[install]]" :disabled="[[!canManage()]]" :title="[[canManage() ? '' : 'Needs the Manage code permission']]"><oj-bind-text value="[['Upgrade to ' + manage().upgradeTo]]"></oj-bind-text></button>
+        </oj-bind-if>
+        <oj-bind-if test="[[manage().canInstall]]">
+          <oj-bind-if test="[[manage().previewNote]]"><p class="factory-cf-note"><oj-bind-text value="[[manage().previewNote]]"></oj-bind-text></p></oj-bind-if>
+          <p class="fx-muted">Installing opens a change for review: it adds the pack's files to the UI as shipped and loads them once. No screen changes until a wave moves it.</p>
+          <button type="button" id="cfInstall" class="fx-btn fx-btn--primary" on-click="[[install]]" :disabled="[[!canManage() || !manage().ready]]" :title="[[!manage().ready ? 'The foundation set has not passed every check yet' : canManage() ? '' : 'Needs the Manage code permission']]">Install pack</button>
+        </oj-bind-if>
+        <oj-bind-if test="[[manage().starterNote]]"><p class="fx-muted"><oj-bind-text value="[[manage().starterNote]]"></oj-bind-text></p></oj-bind-if>
+        <oj-bind-if test="[[manage().next]]">
+          <h3>Being built: <oj-bind-text value="[[manage().next.version]]"></oj-bind-text></h3>
+          <p><strong>Adds:</strong> <oj-bind-text value="[[manage().next.adds]]"></oj-bind-text></p>
+          <p class="fx-muted"><oj-bind-text value="[[manage().next.notes]]"></oj-bind-text></p>
+        </oj-bind-if>
+        <h3>Compatibility</h3>
+        <button type="button" id="cfCompat" class="fx-btn fx-btn--secondary" on-click="[[checkCompat]]" :disabled="[[!workspaceId()]]"><oj-bind-text value="[['Check compatibility with ' + workspaceName()]]"></oj-bind-text></button>
+        <oj-bind-if test="[[compat()]]"><ul class="factory-cf-compat-list" role="status"><oj-bind-for-each data="[[compat]]" as="l"><template><li :class="[[l.data.css]]"><span aria-hidden="true"><oj-bind-text value="[[l.data.mark]]"></oj-bind-text></span> <oj-bind-text value="[[l.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ul></oj-bind-if>
+        <h3>Dependencies</h3>
+        <table class="fx-table factory-cf-table"><thead><tr><th scope="col">Package</th><th scope="col">Version</th><th scope="col">Licence</th></tr></thead><tbody><oj-bind-for-each data="[[manage().deps]]" as="r"><template><tr><td class="factory-cf-mono"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.version]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.licence]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+        <h3>Documentation</h3>
+        <p class="fx-muted">One page per component: properties, events, examples, mapping and checks.</p>
+        <a id="cfDocs" class="fx-btn fx-btn--secondary" :href="[[manage().docsHref]]" download>Export documentation</a>
       </div>
     </oj-bind-if></div>
   </fx-sheet>

@@ -1,5 +1,5 @@
 {
-  "$comment": "The four component packs. \"built\" lists the components that have an implementation; \"checks\" records the quality gate results per component (unit, accessibility, visual, themes, responsive, parity). A component is Available only when every gate is passed. See docs/COMPONENT-PACKS.md.",
+  "$comment": "The four component packs. \"built\" lists the components that have an implementation; \"checks\" records the quality gate results per component (unit, accessibility, visual, themes, responsive, parity). A component is Available only when every gate is passed. See docs/COMPONENT-PACKS.md. \"next\" is the version being built: the components it adds (planned until they pass their checks) and its notes.",
   "packs": [
     {
       "id": "jet-premium",
@@ -486,7 +486,26 @@
           }
         }
       },
-      "folder": "target-packs/components/jet-premium"
+      "folder": "target-packs/components/jet-premium",
+      "next": {
+        "version": "0.2.0",
+        "state": "planned",
+        "adds": [
+          "text-area",
+          "password",
+          "number-input",
+          "currency-picker",
+          "multi-select",
+          "switch",
+          "date-range",
+          "search",
+          "autocomplete",
+          "document-upload"
+        ],
+        "notes": [
+          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+        ]
+      }
     },
     {
       "id": "react",
@@ -885,7 +904,26 @@
           }
         }
       },
-      "folder": "target-packs/components/react"
+      "folder": "target-packs/components/react",
+      "next": {
+        "version": "0.2.0",
+        "state": "planned",
+        "adds": [
+          "text-area",
+          "password",
+          "number-input",
+          "currency-picker",
+          "multi-select",
+          "switch",
+          "date-range",
+          "search",
+          "autocomplete",
+          "document-upload"
+        ],
+        "notes": [
+          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+        ]
+      }
     },
     {
       "id": "react-native",
@@ -1118,7 +1156,26 @@
           }
         }
       },
-      "folder": "target-packs/components/react-native"
+      "folder": "target-packs/components/react-native",
+      "next": {
+        "version": "0.2.0",
+        "state": "planned",
+        "adds": [
+          "text-area",
+          "password",
+          "number-input",
+          "currency-picker",
+          "multi-select",
+          "switch",
+          "date-range",
+          "search",
+          "autocomplete",
+          "document-upload"
+        ],
+        "notes": [
+          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+        ]
+      }
     },
     {
       "id": "angular",
@@ -1497,7 +1554,26 @@
           }
         }
       },
-      "folder": "target-packs/components/angular"
+      "folder": "target-packs/components/angular",
+      "next": {
+        "version": "0.2.0",
+        "state": "planned",
+        "adds": [
+          "text-area",
+          "password",
+          "number-input",
+          "currency-picker",
+          "multi-select",
+          "switch",
+          "date-range",
+          "search",
+          "autocomplete",
+          "document-upload"
+        ],
+        "notes": [
+          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+        ]
+      }
     }
   ]
 }

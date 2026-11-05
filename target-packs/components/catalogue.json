@@ -31,6 +31,47 @@
           "sample": {
             "label": "Continue",
             "value": "primary"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The button text"
+              },
+              {
+                "name": "chroming",
+                "type": "'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger'",
+                "default": "'callToAction'",
+                "doc": "callToAction is the screen's main action"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows it busy and stops a second press"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "the click event",
+                "when": "Pressed, unless disabled or busy"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-button label=\"Pay now\" chroming=\"callToAction\" on-oj-action=\"[[pay]]\"></bx-button>",
+              "react": "<Button label=\"Pay now\" onAction={pay} />",
+              "react-native": "<Button label=\"Pay now\" onAction={pay} />",
+              "angular": "<bx-button label=\"Pay now\" (action)=\"pay()\" />"
+            }
           }
         },
         {
@@ -58,6 +99,47 @@
           "sample": {
             "label": "Download statement",
             "extra": "↓"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "What it does: its name for screen readers and its tooltip"
+              },
+              {
+                "name": "icon",
+                "type": "'more' | 'close'",
+                "default": "'more'",
+                "doc": "The icon"
+              },
+              {
+                "name": "chroming",
+                "type": "string",
+                "default": "'borderless'",
+                "doc": "Look"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "the click event",
+                "when": "Pressed, unless disabled"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-icon-button label=\"More actions\" on-oj-action=\"[[more]]\"></bx-icon-button>",
+              "react": "<IconButton label=\"More actions\" onAction={more} />",
+              "react-native": "<IconButton label=\"More actions\" onAction={more} />",
+              "angular": "<bx-icon-button label=\"More actions\" (action)=\"more()\" />"
+            }
           }
         },
         {
@@ -138,6 +220,83 @@
           "sample": {
             "label": "Nickname",
             "value": "My savings"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "maxLength",
+                "type": "number",
+                "default": "—",
+                "doc": "Length limit, with a counter"
+              },
+              {
+                "name": "clearable",
+                "type": "boolean",
+                "default": "false",
+                "doc": "A clear button while it has a value"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the new text",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-text-field label-hint=\"Beneficiary name\" value=\"{{name}}\" required=\"true\" length.max=\"40\"></bx-text-field>",
+              "react": "<TextField testID=\"name\" label=\"Beneficiary name\" value={name} onChange={setName} required maxLength={40} />",
+              "react-native": "<TextField testID=\"name\" label=\"Beneficiary name\" value={name} onChange={setName} required maxLength={40} />",
+              "angular": "<bx-text-field testID=\"name\" label=\"Beneficiary name\" [(value)]=\"name\" [required]=\"true\" [maxLength]=\"40\" />"
+            }
           }
         },
         {
@@ -247,6 +406,83 @@
             "label": "Amount",
             "value": "1,250.00",
             "extra": "USD"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "number | null",
+                "default": "null",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "currency",
+                "type": "string",
+                "default": "''",
+                "doc": "ISO code: shown beside the amount, sets the decimals"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "default": "—",
+                "doc": "Lowest amount"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "—",
+                "doc": "Highest amount"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the amount as a number, rounded to the currency's decimals (null when empty)",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-amount label-hint=\"Amount\" currency=\"INR\" value=\"{{amount}}\" max=\"50000\"></bx-amount>",
+              "react": "<AmountInput testID=\"amt\" label=\"Amount\" currency=\"INR\" value={amount} onChange={setAmount} max={50000} />",
+              "react-native": "<AmountInput testID=\"amt\" label=\"Amount\" currency=\"INR\" value={amount} onChange={setAmount} max={50000} />",
+              "angular": "<bx-amount testID=\"amt\" label=\"Amount\" currency=\"INR\" [(value)]=\"amount\" [max]=\"50000\" />"
+            }
           }
         },
         {
@@ -300,6 +536,77 @@
           "sample": {
             "label": "Purpose",
             "value": "Family support|Rent|Education"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "options",
+                "type": "Array<string | {value, label, disabled}>",
+                "default": "[]",
+                "doc": "The choices"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "'Choose'",
+                "doc": "Shown when nothing is chosen"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the chosen value ('' when cleared)",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-select label-hint=\"From account\" options=\"[[accounts]]\" value=\"{{account}}\" required=\"true\"></bx-select>",
+              "react": "<Dropdown testID=\"from\" label=\"From account\" options={accounts} value={account} onChange={setAccount} required />",
+              "react-native": "<Dropdown testID=\"from\" label=\"From account\" options={accounts} value={account} onChange={setAccount} required />",
+              "angular": "<bx-select testID=\"from\" label=\"From account\" [options]=\"accounts\" [(value)]=\"account\" [required]=\"true\" />"
+            }
           }
         },
         {
@@ -409,6 +716,77 @@
           "sample": {
             "label": "Tell me by",
             "value": "Email|SMS|Push notification"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string[]",
+                "default": "null",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "options",
+                "type": "Array<string | {value, label, disabled}>",
+                "default": "[]",
+                "doc": "The choices"
+              },
+              {
+                "name": "horizontal",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Side by side"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the list of chosen values",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-checkbox-group label-hint=\"Send alerts by\" options=\"[[channels]]\" value=\"{{alerts}}\"></bx-checkbox-group>",
+              "react": "<CheckboxGroup testID=\"alerts\" label=\"Send alerts by\" options={channels} value={alerts} onChange={setAlerts} />",
+              "react-native": "<CheckboxGroup testID=\"alerts\" label=\"Send alerts by\" options={channels} value={alerts} onChange={setAlerts} />",
+              "angular": "<bx-checkbox-group testID=\"alerts\" label=\"Send alerts by\" [options]=\"channels\" [(value)]=\"alerts\" />"
+            }
           }
         },
         {
@@ -435,6 +813,77 @@
           },
           "sample": {
             "label": "Pay to"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "options",
+                "type": "Array<string | {value, label, disabled}>",
+                "default": "[]",
+                "doc": "The choices"
+              },
+              {
+                "name": "horizontal",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Side by side"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the chosen value",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-choice-group label-hint=\"Transfer speed\" options=\"[[speeds]]\" value=\"{{speed}}\" layout=\"horizontal\"></bx-choice-group>",
+              "react": "<RadioGroup testID=\"speed\" label=\"Transfer speed\" options={speeds} value={speed} onChange={setSpeed} horizontal />",
+              "react-native": "<RadioGroup testID=\"speed\" label=\"Transfer speed\" options={speeds} value={speed} onChange={setSpeed} horizontal />",
+              "angular": "<bx-choice-group testID=\"speed\" label=\"Transfer speed\" [options]=\"speeds\" [(value)]=\"speed\" [horizontal]=\"true\" />"
+            }
           }
         },
         {
@@ -488,6 +937,83 @@
           "sample": {
             "label": "Pay on",
             "value": "2026-01-14"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string (yyyy-mm-dd)",
+                "default": "null",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "min",
+                "type": "string",
+                "default": "—",
+                "doc": "Earliest date"
+              },
+              {
+                "name": "max",
+                "type": "string",
+                "default": "—",
+                "doc": "Latest date"
+              },
+              {
+                "name": "disabledDays",
+                "type": "string[] | (iso) => boolean",
+                "default": "[]",
+                "doc": "Days that cannot be chosen (bank holidays)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the ISO date",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-date label-hint=\"Pay on\" value=\"{{day}}\" min=\"2026-11-10\"></bx-date>",
+              "react": "<DatePicker testID=\"day\" label=\"Pay on\" value={day} onChange={setDay} min=\"2026-11-10\" />",
+              "react-native": "<DatePicker testID=\"day\" label=\"Pay on\" value={day} onChange={setDay} min=\"2026-11-10\" />",
+              "angular": "<bx-date testID=\"day\" label=\"Pay on\" [(value)]=\"day\" min=\"2026-11-10\" />"
+            }
           }
         },
         {
@@ -681,6 +1207,47 @@
             "value": "Savings ·· 4821 · 18 transactions",
             "extra": "December",
             "config": "View statement →"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "doc": "Title"
+              },
+              {
+                "name": "subheading",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under it"
+              },
+              {
+                "name": "selected",
+                "type": "boolean",
+                "default": "—",
+                "doc": "Marks the chosen card"
+              },
+              {
+                "name": "interactive",
+                "type": "boolean",
+                "default": "false",
+                "doc": "The whole card is a button (JET and Angular; React: give onAction)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The card is pressed (interactive cards)"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-card heading=\"Savings •••• 4521\" interactive=\"true\" on-oj-action=\"[[open]]\">…</bx-card>",
+              "react": "<Card heading=\"Savings •••• 4521\" onAction={open}>…</Card>",
+              "react-native": "<Card heading=\"Savings •••• 4521\" onAction={open}>…</Card>",
+              "angular": "<bx-card heading=\"Savings •••• 4521\" [interactive]=\"true\" (action)=\"open()\">…</bx-card>"
+            }
           }
         },
         {
@@ -708,6 +1275,41 @@
           "sample": {
             "value": "Summary|Activity|Details",
             "extra": "Balance 12,400.00 and the last 3 payments.|Payments in and out this month.|Account number, branch and holder."
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "Names the tab list"
+              },
+              {
+                "name": "tabs",
+                "type": "Array<{id, label, disabled}>",
+                "default": "[]",
+                "doc": "The tabs (JET: options)"
+              },
+              {
+                "name": "selection",
+                "type": "string",
+                "default": "—",
+                "doc": "The chosen tab's id; written back"
+              }
+            ],
+            "events": [
+              {
+                "name": "onSelectionChange",
+                "payload": "the tab id",
+                "when": "A tab is chosen by click or arrow keys"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-tabs label=\"Accounts\" options=\"[[tabs]]\" selection=\"{{tab}}\"></bx-tabs>",
+              "react": "<Tabs label=\"Accounts\" tabs={tabs} selection={tab} onSelectionChange={setTab} />",
+              "react-native": "<Tabs label=\"Accounts\" tabs={tabs} selection={tab} onSelectionChange={setTab} />",
+              "angular": "<bx-tabs label=\"Accounts\" [tabs]=\"tabs\" [(selection)]=\"tab\" />"
+            }
           }
         },
         {
@@ -937,6 +1539,64 @@
             "react": "native table",
             "react-native": "rows as cards",
             "angular": "native table"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "caption",
+                "type": "string",
+                "default": "—",
+                "doc": "What the table shows, read by screen readers"
+              },
+              {
+                "name": "rows",
+                "type": "object[] (JET: an array or a data provider)",
+                "default": "[]",
+                "doc": "The rows"
+              },
+              {
+                "name": "columns",
+                "type": "Array<{field, headerText, sortable, align}>",
+                "default": "[]",
+                "doc": "The columns"
+              },
+              {
+                "name": "keyField",
+                "type": "string",
+                "default": "'id'",
+                "doc": "The field that identifies a row"
+              },
+              {
+                "name": "selectionMode",
+                "type": "'none' | 'single' | 'multiple'",
+                "default": "'none'",
+                "doc": "Row selection"
+              },
+              {
+                "name": "selected",
+                "type": "string[]",
+                "default": "[]",
+                "doc": "Chosen rows; written back"
+              }
+            ],
+            "events": [
+              {
+                "name": "onSort",
+                "payload": "{ field, direction }",
+                "when": "A sortable header is pressed"
+              },
+              {
+                "name": "onSelectedChange",
+                "payload": "the chosen keys",
+                "when": "Rows are chosen"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-data-grid caption=\"Recent transactions\" data=\"[[rows]]\" columns=\"[[columns]]\" key-attributes=\"id\"></bx-data-grid>",
+              "react": "<DataTable caption=\"Recent transactions\" rows={rows} columns={columns} keyField=\"id\" />",
+              "react-native": "<DataTable caption=\"Recent transactions\" rows={rows} columns={columns} keyField=\"id\" />",
+              "angular": "<bx-data-grid caption=\"Recent transactions\" [rows]=\"rows\" [columns]=\"columns\" keyField=\"id\" />"
+            }
           }
         },
         {
@@ -1138,6 +1798,35 @@
           },
           "sample": {
             "label": "Payment sent"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "messages",
+                "type": "Array<{id, severity, summary, detail, autoTimeout}>",
+                "default": "[]",
+                "doc": "The messages to show; errors stay until closed"
+              },
+              {
+                "name": "display",
+                "type": "'notification' | 'general'",
+                "default": "'notification'",
+                "doc": "Floating or in the page"
+              }
+            ],
+            "events": [
+              {
+                "name": "onClose",
+                "payload": "the message",
+                "when": "Closed by the customer or on time"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-toast messages=\"[[messages]]\" on-oj-close=\"[[removed]]\"></bx-toast>",
+              "react": "<Toast messages={messages} onClose={remove} />",
+              "react-native": "<Toast messages={messages} onClose={remove} />",
+              "angular": "<bx-toast [messages]=\"messages\" (closed)=\"remove($event)\" />"
+            }
           }
         },
         {
@@ -1164,6 +1853,47 @@
           },
           "sample": {
             "label": "Confirm payment"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shown or not (JET: open() and close())"
+              },
+              {
+                "name": "title",
+                "type": "string",
+                "default": "—",
+                "doc": "Names the dialog"
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the title, read by screen readers"
+              },
+              {
+                "name": "cancelBehavior",
+                "type": "'icon' | 'escape' | 'none'",
+                "default": "'icon'",
+                "doc": "'none' for a step that must be answered"
+              }
+            ],
+            "events": [
+              {
+                "name": "onOpenChange",
+                "payload": "false when it closes",
+                "when": "Escape, the close button or the backdrop (unless cancelBehavior is none)"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-dialog id=\"confirm\" dialog-title=\"Delete A. Sharma?\" on-oj-close=\"[[closed]]\"><div slot=\"body\">…</div></bx-dialog>",
+              "react": "<Dialog open={open} onOpenChange={setOpen} title=\"Delete A. Sharma?\" footer={<Button label=\"Delete\" chroming=\"danger\" />}>…</Dialog>",
+              "react-native": "<Dialog open={open} onOpenChange={setOpen} title=\"Delete A. Sharma?\">…</Dialog>",
+              "angular": "<bx-dialog [(open)]=\"open\" dialogTitle=\"Delete A. Sharma?\">…<bx-button footer label=\"Delete\" /></bx-dialog>"
+            }
           }
         },
         {

@@ -29,6 +29,9 @@ public final class ScreenScaffolder {
      * @param content     the generated starting point
      * @param expectedIds Screen Model ids that must appear as testID in the finished file (screens only)
      */
+    /** A scaffold whose content is written as it is (a file the factory ships), not a starting point for the model. */
+    public static final String FIXED = "fixed";
+
     public record Scaffold(String kind, String content, List<String> expectedIds) {
     }
 

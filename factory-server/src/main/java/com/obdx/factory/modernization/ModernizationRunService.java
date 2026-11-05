@@ -5,7 +5,10 @@ import com.obdx.factory.change.ChangeRequest;
 import com.obdx.factory.change.ChangeService;
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
+import com.obdx.factory.componentpack.ComponentPackService;
 import com.obdx.factory.componentpack.ComponentRegistry;
+import com.obdx.factory.componentpack.ComponentStyleStore;
+import com.obdx.factory.componentpack.PackFiles;
 import com.obdx.factory.modernization.ModernizationStore.Run;
 import com.obdx.factory.requirements.RequirementService;
 import com.obdx.factory.target.TargetService;
@@ -36,10 +39,15 @@ public class ModernizationRunService {
     private final ChangeService changes;
     private final TargetService targets;
     private final ChangeBranchService branches;
+    private final ComponentPackService packs;
+    private final ComponentStyleStore styles;
 
     public ModernizationRunService(ModernizationService modernization, ModernizationStore store, ComponentRegistry registry,
-                                   RequirementService requirements, ChangeService changes, TargetService targets, ChangeBranchService branches) {
+                                   RequirementService requirements, ChangeService changes, TargetService targets, ChangeBranchService branches,
+                                   ComponentPackService packs, ComponentStyleStore styles) {
         this.branches = branches;
+        this.packs = packs;
+        this.styles = styles;
         this.modernization = modernization;
         this.store = store;
         this.registry = registry;
@@ -91,12 +99,17 @@ public class ModernizationRunService {
             }
             TargetService.WorkspaceTarget target = targets.get(workspaceId);
             if (target == null || target.target() == null || "jet".equals(target.target()) || target.appFolder() == null) {
-                throw new BadRequestException("Choose the technology first: pick React or React Native in the Technology catalogue, with the app's folder.");
+                throw new BadRequestException("Choose the technology first: pick React, React Native or Angular in the Technology catalogue, with the app's folder.");
             }
             technology = target.target();
             brief = RunBriefs.migration(inventory, module, target.title() == null ? target.target() : target.title(), target.appFolder());
             subject = module;
         }
+        return begin(workspaceId, r.path(), subject, brief, technology, by);
+    }
+
+    /** Records the brief as an approved requirement, starts its change and the run that follows it. */
+    private ModernizationService.RunView begin(UUID workspaceId, String path, String subject, RunBriefs.Brief brief, String technology, String by) {
         RequirementService.RequirementDetail requirement = requirements.fromModernization(workspaceId, brief.title(), brief.text(), brief.spec(), by);
         ChangeService.ChangeDetail change;
         try {
@@ -110,9 +123,133 @@ public class ModernizationRunService {
             }
             throw e;
         }
-        Run run = store.insertRun(new Run(UUID.randomUUID(), workspaceId, r.path(), subject, brief.screens(), technology, requirement.id(), change.id(),
+        Run run = store.insertRun(new Run(UUID.randomUUID(), workspaceId, path, subject, brief.screens(), technology, requirement.id(), change.id(),
                 false, null, by, OffsetDateTime.now(), null, null, null));
         return modernization.view(run);
+    }
+
+    // --- premium packs in the code ---
+
+    /**
+     * A pack in a workspace's code. installed: the version whose change was delivered (null: never). pending: a version
+     * on its way, with its run's change and state (null: none).
+     */
+    public record PackState(String pack, String installed, String pending, UUID pendingRun, UUID pendingChange, String pendingState,
+                            String startedBy, OffsetDateTime startedAt) {
+    }
+
+    public List<PackState> packStates(UUID workspaceId) {
+        List<ModernizationStore.PackInstall> installs = store.installs(workspaceId);
+        return registry.packs().stream().map(p -> {
+            String installed = null;
+            ModernizationStore.PackInstall pending = null;
+            String pendingState = null;
+            UUID pendingChange = null;
+            for (ModernizationStore.PackInstall i : installs) {
+                if (!i.pack().equals(p.id())) {
+                    continue;
+                }
+                Run run = store.run(i.runId()).orElse(null);
+                ModernizationService.RunView view = run == null ? null : modernization.view(run);
+                if (view != null && "delivered".equals(view.state())) {
+                    if (installed == null) {
+                        installed = i.version();
+                    }
+                } else if (view != null && view.open() && pending == null && installed == null) {
+                    pending = i;
+                    pendingState = view.state();
+                    pendingChange = view.changeId();
+                }
+            }
+            return new PackState(p.id(), installed, pending == null ? null : pending.version(), pending == null ? null : pending.runId(), pendingChange,
+                    pendingState, pending == null ? null : pending.startedBy(), pending == null ? null : pending.startedAt());
+        }).toList();
+    }
+
+    /** One line of a pack's compatibility check: ok, warn or info, and what it found. */
+    public record CompatibilityLine(String state, String text) {
+    }
+
+    /** Component libraries that would fight the premium pack for the same screens, by the name their code uses. */
+    private static final List<String[]> OTHER_LIBRARIES = List.of(new String[]{"@angular/material", "Angular Material"},
+            new String[]{"primeng", "PrimeNG"}, new String[]{"@mui/material", "MUI"}, new String[]{"antd", "Ant Design"},
+            new String[]{"react-native-paper", "React Native Paper"}, new String[]{"@oracle/oraclejet-core-pack", "the JET Core Pack"},
+            new String[]{"bootstrap.min.css", "Bootstrap"});
+
+    /**
+     * Checks a pack against a workspace: the framework version (for the premium JET pack, the JET release the scan found),
+     * other component libraries in the code, and how many of the pack's built components passed every gate.
+     */
+    public List<CompatibilityLine> compatibility(UUID workspaceId, String packId, ComponentPackService.JetFact jet,
+                                                 org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        ComponentRegistry.Pack pack = registry.pack(packId);
+        if (pack == null) {
+            throw new NotFoundException("There is no pack " + packId + ".");
+        }
+        List<CompatibilityLine> out = new java.util.ArrayList<>();
+        if ("jet-premium".equals(packId)) {
+            ComponentPackService.JetTarget t = packs.jetTarget(jet);
+            boolean ok = t.major() != null && t.note().indexOf("older than") < 0;
+            out.add(new CompatibilityLine(ok ? "ok" : "warn", t.note()));
+        } else {
+            TargetService.WorkspaceTarget target = targets.get(workspaceId);
+            boolean same = target != null && packId.equals(target.target());
+            out.add(new CompatibilityLine(same ? "ok" : "info", same ? "The workspace builds a " + pack.name() + " app (" + pack.frameworkRange()
+                    + "): new screens use this pack." : "The workspace does not build a " + pack.name() + " app yet; choose it in the Technology catalogue to use this pack."));
+        }
+        List<String> found = new java.util.ArrayList<>();
+        for (String[] lib : OTHER_LIBRARIES) {
+            if (lib[0].equals("@oracle/oraclejet-core-pack") && "jet-premium".equals(packId)) {
+                continue;
+            }
+            Integer n = jdbc.queryForObject("SELECT count(*) FROM code_chunk WHERE workspace_id = ? AND content LIKE ?", Integer.class, workspaceId,
+                    "%" + lib[0] + "%");
+            if (n != null && n > 0) {
+                found.add(lib[1]);
+            }
+        }
+        out.add(found.isEmpty() ? new CompatibilityLine("ok", "No other component library in the code index.")
+                : new CompatibilityLine("warn", "The code also uses " + String.join(", ", found) + ": screens that use it keep it until a wave replaces them."));
+        long built = pack.built().size();
+        long passed = registry.categories().stream().flatMap(c -> c.components().stream())
+                .filter(e -> "available".equals(packs.inPack(e, pack).readiness())).count();
+        out.add(new CompatibilityLine(passed == built && built > 0 ? "ok" : "info", passed + " of " + built + " built components passed every gate."));
+        return out;
+    }
+
+    /**
+     * Installs the premium JET pack in the bank's UI, or upgrades it to the factory's version, through a change for
+     * review: the change writes the pack's files as shipped and loads them once. Only a pack whose foundation set passed
+     * every check can go in; the other packs come with their target pack's starter.
+     */
+    public ModernizationService.RunView installPack(UUID workspaceId, String packId, String by) {
+        ComponentRegistry.Pack pack = registry.pack(packId);
+        if (pack == null) {
+            throw new NotFoundException("There is no pack " + packId + ".");
+        }
+        if (!"jet-premium".equals(packId)) {
+            throw new BadRequestException(pack.name() + " comes with its target pack's starter: new " + pack.name() + " apps start with it, so there is nothing to install in the JET code.");
+        }
+        List<String> notReady = registry.categories().stream().flatMap(c -> c.components().stream()).filter(ComponentRegistry.Entry::foundation)
+                .filter(e -> !"available".equals(packs.inPack(e, pack).readiness())).map(ComponentRegistry.Entry::name).toList();
+        if (!notReady.isEmpty()) {
+            throw new BadRequestException(pack.name() + " is a preview: it can be installed once its foundation set passes every check ("
+                    + notReady.size() + " not yet: " + String.join(", ", notReady.subList(0, Math.min(3, notReady.size()))) + ").");
+        }
+        PackState state = packStates(workspaceId).stream().filter(s -> s.pack().equals(packId)).findFirst().orElseThrow();
+        if (state.pending() != null) {
+            throw new BadRequestException(pack.packageName() + " " + state.pending() + " is waiting for review already. Open its change to see it.");
+        }
+        if (pack.version().equals(state.installed())) {
+            throw new BadRequestException(pack.packageName() + " " + pack.version() + " is installed already.");
+        }
+        ComponentPackService.Choice c = styles.get(workspaceId).style().defaults();
+        String classes = "bx-theme bx-look-" + c.look() + (c.motion() == null ? "" : " bx-motion-hover-" + c.motion().hover() + " bx-motion-click-"
+                + c.motion().click() + " bx-motion-scroll-" + c.motion().scroll()).replaceAll(" bx-motion-[a-z]+-none", "") + ("dark".equals(c.mode()) ? " bx-dark" : "");
+        RunBriefs.Brief brief = RunBriefs.installPack(pack.packageName(), pack.version(), state.installed(), PackFiles.JET_PREMIUM, classes);
+        ModernizationService.RunView run = begin(workspaceId, "ui", brief.title(), brief, null, by);
+        store.insertInstall(workspaceId, new ModernizationStore.PackInstall(packId, pack.version(), state.installed(), run.id(), by, OffsetDateTime.now()));
+        return run;
     }
 
     /** Starts a wave of the saved upgrade plan as a run, once the wave before it is delivered. */

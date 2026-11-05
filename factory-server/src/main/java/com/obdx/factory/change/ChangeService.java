@@ -1937,6 +1937,11 @@ public class ChangeService {
      * test or texts), or null.
      */
     ScreenScaffolder.Scaffold scaffold(ChangeContext context, String path, String current) {
+        // The premium JET pack's own files are written as the factory ships them (installing or upgrading the pack)
+        java.util.Optional<String> shipped = com.obdx.factory.componentpack.PackFiles.forPath(path);
+        if (shipped.isPresent()) {
+            return new ScreenScaffolder.Scaffold(ScreenScaffolder.FIXED, shipped.get(), List.of());
+        }
         CheckScope scope = context.checks();
         if (!scope.inApp(path)) {
             return null;

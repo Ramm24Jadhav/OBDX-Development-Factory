@@ -77,8 +77,25 @@ public class ComponentRegistry {
                              String confidence, String evidence) {
     }
 
+    /** One property of a component's API: its type, default and what it does. */
+    public record ApiProperty(String name, String type, String defaultValue, String doc) {
+    }
+
+    public record ApiEvent(String name, String payload, String when) {
+    }
+
+    /** A built component's API (React prop names; JET keeps the JET names, Angular binds the same names) and an example per pack. */
+    public record Api(List<ApiProperty> properties, List<ApiEvent> events, Map<String, String> example) {
+    }
+
+    /** The version of a pack being built: what it adds (planned until each passes its checks) and its notes. */
+    public record Next(String version, String state, List<String> adds, List<String> notes) {
+    }
+
     private final List<Category> categories;
     private final Map<String, JetMapping> jetMappings = new LinkedHashMap<>();
+    private final Map<String, Api> apis = new LinkedHashMap<>();
+    private final Map<String, Next> nexts = new LinkedHashMap<>();
     private final List<Pack> packs;
     private final Map<String, Entry> byId = new LinkedHashMap<>();
 
@@ -92,6 +109,18 @@ public class ComponentRegistry {
                 Entry entry = new Entry(text(m, "id"), text(m, "name"), text(m, "purpose"), text(m, "kind"), m.path("foundation").asBoolean(false),
                         new Workspace(text(ws, "kind"), text(ws, "element")), text(m, "dashboard"), strings(m.path("names")),
                         strings(m.path("builtOn")), strings(m.path("sample")));
+                if (m.has("api")) {
+                    JsonNode a = m.path("api");
+                    List<ApiProperty> props = new ArrayList<>();
+                    for (JsonNode p : a.path("properties")) {
+                        props.add(new ApiProperty(text(p, "name"), text(p, "type"), text(p, "default"), text(p, "doc")));
+                    }
+                    List<ApiEvent> events = new ArrayList<>();
+                    for (JsonNode ev : a.path("events")) {
+                        events.add(new ApiEvent(text(ev, "name"), text(ev, "payload"), text(ev, "when")));
+                    }
+                    apis.put(entry.id(), new Api(List.copyOf(props), List.copyOf(events), strings(a.path("example"))));
+                }
                 if (byId.put(entry.id(), entry) != null) {
                     throw new IllegalStateException("The component catalogue lists " + entry.id() + " twice");
                 }
@@ -107,6 +136,14 @@ public class ComponentRegistry {
                 deps.add(new Dependency(text(d, "name"), text(d, "version"), text(d, "licence")));
             }
             List<Built> built = new ArrayList<>();
+            if (p.has("next")) {
+                JsonNode nx = p.path("next");
+                List<String> adds = new ArrayList<>();
+                nx.path("adds").forEach((x) -> adds.add(x.asString()));
+                List<String> notes = new ArrayList<>();
+                nx.path("notes").forEach((x) -> notes.add(x.asString()));
+                nexts.put(text(p, "id"), new Next(text(nx, "version"), text(nx, "state"), List.copyOf(adds), List.copyOf(notes)));
+            }
             for (JsonNode b : p.path("built")) {
                 Built item = new Built(text(b, "component"), text(b, "source"), text(b, "export"));
                 if (!byId.containsKey(item.component())) {
@@ -170,6 +207,16 @@ public class ComponentRegistry {
     }
 
     /** How a JET element maps to the premium JET pack, or null when the registry does not list it. */
+    /** The API of a built component, or null. */
+    public Api api(String componentId) {
+        return apis.get(componentId);
+    }
+
+    /** The version of a pack being built, or null. */
+    public Next next(String packId) {
+        return nexts.get(packId);
+    }
+
     public JetMapping jetMapping(String element) {
         return jetMappings.get(element);
     }

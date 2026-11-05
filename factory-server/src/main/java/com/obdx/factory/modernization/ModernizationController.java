@@ -29,9 +29,14 @@ public class ModernizationController {
     private final TechnologySettings settings;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final com.obdx.factory.profile.ProjectProfileService profiles;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public ModernizationController(ModernizationService service, ModernizationRunService runs, TechnologyCatalogue catalogue, TechnologySettings settings,
-                                   AccessGuard guard, AuditLog audit) {
+                                   AccessGuard guard, AuditLog audit, com.obdx.factory.profile.ProjectProfileService profiles,
+                                   org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.profiles = profiles;
+        this.jdbc = jdbc;
         this.settings = settings;
         this.service = service;
         this.runs = runs;
@@ -99,6 +104,37 @@ public class ModernizationController {
         ModernizationService.RunView run = runs.start(workspaceId, request, user.getDisplayName());
         audit.record("MODERNIZATION_RUN_STARTED", workspaceId, run.subject(), run.changeId() == null ? null : run.changeId().toString());
         return run;
+    }
+
+    /** The premium packs in the workspace's code: the version installed and one on its way (its change). */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/packs")
+    public List<ModernizationRunService.PackState> packs(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return runs.packStates(workspaceId);
+    }
+
+    /** Installs (or upgrades) a premium pack in the code through a change for review (Manage code). */
+    @PostMapping("/api/workspaces/{workspaceId}/modernization/packs/{packId}/install")
+    public ModernizationService.RunView installPack(@PathVariable UUID workspaceId, @PathVariable String packId) {
+        AppUser user = guard.require(workspaceId, Permission.MANAGE_CODE);
+        ModernizationService.RunView run = runs.installPack(workspaceId, packId, user.getDisplayName());
+        audit.record("COMPONENT_PACK_INSTALL_STARTED", workspaceId, run.subject(), run.changeId() == null ? null : run.changeId().toString());
+        return run;
+    }
+
+    /** Checks a pack against the workspace: framework version, other component libraries, gates passed. */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/packs/{packId}/compatibility")
+    public List<ModernizationRunService.CompatibilityLine> compatibility(@PathVariable UUID workspaceId, @PathVariable String packId) {
+        guard.require(workspaceId, Permission.VIEW);
+        com.obdx.factory.componentpack.ComponentPackService.JetFact fact;
+        try {
+            var f = profiles.get(workspaceId).facts().stream().filter((x) -> "ui.jetVersion".equals(x.key())).findFirst().orElse(null);
+            fact = f == null ? new com.obdx.factory.componentpack.ComponentPackService.JetFact(null, "missing", List.of())
+                    : new com.obdx.factory.componentpack.ComponentPackService.JetFact(f.value(), f.status(), f.evidence());
+        } catch (com.obdx.factory.common.NotFoundException e) {
+            fact = new com.obdx.factory.componentpack.ComponentPackService.JetFact(null, "missing", List.of());
+        }
+        return runs.compatibility(workspaceId, packId, fact, jdbc);
     }
 
     @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}")

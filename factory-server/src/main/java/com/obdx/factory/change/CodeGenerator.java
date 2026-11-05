@@ -123,6 +123,10 @@ public class CodeGenerator {
     public Result generate(ChangeContext context, ChangePlan plan, ChangePlan.Item item, String current, String original,
                            Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold,
                            String partial, boolean partialComplete) {
+        if (scaffold != null && ScreenScaffolder.FIXED.equals(scaffold.kind())) {
+            // A file the factory ships (the premium pack): written as it is, and checked like any other
+            return new Result(scaffold.content(), checked(context, item, original, scaffold.content(), scaffold, false), 0);
+        }
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);
         String rules = checks.describeRules(context.checks(), item.path());
         String guidance = checks.targetGuidance(context.checks(), item.path());

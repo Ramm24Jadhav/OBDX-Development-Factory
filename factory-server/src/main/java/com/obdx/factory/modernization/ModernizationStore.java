@@ -126,6 +126,26 @@ public class ModernizationStore {
         return jdbc.query("SELECT " + RUN_COLUMNS + " FROM modernization_run WHERE workspace_id = ? ORDER BY started_at DESC", this::mapRun, workspaceId);
     }
 
+    // --- premium packs installed in the code (V37) ---
+
+    /** A pack version going into (or in) a workspace's code through a run's change; installed once that change is delivered. */
+    public record PackInstall(String pack, String version, String fromVersion, UUID runId, String startedBy, OffsetDateTime startedAt) {
+    }
+
+    public void insertInstall(UUID workspaceId, PackInstall i) {
+        jdbc.update("INSERT INTO component_pack_install (workspace_id, pack_id, version, from_version, run_id, started_by, started_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workspace_id, pack_id, version) DO UPDATE SET from_version = EXCLUDED.from_version, "
+                + "run_id = EXCLUDED.run_id, started_by = EXCLUDED.started_by, started_at = EXCLUDED.started_at", workspaceId, i.pack(), i.version(),
+                i.fromVersion(), i.runId(), i.startedBy(), stamp(i.startedAt()));
+    }
+
+    /** The workspace's pack installs, newest first. */
+    public List<PackInstall> installs(UUID workspaceId) {
+        return jdbc.query("SELECT pack_id, version, from_version, run_id, started_by, started_at FROM component_pack_install WHERE workspace_id = ? "
+                + "ORDER BY started_at DESC", (rs, n) -> new PackInstall(rs.getString("pack_id"), rs.getString("version"), rs.getString("from_version"),
+                rs.getObject("run_id", UUID.class), rs.getString("started_by"), time(rs, "started_at")), workspaceId);
+    }
+
     // --- technology settings ---
 
     public Optional<SavedPlan> settings(UUID workspaceId, String technology) {

@@ -41,7 +41,7 @@ public class ComponentPackService {
 
     public record PackView(String id, String name, String packageName, String version, String path, String frameworkRange, String state,
                            String description, String repository, List<ComponentRegistry.Dependency> dependencies, Counts counts,
-                           List<ComponentRegistry.Build> builds) {
+                           List<ComponentRegistry.Build> builds, ComponentRegistry.Next next) {
     }
 
     /** The workspace's ui.jetVersion fact: its value (null when the scan found none), status and evidence. */
@@ -61,8 +61,13 @@ public class ComponentPackService {
                          Map<String, String> gates, String source) {
     }
 
+    /**
+     * api: the built component's properties, events and examples (null when not described); jetMapping: how the workspace's
+     * JET element maps to the premium JET pack (null when it replaces none).
+     */
     public record ComponentView(String id, String name, String purpose, String kind, boolean foundation, String dashboard,
-                                String workspaceKind, String workspaceElement, Map<String, String> sample, Map<String, InPack> packs) {
+                                String workspaceKind, String workspaceElement, Map<String, String> sample, Map<String, InPack> packs,
+                                ComponentRegistry.Api api, ComponentRegistry.JetMapping jetMapping) {
     }
 
     public record CategoryView(String id, String name, List<ComponentView> components) {
@@ -94,12 +99,12 @@ public class ComponentPackService {
             categories.add(new CategoryView(c.id(), c.name(), c.components().stream().map((e) -> view(e, build)).toList()));
         }
         List<PackView> packs = registry.packs().stream().map((p) -> new PackView(p.id(), p.name(), p.packageName(), p.version(), p.path(),
-                p.frameworkRange(), p.state(), p.description(), p.repository(), p.dependencies(), counts(p, categories), p.builds())).toList();
+                p.frameworkRange(), p.state(), p.description(), p.repository(), p.dependencies(), counts(p, categories), p.builds(), registry.next(p.id()))).toList();
         return new Catalogue(packs, categories, registry.size(), jet);
     }
 
     /** Picks the premium JET build for the workspace's JET version and says why. */
-    JetTarget jetTarget(JetFact fact) {
+    public JetTarget jetTarget(JetFact fact) {
         List<ComponentRegistry.Build> builds = registry.pack("jet-premium").builds();
         ComponentRegistry.Build first = builds.getFirst();
         if (fact == null) {
@@ -142,10 +147,11 @@ public class ComponentPackService {
             packs.put(p.id(), in);
         }
         return new ComponentView(e.id(), e.name(), e.purpose(), e.kind(), e.foundation(), e.dashboard(), e.workspace().kind(),
-                e.workspace().element(), e.sample(), packs);
+                e.workspace().element(), e.sample(), packs, registry.api(e.id()),
+                e.workspace().element() == null ? null : registry.jetMapping(e.workspace().element()));
     }
 
-    InPack inPack(Entry e, Pack p) {
+    public InPack inPack(Entry e, Pack p) {
         String name = e.names().get(p.id());
         ComponentRegistry.Built built = p.built().stream().filter((b) -> b.component().equals(e.id())).findFirst().orElse(null);
         Map<String, Gate> recorded = p.checks().getOrDefault(e.id(), Map.of());
@@ -228,6 +234,69 @@ public class ComponentPackService {
         return new Counts(available, inTest, planned, missing);
     }
 
+    // Documentation ----------------------------------------------------------------------------------------------------
+
+    /** A pack's documentation as one HTML file: per component its purpose, readiness, checks, API, example and JET mapping. */
+    public String documentation(String packId) {
+        Pack p = registry.pack(packId);
+        if (p == null) {
+            throw new com.obdx.factory.common.NotFoundException("There is no pack " + packId + ".");
+        }
+        StringBuilder h = new StringBuilder("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>")
+                .append(esc(p.packageName() + " " + p.version())).append(" documentation</title><style>body{font-family:system-ui,sans-serif;margin:24px;"
+                        + "color:#0f172a;max-width:960px}h1{font-size:24px}h2{font-size:18px;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px}"
+                        + "table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;font-size:13px}"
+                        + "th{background:#f8fafc}code,pre{font-family:Consolas,monospace;font-size:12.5px}pre{background:#f8fafc;padding:10px;overflow:auto}"
+                        + ".muted{color:#64748b}</style></head><body>");
+        h.append("<h1>").append(esc(p.name())).append(" · ").append(esc(p.packageName() + " " + p.version())).append("</h1><p>").append(esc(p.description()))
+                .append("</p><p class=\"muted\">").append(esc(p.frameworkRange())).append(". One section per built component; components only planned are listed at the end.</p>");
+        List<String> planned = new ArrayList<>();
+        for (ComponentRegistry.Category c : registry.categories()) {
+            for (Entry e : c.components()) {
+                InPack in = inPack(e, p);
+                if (!"available".equals(in.readiness()) && !"in-test".equals(in.readiness())) {
+                    if ("planned".equals(in.readiness())) {
+                        planned.add(e.name());
+                    }
+                    continue;
+                }
+                h.append("<h2>").append(esc(e.name())).append(" <code>").append(esc(in.name())).append("</code></h2><p>").append(esc(e.purpose()))
+                        .append("</p><p><b>").append("available".equals(in.readiness()) ? "Available" : "In test").append("</b> · built on ").append(esc(in.builtOn()))
+                        .append(in.source() == null ? "" : " · <code>" + esc(in.source()) + "</code>").append("</p>");
+                h.append("<table><tr><th>Check</th><th>Result</th></tr>");
+                in.gates().forEach((g, s) -> h.append("<tr><td>").append(esc(g)).append("</td><td>").append(esc(s)).append("</td></tr>"));
+                h.append("</table>");
+                ComponentRegistry.Api api = registry.api(e.id());
+                if (api != null) {
+                    h.append("<table><tr><th>Property</th><th>Type</th><th>Default</th><th>What it does</th></tr>");
+                    api.properties().forEach((x) -> h.append("<tr><td><code>").append(esc(x.name())).append("</code></td><td>").append(esc(x.type()))
+                            .append("</td><td>").append(esc(x.defaultValue())).append("</td><td>").append(esc(x.doc())).append("</td></tr>"));
+                    h.append("</table><table><tr><th>Event</th><th>Payload</th><th>When</th></tr>");
+                    api.events().forEach((x) -> h.append("<tr><td><code>").append(esc(x.name())).append("</code></td><td>").append(esc(x.payload()))
+                            .append("</td><td>").append(esc(x.when())).append("</td></tr>"));
+                    h.append("</table>");
+                    String example = api.example().get(p.id());
+                    if (example != null) {
+                        h.append("<pre>").append(esc(example)).append("</pre>");
+                    }
+                }
+                ComponentRegistry.JetMapping m = e.workspace().element() == null ? null : registry.jetMapping(e.workspace().element());
+                if (m != null) {
+                    h.append("<p><b>From ").append(esc(m.source())).append("</b>: ").append(esc(m.status())).append(", confidence ").append(esc(m.confidence()))
+                            .append(". ").append(esc(m.evidence())).append("</p>");
+                }
+            }
+        }
+        if (!planned.isEmpty()) {
+            h.append("<h2>Planned</h2><p>").append(esc(String.join(", ", planned))).append("</p>");
+        }
+        return h.append("</body></html>").toString();
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
     // The component style --------------------------------------------------------------------------------------------
 
     static final Set<String> LOOKS = Set.of("elevated", "soft", "glass", "outline", "vivid", "pill", "brutal", "redwood");
@@ -244,7 +313,52 @@ public class ComponentPackService {
     public record Choice(String look, Motion motion, String mode, String brand) {
     }
 
-    public record Style(Choice defaults, Map<String, Choice> components) {
+    /**
+     * A customised copy of a shipped component, for one workspace: its look options; the shipped component stays as it
+     * is and a pack upgrade never overwrites the copy.
+     */
+    public record Copy(String name, String component, String pack, String variant, String corners, String size, String colour, String by,
+                       java.time.OffsetDateTime at) {
+    }
+
+    public record Style(Choice defaults, Map<String, Choice> components, List<Copy> copies) {
+
+        public Style {
+            copies = copies == null ? List.of() : List.copyOf(copies);
+        }
+
+        public Style(Choice defaults, Map<String, Choice> components) {
+            this(defaults, components, List.of());
+        }
+    }
+
+    static final Set<String> VARIANTS = Set.of("default", "secondary", "outline", "ghost", "destructive", "link");
+    static final Set<String> CORNERS = Set.of("square", "rounded", "pill");
+    static final Set<String> SIZES = Set.of("compact", "standard", "large");
+    static final Set<String> COLOURS = Set.of("brand", "neutral", "success");
+    private static final Pattern COPY_NAME = Pattern.compile("[a-z][a-z0-9]*(-[a-z0-9]+)*");
+
+    /** Checks a new copy: a known built component of the pack, known options and a name no other copy has. */
+    public Copy validateCopy(Copy copy, List<Copy> existing, String by) {
+        if (copy == null || copy.component() == null || registry.component(copy.component()) == null) {
+            throw new BadRequestException("Say which component the copy is of.");
+        }
+        Pack p = registry.pack(copy.pack());
+        if (p == null || p.built().stream().noneMatch((b) -> b.component().equals(copy.component()))) {
+            throw new BadRequestException("A copy starts from a component the pack has built.");
+        }
+        if (copy.name() == null || !COPY_NAME.matcher(copy.name()).matches() || copy.name().length() > 60) {
+            throw new BadRequestException("Name the copy in lower case letters, digits and dashes, for example bx-button-pill-large.");
+        }
+        if (existing.stream().anyMatch((c) -> c.name().equals(copy.name()))) {
+            throw new BadRequestException("There is a copy called " + copy.name() + " already. Change a setting or remove that copy first.");
+        }
+        one(copy.name(), "variant", copy.variant(), VARIANTS);
+        one(copy.name(), "corners", copy.corners(), CORNERS);
+        one(copy.name(), "size", copy.size(), SIZES);
+        one(copy.name(), "colour", copy.colour(), COLOURS);
+        return new Copy(copy.name(), copy.component(), copy.pack(), copy.variant(), copy.corners() == null ? "rounded" : copy.corners(),
+                copy.size() == null ? "standard" : copy.size(), copy.colour() == null ? "brand" : copy.colour(), by, java.time.OffsetDateTime.now());
     }
 
     /** The default style of a workspace that has not saved one. */
@@ -274,7 +388,7 @@ public class ComponentPackService {
                 }
             }
         }
-        return new Style(d, components);
+        return new Style(d, components, style.copies());
     }
 
     private static void check(String where, Choice c, boolean all) {
