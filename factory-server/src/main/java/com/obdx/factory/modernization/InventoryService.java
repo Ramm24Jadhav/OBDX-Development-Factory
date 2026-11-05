@@ -41,17 +41,53 @@ public class InventoryService {
         this.indexing = indexing;
     }
 
+    /** Told each step of a scan as it starts (0: read the files, 1: find screens and modules, 3: save); can stop it. */
+    public interface Progress {
+        void step(int index);
+
+        boolean stopped();
+
+        Progress NONE = new Progress() {
+            public void step(int index) {
+            }
+
+            public boolean stopped() {
+                return false;
+            }
+        };
+    }
+
+    /** Thrown when a scan is stopped between steps; nothing is saved. */
+    public static class Stopped extends RuntimeException {
+        public Stopped() {
+            super("The analysis was stopped; the last analysis stays.");
+        }
+    }
+
     /** Scans the workspace's working copy and stores the inventory. The workspace's new app (if any) is left out. */
     public Inventory scan(UUID workspaceId) {
+        return scan(workspaceId, Progress.NONE);
+    }
+
+    public Inventory scan(UUID workspaceId, Progress progress) {
         Workspace workspace = workspaces.findById(workspaceId).orElseThrow(() -> new NotFoundException("Workspace not found: " + workspaceId));
         Path workingCopy = storage.workingCopy(workspaceId);
         if (!Files.isDirectory(workingCopy)) {
             throw new BadRequestException("Import the workspace's code first; the inventory is scanned from it");
         }
         try {
+            progress.step(0);
             SourceTree tree = SourceTree.scan(workingCopy, indexing.excludeDirs(), indexing.maxFileSize().toBytes());
+            if (progress.stopped()) {
+                throw new Stopped();
+            }
+            progress.step(1);
             Inventory inventory = InventoryScanner.scan(tree, workspace.getIndexedRevision(),
                     "jet".equals(workspace.getTarget()) ? null : workspace.getAppFolder());
+            if (progress.stopped()) {
+                throw new Stopped();
+            }
+            progress.step(3);
             repository.save(workspaceId, inventory);
             return inventory;
         } catch (IOException e) {

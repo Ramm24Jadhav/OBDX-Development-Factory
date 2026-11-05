@@ -16,6 +16,7 @@
   <oj-bind-if test="[[loading() && !plan()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the plan"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[plan()]]">
+    <oj-bind-if test="[[actionError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="muActionError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>That did not work.</strong> <oj-bind-text value="[[actionError]]"></oj-bind-text></span><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearError]]">Dismiss</button></div></oj-bind-if>
     <div class="factory-mu-tiles"><oj-bind-for-each data="[[tiles]]" as="t"><template><div class="fx-kpi factory-mu-tile"><span class="fx-kpi-label"><oj-bind-text value="[[t.data.k]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[t.data.v]]"></oj-bind-text></span></div></template></oj-bind-for-each></div>
 
     <oj-bind-if test="[[plan().components.length === 0]]">
@@ -38,7 +39,7 @@
         <section class="fx-card factory-mu-waves" aria-labelledby="muWavesTitle">
           <div class="fx-card-head"><h2 class="fx-card-title" id="muWavesTitle">Waves</h2><fx-segmented id="muGrouping" label="Group the waves" options="[[groupOptions]]" value="{{grouping}}" disabled="[[!canManage()]]"></fx-segmented></div>
           <div class="fx-table-wrap"><table class="fx-table" id="muWaveTable"><thead><tr><th scope="col">Wave</th><th scope="col"><oj-bind-text value="[[grouping() === 'module' ? 'Module' : 'Component']]"></oj-bind-text></th><th scope="col" class="fx-num">Screens</th><th scope="col">Components</th><th scope="col">Change</th><th scope="col">State</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
-            <tbody><oj-bind-for-each data="[[waves]]" as="w"><template><tr :class="[[w.data.css]]" :aria-selected="[[w.data.selected]]">
+            <tbody><oj-bind-for-each data="[[waves]]" as="w"><template><tr :class="[[w.data.css]]" :aria-selected="[[w.data.selected]]" on-click="[[w.data.pick]]">
               <td><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[w.data.pick]]" :aria-label="[['Show wave ' + w.data.n]]"><oj-bind-text value="[[w.data.n]]"></oj-bind-text></button></td>
               <th scope="row"><oj-bind-text value="[[w.data.name]]"></oj-bind-text></th><td class="fx-num"><oj-bind-text value="[[w.data.screens]]"></oj-bind-text></td>
               <td class="factory-mc-el"><oj-bind-text value="[[w.data.comps]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[w.data.change]]"></oj-bind-text></td>
@@ -56,8 +57,9 @@
             <oj-bind-if test="[[wave().more]]"><p class="fx-help"><oj-bind-text value="[[wave().more]]"></oj-bind-text></p></oj-bind-if>
             <h3 class="factory-mm-module">Before it starts</h3>
             <ul class="factory-mu-checks"><oj-bind-for-each data="[[wave().checks]]" as="c"><template><li :class="[[c.data.css]]"><span aria-hidden="true"><oj-bind-text value="[[c.data.ok ? '✓' : '!']]"></oj-bind-text></span><oj-bind-text value="[[c.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
-            <button type="button" class="fx-btn fx-btn--primary fx-btn--block" id="muWaveAct" on-click="[[wave().act]]" :disabled="[[!wave().canAct]]"><oj-bind-text value="[[wave().button]]"></oj-bind-text></button>
+            <button type="button" class="fx-btn fx-btn--primary fx-btn--block" id="muWaveAct" on-click="[[wave().act]]" :disabled="[[!wave().canAct]]" :title="[[wave().canAct ? null : wave().title]]"><oj-bind-text value="[[wave().button]]"></oj-bind-text></button>
             <oj-bind-if test="[[wave().hint]]"><p class="fx-help"><oj-bind-text value="[[wave().hint]]"></oj-bind-text></p></oj-bind-if>
+            <oj-bind-if test="[[wave().second]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--block" id="muWaveSecond" on-click="[[wave().secondAct]]"><oj-bind-text value="[[wave().second]]"></oj-bind-text></button></oj-bind-if>
           </aside>
         </oj-bind-if>
       </div>

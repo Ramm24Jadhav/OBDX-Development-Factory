@@ -35,6 +35,18 @@ class ModernizationPlansTest {
                     new Inventory.Module("payees", 1, 1, Map.of("S", 1), Map.of()), new Inventory.Module("payments", 1, 1, Map.of("L", 1), Map.of())));
 
     @Test
+    void theTeamCanReorderAndSplitWaves() {
+        List<String> included = List.of("oj-input-text", "oj-button");
+        List<UpgradePlans.Draft> drafts = UpgradePlans.waves(SAMPLE, included, "module");
+        List<UpgradePlans.Draft> arranged = UpgradePlans.arrange(SAMPLE, drafts, included, List.of("module:accounts", "module:login"), List.of("module:accounts"));
+        assertThat(arranged).extracting(UpgradePlans.Draft::key).containsExactly("module:login", "module:payees", "module:payments", "module:accounts#1", "module:accounts#2");
+        arranged = UpgradePlans.arrange(SAMPLE, drafts, included, List.of("module:accounts#2", "module:accounts#1"), List.of("module:accounts"));
+        assertThat(arranged.getFirst().name()).isEqualTo("accounts (2 of 2)");
+        assertThat(arranged.getFirst().screens()).hasSize(1);
+        assertThat(UpgradePlans.arrange(SAMPLE, drafts, included, null, null)).isEqualTo(drafts);
+    }
+
+    @Test
     void wavesGoSmallModulesFirstOrOneComponentEach() {
         List<UpgradePlans.Draft> byModule = UpgradePlans.waves(SAMPLE, List.of("oj-input-text", "oj-button"), "module");
         assertThat(byModule).extracting(UpgradePlans.Draft::name).containsExactly("login", "payees", "payments", "accounts");

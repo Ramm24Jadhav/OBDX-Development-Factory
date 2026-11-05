@@ -206,6 +206,9 @@
                 <oj-bind-if test="[[crumbs().parent]]">
                   <li><a :href="[[crumbs().parent.href]]" on-click="[[crumbs().parent.open]]"><oj-bind-text value="[[crumbs().parent.label]]"></oj-bind-text></a></li>
                 </oj-bind-if>
+                <oj-bind-if test="[[crumbs().via]]">
+                  <li><a :href="[[crumbs().via.href]]" on-click="[[crumbs().via.open]]"><oj-bind-text value="[[crumbs().via.label]]"></oj-bind-text></a></li>
+                </oj-bind-if>
                 <li><span aria-current="page"><oj-bind-text value="[[crumbs().page]]"></oj-bind-text></span></li>
               </ol>
             </nav>

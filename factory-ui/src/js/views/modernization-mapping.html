@@ -19,7 +19,9 @@
       <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
       <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
 
-  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mmError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to map yet</strong><oj-bind-text value="[[error]]"></oj-bind-text></div></oj-bind-if>
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mmError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to map yet</strong><oj-bind-text value="[[error]]"></oj-bind-text>
+    <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--primary" on-click="[[toInventory]]">Open the component inventory</button>
+      <oj-bind-if test="[[packMissing()]]"><a class="fx-btn fx-btn--secondary" href="?ojr=about">Update the factory</a></oj-bind-if></div></div></oj-bind-if>
   <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the mapping"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[data()]]">
@@ -27,7 +29,7 @@
       <div class="factory-mm-pair">
         <span class="factory-mm-el"><code id="mmFrom"><oj-bind-text value="[[data().element]]"></oj-bind-text></code><small>Oracle JET component</small></span>
         <span class="factory-mm-arrow" aria-hidden="true">→</span>
-        <span class="factory-mm-el is-premium"><code id="mmTo"><oj-bind-text value="[[data().premium]]"></oj-bind-text></code><small>Premium component</small></span>
+        <span class="factory-mm-el is-premium"><code id="mmTo"><oj-bind-text value="[[data().premium]]"></oj-bind-text></code><small>Premium component<oj-bind-if test="[[packVersion()]]"> <span class="fx-badge fx-badge--primary" id="mmPackVersion"><oj-bind-text value="[['Pack ' + packVersion()]]"></oj-bind-text></span></oj-bind-if></small></span>
       </div>
       <span class="factory-mm-status"><span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span><small class="fx-muted"><oj-bind-text value="[[statusDetail]]"></oj-bind-text></small></span>
       <dl class="factory-mm-nums"><div><dt>Screens</dt><dd><oj-bind-text value="[[data().screens]]"></oj-bind-text></dd></div><div><dt>Modules</dt><dd><oj-bind-text value="[[data().modules.length]]"></oj-bind-text></dd></div>
@@ -41,7 +43,7 @@
         <fx-segmented id="mmState" label="State" options="[[stateOptions]]" value="{{state}}"></fx-segmented>
         <span class="factory-mm-codeswitch"><fx-switch id="mmShowCode" label="Show code" value="{{showCode}}"></fx-switch></span>
       </div>
-      <oj-bind-if test="[[!showCode()]]">
+      <oj-bind-if test="[[true]]">
         <div class="factory-mm-sides">
           <oj-bind-for-each data="[[sides]]" as="side">
             <template>
@@ -90,24 +92,27 @@
           </oj-bind-for-each>
         </div>
       </oj-bind-if>
-      <oj-bind-if test="[[showCode()]]">
-        <div class="factory-mm-code">
-          <div><div class="factory-mm-side-head"><strong>Oracle JET</strong><span class="fx-muted factory-mo-mono"><oj-bind-text value="[[codeFrom]]"></oj-bind-text></span></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codeJet]]"></oj-bind-text></pre></div>
-          <div><div class="factory-mm-side-head"><strong>Premium</strong></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codePremium]]"></oj-bind-text></pre></div>
-        </div>
-      </oj-bind-if>
     </section>
 
     <div class="factory-mm-layout">
+      <oj-bind-if test="[[showCode()]]">
+        <section class="fx-card factory-mm-details" aria-label="Code" id="mmCodeCard">
+          <div class="factory-mm-code">
+            <div><div class="factory-mm-side-head"><strong>Oracle JET</strong><span class="fx-muted factory-mo-mono"><oj-bind-text value="[[codeFrom]]"></oj-bind-text></span></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codeJet]]"></oj-bind-text></pre></div>
+            <div><div class="factory-mm-side-head"><strong>Premium</strong></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codePremium]]"></oj-bind-text></pre></div>
+          </div>
+        </section>
+      </oj-bind-if>
+      <oj-bind-if test="[[!showCode()]]">
       <section class="fx-card factory-mm-details" aria-label="Mapping details">
         <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Mapping" on-keydown="[[tabKey]]">
           <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mmTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
         </div>
         <div role="tabpanel" :aria-labelledby="[['mmTab-' + tab()]]" class="factory-mm-panel">
           <oj-bind-if test="[[tab() === 'props']]">
-            <div class="fx-table-wrap"><table class="fx-table" id="mmProps"><thead><tr><th scope="col">JET property</th><th scope="col">Premium property</th><th scope="col">Mapping</th><th scope="col">Notes</th></tr></thead>
+            <div class="fx-table-wrap"><table class="fx-table" id="mmProps"><thead><tr><th scope="col">JET property</th><th scope="col">Premium property</th><th scope="col">Mapping</th><th scope="col">Result</th><th scope="col">Notes</th></tr></thead>
               <tbody><oj-bind-for-each data="[[props]]" as="p"><template><tr><th scope="row" class="factory-mc-el"><oj-bind-text value="[[p.data.from]]"></oj-bind-text></th><td class="factory-mc-el"><oj-bind-text value="[[p.data.to]]"></oj-bind-text></td>
-                <td><span :class="[[p.data.css]]"><oj-bind-text value="[[p.data.kind]]"></oj-bind-text></span></td><td class="fx-muted"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+                <td><span :class="[[p.data.css]]"><oj-bind-text value="[[p.data.kind]]"></oj-bind-text></span></td><td :class="[[p.data.resultCss]]"><oj-bind-text value="[[p.data.result]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
             <oj-bind-if test="[[props().length === 0]]"><p class="fx-muted">No properties are listed for this element.</p></oj-bind-if>
             <ul class="factory-mm-legend"><oj-bind-for-each data="[[legend]]" as="l"><template><li><i :style="[[l.data.style]]" aria-hidden="true"></i><oj-bind-text value="[[l.data.label]]"></oj-bind-text> <strong><oj-bind-text value="[[l.data.n]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ul>
           </oj-bind-if>
@@ -138,6 +143,7 @@
           <p class="fx-help"><oj-bind-text value="[[(data().evidence || '') + (data().confidence ? ' Confidence: ' + data().confidence + '.' : '')]]"></oj-bind-text></p>
         </div>
       </section>
+      </oj-bind-if>
 
       <aside class="factory-mm-aside">
         <section class="fx-card" aria-labelledby="mmTouchTitle">
@@ -147,8 +153,10 @@
             <oj-bind-if test="[[i.data.link]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[i.data.open]]" aria-controls="mmWhere">View</button></oj-bind-if></li></template></oj-bind-for-each></ul>
         </section>
         <section class="fx-card" aria-labelledby="mmChecksTitle">
-          <h2 class="fx-card-title" id="mmChecksTitle">What the mapping says</h2>
+          <div class="factory-mv-cardhead"><h2 class="fx-card-title" id="mmChecksTitle">What the checks found</h2>
+            <oj-bind-if test="[[allPassed()]]"><span class="fx-badge fx-badge--success" id="mmAllPassed">All passed</span></oj-bind-if></div>
           <ul class="factory-mp-points"><oj-bind-for-each data="[[checks]]" as="c"><template><li><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[c.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewAllChecks]]">View all</button>
         </section>
       </aside>
     </div>
@@ -174,7 +182,8 @@
         <ul class="factory-mm-screens"><oj-bind-for-each data="[[moduleList]]" as="m"><template><li><oj-bind-text value="[[m.data.module]]"></oj-bind-text> <span class="fx-muted"><oj-bind-text value="[[m.data.count + ' screens']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
         <h3 class="factory-mm-module">Test files that use it</h3>
         <oj-bind-if test="[[tests().length === 0]]"><p class="fx-muted">No test file mentions it.</p></oj-bind-if>
-        <ul class="factory-mm-screens"><oj-bind-for-each data="[[tests]]" as="t"><template><li class="factory-mo-mono"><oj-bind-text value="[[t.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        <ul class="factory-mm-screens"><oj-bind-for-each data="[[testsList]]" as="t"><template><li class="factory-mo-mono"><oj-bind-text value="[[t.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        <oj-bind-if test="[[testsMore() && !allTests()]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[showAllTests]]"><oj-bind-text value="[[testsMore]]"></oj-bind-text></button></oj-bind-if>
         <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[exportList]]">Export the list</button><button type="button" class="fx-btn fx-btn--primary" on-click="[[closePanel]]">Close</button></div>
       </div>
     </fx-sheet>

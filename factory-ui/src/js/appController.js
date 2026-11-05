@@ -30,7 +30,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
 
       // icon: the sidebar icon (css class factory-ico-<icon>); group: the sidebar section (NAV_GROUPS); parent: the
       // sidebar entry that stays highlighted, and shows in the breadcrumb, for a page opened from another one;
-      // sidebar: false keeps a page out of the sidebar (it opens from the top bar and the palette); hidden: in no menu.
+      // sidebar: false keeps a page out of the sidebar (it opens from the top bar and the palette); hidden: in no menu;
+      // via: a step page between the parent and this one in the breadcrumb (the step it is opened from).
       let navData = [
         { path: '', redirect: preferences.landing() || 'overview' },
         { path: 'overview', detail: { label: 'Home', icon: 'home', group: 'overview' } },
@@ -57,11 +58,11 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'modernization-history', detail: { label: 'History', icon: 'clock', group: 'modernize', sub: true, parent: 'modernization' } },
         { path: 'modernization-path', detail: { label: 'Choose a path', hidden: true, parent: 'modernization' } },
         { path: 'modernization-components', detail: { label: 'Component inventory', hidden: true, parent: 'modernization' } },
-        { path: 'modernization-mapping', detail: { label: 'Component mapping', hidden: true, parent: 'modernization' } },
-        { path: 'modernization-upgrade', detail: { label: 'Upgrade plan', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-mapping', detail: { label: 'Component mapping', hidden: true, parent: 'modernization', via: 'modernization-components' } },
+        { path: 'modernization-upgrade', detail: { label: 'Upgrade plan', hidden: true, parent: 'modernization', via: 'modernization-components' } },
         { path: 'modernization-catalogue', detail: { label: 'Technology catalogue', hidden: true, parent: 'modernization' } },
         { path: 'modernization-planner', detail: { label: 'Migration planner', hidden: true, parent: 'modernization' } },
-        { path: 'modernization-workspace', detail: { label: 'Migration workspace', hidden: true, parent: 'modernization' } },
+        { path: 'modernization-workspace', detail: { label: 'Migration workspace', hidden: true, parent: 'modernization', via: 'modernization-planner' } },
         { path: 'modernization-validation', detail: { label: 'Validation', hidden: true, parent: 'modernization' } },
         { path: 'modernization-review', detail: { label: 'Review and approval', hidden: true, parent: 'modernization' } },
         { path: 'modernization-analysis', detail: { label: 'Code analysis', hidden: true, parent: 'modernization' } },
@@ -142,10 +143,10 @@ define(['knockout', './services/session', './services/updates', './services/dash
         return {
           label: path === owner.path ? owner.detail.subLabel || route.detail.label : route.detail.label,
           href: '?ojr=' + path,
-          // Overview stays marked on the steps of a path, which are in no menu
+          // Only the page itself: on the steps of a path (in no menu) the parent entry alone is marked
           active: ko.pureComputed(() => {
             const current = currentRoute();
-            return !!current && (current.path === path || (path === owner.path && current.detail.parent === owner.path && current.detail.hidden));
+            return !!current && current.path === path;
           }),
           open: openPath(path)
         };
@@ -237,6 +238,11 @@ define(['knockout', './services/session', './services/updates', './services/dash
               router.go({ path: parent.path });
             }
           } : null,
+          // The step it is opened from, for the step pages below another step (Mapping under Inventory, Workspace under Planner)
+          via: current.detail.via ? (() => {
+            const v = navData.find((r) => r.path === current.detail.via);
+            return v ? { label: v.detail.label, href: '?ojr=' + v.path, open: (event) => { if (event.ctrlKey || event.metaKey || event.shiftKey) { return; } event.preventDefault(); router.go({ path: v.path }); } } : null;
+          })() : null,
           page: current.detail.label
         };
       });

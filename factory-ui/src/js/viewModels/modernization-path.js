@@ -30,8 +30,39 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.mode = ko.observable('agent');
       self.analysis = ko.observable('latest');
       self.saved = ko.observable(null);
-      self.running = ko.observable(false);
-      self.runSteps = ko.observableArray([]);
+      self.saveError = ko.observable('');
+      self.runOpen = ko.observable(false);
+      self.job = mz.analysis;
+      self.running = mz.analysisRunning;
+      self.workspaceOptions = workspaceSelection.options;
+      self.pickWorkspace = (event) => { const id = event.detail.value; if (id && id !== self.workspaceId()) { self.workspaceId(id); } };
+      // The code the path works from: the workspace's imported branch at its latest revision (another one is imported in Workspaces)
+      self.branchOptions = ko.pureComputed(() => {
+        const o = self.overview();
+        const url = o && o.info && o.info.svnUrl ? o.info.svnUrl : '';
+        const tail = url.replace(/^.*?\/((trunk|branches\/[^/]+|tags\/[^/]+).*)$/, '$1') || url || 'trunk';
+        return [{ value: 'current', label: tail }];
+      });
+      self.revisionOptions = ko.pureComputed(() => {
+        const a = self.overview() ? self.overview().analysis : null;
+        return [{ value: 'latest', label: a && a.codeRevision ? 'r' + a.codeRevision + ' (latest)' : 'Not imported' }];
+      });
+      self.branch = ko.observable('current');
+      self.revision = ko.observable('latest');
+      self.analysisState = ko.pureComputed(() => {
+        const a = self.overview() ? self.overview().analysis : null;
+        if (self.running()) { return ui.pill('Running', 'blue'); }
+        if (!a || !a.done) { return ui.pill('Not analysed', 'amber'); }
+        return ui.pill('Finished · ' + (a.upToDate ? 'Up to date' : 'Older than the code'), a.upToDate ? 'green' : 'amber');
+      });
+      self.needsAnalysis = ko.pureComputed(() => !!self.overview() && !self.overview().analysis.done && !self.running());
+      self.runSteps = ko.pureComputed(() => (self.job() ? self.job().steps : []).map((st) => ({ t: st.name, mark: st.state })));
+      self.runBar = ko.pureComputed(() => ({ width: (self.job() ? self.job().percent : 0) + '%' }));
+      self.runTitle = ko.pureComputed(() => (!self.job() ? 'Analysing the code' : self.job().state === 'running' ? 'Analysing the code' : self.job().state === 'done' ? 'Analysis finished' : self.job().state === 'stopped' ? 'Analysis stopped' : 'Analysis failed'));
+      self.runMessage = ko.pureComputed(() => (self.job() ? self.job().message : ''));
+      self.runDone = ko.pureComputed(() => !!self.job() && self.job().state === 'done');
+      self.continueLabel = ko.pureComputed(() => (self.path() === 'ui' ? 'Continue to the component inventory' : 'Continue to choose a technology'));
+      self.runCancelLabel = ko.pureComputed(() => (self.running() ? 'Stop' : 'Stay here'));
 
       self.steps = ko.pureComputed(() => mz.steps(self.path(), 1));
       self.pathName = ko.pureComputed(() => mz.pathName(self.path()));
@@ -103,6 +134,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       self.nextLabel = ko.pureComputed(() => (self.analysis() === 'new' ? 'Analyze and continue' : self.path() === 'ui' ? 'Continue to the component inventory' : 'Continue to choose a technology'));
       self.blocked = ko.pureComputed(() => !self.canManage() || !!self.modulesError() || self.running() || !self.overview());
+      self.blockedTitle = ko.pureComputed(() => (!self.canManage() ? 'Choosing a path needs the Manage code permission' : self.modulesError() ? self.modulesError()
+        : self.running() ? 'The analysis is running' : null));
 
       const body = (state) => ({ path: self.path(), scope: self.scope(), modules: self.scope() === 'some' ? self.modules() : [], mode: self.mode(),
         analysis: self.analysis(), technology: self.saved() && self.saved().path === self.path() ? self.saved().technology : null, state: state });
@@ -110,44 +143,40 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
 
       self.saveDraft = () => {
         if (self.blocked()) { return; }
-        save('draft').then(() => toast.success('Draft saved. Overview shows it with a Continue link.')).catch((e) => toast.error(ui.errorText(e)));
+        self.saveError('');
+        save('draft').then(() => toast.success('Draft saved. Overview shows it with a Continue link.')).catch((e) => self.saveError(ui.errorText(e)));
       };
+      self.retrySave = () => { self.saveError(''); self.proceed(); };
       self.cancel = () => mz.open('modernization');
       self.moreItems = [{ value: 'draft', label: 'Save as draft' }, { value: 'overview', label: 'Back to Overview' }];
       self.more = (event) => { const v = event.detail && event.detail.value; if (v === 'draft') { self.saveDraft(); } else if (v === 'overview') { self.cancel(); } };
 
       const next = () => mz.open(self.path() === 'ui' ? 'modernization-components' : 'modernization-catalogue');
-      self.stopText = ko.pureComputed(() => (self.running() ? 'Analysing…' : ''));
       self.proceed = () => {
         if (self.blocked()) { return; }
+        self.saveError('');
         if (self.analysis() !== 'new') {
-          save('started').then(next).catch((e) => toast.error(ui.errorText(e)));
+          save('started').then(next).catch((e) => self.saveError(ui.errorText(e)));
           return;
         }
-        // Analyze again first: the analysis runs, then the choice is saved and the next step opens
-        self.running(true);
-        self.runSteps([{ t: 'Reading the screens, modules and services', mark: 'running' }]);
-        api.post('workspaces/' + self.workspaceId() + '/inventory/scan').then((inv) => {
-          self.runSteps([{ t: 'Read ' + inv.summary.screens + ' screens', mark: 'done' }, { t: 'Found ' + inv.summary.modules + ' modules', mark: 'done' },
-            { t: 'Counted ' + (inv.summary.components || 0) + ' JET components', mark: 'done' }]);
-          self.analysis('latest');
-          return save('started');
-        }).then(() => { self.running(false); next(); }).catch((e) => {
-          self.running(false);
-          self.runSteps([]);
-          toast.error(ui.errorText(e));
-        });
+        // Analyze again first: the analysis runs in the background with its steps in a dialog; Continue opens the next step
+        self.runOpen(true);
+        mz.startAnalysis().catch(() => self.runOpen(false));
       };
+      self.runAnalysis = () => { self.analysis('new'); self.proceed(); };
+      self.runCancel = () => { if (self.running()) { mz.stopAnalysis(); } else { self.runOpen(false); } };
+      self.runContinue = () => { self.analysis('latest'); save('started').then(() => { self.runOpen(false); next(); }).catch((e) => { self.runOpen(false); self.saveError(ui.errorText(e)); }); };
+      const done = mz.analysisDone.subscribe(() => load(self.workspaceId(), true));
 
-      const load = (id) => {
+      const load = (id, again) => {
         if (!id) { self.loading(false); return; }
         self.loading(true);
-        const asked = mz.take();
+        const asked = again ? {} : mz.take();
         Promise.all([api.get('workspaces/' + id + '/modernization/overview'), api.get('workspaces/' + id + '/modernization/path')]).then((r) => {
           self.overview(r[0]);
           const c = r[1] || null;
           self.saved(c);
-          if (c) { self.path(c.path); self.scope(c.scope); self.modules(c.modules || []); self.mode(c.mode); self.analysis(c.analysis); }
+          if (c && !again) { self.path(c.path); self.scope(c.scope); self.modules(c.modules || []); self.mode(c.mode); self.analysis(c.analysis); }
           if (asked.path) { self.path(asked.path); }
           if (!r[0].analysis.done) { self.analysis('new'); }
           self.error(null);
@@ -159,7 +188,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         document.title = 'Choose a path';
         load(self.workspaceId());
       };
-      self.disconnected = () => sub.dispose();
+      self.disconnected = () => { sub.dispose(); done.dispose(); };
     }
 
     return PathViewModel;

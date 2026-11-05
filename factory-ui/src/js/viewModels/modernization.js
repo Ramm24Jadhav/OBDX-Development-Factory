@@ -1,7 +1,8 @@
 /*
  * Modernization Overview (docs/MODERNIZATION.md): what the analysis of the code found, the two paths with how far each
  * is (screens or modules delivered to SVN), the findings that point to the next screen, the modules by state and the
- * recent activity. Every number comes from the stored analysis, the pack registry and the runs' changes.
+ * recent activity. Every number comes from the stored analysis, the pack registry and the runs' changes. The analysis
+ * runs in the background with its steps shown here (and Stop); the workspace can be changed from the analysis card.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/toast',
         '../services/modernization', 'ojs/ojknockout'],
@@ -22,15 +23,26 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.error = ko.observable(null);
       self.data = ko.observable(null);
       self.canManage = mz.canManage;
-
+      self.workspaceOptions = workspaceSelection.options;
+      self.pickWorkspace = (event) => { const id = event.detail.value; if (id && id !== self.workspaceId()) { self.workspaceId(id); } };
+      self.job = mz.analysis;
+      self.running = mz.analysisRunning;
+      self.jobSteps = ko.pureComputed(() => (self.job() ? self.job().steps : []).map((st) => ({ name: st.name, css: 'factory-mo-jobstep is-' + st.state,
+        mark: st.state === 'done' ? '✓' : st.state === 'running' ? '…' : st.state === 'failed' || st.state === 'stopped' ? '✕' : '' })));
+      self.jobBar = ko.pureComputed(() => ({ width: (self.job() ? self.job().percent : 0) + '%' }));
+      self.jobProblem = ko.pureComputed(() => (self.job() && (self.job().state === 'failed' || self.job().state === 'stopped') ? self.job() : null));
+      self.stopAnalysis = () => mz.stopAnalysis();
+      const done = mz.analysisDone.subscribe(() => load(self.workspaceId()));
       self.analysis = ko.pureComputed(() => (self.data() ? self.data().analysis : null));
       self.analysed = ko.pureComputed(() => !!self.analysis() && self.analysis().done);
       self.analysisText = ko.pureComputed(() => {
         const a = self.analysis();
+        if (self.running()) { return 'Running'; }
         if (!a || !a.done) { return 'Not analysed yet'; }
-        return (a.upToDate ? 'Up to date' : 'Older than the code') + ' · ' + ui.when(a.at);
+        return a.upToDate ? 'Up to date' : 'Older than the code';
       });
-      self.analysisCss = ko.pureComputed(() => ui.pill(self.analysisText(), self.analysis() && self.analysis().upToDate ? 'green' : 'amber').css);
+      self.analysisWhen = ko.pureComputed(() => (self.analysis() && self.analysis().done ? ui.when(self.analysis().at) : ''));
+      self.analysisCss = ko.pureComputed(() => ui.pill(self.analysisText(), self.running() ? 'blue' : self.analysis() && self.analysis().upToDate ? 'green' : 'amber').css);
       self.revisionText = ko.pureComputed(() => {
         const a = self.analysis();
         return a && a.codeRevision ? 'r' + a.codeRevision : 'Not imported';
@@ -61,19 +73,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const target = begun ? (p.id === 'ui' ? 'modernization-components' : 'modernization-planner') : 'modernization-path';
           return {
             id: p.id, title: meta.title, text: meta.text, iconClass: 'factory-nav-icon factory-ico-' + meta.icon,
+            recommended: recommended,
             tag: p.chosen ? (begun ? 'Started' : 'Draft saved') : recommended ? 'Recommended' : p.id === 'migration' ? 'Strategic' : '',
             tagCss: ui.pill('', p.chosen ? (begun ? 'blue' : 'amber') : recommended ? 'green' : 'violet').css,
             facts: [
               { k: 'Scope', v: p.chosen && d.choice && d.choice.scope === 'some' ? d.choice.modules.length + ' chosen modules' : meta.scope },
               p.id === 'ui' ? { k: 'Covered by the pack', v: directShare() === null ? 'Analyze to see' : directShare() + '% direct replacements' }
-                : { k: 'Ready now', v: d.choice && d.choice.technology && p.chosen ? d.choice.technology : meta.ready }
+                : { k: 'Ready now', v: d.choice && d.choice.technology && p.chosen ? d.choice.technology : meta.ready },
+              // The size of the work, as the analysis counted it (the factory gives no estimate of days)
+              { k: 'Size of the work', v: p.of ? p.of + ' ' + p.unit : 'Analyze to see' }
             ],
             percent: p.percent + '%',
             barStyle: { width: p.percent + '%' },
             note: p.of ? p.note : 'Analyze the code to see the ' + p.unit + '.',
             button: begun ? 'Continue' : draft ? 'Continue the draft' : 'Start',
-            css: 'fx-card factory-mo-path' + (p.chosen ? ' is-chosen' : ''),
+            css: 'fx-card factory-mo-path' + (p.chosen ? ' is-chosen' : '') + (recommended && !p.chosen ? ' is-recommended' : ''),
+            buttonCss: p.id === 'ui' ? 'fx-btn fx-btn--primary' : 'fx-btn fx-btn--secondary',
             disabled: !begun && !self.canManage(),
+            title: !begun && !self.canManage() ? 'Starting needs the Manage code permission' : null,
             go: () => mz.open(target, { path: p.id })
           };
         });
@@ -109,14 +126,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.start = () => mz.open('modernization-path');
       self.openAnalysis = () => mz.open('modernization-analysis');
       self.openHistory = () => mz.open('modernization-history');
-      self.analyze = () => {
-        const id = self.workspaceId();
-        if (!id) { return; }
-        api.post('workspaces/' + id + '/inventory/scan').then(() => {
-          toast.success('Analysis finished. The numbers below are from it.');
-          return load(id);
-        }).catch((e) => toast.error(ui.errorText(e)));
-      };
+      self.analyze = () => { if (self.workspaceId()) { mz.startAnalysis().catch(() => null); } };
+      self.analyzeTitle = ko.pureComputed(() => (!self.canManage() ? 'You can view this workspace; ask for Manage code to analyze it.' : self.running() ? 'The analysis is running' : null));
+      self.startTitle = ko.pureComputed(() => (!self.workspaceId() ? 'Choose a workspace first' : !self.canManage() ? 'Starting needs the Manage code permission' : null));
+      self.tryAgain = () => load(self.workspaceId());
 
       const load = (id) => {
         if (!id) { self.data(null); self.loading(false); return Promise.resolve(); }
@@ -131,8 +144,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         accUtils.announce('Modernization overview loaded.', 'assertive');
         document.title = 'Modernization';
         load(self.workspaceId());
+        mz.followAnalysis();
       };
-      self.disconnected = () => sub.dispose();
+      self.disconnected = () => { sub.dispose(); done.dispose(); };
     }
 
     return ModernizationViewModel;

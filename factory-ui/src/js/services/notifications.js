@@ -8,6 +8,8 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
   const read = ko.observable(load());
   const save = (map) => { read(map); try { window.localStorage.setItem(KEY, JSON.stringify(map)); } catch (e) { /* kept for this visit only */ } };
   const DAY_MS = 24 * 3600 * 1000;
+  // Events the browser saw itself (an analysis finishing), shown with the rest until the page is reloaded
+  const local = ko.observableArray([]);
 
   const all = ko.pureComputed(() => {
     const list = [];
@@ -63,6 +65,7 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
         at: j.finishedAt || j.createdAt, priority: j.status === 'FAILED' ? 'high' : 'low', action: j.status === 'FAILED', page: 'code', workspaceId: w.id,
         details: [{ label: 'Workspace', value: w.name }, { label: 'Files', value: j.filesIndexed + ' indexed, ' + j.filesRemoved + ' removed' }], errors: j.message && j.status === 'FAILED' ? [j.message] : [] }));
     });
+    local().forEach(add);
     const m = dashboard.model();
     if (m && !m.saved) {
       add({ id: 'model-not-chosen', category: 'system', title: 'Models Not Chosen', icon: 'chip', tone: 'amber', text: 'The factory uses the models from its settings file.', related: 'Models', relatedSub: m.chatModel,
@@ -75,6 +78,7 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
 
   return {
     all: all,
+    add: (n) => { if (!local().some((x) => x.id === n.id)) { local.push(Object.assign({ details: [], errors: [], priority: 'low', action: false }, n)); } },
     unreadCount: ko.pureComputed(() => all().filter((n) => n.unread()).length),
     markRead: (ids) => { const map = Object.assign({}, read()); ids.forEach((id) => { map[id] = true; }); save(map); },
     markUnread: (ids) => { const map = Object.assign({}, read()); ids.forEach((id) => { delete map[id]; }); save(map); }

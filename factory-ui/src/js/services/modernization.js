@@ -1,8 +1,10 @@
 /*
  * What the Modernization pages share (docs/MODERNIZATION.md): going to a page with what it should open on, the step bar
- * of each path, the labels of run states and mapping results, and whether the user may change things.
+ * of each path, the labels of run states and mapping results, whether the user may change things, and the code
+ * analysis running in the background (followed here so it goes on while the user moves between pages).
  */
-define(['knockout', './pageRequests', './session', './workspaceSelection', './ui'], function (ko, pageRequests, session, workspaceSelection, ui) {
+define(['knockout', './pageRequests', './session', './workspaceSelection', './ui', './api', './toast', './notifications'],
+  function (ko, pageRequests, session, workspaceSelection, ui, api, toast, notifications) {
   /** Opens a Modernization page; request is what it opens on (see pageRequests.modernization). */
   const open = (path, request) => {
     pageRequests.modernization(request || null);
@@ -54,6 +56,39 @@ define(['knockout', './pageRequests', './session', './workspaceSelection', './ui
   });
   const num = (n) => (n === null || n === undefined ? '–' : Number(n).toLocaleString());
 
-  return { open: open, take: take, steps: steps, pathName: pathName, runPill: runPill, RUN: RUN, COMPAT: COMPAT, compatPill: compatPill,
+  // The analysis job of the chosen workspace: started, followed every 1.5 s while it runs, told in a toast and the bell
+  const analysis = ko.observable(null);
+  let timer = null;
+  const follow = (id) => {
+    window.clearTimeout(timer);
+    api.get('workspaces/' + id + '/inventory/analysis').then((job) => {
+      if (id !== workspaceSelection.selectedId()) { return; }
+      const was = analysis();
+      analysis(job || null);
+      if (job && job.state === 'running') { timer = window.setTimeout(() => follow(id), 1500); return; }
+      if (job && was && was.state === 'running') {
+        const ok = job.state === 'done';
+        toast[ok ? 'success' : 'error'](job.message);
+        notifications.add({ id: 'analysis-' + id + '-' + job.finishedAt, category: 'system', title: ok ? 'Analysis Finished' : job.state === 'stopped' ? 'Analysis Stopped' : 'Analysis Failed',
+          icon: ok ? 'check' : 'alert', tone: ok ? 'green' : job.state === 'stopped' ? 'amber' : 'red', text: job.message, related: 'Code analysis', relatedSub: '', at: job.finishedAt,
+          page: 'modernization', workspaceId: id, priority: ok ? 'low' : 'high', action: !ok });
+        analysisDone.notifySubscribers(job);
+      }
+    }).catch(() => null);
+  };
+  const analysisDone = ko.observable(null);
+  const startAnalysis = () => {
+    const id = workspaceSelection.selectedId();
+    return api.post('workspaces/' + id + '/inventory/analysis').then((job) => { analysis(job); toast.info('Analysis started. You can leave this page; the bell tells you when it is done.'); follow(id); return job; })
+      .catch((e) => { toast.error(ui.errorText(e)); throw e; });
+  };
+  const stopAnalysis = () => api.post('workspaces/' + workspaceSelection.selectedId() + '/inventory/analysis/stop').then((job) => analysis(job)).catch((e) => toast.error(ui.errorText(e)));
+  const analysisRunning = ko.pureComputed(() => !!analysis() && analysis().state === 'running');
+  workspaceSelection.selectedId.subscribe((id) => { analysis(null); if (id) { follow(id); } });
+  if (workspaceSelection.selectedId()) { follow(workspaceSelection.selectedId()); }
+
+  return { analysis: analysis, analysisRunning: analysisRunning, analysisDone: analysisDone, startAnalysis: startAnalysis, stopAnalysis: stopAnalysis,
+    followAnalysis: () => { if (workspaceSelection.selectedId()) { follow(workspaceSelection.selectedId()); } },
+    open: open, take: take, steps: steps, pathName: pathName, runPill: runPill, RUN: RUN, COMPAT: COMPAT, compatPill: compatPill,
     statusText: statusText, CATEGORY: CATEGORY, canManage: canManage, num: num };
 });

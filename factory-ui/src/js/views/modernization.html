@@ -1,38 +1,58 @@
 <div class="factory-pg factory-mo">
-  <div class="factory-rq-head">
-    <div class="factory-rq-title">
-      <h1>Modernization</h1>
-      <p class="factory-rq-lead">Give your OBDX channel premium components, or move it to a modern technology module by module. The OBDX services stay as they are.</p>
-    </div>
-    <div class="factory-rq-headbar">
-      <button type="button" id="moAnalysisButton" class="fx-btn fx-btn--ghost" on-click="[[openAnalysis]]" :disabled="[[!analysed()]]">Code analysis</button>
-      <button type="button" id="moStartButton" class="fx-btn fx-btn--primary" on-click="[[start]]" :disabled="[[!workspaceId() || !canManage()]]">
-        <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Start a modernization</button>
-    </div>
+  <div class="factory-mo-top">
+    <section class="fx-card factory-mo-hero" aria-labelledby="moTitle">
+      <div class="factory-mo-hero-text">
+        <span class="fx-badge fx-badge--primary">OBDX</span>
+        <h1 id="moTitle">Modernization</h1>
+        <p class="factory-rq-lead">Give your OBDX channel premium components, or move it to a modern technology module by module. The OBDX services stay as they are.</p>
+        <div class="factory-mr-next">
+          <button type="button" id="moStartButton" class="fx-btn fx-btn--primary" on-click="[[start]]" :disabled="[[!workspaceId() || !canManage()]]" :title="[[startTitle]]">
+            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Start a modernization</button>
+          <button type="button" id="moAnalysisButton" class="fx-btn fx-btn--ghost" on-click="[[openAnalysis]]" :disabled="[[!analysed()]]" :title="[[analysed() ? null : 'Greyed out until the code is analysed']]">Code analysis</button>
+        </div>
+      </div>
+      <div class="factory-mo-art" aria-hidden="true">
+        <div class="factory-mo-art-card is-before"><small>Today · Oracle JET</small><strong>Make a payment</strong><span class="factory-mo-art-field"></span><span class="factory-mo-art-field"></span><span class="factory-mo-art-btn"></span></div>
+        <span class="factory-mo-art-arrow">→</span>
+        <div class="factory-mo-art-card is-after"><small>Modernized</small><strong>Make a payment</strong><span class="factory-mo-art-field"></span><span class="factory-mo-art-field"></span><span class="factory-mo-art-btn"></span></div>
+      </div>
+    </section>
+    <oj-bind-if test="[[workspaceId()]]">
+    <section class="fx-card factory-mo-analysis" aria-label="Analysis">
+      <fx-select id="moWorkspace" label="Workspace" options="[[workspaceOptions]]" value="[[workspaceId]]" on-value-changed="[[pickWorkspace]]"></fx-select>
+      <dl class="factory-mo-facts">
+        <div><dt>Code revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[[revisionText]]"></oj-bind-text></dd></div>
+        <div><dt>Last analysis</dt><dd><span id="moAnalysisState" :class="[[analysisCss]]"><oj-bind-text value="[[analysisText]]"></oj-bind-text></span>
+          <oj-bind-if test="[[analysisWhen()]]"><small class="fx-muted factory-mo-when"><oj-bind-text value="[[analysisWhen]]"></oj-bind-text></small></oj-bind-if></dd></div>
+      </dl>
+      <oj-bind-if test="[[!running()]]"><button type="button" id="moAnalyzeButton" class="fx-btn fx-btn--secondary" on-click="[[analyze]]" :disabled="[[!canManage()]]" :title="[[analyzeTitle]]">
+        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[analysed() ? 'Analyze again' : 'Analyze the code']]"></oj-bind-text></button></oj-bind-if>
+      <oj-bind-if test="[[running()]]"><div class="factory-mo-job" role="status" aria-live="polite" id="moJob">
+        <div class="fx-progress" role="progressbar" aria-label="Analysis" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[job().percent]]"><span :style="[[jobBar]]"></span></div>
+        <ol class="factory-mo-jobsteps"><oj-bind-for-each data="[[jobSteps]]" as="j"><template><li :class="[[j.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[j.data.mark]]"></oj-bind-text></span><oj-bind-text value="[[j.data.name]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+        <p class="fx-help">You can leave this page; the bell tells you when it is done.</p>
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="moStop" on-click="[[stopAnalysis]]" :disabled="[[!canManage()]]">Stop</button></div></oj-bind-if>
+    </section>
+    </oj-bind-if>
   </div>
 
   <oj-bind-if test="[[!workspaceId()]]">
     <div class="fx-empty" id="moNoWorkspace"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No workspace chosen</strong>Choose a workspace in the top bar to see its modernization.</div>
   </oj-bind-if>
-  <oj-bind-if test="[[error()]]"><p class="factory-rqd-next" id="moError" role="alert"><oj-bind-text value="[[error]]"></oj-bind-text></p></oj-bind-if>
+  <oj-bind-if test="[[error()]]"><div class="fx-alert fx-alert--danger" id="moError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>The overview did not load.</strong> <oj-bind-text value="[[error]]"></oj-bind-text></span>
+    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[tryAgain]]">Try again</button></div></oj-bind-if>
   <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the modernization overview"><span class="fx-skeleton"></span><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[data()]]">
     <!-- What was analysed -->
-    <section class="fx-card factory-mo-analysis" aria-label="Analysis">
-      <dl class="factory-mo-facts">
-        <div><dt>Workspace</dt><dd><oj-bind-text value="[[data().workspace]]"></oj-bind-text></dd></div>
-        <div><dt>Code revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[[revisionText]]"></oj-bind-text></dd></div>
-        <div><dt>Last analysis</dt><dd><span id="moAnalysisState" :class="[[analysisCss]]"><oj-bind-text value="[[analysisText]]"></oj-bind-text></span></dd></div>
-      </dl>
-      <button type="button" id="moAnalyzeButton" class="fx-btn fx-btn--secondary" on-click="[[analyze]]" :disabled="[[!canManage()]]"
-              :title="[[canManage() ? null : 'You can view this workspace; ask for Manage code to analyze it.']]">
-        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[analysed() ? 'Analyze again' : 'Analyze the code']]"></oj-bind-text></button>
-    </section>
+    <oj-bind-if test="[[jobProblem()]]"><div class="fx-alert fx-alert--warning" role="status" id="moJobProblem"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="fx-alert-text"><strong><oj-bind-text value="[[jobProblem().state === 'stopped' ? 'The analysis was stopped.' : 'The analysis failed.']]"></oj-bind-text></strong> <oj-bind-text value="[[jobProblem().message]]"></oj-bind-text> The numbers below are from the last analysis.</span>
+      <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[analyze]]" :disabled="[[!canManage()]]">Try again</button></div></oj-bind-if>
 
     <oj-bind-if test="[[!analysed()]]">
       <div class="fx-empty" id="moNotAnalysed"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>
-        <strong>The code has not been analysed yet</strong>Analyze the code to count its screens, modules and Oracle JET components. Both paths start from the analysis.</div>
+        <strong>The code has not been analysed yet</strong>Analyze the code to count its screens, modules and Oracle JET components. Both paths start from the analysis.
+        <button type="button" class="fx-btn fx-btn--primary" on-click="[[analyze]]" :disabled="[[!canManage() || running()]]" :title="[[analyzeTitle]]">Analyze the code</button></div>
     </oj-bind-if>
 
     <oj-bind-if test="[[analysed()]]">
@@ -63,7 +83,7 @@
               <div class="fx-progress" role="progressbar" :aria-valuenow="[[p.data.percent]]" aria-valuemin="0" aria-valuemax="100" :aria-label="[[p.data.title + ' progress']]"><span :style="[[p.data.barStyle]]"></span></div>
               <strong><oj-bind-text value="[[p.data.percent]]"></oj-bind-text></strong></div>
             <div class="factory-mo-path-foot"><p class="fx-help"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></p>
-              <button type="button" class="fx-btn fx-btn--primary" :id="[['moPathButton-' + p.data.id]]" on-click="[[p.data.go]]" :disabled="[[p.data.disabled]]">
+              <button type="button" :class="[[p.data.buttonCss]]" :id="[['moPathButton-' + p.data.id]]" on-click="[[p.data.go]]" :disabled="[[p.data.disabled]]" :title="[[p.data.title]]">
                 <oj-bind-text value="[[p.data.button]]"></oj-bind-text><span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button></div>
           </section>
         </template>

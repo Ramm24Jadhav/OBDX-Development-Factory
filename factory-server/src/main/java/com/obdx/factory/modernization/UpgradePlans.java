@@ -73,6 +73,38 @@ public final class UpgradePlans {
         return out;
     }
 
+    /**
+     * The waves as the team arranged them: each wave in split is cut into two halves by its screens (keys key#1 and
+     * key#2, named "(1 of 2)" and "(2 of 2)"), then the waves go in the saved order; waves not in it keep theirs, after.
+     */
+    public static List<Draft> arrange(Inventory inventory, List<Draft> drafts, List<String> included, List<String> order, List<String> split) {
+        Set<String> wanted = new LinkedHashSet<>(included);
+        Map<String, Inventory.Screen> byId = new LinkedHashMap<>();
+        inventory.screens().forEach(s -> byId.put(s.id(), s));
+        List<Draft> cut = new ArrayList<>();
+        for (Draft d : drafts) {
+            if (split == null || !split.contains(d.key()) || d.screens().size() < 2) {
+                cut.add(d);
+                continue;
+            }
+            int half = (d.screens().size() + 1) / 2;
+            List<List<ScreenUse>> parts = List.of(d.screens().subList(0, half), d.screens().subList(half, d.screens().size()));
+            for (int i = 0; i < 2; i++) {
+                List<ScreenUse> on = parts.get(i);
+                Set<String> components = new LinkedHashSet<>();
+                on.forEach(u -> { Inventory.Screen s = byId.get(u.id()); if (s != null && s.elements() != null) { s.elements().keySet().stream().filter(wanted::contains).forEach(components::add); } });
+                cut.add(new Draft(d.key() + "#" + (i + 1), d.name() + " (" + (i + 1) + " of 2)", on, wanted.stream().filter(components::contains).toList(),
+                        on.stream().map(ScreenUse::module).distinct().toList()));
+            }
+        }
+        if (order == null || order.isEmpty()) {
+            return cut;
+        }
+        List<Draft> out = new ArrayList<>(cut);
+        out.sort(Comparator.comparingInt((Draft d) -> { int at = order.indexOf(d.key()); return at < 0 ? Integer.MAX_VALUE : at; }));
+        return out;
+    }
+
     /** What a wave waits for: nothing for the first, else the wave before it to be delivered. */
     static String waitsFor(int index, List<String> states) {
         if (index == 0) {

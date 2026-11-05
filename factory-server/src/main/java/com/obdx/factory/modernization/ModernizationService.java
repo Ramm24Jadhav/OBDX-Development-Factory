@@ -199,7 +199,7 @@ public class ModernizationService {
         }
         if (mappingTypes > 0) {
             out.add(new Insight(mappingTypes + (mappingTypes == 1 ? " component needs its" : " components need their") + " properties or events mapped",
-                    "modernization-mapping", "primary"));
+                    "modernization-mapping?element=" + components.rows().stream().filter(r -> r.compatibility().equals("mapping")).map(ComponentInventory.Row::element).findFirst().orElse(""), "primary"));
         }
         if (customTypes > 0) {
             out.add(new Insight(customTypes + (customTypes == 1 ? " component needs" : " components need") + " a custom build or stays JET",
@@ -331,12 +331,27 @@ public class ModernizationService {
 
     /** The inventory's rows as CSV (Excel-friendly, UTF-8 with BOM): the current filter is applied by the page. */
     public String componentsCsv(UUID workspaceId, String compatibility, String category) {
+        return componentsCsv(workspaceId, compatibility, category, null, null);
+    }
+
+    /** The inventory as CSV with the table's filters: compatibility, categories (comma separated), module and a search. */
+    public String componentsCsv(UUID workspaceId, String compatibility, String category, String module, String query) {
+        java.util.Set<String> categories = category == null || category.isBlank() || "all".equals(category) ? java.util.Set.of()
+                : new java.util.HashSet<>(java.util.Arrays.asList(category.split(",")));
+        String q = query == null ? "" : query.trim().toLowerCase(java.util.Locale.ROOT);
         StringBuilder csv = new StringBuilder("﻿JET component,Category,Uses,Screens,Modules,Premium component,Mapping,Compatibility,Effort\r\n");
         for (ComponentInventory.Row r : components(workspaceId).rows()) {
             if (compatibility != null && !compatibility.isBlank() && !"all".equals(compatibility) && !compatibility.equals(r.compatibility())) {
                 continue;
             }
-            if (category != null && !category.isBlank() && !"all".equals(category) && !category.equals(r.category())) {
+            if (!categories.isEmpty() && !categories.contains(r.category())) {
+                continue;
+            }
+            if (module != null && !module.isBlank() && !r.modules().contains(module)) {
+                continue;
+            }
+            if (!q.isEmpty() && !(r.element() + " " + (r.premium() == null ? "" : r.premium()) + " " + r.category() + " " + String.join(" ", r.modules()))
+                    .toLowerCase(java.util.Locale.ROOT).contains(q)) {
                 continue;
             }
             csv.append(String.join(",", cell(r.element()), cell(r.category()), String.valueOf(r.uses()), String.valueOf(r.screens()),
@@ -498,12 +513,17 @@ public class ModernizationService {
                            UUID runId, String state, UUID changeId, String changeTitle, String waitsFor, boolean canStart) {
     }
 
+    /** order and split: how the team arranged the waves (see UpgradePlans.arrange). */
     public record UpgradePlanView(String grouping, List<PlanComponent> components, List<WaveView> waves, int screens, int delivered,
-                                  String packVersion, boolean saved, String savedBy, OffsetDateTime savedAt) {
+                                  String packVersion, boolean saved, String savedBy, OffsetDateTime savedAt, List<String> order, List<String> split) {
     }
 
     /** What Upgrade plan saves: grouping (module or component), the components in the plan and those left out. */
-    public record UpgradePlanRequest(String grouping, List<String> components, List<String> off) {
+    /** order: the wave keys in the team's order; split: the waves cut in two (see UpgradePlans.arrange). */
+    public record UpgradePlanRequest(String grouping, List<String> components, List<String> off, List<String> order, List<String> split) {
+        public UpgradePlanRequest(String grouping, List<String> components, List<String> off) {
+            this(grouping, components, off, null, null);
+        }
     }
 
     /** The plan with the components asked for (from the inventory) added to the saved ones. */
@@ -527,7 +547,9 @@ public class ModernizationService {
         }
         Map<String, String> runIds = new LinkedHashMap<>();
         saved.ifPresent(p -> p.plan().path("runs").properties().forEach(e -> runIds.put(e.getKey(), e.getValue().asString())));
-        return planView(workspaceId, inventory, grouping, components, off, runIds, saved.orElse(null));
+        List<String> order = draft != null && draft.order() != null ? draft.order() : strings(saved.map(p -> p.plan().path("order")).orElse(null));
+        List<String> split = draft != null && draft.split() != null ? draft.split() : strings(saved.map(p -> p.plan().path("split")).orElse(null));
+        return planView(workspaceId, inventory, grouping, components, off, runIds, saved.orElse(null), order, split);
     }
 
     public UpgradePlanView saveUpgradePlan(UUID workspaceId, UpgradePlanRequest r, String by) {
@@ -550,11 +572,15 @@ public class ModernizationService {
         plan.put("grouping", grouping);
         components.forEach(plan.putArray("components")::add);
         off.forEach(plan.putArray("off")::add);
+        List<String> order = r.order() == null ? List.of() : r.order();
+        List<String> split = r.split() == null ? List.of() : r.split();
+        order.forEach(plan.putArray("order")::add);
+        split.forEach(plan.putArray("split")::add);
         tools.jackson.databind.node.ObjectNode runs = plan.putObject("runs");
         runIds.forEach(runs::put);
         ModernizationStore.SavedPlan savedPlan = store.savePlan(workspaceId, "ui", plan, by);
         audit.record("MODERNIZATION_PLAN_SAVED", workspaceId, "ui", (components.size() - off.size()) + " components in the plan, by " + grouping);
-        return planView(workspaceId, inventory, grouping, components, off, runIds, savedPlan);
+        return planView(workspaceId, inventory, grouping, components, off, runIds, savedPlan, order, split);
     }
 
     /** Records the run a wave started, in the saved plan. */
@@ -562,13 +588,13 @@ public class ModernizationService {
         ModernizationStore.SavedPlan saved = store.plan(workspaceId, "ui").orElse(null);
         tools.jackson.databind.node.ObjectNode plan = saved != null && saved.plan() instanceof tools.jackson.databind.node.ObjectNode o ? o.deepCopy()
                 : tools.jackson.databind.node.JsonNodeFactory.instance.objectNode();
-        tools.jackson.databind.node.ObjectNode runs = plan.has("runs") && plan.get("runs") instanceof tools.jackson.databind.node.ObjectNode o ? o : plan.putObject("runs");
+        tools.jackson.databind.node.ObjectNode runs = plan.has("runs") && plan.get("runs") instanceof tools.jackson.databind.node.ObjectNode r ? r : plan.putObject("runs");
         runs.put(key, runId.toString());
         store.savePlan(workspaceId, "ui", plan, saved != null && saved.savedBy() != null ? saved.savedBy() : by);
     }
 
     private UpgradePlanView planView(UUID workspaceId, Inventory inventory, String grouping, List<String> components, List<String> off,
-                                     Map<String, String> runIds, ModernizationStore.SavedPlan saved) {
+                                     Map<String, String> runIds, ModernizationStore.SavedPlan saved, List<String> order, List<String> split) {
         ComponentInventory.View inv = ComponentInventory.of(inventory, registry);
         Map<String, ComponentInventory.Row> rows = new LinkedHashMap<>();
         inv.rows().forEach(row -> rows.put(row.element(), row));
@@ -577,7 +603,7 @@ public class ModernizationService {
             return new PlanComponent(c, row.premium(), row.screens(), row.uses(), row.compatibility(), row.status(), !off.contains(c));
         }).toList();
         List<String> included = list.stream().filter(PlanComponent::included).map(PlanComponent::element).toList();
-        List<UpgradePlans.Draft> drafts = UpgradePlans.waves(inventory, included, grouping);
+        List<UpgradePlans.Draft> drafts = UpgradePlans.arrange(inventory, UpgradePlans.waves(inventory, included, grouping), included, order, split);
         Map<UUID, RunView> runs = new LinkedHashMap<>();
         runs(workspaceId).forEach(v -> runs.put(v.id(), v));
         List<String> states = new ArrayList<>();
@@ -595,7 +621,7 @@ public class ModernizationService {
         drafts.forEach(d -> d.screens().forEach(s -> touched.add(s.id())));
         int delivered = (int) waves.stream().filter(w -> "delivered".equals(w.state())).count();
         return new UpgradePlanView(grouping, list, waves, touched.size(), delivered, registry.pack("jet-premium").version(), saved != null,
-                saved == null ? null : saved.savedBy(), saved == null ? null : saved.savedAt());
+                saved == null ? null : saved.savedBy(), saved == null ? null : saved.savedAt(), order == null ? List.of() : order, split == null ? List.of() : split);
     }
 
     public String upgradePlanCsv(UUID workspaceId) {

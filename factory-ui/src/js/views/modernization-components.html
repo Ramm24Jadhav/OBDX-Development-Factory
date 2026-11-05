@@ -14,7 +14,8 @@
       <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
       <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
 
-  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mcError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to show yet</strong><oj-bind-text value="[[error]]"></oj-bind-text></div></oj-bind-if>
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mcError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to show yet</strong><oj-bind-text value="[[error]]"></oj-bind-text>
+    <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--primary" on-click="[[tryAgain]]">Try again</button><a class="fx-btn fx-btn--secondary" href="?ojr=modernization">Analyze on Overview</a></div></div></oj-bind-if>
   <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the component inventory"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[data()]]">
@@ -47,7 +48,10 @@
         <aside class="fx-card factory-mc-filters" aria-label="Filters">
           <div class="fx-card-head"><h2 class="fx-card-title">Filters</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="mcReset" on-click="[[reset]]" :disabled="[[!filtered()]]">Reset all</button></div>
           <h3 class="factory-mc-facet-title">Category</h3>
-          <ul class="factory-mc-facets"><oj-bind-for-each data="[[categories]]" as="c"><template><li><button type="button" :class="[[c.data.css]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]"><span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span></button></li></template></oj-bind-for-each></ul>
+          <ul class="factory-mc-checks"><oj-bind-for-each data="[[categories]]" as="c"><template><li><label class="factory-mc-check"><input type="checkbox" class="fx-check" :checked="[[c.data.checked]]" on-click="[[c.data.toggle]]"/>
+            <span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span></label></li></template></oj-bind-for-each></ul>
+          <h3 class="factory-mc-facet-title">Usage</h3>
+          <fx-select id="mcUsage" label="Usage" hide-label options="[[usageOptions]]" value="{{usage}}"></fx-select>
           <h3 class="factory-mc-facet-title">Compatibility</h3>
           <ul class="factory-mc-facets"><oj-bind-for-each data="[[compatFacets]]" as="c"><template><li><button type="button" :class="[[c.data.css]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]"><span class="factory-mc-facet-dot" :style="[[c.data.dot]]" aria-hidden="true"></span><span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span></button></li></template></oj-bind-for-each></ul>
         </aside>
@@ -55,7 +59,8 @@
           <div class="factory-mc-toolbar">
             <fx-select id="mcModule" label="Module" hide-label options="[[moduleOptions]]" value="{{module}}"></fx-select>
             <fx-input id="mcSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components" value="{{query}}"></fx-input>
-            <span class="fx-muted factory-mc-view"><oj-bind-text value="[[viewName]]"></oj-bind-text></span>
+            <fx-select id="mcView" label="View" hide-label options="[[viewOptions]]" value="{{compat}}"></fx-select>
+            <fx-select id="mcSort" label="Sort" hide-label options="[[sortOptions]]" value="{{sort}}"></fx-select>
             <fx-menu-button id="mcColumns" variant="ghost" icon="table" label="Columns" items="[[columnItems]]" on-fx-action="[[columnAction]]"></fx-menu-button>
           </div>
           <div class="fx-table-wrap">
@@ -96,7 +101,8 @@
           </div>
           <oj-bind-if test="[[rows().length === 0]]"><p class="fx-muted factory-mc-none">No component matches the filters. <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[reset]]">Reset all</button></p></oj-bind-if>
           <div class="fx-pager">
-            <span class="fx-pager-text"><oj-bind-text value="[[pager.text() + ' component types']]"></oj-bind-text></span>
+            <span class="fx-pager-text"><oj-bind-text value="[[pagerText]]"></oj-bind-text></span>
+            <fx-select id="mcPageSize" label="Rows per page" hide-label options="[[sizeOptions]]" value="{{pager.size}}"></fx-select>
             <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
             <oj-bind-for-each data="[[pager.numbers]]" as="n"><template>
               <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>

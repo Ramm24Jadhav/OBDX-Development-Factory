@@ -9551,3 +9551,35 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 .factory-mw-steptime { margin-left: auto; font-size: var(--fx-text-2xs); color: var(--fx-text-muted); white-space: nowrap; }
 .factory-mr-file.is-written .factory-mw-fmark { color: var(--fx-success-text); }
 @media (max-width: 1280px) { .factory-mw-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } .factory-mw-impacts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Modernization overview: the hero beside the analysis card, the before and after picture, the running analysis */
+.factory-mo-top { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: var(--fx-space-4); margin-bottom: var(--fx-space-4); align-items: stretch; }
+.factory-mo-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--fx-space-4); align-items: center;
+  background: linear-gradient(120deg, var(--fx-primary-soft), var(--fx-surface) 70%); }
+.factory-mo-hero h1 { margin: var(--fx-space-2) 0 var(--fx-space-1); }
+.factory-mo-hero-text .factory-mr-next { margin-top: var(--fx-space-3); }
+.factory-mo-art { display: flex; align-items: center; gap: var(--fx-space-2); }
+.factory-mo-art-card { width: 132px; padding: var(--fx-space-2); border-radius: var(--fx-radius); border: var(--fx-border-width) solid var(--fx-border); background: var(--fx-surface); display: flex; flex-direction: column; gap: 5px; box-shadow: var(--fx-shadow-sm); }
+.factory-mo-art-card small { font-size: 10px; color: var(--fx-text-muted); }
+.factory-mo-art-card strong { font-size: var(--fx-text-2xs); color: var(--fx-text); }
+.factory-mo-art-field { height: 9px; border-radius: 2px; border: var(--fx-border-width) solid var(--fx-border-strong); }
+.factory-mo-art-btn { width: 50%; height: 11px; border-radius: 2px; background: var(--fx-text-faint); }
+.factory-mo-art-card.is-after { border-color: var(--fx-primary-border); }
+.factory-mo-art-card.is-after .factory-mo-art-field { border-radius: var(--fx-radius-sm); border-color: var(--fx-primary-border); background: var(--fx-primary-soft); }
+.factory-mo-art-card.is-after .factory-mo-art-btn { background: var(--fx-primary); border-radius: var(--fx-radius-pill); }
+.factory-mo-art-arrow { color: var(--fx-primary); font-weight: var(--fx-weight-semibold); }
+.factory-mo-top .factory-mo-analysis { display: flex; flex-direction: column; gap: var(--fx-space-3); margin: 0; }
+.factory-mo-when { display: block; margin-top: 2px; }
+.factory-mo-job { display: flex; flex-direction: column; gap: var(--fx-space-2); }
+.factory-mo-jobsteps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--fx-text-sm); }
+.factory-mo-jobstep { display: flex; align-items: center; gap: var(--fx-space-2); color: var(--fx-text-muted); }
+.factory-mo-jobstep.is-done { color: var(--fx-text); }
+.factory-mo-jobstep.is-done .factory-mz-dot { background: var(--fx-success); border-color: var(--fx-success); color: var(--fx-on-primary); }
+.factory-mo-jobstep.is-running { color: var(--fx-text); font-weight: var(--fx-weight-semibold); }
+.factory-mo-jobstep.is-running .factory-mz-dot { border-color: var(--fx-primary); color: var(--fx-primary-text); }
+.factory-mo-jobstep.is-failed .factory-mz-dot, .factory-mo-jobstep.is-stopped .factory-mz-dot { border-color: var(--fx-danger); color: var(--fx-danger-text); }
+.factory-mo-path.is-recommended { border-color: var(--fx-primary); box-shadow: 0 0 0 1px var(--fx-primary), var(--fx-shadow-sm); }
+@media (max-width: 1180px) { .factory-mo-top { grid-template-columns: minmax(0, 1fr); } .factory-mo-art { display: none; } .factory-mo-hero { grid-template-columns: minmax(0, 1fr); } }
+/* Choose a path: the code the path works from, and the analysis state */
+.factory-mp-source { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--fx-space-3); }
+.factory-mp-analysisrow { display: flex; align-items: center; gap: var(--fx-space-3); margin: var(--fx-space-3) 0; }
+@media (max-width: 1100px) { .factory-mp-source { grid-template-columns: minmax(0, 1fr); } }

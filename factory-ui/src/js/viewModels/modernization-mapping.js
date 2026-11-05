@@ -111,7 +111,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       const parts = (list) => (list || []).map((p) => {
         const k = KIND[p.kind] || [p.kind, 'grey'];
-        return { from: p.from, to: p.to || '—', kind: k[0], css: ui.pill(k[0], k[1]).css, note: p.note || (p.kind === 'same' ? 'Works the same' : '') };
+        // The result: kept or mapped by the factory, or finished by a person
+        const ok = p.kind !== 'hand' && p.kind !== 'dropped';
+        return { from: p.from, to: p.to || '—', kind: k[0], css: ui.pill(k[0], k[1]).css, note: p.note || (p.kind === 'same' ? 'Works the same' : ''),
+          result: ok ? '✓ ' + (p.kind === 'same' ? 'Kept' : 'Mapped') : p.kind === 'dropped' ? '— Not carried over' : '! A person finishes', resultCss: ok ? 'factory-mm-ok' : 'factory-mm-todo' };
       });
       self.props = ko.pureComputed(() => parts(d().properties));
       self.events = ko.pureComputed(() => parts(d().events));
@@ -139,6 +142,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         screens: m.screens.map((s) => ({ name: s.name, id: s.id, uses: s.uses })) })));
       self.journeys = ko.pureComputed(() => d().journeys || []);
       self.tests = ko.pureComputed(() => d().tests || []);
+      self.testsShown = ko.pureComputed(() => self.tests().slice(0, 3));
+      self.testsMore = ko.pureComputed(() => (self.tests().length > 3 ? '+' + (self.tests().length - 3) + ' more' : ''));
+      self.allTests = ko.observable(false);
+      self.testsList = ko.pureComputed(() => (self.allTests() ? self.tests() : self.testsShown()));
+      self.showAllTests = () => self.allTests(true);
+      self.allPassed = ko.pureComputed(() => self.manual().length === 0);
+      self.viewAllChecks = () => self.tab('props');
+      self.packVersion = ko.observable('');
+      self.toInventory = () => mz.open('modernization-components');
+      self.packMissing = ko.pureComputed(() => /pack|update/i.test(self.error() || ''));
       self.closePanel = () => self.panelOpen(false);
       self.exportList = () => {
         const lines = ['Module,Screen,Uses'];
@@ -162,8 +175,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }).catch((e) => toast.error(ui.errorText(e))).then(() => self.starting(false));
       };
       self.canChange = ko.pureComputed(() => self.canManage() && !!d().component && d().compatibility !== 'custom' && !self.starting());
-      self.moreItems = [{ value: 'next', label: 'Next component' }, { value: 'plan', label: 'Add to the upgrade plan' }, { value: 'inventory', label: 'Back to the inventory' }];
-      self.moreAction = (event) => { const v = event.detail.value; if (v === 'next') { self.next(); } else if (v === 'plan') { self.addToPlan(); } else { self.back(); } };
+      self.moreItems = ko.pureComputed(() => [{ value: 'where', label: 'Where it is used' }, { value: 'code', label: self.showCode() ? 'Hide the code' : 'Show the code' },
+        { value: 'next', label: 'Next component', disabled: !self.hasNext() }, { separator: true }, { value: 'plan', label: 'Add to the upgrade plan', disabled: !self.canManage() },
+        { value: 'change', label: 'Make the change now', disabled: !self.canChange() }, { value: 'inventory', label: 'Back to the inventory' }]);
+      self.moreAction = (event) => {
+        const v = event.detail.value;
+        if (v === 'next') { self.next(); } else if (v === 'plan') { self.addToPlan(); } else if (v === 'where') { self.panelOpen(true); }
+        else if (v === 'code') { self.showCode(!self.showCode()); } else if (v === 'change') { self.makeChange(); } else { self.back(); }
+      };
 
       const load = (id, element) => {
         if (!id) { self.loading(false); return; }
@@ -180,6 +199,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (asked.tab) { self.tab(asked.tab); }
         load(self.workspaceId(), asked.element);
         jetPack.load().catch(() => null);
+        api.get('component-packs').then((c) => { const p = (c.packs || []).find((x) => x.id === 'jet-premium'); self.packVersion(p ? p.version : ''); }).catch(() => null);
         if (self.workspaceId()) { api.get('workspaces/' + self.workspaceId() + '/component-style').then((s) => self.style(s.style)).catch(() => null); }
       };
       self.disconnected = () => sub.dispose();

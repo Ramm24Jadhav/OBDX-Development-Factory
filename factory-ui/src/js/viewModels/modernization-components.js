@@ -19,6 +19,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.tab = ko.observable('inventory');
       self.compat = ko.observable('all');
       self.category = ko.observable('all');
+      self.cats = ko.observable([]);
+      self.usage = ko.observable('any');
+      self.sort = ko.observable('uses');
+      self.usageOptions = [{ value: 'any', label: 'Any number of uses' }, { value: 'few', label: '1 to 9 uses' }, { value: 'some', label: '10 to 49 uses' }, { value: 'many', label: '50 uses or more' }];
+      self.sortOptions = [{ value: 'uses', label: 'Sort: most used' }, { value: 'element', label: 'Sort: JET component, A to Z' }, { value: 'screens', label: 'Sort: most screens' }];
+      self.viewOptions = [{ value: 'all', label: 'View: all components' }, { value: 'direct', label: 'View: direct replacements' }, { value: 'mapping', label: 'View: property or event mapping' },
+        { value: 'custom', label: 'View: transformation, manual or unsupported' }];
       self.module = ko.observable('');
       self.query = ko.observable('');
       self.selected = ko.observable({});
@@ -62,9 +69,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.categories = ko.pureComputed(() => {
         const d = self.data();
         if (!d) { return []; }
-        return [{ id: 'all', name: 'All categories', uses: d.totals.uses }].concat(d.categories).map((c) => ({
-          name: c.name, n: mz.num(c.uses), pressed: ko.pureComputed(() => (self.category() === c.id ? 'true' : 'false')),
-          css: ko.pureComputed(() => 'factory-mc-facet' + (self.category() === c.id ? ' is-on' : '')), pick: () => self.category(c.id)
+        // Several categories can be ticked; none ticked shows them all
+        return d.categories.map((c) => ({
+          id: c.id, name: c.name, n: mz.num(c.uses), checked: self.cats().indexOf(c.id) >= 0,
+          toggle: () => { const on = self.cats().indexOf(c.id) >= 0; self.cats(on ? self.cats().filter((x) => x !== c.id) : self.cats().concat([c.id])); return true; }
         }));
       });
       self.compatFacets = ko.pureComputed(() => {
@@ -77,19 +85,24 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         }));
       });
       self.moduleOptions = ko.pureComputed(() => [{ value: '', label: 'All modules' }].concat((self.data() ? self.data().modules : []).map((m) => ({ value: m.module, label: m.module }))));
-      self.filtered = ko.pureComputed(() => self.compat() !== 'all' || self.category() !== 'all' || !!self.module() || !!self.query().trim());
-      self.reset = () => { self.compat('all'); self.category('all'); self.module(''); self.query(''); };
+      self.filtered = ko.pureComputed(() => self.compat() !== 'all' || self.cats().length > 0 || self.usage() !== 'any' || !!self.module() || !!self.query().trim());
+      self.reset = () => { self.compat('all'); self.cats([]); self.usage('any'); self.module(''); self.query(''); };
+      const usageOk = (n) => (self.usage() === 'few' ? n < 10 : self.usage() === 'some' ? n >= 10 && n < 50 : self.usage() === 'many' ? n >= 50 : true);
 
       const visibleRows = ko.pureComputed(() => {
         const d = self.data();
         if (!d) { return []; }
         const q = self.query().trim().toLowerCase();
-        return d.rows.filter((r) => (self.compat() === 'all' || r.compatibility === self.compat()) && (self.category() === 'all' || r.category === self.category())
-          && (!self.module() || r.modules.indexOf(self.module()) >= 0)
+        const list = d.rows.filter((r) => (self.compat() === 'all' || r.compatibility === self.compat()) && (self.cats().length === 0 || self.cats().indexOf(r.category) >= 0)
+          && (!self.module() || r.modules.indexOf(self.module()) >= 0) && usageOk(r.uses)
           && (!q || (r.element + ' ' + (r.premium || '') + ' ' + mz.CATEGORY[r.category] + ' ' + r.modules.join(' ')).toLowerCase().indexOf(q) >= 0));
+        const by = self.sort();
+        return list.slice().sort((a, b) => (by === 'element' ? a.element.localeCompare(b.element) : by === 'screens' ? b.screens - a.screens || b.uses - a.uses : b.uses - a.uses || a.element.localeCompare(b.element)));
       });
       self.viewName = ko.pureComputed(() => ({ all: 'All components', direct: 'Direct replacements', mapping: 'Property or event mapping', custom: 'Transformation, manual or unsupported' })[self.compat()]);
       self.pager = ui.pages(visibleRows, 10, [10, 25, 50]);
+      self.sizeOptions = [10, 25, 50].map((n) => ({ value: n, label: n + ' per page' }));
+      self.pagerText = ko.pureComputed(() => self.pager.text() + ' component types · ' + mz.num(visibleRows().reduce((n, r) => n + r.uses, 0)) + ' uses');
       self.col = (name) => ko.pureComputed(() => !!self.shownColumns()[name]);
       self.showCategory = self.col('category');
       self.showScreens = self.col('screens');
@@ -139,7 +152,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!p.length) { return 'Pick components to add them to the upgrade plan.'; }
         const mods = new Set();
         p.forEach((r) => r.modules.forEach((m) => mods.add(m)));
-        return p.length + (p.length === 1 ? ' component' : ' components') + ' selected · ' + p.reduce((a, r) => a + r.uses, 0) + ' uses · ' + mods.size + (mods.size === 1 ? ' module' : ' modules');
+        const screens = p.reduce((a, r) => a + r.screens, 0);
+        return p.length + (p.length === 1 ? ' component' : ' components') + ' selected · ' + p.reduce((a, r) => a + r.uses, 0) + ' uses · ' + screens + (screens === 1 ? ' screen' : ' screens') + ' · ' + mods.size + (mods.size === 1 ? ' module' : ' modules');
       });
       self.hasPicked = ko.pureComputed(() => picked().length > 0);
       self.canManage = mz.canManage;
@@ -147,13 +161,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.compare = () => { const p = picked(); mz.open('modernization-mapping', { element: p.length ? p[0].element : null }); };
       self.viewScreens = () => { const p = picked(); mz.open('modernization-mapping', { element: p.length ? p[0].element : null, tab: 'screens' }); };
       self.back = () => mz.open('modernization-path');
+      // The CSV carries the same filters as the table: compatibility, categories, module and search
       self.csvHref = ko.pureComputed(() => (self.workspaceId() ? 'api/workspaces/' + self.workspaceId() + '/modernization/components.csv?compatibility='
-        + encodeURIComponent(self.compat()) + '&category=' + encodeURIComponent(self.category()) : '#'));
-      self.moreItems = [{ value: 'compare', label: 'Compare and preview' }, { value: 'screens', label: 'View the screens' }, { value: 'csv', label: 'Export as CSV' }];
+        + encodeURIComponent(self.compat()) + '&category=' + encodeURIComponent(self.cats().length ? self.cats().join(',') : 'all')
+        + '&module=' + encodeURIComponent(self.module()) + '&q=' + encodeURIComponent(self.query().trim()) : '#'));
+      self.moreItems = ko.pureComputed(() => [{ value: 'compare', label: 'Compare and preview', disabled: !self.hasPicked() }, { value: 'screens', label: 'View the screens', disabled: !self.hasPicked() },
+        { value: 'csv', label: 'Export as CSV' }, { separator: true }].concat(COLUMNS.map((c) => ({ value: 'col:' + c[0], label: (self.shownColumns()[c[0]] ? '✓ ' : '   ') + 'Show ' + c[1].toLowerCase() }))));
       self.moreAction = (event) => {
         const v = event.detail.value;
         if (v === 'compare') { self.compare(); } else if (v === 'screens') { self.viewScreens(); } else if (v === 'csv') { window.location.href = self.csvHref(); }
+        else if (v.indexOf('col:') === 0) { self.columnAction({ detail: { value: v.substring(4) } }); }
       };
+      self.tryAgain = () => load(self.workspaceId());
 
       self.matrix = ko.pureComputed(() => (self.data() ? self.data().matrix : []).map((m) => {
         const tone = (x) => (x === 'none' || /^(\d+) of \1$/.test(x) ? 'is-ok' : x.indexOf(' of ') > 0 ? 'is-warn' : 'is-bad');

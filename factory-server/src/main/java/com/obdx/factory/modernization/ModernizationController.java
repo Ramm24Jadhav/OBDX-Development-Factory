@@ -86,9 +86,10 @@ public class ModernizationController {
 
     @GetMapping("/api/workspaces/{workspaceId}/modernization/components.csv")
     public ResponseEntity<byte[]> componentsCsv(@PathVariable UUID workspaceId, @RequestParam(required = false) String compatibility,
-                                                @RequestParam(required = false) String category) {
+                                                @RequestParam(required = false) String category, @RequestParam(required = false) String module,
+                                                @RequestParam(required = false) String q) {
         guard.require(workspaceId, Permission.VIEW);
-        return csv("component-inventory.csv", service.componentsCsv(workspaceId, compatibility, category));
+        return csv("component-inventory.csv", service.componentsCsv(workspaceId, compatibility, category, module, q));
     }
 
     /** One element's mapping; without element, the most used one. */
@@ -224,10 +225,13 @@ public class ModernizationController {
     public ModernizationService.UpgradePlanView upgradePlan(@PathVariable UUID workspaceId, @RequestParam(required = false) List<String> add,
                                                             @RequestParam(required = false) String grouping,
                                                             @RequestParam(required = false) List<String> components,
-                                                            @RequestParam(required = false) List<String> off) {
+                                                            @RequestParam(required = false) List<String> off,
+                                                            @RequestParam(required = false) List<String> order,
+                                                            @RequestParam(required = false) List<String> split) {
         guard.require(workspaceId, Permission.VIEW);
-        boolean draft = grouping != null || components != null || off != null;
-        return service.upgradePlan(workspaceId, add, draft ? new ModernizationService.UpgradePlanRequest(grouping, components, off == null ? List.of() : off) : null);
+        boolean draft = grouping != null || components != null || off != null || order != null || split != null;
+        return service.upgradePlan(workspaceId, add, draft ? new ModernizationService.UpgradePlanRequest(grouping, components, off == null ? List.of() : off,
+                order, split) : null);
     }
 
     @PutMapping("/api/workspaces/{workspaceId}/modernization/upgrade-plan")
