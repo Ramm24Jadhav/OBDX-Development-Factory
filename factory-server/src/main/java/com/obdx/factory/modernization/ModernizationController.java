@@ -32,10 +32,15 @@ public class ModernizationController {
     private final com.obdx.factory.profile.ProjectProfileService profiles;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final RunValidation validation;
+    private final RunReviewReport reviewReport;
+    private final RunHistory history;
 
     public ModernizationController(ModernizationService service, ModernizationRunService runs, TechnologyCatalogue catalogue, TechnologySettings settings,
                                    AccessGuard guard, AuditLog audit, com.obdx.factory.profile.ProjectProfileService profiles,
-                                   org.springframework.jdbc.core.JdbcTemplate jdbc, RunValidation validation) {
+                                   org.springframework.jdbc.core.JdbcTemplate jdbc, RunValidation validation,
+                                   RunReviewReport reviewReport, RunHistory history) {
+        this.history = history;
+        this.reviewReport = reviewReport;
         this.validation = validation;
         this.profiles = profiles;
         this.jdbc = jdbc;
@@ -160,6 +165,14 @@ public class ModernizationController {
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test-evidence.zip\"").body(validation.evidenceZip(workspaceId, runId));
     }
 
+    /** The run's review report (steps, tests, rules, files, comments) as a PDF. */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/review.pdf")
+    public org.springframework.http.ResponseEntity<byte[]> reviewPdf(@PathVariable UUID workspaceId, @PathVariable UUID runId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"review-report.pdf\"").body(reviewReport.pdf(workspaceId, runId));
+    }
+
     /** One screenshot of the run's build, through the factory. */
     @GetMapping("/api/workspaces/{workspaceId}/modernization/runs/{runId}/validation/image")
     public org.springframework.http.ResponseEntity<byte[]> validationImage(@PathVariable UUID workspaceId, @PathVariable UUID runId,
@@ -279,6 +292,13 @@ public class ModernizationController {
         TechnologySettings.Settings saved = settings.save(workspaceId, technology, request == null ? null : request.values(), user.getUsername());
         audit.record("MODERNIZATION_SETTINGS_SAVED", workspaceId, saved.name(), null);
         return saved;
+    }
+
+    /** Every run with its result category, change facts, duration, outcome, steps and files (History). */
+    @GetMapping("/api/workspaces/{workspaceId}/modernization/history")
+    public List<RunHistory.Row> history(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return history.rows(workspaceId);
     }
 
     @GetMapping("/api/workspaces/{workspaceId}/modernization/history.csv")

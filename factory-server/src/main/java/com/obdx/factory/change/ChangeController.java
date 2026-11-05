@@ -32,9 +32,11 @@ public class ChangeController {
     private final ChangeBranchService branches;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final ChangeVersions versions;
 
     public ChangeController(ChangeService service, ChangeBuildService builds, ChangeBranchService branches, AccessGuard guard,
-                            AuditLog audit) {
+                            AuditLog audit, ChangeVersions versions) {
+        this.versions = versions;
         this.branches = branches;
         this.service = service;
         this.builds = builds;
@@ -157,6 +159,27 @@ public class ChangeController {
         ChangeService.ChangeDetail change = service.editFile(id, request.path(), request.content());
         audit.record("CHANGE_FILE_EDITED", change.workspaceId(), request.path(), change.title());
         return change;
+    }
+
+    @GetMapping("/api/changes/{id}/delivery")
+    public ChangeService.DeliveryPreview delivery(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.VIEW);
+        return service.deliveryPreview(id);
+    }
+
+    /** The change's versions: its first generation, then each Write again or edit (see ChangeVersions). */
+    @GetMapping("/api/changes/{id}/versions")
+    public java.util.List<ChangeVersions.Version> versions(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.VIEW);
+        return versions.versions(id);
+    }
+
+    /** What changed between two versions of the change, file by file. */
+    @GetMapping("/api/changes/{id}/compare")
+    public ChangeVersions.Comparison compare(@PathVariable UUID id, @org.springframework.web.bind.annotation.RequestParam int from,
+                                             @org.springframework.web.bind.annotation.RequestParam int to) {
+        guard.requireForChange(id, Permission.VIEW);
+        return versions.compare(id, from, to);
     }
 
     @GetMapping("/api/changes/{id}/patch")

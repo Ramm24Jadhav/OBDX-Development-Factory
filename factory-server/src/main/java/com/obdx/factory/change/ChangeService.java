@@ -1710,6 +1710,24 @@ public class ChangeService {
         }
     }
 
+    /** Where Approve and deliver commits the change (relative to the repository root) and with which message. */
+    public record DeliveryPreview(String branch, String message) {
+    }
+
+    public DeliveryPreview deliveryPreview(UUID id) {
+        ChangeRequest change = find(id);
+        return new DeliveryPreview(branchFor(id), commitMessage(change, id));
+    }
+
+    private String branchFor(UUID id) {
+        return properties.branchFolder().replaceAll("^/+|/+$", "") + "/cr-" + id.toString().substring(0, 8);
+    }
+
+    private static String commitMessage(ChangeRequest change, UUID id) {
+        return "OBDX Development Factory: " + change.getTitle() + " (change " + id.toString().substring(0, 8)
+                + ", plan approved by " + change.getPlanApprovedBy() + ")";
+    }
+
     private ChangeDetail deliver(ChangeRequest change, UUID id) {
         List<ChangeFileStore.ChangeFile> deliverable = deliverable(id);
         if (deliverable.isEmpty()) {
@@ -1720,8 +1738,7 @@ public class ChangeService {
         SvnClient.SvnInfo info = svn.info(workspace.getSvnUrl(), credentials);
         String root = info.repositoryRoot();
         String source = info.url().substring(root.length()).replaceAll("^/+", "");
-        String folder = properties.branchFolder().replaceAll("^/+|/+$", "");
-        String branch = folder + "/cr-" + id.toString().substring(0, 8);
+        String branch = branchFor(id);
         if (svn.exists(root + "/" + branch, credentials)) {
             throw new ConflictException("The branch " + branch + " already exists");
         }
@@ -1730,7 +1747,7 @@ public class ChangeService {
         try {
             List<String> operations = new ArrayList<>();
             String parent = "";
-            for (String part : folder.split("/")) {
+            for (String part : branch.substring(0, branch.lastIndexOf('/')).split("/")) {
                 parent = parent.isEmpty() ? part : parent + "/" + part;
                 if (!svn.exists(root + "/" + parent, credentials)) {
                     operations.addAll(List.of("mkdir", parent));
@@ -1758,8 +1775,7 @@ public class ChangeService {
                 operations.addAll(List.of("put", content.toString(), branch + "/" + file.path()));
             }
 
-            String message = "OBDX Development Factory: " + change.getTitle() + " (change " + id.toString().substring(0, 8)
-                    + ", plan approved by " + change.getPlanApprovedBy() + ")";
+            String message = commitMessage(change, id);
             long revision = svn.multiCommit(root, message, operations, credentials);
             change.delivered(root + "/" + branch, revision);
             List<ChangeFileStore.ChangeFile> all = files.files(id);

@@ -52,6 +52,9 @@ class ChangeControllerTest {
     @MockitoBean
     private AuditLog audit;
 
+    @MockitoBean
+    private ChangeVersions versions;
+
     private static final UUID ID = UUID.randomUUID();
     private static final UUID WORKSPACE = UUID.randomUUID();
 

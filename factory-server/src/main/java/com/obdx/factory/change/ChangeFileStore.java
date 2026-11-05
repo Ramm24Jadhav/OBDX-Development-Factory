@@ -79,6 +79,36 @@ public class ChangeFileStore {
                         + "attempts = ?, rewrite = NULL, rewrite_complete = FALSE, fit_due = FALSE WHERE change_id = ? AND path = ?",
                 status.name(), original, generated, edited, check == null ? null : check.status().name(),
                 check == null ? null : check.message(), attempts, changeId, path);
+        if (generated != null) {
+            keepRevision(changeId, path, generated, edited);
+        }
+    }
+
+    /** One content a file had, in the order written (see V39). */
+    public record Revision(long id, String path, boolean edited, java.time.OffsetDateTime writtenAt) {
+    }
+
+    /** Keeps the content as the file's next revision, unless it is the same as its last one. */
+    void keepRevision(UUID changeId, String path, String content, boolean edited) {
+        List<String> last = jdbc.queryForList("SELECT content FROM change_file_revision WHERE change_id = ? AND path = ? ORDER BY id DESC LIMIT 1",
+                String.class, changeId, path);
+        if (last.isEmpty() || !last.getFirst().equals(content)) {
+            jdbc.update("INSERT INTO change_file_revision (change_id, path, content, edited) VALUES (?, ?, ?, ?)", changeId, path, content, edited);
+        }
+    }
+
+    public List<Revision> revisions(UUID changeId) {
+        return jdbc.query("SELECT id, path, edited, written_at FROM change_file_revision WHERE change_id = ? ORDER BY id",
+                (rs, n) -> new Revision(rs.getLong("id"), rs.getString("path"), rs.getBoolean("edited"), rs.getObject("written_at", java.time.OffsetDateTime.class)),
+                changeId);
+    }
+
+    /** Each file's content as it was after revision upTo (a file not written by then is left out). */
+    public java.util.Map<String, String> contentAt(UUID changeId, long upTo) {
+        java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
+        jdbc.query("SELECT DISTINCT ON (path) path, content FROM change_file_revision WHERE change_id = ? AND id <= ? ORDER BY path, id DESC",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> out.put(rs.getString("path"), rs.getString("content")), changeId, upTo);
+        return out;
     }
 
     /**
