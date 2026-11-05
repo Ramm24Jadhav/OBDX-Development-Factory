@@ -1,159 +1,131 @@
-<div class="factory-pg factory-ac-page">
-  <div class="factory-pg-head">
-    <div>
-      <h1>Account &amp; Preferences</h1>
-      <p>Manage your profile, preferences and application settings</p>
+<div class="factory-pg factory-acc">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Account</h1>
+      <p class="factory-rq-lead">Your profile, and how the factory looks and behaves for you. Preferences are kept in this browser.</p>
+    </div>
+    <div class="factory-rq-headbar">
+      <button type="button" id="signOutButton" class="fx-btn fx-btn--secondary" on-click="[[signOut]]"><span class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Sign out</button>
+      <fx-menu-button id="accMoreButton" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
     </div>
   </div>
-
-  <div class="factory-tabbar" role="tablist" aria-label="Account">
-    <oj-bind-for-each data="[[tabs]]">
-      <template><button type="button" role="tab" :id="[['ac-' + $current.data.value]]" :class="[[$current.data.css]]" :aria-selected="[[$current.data.selected() ? 'true' : 'false']]" on-click="[[$current.data.pick]]">
-        <span :class="[[$current.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.text]]"></oj-bind-text></button></template>
-    </oj-bind-for-each>
-  </div>
-  <oj-bind-if test="[[tab() === 'api']]">
-    <div class="fx-alert fx-alert--info factory-ac-apinote" id="apiAccessNote" role="status"><span class="factory-nav-icon factory-ico-link" aria-hidden="true"></span>
-      <span class="fx-alert-text">The factory has no personal API keys yet. Scripts call its REST API with a signed-in session; the endpoints are listed in docs/DEVELOPMENT.md.</span></div>
-  </oj-bind-if>
 
   <oj-bind-if test="[[user()]]">
-    <div class="factory-row factory-row-3 factory-ac-row">
-      <section class="factory-card" id="ac-sec-profile">
-        <div class="factory-ac-head"><div><h2>Profile Information</h2><p class="factory-card-sub">Your personal and role information</p></div>
-          <span data-fx-tip="Administrators change names and emails on the Users &amp; Access page"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" disabled>Edit Profile</button></span></div>
-        <div class="factory-ac-person"><span class="factory-ac-avatar"><oj-bind-text value="[[initials]]"></oj-bind-text>
-          <span class="factory-ac-camera" title="Profile pictures are not supported yet"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></span>
-          <div><strong id="accountName"><oj-bind-text value="[[user().displayName]]"></oj-bind-text></strong><span><oj-bind-text value="[[roleText]]"></oj-bind-text></span>
-            <span class="factory-ov-subtle"><oj-bind-text value="[[sourceLabel]]"></oj-bind-text></span></div></div>
-        <ul class="factory-ac-rows">
-          <oj-bind-for-each data="[[profileRows]]" as="row"><template><li><span :class="[[row.data.iconClass]]" aria-hidden="true"></span><span><oj-bind-text value="[[row.data.label]]"></oj-bind-text></span>
-            <strong :title="[[row.data.value]]"><oj-bind-text value="[[row.data.value]]"></oj-bind-text></strong></li></template></oj-bind-for-each>
-        </ul>
-        <p class="factory-card-sub">Your name and email come from <oj-bind-text value="[[sourceLabel().toLowerCase()]]"></oj-bind-text>; administrators change them.</p>
-      </section>
-
-      <section class="factory-card" id="ac-sec-preferences">
-        <div class="factory-ac-head"><div><h2>Application Preferences</h2><p class="factory-card-sub">Customize your experience (kept in this browser)</p></div>
-          <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[resetPreferences]]">Reset</button></div>
-        <dl class="factory-ac-prefs">
-          <dt id="themeLabel">Theme</dt>
-          <dd class="factory-ac-themes" role="group" aria-labelledby="themeLabel">
-            <oj-bind-for-each data="[[themes]]" as="th"><template>
-              <button type="button" :id="[['theme-' + th.data.value]]" :class="[[th.data.css]]" :aria-pressed="[[th.data.pressed]]" on-click="[[th.data.pick]]" :title="[[th.data.tip]]">
-                <span :class="[[th.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[th.data.label]]"></oj-bind-text></button>
-            </template></oj-bind-for-each>
-          </dd>
-          <dt id="densityLabel">Density</dt>
-          <dd><fx-segmented id="densityPick" label="Density" options="[[densityOptions]]" value="{{prefs.density}}"></fx-segmented></dd>
-          <dt><label for="workspacePick">Default Workspace</label></dt>
-          <dd><select id="workspacePick" class="fx-select" on-change="[[workspaceChange]]"><option value="" :selected="[[prefs.workspace() === '']]">The first one</option>
-            <oj-bind-for-each data="[[workspaceOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === prefs.workspace()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
-          <dt><label for="landingPick">Default Landing Page</label></dt>
-          <dd><select id="landingPick" class="fx-select" on-change="[[landingChange]]">
-            <oj-bind-for-each data="[[landingOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === prefs.landing()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
-          <dt><label for="pageSizePick">Items per Page</label></dt>
-          <dd><select id="pageSizePick" class="fx-select" on-change="[[pageSizeChange]]">
-            <oj-bind-for-each data="[[pageSizeOptions]]"><template><option :value="[[$current.data]]" :selected="[[$current.data === extra.pageSize()]]"><oj-bind-text value="[[$current.data]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
-          <dt><label for="dateFormatPick">Date Format</label></dt>
-          <dd><select id="dateFormatPick" class="fx-select" on-change="[[dateFormatChange]]">
-            <oj-bind-for-each data="[[dateFormatOptions]]"><template><option :value="[[$current.data.value]]" :selected="[[$current.data.value === extra.dateFormat()]]"><oj-bind-text value="[[$current.data.label]]"></oj-bind-text></option></template></oj-bind-for-each></select></dd>
-          <dt id="timeFormatLabel">Time Format</dt><dd><span class="fx-toggle-group factory-ac-segs" role="group" aria-labelledby="timeFormatLabel"><button type="button" :aria-pressed="[[prefs.hour12() ? 'true' : 'false']]" on-click="[[hour12On]]">12 Hour</button><button type="button" :aria-pressed="[[prefs.hour12() ? 'false' : 'true']]" on-click="[[hour24On]]">24 Hour</button></span>
-            <span class="factory-ov-subtle factory-ac-sample"><oj-bind-text value="[[sample]]"></oj-bind-text></span></dd>
-          <dt><label for="editorThemePick">Code Editor Theme</label></dt>
-          <dd><select id="editorThemePick" class="fx-select" on-change="[[editorThemeChange]]"><option value="light" :selected="[[extra.editorTheme() === 'light']]">Light</option><option value="dark" :selected="[[extra.editorTheme() === 'dark']]">Dark</option></select></dd>
-          <dt><label for="textPick">Font Size</label></dt>
-          <dd><select id="textPick" class="fx-select" on-change="[[textChange]]"><option value="normal" :selected="[[prefs.textSize() === 'normal']]">Normal</option><option value="large" :selected="[[prefs.textSize() === 'large']]">Large</option></select></dd>
-          <dt id="shortcutsLabel">Keyboard Shortcuts</dt>
-          <dd class="factory-ac-shortcuts"><button type="button" id="shortcutsButton" class="fx-btn fx-btn--secondary fx-btn--sm" aria-describedby="shortcutsLabel" on-click="[[showShortcuts]]"><span class="factory-nav-icon factory-ico-help" aria-hidden="true"></span>Show Shortcuts</button>
-            <span class="factory-ov-subtle">or press <kbd class="factory-kbd">?</kbd></span></dd>
-        </dl>
-        <p class="factory-card-sub">The landing page applies the next time the factory opens. Items per page, date format and code editor theme are saved here; the pages do not use them yet.</p>
-      </section>
-
-      <section class="factory-card factory-ac-flex" id="ac-sec-notifications">
-        <h2>Notification Preferences</h2>
-        <p class="factory-card-sub">Choose which events show in the Notification Center</p>
-        <div class="factory-ac-nhead" aria-hidden="true"><span>Event</span><span>In App</span><span>Email</span><span>Teams</span></div>
-        <ul class="factory-switch-list factory-ac-notify">
-          <oj-bind-for-each data="[[notifyRows]]" as="nr">
-            <template><li><span class="factory-name-cell"><span :class="[[nr.data.tileCss]]"><span :class="[[nr.data.iconClass]]" aria-hidden="true"></span></span><oj-bind-text value="[[nr.data.label]]"></oj-bind-text></span>
-              <span :data-fx-tip="[[nr.data.tip || null]]"><button type="button" class="fx-switch" role="switch" :aria-checked="[[nr.data.checkedText]]" :disabled="[[nr.data.disabled]]" on-click="[[nr.data.flip]]" :aria-label="[[nr.data.label + ' in the factory']]"></button></span>
-              <span data-fx-tip="Email delivery is not available yet"><button type="button" class="fx-switch" role="switch" aria-checked="false" disabled :aria-label="[[nr.data.label + ' by email']]"></button></span>
-              <span data-fx-tip="Teams delivery is not available yet"><button type="button" class="fx-switch" role="switch" aria-checked="false" disabled :aria-label="[[nr.data.label + ' in Teams']]"></button></span></li></template>
+    <div class="factory-acc-layout">
+      <!-- The profile -->
+      <section class="fx-card factory-acc-profile" id="ac-sec-profile" aria-labelledby="accountName">
+        <div class="factory-acc-person">
+          <span :class="[[avatarCss]]" aria-hidden="true"><oj-bind-text value="[[initials]]"></oj-bind-text></span>
+          <div class="factory-acc-who"><h2 id="accountName"><oj-bind-text value="[[user().displayName]]"></oj-bind-text></h2>
+            <span class="factory-acc-role"><oj-bind-text value="[[roleText]]"></oj-bind-text></span></div>
+        </div>
+        <dl class="factory-acc-facts" id="profileFacts">
+          <oj-bind-for-each data="[[profileRows]]" as="r">
+            <template><div><dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt><dd :class="[[r.data.css]]" :title="[[r.data.value]]"><oj-bind-text value="[[r.data.value]]"></oj-bind-text></dd></div></template>
           </oj-bind-for-each>
-        </ul>
-        <p class="factory-card-sub">Notifications show in the factory; email and Teams delivery are not available yet.</p>
-        <div class="factory-ac-foot"><button type="button" id="sendTestButton" class="fx-btn fx-btn--secondary" on-click="[[sendTest]]"><span class="factory-nav-icon factory-ico-arrow" aria-hidden="true"></span>Send Test Notification</button></div>
-      </section>
-    </div>
-
-    <div class="factory-row factory-row-3 factory-ac-row">
-      <section class="factory-card" id="ac-sec-security">
-        <h2>Change Password</h2>
-        <p class="factory-card-sub">Update your account password</p>
-        <oj-bind-if test="[[canChange()]]">
-          <div class="fx-form factory-ac-pwform">
-            <fx-input id="currentPassword" type="password" label="Current Password" placeholder="Enter current password" value="{{currentPassword}}" autocomplete="current-password"></fx-input>
-            <fx-input id="newPassword" type="password" label="New Password" placeholder="Enter new password" value="{{newPassword}}" autocomplete="new-password"></fx-input>
-            <fx-input id="repeatPassword" type="password" label="Confirm New Password" placeholder="Confirm new password" value="{{repeatPassword}}" autocomplete="new-password"></fx-input>
+        </dl>
+        <div class="factory-acc-wsblock">
+          <span class="factory-acc-label">Workspaces</span>
+          <div class="factory-acc-chips" id="profileWorkspaces">
+            <oj-bind-for-each data="[[workspaceChips]]" as="w"><template><span class="fx-badge" :title="[[w.data.tip]]"><oj-bind-text value="[[w.data.text]]"></oj-bind-text></span></template></oj-bind-for-each>
+            <oj-bind-if test="[[workspaceChips().length === 0]]"><span class="factory-acc-muted">None yet; ask an administrator.</span></oj-bind-if>
           </div>
-          <p class="factory-ac-reqtitle" id="passwordRulesTitle">Password Requirements:</p>
-          <ul class="factory-ac-reqs" aria-labelledby="passwordRulesTitle"><oj-bind-for-each data="[[rules]]"><template><li :class="[[$current.data.rowCss]]"><span :class="[[$current.data.css]]" aria-hidden="true"></span><oj-bind-text value="[[$current.data.label]]"></oj-bind-text><span class="factory-sr"><oj-bind-text value="[[$current.data.ok() ? ': done' : ': not yet']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
-          <oj-bind-if test="[[message()]]"><p class="fx-error" id="passwordMessage" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[message]]"></oj-bind-text></p></oj-bind-if>
-          <div class="factory-ac-pwbtn"><button type="button" id="changePasswordButton" class="fx-btn fx-btn--primary factory-md-save" on-click="[[changePassword]]">Update Password</button></div>
-        </oj-bind-if>
-        <oj-bind-if test="[[!canChange()]]">
-          <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>
-            <span>You sign in with <oj-bind-text value="[[sourceLabel]]"></oj-bind-text>; change your password there.</span></div>
-        </oj-bind-if>
+        </div>
+        <p class="factory-acc-note">Your name and email come from <oj-bind-text value="[[sourceLabel().toLowerCase()]]"></oj-bind-text>; administrators change them.</p>
       </section>
 
-      <div class="factory-stack factory-ac-stack">
-        <section class="factory-card">
-          <div class="factory-ac-head"><div><h2>Two-Factor Authentication</h2><p class="factory-card-sub">Enhance your account security</p></div><span class="fx-badge">Set by your bank</span></div>
-          <p class="factory-ac-text">The factory has no second factor of its own. With single sign-on, your bank's identity provider asks for it.</p>
-          <ul class="factory-ac-mfa">
-            <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span><span><strong>Authenticator App</strong><span class="factory-ov-subtle">Through your bank's single sign-on</span></span>
-              <span data-fx-tip="Your bank's identity provider manages this"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" disabled>Manage</button></span></li>
-            <li class="factory-ac-or">OR</li>
-            <li><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span><span><strong>SMS Verification</strong><span class="factory-ov-subtle">Not offered by the factory</span></span>
-              <span data-fx-tip="The factory cannot send text messages"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" disabled>Enable</button></span></li>
+      <div class="factory-acc-groups">
+        <!-- Appearance -->
+        <section class="fx-card factory-acc-group" id="ac-sec-preferences" aria-labelledby="accAppearanceTitle">
+          <h2 id="accAppearanceTitle">Appearance</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong id="themeLabel">Theme</strong><span>The same as the top bar's light and dark switch</span></span>
+              <span class="fx-toggle-group factory-acc-themes" role="group" aria-labelledby="themeLabel">
+                <oj-bind-for-each data="[[themes]]" as="th"><template>
+                  <button type="button" :id="[['theme-' + th.data.value]]" :aria-pressed="[[th.data.pressed]]" on-click="[[th.data.pick]]" :title="[[th.data.tip]]">
+                    <span :class="[[th.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[th.data.label]]"></oj-bind-text></button>
+                </template></oj-bind-for-each>
+              </span></li>
+            <li><span class="factory-acc-text"><strong>Density</strong><span>Compact rows and controls on every page</span></span>
+              <fx-segmented id="densityPick" label="Density" options="[[densityOptions]]" value="{{prefs.density}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Font size</strong><span>Larger text on every page</span></span>
+              <fx-segmented id="textPick" label="Font size" options="[[textOptions]]" value="{{prefs.textSize}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Code editor theme</strong><span>Saved; the code views do not use it yet</span></span>
+              <fx-segmented id="editorThemePick" label="Code editor theme" options="[[editorThemeOptions]]" value="{{extra.editorTheme}}"></fx-segmented></li>
           </ul>
         </section>
-        <section class="factory-card">
-          <div class="factory-ac-head"><div><h2>Active Sessions</h2><p class="factory-card-sub">Only this session can be signed out here</p></div>
-            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[signOut]]">Sign Out</button></div>
-          <ul class="factory-ac-sessions"><li><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span>
-            <span class="factory-list-title"><oj-bind-text value="[[browser]]"></oj-bind-text></span><span class="fx-badge fx-badge--success">Current Session</span>
-            <span class="factory-ov-subtle"><oj-bind-text value="[[timezone]]"></oj-bind-text></span></li></ul>
-          <ul class="factory-ac-rows factory-ac-sessrows">
-            <li><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span><span>Signed in as</span><strong><oj-bind-text value="[[user().username]]"></oj-bind-text></strong></li>
-            <li><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span><span>Sign-in method</span><strong><oj-bind-text value="[[sourceLabel]]"></oj-bind-text></strong></li>
-            <li><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span>Language</span><strong><oj-bind-text value="[[language]]"></oj-bind-text></strong></li>
-          </ul>
-          <p class="factory-card-sub factory-ac-sessnote">Sessions on other devices are not listed: the factory does not keep a list of them yet. Sign Out ends this session only.</p>
-        </section>
-      </div>
 
-      <div class="factory-stack factory-ac-stack">
-        <section class="factory-card">
-          <h2>Application Settings</h2>
-          <p class="factory-card-sub">Additional application preferences</p>
-          <ul class="factory-switch-list factory-ac-settings">
-            <oj-bind-for-each data="[[settingsRows]]" as="row">
-              <template><li><span :class="[[row.data.iconClass]]" aria-hidden="true"></span><span class="factory-ac-settext"><strong :id="[[row.data.id + 'Label']]"><oj-bind-text value="[[row.data.label]]"></oj-bind-text></strong><span class="factory-list-sub"><oj-bind-text value="[[row.data.sub]]"></oj-bind-text></span></span>
-                <span class="factory-ac-switchcell" :data-fx-tip="[[row.data.tip || null]]"><button type="button" class="fx-switch" role="switch" :id="[[row.data.id]]" :aria-checked="[[row.data.checkedText]]" :disabled="[[row.data.disabled]]" on-click="[[row.data.flip]]" :aria-labelledby="[[row.data.id + 'Label']]"></button></span></li></template>
+        <!-- Defaults -->
+        <section class="fx-card factory-acc-group" aria-labelledby="accDefaultsTitle">
+          <h2 id="accDefaultsTitle">Defaults</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong>Default workspace</strong><span>Chosen in the top bar when the factory opens</span></span>
+              <fx-select id="workspacePick" class="factory-acc-select" label="Default workspace" hide-label placeholder="The first one" options="[[workspaceOptions]]" value="{{prefs.workspace}}"></fx-select></li>
+            <li><span class="factory-acc-text"><strong>Landing page</strong><span>Applies the next time the factory opens</span></span>
+              <fx-select id="landingPick" class="factory-acc-select" label="Landing page" hide-label options="[[landingOptions]]" value="{{prefs.landing}}"></fx-select></li>
+            <li><span class="factory-acc-text"><strong>Time format</strong><span id="timeSample"><oj-bind-text value="[[sample]]"></oj-bind-text></span></span>
+              <fx-segmented id="timeFormatPick" label="Time format" options="[[hourOptions]]" value="{{prefs.hour12}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Items per page</strong><span>Saved; the pages do not use it yet</span></span>
+              <fx-segmented id="pageSizePick" label="Items per page" options="[[pageSizeOptions]]" value="{{extra.pageSize}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Date format</strong><span>Saved; the pages do not use it yet</span></span>
+              <fx-select id="dateFormatPick" class="factory-acc-select" label="Date format" hide-label options="[[dateFormatOptions]]" value="{{extra.dateFormat}}"></fx-select></li>
+          </ul>
+        </section>
+
+        <!-- Notifications -->
+        <section class="fx-card factory-acc-group" id="ac-sec-notifications" aria-labelledby="accNotifyTitle">
+          <div class="factory-acc-grouphead"><h2 id="accNotifyTitle">Notifications</h2>
+            <button type="button" id="sendTestButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[sendTest]]">Send a test</button></div>
+          <ul class="factory-acc-list">
+            <oj-bind-for-each data="[[notifyRows]]" as="nr">
+              <template><li><span :class="[[nr.data.tileCss]]" aria-hidden="true"><span :class="[[nr.data.iconClass]]"></span></span>
+                <span class="factory-acc-text"><strong :id="[[nr.data.id + 'Label']]"><oj-bind-text value="[[nr.data.label]]"></oj-bind-text></strong><span><oj-bind-text value="[[nr.data.sub]]"></oj-bind-text></span></span>
+                <button type="button" class="fx-switch" role="switch" :id="[[nr.data.id]]" :aria-checked="[[nr.data.checkedText]]" on-click="[[nr.data.flip]]" :aria-labelledby="[[nr.data.id + 'Label']]"></button></li></template>
             </oj-bind-for-each>
           </ul>
+          <p class="factory-acc-note" id="notifyNote">These show in the bell and the Notification Center. Email and Teams delivery, security alerts and a weekly summary are not available yet.</p>
         </section>
-        <section class="factory-card factory-ac-danger">
-          <h2>Danger Zone</h2>
-          <p class="factory-card-sub">Irreversible account actions</p>
-          <span data-fx-tip="Ask an administrator to remove your account"><button type="button" class="factory-ac-delete" id="deleteAccountButton" disabled>
-            <span class="factory-nav-icon factory-ico-trash" aria-hidden="true"></span><span><strong>Delete Account</strong><span>Ask an administrator to remove your account</span></span><span class="factory-ac-chev" aria-hidden="true">›</span></button></span>
+
+        <!-- Assistant and shortcuts -->
+        <section class="fx-card factory-acc-group" aria-labelledby="accWorkTitle">
+          <h2 id="accWorkTitle">Assistant and shortcuts</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong id="assistantToggleLabel">AI suggestions</strong><span>Show the AI Assistant panels on the pages</span></span>
+              <button type="button" class="fx-switch" role="switch" id="assistantToggle" :aria-checked="[[assistant.checkedText]]" on-click="[[assistant.flip]]" aria-labelledby="assistantToggleLabel"></button></li>
+            <li><span class="factory-acc-text"><strong id="shortcutsLabel">Keyboard shortcuts</strong><span>Or press <kbd class="factory-kbd">?</kbd> on any page</span></span>
+              <button type="button" id="shortcutsButton" class="fx-btn fx-btn--secondary fx-btn--sm" aria-describedby="shortcutsLabel" on-click="[[showShortcuts]]">Show</button></li>
+          </ul>
+          <p class="factory-acc-note" id="notSettingsNote">Not settings: pages save when you press Save, tooltips always show, each page decides when to ask before deleting, and the factory collects no usage data.</p>
+        </section>
+
+        <!-- Security -->
+        <section class="fx-card factory-acc-group" id="ac-sec-security" aria-labelledby="accSecurityTitle">
+          <h2 id="accSecurityTitle">Security</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong>Password</strong>
+              <span><oj-bind-text value="[[canChange() ? 'At least 12 characters' : 'You sign in with ' + sourceLabel() + '; change your password there']]"></oj-bind-text></span></span>
+              <oj-bind-if test="[[canChange()]]"><button type="button" id="changePasswordStart" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openPassword]]">Change</button></oj-bind-if></li>
+            <li><span class="factory-acc-text"><strong>Two-factor sign-in</strong><span>The factory has none of its own; with single sign-on, your bank's identity provider asks for it</span></span>
+              <span class="fx-badge">Set by your bank</span></li>
+            <li><span class="factory-acc-text"><strong>This session</strong><span><oj-bind-text value="[[browser + (timezone ? ' · ' + timezone : '')]]"></oj-bind-text></span></span>
+              <span class="fx-badge fx-badge--success">Current session</span></li>
+            <li><span class="factory-acc-text"><strong>API access</strong><span id="apiAccessNote">No personal API keys yet. Scripts call the REST API with a signed-in session; the endpoints are in docs/DEVELOPMENT.md.</span></span></li>
+          </ul>
+          <p class="factory-acc-note">Sessions on other devices are not listed: the factory does not keep a list of them. Sign out ends this session only. To remove your account, ask an administrator.</p>
         </section>
       </div>
     </div>
+
+    <fx-sheet id="passwordSheet" open="{{passwordOpen}}" heading="Change password" subtitle="Use the new one the next time you sign in.">
+      <div class="factory-acc-sheet">
+        <fx-input id="currentPassword" type="password" label="Current password" value="{{currentPassword}}" autocomplete="current-password"></fx-input>
+        <fx-input id="newPassword" type="password" label="New password" value="{{newPassword}}" autocomplete="new-password"></fx-input>
+        <fx-input id="repeatPassword" type="password" label="Confirm the new password" value="{{repeatPassword}}" autocomplete="new-password"></fx-input>
+        <ul class="factory-ac-reqs" aria-label="Password requirements"><oj-bind-for-each data="[[rules]]" as="r"><template><li :class="[[r.data.rowCss]]"><span :class="[[r.data.css]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.label]]"></oj-bind-text><span class="factory-sr"><oj-bind-text value="[[r.data.ok() ? ': done' : ': not yet']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+        <oj-bind-if test="[[message()]]"><p class="fx-error" id="passwordMessage" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[message]]"></oj-bind-text></p></oj-bind-if>
+        <div class="factory-adm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[closePassword]]">Cancel</button>
+          <button type="button" id="changePasswordButton" class="fx-btn fx-btn--primary" on-click="[[changePassword]]">Update password</button></div>
+      </div>
+    </fx-sheet>
   </oj-bind-if>
 </div>

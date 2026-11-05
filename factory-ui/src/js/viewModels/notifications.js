@@ -1,15 +1,14 @@
 /*
- * Notification Center page: every notification with its category, priority and read state, filters, the selected
- * one's details, error summary, actions and related items, and marking as read. Notifications come from the
- * notifications service.
+ * Notification Center page: one header with Mark all read, chips with counts by kind (unread, needs you, failures,
+ * questions, builds, AI work, reviews, system), a search and more filters (type, priority, time), compact rows grouped
+ * by day with the unread state, and the chosen notification beside the list with its error summary, actions and
+ * related items. Notifications come from the notifications service; read state is kept in this browser.
  */
 define(['knockout', '../accUtils', '../services/dashboard', '../services/notifications', '../services/workspaceSelection', '../services/ui',
         '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
   function (ko, accUtils, dashboard, notifications, workspaceSelection, ui, toast, pageRequests) {
     const CATEGORY = { action: 'Action Required', build: 'Build & Test', agent: 'AI work', review: 'Reviews & Approvals', system: 'System' };
     const PRIORITY = { high: { text: 'High', css: 'fx-badge fx-badge--danger' }, medium: { text: 'Medium', css: 'fx-badge fx-badge--warning' }, low: { text: 'Low', css: 'fx-badge fx-badge--success' } };
-    const UNREAD = { text: 'Unread', css: 'fx-badge fx-badge--primary' };
-    const READ = { text: 'Read', css: 'fx-badge' };
     // The state of the thing a notification is about, from how the notifications service builds its id
     const SUBJECT = [
       ['build-', (n) => (n.tone === 'green' ? ui.status('SUCCEEDED', 'Build passed') : ui.status('FAILED', 'Build failed'))],
@@ -29,140 +28,143 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
       build: ['Build & Test', 'flask'], requirements: ['Requirement', 'list'], reviews: ['Screen review', 'design'], impact: ['Change plan', 'branch'],
       changes: ['Change', 'branch'], code: ['Code', 'code'], models: ['Models', 'chip']
     };
+    // The kinds (chips): All and Unread always show, the others when they have notifications
+    const KINDS = [
+      { value: 'all', label: 'All', test: () => true },
+      { value: 'unread', label: 'Unread', dot: 'is-primary', test: (n) => n.unread() },
+      { value: 'action', label: 'Needs you', dot: 'is-warning', test: (n) => n.action },
+      { value: 'failed', label: 'Failures', dot: 'is-danger', test: (n) => n.tone === 'red' },
+      { value: 'questions', label: 'Questions', test: (n) => n.title === 'Questions to Answer' },
+      { value: 'build', label: 'Builds', test: (n) => n.category === 'build' },
+      { value: 'agent', label: 'AI work', test: (n) => n.category === 'agent' },
+      { value: 'review', label: 'Reviews & approvals', test: (n) => n.category === 'review' },
+      { value: 'system', label: 'System', test: (n) => n.category === 'system' }
+    ];
+    const DAY_MS = 24 * 3600 * 1000;
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const dayLabel = (at) => {
+      if (!at) { return 'Not dated'; }
+      const d = new Date(at);
+      const diff = Math.round((startOfDay(new Date()) - startOfDay(d)) / DAY_MS);
+      return diff <= 0 ? 'Today' : diff === 1 ? 'Yesterday' : d.toLocaleDateString(undefined, { weekday: diff < 7 ? 'long' : undefined, day: 'numeric', month: 'long', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+    };
+    const timeOf = (n) => (n.at ? new Date(n.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '');
 
     function NotificationsViewModel() {
       const all = notifications.all;
-      const c = (test) => ko.pureComputed(() => all().filter(test).length);
-      const count = (test) => all().filter(test).length;
-      this.kpis = ko.pureComputed(() => [
-        { label: 'Total Notifications', value: all().length, sub: '↑ ' + count((n) => n.today) + ' today', css: 'factory-kpi-sub fx-trend fx-trend--up', tone: 'amber', icon: 'bell' },
-        { label: 'Action Required', value: count((n) => n.action), sub: 'Needs your attention', css: 'factory-kpi-sub', tone: 'red', icon: 'alert' },
-        { label: 'Build & Test', value: count((n) => n.category === 'build'), sub: count((n) => n.category === 'build' && n.tone === 'red') + ' failed, ' + count((n) => n.category === 'build' && n.tone === 'green') + ' completed', css: 'factory-kpi-sub', tone: 'violet', icon: 'cog' },
-        { label: 'AI work', value: count((n) => n.category === 'agent'), sub: count((n) => n.category === 'agent' && n.tone !== 'red') + ' completed, ' + count((n) => n.category === 'agent' && n.tone === 'red') + ' failed', css: 'factory-kpi-sub', tone: 'blue', icon: 'robot' },
-        { label: 'Reviews & Approvals', value: count((n) => n.category === 'review'), sub: count((n) => n.category === 'review' && n.action) + ' pending approval', css: 'factory-kpi-sub', tone: 'violet', icon: 'doc' },
-        { label: 'System', value: count((n) => n.category === 'system'), sub: 'General updates', css: 'factory-kpi-sub', tone: 'blue', icon: 'info' }
-      ].map((k) => Object.assign(k, { iconCss: 'factory-kpi-icon factory-no-tone-' + k.tone, iconClass: 'factory-nav-icon factory-ico-' + k.icon })));
 
-      this.tab = ko.observable('all');
-      this.tabs = ui.tabs(this.tab, [
-        { value: 'all', label: 'All', icon: 'bell', count: c(() => true) },
-        { value: 'action', label: 'Action Required', icon: 'alert', count: c((n) => n.action) },
-        { value: 'build', label: 'Build & Test', icon: 'cog', count: c((n) => n.category === 'build') },
-        { value: 'agent', label: 'AI work', icon: 'robot', count: c((n) => n.category === 'agent') },
-        { value: 'review', label: 'Reviews', icon: 'doc', count: c((n) => n.category === 'review') },
-        { value: 'system', label: 'System', icon: 'info', count: c((n) => n.category === 'system') }
-      ]);
+      this.kind = ko.observable('all');
       this.search = ko.observable('');
       this.typeFilter = ko.observable('');
-      this.statusFilter = ko.observable('');
       this.priorityFilter = ko.observable('');
       this.timeFilter = ko.observable('');
-      this.searchInput = ui.value(this.search);
-      this.typeChange = ui.value(this.typeFilter);
-      this.statusChange = ui.value(this.statusFilter);
-      this.priorityChange = ui.value(this.priorityFilter);
-      this.timeChange = ui.value(this.timeFilter);
-      this.types = ko.pureComputed(() => all().map((n) => n.title).filter((t, i, list) => list.indexOf(t) === i).sort());
-      this.filtersOn = ko.pureComputed(() => !!(this.search() || this.typeFilter() || this.statusFilter() || this.priorityFilter() || this.timeFilter()));
-      this.clearFilters = () => { this.search(''); this.typeFilter(''); this.statusFilter(''); this.priorityFilter(''); this.timeFilter(''); };
-      this.visible = ko.pureComputed(() => {
+      this.moreFilters = ko.observable(false);
+      this.toggleFilters = () => this.moreFilters(!this.moreFilters());
+      this.typeOptions = ko.pureComputed(() => [{ value: '', label: 'All types' }].concat(all().map((n) => n.title).filter((t, i, list) => list.indexOf(t) === i).sort().map((t) => ({ value: t, label: t }))));
+      this.priorityOptions = [{ value: '', label: 'Any priority' }, { value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }];
+      this.timeOptions = [{ value: '', label: 'Any time' }, { value: '1', label: 'Today' }, { value: '7', label: 'Last 7 days' }, { value: '30', label: 'Last 30 days' }];
+      this.extraCount = ko.pureComputed(() => [this.typeFilter(), this.priorityFilter(), this.timeFilter()].filter(Boolean).length);
+      this.filtersOn = ko.pureComputed(() => !!(this.search() || this.extraCount() || this.kind() !== 'all'));
+      this.clearFilters = () => { this.search(''); this.typeFilter(''); this.priorityFilter(''); this.timeFilter(''); this.kind('all'); };
+      const matches = (n) => {
         const text = this.search().trim().toLowerCase();
         const days = this.timeFilter() ? Number(this.timeFilter()) : 0;
-        return all().filter((n) => (this.tab() === 'all' || (this.tab() === 'action' ? n.action : n.category === this.tab()))
-          && (!this.typeFilter() || n.title === this.typeFilter())
-          && (!this.statusFilter() || (this.statusFilter() === 'unread') === n.unread())
+        return (!this.typeFilter() || n.title === this.typeFilter())
           && (!this.priorityFilter() || n.priority === this.priorityFilter())
-          && (!days || (n.at && Date.now() - new Date(n.at).getTime() < days * 24 * 3600 * 1000))
-          && (!text || (n.title + ' ' + n.text + ' ' + n.related).toLowerCase().indexOf(text) >= 0));
+          && (!days || (n.at && Date.now() - new Date(n.at).getTime() < days * DAY_MS))
+          && (!text || (n.title + ' ' + n.text + ' ' + n.related).toLowerCase().indexOf(text) >= 0);
+      };
+      this.kindChips = ko.pureComputed(() => {
+        const base = all().filter(matches);
+        return KINDS.map((k) => {
+          const n = base.filter(k.test).length;
+          return { value: k.value, n: n, text: k.label + ' ' + n, dot: k.dot ? 'factory-rq-fdot ' + k.dot : '',
+            pressed: this.kind() === k.value ? 'true' : 'false', pick: () => this.kind(k.value) };
+        }).filter((c) => c.value === 'all' || c.value === 'unread' || c.n > 0 || this.kind() === c.value);
       });
-      this.pager = ui.pages(this.visible, 10, [10, 25, 50]);
-      // Date over time in the Time column, so the time never breaks apart
-      const whenParts = (text) => { const i = text.lastIndexOf(', '); return i > 0 ? [text.slice(0, i), text.slice(i + 2)] : [text, '']; };
+      this.visible = ko.pureComputed(() => {
+        const k = KINDS.find((x) => x.value === this.kind()) || KINDS[0];
+        return all().filter((n) => k.test(n) && matches(n))
+          .slice().sort((a, b) => (b.at ? new Date(b.at).getTime() : 0) - (a.at ? new Date(a.at).getTime() : 0));
+      });
+      this.pager = ui.pages(this.visible, 25, [25, 50, 100]);
+      this.long = ko.pureComputed(() => this.visible().length > this.pager.size());
+      this.unreadCount = notifications.unreadCount;
+      this.lead = ko.pureComputed(() => {
+        const total = all().length;
+        if (!total) { return 'Builds, AI work, reviews and system events of your workspaces.'; }
+        const unread = this.unreadCount();
+        const needs = all().filter((n) => n.action).length;
+        return (unread ? unread + ' unread' : 'All read') + ' · ' + needs + ' need you · ' + total + ' in all';
+      });
+      this.shown = ko.pureComputed(() => (this.visible().length === all().length ? all().length + ' shown' : this.visible().length + ' of ' + all().length));
+
       this.selectedId = ko.observable(null);
-      this.checked = ko.observable({});
       this.selected = ko.pureComputed(() => all().find((n) => n.id === this.selectedId()) || (this.selectedId() === 'none' ? null : this.visible()[0]) || null);
 
-      // The row ⋮ menu (design system .fx-menu), fixed next to its button so the table does not clip it; one menu
-      // state for every row, with the keyboard handling of ui.menu()
-      this.rowMenu = ui.menu();
-      this.menuId = ko.observable(null);
-      this.menuStyle = ko.observable({});
-      this.menuRow = ko.pureComputed(() => (this.rowMenu.open() && all().find((n) => n.id === this.menuId())) || null);
-      this.closeMenu = () => this.rowMenu.close();
-      this.menuKey = (event) => this.rowMenu.key(event);
-      this.stop = (event) => { event.stopPropagation(); return true; };
-
-      this.rows = ko.pureComputed(() => this.pager.rows().map((n, index) => Object.assign({}, n, {
-        whenDate: whenParts(n.when)[0], whenTime: whenParts(n.when)[1],
-        iconCss: 'factory-kpi-icon factory-no-icon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
-        categoryText: CATEGORY[n.category],
-        priorityBadge: PRIORITY[n.priority], statusBadge: n.unread() ? UNREAD : READ, subject: subjectStatus(n),
-        css: 'factory-clickable' + (this.selected() && this.selected().id === n.id ? ' is-selected' : '') + (n.unread() ? ' factory-no-unread' : ''),
-        menuOpen: ko.pureComputed(() => this.rowMenu.open() && this.menuId() === n.id),
-        // The keyboard cursor (ui.tableKeys) in its own computed, so moving it does not redraw the rows
-        rowCss: ko.pureComputed(() => 'factory-clickable' + (this.selected() && this.selected().id === n.id ? ' is-selected' : '') + (n.unread() ? ' factory-no-unread' : '')
-          + (this.keys.cursor() === index ? ' is-cursor' : '')),
-        focus: () => { this.keys.cursor(index); return true; },
-        // The open row shows checked, as in the design
-        isChecked: ko.pureComputed(() => !!this.checked()[n.id] || (!!this.selected() && this.selected().id === n.id)),
-        check: (event) => { event.stopPropagation(); const m = Object.assign({}, this.checked()); m[n.id] = event.target.checked; this.checked(m); return true; },
-        pick: () => { this.selectedId(n.id); notifications.markRead([n.id]); },
-        menu: (event) => {
-          event.stopPropagation();
-          if (this.rowMenu.open() && this.menuId() === n.id) {
-            this.closeMenu();
-            return;
-          }
-          this.closeMenu();
-          const r = event.currentTarget.getBoundingClientRect();
-          // Below the button, or above it when the button is near the bottom of the window
-          const left = Math.max(8, r.right - 200) + 'px';
-          this.menuStyle(r.bottom + 160 < window.innerHeight ? { top: (r.bottom + 4) + 'px', bottom: 'auto', left: left }
-            : { top: 'auto', bottom: (window.innerHeight - r.top + 4) + 'px', left: left });
-          this.menuId(n.id);
-          this.rowMenu.toggle(event);
-        }
-      })));
-      // Keyboard: arrows or J/K move, Enter opens the details, X selects; focus returns to the row after the redraw
-      const focusCursor = () => window.setTimeout(() => {
-        const tr = document.querySelectorAll('#notificationTable tbody tr')[this.keys.cursor()];
-        if (tr) { tr.focus(); }
-      }, 0);
-      this.keys = ui.tableKeys(this.rows, {
-        open: (row) => { row.pick(); focusCursor(); },
-        toggle: (row) => { const m = Object.assign({}, this.checked()); m[row.id] = !m[row.id]; this.checked(m); }
-      });
-      this.allChecked = ko.pureComputed(() => this.pager.rows().length > 0 && this.pager.rows().every((n) => this.checked()[n.id]));
-      this.checkAll = (event) => {
-        const m = Object.assign({}, this.checked());
-        this.pager.rows().forEach((n) => { m[n.id] = event.target.checked; });
-        this.checked(m);
-        return true;
-      };
-
-      // An import's notification opens Code › Index; the code itself opens on Code › Explore
       const go = (n, page, codeTab) => {
         if (n.workspaceId) {
           workspaceSelection.selectedId(n.workspaceId);
         }
         if (page === 'code') {
+          // An import's notification opens Code › Index; the code itself opens on Code › Explore
           pageRequests.codeTab(codeTab || (n.page === 'code' ? 'index' : 'explore'));
         }
         window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
       };
       const toggleRead = (n) => (n.unread() ? notifications.markRead([n.id]) : notifications.markUnread([n.id]));
       const external = (url) => () => window.open(url, '_blank', 'noopener');
+
+      // Rows, with a day heading before the first row of each day
+      this.rows = ko.pureComputed(() => {
+        let lastDay = null;
+        return this.pager.rows().map((n) => {
+          const day = dayLabel(n.at);
+          const head = day !== lastDay ? day : '';
+          lastDay = day;
+          const isOn = ko.pureComputed(() => !!this.selected() && this.selected().id === n.id);
+          return Object.assign({}, n, {
+            dayHead: head,
+            iconCss: 'factory-nt-icon is-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
+            categoryText: CATEGORY[n.category], subject: subjectStatus(n),
+            priorityBadge: n.priority === 'high' ? PRIORITY.high : null,
+            time: timeOf(n) || n.when,
+            sub: [n.related, n.relatedSub].filter(Boolean).join(' · '),
+            css: ko.pureComputed(() => 'factory-nt-item' + (n.unread() ? ' is-unread' : '') + (isOn() ? ' is-on' : '')),
+            current: ko.pureComputed(() => (isOn() ? 'true' : null)),
+            label: ko.pureComputed(() => (n.unread() ? 'Unread: ' : '') + n.title + '. ' + n.text),
+            pick: () => {
+              this.selectedId(n.id);
+              notifications.markRead([n.id]);
+              // At 1024 px and below the notification is under the list: bring it into view
+              if (window.innerWidth <= 1024) {
+                window.setTimeout(() => { const d = document.getElementById('ntDetail'); if (d) { d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 0);
+              }
+            },
+            menuItems: ko.pureComputed(() => [
+              { value: 'read', label: n.unread() ? 'Mark as read' : 'Mark as unread', icon: 'check' },
+              { value: 'open', label: 'Open ' + (PAGE[n.page] || [n.page])[0], icon: 'arrow' },
+              { value: 'details', label: 'Show details', icon: 'info' }
+            ]),
+            menu: (event) => {
+              const v = event.detail.value;
+              if (v === 'read') { toggleRead(n); } else if (v === 'open') { notifications.markRead([n.id]); go(n, n.page); } else { this.selectedId(n.id); notifications.markRead([n.id]); }
+            }
+          });
+        });
+      });
+
       this.selectedView = ko.pureComputed(() => {
         const n = this.selected();
         if (!n) {
           return null;
         }
         const page = PAGE[n.page] || [n.page, 'arrow'];
-        const readAction = { label: n.unread() ? 'Mark as Read' : 'Mark as Unread', run: () => toggleRead(n) };
+        const readAction = { label: n.unread() ? 'Mark as read' : 'Mark as unread', run: () => toggleRead(n) };
         let primary = { label: 'Open ' + page[0], run: () => go(n, n.page) };
         let secondary = readAction;
         if (n.category === 'build') {
-          primary = n.link ? { label: 'View Build Logs', run: external(n.link.replace(/\/?$/, '/') + 'console'), external: true } : { label: 'Open Build & Test', run: () => go(n, 'build') };
+          primary = n.link ? { label: 'View build logs', run: external(n.link.replace(/\/?$/, '/') + 'console'), external: true } : { label: 'Open Build & Test', run: () => go(n, 'build') };
           secondary = n.link ? { label: 'View in Jenkins', run: external(n.link), external: true } : readAction;
         }
         const ws = (n.details.find((d) => d.label === 'Workspace') || {}).value;
@@ -177,17 +179,17 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
           related.push({ label: 'Jenkins build', value: n.related, icon: 'share', run: external(n.link) });
         }
         return Object.assign({}, n, {
-          iconCss: 'factory-kpi-icon factory-no-bigicon factory-no-tone-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
+          iconCss: 'factory-nt-icon factory-nt-bigicon is-' + n.tone, iconClass: 'factory-nav-icon factory-ico-' + n.icon,
           priorityBadge: PRIORITY[n.priority], category: CATEGORY[n.category], subject: subjectStatus(n), primary: primary, secondary: secondary,
-          errorsCss: 'fx-alert ' + (n.tone === 'red' ? 'fx-alert--danger' : 'fx-alert--warning') + ' factory-no-errors',
+          // Mark as read stays one click away even when the second button opens Jenkins
+          readLabel: readAction.label, showRead: secondary !== readAction,
+          errorsCss: 'fx-alert ' + (n.tone === 'red' ? 'fx-alert--danger' : 'fx-alert--warning') + ' factory-nt-errors',
           relatedItems: related.map((r) => Object.assign(r, { iconClass: 'factory-nav-icon factory-ico-' + r.icon }))
         });
       });
+      this.selectedRead = () => { const n = this.selected(); if (n) { toggleRead(n); } };
       this.closeDetails = () => this.selectedId('none');
-      this.menuToggleRead = () => { toggleRead(this.menuRow()); this.closeMenu(); };
-      this.menuOpen = () => { const n = this.menuRow(); this.closeMenu(); notifications.markRead([n.id]); go(n, n.page); };
-      this.menuDetails = () => { const n = this.menuRow(); this.closeMenu(); this.selectedId(n.id); notifications.markRead([n.id]); };
-      const checkedIds = () => Object.keys(this.checked()).filter((id) => this.checked()[id]);
+
       const plural = (count) => count + (count === 1 ? ' notification' : ' notifications');
       this.unreadVisible = ko.pureComputed(() => this.visible().some((n) => n.unread()));
       this.markAllRead = () => {
@@ -195,24 +197,25 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         notifications.markRead(ids);
         toast.success(plural(ids.length) + ' marked as read.', { action: { label: 'Undo', run: () => notifications.markUnread(ids) } });
       };
-      this.markSelectedRead = () => { const ids = checkedIds(); notifications.markRead(ids); toast.success(plural(ids.length) + ' marked as read.'); };
-      this.markSelectedUnread = () => { const ids = checkedIds(); notifications.markUnread(ids); toast.success(plural(ids.length) + ' marked as unread.'); };
+      // The former selection bar: the same on every notification shown
+      this.markShownUnread = () => {
+        const ids = this.visible().filter((n) => !n.unread()).map((n) => n.id);
+        notifications.markUnread(ids);
+        toast.success(plural(ids.length) + ' marked as unread.', { action: { label: 'Undo', run: () => notifications.markRead(ids) } });
+      };
       this.settings = () => window.dispatchEvent(new CustomEvent('factory-navigate', { detail: 'account' }));
-      this.clearChecked = () => this.checked({});
-      this.checkedCount = ko.pureComputed(() => checkedIds().length);
-      this.hasChecked = ko.pureComputed(() => this.checkedCount() > 0);
+      this.moreItems = ko.pureComputed(() => [
+        { value: 'unread', label: 'Mark the shown as unread', icon: 'bell', disabled: !this.visible().some((n) => !n.unread()) },
+        { value: 'settings', label: 'Notification settings', icon: 'cog', description: 'Which kinds show, on the Account page' }
+      ]);
+      this.moreAction = (event) => { if (event.detail.value === 'unread') { this.markShownUnread(); } else { this.settings(); } };
+      this.emptyText = ko.pureComputed(() => (all().length === 0 ? 'No notifications yet. Builds, AI work, reviews and system events show here.'
+        : this.kind() === 'unread' && !this.search() && !this.extraCount() ? 'Everything is read.' : 'No notifications match.'));
 
-      // The menu is fixed in place, so it closes when the page scrolls under it
-      const scrolled = (event) => { if (!(event.target.closest && event.target.closest('.fx-menu'))) { this.closeMenu(); } };
       this.connected = () => {
         accUtils.announce('Notification Center loaded.');
         document.title = 'Notifications';
         dashboard.load();
-        window.addEventListener('scroll', scrolled, true);
-      };
-      this.disconnected = () => {
-        this.closeMenu();
-        window.removeEventListener('scroll', scrolled, true);
       };
     }
 
