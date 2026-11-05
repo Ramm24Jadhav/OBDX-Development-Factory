@@ -38,7 +38,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     viewModel: ButtonModel, metadata: buttonMeta
   });
   Composite.register('bx-icon-button', {
-    view: '<button type="button" :class="[[css + \' bx-btn--icon\']]" :disabled="[[$properties.disabled]]" :aria-label="[[$properties.label]]" :title="[[$properties.label]]" on-click="[[press]]">'
+    view: '<button type="button" :class="[[css() + \' bx-btn--icon\']]" :disabled="[[$properties.disabled]]" :aria-label="[[$properties.label]]" :title="[[$properties.label]]" on-click="[[press]]">'
       + '<oj-bind-slot><span :class="[[\'bx-icon bx-icon--\' + ($properties.icon || \'more\')]]" aria-hidden="true"></span></oj-bind-slot></button>',
     viewModel: ButtonModel,
     metadata: { properties: { label: { type: 'string', value: '' }, icon: { type: 'string', value: 'more' }, chroming: { type: 'string', value: 'borderless' },
@@ -285,7 +285,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
   Composite.register('bx-data-grid', {
     view: '<div class="bx-grid-wrap"><table class="bx-grid" :aria-label="[[$properties.accessibility && $properties.accessibility.label ? $properties.accessibility.label : null]]">'
       + '<oj-bind-if test="[[$properties.caption]]"><caption><oj-bind-text value="[[$properties.caption]]"></oj-bind-text></caption></oj-bind-if><thead><tr>'
-      + '<oj-bind-if test="[[selectable()]]"><th scope="col" class="bx-th bx-th-check"><span class="bx-visually-hidden">Select</span></th></oj-bind-if>'
+      + '<oj-bind-if test="[[selectable()]]"><th scope="col" class="bx-th bx-th-check"><span class="bx-visually-hidden">Select Row</span></th></oj-bind-if>'
       + '<oj-bind-for-each data="[[columns]]" as="c"><template><th scope="col" :class="[[c.data.css]]" :aria-sort="[[c.data.sortable ? c.data.sort : null]]">'
       + '<oj-bind-if test="[[c.data.sortable]]"><button type="button" class="bx-sort" on-click="[[c.data.toggle]]"><oj-bind-text value="[[c.data.header]]"></oj-bind-text><span aria-hidden="true"><oj-bind-text value="[[c.data.mark]]"></oj-bind-text></span></button></oj-bind-if>'
       + '<oj-bind-if test="[[!c.data.sortable]]"><oj-bind-text value="[[c.data.header]]"></oj-bind-text></oj-bind-if></th></template></oj-bind-for-each></tr></thead>'

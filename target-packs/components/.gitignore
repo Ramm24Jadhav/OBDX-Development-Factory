@@ -1,1 +1,4 @@
 node_modules/
+gates/results/
+gates/test-results/
+gates/playwright-report/

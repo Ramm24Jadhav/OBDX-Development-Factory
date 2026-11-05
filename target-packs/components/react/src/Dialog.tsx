@@ -12,13 +12,15 @@ export interface DialogProps {
   /** 'none' keeps the dialog open on Escape and outside clicks, and hides the close button (a step that must be answered). */
   cancelBehavior?: 'icon' | 'escape' | 'none';
   testID?: string;
+  /** Where the dialog is drawn (a preview panel); the page's body when left out. */
+  container?: HTMLElement | null;
 }
 
 /**
  * A modal dialog (oj-dialog), on Radix Dialog: focus moves in and stays inside, goes back to the button that opened it,
  * Escape closes unless cancelBehavior is 'none', and the page behind is hidden from screen readers.
  */
-export function Dialog({ open, onOpenChange, title, description, children, footer, cancelBehavior = 'icon', testID }: DialogProps) {
+export function Dialog({ open, onOpenChange, title, description, children, footer, cancelBehavior = 'icon', testID, container }: DialogProps) {
   const locked = cancelBehavior === 'none';
   // Radix gives focus back only to its own trigger; screens open dialogs from their own buttons, so remember who had it
   // (taken while rendering the open, before Radix moves focus into the dialog)
@@ -30,7 +32,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
   wasOpen.current = open;
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
-      <RadixDialog.Portal>
+      <RadixDialog.Portal container={container ?? undefined}>
         <RadixDialog.Overlay className="bx-dialog-backdrop" />
         <RadixDialog.Content className="bx-dialog" data-testid={testID} {...(description ? {} : { 'aria-describedby': undefined })}
                              onEscapeKeyDown={(e) => { if (locked) { e.preventDefault(); } }}

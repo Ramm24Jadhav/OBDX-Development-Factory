@@ -11,6 +11,21 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
   var extend = function (a, b) { var o = {}; Object.keys(a).forEach(function (k) { o[k] = a[k]; }); Object.keys(b).forEach(function (k) { o[k] = b[k]; }); return o; };
   var METHODS = { validate: {}, reset: {}, showMessages: {} };
 
+  /**
+   * Writes a new value the JET way: only when it passes required, the validators and the field's own check (own, a
+   * message or ''). A value that fails is not written; the message shows and valid is invalidShown, so the screen's
+   * view model keeps the last valid value, as with oj-input-text and the other JET fields.
+   */
+  var accept = function (vm, value, own) {
+    var message = own || bx.validate(value, vm.props.required, vm.props.validators, vm.props.labelHint);
+    vm.shown(true);
+    if (message) { vm.validationError(message); vm.props.valid = 'invalidShown'; return false; }
+    vm.validationError('');
+    vm.props.value = value;
+    vm.props.valid = 'valid';
+    return true;
+  };
+
   /* ---------- bx-text-field ---------- */
   function TextFieldModel(context) {
     var self = this;
@@ -33,9 +48,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       try {
         var parsed = text === '' ? (self.props.converter ? null : '') : bx.parse(self.props.converter, text);
         self.typed(null);
-        self.props.value = parsed;
-        self.check(true);
-        return true;
+        return accept(self, parsed, '');
       } catch (e) {
         var m = e && (e.getMessage ? e.getMessage() : e.message);
         self.validationError(m && typeof m === 'object' ? (m.detail || m.summary) : (m || 'Enter a valid value.'));
@@ -44,9 +57,10 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
         return false;
       }
     };
-    self.onBlur = function () { self.focused(false); if (self.commit()) { self.check(true); } return true; };
+    // Leaving the field commits what was typed, or shows required when nothing was
+    self.onBlur = function () { self.focused(false); if (self.typed() !== null) { self.commit(); } else { self.check(true); } return true; };
     self.onKey = function (event) { if (event.key === 'Enter') { self.commit(); } return true; };
-    self.clear = function () { self.typed(null); self.props.rawValue = ''; self.props.value = self.props.converter ? null : ''; self.check(true); };
+    self.clear = function () { self.typed(null); self.props.rawValue = ''; accept(self, self.props.converter ? null : '', ''); };
   }
   Composite.register('bx-text-field', {
     view: bx.fieldView('<input class="bx-input" :id="[[id]]" :value="[[text]]" :placeholder="[[$properties.placeholder]]" :disabled="[[$properties.disabled]]"'
@@ -82,14 +96,13 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       var text = self.typed().trim();
       var n = text === '' ? null : self.props.converter ? bx.parse(self.props.converter, text) : Number(text.replace(/[^0-9.-]/g, ''));
       self.typed(null);
-      if (n !== null && !Number.isFinite(Number(n))) { self.validationError('Enter an amount, for example 1,250.00.'); self.shown(true); return; }
-      self.props.value = n;
+      if (n !== null && !Number.isFinite(Number(n))) { self.validationError('Enter an amount, for example 1,250.00.'); self.shown(true); self.props.valid = 'invalidShown'; return; }
       var message = '';
       if (n !== null && self.props.min !== null && self.props.min !== undefined && n < self.props.min) { message = 'Enter at least ' + self.props.min + '.'; }
       if (n !== null && self.props.max !== null && self.props.max !== undefined && n > self.props.max) { message = 'Enter at most ' + self.props.max + '.'; }
-      if (message) { self.validationError(message); self.shown(true); self.props.valid = 'invalidShown'; } else { self.check(true); }
+      accept(self, n, message);
     };
-    self.onBlur = function () { self.focused(false); self.commit(); return true; };
+    self.onBlur = function () { self.focused(false); if (self.typed() !== null) { self.commit(); } else { self.check(true); } return true; };
     self.onKey = function (event) { if (event.key === 'Enter') { self.commit(); } return true; };
   }
   Composite.register('bx-amount', {
@@ -205,8 +218,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       var disabled = self.props.disabledDays;
       if (v && typeof disabled === 'function' && disabled(v)) { message = 'This day cannot be chosen.'; }
       if (v && Array.isArray(disabled) && disabled.indexOf(v) >= 0) { message = 'This day cannot be chosen.'; }
-      self.props.value = v;
-      if (message) { self.validationError(message); self.shown(true); self.props.valid = 'invalidShown'; } else { self.check(true); }
+      accept(self, v, message);
       return true;
     };
   }

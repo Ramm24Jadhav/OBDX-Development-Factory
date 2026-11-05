@@ -172,6 +172,8 @@ define(['knockout'], function (ko) {
     vm.validate = function () { return Promise.resolve(vm.check(true) ? 'invalid' : 'valid'); };
     vm.showMessages = function () { vm.check(true); };
     vm.reset = function () { vm.shown(false); vm.validationError(''); vm.props.valid = 'valid'; };
+    // Like the JET fields, valid is known from the start: invalidHidden for an empty required field, without showing it
+    vm.bindingsApplied = function () { vm.check(false); };
     vm.onFocus = function () { vm.focused(true); return true; };
     vm.onBlur = function () { vm.focused(false); vm.check(true); return true; };
   }

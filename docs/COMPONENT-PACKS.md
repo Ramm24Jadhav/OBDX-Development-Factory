@@ -10,8 +10,12 @@ React (`components/react`: Radix dialog and tabs, the JET pack's skin unchanged,
 target checks) and Angular (`components/angular`: standalone components with signal inputs and form-control support,
 the CDK focus trap, the same skin, vitest with the Angular compiler and axe). Each pack's unit and accessibility gates
 pass and run in the `component-packs` CI job; `tools/build-tokens.js` builds the tokens to `tokens/build/tokens.css`
-and `react-native/src/tokens.ts` (`--check` in CI). Next: the browser gates (visual, themes, responsive, contrast) and
-parity tests, the starters switching to the packs, then the rest of the catalogue in waves.
+and `react-native/src/tokens.ts` (`--check` in CI). The browser gates (`components/gates`, Playwright in Chromium,
+the `component-gates` CI job) run on each web pack's gallery: axe with contrast, light and dark, phone to laptop and
+screenshots. Parity runs the premium JET pack beside the JET elements it replaces, in a real JET 6.2 app and the current
+release; `gates/record.mjs` writes the results into `packs.json`. The premium JET foundation set passes every gate and
+is Available; in React and Angular the card is, and the rest waits for parity with the JET screens. Next: React and
+Angular parity, React Native on devices, the starters switching to the packs, then the rest of the catalogue in waves.
 
 The goal: one design system for the bank's channel UI, implemented four times — Oracle JET (the UI path), React,
 React Native and Angular (the migration path) — with a metadata registry the factory reads to show, compare, map and

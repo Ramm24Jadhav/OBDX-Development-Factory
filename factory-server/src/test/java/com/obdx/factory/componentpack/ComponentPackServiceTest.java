@@ -73,14 +73,22 @@ class ComponentPackServiceTest {
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("not-run");
         // What the starters had beyond the foundation set stays listed from the starter
         assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#SwitchField");
-        assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("in-test");
-        assertThat(c.packs().get(0).counts().inTest()).isEqualTo(13);
+        // The premium JET pack's foundation set passed every gate, parity on JET 6.2 and the current release included
+        assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("available");
+        assertThat(find(c, "button").packs().get("jet-premium").gates().get("parity")).isEqualTo("passed");
+        assertThat(c.packs().get(0).counts().available()).isEqualTo(13);
+        // React and Angular passed the browser gates; parity with the JET screens is still to run, so only the card
+        // (which replaces nothing) is Available
+        assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
+        assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
         // Angular does not carry the widgets
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(176));
-        assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available()).isZero());
-        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(16);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(13);
+        assertThat(c.packs().get(1).counts().available()).isEqualTo(1);
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(15);
+        assertThat(c.packs().get(2).counts().available()).isZero();
+        assertThat(c.packs().get(3).counts().available()).isEqualTo(1);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(12);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");

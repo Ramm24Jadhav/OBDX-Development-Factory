@@ -1,0 +1,9 @@
+{
+  "name": "obdx-gates-jet21",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The current Oracle JET release, for the premium JET pack's browser gates and parity tests.",
+  "dependencies": {
+    "@oracle/oraclejet": "21.0.3"
+  }
+}

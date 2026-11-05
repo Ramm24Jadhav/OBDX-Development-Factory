@@ -232,6 +232,15 @@ test('dialog, tabs, grid and toasts have their roles', () => {
   if (!/<th scope="col"/.test(registry['bx-data-grid'].view) || !/:aria-sort=/.test(registry['bx-data-grid'].view)) { throw new Error('grid headers'); }
   if (!/:role="\[\[t\.data\.role\]\]"/.test(registry['bx-toast'].view)) { throw new Error('toast live roles'); }
 });
+test('a view model value joined with text in a binding is called, not used bare (it would print the function)', () => {
+  const bad = [];
+  views.forEach(([e, v]) => (v.match(/\[\[[^\]]*\]\]/g) || []).filter((x) => x.includes('+')).forEach((x) => {
+    const bare = x.slice(2, -2).replace(/\\?'[^']*\\?'/g, "''").match(/(^|[^.\w$])([A-Za-z_]\w*)\b(?!\s*[(.])/g) || [];
+    bare.map((t) => t.replace(/^[^A-Za-z_]/, '')).filter((t) => !['id', 'name', 'true', 'false', 'null', 'undefined'].includes(t)).forEach((t) => bad.push(e + ': ' + x));
+  }));
+  eq(bad, [], 'bare view model values joined with text');
+});
+
 test('views use only bindings JET 6 has (no function literals, no new, no $parent)', () => {
   const bad = views.filter(([, v]) => /\[\[[^\]]*(function\s*\(|=>|\bnew\s|\$parent)/.test(v)).map(([e]) => e);
   eq(bad, [], 'views with bindings JET cannot run');

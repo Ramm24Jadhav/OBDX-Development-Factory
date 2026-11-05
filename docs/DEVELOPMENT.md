@@ -615,7 +615,8 @@ The page (route `modernization`) leads with the answer. One header: the analysis
 The React, React Native and Angular packs (`target-packs/components/<pack>`) are npm packages with their own checks,
 run by the `component-packs` CI job and locally with Node 22 (the version the build downloads, in
 `factory-ui/target/node`): `npm ci` then `npm run check` in the pack folder. After changing `tokens/tokens.json`, run
-`node target-packs/components/tools/build-tokens.js`.
+`node target-packs/components/tools/build-tokens.js`. The browser gates and parity tests are in
+`target-packs/components/gates` (its README says how to run them and record the results).
 
 ## Recipes, templates and reference examples
 
