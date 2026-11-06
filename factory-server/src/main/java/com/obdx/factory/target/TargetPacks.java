@@ -68,6 +68,20 @@ public class TargetPacks {
         return Optional.ofNullable(id == null ? null : packs.get(id));
     }
 
+    /**
+     * The pack the app's screens are written with: the workspace's target, except that a Capacitor app wrapping the
+     * Angular app (angular.json in the app folder, see target-packs/capacitor/wrap-angular.mjs) gets Angular screens;
+     * a Capacitor app on the React starter (vite.config.ts) keeps the React ones.
+     *
+     * @param fileExists whether a repository path is a file of the workspace's code
+     */
+    public Optional<TargetPack> screens(String target, String appFolder, java.util.function.Predicate<String> fileExists) {
+        if ("capacitor".equals(target) && appFolder != null && fileExists.test(appFolder + "/angular.json")) {
+            return find(TargetPack.ANGULAR);
+        }
+        return find(target);
+    }
+
     public TargetPack jet() {
         return packs.get(TargetPack.JET);
     }

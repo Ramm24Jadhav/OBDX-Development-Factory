@@ -270,6 +270,29 @@ class ScreenScaffolderTest {
         assertThat(ScreenScaffolder.screen(capacitor, TRANSFER, "payments").content()).isEqualTo(ScreenScaffolder.screen(react, TRANSFER, "payments").content());
     }
 
+    @Test
+    void scaffoldsAngularPagesForACapacitorAppWrappingTheAngularApp() {
+        // The React starter in the app folder: React pages, as before
+        java.util.Set<String> reactApp = java.util.Set.of("mobile/package.json", "mobile/vite.config.ts", "mobile/capacitor.config.ts");
+        TargetPack forReact = packs.screens("capacitor", "mobile", reactApp::contains).orElseThrow();
+        assertThat(forReact.id()).isEqualTo("capacitor");
+        assertThat(ScreenScaffolder.forFile(forReact, "mobile", "mobile/src/screens/payments/FundTransferPage.tsx", List.of(TRANSFER), null)
+                .orElseThrow().content()).contains("export function FundTransferPage(");
+        assertThat(ScreenScaffolder.forFile(forReact, "mobile", "mobile/src/app/screens/payments/FundTransferPage.ts", List.of(TRANSFER), null)).isEmpty();
+
+        // The Angular app wrapped by wrap-angular.mjs: Angular pages from the Angular pack
+        java.util.Set<String> angularApp = java.util.Set.of("mobile/package.json", "mobile/angular.json", "mobile/capacitor.config.ts");
+        TargetPack forAngular = packs.screens("capacitor", "mobile", angularApp::contains).orElseThrow();
+        assertThat(forAngular.id()).isEqualTo("angular");
+        String page = ScreenScaffolder.forFile(forAngular, "mobile", "mobile/src/app/screens/payments/FundTransferPage.ts", List.of(TRANSFER), null)
+                .orElseThrow().content();
+        assertThat(page).isEqualTo(ScreenScaffolder.screen(packs.find("angular").orElseThrow(), TRANSFER, "payments").content());
+        assertThat(ScreenScaffolder.forFile(forAngular, "mobile", "mobile/src/screens/payments/FundTransferPage.tsx", List.of(TRANSFER), null)).isEmpty();
+
+        // Only Capacitor wraps: an angular.json does not turn another target into Angular
+        assertThat(packs.screens("react", "mobile", angularApp::contains).orElseThrow().id()).isEqualTo("react");
+    }
+
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content);
