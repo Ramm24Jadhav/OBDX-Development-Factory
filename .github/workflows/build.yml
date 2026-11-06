@@ -34,6 +34,12 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # The React, Angular and React Native galleries, which the Component factory page frames one component at a time
+      - name: Build the component previews
+        run: target-packs/components/previews/build.sh
       - name: Install Subversion (used by the import tests)
         run: sudo apt-get update -q && sudo apt-get install -y -q subversion
       - name: Build and test

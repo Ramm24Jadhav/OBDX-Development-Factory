@@ -10153,6 +10153,11 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-cf-side-body { position: relative; flex: 1; min-height: 120px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; padding: 16px 40px; }
 .factory-cf-side.is-jet .factory-cf-side-body { padding: 16px; }
 .factory-cf-stage { display: flex; justify-content: center; }
+/* A pack's own gallery, framed to one component (React, Angular, React Native); it says its height (fitFrame). The frame
+   keeps the light colour scheme of the page inside, so the browser does not paint it opaque in the dark theme. */
+.factory-cf-frame { display: block; width: 100%; height: 140px; border: 0; background: transparent; color-scheme: normal; transition: height var(--fx-dur-fast) var(--fx-ease-standard); }
+.factory-cf-frame.is-wide { height: 220px; }
+.factory-cf-stage:has(.factory-cf-frame) { flex: 1 1 auto; min-width: 0; }
 .factory-cf-stage > * { flex: 1; min-width: 0; }
 .factory-cf-side-body .factory-cf-dots { display: flex; justify-content: center; gap: 4px; }
 .factory-cf-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; border: var(--fx-border-width) solid var(--fx-border);

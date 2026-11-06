@@ -33,5 +33,35 @@ define(['knockout'], function (ko) {
       m.scroll ? 'bx-motion-scroll-' + m.scroll : '', c.mode === 'dark' ? 'bx-dark' : ''].filter(Boolean).join(' ');
   }
 
-  return { load: load, ready: ready, styleClasses: styleClasses };
+  // The JET gallery's examples (the gates' jet-gallery.html, with its sample data): every component as the gates check it.
+  // examples() resolves to view(id), a fresh copy of that component's example (null when the gallery has none), and data.
+  let examples_ = null;
+  function examples() {
+    if (examples_) { return examples_; }
+    window.requirejs.config({ paths: { 'bx-samples': '../packs/samples/jet-samples' } });
+    const samples = new Promise((resolve, reject) => { window.requirejs(['bx-samples'], resolve, reject); });
+    const page = fetch('packs/samples/jet-gallery.html').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status))));
+    examples_ = Promise.all([load(), page, samples]).then(([, html, make]) => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const bodies = {};
+      doc.querySelectorAll('section[data-component]').forEach((sec) => { bodies[sec.getAttribute('data-component')] = sec.querySelector('.gate-body'); });
+      return { data: make(ko), view: (id) => (bodies[id] ? Array.from(document.importNode(bodies[id], true).childNodes) : null) };
+    }).catch(() => { examples_ = null; return { data: {}, view: () => null }; });
+    return examples_;
+  }
+
+  // Which packs' own galleries the jar has (target-packs/components/previews/build.sh), to frame one component each
+  const PREVIEW_PAGES = { react: 'packs/previews/react/index.html', angular: 'packs/previews/angular/gallery/index.html', 'react-native': 'packs/previews/react-native/index.html' };
+  const framed = ko.observable({});
+  let checked = false;
+  function previews() {
+    if (!checked) {
+      checked = true;
+      Object.keys(PREVIEW_PAGES).forEach((id) => fetch(PREVIEW_PAGES[id], { method: 'HEAD' })
+        .then((r) => { if (r.ok) { framed(Object.assign({}, framed(), { [id]: PREVIEW_PAGES[id] })); } }).catch(() => undefined));
+    }
+    return framed;
+  }
+
+  return { load: load, ready: ready, styleClasses: styleClasses, examples: examples, previews: previews };
 });

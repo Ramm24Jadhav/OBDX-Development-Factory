@@ -11,10 +11,17 @@ import {
   AccountBalance, Accordion, AlertSubscriptions, AmountInput, ApprovalQueue, Autocomplete, BarChart, Button, Card, CardTile, CheckboxGroup, CurrencySelector,
   DataTable, DatePicker, DateRangePicker, DestructiveButton, Dialog, Dropdown, ErrorMessage, Faq, FileUpload, FilterChips, IconButton, LoanCalculator,
   MultiSelect, NumberInput, OtpInput, OverviewWidget, PasswordField, ProgressBar, RadioGroup, RollingDigits, SearchField, SecondaryButton, SlideToConfirm,
-  StatusBadge, Stepper, SuccessCheck, Tabs, TextArea, TextField, ThemeProvider, Timeline, Toast, Toggle, ToggleGroup, TransactionHistory, useTheme,
+  StatusBadge, Stepper, SuccessCheck, Tabs, TextArea, TextField, ThemeProvider, Timeline, Toast, Toggle, ToggleGroup, TransactionHistory, useTheme, type ComponentStyle,
 } from '../src';
 
-const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
+// The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
+const only = params.get('only');
+const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
+const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
+const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
+const brand = /^#[0-9a-f]{6}$/i.test(params.get('brand') ?? '') ? params.get('brand')! : undefined;
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
 const rows = [
   { id: 't1', date: '12 Nov 2026', text: 'Electricity bill', amount: '-1,240.00' },
@@ -28,6 +35,7 @@ function Line({ children }: { children: ReactNode }) {
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  if (only && only !== id) { return null; }
   return (
     <section className="gate" data-component={id} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`}>{title}</h2>
@@ -44,7 +52,7 @@ function Held<T>({ initial, children }: { initial: T; children: (value: T, set: 
 
 function Gallery() {
   return (
-    <ThemeProvider style={{ mode, look: 'elevated', motion: { click: 'press', scroll: 'fadeup' } }}>
+    <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>

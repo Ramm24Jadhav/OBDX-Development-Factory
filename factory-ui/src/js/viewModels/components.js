@@ -9,7 +9,7 @@
  * and Customise, which saves a copy in My copies. Manage pack installs or upgrades a pack in the code through a change.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/toast', '../services/session',
-        '../services/jetPack', 'ojs/ojknockout'],
+        '../services/jetPack', 'ojs/ojknockout', 'ojs/ojbinddom'],
   function (ko, accUtils, api, workspaceSelection, ui, toast, session, jetPack) {
     const pill = ui.pill;
     const READY = { available: ['Available', 'green'], 'in-test': ['In test', 'amber'], planned: ['Planned', 'grey'], 'not-in-pack': ['Not in this pack', 'grey'] };
@@ -182,6 +182,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       const previewCss = (s, extra) => jetPack.styleClasses({ look: s.look, motion: s.motion, mode: s.mode }) + ' factory-cf-live' + (extra ? ' ' + extra : '');
       const brandStyle = (brand) => { const b = BRANDS.find((x) => x[0] === brand); return b && b[2] ? { '--bx-brand': b[2], '--bx-brand-2': b[2] } : {}; };
+      // Every component previews as its own pack draws it: React, Angular and React Native in a frame of that pack's gallery
+      // (only that component, in the card's design, motion, theme and brand), JET from the JET gallery's example
+      const jetExamples = ko.observable(null);
+      const framed = jetPack.previews();
+      const frameOf = (packId, id, s) => {
+        const page = framed()[packId];
+        if (!page) { return null; }
+        const b = BRANDS.find((x) => x[0] === s.brand);
+        const m = s.motion || {};
+        const q = [['only', id], ['mode', s.mode === 'dark' ? 'dark' : 'light'], ['look', s.look], ['hover', m.hover], ['click', m.click], ['scroll', m.scroll], ['brand', b && b[2]]]
+          .filter((x) => x[1] && x[1] !== 'none').map((x) => x[0] + '=' + encodeURIComponent(x[1])).join('&');
+        return page + '?' + q;
+      };
+      const exampleOf = (id) => { const ex = jetExamples(); const view = ex && !PREVIEW[id] ? ex.view(id) : null; return view ? { view: view, data: ex.data } : null; };
+
       const visibleDash = (m) => self.dashboard() === 'all' || !m.dashboard || m.dashboard.toLowerCase().indexOf(self.dashboard() === 'retail' ? 'retail' : 'corporate') >= 0;
 
       const matches = ko.pureComputed(() => {
@@ -235,7 +250,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             jetNote: m.workspaceKind === 'element' ? 'Not used in ' + self.workspaceName() + ' today' : m.workspaceKind === 'none' ? 'Nothing in ' + self.workspaceName() + ' today: this is new'
               : 'Today an OBDX ' + (m.workspaceKind === 'widget' ? 'widget' : 'screen') + ' built by hand',
             tag: isNew ? 'New in ' + p.next.version : 'New', logo: LOGO[p.id] || p.name[0], packName: p.name,
-            live: built && self.packReady() && p.id !== 'react-native', kind: kind, native: built && p.id === 'react-native',
+            frame: built ? frameOf(p.id, m.id, s) : null, example: built ? exampleOf(m.id) : null, frameTitle: m.name + ' as ' + p.name + ' draws it',
+            live: built && self.packReady() && (p.id !== 'react-native' || !!framed()[p.id]), kind: kind, native: built && p.id === 'react-native' && !framed()[p.id],
             emptyText: isNew ? 'Planned for ' + p.next.version + ': it ships when it passes its checks' : ip.readiness === 'not-in-pack' ? 'Not in this pack' : 'Not in this pack yet',
             nameInPack: ip.name || '—', label: (m.sample && m.sample.label) || m.name,
             css: previewCss(s), brand: brandStyle(s.brand),
@@ -360,7 +376,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return {
           title: ip.name || e.m.name, subtitle: e.m.name + ' · ' + p.name + ' · ' + p.packageName + ' ' + p.version, purpose: e.m.purpose,
           foundation: e.m.foundation, readiness: pill.apply(null, READY[ip.readiness]), mapping: pill.apply(null, MAPPING[ip.mapping]),
-          live: !!ip.source && self.packReady() && p.id !== 'react-native', native: !!ip.source && p.id === 'react-native', kind: kind,
+          frame: ip.source ? frameOf(p.id, e.m.id, s) : null, example: ip.source ? exampleOf(e.m.id) : null, frameTitle: e.m.name + ' as ' + p.name + ' draws it',
+          live: !!ip.source && self.packReady() && (p.id !== 'react-native' || !!framed()[p.id]), native: !!ip.source && p.id === 'react-native' && !framed()[p.id], kind: kind,
           label: (e.m.sample && e.m.sample.label) || e.m.name, css: previewCss(s, 'is-pinned'), style: Object.assign(brandStyle(s.brand), copyVars({ corners: ed.corners(), size: ed.size(), colour: ed.colour() })),
           chroming: chromingOf(ed.variant()),
           gates: Object.keys(ip.gates).map((g) => ({ name: GATE_NAMES[g] || g, state: pill.apply(null, GATE[ip.gates[g]] || [ip.gates[g], 'grey']) })),
@@ -506,11 +523,21 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const loadAll = (id) => Promise.all([loadCatalogue(id), loadStyle(id), loadPackStates(id), loadUsed(id)]);
       self.workspaceId.subscribe((id) => { loadAll(id).catch((e) => self.error(ui.errorText(e))); });
 
+      // A framed gallery says how tall its one component is; the frame takes that height (within limits)
+      const fitFrame = (e) => {
+        if (e.origin !== location.origin || !e.data || typeof e.data.height !== 'number') { return; }
+        const frame = Array.from(document.querySelectorAll('iframe.factory-cf-frame')).find((f) => f.contentWindow === e.source);
+        if (frame) { frame.style.height = Math.max(64, Math.min(640, e.data.height)) + 'px'; }
+      };
+      self.disconnected = () => { window.removeEventListener('message', fitFrame); };
+
       self.connected = () => {
         accUtils.announce('Component factory page loaded.', 'assertive');
         document.title = 'Component factory';
         self.loading(true);
         jetPack.load().catch(() => null);
+        jetPack.examples().then(jetExamples);
+        window.addEventListener('message', fitFrame);
         loadAll(self.workspaceId()).then(() => self.error(null)).catch((e) => self.error(ui.errorText(e))).then(() => self.loading(false));
       };
       // The live previews' sample values

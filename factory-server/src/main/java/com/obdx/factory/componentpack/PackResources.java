@@ -15,5 +15,9 @@ public class PackResources implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/packs/jet-premium/**").addResourceLocations("classpath:/target-packs/components/jet-premium/bx/");
+        // The JET gallery's examples and their sample data, which the Component factory shows live on every card
+        registry.addResourceHandler("/packs/samples/**").addResourceLocations("classpath:/target-packs/components/gates/");
+        // The React, Angular and React Native galleries, which the Component factory frames one component at a time
+        registry.addResourceHandler("/packs/previews/**").addResourceLocations("classpath:/target-packs/components/previews/");
     }
 }

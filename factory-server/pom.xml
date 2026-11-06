@@ -157,7 +157,22 @@
           <exclude>**/node_modules/**</exclude>
           <!-- The packs' browser gates (galleries, screenshots, results) are for CI, not the server -->
           <exclude>components/gates/**</exclude>
+          <exclude>components/previews/**</exclude>
         </excludes>
+      </resource>
+      <!-- The JET gallery's examples and sample data, shown live on the Component factory page (PackResources) -->
+      <resource>
+        <directory>../target-packs/components/gates</directory>
+        <targetPath>target-packs/components/gates</targetPath>
+        <includes>
+          <include>jet-gallery.html</include>
+          <include>jet-samples.js</include>
+        </includes>
+      </resource>
+      <!-- The React, Angular and React Native galleries, built by target-packs/components/previews/build.sh (when it ran) -->
+      <resource>
+        <directory>../target-packs/components/previews/dist</directory>
+        <targetPath>target-packs/components/previews</targetPath>
       </resource>
       <!-- Helper scripts of the download, refreshed in place after an update (BundleFiles) -->
       <resource>

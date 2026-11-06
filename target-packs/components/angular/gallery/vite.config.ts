@@ -9,5 +9,7 @@ export default defineConfig({
   root: pack,
   plugins: [angular({ tsconfig: resolve(pack, 'tsconfig.gallery.json'), workspaceRoot: pack, jit: true })],
   server: { host: '127.0.0.1' },
+  // A build (previews/build.sh) starts from the gallery page
+  build: { rollupOptions: { input: resolve(pack, 'gallery/index.html') } },
   logLevel: 'warn',
 });

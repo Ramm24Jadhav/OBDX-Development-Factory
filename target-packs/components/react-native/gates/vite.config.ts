@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 /*
@@ -8,7 +9,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { 'react-native': 'react-native-web' },
+    // From this folder, so the pack's source (../src) finds it in a build too, with one copy of React
+    alias: { 'react-native': resolve(import.meta.dirname, 'node_modules/react-native-web') },
+    dedupe: ['react', 'react-dom'],
     extensions: ['.web.tsx', '.web.ts', '.tsx', '.ts', '.web.js', '.js', '.json'],
   },
   define: { __DEV__: 'false', global: 'globalThis' },

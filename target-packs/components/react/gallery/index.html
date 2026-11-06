@@ -4,6 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>obdx-react gallery</title>
+    <script>
+      // ?only=<component id>: the factory's Component factory page shows this one section in a frame, sized to it
+      (function () {
+        var q = new URLSearchParams(location.search), only = q.get('only'), brand = q.get('brand');
+        if (!only) { return; }
+        var sel = '[data-component="' + CSS.escape(only) + '"]';
+        var css = document.createElement('style');
+        css.textContent = 'html,body{margin:0;background:transparent!important}.gallery{padding:16px!important;gap:0!important;min-height:0!important;background:transparent!important}'
+          + '.gallery>h1,[data-component]:not(' + sel + '){display:none!important}' + sel + '>h2{display:none!important}' + sel + '{padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important}'
+          + (brand && /^#[0-9a-f]{6}$/i.test(brand) ? '.gallery{--bx-brand:' + brand + ';--bx-brand-2:' + brand + '}' : '');
+        document.head.appendChild(css);
+        var post = function () {
+          var el = document.querySelector(sel);
+          parent.postMessage({ preview: only, height: el ? Math.ceil(el.getBoundingClientRect().height) + 32 : 0 }, '*');
+        };
+        new ResizeObserver(post).observe(document.documentElement);
+        addEventListener('load', post);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

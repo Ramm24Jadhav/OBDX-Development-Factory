@@ -7,11 +7,15 @@ import '@angular/compiler';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 
-import { Column, Message, OBDX_COMPONENTS, styleClasses } from '../src';
+import { Column, ComponentStyle, Message, OBDX_COMPONENTS, styleClasses } from '../src';
 import '../src/bx.css';
 import './gallery.css';
 
-const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
+// The factory's Component factory shows one section (?only=id, see index.html) in the design and motion its card has chosen
+const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
+const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
 
 @Component({
   selector: 'gallery-root',
@@ -684,7 +688,7 @@ const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark
   `,
 })
 class Gallery {
-  rootClass = styleClasses({ look: 'elevated', mode }) + ' gallery';
+  rootClass = styleClasses({ look, mode, motion }) + ' gallery';
   name = signal('A. Sharma');
   amount = signal<number | null>(1250);
   account = signal('S');

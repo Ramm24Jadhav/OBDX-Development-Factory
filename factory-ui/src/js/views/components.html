@@ -126,7 +126,8 @@
                     <div class="factory-cf-side-body">
                     <oj-bind-if test="[[c.data.canDesign]]"><button type="button" class="factory-cf-nav is-prev" aria-label="Previous design" on-click="[[c.data.prevLook]]">‹</button></oj-bind-if>
                     <div class="factory-cf-stage">
-                    <oj-bind-if test="[[c.data.live]]"><div :class="[[c.data.css]]" :style="[[c.data.brand]]">
+                    <oj-bind-if test="[[c.data.live && c.data.frame]]"><iframe class="factory-cf-frame" :src="[[c.data.frame]]" :title="[[c.data.frameTitle]]" loading="lazy"></iframe></oj-bind-if>
+                    <oj-bind-if test="[[c.data.live && !c.data.frame]]"><div :class="[[c.data.css]]" :style="[[c.data.brand]]">
               <oj-bind-if test="[[c.data.kind === 'button']]"><div class="factory-cf-pv-row"><bx-button label="[[c.data.label]]" chroming="[[c.data.chroming || 'callToAction']]" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button></div></oj-bind-if>
               <oj-bind-if test="[[c.data.kind === 'iconbutton']]"><div class="factory-cf-pv-row"><bx-icon-button label="More actions" on-oj-action="[[pv.press]]"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined" on-oj-action="[[pv.press]]"></bx-icon-button></div></oj-bind-if>
               <oj-bind-if test="[[c.data.kind === 'field']]"><bx-text-field label-hint="[[c.data.label]]" value="{{pv.text}}" required="true" help.instruction="As it appears on the account"></bx-text-field></oj-bind-if>
@@ -140,7 +141,8 @@
               <oj-bind-if test="[[c.data.kind === 'card']]"><bx-card heading="Savings •••• 4521" subheading="Available balance" interactive="true" on-oj-action="[[pv.press]]">₹85,000.00</bx-card></oj-bind-if>
               <oj-bind-if test="[[c.data.kind === 'tabs']]"><bx-tabs label="Accounts" options="[[pv.tabs]]" selection="{{pv.tab}}"></bx-tabs></oj-bind-if>
               <oj-bind-if test="[[c.data.kind === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pv.rows]]" columns="[[pv.columns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
-              <oj-bind-if test="[[c.data.kind === 'generic']]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'generic' && c.data.example]]"><oj-bind-dom config="[[c.data.example]]"></oj-bind-dom></oj-bind-if>
+              <oj-bind-if test="[[c.data.kind === 'generic' && !c.data.example]]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
                     </div></oj-bind-if>
                     <oj-bind-if test="[[c.data.native]]"><p class="fx-muted factory-cf-side-empty">Built for Android and iOS: React Native renders it with native controls, so it is checked on its own gallery, not in this browser.</p></oj-bind-if>
                     <oj-bind-if test="[[!c.data.live && !c.data.native]]"><p class="fx-muted factory-cf-side-empty"><oj-bind-text value="[[c.data.emptyText]]"></oj-bind-text></p></oj-bind-if>
@@ -213,7 +215,7 @@
         <div class="factory-cf-detail-tags"><oj-bind-if test="[[detail().foundation]]"><span class="fx-badge fx-badge--violet">Foundation</span></oj-bind-if><span :class="[[detail().readiness.css]]"><oj-bind-text value="[[detail().readiness.text]]"></oj-bind-text></span><span :class="[[detail().mapping.css]]"><oj-bind-text value="[[detail().mapping.text]]"></oj-bind-text></span></div>
         <div class="fx-tabs" role="tablist" aria-label="Component"><oj-bind-for-each data="[[detailTabs]]" as="t"><template><button type="button" role="tab" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each></div>
         <oj-bind-if test="[[(detailTab() === 'overview' || detailTab() === 'customise') && detail().live]]">
-          <oj-bind-for-each data="[[[detail()]]]" as="dd"><template><div :class="[[dd.data.css]]" :style="[[dd.data.style]]">
+          <oj-bind-for-each data="[[[detail()]]]" as="dd"><template><oj-bind-if test="[[dd.data.frame]]"><iframe class="factory-cf-frame is-wide" :src="[[dd.data.frame]]" :title="[[dd.data.frameTitle]]"></iframe></oj-bind-if><oj-bind-if test="[[!dd.data.frame]]"><div :class="[[dd.data.css]]" :style="[[dd.data.style]]">
               <oj-bind-if test="[[dd.data.kind === 'button']]"><div class="factory-cf-pv-row"><bx-button label="[[dd.data.label]]" chroming="[[dd.data.chroming || 'callToAction']]" on-oj-action="[[pv.press]]"></bx-button><bx-button label="Cancel" chroming="outlined" on-oj-action="[[pv.press]]"></bx-button></div></oj-bind-if>
               <oj-bind-if test="[[dd.data.kind === 'iconbutton']]"><div class="factory-cf-pv-row"><bx-icon-button label="More actions" on-oj-action="[[pv.press]]"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined" on-oj-action="[[pv.press]]"></bx-icon-button></div></oj-bind-if>
               <oj-bind-if test="[[dd.data.kind === 'field']]"><bx-text-field label-hint="[[dd.data.label]]" value="{{pv.text}}" required="true" help.instruction="As it appears on the account"></bx-text-field></oj-bind-if>
@@ -227,8 +229,8 @@
               <oj-bind-if test="[[dd.data.kind === 'card']]"><bx-card heading="Savings •••• 4521" subheading="Available balance" interactive="true" on-oj-action="[[pv.press]]">₹85,000.00</bx-card></oj-bind-if>
               <oj-bind-if test="[[dd.data.kind === 'tabs']]"><bx-tabs label="Accounts" options="[[pv.tabs]]" selection="{{pv.tab}}"></bx-tabs></oj-bind-if>
               <oj-bind-if test="[[dd.data.kind === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pv.rows]]" columns="[[pv.columns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
-              <oj-bind-if test="[[dd.data.kind === 'generic']]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
-          </div></template></oj-bind-for-each>
+              <oj-bind-if test="[[dd.data.kind === 'generic' && dd.data.example]]"><oj-bind-dom config="[[dd.data.example]]"></oj-bind-dom></oj-bind-if>              <oj-bind-if test="[[dd.data.kind === 'generic' && !dd.data.example]]"><p class="fx-muted">Built: open Details for its API and example.</p></oj-bind-if>
+          </div></oj-bind-if></template></oj-bind-for-each>
         </oj-bind-if>
         <oj-bind-if test="[[detailTab() === 'overview']]">
           <div role="tabpanel">
