@@ -11,7 +11,7 @@ import {
   AccountBalance, Accordion, AlertSubscriptions, AmountInput, ApprovalQueue, Autocomplete, BarChart, Button, Card, CardTile, CheckboxGroup, CurrencySelector,
   DataTable, DatePicker, DateRangePicker, DestructiveButton, Dialog, Dropdown, ErrorMessage, Faq, FileUpload, FilterChips, IconButton, LoanCalculator,
   MultiSelect, NumberInput, OtpInput, OverviewWidget, PasswordField, ProgressBar, RadioGroup, RollingDigits, SearchField, SecondaryButton, SlideToConfirm,
-  StatusBadge, Stepper, SuccessCheck, Tabs, TextArea, TextField, ThemeProvider, Timeline, Toast, Toggle, ToggleGroup, TransactionHistory,
+  StatusBadge, Stepper, SuccessCheck, Tabs, TextArea, TextField, ThemeProvider, Timeline, Toast, Toggle, ToggleGroup, TransactionHistory, useTheme,
 } from '../src';
 
 const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
@@ -21,6 +21,11 @@ const rows = [
   { id: 't2', date: '11 Nov 2026', text: 'Salary', amount: '85,000.00' },
 ];
 const noop = () => undefined;
+
+/** Gallery text in the theme's colour (the platform default is black in the dark theme). */
+function Line({ children }: { children: ReactNode }) {
+  return <Text style={{ color: useTheme().color.text }}>{children}</Text>;
+}
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
@@ -65,16 +70,16 @@ function Gallery() {
         <Section id="date" title="Date"><Held initial="2026-11-12">{(v, set) => <DatePicker testID="dp" label="Pay on" value={v} onChange={set} />}</Held></Section>
         <Section id="dialog" title="Dialog">
           <Dialog open={false} onOpenChange={noop} title="Delete A. Sharma?" description="You can add them again later." />
-          <Text>The dialog opens over the screen (a modal); its look is checked in its open state on devices.</Text>
+          <Line>The dialog opens over the screen (a modal); its look is checked in its open state on devices.</Line>
         </Section>
         <Section id="toast" title="Toast">
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
         </Section>
-        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Text>₹85,000.00</Text></Card></Section>
+        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
         <Section id="tabs" title="Tabs">
-          <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Text>2 current accounts</Text> },
-            { id: 's', label: 'Savings', content: <Text>1 savings account</Text> }]} />}</Held>
+          <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
+            { id: 's', label: 'Savings', content: <Line>1 savings account</Line> }]} />}</Held>
         </Section>
         <Section id="data-grid" title="Data table">
           <DataTable caption="Recent transactions" rows={rows} keyField="id" columns={[{ field: 'date', headerText: 'Date' }, { field: 'text', headerText: 'Description' },

@@ -65,7 +65,7 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{ICON[severity]}</Text>
             </View>
             {/* The message is one stop for a screen reader; the close button stays its own */}
-            <View style={{ flex: 1, gap: 2 }} accessible accessibilityRole={severity === 'error' ? 'alert' : 'summary'}
+            <View style={{ flex: 1, gap: 2 }} accessible accessibilityRole={severity === 'error' ? 'alert' : undefined}
                   accessibilityLiveRegion={severity === 'error' ? 'assertive' : 'polite'}>
               <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.text }}>{m.summary}</Text>
               {m.detail ? <Text style={{ fontSize: 14, color: t.color.textBody }}>{m.detail}</Text> : null}

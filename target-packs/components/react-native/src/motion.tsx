@@ -111,8 +111,14 @@ export function Press({ style, onPressIn, onPressOut, disabled, ...props }: Pres
     (spring ? Animated.spring(s, { toValue: v, ...SPRING, friction: 3, useNativeDriver: true })
       : Animated.timing(s, { toValue: v, duration: DURATION.fast, easing: EASING.standard, useNativeDriver: true })).start();
   };
+  // react-native-web 0.21 reads the aria-* props, not accessibilityState, so checked and selected reach the browser too
+  // (a selected button is a pressed toggle on the web: aria-selected belongs to tabs and options only)
+  const st = props.accessibilityState;
+  const pick = props.accessibilityRole === 'tab' || props.accessibilityRole === 'radio';
   return (
-    <AnimatedPressable {...props} disabled={disabled}
+    <AnimatedPressable {...props} disabled={disabled} aria-checked={st?.checked} aria-selected={pick ? st?.selected : undefined}
+                       aria-pressed={pick ? undefined : st?.selected} aria-expanded={st?.expanded}
+                       aria-disabled={st?.disabled}
                        android_ripple={click === 'ripple' && !r ? { color: t.color.primarySoft } : undefined}
                        onPressIn={(e) => { if (click === 'press' || click === 'bounce') { to(click === 'bounce' ? 0.95 : t.pressScale, false); } onPressIn?.(e); }}
                        onPressOut={(e) => { to(1, click === 'bounce'); onPressOut?.(e); }}

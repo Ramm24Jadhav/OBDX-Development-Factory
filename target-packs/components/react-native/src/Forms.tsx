@@ -4,11 +4,11 @@
  * lists open as sheets, the keypads fit the value, and the app brings its own document picker to FileUpload.
  */
 import { ReactNode, useState } from 'react';
-import { Animated, FlatList, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Animated, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { DatePicker } from './DatePicker';
 import { FieldProps, FieldShell, Option, controlStyle, isEmpty, options as toOptions, styles, useField } from './field';
-import { Enter, Pop, Press, Roll, Shake, useOpen } from './motion';
+import { Enter, Pop, Press, Roll, Shake, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
 
 /* ---------- TextArea (oj-text-area) ---------- */
@@ -42,13 +42,13 @@ export function TextArea(props: TextAreaProps) {
 
 export interface PasswordFieldProps extends FieldProps<string> {
   /** password to sign in, new-password to set one, one-time-code for an OTP (the platforms' password managers read it). */
-  autoComplete?: 'password' | 'new-password' | 'one-time-code';
+  autoComplete?: 'current-password' | 'new-password' | 'one-time-code';
   revealable?: boolean;
 }
 
 /** A secret: masked, no autocorrect or suggestions, with Show and Hide. */
 export function PasswordField(props: PasswordFieldProps) {
-  const { testID, label, value, onChange, required, readOnly, disabled, helpText, placeholder, autoComplete = 'password', revealable = true } = props;
+  const { testID, label, value, onChange, required, readOnly, disabled, helpText, placeholder, autoComplete = 'current-password', revealable = true } = props;
   const t = useTheme();
   const s = styles(t);
   const f = useField(props, value);
@@ -64,7 +64,7 @@ export function PasswordField(props: PasswordFieldProps) {
                    onFocus={f.onFocus} onBlur={f.onBlur} onChangeText={(x) => onChange?.(x)} />
         {revealable && !disabled
           ? <Pressable testID={`${testID}-reveal`} accessibilityRole="button" accessibilityLabel={`${shown ? 'Hide' : 'Show'} ${label}`}
-                       accessibilityState={{ selected: shown }} hitSlop={12} onPress={() => setShown(!shown)}>
+                       accessibilityState={{ selected: shown }} hitSlop={12} style={s.tap} onPress={() => setShown(!shown)}>
               <Text style={[s.side, { color: t.color.primaryText, fontWeight: '600' }]}>{shown ? 'Hide' : 'Show'}</Text>
             </Pressable>
           : null}
@@ -86,7 +86,7 @@ export interface NumberInputProps extends FieldProps<number | null> {
 function Stepper({ testID, label, sign, disabled, onPress, t }: { testID: string; label: string; sign: string; disabled: boolean; onPress: () => void; t: Theme }) {
   return (
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
-               style={{ minWidth: t.minTouch - 8, minHeight: t.minTouch - 8, alignItems: 'center', justifyContent: 'center', borderRadius: t.radius.control,
+               style={{ minWidth: t.minTouch - 4, minHeight: t.minTouch - 4, alignItems: 'center', justifyContent: 'center', borderRadius: t.radius.control,
                  backgroundColor: t.color.surface2, opacity: disabled ? 0.45 : 1 }}>
       <Text style={{ fontSize: 18, color: t.color.text }} importantForAccessibility="no">{sign}</Text>
     </Press>
@@ -127,7 +127,7 @@ export function NumberInput(props: NumberInputProps) {
       <View style={[controlStyle(t, { focused: f.focused, error: f.error, disabled, readOnly }), { paddingHorizontal: 4, gap: 4 }]}>
         {steppable ? <Stepper testID={`${testID}-decrease`} label={`Decrease ${label}`} sign="−" t={t} onPress={() => nudge(-step)}
                               disabled={min !== undefined && value !== null && value <= min} /> : null}
-        <Roll on={value} style={{ flex: 1 }}>
+        <Roll on={value} style={{ flex: 1, alignSelf: 'stretch' }}>
         <TextInput testID={`${testID}-input`} style={[s.input, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}
                    keyboardType={decimals ? 'decimal-pad' : 'number-pad'} value={typed ?? (value === null || value === undefined ? '' : String(value))}
                    placeholder={placeholder} placeholderTextColor={t.color.textMuted} editable={!readOnly && !disabled}
@@ -245,7 +245,7 @@ export function MultiSelect(props: MultiSelectProps) {
                 <Text style={{ fontSize: 14, color: t.color.primaryText }}>{labelOf(v)}</Text>
                 {editable
                   ? <Pressable testID={`${testID}-remove-${v}`} accessibilityRole="button" accessibilityLabel={`Remove ${labelOf(v)}`} hitSlop={8}
-                               onPress={() => flip(v)} style={{ minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' }}>
+                               onPress={() => flip(v)} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                       <Text style={{ fontSize: 16, color: t.color.primaryText }} importantForAccessibility="no">×</Text>
                     </Pressable>
                   : null}
@@ -279,18 +279,24 @@ export function MultiSelect(props: MultiSelectProps) {
 
 /* ---------- Toggle (oj-switch) ---------- */
 
-/** On or off: the platform's switch, named by its label. */
+/** On or off, named by its label. The whole row is the switch, so it is easy to touch (the platform switch is 40 by 20 on the web). */
 export function Toggle(props: FieldProps<boolean>) {
   const { testID, label, value, onChange, readOnly, disabled, helpText, error } = props;
   const t = useTheme();
   const s = styles(t);
+  const at = useSlide(value ? 1 : 0);
+  const off = !!(disabled || readOnly);
   return (
     <View testID={testID} style={s.field}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: t.minTouch, gap: 12 }}>
+      <Press testID={`${testID}-input`} accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={error || helpText}
+             accessibilityState={{ checked: !!value, disabled: off }} disabled={off} onPress={() => onChange?.(!value)}
+             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: t.minTouch, gap: 12, opacity: disabled ? 0.5 : 1 }}>
         <Text style={{ fontSize: 15, color: t.color.text, flexShrink: 1 }} importantForAccessibility="no">{label}</Text>
-        <Switch testID={`${testID}-input`} accessibilityLabel={label} accessibilityHint={error || helpText} value={!!value} disabled={disabled || readOnly}
-                onValueChange={(x) => onChange?.(x)} trackColor={{ true: t.color.primary, false: t.color.borderStrong }} thumbColor={t.color.surface} />
-      </View>
+        <View style={{ width: 52, height: 30, borderRadius: 15, padding: 3, backgroundColor: value ? t.color.primary : t.color.borderStrong }}>
+          <Animated.View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.color.surface,
+            transform: [{ translateX: at.interpolate({ inputRange: [0, 1], outputRange: [0, 22] }) }] }} />
+        </View>
+      </Press>
       {error
         ? <Text testID={`${testID}-error`} style={s.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">{error}</Text>
         : helpText ? <Text style={[s.help, { marginTop: 0 }]}>{helpText}</Text> : null}
@@ -367,7 +373,7 @@ export function SearchField(props: SearchFieldProps) {
                      editable={!disabled} returnKeyType="search" autoCorrect={false} accessibilityLabel={label} accessibilityHint={helpText}
                      onFocus={f.onFocus} onBlur={f.onBlur} onSubmitEditing={() => onSearch?.(value ?? '')} onChangeText={(x) => onChange?.(x)} />
           {value && !disabled
-            ? <Pressable testID={`${testID}-clear`} accessibilityRole="button" accessibilityLabel={`Clear ${label}`} hitSlop={12} onPress={() => onChange?.('')}>
+            ? <Pressable testID={`${testID}-clear`} accessibilityRole="button" accessibilityLabel={`Clear ${label}`} hitSlop={12} style={s.tap} onPress={() => onChange?.('')}>
                 <Text style={s.side}>×</Text>
               </Pressable>
             : null}
@@ -484,7 +490,7 @@ export function FileUpload(props: FileUploadProps) {
     <Enter testID={testID} style={s.field}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
       <Shake error={message}>
-      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}, ${label}`}
+      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}${hint ? `, ${hint}` : ''}, ${label}`}
                  accessibilityHint={message || hint || helpText} accessibilityState={{ disabled: !!disabled }} disabled={disabled} onPress={choose}
                  style={{ minHeight: t.minTouch + 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: message ? t.color.danger : t.color.borderStrong,
                    borderRadius: t.radius.card, alignItems: 'center', justifyContent: 'center', padding: 12, opacity: disabled ? 0.6 : 1 }}>

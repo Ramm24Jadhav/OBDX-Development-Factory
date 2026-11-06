@@ -41,7 +41,7 @@ export function Button({ testID, label, chroming = 'callToAction', disabled, bus
                  justifyContent: 'center', opacity: off ? 0.5 : 1, overflow: 'hidden' }, l.box]}>
       {/* the busy button shimmers (motion.json: loading) */}
       <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 8 }, shimmer]}>
-        {busy ? <ActivityIndicator size="small" color={l.text} /> : startIcon}
+        {busy ? <ActivityIndicator size="small" color={l.text} aria-hidden /> : startIcon}
         <Text style={{ color: l.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
       </Animated.View>
     </Press>

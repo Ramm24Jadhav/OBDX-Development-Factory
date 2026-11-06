@@ -384,7 +384,7 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
         </View>
         {list.map((o) => (
           <Touch key={o.value} testID={testID ? `${testID}-option-${o.value}` : undefined} role="radio" label={o.label} selected={o.value === value}
-                 disabled={disabled || o.disabled} onPress={() => onChange?.(o.value)} style={{ flex: 1, alignItems: 'center', minHeight: t.minTouch - 6 }}>
+                 disabled={disabled || o.disabled} onPress={() => onChange?.(o.value)} style={{ flex: 1, alignItems: 'center', minHeight: t.minTouch - 4 }}>
             <Text style={{ fontSize: 14, fontWeight: o.value === value ? '700' : '500', color: o.value === value ? t.color.primaryText : t.color.textBody }}>{o.label}</Text>
           </Touch>
         ))}

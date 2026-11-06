@@ -51,6 +51,8 @@ dependencies {
     testImplementation(compose)
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("junit:junit:4.13.2")
+    // android.jar only stubs org.json; plain JVM tests (FormModelTest) need the real one
+    testImplementation("org.json:json:20250517")
     testImplementation("org.robolectric:robolectric:4.16")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

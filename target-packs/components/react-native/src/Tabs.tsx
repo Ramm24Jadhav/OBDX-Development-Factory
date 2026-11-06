@@ -44,7 +44,7 @@ export function Tabs({ label, tabs, selection, onSelectionChange, testID }: Tabs
                    accessibilityHint={`Tab ${i + 1} of ${tabs.length}`} accessibilityState={{ selected: on, disabled: !!x.disabled }}
                    disabled={x.disabled} onPress={() => onSelectionChange(x.id)}
                    onLayout={(e) => { places.current.set(x.id, { x: e.nativeEvent.layout.x, width: e.nativeEvent.layout.width }); measured((n) => n + 1); }}
-                   style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: t.radius.control,
+                   style={{ minHeight: t.minTouch - 4, justifyContent: 'center', paddingHorizontal: 16, borderRadius: t.radius.control,
                      backgroundColor: on && !at ? t.color.surface : 'transparent', opacity: x.disabled ? 0.5 : 1 }}>
               <Text style={{ fontSize: 14, fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{x.label}</Text>
             </Press>

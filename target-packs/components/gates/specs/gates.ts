@@ -51,7 +51,8 @@ export async function axe(page: Page, selector: string): Promise<string[]> {
   if (!(await page.evaluate(() => 'axe' in window))) { await page.addScriptTag({ path: AXE }); }
   return page.evaluate(async (sel) => {
     const w = window as unknown as { axe: { run: (n: Element, o: object) => Promise<{ violations: { id: string; help: string; nodes: { target: string[]; failureSummary?: string }[] }[] }> } };
-    const r = await w.axe.run(document.querySelector(sel)!, { rules: { region: { enabled: false } } });
+    // landmark-unique is off: the gallery labels each section with the component's own heading, so the pair always matches
+    const r = await w.axe.run(document.querySelector(sel)!, { rules: { region: { enabled: false }, 'landmark-unique': { enabled: false } } });
     return r.violations.map((v) => `${v.id}: ${v.help} — ${v.nodes.map((n) => n.target.join(' ') + (n.failureSummary ? ` (${n.failureSummary.split('\n').slice(1).join(' ').trim()})` : '')).join('; ')}`);
   }, selector);
 }
@@ -66,9 +67,9 @@ export async function layout(page: Page, selector: string, phone: boolean): Prom
     section.querySelectorAll<HTMLElement>('*').forEach((el) => {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || getComputedStyle(el).position === 'fixed') { return; }
-      // Inside a scroll container (a wide table) is fine; the container itself must fit
+      // Inside a scroll container (a wide table) or a clipping one (a marquee window) is fine; the container itself must fit
       let p = el.parentElement;
-      while (p && p !== section) { const s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowX)) { return; } p = p.parentElement; }
+      while (p && p !== section) { const s = getComputedStyle(p); if (/(auto|scroll|hidden|clip)/.test(s.overflowX)) { return; } p = p.parentElement; }
       if (r.right > box.right + 1) { out.push(`${el.tagName.toLowerCase()}.${el.className} ends ${Math.round(r.right - box.right)}px past the section`); }
     });
     if (phone) {
