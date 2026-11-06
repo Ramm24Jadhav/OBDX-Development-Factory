@@ -26,7 +26,7 @@ export function exampleRoutes(changeId) {
     run: run,
     build: { number: 58, url: null, job: 'modernize-react', result: 'UNSTABLE', round: 2, startedAt: at(1), finishedAt: at(1), errors: [], log: '' },
     published: true, totals: count(246, 241, 5),
-    byType: { unit: count(180, 178, 2), functional: count(24, 23, 1), api: count(18, 18, 0), security: count(10, 10, 0), accessibility: count(8, 6, 2), ui: count(6, 6, 0) },
+    byType: { unit: count(180, 178, 2), functional: count(24, 23, 1), api: count(18, 18, 0), security: count(10, 10, 0), accessibility: count(8, 6, 2), ui: count(6, 6, 0), performance: count(4, 4, 0) },
     suites: [{ name: 'PaymentForm', type: 'unit', total: 42, passed: 41, failed: 1, skipped: 0, seconds: 3.2, result: 'failed' },
       { name: 'PaymentService', type: 'unit', total: 38, passed: 38, failed: 0, skipped: 0, seconds: 1.4, result: 'passed' },
       { name: 'Make a payment journey', type: 'functional', total: 12, passed: 11, failed: 1, skipped: 0, seconds: 22.5, result: 'failed' },

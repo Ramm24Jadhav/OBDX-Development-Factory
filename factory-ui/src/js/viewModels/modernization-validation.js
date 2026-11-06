@@ -61,7 +61,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           ['Security', sec.total ? sec.failed + (sec.failed === 1 ? ' finding' : ' findings') : 'Not run', sec.total ? (sec.failed ? 'red' : 'green') : 'grey'],
           ['Accessibility', a11y.total ? (a11y.failed ? a11y.failed + ' failing' : 'WCAG 2.2 AA') : 'Not run', toneOf(a11y)],
           ['Performance', perf.total ? of(perf) : 'Not measured', toneOf(perf)]
-        ].map((k) => ({ k: k[0], v: k[1], css: 'fx-kpi factory-mv-kpi is-' + k[2] }));
+        ].map((k) => ({ k: k[0], v: k[1], css: 'fx-kpi factory-mv-kpi is-' + k[2], chipCss: 'factory-mb-chip ' + ({ green: 'is-success', red: 'is-danger', amber: 'is-warning', grey: 'is-grey' }[k[2]] || '') }));
       });
 
       // The checks, in order: picking one shows what happened and opens its tab

@@ -1,10 +1,11 @@
-<div class="factory-pg factory-mv">
-  <div class="factory-rq-head">
-    <div class="factory-rq-title">
+<!-- Validation, as on the approved board (docs/design/boards/Validation-*.png) -->
+<div class="factory-pg factory-mb factory-mv">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
       <h1>Validation</h1>
-      <p class="factory-rq-lead"><oj-bind-text value="[[lead]]"></oj-bind-text></p>
+      <p><oj-bind-text value="[[lead]]"></oj-bind-text></p>
     </div>
-    <div class="factory-rq-headbar"><oj-bind-if test="[[run()]]"><span id="mvState" role="status" :class="[[ready() ? 'fx-badge fx-badge--success' : 'fx-badge fx-badge--warning']]"><oj-bind-text value="[[ready() ? 'Ready for review' : 'Not ready yet']]"></oj-bind-text></span></oj-bind-if></div>
+    <div class="factory-mb-headtools"><oj-bind-if test="[[run()]]"><span id="mvState" role="status" :class="[[ready() ? 'fx-badge fx-badge--success' : 'fx-badge fx-badge--warning']]"><oj-bind-text value="[[ready() ? 'Ready for review' : 'Not ready yet']]"></oj-bind-text></span></oj-bind-if></div>
   </div>
 
   <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 4 of 5</small></span>
@@ -25,17 +26,17 @@
       <div class="fx-empty factory-mv-empty" id="mvNoBuild"><strong>No build yet</strong><span>Jenkins builds the change and runs its tests; the results show here.</span>
         <button type="button" class="fx-btn fx-btn--primary" on-click="[[runAgain]]" :disabled="[[!canManage()]]" :title="[[rerunTitle]]">Run the tests</button></div>
     </oj-bind-if>
-    <div class="factory-mv-tiles"><oj-bind-for-each data="[[kpis]]" as="k"><template><div :class="[[k.data.css]]"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.k]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.v]]"></oj-bind-text></span></div></template></oj-bind-for-each></div>
+    <ul class="factory-mb-chips" id="mvTiles" aria-label="The checks"><oj-bind-for-each data="[[kpis]]" as="k"><template><li :class="[[k.data.chipCss]]"><b><oj-bind-text value="[[k.data.v]]"></oj-bind-text></b><span><oj-bind-text value="[[k.data.k]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
 
-    <section class="fx-card" aria-labelledby="mvChecksTitle">
+
+    <div class="factory-mb-valgrid">
+    <section class="factory-mb-card factory-mb-sidecard factory-mb-area-checks" aria-labelledby="mvChecksTitle">
       <h2 class="fx-card-title" id="mvChecksTitle">Checks, in order</h2>
       <ol class="factory-mv-pipeline is-8"><oj-bind-for-each data="[[pipeline]]" as="p"><template><li><button type="button" :class="[[p.data.css]]" :aria-pressed="[[p.data.pressed]]" on-click="[[p.data.pick]]">
         <span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[p.data.mark]]"></oj-bind-text></span><span><strong><oj-bind-text value="[[p.data.name]]"></oj-bind-text></strong></span></button></li></template></oj-bind-for-each></ol>
       <oj-bind-if test="[[stepDetail()]]"><div :class="[[stepDetail().css]]" role="status" id="mvStepDetail"><strong><oj-bind-text value="[[stepDetail().name]]"></oj-bind-text></strong> <oj-bind-text value="[[stepDetail().text]]"></oj-bind-text></div></oj-bind-if>
     </section>
-
-    <div class="factory-mv-layout">
-      <section class="fx-card factory-mv-summary" aria-labelledby="mvTestsTitle">
+      <section class="factory-mb-card factory-mb-sidecard factory-mb-area-tests factory-mv-summary" aria-labelledby="mvTestsTitle">
         <h2 class="fx-card-title" id="mvTestsTitle">All tests</h2>
         <oj-bind-if test="[[published()]]">
           <div class="factory-mo-ringrow"><span class="factory-ring" :style="[[ring().style]]" role="img" :aria-label="[[ring().label + ' of the tests passed']]"><span><oj-bind-text value="[[ring().label]]"></oj-bind-text><small>passed</small></span></span>
@@ -44,24 +45,8 @@
         </oj-bind-if>
         <oj-bind-if test="[[!published()]]"><p class="fx-muted">The Jenkins job publishes no JUnit report yet, so the tests are not counted. Publish it (junit step) to see them by suite.</p></oj-bind-if>
       </section>
-      <section class="fx-card factory-mv-summary" aria-labelledby="mvCovTitle">
-        <h2 class="fx-card-title" id="mvCovTitle">Code coverage</h2>
-        <oj-bind-if test="[[coverage()]]">
-          <div class="factory-mo-ringrow"><span class="factory-ring" :style="[[coverage().style]]" role="img" :aria-label="[[coverage().pct + ' of the lines are covered']]"><span><oj-bind-text value="[[coverage().pct]]"></oj-bind-text><small>lines</small></span></span>
-            <dl class="factory-mv-counts"><div><dt>Covered</dt><dd><oj-bind-text value="[[coverage().covered]]"></oj-bind-text></dd></div><div><dt>Not covered</dt><dd><oj-bind-text value="[[coverage().missed]]"></oj-bind-text></dd></div>
-              <div><dt><oj-bind-text value="[[coverage().gate]]"></oj-bind-text></dt><dd><oj-bind-text value="[[coverage().ok ? 'Met' : 'Not met']]"></oj-bind-text></dd></div></dl></div>
-        </oj-bind-if>
-        <oj-bind-if test="[[!coverage()]]"><p class="fx-muted"><oj-bind-text value="[[gateText]]"></oj-bind-text></p></oj-bind-if>
-      </section>
-      <section class="fx-card" aria-labelledby="mvLookTitle">
-        <div class="factory-mv-cardhead"><h2 class="fx-card-title" id="mvLookTitle">To look at</h2><oj-bind-if test="[[lookAt().length > 0]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewAll]]">View all</button></oj-bind-if></div>
-        <oj-bind-if test="[[lookAt().length === 0]]"><p class="fx-muted">Nothing: no file has problems, no test fails and the build has no errors.</p></oj-bind-if>
-        <ul class="factory-mo-insights"><oj-bind-for-each data="[[lookAt]]" as="l"><template><li :class="[[l.data.css]]"><span class="factory-mv-sev" aria-hidden="true"><oj-bind-text value="[[l.data.mark]]"></oj-bind-text></span><a href="#" on-click="[[l.data.go]]"><oj-bind-text value="[[l.data.text]]"></oj-bind-text> ›</a></li></template></oj-bind-for-each></ul>
-      </section>
-    </div>
-
-    <section class="fx-card" aria-label="Results">
-      <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Results" on-keydown="[[tabKey]]">
+    <section class="factory-mb-card factory-mb-sidecard factory-mb-area-results" aria-label="Results">
+      <div class="factory-mb-tabs" role="tablist" aria-label="Results" on-keydown="[[tabKey]]">
         <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mvTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
       </div>
       <div role="tabpanel" class="factory-mm-panel">
@@ -110,17 +95,33 @@
         <oj-bind-if test="[[tab() === 'log']]"><pre class="fx-log factory-mv-log"><oj-bind-text value="[[log]]"></oj-bind-text></pre><oj-bind-if test="[[jenkinsUrl()]]"><a :href="[[jenkinsUrl]]" target="_blank" rel="noopener" class="fx-btn fx-btn--link">Open the Jenkins console</a></oj-bind-if></oj-bind-if>
       </div>
     </section>
+      <section class="factory-mb-card factory-mb-sidecard factory-mb-area-coverage factory-mv-summary" aria-labelledby="mvCovTitle">
+        <h2 class="fx-card-title" id="mvCovTitle">Code coverage</h2>
+        <oj-bind-if test="[[coverage()]]">
+          <div class="factory-mo-ringrow"><span class="factory-ring" :style="[[coverage().style]]" role="img" :aria-label="[[coverage().pct + ' of the lines are covered']]"><span><oj-bind-text value="[[coverage().pct]]"></oj-bind-text><small>lines</small></span></span>
+            <dl class="factory-mv-counts"><div><dt>Covered</dt><dd><oj-bind-text value="[[coverage().covered]]"></oj-bind-text></dd></div><div><dt>Not covered</dt><dd><oj-bind-text value="[[coverage().missed]]"></oj-bind-text></dd></div>
+              <div><dt><oj-bind-text value="[[coverage().gate]]"></oj-bind-text></dt><dd><oj-bind-text value="[[coverage().ok ? 'Met' : 'Not met']]"></oj-bind-text></dd></div></dl></div>
+        </oj-bind-if>
+        <oj-bind-if test="[[!coverage()]]"><p class="fx-muted"><oj-bind-text value="[[gateText]]"></oj-bind-text></p></oj-bind-if>
+      </section>
+      <section class="factory-mb-card factory-mb-sidecard factory-mb-area-look" aria-labelledby="mvLookTitle">
+        <div class="factory-mv-cardhead"><h2 class="fx-card-title" id="mvLookTitle">To look at</h2><oj-bind-if test="[[lookAt().length > 0]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewAll]]">View all</button></oj-bind-if></div>
+        <oj-bind-if test="[[lookAt().length === 0]]"><p class="fx-muted">Nothing: no file has problems, no test fails and the build has no errors.</p></oj-bind-if>
+        <ul class="factory-mo-insights"><oj-bind-for-each data="[[lookAt]]" as="l"><template><li :class="[[l.data.css]]"><span class="factory-mv-sev" aria-hidden="true"><oj-bind-text value="[[l.data.mark]]"></oj-bind-text></span><a href="#" on-click="[[l.data.go]]"><oj-bind-text value="[[l.data.text]]"></oj-bind-text> ›</a></li></template></oj-bind-for-each></ul>
+      </section>
+    </div>
+
 
     <oj-bind-if test="[[rerunLine()]]"><p class="factory-mv-rerun" role="status" id="mvRerunLine"><oj-bind-text value="[[rerunLine]]"></oj-bind-text></p></oj-bind-if>
-    <div class="factory-mz-actions">
-      <button type="button" class="fx-btn fx-btn--ghost" id="mvBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Workspace</button>
-      <div class="factory-mz-actions-end">
-        <fx-menu-button id="mvMore" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
-        <button type="button" class="fx-btn fx-btn--secondary" id="mvEvidence" on-click="[[openEvidence]]">Test evidence</button>
-        <oj-bind-if test="[[anyFailed()]]"><button type="button" class="fx-btn fx-btn--primary" id="mvRerun" on-click="[[runFailed]]" :disabled="[[!canManage()]]" :title="[[rerunTitle]]">Run the failed tests again</button></oj-bind-if>
-        <oj-bind-if test="[[!anyFailed()]]"><button type="button" class="fx-btn fx-btn--primary" id="mvToReview" on-click="[[toReview]]" :disabled="[[!ready()]]" :title="[[ready() ? null : 'Greyed out while checks or the build fail, or the build has not run']]">Send for review<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button></oj-bind-if>
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mvBack" on-click="[[back]]"><span aria-hidden="true">←</span>Workspace</button>
+      <span class="factory-mb-spacer"></span>
+      <div class="factory-mb-footer-end">
+        <fx-menu-button id="mvMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <oj-bind-if test="[[anyFailed()]]"><button type="button" class="factory-mb-btn is-primary" id="mvRerun" on-click="[[runFailed]]" :disabled="[[!canManage()]]" :title="[[rerunTitle]]">Run the failed tests again</button></oj-bind-if>
+        <oj-bind-if test="[[!anyFailed()]]"><button type="button" class="factory-mb-btn is-primary" id="mvToReview" on-click="[[toReview]]" :disabled="[[!ready()]]" :title="[[ready() ? null : 'Greyed out while checks or the build fail, or the build has not run']]">Send for review<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button></oj-bind-if>
       </div>
-    </div>
+    </footer>
 
     <fx-sheet id="mvEvidenceSheet" open="{{evidenceOpen}}" heading="Test evidence" subtitle="Each suite of the last build, the screenshots and the log">
       <div class="factory-cf-detail-wrap">
