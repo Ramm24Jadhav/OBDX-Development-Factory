@@ -84,7 +84,10 @@ export const styles = (t: Theme) => StyleSheet.create({
   req: { color: t.color.danger },
   help: { fontSize: 12.5, color: t.color.textMuted, marginTop: 6 },
   error: { fontSize: 12.5, color: t.color.dangerText, marginTop: 6, fontWeight: '500' },
-  input: { flex: 1, fontSize: 16, color: t.color.text, paddingVertical: 10 },
+  // The input fills the box's height, so the whole box is its touch target
+  input: { flex: 1, alignSelf: 'stretch', fontSize: 16, color: t.color.text, paddingVertical: 10 },
+  /** A small control inside a field (Show, Clear): at least 44 by 44 points. */
+  tap: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   affix: { fontSize: 13, fontWeight: '600', color: t.color.textMuted, marginRight: 8 },
   side: { fontSize: 12, color: t.color.textMuted, marginLeft: 8 },
 });

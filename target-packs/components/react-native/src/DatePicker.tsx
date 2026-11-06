@@ -60,7 +60,7 @@ export function DatePicker(props: DatePickerProps) {
                    placeholderTextColor={t.color.textMuted} value={typed ?? typedOf(value)} editable={!readOnly && !disabled}
                    accessibilityLabel={label} accessibilityHint={f.error || helpText || 'Day, month and year'} aria-required={required} aria-invalid={!!f.error}
                    onFocus={f.onFocus} onBlur={() => { f.onBlur(); commit(); }} onSubmitEditing={commit} onChangeText={setTyped} />
-        {value && typed === null ? <Text style={s.side} importantForAccessibility="no">{showDate(value)}</Text> : null}
+        {value && typed === null ? <Text style={[s.side, { color: t.color.textBody }]} importantForAccessibility="no">{showDate(value)}</Text> : null}
       </Pressable>
     </FieldShell>
   );

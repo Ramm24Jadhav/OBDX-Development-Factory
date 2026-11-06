@@ -66,7 +66,7 @@ export function DataTable<R extends object>({ caption, rows, columns, keyField, 
             return (
               <Pressable key={c.field} testID={testID ? `${testID}-sort-${c.field}` : undefined} accessibilityRole="button"
                          accessibilityLabel={`Sort by ${c.headerText}, ${dir}`} onPress={() => toggleSort(c.field)}
-                         style={{ minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 999, borderWidth: 1,
+                         style={{ minHeight: t.minTouch - 4, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 999, borderWidth: 1,
                            borderColor: on ? t.color.primary : t.color.border, backgroundColor: on ? t.color.primarySoft : t.color.surface }}>
                 <Text style={{ fontSize: 13, color: on ? t.color.primaryText : t.color.textBody }}>{c.headerText}{on ? (sort!.asc ? ' ↑' : ' ↓') : ''}</Text>
               </Pressable>

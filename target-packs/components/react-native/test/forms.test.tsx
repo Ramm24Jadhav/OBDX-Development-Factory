@@ -85,14 +85,14 @@ describe('MultiSelect', () => {
 });
 
 describe('Toggle', () => {
-  it('is the platform switch named by its label, and does not change when read only', async () => {
+  it('is a switch named by its label, and does not change when read only', async () => {
     let seen = false;
     await render(<Controlled initial={false}>{(v, set) => <Toggle testID="t" label="Paperless statements" value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent(screen.getByRole('switch', { name: 'Paperless statements' }), 'valueChange', true);
+    await fireEvent.press(screen.getByRole('switch', { name: 'Paperless statements' }));
     expect(seen).toBe(true);
     await render(<Toggle testID="r" label="Alerts" value readOnly />);
     const locked = screen.getByRole('switch', { name: 'Alerts' });
-    expect(locked.props.disabled === true || locked.props.enabled === false).toBe(true);
+    expect(locked.props.accessibilityState?.disabled).toBe(true);
     expect(accessibilityProblems()).toEqual([]);
   });
 });
@@ -172,7 +172,7 @@ describe('FileUpload', () => {
     let seen: PickedFile[] = [];
     await render(<Controlled<PickedFile[]> initial={[]}>{(v, set) => <FileUpload testID="f" label="Proof of address" value={v} accept=".pdf,image/*" maxSize={1048576}
                                                                                 pick={async () => [pdf]} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await act(async () => { await fireEvent.press(screen.getByRole('button', { name: 'Choose a file, Proof of address' })); });
+    await act(async () => { await fireEvent.press(screen.getByRole('button', { name: /^Choose a file, Proof of address/ })); });
     expect(seen.map((f) => f.name)).toEqual(['statement.pdf']);
     expect(screen.getByText('4 B')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Remove statement.pdf' }));
@@ -182,7 +182,7 @@ describe('FileUpload', () => {
 
   it('refuses a type it does not accept, and says why', async () => {
     await render(<FileUpload testID="f" label="Proof of address" value={[]} accept=".pdf,image/*" pick={async () => [exe]} />);
-    await act(async () => { await fireEvent.press(screen.getByRole('button', { name: 'Choose a file, Proof of address' })); });
+    await act(async () => { await fireEvent.press(screen.getByRole('button', { name: /^Choose a file, Proof of address/ })); });
     expect(screen.getByRole('alert')).toHaveTextContent(/setup.exe is not a file type this accepts/);
     expect(fileSize(2621440)).toBe('2.5 MB');
   });

@@ -550,7 +550,7 @@ export function Segment(props: SegmentProps) {
           return (
             <Touch key={o.key} testID={`${testID}-option-${o.key}`} role="radio" label={o.label} selected={on} disabled={disabled || readOnly || o.disabled}
                    onPress={() => onChange?.(o.key)} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8, borderRadius: t.radius.control,
-                     minHeight: t.minTouch - 6 }}>
+                     minHeight: t.minTouch - 4 }}>
               <Text style={{ fontSize: 14, textAlign: 'center', fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{o.label}</Text>
             </Touch>
           );
@@ -587,7 +587,7 @@ export function Chips(props: ChipsProps) {
           return (
             <Press key={o.key} testID={`${testID}-option-${o.key}`} accessibilityRole={single ? 'radio' : 'checkbox'} accessibilityLabel={o.label}
                        accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => flip(o.key)}
-                       style={{ minHeight: t.minTouch - 8, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999,
+                       style={{ minHeight: t.minTouch - 4, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999,
                          borderWidth: 1, borderColor: on ? t.color.primary : t.color.borderStrong, backgroundColor: on ? t.color.primarySoft : t.color.surface,
                          opacity: off ? 0.5 : 1 }} hitSlop={4}>
               <Pop on={on}>

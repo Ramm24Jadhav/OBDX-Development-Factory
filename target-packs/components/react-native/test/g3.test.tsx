@@ -96,14 +96,14 @@ describe('group 3', () => {
     await render(<CardTile testID="c" card={card} frozen={false} onFrozenChange={(x) => { frozen = x; }} />);
     expect(screen.getByLabelText('Platinum card ·· 4821, expires 08/29')).toBeTruthy();
     expect(screen.queryByText(/4111/)).toBeNull();
-    await fireEvent(screen.getByLabelText('Freeze the card'), 'valueChange', true);
+    await fireEvent.press(screen.getByLabelText('Freeze the card'));
     expect(frozen).toBe(true);
   });
 
   it('BlockCard asks before blocking', async () => {
     let blocked = false;
     await render(<BlockCard testID="b" label="Block the card" value={false} onChange={(x) => { blocked = x; }} />);
-    await fireEvent(screen.getByLabelText('Block the card'), 'valueChange', true);
+    await fireEvent.press(screen.getByLabelText('Block the card'));
     expect(blocked).toBe(false);
     await fireEvent.press(screen.getByRole('button', { name: 'Block' }));
     expect(blocked).toBe(true);
@@ -112,8 +112,8 @@ describe('group 3', () => {
   it('CardControls writes back the allowed uses', async () => {
     let seen: string[] = [];
     await render(<Controlled<string[]> initial={['online']}>{(v, set) => <CardControls testID="c" label="Allow" value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent(screen.getByLabelText('Use abroad'), 'valueChange', true);
-    await fireEvent(screen.getByLabelText('Online payments'), 'valueChange', false);
+    await fireEvent.press(screen.getByLabelText('Use abroad'));
+    await fireEvent.press(screen.getByLabelText('Online payments'));
     expect(seen).toEqual(['abroad']);
   });
 

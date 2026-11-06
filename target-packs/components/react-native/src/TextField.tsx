@@ -27,7 +27,7 @@ export function TextField(props: TextFieldProps) {
                    accessibilityState={{ disabled: !!disabled }} aria-required={required} aria-invalid={!!f.error}
                    onFocus={f.onFocus} onBlur={f.onBlur} onChangeText={(x) => onChange?.(x)} />
         {clearable && value && !readOnly && !disabled
-          ? <Pressable testID={`${testID}-clear`} accessibilityRole="button" accessibilityLabel={`Clear ${label}`} hitSlop={12} onPress={() => onChange?.('')}>
+          ? <Pressable testID={`${testID}-clear`} accessibilityRole="button" accessibilityLabel={`Clear ${label}`} hitSlop={12} style={s.tap} onPress={() => onChange?.('')}>
               <Text style={s.side}>×</Text>
             </Pressable>
           : null}
