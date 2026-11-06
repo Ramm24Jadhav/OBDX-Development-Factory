@@ -1,5 +1,5 @@
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { ComponentType, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, StyleSheet, ViewStyle } from 'react-native';
 
 import { darkColors, lightTokens } from './tokens';
 
@@ -28,7 +28,7 @@ export interface Theme {
   pressScale: number;
   look: NonNullable<ComponentStyle['look']>;
   /** Liquid glass (glass.json): the translucent fill and lit rim of controls and cards; null for the other looks or when the phone asks for less transparency. */
-  glass: { fill: string; rim: string } | null;
+  glass: { fill: string; rim: string; tint: 'light' | 'dark' } | null;
   /** The click and entrance effects of the component style (see motion.tsx); none when the style sets none. */
   motion: { click: 'press' | 'ripple' | 'bounce' | 'none'; scroll: 'fadeup' | 'scale' | 'slide' | 'blur' | 'none' };
 }
@@ -48,9 +48,9 @@ export function makeTheme(style: ComponentStyle = {}, brand?: string, reduceTran
     minTouch: 48,
     pressScale: style.motion?.click === 'press' || style.motion?.click === 'bounce' ? 0.97 : 1,
     look,
-    // shortcut: a fill and rim, no blur; a real frost needs a native blur view (expo-blur or @react-native-community/blur)
-    glass: look !== 'liquid' || reduceTransparency ? null : style.mode === 'dark' ? { fill: 'rgba(40, 40, 40, 0.62)', rim: 'rgba(255, 255, 255, 0.13)' }
-      : { fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)' },
+    // the fill and rim; GlassBlur adds expo-blur's frost behind them where the app has it
+    glass: look !== 'liquid' || reduceTransparency ? null : style.mode === 'dark' ? { fill: 'rgba(40, 40, 40, 0.62)', rim: 'rgba(255, 255, 255, 0.13)', tint: 'dark' }
+      : { fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)', tint: 'light' },
     motion: { click: style.motion?.click ?? 'none', scroll: style.motion?.scroll ?? 'none' },
   };
 }
@@ -71,4 +71,23 @@ export function ThemeProvider({ style, brand, children }: { style?: ComponentSty
 
 export function useTheme(): Theme {
   return useContext(ThemeContext);
+}
+
+type BlurProps = { intensity?: number; tint?: 'light' | 'dark'; style?: ViewStyle; pointerEvents?: 'none' };
+let blurView: ComponentType<BlurProps> | null | undefined;
+
+/** expo-blur's BlurView, or null where the app has no expo-blur (a bare React Native app, the web gallery): then the fill and rim stay alone. */
+function loadBlur(): ComponentType<BlurProps> | null {
+  if (blurView === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional: Metro and jest resolve it if installed
+    try { blurView = (require('expo-blur') as { BlurView?: ComponentType<BlurProps> }).BlurView ?? null; } catch { blurView = null; }
+  }
+  return blurView;
+}
+
+/** Liquid glass's frost: a BlurView filling its surface, behind the content. Put it first in a surface with overflow hidden; nothing off liquid. */
+export function GlassBlur() {
+  const t = useTheme();
+  const Blur = t.glass ? loadBlur() : null;
+  return Blur ? <Blur intensity={20} tint={t.glass!.tint} style={StyleSheet.absoluteFill as ViewStyle} pointerEvents="none" /> : null;
 }

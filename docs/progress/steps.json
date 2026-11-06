@@ -309,14 +309,14 @@
    "items": [
     {
      "name": "Blur view glass",
-     "done": false
+     "done": true
     },
     {
      "name": "iOS 26 glass where available",
      "done": false
     }
    ],
-   "note": "Fill and rim in theme.tsx; a native blur view needs approval"
+   "note": "expo-blur BlurView (optional), fill and rim as the fallback"
   },
   {
    "id": "LG4",

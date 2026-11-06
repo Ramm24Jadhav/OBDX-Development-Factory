@@ -174,7 +174,7 @@ describe('Tokens and the component style', () => {
   });
 
   it('draws Liquid glass as a translucent fill with a lit rim, and solid when the phone asks for less transparency', async () => {
-    expect(makeTheme({ look: 'liquid' }).glass).toEqual({ fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)' });
+    expect(makeTheme({ look: 'liquid' }).glass).toEqual({ fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)', tint: 'light' });
     expect(makeTheme({ look: 'liquid', mode: 'dark' }).glass?.fill).toBe('rgba(40, 40, 40, 0.62)');
     expect(makeTheme({ look: 'liquid' }, undefined, true).glass).toBeNull();
     expect(makeTheme({ look: 'glass' }).glass).toBeNull();

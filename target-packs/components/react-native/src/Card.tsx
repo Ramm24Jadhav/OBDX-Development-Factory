@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
 import { Enter, Press } from './motion';
-import { useTheme } from './theme';
+import { GlassBlur, useTheme } from './theme';
 
 export interface CardProps {
   heading?: string;
@@ -21,10 +21,12 @@ export function Card({ heading, subheading, children, actions, onAction, selecte
   const box = {
     gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.color.surface, borderWidth: selected ? 1.5 : t.border,
     borderColor: selected ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.border,
+    ...(t.glass ? { overflow: 'hidden' as const } : {}),
     ...(t.shadow ? { shadowColor: '#0f172a', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : {}),
   };
   const body = (
     <>
+      <GlassBlur />
       {heading ? (
         <View style={{ gap: 2 }}>
           <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{heading}</Text>

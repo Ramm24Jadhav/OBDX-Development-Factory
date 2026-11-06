@@ -253,8 +253,9 @@ back for reduced transparency (solid), forced colours (system colours, 1px borde
 and no backdrop-filter (92% surface). React adds Glisse's `Glass` as a lens (`Lens`, `src/lens.tsx`) in buttons, icon
 buttons, the action menu, tabs, segmented and the switch, imported only under `liquid`; nothing is marked as moving
 backdrop, so no frame loop runs. React Native draws a translucent fill and rim (`theme.glass`), solid when the phone
-asks for less transparency; a real frost needs a native blur view (expo-blur or @react-native-community/blur, not
-added). The slider has a frosted glass thumb (native slider back in forced colours). The web packs have no bottom nav
+asks for less transparency. The user chose expo-blur (7 Nov): an optional peer dependency, loaded only if the app
+has it, so `GlassBlur` puts a BlurView behind buttons, icon buttons and cards; without it (a bare app, the web
+gallery) the fill and rim stay alone. The slider has a frosted glass thumb (native slider back in forced colours). The web packs have no bottom nav
 component; the pill and dock navs are glass. LG4: Vue 3, Capacitor, JET Core Pack and Flutter starters have no design
 list yet (no component style, no look choice; Capacitor has its own CSS, not the React pack), so there is no look to
 add Liquid glass to until a component style reaches them. Open: the browser gates of LG5 (contrast over a busy
