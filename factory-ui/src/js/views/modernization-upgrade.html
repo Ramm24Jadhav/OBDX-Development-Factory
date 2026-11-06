@@ -1,10 +1,8 @@
-<div class="factory-pg factory-mu">
-  <div class="factory-rq-head">
-    <div class="factory-rq-title">
-      <h1>Upgrade plan</h1>
-      <p class="factory-rq-lead">Which screens get which premium components, one change per wave.</p>
-    </div>
-    <div class="factory-rq-headbar"><oj-bind-if test="[[plan()]]"><span id="muSaved" role="status" :class="[[savedCss]]"><oj-bind-text value="[[savedText]]"></oj-bind-text></span></oj-bind-if></div>
+<!-- Upgrade plan, as on the approved board (docs/design/boards/UpgradePlan-*.png) -->
+<div class="factory-pg factory-mb factory-mu">
+  <div class="factory-mb-pagehead is-sm">
+    <h1>Upgrade plan</h1>
+    <p>Which screens get which components, one change per wave.</p>
   </div>
 
   <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 3 of 5</small></span>
@@ -17,7 +15,7 @@
 
   <oj-bind-if test="[[plan()]]">
     <oj-bind-if test="[[actionError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="muActionError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>That did not work.</strong> <oj-bind-text value="[[actionError]]"></oj-bind-text></span><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[clearError]]">Dismiss</button></div></oj-bind-if>
-    <div class="factory-mu-tiles"><oj-bind-for-each data="[[tiles]]" as="t"><template><div class="fx-kpi factory-mu-tile"><span class="fx-kpi-label"><oj-bind-text value="[[t.data.k]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[t.data.v]]"></oj-bind-text></span></div></template></oj-bind-for-each></div>
+    <ul class="factory-mb-chips" id="muTiles" aria-label="The plan"><oj-bind-for-each data="[[tiles]]" as="t"><template><li class="factory-mb-chip"><b><oj-bind-text value="[[t.data.v]]"></oj-bind-text></b><span><oj-bind-text value="[[t.data.k]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
 
     <oj-bind-if test="[[plan().components.length === 0]]">
       <div class="fx-empty" id="muEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-cube" aria-hidden="true"></span></span><strong>No components in the plan yet</strong>Pick components in the inventory and add them to the plan.
@@ -25,10 +23,10 @@
     </oj-bind-if>
 
     <oj-bind-if test="[[plan().components.length > 0]]">
-      <div class="factory-mu-layout">
-        <section class="fx-card factory-mu-comps" aria-labelledby="muCompsTitle">
-          <div class="fx-card-head"><h2 class="fx-card-title" id="muCompsTitle">Components in the plan</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="muAdd" on-click="[[add]]"><span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Add</button></div>
-          <p class="fx-help">From the inventory. Untick one to leave it out of every wave.</p>
+      <div class="factory-mb-planlayout">
+        <section class="factory-mb-card factory-mb-sidecard factory-mu-comps" aria-labelledby="muCompsTitle">
+          <div class="factory-mb-head"><h2 class="factory-mb-h2" id="muCompsTitle">Components in the plan</h2><button type="button" class="factory-mb-link" id="muAdd" on-click="[[add]]">＋ Add</button></div>
+          <p class="factory-mb-note">From the inventory. Untick one to leave it out of every wave.</p>
           <ul class="factory-mu-complist"><oj-bind-for-each data="[[componentRows]]" as="c"><template>
             <li :class="[[c.data.css]]"><label><input type="checkbox" class="fx-check" :checked="[[c.data.checked]]" on-click="[[c.data.toggle]]" :disabled="[[!canManage()]]"/>
               <span class="factory-mu-comp-text"><span class="factory-mc-el"><oj-bind-text value="[[c.data.element]]"></oj-bind-text> → <oj-bind-text value="[[c.data.premium]]"></oj-bind-text></span>
@@ -36,21 +34,21 @@
               <span :class="[[c.data.compatCss]]"><oj-bind-text value="[[c.data.compat]]"></oj-bind-text></span></label></li></template></oj-bind-for-each></ul>
         </section>
 
-        <section class="fx-card factory-mu-waves" aria-labelledby="muWavesTitle">
-          <div class="fx-card-head"><h2 class="fx-card-title" id="muWavesTitle">Waves</h2><fx-segmented id="muGrouping" label="Group the waves" options="[[groupOptions]]" value="{{grouping}}" disabled="[[!canManage()]]"></fx-segmented></div>
-          <div class="fx-table-wrap"><table class="fx-table" id="muWaveTable"><thead><tr><th scope="col">Wave</th><th scope="col"><oj-bind-text value="[[grouping() === 'module' ? 'Module' : 'Component']]"></oj-bind-text></th><th scope="col" class="fx-num">Screens</th><th scope="col">Components</th><th scope="col">Change</th><th scope="col">State</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+        <section class="factory-mb-card factory-mb-sidecard factory-mu-waves" aria-labelledby="muWavesTitle">
+          <div class="factory-mb-head"><h2 class="factory-mb-h2" id="muWavesTitle">Waves</h2><fx-segmented id="muGrouping" label="Group the waves" options="[[groupOptions]]" value="{{grouping}}" disabled="[[!canManage()]]"></fx-segmented></div>
+          <div class="fx-table-wrap"><table class="fx-table factory-mb-table factory-mb-wavetable" id="muWaveTable"><thead><tr><th scope="col">Wave</th><th scope="col"><oj-bind-text value="[[grouping() === 'module' ? 'Module' : 'Component']]"></oj-bind-text></th><th scope="col" class="fx-num">Screens</th><th scope="col">Components</th><th scope="col">Change</th><th scope="col">State</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
             <tbody><oj-bind-for-each data="[[waves]]" as="w"><template><tr :class="[[w.data.css]]" :aria-selected="[[w.data.selected]]" on-click="[[w.data.pick]]">
               <td><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[w.data.pick]]" :aria-label="[['Show wave ' + w.data.n]]"><oj-bind-text value="[[w.data.n]]"></oj-bind-text></button></td>
               <th scope="row"><oj-bind-text value="[[w.data.name]]"></oj-bind-text></th><td class="fx-num"><oj-bind-text value="[[w.data.screens]]"></oj-bind-text></td>
               <td class="factory-mc-el"><oj-bind-text value="[[w.data.comps]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[w.data.change]]"></oj-bind-text></td>
               <td><span :class="[[w.data.stateCss]]"><oj-bind-text value="[[w.data.state]]"></oj-bind-text></span></td>
               <td class="fx-table-actions"><fx-menu-button variant="ghost" size="sm" icon="more" icon-only label="[['Wave ' + w.data.n + ' actions']]" align="end" items="[[w.data.menu]]" on-fx-action="[[w.data.menuAction]]"></fx-menu-button></td></tr></template></oj-bind-for-each></tbody></table></div>
-          <p class="fx-help">Small modules go first, so the bank sees the new look early. A wave is done when its change is delivered to SVN.</p>
+          <p class="factory-mb-note">Small modules go first, so the bank sees the new look early. A wave is done when its change is delivered to SVN.</p>
         </section>
 
         <oj-bind-if test="[[wave()]]">
-          <aside class="fx-card factory-mu-detail" aria-labelledby="muWaveTitle">
-            <h2 class="fx-card-title" id="muWaveTitle"><oj-bind-text value="[['Wave ' + wave().n + ': ' + wave().name]]"></oj-bind-text></h2>
+          <aside class="factory-mb-card factory-mb-sidecard factory-mb-wavedetail factory-mu-detail" aria-labelledby="muWaveTitle">
+            <h2 class="factory-mb-h2" id="muWaveTitle"><oj-bind-text value="[['Wave ' + wave().n + ': ' + wave().name]]"></oj-bind-text></h2>
             <p class="fx-muted"><oj-bind-text value="[[wave().summary]]"></oj-bind-text></p>
             <h3 class="factory-mm-module">Screens in this wave</h3>
             <ul class="factory-mu-screens"><oj-bind-for-each data="[[wave().screens]]" as="x"><template><li><span><oj-bind-text value="[[x.data.name]]"></oj-bind-text><small class="fx-muted factory-mo-mono"><oj-bind-text value="[[x.data.id]]"></oj-bind-text></small></span><span class="fx-muted"><oj-bind-text value="[[x.data.uses]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
@@ -65,14 +63,12 @@
       </div>
     </oj-bind-if>
 
-    <div class="factory-mz-actions">
-      <button type="button" class="fx-btn fx-btn--ghost" id="muBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Mapping</button>
-      <div class="factory-mz-actions-end">
-        <fx-menu-button id="muMore" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
-        <button type="button" class="fx-btn fx-btn--secondary" id="muDraft" on-click="[[saveDraft]]" :disabled="[[!canManage()]]">Save as draft</button>
-        <a class="fx-btn fx-btn--secondary" id="muCsv" :href="[[csvHref]]">Export the plan</a>
-        <button type="button" class="fx-btn fx-btn--primary" id="muSaveStart" on-click="[[saveAndStart]]" :disabled="[[!canManage() || plan().components.length === 0]]"><oj-bind-text value="[[footLabel]]"></oj-bind-text><span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
-      </div>
-    </div>
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="muBack" on-click="[[back]]"><span aria-hidden="true">←</span>Mapping</button>
+      <oj-bind-if test="[[savedText()]]"><span id="muSaved" role="status" class="factory-mb-muted"><oj-bind-text value="[[savedText]]"></oj-bind-text></span></oj-bind-if>
+      <span class="factory-mb-spacer"></span>
+      <fx-menu-button id="muMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+      <button type="button" class="factory-mb-btn is-primary" id="muSaveStart" on-click="[[saveAndStart]]" :disabled="[[!canManage() || plan().components.length === 0]]"><oj-bind-text value="[[footLabel]]"></oj-bind-text><span aria-hidden="true">→</span></button>
+    </footer>
   </oj-bind-if>
 </div>

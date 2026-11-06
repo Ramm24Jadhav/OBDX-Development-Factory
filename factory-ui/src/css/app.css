@@ -9970,3 +9970,25 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mb-footer-end { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 1180px) { .factory-mb-mapgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "sides sides" "touch checks" "bar bar" "main main"; } }
 @media (max-width: 900px) { .factory-mb-mapgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sides" "bar" "main" "touch" "checks"; } .factory-mb-mapsides .factory-mm-sides { grid-template-columns: minmax(0, 1fr); } }
+/* Upgrade plan, as drawn: the components list beside the waves, the chosen wave under both */
+.factory-mb-planlayout { display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-areas: "comps waves" "detail detail"; gap: 14px; align-items: start; }
+.factory-mb-planlayout > .factory-mu-comps { grid-area: comps; }
+.factory-mb-planlayout > .factory-mu-waves { grid-area: waves; min-width: 0; }
+.factory-mb-planlayout > oj-bind-if, .factory-mb-planlayout .factory-mb-wavedetail { grid-area: detail; }
+.factory-mb-wavedetail { display: flex; flex-direction: column; gap: 8px; }
+.factory-mb-wavedetail .fx-btn--block { width: auto; align-self: flex-start; }
+.factory-mu-comps .factory-mu-complist { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.factory-mu-comps .factory-mu-complist li { padding: 8px 0; border-top: var(--fx-border-width) solid var(--fx-border); }
+.factory-mu-comps .factory-mu-complist label { display: flex; align-items: flex-start; gap: 8px; }
+.factory-mu-comps .factory-mc-el { font-family: var(--fx-font-mono); font-size: 11.5px; color: var(--fx-text); }
+.factory-mb-wavetable tbody tr { cursor: pointer; }
+.factory-mb-wavetable tbody tr[aria-selected="true"] { background: var(--fx-primary-soft); }
+.factory-mb-wavetable .factory-mc-el { font-family: var(--fx-font-mono); font-size: 11.5px; white-space: normal; }
+@media (max-width: 1100px) { .factory-mb-planlayout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "comps" "waves" "detail"; } }
+.factory-mu-comps .factory-mu-complist li { background: transparent; border-radius: 0; margin: 0; display: block; }
+.factory-mu-comps .factory-mu-complist label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.factory-mu-comps .factory-mu-comp-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.factory-mu-comps .factory-mu-comp-text .factory-mc-el { word-break: normal; overflow-wrap: anywhere; line-height: 15px; }
+.factory-mu-comps .factory-mu-comp-text .fx-muted { font-size: 11.5px; }
+.factory-mu-comps .factory-mu-complist label > span:last-child { font-size: 10.5px; padding: 1px 6px; white-space: nowrap; }
+.factory-mu-comps .factory-mu-complist li, .factory-mu-comps .factory-mu-complist li > label, .factory-mu-comps .factory-mu-complist li.is-on { background: none; box-shadow: none; padding-left: 0; padding-right: 0; }

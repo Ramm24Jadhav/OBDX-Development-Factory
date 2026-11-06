@@ -36,7 +36,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       self.componentRows = ko.pureComputed(() => (self.plan() ? self.plan().components : []).map((c) => {
         const pill = mz.compatPill(c.compatibility);
-        return { element: c.element, premium: c.premium, screens: c.screens + (c.screens === 1 ? ' screen' : ' screens'), compat: pill.text, compatCss: pill.css,
+        return { element: c.element, premium: c.premium, screens: c.screens + (c.screens === 1 ? ' screen' : ' screens'), compat: ({ 'Direct replacement': 'Direct', 'Property or event mapping': 'Property mapping' })[pill.text] || pill.text, compatCss: pill.css,
           checked: c.included, css: 'factory-mu-comp' + (c.included ? '' : ' is-off'),
           toggle: () => {
             const off = self.off().slice();
