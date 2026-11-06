@@ -51,6 +51,14 @@ class IssueServiceTest {
     }
 
     @Test
+    void titlesAreTheFirstSentenceAndShort() {
+        assertThat(IssueService.title("Customers in UAT cannot make transfers. After Submit they see an error.")).isEqualTo("Customers in UAT cannot make transfers.");
+        assertThat(IssueService.title("Error 1.2 in version 22.2 when paying")).isEqualTo("Error 1.2 in version 22.2 when paying");
+        String longLine = "word ".repeat(40).strip();
+        assertThat(IssueService.title(longLine)).hasSizeLessThanOrEqualTo(103).endsWith("...");
+    }
+
+    @Test
     void turnsEvidenceIntoCodeSearches() {
         assertThat(IssueService.frameQuery("com.bank.obdx.payments.FundTransferService.transfer(FundTransferService.java:142)"))
                 .isEqualTo("FundTransferService transfer");

@@ -7,6 +7,7 @@ import com.obdx.factory.issue.IssueRepository.IssueFile;
 import com.obdx.factory.issue.IssueRepository.Knowledge;
 import com.obdx.factory.issue.IssueRepository.Status;
 import com.obdx.factory.knowledge.KnowledgeImporter;
+import com.obdx.factory.knowledge.KnowledgePolicy;
 import com.obdx.factory.knowledge.KnowledgeRepository;
 import com.obdx.factory.knowledge.KnowledgeSearch;
 import com.obdx.factory.model.ModelGatewayException;
@@ -103,11 +104,14 @@ public class IssueService {
     private final Duration repeatWindow;
     private final ScreenshotBlur blur;
     private final LiveChecks liveChecks;
+    private final KnowledgePolicy knowledgePolicy;
 
     public IssueService(IssueRepository issues, IssueAnalyzer analyzer, CodeSearchService codeSearch, ProjectProfileService profiles,
                         WorkspaceRepository workspaces, KnowledgeSearch knowledgeSearch, KnowledgeRepository knowledgeDocuments,
                         @Qualifier("issueExecutor") TaskExecutor executor,
-                        @Value("${factory.issue.repeat-window:24h}") Duration repeatWindow, ScreenshotBlur blur, LiveChecks liveChecks) {
+                        @Value("${factory.issue.repeat-window:24h}") Duration repeatWindow, ScreenshotBlur blur, LiveChecks liveChecks,
+                        KnowledgePolicy knowledgePolicy) {
+        this.knowledgePolicy = knowledgePolicy;
         this.blur = blur;
         this.liveChecks = liveChecks;
         this.issues = issues;
@@ -199,7 +203,12 @@ public class IssueService {
             readScreenshots(id, notes);
             evidence = withLiveChecks(id, withLibrary(workspace, withCode(issue.workspaceId(), LogEvidenceParser.parse(sources(issue)))));
             List<Diagnosis.Similar> similar = similar(issue.workspaceId(), id, evidence.signature());
-            Diagnosis diagnosis = analyzer.diagnose(context(issue, workspace), evidence, similar);
+            IssueAnalyzer.Context context = context(issue, workspace);
+            if (!context.libraryAllowed() && evidence.items().stream().anyMatch(i -> i.kind().equals("ORACLE_NOTE") || i.kind().equals("MANUAL"))) {
+                notes.add("Matching Oracle notes and manuals are listed with the evidence but were not given to the model: "
+                        + knowledgePolicy.chatProblem());
+            }
+            Diagnosis diagnosis = analyzer.diagnose(context, evidence, similar);
             issues.saveAnalysis(id, evidence, diagnosis, Status.DIAGNOSED, notes.isEmpty() ? null : String.join(" ", notes));
             issues.addEvent(issue.workspaceId(), id, "ANALYZED", "The diagnosis of \"" + issue.title() + "\" is ready: "
                     + diagnosis.category().toLowerCase(Locale.ROOT).replace('_', ' ') + ".", false);
@@ -248,7 +257,7 @@ public class IssueService {
         int n = 0;
         for (IssueRepository.Check check : issues.checks(id)) {
             if (check.result().startsWith("LIVE_")) {
-                items.add(new Evidence.Item("L" + ++n, "LIVE_CHECK", "live check " + check.createdAt().toLocalDate(), null, check.summary()));
+                items.add(new Evidence.Item("L" + ++n, "LIVE_CHECK", "live check " + check.createdAt().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate(), null, check.summary()));
             }
         }
         return n == 0 ? evidence : new Evidence(items, evidence.signature());
@@ -436,7 +445,7 @@ public class IssueService {
 
     IssueAnalyzer.Context context(Issue issue, Workspace workspace) {
         return new IssueAnalyzer.Context(issue.title(), issue.description(), issue.environment(), workspace.getObdxVersion(),
-                profile(issue.workspaceId()));
+                profile(issue.workspaceId()), knowledgePolicy.chatAllowed());
     }
 
     /** Joins the group of an issue of the same workspace with the same error, filed within the repeat window. */
@@ -606,7 +615,9 @@ public class IssueService {
             sr.append("- (not analyzed yet)\n");
         }
         for (IssueRepository.Check check : issues.checks(id)) {
-            sr.append("- Fix check (").append(check.createdAt().toLocalDate()).append("): ").append(check.summary()).append('\n');
+            sr.append(check.result().startsWith("LIVE_") ? "- Live check (" : "- Fix check (")
+                    .append(check.createdAt().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate()).append("): ")
+                    .append(check.summary()).append('\n');
         }
         if (!blank(issue.resolution())) {
             sr.append("- Tried: ").append(issue.resolution()).append('\n');
@@ -721,7 +732,18 @@ public class IssueService {
         if (text == null) {
             return "Issue from " + uploads.getFirst().name();
         }
-        return text.strip().lines().findFirst().orElse("Issue").strip();
+        return title(text.strip().lines().findFirst().orElse("Issue").strip());
+    }
+
+    /** The first sentence of a line, at most 100 characters (cut at a word). */
+    static String title(String line) {
+        java.util.regex.Matcher sentence = java.util.regex.Pattern.compile("^(.{12,}?[.!?])\\s").matcher(line + " ");
+        String first = sentence.find() ? sentence.group(1) : line;
+        if (first.length() <= 100) {
+            return first;
+        }
+        int space = first.lastIndexOf(' ', 99);
+        return first.substring(0, space > 40 ? space : 99) + "...";
     }
 
     private static boolean blank(String value) {

@@ -1,4 +1,9 @@
-# Issue Analyzer: Phase 3 plan (draft)
+# Issue Analyzer: Phase 3 plan
+
+**Built** (see "Issue Analyzer" in `DEVELOPMENT.md`). The real-use test on the 8081 test factory with Groq found and
+fixed: Oracle notes and manuals were sent to a chat model outside the bank (now only when the Library's
+`KnowledgePolicy` allows it), issue titles were the whole first paragraph (now the first sentence, at most 100
+characters), and the SR draft called live checks fix checks and gave their dates in UTC.
 
 Phases 1 and 2 are built (`ISSUE-ANALYZER-PLAN.md`, `ISSUE-ANALYZER-PHASE-2.md`). Phase 3 starts with trying them for
 real, then adds three things.

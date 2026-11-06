@@ -302,6 +302,11 @@ Phase 2 adds Oracle support notes, bug texts and patch readmes as a kind of Libr
 errors and cited with their version; links that let bank administrators report and follow an issue without an
 account, seeing only what an engineer released and the steps meant for them; fix checks that compare new logs with
 the original error without a model; questions about an issue; and groups of the same error reported within a day.
+Library text reaches the chat model only when it runs on the bank's network (the Library's own rule).
+
+Phase 3 hides customer data in screenshots when the model runs on the factory's machine (the blurred copy replaces
+the original), tells the filer and leads about issue events in the bell menu, and lets engineers check, read-only,
+whether hosts the issue mentions resolve, accept connections and present a valid, trusted certificate.
 
 ---
 

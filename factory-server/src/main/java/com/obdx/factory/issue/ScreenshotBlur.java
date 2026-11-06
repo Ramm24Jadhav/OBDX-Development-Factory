@@ -113,7 +113,8 @@ public class ScreenshotBlur {
             double y = clamp(b.path("y").asDouble(-1) - PADDING);
             double w = Math.min(1 - x, b.path("w").asDouble(0) + 2 * PADDING);
             double h = Math.min(1 - y, b.path("h").asDouble(0) + 2 * PADDING);
-            if (b.path("x").asDouble(-1) >= 0 && b.path("y").asDouble(-1) >= 0 && w > 0 && h > 0) {
+            if (b.path("x").asDouble(-1) >= 0 && b.path("y").asDouble(-1) >= 0 && b.path("w").asDouble(0) > 0 && b.path("h").asDouble(0) > 0
+                    && w > 0 && h > 0) {
                 boxes.add(new Box(x, y, w, h));
             }
             if (boxes.size() >= MAX_BOXES) {

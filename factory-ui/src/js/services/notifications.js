@@ -73,7 +73,7 @@ define(['knockout', './dashboard', './ui', './preferences'], function (ko, dashb
       (d.issueEvents || []).forEach((e) => {
         const k = ISSUE[e.kind] || ['Issue', 'system', 'info', 'blue', 'low'];
         add({ id: 'issue-' + e.id, category: k[1], subjectStatus: e.failed ? 'FAILED' : 'READY', subjectWords: e.failed ? 'Needs attention' : 'Issue',
-          title: e.failed ? k[0].replace('Diagnosed', 'Analysis Failed').replace('Checked', 'Still Failing') : k[0], icon: e.failed ? 'alert' : k[2],
+          title: e.failed ? k[0].replace('Diagnosed', 'Analysis Failed').replace('Fix Checked', 'Still Failing After a Fix') : k[0], icon: e.failed ? 'alert' : k[2],
           tone: e.failed ? 'red' : k[3], text: e.text, related: e.issueTitle, relatedSub: w.name, at: e.createdAt, priority: e.failed ? 'high' : k[4],
           action: e.failed || e.kind === 'FILED' || e.kind === 'BANK_ANSWER' || e.kind === 'GROUPED', page: 'issues', workspaceId: w.id, issueId: e.issueId,
           details: [{ label: 'Workspace', value: w.name }, { label: 'Issue', value: e.issueTitle }], errors: [] });
