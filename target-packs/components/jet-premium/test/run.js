@@ -93,7 +93,15 @@ const G6 = ['bx-overview', 'bx-quick-insights', 'bx-recent-transactions', 'bx-bi
   'bx-rewards', 'bx-financial-advisor', 'bx-special-offers', 'bx-credit-cards-overview', 'bx-loans-overview', 'bx-delinquency-notice', 'bx-financial-overview', 'bx-position-by-currency',
   'bx-credit-line-usage', 'bx-bills-receivable-payable', 'bx-trade-instruments', 'bx-reports', 'bx-accounts-corp', 'bx-corporate-limits', 'bx-transactions-widget', 'bx-last-5-payments',
   'bx-bulk-file-upload', 'bx-quick-links-corp', 'bx-work-snapshot', 'bx-notifications-widget', 'bx-pending-for-action', 'bx-my-limits', 'bx-pending-approvals'];
-const GROUPS = [G1, G2, G3, G4, G5, G6];
+const G7 = ['bx-rolling-digits', 'bx-count-up', 'bx-split-flap-board', 'bx-reveal-digits', 'bx-blur-in-text', 'bx-text-reveal', 'bx-rotating-text', 'bx-shimmer-text',
+  'bx-gradient-text', 'bx-typed-text', 'bx-focus-word', 'bx-scroll-float-text', 'bx-fade-in-content', 'bx-scroll-reveal', 'bx-scroll-expand', 'bx-edge-blur', 'bx-glare-hover',
+  'bx-magnetic-button', 'bx-highlight-border', 'bx-click-burst', 'bx-marquee', 'bx-animated-list', 'bx-spotlight-card', 'bx-tilt-card', 'bx-flip-card', 'bx-card-stack',
+  'bx-glow-border-card', 'bx-bento-grid', 'bx-carousel', 'bx-elastic-slider', 'bx-option-wheel', 'bx-pill-nav', 'bx-dock-nav', 'bx-card-nav', 'bx-staggered-menu', 'bx-document-folder',
+  'bx-scroll-stack', 'bx-profile-card', 'bx-glass-panel', 'bx-gradient-backdrop', 'bx-soft-aurora', 'bx-silk-backdrop', 'bx-dot-grid', 'bx-line-waves', 'bx-light-beams', 'bx-topography',
+  'bx-particle-backdrop', 'bx-slide-to-confirm', 'bx-hold-to-confirm', 'bx-otp-slots', 'bx-receipt-tear', 'bx-success-check', 'bx-swipe-row', 'bx-swipe-toast', 'bx-bell-toggle',
+  'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment', 'bx-scrub-field', 'bx-budget-gauge', 'bx-status-mark', 'bx-favourite-heart', 'bx-peek-rating',
+  'bx-warm-tooltip', 'bx-prompt-bar', 'bx-voice-pill', 'bx-call-chip', 'bx-lattice-loader'];
+const GROUPS = [G1, G2, G3, G4, G5, G6, G7];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -605,7 +613,7 @@ test('g2 bx-balance-card: the amount in its currency, hidden and shown on reques
   const b = create('bx-balance-card', { label: 'Savings ·· 4821', amount: 12400, currency: 'USD' });
   eq(b.vm.shown(), (12400).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'shown');
   b.vm.toggle();
-  eq([b.vm.shown(), b.vm.toggleText(), b.props.hidden], ['••••••', 'Show balance', true], 'hidden');
+  eq([b.vm.shown(), b.vm.toggleText(), b.props.amountHidden], ['••••••', 'Show balance', true], 'hidden');
 });
 test('g2 bx-payee-list: found by name, picked with ojAction', () => {
   const p = create('bx-payee-list', { items: [{ id: 'p1', name: 'A. Rao', meta: 'HSBC ·· 9268' }, { id: 'p2', name: 'J. Mehta' }] });
@@ -836,6 +844,163 @@ test('g6 widgets keep their kinds\' behaviour with their own defaults', () => {
   eq([create('bx-delinquency-notice', {}).vm.role(), create('bx-rewards', {}).props.interactive, create('bx-pending-approvals', {}).props.actionLabel, create('bx-calculators', {}).props.mode,
     create('bx-quick-links-corp', {}).props.label, create('bx-credit-score', { items: [{ label: 'Credit score', value: 742, max: 900 }] }).vm.rows()[0].css],
     ['alert', false, 'Approve', 'loan', 'Quick links', 'bx-meter-fill bx-w-80'], 'defaults');
+});
+
+// Group 7: text effects, motion, showcase, backdrops, micro interactions
+const runTimers = (ms, times) => { for (let i = 0; i < (times || 1); i++) { const t = timers.filter((x) => x.fn && (ms === undefined || x.ms === ms)).shift(); if (!t) { return; } const fn = t.fn; t.fn = null; fn(); } };
+const style = () => { const v = {}; return { v, setProperty: (n, x) => { v[n] = x; } }; };
+test('g7 G7 has 69 components', () => eq(G7.length, 69, 'count'));
+test('g7 text: every moving piece is hidden from screen readers and the whole text is there once', () => {
+  G7.slice(0, 12).forEach((e) => {
+    const v = registry[e].view;
+    if (!/bx-visually-hidden/.test(v) && !/bx-fx-text/.test(v)) { throw new Error(e + ': no text for screen readers'); }
+    if (/bx-visually-hidden/.test(v) && !/aria-hidden="true"/.test(v)) { throw new Error(e + ': the moving copy is read too'); }
+  });
+});
+test('g7 bx-rolling-digits: a column per digit, set to its digit; separators stay', () => {
+  const r = create('bx-rolling-digits', { value: 1250.5, currency: 'USD' });
+  const text = (1250.5).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD';
+  eq([r.vm.text(), r.vm.cols().filter((c) => c.digit).map((c) => c.css.slice(-1)).join('')], [text, text.replace(/\D/g, '')], 'columns');
+});
+test('g7 bx-count-up counts to the value in steps; bx-typed-text types to the end', () => {
+  timers.length = 0;
+  const c = create('bx-count-up', { value: 1000, duration: 300 });
+  eq([c.vm.now(), c.vm.final()], [0, (1000).toLocaleString(undefined, { minimumFractionDigits: 2 })], 'start');
+  runTimers(10, 30);
+  eq(c.vm.now(), 1000, 'end');
+  timers.length = 0;
+  const t = create('bx-typed-text', { text: 'Hi there', speed: 20 });
+  runTimers(20, 3);
+  eq([t.vm.shown(), t.vm.typing()], ['Hi ', true], 'typing');
+  runTimers(20, 10);
+  eq([t.vm.shown(), t.vm.typing()], ['Hi there', false], 'typed');
+});
+test('g7 under reduced motion the numbers and text show their end at once', () => {
+  window.matchMedia = () => ({ matches: true });
+  timers.length = 0;
+  eq([create('bx-count-up', { value: 5 }).vm.now(), create('bx-typed-text', { text: 'Done' }).vm.shown(), timers.length], [5, 'Done', 0], 'end state, no timers');
+  delete window.matchMedia;
+});
+test('g7 bx-rotating-text and bx-focus-word move on; screen readers hear all the words', () => {
+  timers.length = 0;
+  const r = create('bx-rotating-text', { prefix: 'Pay', words: ['bills', 'friends', 'cards'], interval: 100 });
+  eq([r.vm.word(), r.vm.all()], ['bills', 'Pay bills, friends or cards'], 'first');
+  runTimers(100);
+  eq(r.vm.shown()[0].word, 'friends', 'next');
+  timers.length = 0;
+  const f = create('bx-focus-word', { text: 'Save a little every day', interval: 100 });
+  runTimers(100);
+  eq(f.vm.words().map((w) => w.css.includes('is-focus')), [false, true, false, false, false], 'focus');
+});
+test('g7 bx-reveal-digits: masked to the last four, shown on request', () => {
+  const r = create('bx-reveal-digits', { value: 'GB29 NWBK 6016 1331 9268 19' });
+  eq(r.vm.text(), '•••• 6819', 'masked');
+  r.vm.toggle();
+  eq([r.vm.text(), r.vm.pressed(), r.vm.tiles().length], ['GB29 NWBK 6016 1331 9268 19', 'true', 27], 'shown');
+});
+test('g7 pointer effects set CSS variables on the element; click burst adds and removes dots', () => {
+  const s = style();
+  const target = { style: s, getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }) };
+  create('bx-tilt-card', {}).vm.move({ currentTarget: target, clientX: 200, clientY: 0 });
+  eq([s.v['--bx-sx'], s.v['--bx-ry'], s.v['--bx-rx']], ['100%', '5.00deg', '4.00deg'], 'tilt');
+  create('bx-magnetic-button', {}).vm.move({ currentTarget: target, clientX: 100, clientY: 50 });
+  eq(s.v['--bx-mx'], '0.0px', 'magnet at the centre');
+  const kids = [];
+  const host = { getBoundingClientRect: () => ({ left: 0, top: 0 }), ownerDocument: { createElement: () => ({ style: {}, setAttribute() {}, parentNode: null }) }, appendChild: (x) => { kids.push(x); x.parentNode = { removeChild: () => kids.splice(kids.indexOf(x), 1) }; } };
+  timers.length = 0;
+  create('bx-click-burst', {}).vm.burst({ currentTarget: host, clientX: 5, clientY: 5 });
+  eq(kids.length, 8, 'dots');
+  runTimers(700, 8);
+  eq(kids.length, 0, 'removed');
+});
+test('g7 showcase: deck and carousel go round; the flip card hides the face it turned away', () => {
+  const deck = create('bx-card-stack', { items: [{ title: 'A' }, { title: 'B' }, { title: 'C' }] });
+  deck.vm.prev();
+  eq([deck.props.index, deck.vm.where(), deck.vm.cards().map((c) => c.hidden)], [2, 'Card 3 of 3', ['true', 'true', null]], 'deck');
+  const car = create('bx-carousel', { slides: [{ title: 'One' }, { title: 'Two' }] });
+  car.vm.next();
+  car.vm.next();
+  car.vm.slides()[1].go();
+  eq([car.props.index, car.vm.slides()[1].of, car.vm.slides()[0].hidden, car.vm.slides()[1].current], [1, '2 of 2', true, 'true'], 'carousel');
+  const f = create('bx-flip-card', { heading: 'Platinum', front: 'Cashback', back: 'Fees' });
+  f.vm.flip();
+  eq([f.props.flipped, f.vm.frontHidden(), f.vm.backHidden()], [true, 'true', null], 'flipped');
+  if (!/aria-roledescription="carousel"/.test(registry['bx-carousel'].view) || !/aria-roledescription="slide"/.test(registry['bx-carousel'].view)) { throw new Error('carousel roles'); }
+});
+test('g7 bx-option-wheel, bx-document-folder, bx-marquee, bx-bento-grid', () => {
+  const w = create('bx-option-wheel', { options: ['3 months', '6 months', '12 months'], value: '3 months' });
+  w.vm.onKey(key('ArrowDown'));
+  eq([w.props.value, w.vm.active() === w.vm.options()[1].key], ['6 months', true], 'wheel');
+  const f = create('bx-document-folder', { items: [{ id: 'd1', title: 'Statement Dec' }] });
+  f.vm.toggle();
+  f.vm.docs()[0].open();
+  eq([f.props.open, f.vm.expanded(), f.vm.count(), f.events[0].detail.item.id], [true, 'true', '1 document', 'd1'], 'folder');
+  const m = create('bx-marquee', { items: ['USD 0.92 EUR'] });
+  m.vm.toggle();
+  eq([m.vm.css(), m.vm.toggleText()], ['bx-marquee-track is-normal is-paused', 'Play'], 'paused');
+  const b = create('bx-bento-grid', { interactive: true, items: [{ id: 't', title: 'Spending', size: 'wide' }] });
+  b.vm.tiles()[0].open();
+  eq([b.vm.tiles()[0].css, b.events[0].detail.item.id], ['bx-bento-tile is-wide bx-d-0', 't'], 'bento');
+});
+test('g7 confirms: a press confirms the slide (no drag needed); a partial drag does not; hold needs the full time', () => {
+  const s = create('bx-slide-to-confirm', {});
+  const handle = { style: style(), parentNode: { getBoundingClientRect: () => ({ width: 300 }) }, getBoundingClientRect: () => ({ width: 50 }) };
+  s.vm.down({ currentTarget: handle, clientX: 0 });
+  s.vm.move({ currentTarget: handle, clientX: 100 });
+  s.vm.up({ currentTarget: handle });
+  s.vm.click();
+  eq([s.vm.done(), types(s)], [false, []], 'partial drag');
+  s.vm.click();
+  eq([s.vm.done(), types(s), s.vm.text()], [true, ['ojAction'], 'Paid'], 'pressed');
+  timers.length = 0;
+  const h = create('bx-hold-to-confirm', { duration: 1000 });
+  h.vm.start();
+  h.vm.cancel();
+  runTimers(1000);
+  eq([h.vm.done(), types(h)], [false, []], 'let go early');
+  h.vm.onKey(key(' '));
+  eq(h.vm.holding(), true, 'held by Space');
+  runTimers(1000);
+  eq([h.vm.done(), types(h), h.vm.hint()], [true, ['ojAction'], 'Press and hold for 1 seconds'], 'held');
+});
+test('g7 micro: swipe row actions, swipe toast, toggles, gauge, scrub, prompt, voice, call', () => {
+  const r = create('bx-swipe-row', { heading: 'Coffee House', actions: [{ value: 'dispute', label: 'Dispute', tone: 'danger' }] });
+  r.vm.down({ clientX: 200 });
+  r.vm.up({ clientX: 100 });
+  eq([r.vm.open(), r.vm.actions()[0].name], [true, 'Dispute: Coffee House'], 'swiped');
+  r.vm.actions()[0].go();
+  eq([r.events[0].detail.value, r.vm.open()], ['dispute', false], 'action');
+  const t = create('bx-swipe-toast', { message: 'Saved' });
+  t.vm.down({ clientX: 0 });
+  t.vm.up({ clientX: 80 });
+  eq([t.vm.gone(), types(t)], [true, ['ojClose']], 'toast');
+  const heart = create('bx-favourite-heart', { name: 'A. Rao' });
+  heart.vm.toggle();
+  eq([heart.props.value, heart.vm.pressed(), heart.vm.name()], [true, 'true', 'Favourite A. Rao'], 'heart');
+  const gauge = create('bx-budget-gauge', { value: 450, max: 400, unit: 'USD' });
+  eq([gauge.vm.offset(), gauge.vm.text(), gauge.vm.css()], ['0', '450 USD of 400 USD, over budget', 'bx-gauge is-over'], 'gauge');
+  eq(create('bx-budget-gauge', { value: 100, max: 400 }).vm.offset(), '94.5', 'quarter');
+  const sc = create('bx-scrub-field', { value: 100, max: 120, step: 10 });
+  sc.vm.down({ clientX: 0 });
+  sc.vm.move({ clientX: 40 });
+  eq(sc.props.value, 120, 'scrub clamps');
+  sc.vm.up();
+  const p = create('bx-prompt-bar', { suggestions: ['What did I spend on travel?'] });
+  p.vm.chips()[0].use();
+  p.vm.onKey(key('Enter'));
+  eq([p.events[0].detail.text, p.vm.draft()], ['What did I spend on travel?', ''], 'prompt');
+  const v = create('bx-voice-pill', {});
+  v.vm.toggle();
+  eq([v.props.listening, v.events[0].detail.listening, v.vm.text()], [true, true, 'Listening… press to stop'], 'voice');
+  eq(create('bx-call-chip', { number: '+44 20 7946 0000' }).vm.href(), 'tel:+442079460000', 'call');
+});
+test('g7 reused kinds keep their behaviour inside the effect classes', () => {
+  ['bx-elastic-slider', 'bx-pill-nav', 'bx-dock-nav', 'bx-staggered-menu', 'bx-otp-slots', 'bx-receipt-tear', 'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment',
+    'bx-peek-rating', 'bx-warm-tooltip'].forEach((e) => { if (!/^<div class="bx-fx-/.test(registry[e].view)) { throw new Error(e + ': no effect class'); } });
+  const s = create('bx-squish-switch', { labelHint: 'Round up to save' });
+  s.vm.toggle();
+  eq(s.props.value, true, 'switch');
+  eq(create('bx-gradient-backdrop', {}).vm.css(), 'bx-backdrop is-gradient', 'backdrop');
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)

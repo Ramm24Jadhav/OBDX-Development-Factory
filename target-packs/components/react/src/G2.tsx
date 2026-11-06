@@ -66,14 +66,14 @@ export function Tiles({ testID, heading, items, onAction }: TilesProps) {
 
 /* ---------- AccountBalance ---------- */
 
-export interface BalanceProps { testID?: string; label: string; amount: number | string; currency?: string; meta?: string; hideable?: boolean; hidden?: boolean; onHiddenChange?: (hidden: boolean) => void }
+export interface BalanceProps { testID?: string; label: string; amount: number | string; currency?: string; meta?: string; hideable?: boolean; amountHidden?: boolean; onAmountHiddenChange?: (hidden: boolean) => void }
 
 /** An account's balance in its currency, hidden on request. */
-export function AccountBalance({ testID, label, amount, currency, meta, hideable = true, hidden, onHiddenChange }: BalanceProps) {
+export function AccountBalance({ testID, label, amount, currency, meta, hideable = true, amountHidden, onAmountHiddenChange }: BalanceProps) {
   const id = useId();
   const [own, setOwn] = useState(false);
-  const off = hidden ?? own;
-  const toggle = () => { setOwn(!off); onHiddenChange?.(!off); };
+  const off = amountHidden ?? own;
+  const toggle = () => { setOwn(!off); onAmountHiddenChange?.(!off); };
   return (
     <section className="bx-balance" aria-labelledby={id} data-testid={testID}>
       <div className="bx-balance-head">

@@ -46,6 +46,13 @@ export { AccountsWidget, BulkUploadWidget, CorporateLimitsWidget, CreditLineWidg
   MyLimitsWidget, NotificationsWidget, PendingActionWidget, PendingApprovalsWidget, QuickLinksWidget, ReportsWidget, TradeBillsWidget, TradeInstrumentsWidget, TransactionsWidget,
   WorkSnapshotWidget } from './g6';
 export type { QuickItem, SummaryTab } from './g6';
+export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip, CardNav, CardStack, Carousel, ClickBurst, CountUp, DockNav, DocumentFolder, DotGrid, EdgeBlur,
+  ElasticSlider, FadeInContent, FavouriteHeart, FlipCard, FocusWord, G7_COMPONENTS, GlareHover, GlassPanel, GlideSelect, GlowBorderCard, GradientBackdrop, GradientText,
+  HighlightBorder, HoldToConfirm, JellyRadio, LatticeLoader, LightBeams, LineWaves, MagneticButton, Marquee, OptionWheel, OtpSlots, ParticleBackdrop, PeekRating, PillNav,
+  ProfileCard, PromptBar, ReceiptTear, RevealDigits, RollingDigits, RotatingText, RubberSegment, ScrollExpand, ScrollFloatText, ScrollReveal, ScrollStack, ScrubField, ShimmerText,
+  SilkBackdrop, SlideToConfirm, SoftAurora, SplitFlapBoard, SpotlightCard, SquishSwitch, StaggeredMenu, StatusMark, SuccessCheck, SwipeRow, SwipeToast, TextReveal, TiltCard,
+  Topography, TypedText, VoicePill, WarmTooltip, stagger } from './g7';
+export type { BentoTile, CardNavItem, DeckItem, FlapRow, FolderDoc, ListEntry, SwipeAction } from './g7';
 
 import { AmountInput, TextField } from './text-field';
 import { Button, IconButton } from './button';
@@ -63,8 +70,9 @@ import { G3_COMPONENTS } from './g3';
 import { G4_COMPONENTS } from './g4';
 import { G5_COMPONENTS } from './g5';
 import { G6_COMPONENTS } from './g6';
+import { G7_COMPONENTS } from './g7';
 import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle } from './forms';
 
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
-  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS] as const;
+  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS, ...G7_COMPONENTS] as const;

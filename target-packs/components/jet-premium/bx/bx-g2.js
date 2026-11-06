@@ -86,15 +86,15 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
   function BalanceKind(context) {
     var self = this;
     base(self, context, 'bx-bal');
-    self.shown = ko.pureComputed(function () { return self.props.hidden ? '••••••' : money(self.props.amount, self.props.currency); });
-    self.toggleText = ko.pureComputed(function () { return self.props.hidden ? 'Show balance' : 'Hide balance'; });
-    self.pressed = ko.pureComputed(function () { return self.props.hidden ? 'false' : 'true'; });
-    self.toggle = function () { self.props.hidden = !self.props.hidden; };
+    self.shown = ko.pureComputed(function () { return self.props.amountHidden ? '••••••' : money(self.props.amount, self.props.currency); });
+    self.toggleText = ko.pureComputed(function () { return self.props.amountHidden ? 'Show balance' : 'Hide balance'; });
+    self.pressed = ko.pureComputed(function () { return self.props.amountHidden ? 'false' : 'true'; });
+    self.toggle = function () { self.props.amountHidden = !self.props.amountHidden; };
   }
-  kinds.balance = { model: BalanceKind, props: { label: str(), amount: { type: 'any' }, currency: str(), meta: str(), hideable: bool(true), hidden: { type: 'boolean', value: false, writeback: true } },
+  kinds.balance = { model: BalanceKind, props: { label: str(), amount: { type: 'any' }, currency: str(), meta: str(), hideable: bool(true), amountHidden: { type: 'boolean', value: false, writeback: true } },
     view: '<section class="bx-balance" :aria-labelledby="[[id]]"><div class="bx-balance-head"><h3 class="bx-balance-label" :id="[[id]]">' + txt('$properties.label') + '</h3>'
       + iff('$properties.hideable', '<button type="button" class="bx-reveal" :aria-pressed="[[pressed]]" on-click="[[toggle]]">' + txt('toggleText') + '</button>') + '</div>'
-      + '<p class="bx-balance-amount">' + txt('shown') + '</p>' + iff('$properties.meta && !$properties.hidden', '<p class="bx-balance-meta">' + txt('$properties.meta') + '</p>') + '</section>' };
+      + '<p class="bx-balance-amount">' + txt('shown') + '</p>' + iff('$properties.meta && !$properties.amountHidden', '<p class="bx-balance-meta">' + txt('$properties.meta') + '</p>') + '</section>' };
 
   /* ---------- card: a thing to act on (an account, a payee, a product), with a badge and an action ---------- */
   function CardKind(context) {

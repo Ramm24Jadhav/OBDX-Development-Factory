@@ -113,7 +113,7 @@ export class DepositsSummary extends TilesBase { protected override readonly def
 
 /* ---------- AccountBalance ---------- */
 
-/** An account's balance in its currency, hidden on request. [(hidden)]. */
+/** An account's balance in its currency, hidden on request. [(amountHidden)]. */
 @Component({
   selector: 'bx-balance-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -122,11 +122,11 @@ export class DepositsSummary extends TilesBase { protected override readonly def
       <div class="bx-balance-head">
         <h3 class="bx-balance-label" [id]="id">{{ label() }}</h3>
         @if (hideable()) {
-          <button type="button" class="bx-reveal" [attr.aria-pressed]="!hidden()" (click)="hidden.set(!hidden())">{{ hidden() ? 'Show balance' : 'Hide balance' }}</button>
+          <button type="button" class="bx-reveal" [attr.aria-pressed]="!amountHidden()" (click)="amountHidden.set(!amountHidden())">{{ amountHidden() ? 'Show balance' : 'Hide balance' }}</button>
         }
       </div>
-      <p class="bx-balance-amount">{{ hidden() ? '••••••' : shown() }}</p>
-      @if (meta() && !hidden()) { <p class="bx-balance-meta">{{ meta() }}</p> }
+      <p class="bx-balance-amount">{{ amountHidden() ? '••••••' : shown() }}</p>
+      @if (meta() && !amountHidden()) { <p class="bx-balance-meta">{{ meta() }}</p> }
     </section>`,
 })
 export class AccountBalance extends Part {
@@ -135,7 +135,8 @@ export class AccountBalance extends Part {
   readonly currency = input('');
   readonly meta = input('');
   readonly hideable = input(true);
-  readonly hidden = model(false);
+  /** The amount is hidden: [(amountHidden)]. */
+  readonly amountHidden = model(false);
   protected readonly shown = computed(() => money(this.amount(), this.currency() || undefined));
 }
 
