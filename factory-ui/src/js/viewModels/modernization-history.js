@@ -14,6 +14,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const weekStart = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
     const took = (m) => (m === null || m === undefined ? '—' : m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : Math.round(m / 1440) + ' days');
     const pathLabel = (p) => (p === 'ui' ? 'Component upgrade' : 'Migration');
+    const TONE = { completed: 'is-success', problems: 'is-warning', failed: 'is-danger', running: 'is-primary' };
+    const title = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1).replace(/-/g, ' ') : t);
+    const started = (d) => new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
     function HistoryViewModel() {
       const self = this;
@@ -41,10 +44,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const list = inRange();
         const finished = list.filter((r) => r.category !== 'running');
         const avg = finished.length ? Math.round(finished.reduce((n, r) => n + r.minutes, 0) / finished.length) : null;
-        return [['Runs', String(list.length), 'blue'], ['Completed', String(count(list, 'completed')), 'green'], ['With problems', String(count(list, 'problems')), 'amber'],
-          ['Failed', String(count(list, 'failed')), 'red'], ['Running', String(count(list, 'running')), 'blue'], ['Average run', took(avg), 'blue'],
-          ['Of finished runs completed', finished.length ? Math.round(100 * count(list, 'completed') / finished.length) + '%' : '—', 'green']]
-          .map((k) => ({ k: k[0], v: k[1], css: 'fx-kpi factory-mu-tile factory-mh-kpi is-' + k[2] }));
+        return [['Runs', String(list.length), ''], ['Completed', String(count(list, 'completed')), 'success'], ['With problems', String(count(list, 'problems')), 'warning'],
+          ['Failed', String(count(list, 'failed')), 'danger'], ['Running', String(count(list, 'running')), 'info'], ['Average run', took(avg), ''],
+          ['Of finished runs completed', finished.length ? Math.round(100 * count(list, 'completed') / finished.length) + '%' : '—', 'success']]
+          .map((k) => ({ k: k[0], v: k[1], css: 'factory-mb-chip' + (k[2] ? ' is-' + k[2] : '') }));
       });
 
       // Runs per week, the last 8 weeks, by result
@@ -60,6 +63,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           ORDER.forEach((c) => { values[c] = count(list, c); });
           return { label: w.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), values: values };
         });
+      });
+      // The stacked bars: completed at the bottom, then with problems, failed and running; the axis rounds up to four steps
+      self.barKey = ['completed', 'problems', 'failed'].map((c) => ({ label: CATEGORY[c][0], css: 'factory-mh-seg is-' + c }));
+      self.weekBars = ko.pureComputed(() => {
+        const list = self.bars();
+        const step = Math.max(1, Math.ceil(Math.max.apply(null, list.map((b) => ORDER.reduce((n, c) => n + b.values[c], 0))) / 4));
+        return { ticks: [4, 3, 2, 1, 0].map((i) => String(i * step)),
+          cols: list.map((b) => ({ label: b.label, title: b.label + ': ' + ORDER.map((c) => CATEGORY[c][0] + ' ' + b.values[c]).join(', '),
+            parts: ORDER.filter((c) => b.values[c]).map((c) => ({ css: 'factory-mh-seg is-' + c, style: { height: (100 * b.values[c] / (4 * step)) + '%' } })) })) };
       });
       self.barSummary = ko.pureComputed(() => 'Runs started in each of the last 8 weeks: ' + self.bars().map((b) => b.label + ' ' + ORDER.reduce((n, c) => n + b.values[c], 0)).join(', '));
 
@@ -78,10 +90,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return ORDER.map((c) => {
           const n = count(list, c);
           return { label: CATEGORY[c][0], n: n, pct: list.length ? Math.round(100 * n / list.length) + '%' : '—', dot: { background: CATEGORY[c][3] },
-            pressed: self.result() === c ? 'true' : 'false', css: 'factory-mc-facet' + (self.result() === c ? ' is-on' : ''), pick: () => self.result(self.result() === c ? 'all' : c) };
+            pressed: self.result() === c ? 'true' : 'false', css: 'factory-mh-res' + (self.result() === c ? ' is-on' : ''), pick: () => self.result(self.result() === c ? 'all' : c) };
         });
       });
-      self.filterName = ko.pureComputed(() => (self.result() === 'all' ? '' : 'Only: ' + CATEGORY[self.result()][0]));
+      self.filterName = ko.pureComputed(() => (self.result() === 'all' ? 'All results' : CATEGORY[self.result()][0]));
+      self.filterItems = [{ value: 'all', label: 'All results' }].concat(ORDER.map((c) => ({ value: c, label: CATEGORY[c][0] })));
+      self.filterAction = (event) => self.result(event.detail.value);
       self.clearFilter = () => self.result('all');
 
       const shown = ko.pureComputed(() => {
@@ -89,14 +103,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         return inRange().filter((r) => (self.result() === 'all' || r.category === self.result())
           && (!q || [r.run.subject, r.run.changeTitle, r.run.technology, r.run.startedBy, r.branch].join(' ').toLowerCase().indexOf(q) >= 0));
       });
-      self.pager = ui.pages(shown, 10, [10, 25, 50]);
-      const pill = (c) => ui.pill(CATEGORY[c][2] + ' ' + CATEGORY[c][0], CATEGORY[c][1]);
+      self.pager = ui.pages(shown, 8, [8, 25, 50]);
+      const pill = (c) => ({ text: CATEGORY[c][2] + ' ' + CATEGORY[c][0], css: 'factory-mb-pill is-sm ' + TONE[c] });
       const branchName = (b) => (b ? b.replace(/^.*?\/(branches|tags)\//, '$1/') : '—');
       self.rows = ko.pureComputed(() => self.pager.rows().map((r) => {
         const on = ko.pureComputed(() => !!self.picked()[r.run.id]);
-        return { id: r.run.id, subject: r.run.subject, change: r.run.changeTitle || '—', hasChange: !!r.run.changeId, openChange: () => mz.open('modernization-workspace', { runId: r.run.id }),
-          path: pathLabel(r.run.path), technology: r.run.technology || (r.run.path === 'ui' ? 'Premium JET pack' : '—'), branch: branchName(r.branch),
-          when: ui.when(r.run.startedAt), by: r.run.startedBy || '', took: took(r.minutes), state: pill(r.category).text, css: pill(r.category).css, outcome: r.outcome,
+        return { id: r.run.id, subject: r.run.subject, module: title(r.run.subject), change: r.run.changeTitle || '—', hasChange: !!r.run.changeId, openChange: () => mz.open('modernization-workspace', { runId: r.run.id }),
+          path: pathLabel(r.run.path), technology: title(r.run.technology) || (r.run.path === 'ui' ? 'Premium JET pack' : '—'), branch: branchName(r.branch),
+          when: started(r.run.startedAt), by: r.run.startedBy ? 'Started by ' + r.run.startedBy : null, took: took(r.minutes), state: pill(r.category).text, css: pill(r.category).css, outcome: r.outcome,
           checked: on, toggle: () => { const n = Object.assign({}, self.picked()); if (n[r.run.id]) { delete n[r.run.id]; } else { n[r.run.id] = true; } self.picked(n); return true; },
           open: () => openPanel(r), details: () => { self.current(r); self.tab('details'); },
           menu: [{ value: 'details', label: 'Run details' }, { value: 'workspace', label: 'Open the change' }, { value: 'review', label: 'Open in Review' }, { value: 'log', label: 'Download the log' }],
@@ -109,10 +123,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const logHref = (ids) => 'api/workspaces/' + self.workspaceId() + '/modernization/history/logs.zip' + (ids.length ? '?' + ids.map((i) => 'runs=' + i).join('&') : '');
 
       // Page tabs
-      self.tabs = ko.pureComputed(() => ui.tabs(self.tab, [{ value: 'runs', label: 'Runs', count: shown().length }, { value: 'details', label: 'Run details' },
+      self.tabs = ko.pureComputed(() => ui.tabs(self.tab, [{ value: 'runs', label: 'Runs' }, { value: 'details', label: 'Run details' },
         { value: 'files', label: 'Files produced' }, { value: 'delivery', label: 'Delivery log' }]));
       const TAB_KEYS = ['runs', 'details', 'files', 'delivery'];
-      self.tabKey = (vm, event) => {
+      self.tabKey = (event) => {
         const at = TAB_KEYS.indexOf(self.tab());
         const n = event.key === 'ArrowRight' ? (at + 1) % TAB_KEYS.length : event.key === 'ArrowLeft' ? (at + TAB_KEYS.length - 1) % TAB_KEYS.length : event.key === 'Home' ? 0 : event.key === 'End' ? TAB_KEYS.length - 1 : -1;
         if (n < 0) { return true; }

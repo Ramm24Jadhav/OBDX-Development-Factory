@@ -36,10 +36,20 @@ export function exampleRoutes(changeId) {
       { suite: 'Accessibility (axe)', type: 'accessibility', name: 'Payment summary', error: 'color-contrast: the fee line is 3.9:1' }],
     coverage: 84.5, gate: 80, rules: rules, calls: detail.calls, images: [], problem: null
   };
-  const history = [{ run: Object.assign({}, run, { state: 'delivered', deliveredRevision: 1513, finishedAt: at(3) }), category: 'Migration', branch: 'branches/migration-react',
-    files: 42, screens: 38, testsPassed: 246, testsTotal: 246, testsFailed: 0, fileProblems: 0, buildNumber: 58, buildResult: 'SUCCESS', minutes: 34, outcome: 'Delivered',
-    steps: [{ at: at(0), by: 'admin', text: 'Run started', minutes: 0 }, { at: at(1), by: 'factory', text: 'Files written', minutes: 12 }, { at: at(2), by: 'Jenkins', text: 'Tests passed', minutes: 9 }],
-    producedFiles: [{ path: 'web/src/modules/payments/PaymentForm.tsx', action: 'ADD', check: 'PASSED' }] }];
+  // The History board's rows: a run per module over the weeks, each with its result category
+  const day = (d) => new Date(Date.UTC(2026, 9, 26 - d, 11, 24)).toISOString();
+  const H = [['payments', 'ui', 'completed', 0, 48, '286 components replaced'], ['accounts', 'migration', 'running', 2, 72, '38 of 42 files written'],
+    ['payees', 'ui', 'problems', 4, 106, '3 test failures, 2 warnings'], ['cards', 'migration', 'completed', 6, 56, '132 components replaced'],
+    ['login', 'migration', 'completed', 8, 42, 'Security and WCAG checks passed'], ['profile', 'ui', 'failed', 10, 80, 'Build failed: dependency conflict'],
+    ['dashboard', 'migration', 'completed', 12, 47, '12 screens moved'], ['service-requests', 'ui', 'completed', 15, 69, '126 components replaced']];
+  const history = H.map((h, i) => ({
+    run: Object.assign({}, run, { id: '00000000-0000-4000-8000-0000000000' + (57 - i), path: h[1], subject: h[0], technology: h[1] === 'ui' ? null : 'react',
+      changeTitle: 'CHG-00' + (57 - i), state: h[2] === 'running' ? 'building' : h[2] === 'failed' ? 'failed' : 'delivered', startedAt: day(h[3]), finishedAt: h[2] === 'running' ? null : day(h[3]) }),
+    category: h[2], branch: 'branches/' + (h[1] === 'ui' ? h[0] + '-premium' : 'migration-' + h[0]), files: 12 + i * 3, screens: 4 + i, testsPassed: 240, testsTotal: 246,
+    testsFailed: h[2] === 'problems' ? 3 : 0, fileProblems: h[2] === 'problems' ? 2 : 0, buildNumber: 58 - i, buildResult: h[2] === 'failed' ? 'FAILURE' : 'SUCCESS', minutes: h[4], outcome: h[5],
+    steps: [{ at: day(h[3]), by: 'admin', text: 'Run started', minutes: 0 }, { at: day(h[3]), by: 'factory', text: 'Files written', minutes: 12 }],
+    producedFiles: [{ path: 'web/src/modules/' + h[0] + '/index.tsx', action: 'ADD', check: 'PASSED' }]
+  }));
   return [
     [/\/modernization\/runs\/[^/]+\/detail$/, detail],
     [/\/modernization\/runs\/[^/]+\/validation$/, validation],
