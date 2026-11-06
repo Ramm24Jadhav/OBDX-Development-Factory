@@ -9,7 +9,7 @@ import { Animated, Image, PanResponder, ScrollView, StyleSheet, Text, View } fro
 import { Avatar } from './G1';
 import { Tabs } from './Tabs';
 import { Option } from './field';
-import { DURATION, Enter, Press, useOpen, usePop, useProgress, useReducedMotion, useSlide, useStagger } from './motion';
+import { BG, DURATION, Enter, Press, useOpen, usePop, useProgress, useReducedMotion, useSlide, useStagger } from './motion';
 import { Heading, KeyValues, Row, Sheet, SliderControl, SliderControlProps, Touch, panel } from './parts';
 import { useTheme } from './theme';
 
@@ -60,7 +60,7 @@ export function SpotlightCard({ testID, children, label, onPress }: CardProps) {
            style={[panel(t), { overflow: 'hidden' }]}>
       {children}
       {at ? <View pointerEvents="none" importantForAccessibility="no" style={[StyleSheet.absoluteFill, {
-        experimental_backgroundImage: `radial-gradient(circle at ${Math.round(at.x)}px ${Math.round(at.y)}px, rgba(255, 255, 255, 0.35), transparent 60%)` }]} /> : null}
+        [BG]: `radial-gradient(circle at ${Math.round(at.x)}px ${Math.round(at.y)}px, rgba(255, 255, 255, 0.35), transparent 60%)` }]} /> : null}
     </Press>
   );
 }
@@ -187,7 +187,7 @@ export function GlowBorderCard({ testID, children }: CardProps) {
   return (
     <View testID={testID} style={{ borderRadius: t.radius.card + 2, padding: 2, overflow: 'hidden' }}>
       <Animated.View pointerEvents="none" importantForAccessibility="no" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
-        experimental_backgroundImage: `linear-gradient(90deg, ${t.color.primary}, ${t.color.info}, ${t.color.success}, ${t.color.primary})`,
+        [BG]: `linear-gradient(90deg, ${t.color.primary}, ${t.color.info}, ${t.color.success}, ${t.color.primary})`,
         transform: [{ rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }} />
       <View style={[panel(t), { borderWidth: 0 }]}>{children}</View>
     </View>
@@ -515,7 +515,7 @@ export function ProfileCard({ testID, name, role, photo, rows = [], actionLabel,
   const v = useProgress(name, DURATION.slow);
   return (
     <Enter testID={testID} style={[panel(t), { padding: 0, overflow: 'hidden' }]}>
-      <View style={{ height: 64, experimental_backgroundImage: `linear-gradient(135deg, ${t.color.primary}, ${t.color.info})` }} />
+      <View style={{ height: 64, [BG]: `linear-gradient(135deg, ${t.color.primary}, ${t.color.info})` }} />
       <Animated.View style={{ marginTop: -28, alignSelf: 'center', borderRadius: 32, borderWidth: 3, borderColor: t.color.surface,
         transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
         {photo ? <Image source={{ uri: photo }} style={{ width: 56, height: 56, borderRadius: 28 }} accessibilityLabel={name} /> : <Avatar name={name} size="lg" />}

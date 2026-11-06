@@ -6,7 +6,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { DURATION, EASING, useCycle, useProgress, useReducedMotion } from './motion';
+import { BG, DURATION, EASING, useCycle, useProgress, useReducedMotion } from './motion';
 import { useTheme } from './theme';
 
 export interface WrapProps {
@@ -68,7 +68,7 @@ export function ScrollExpand({ testID, children, style, progress }: ScrollExpand
 export function EdgeBlur({ testID, children, style, size = 28 }: WrapProps & { size?: number }) {
   const t = useTheme();
   const edge = (to: 'bottom' | 'top') => ({ position: 'absolute' as const, left: 0, right: 0, height: size, [to === 'bottom' ? 'top' : 'bottom']: 0,
-    experimental_backgroundImage: `linear-gradient(to ${to}, ${t.color.bg}, transparent)` });
+    [BG]: `linear-gradient(to ${to}, ${t.color.bg}, transparent)` });
   return (
     <View testID={testID} style={[style, { overflow: 'hidden' }]}>
       {children}
@@ -92,7 +92,7 @@ export function GlareHover({ testID, children, style, onPress, label }: WrapProp
       {children}
       <Animated.View pointerEvents="none" importantForAccessibility="no"
                      style={{ position: 'absolute', top: -20, bottom: -20, width: 80, left: 0, opacity: x.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0] }),
-                       experimental_backgroundImage: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.45), transparent)',
+                       [BG]: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.45), transparent)',
                        transform: [{ rotate: '20deg' }, { translateX: x.interpolate({ inputRange: [0, 1], outputRange: [-120, 520] }) }] }} />
     </Pressable>
   );

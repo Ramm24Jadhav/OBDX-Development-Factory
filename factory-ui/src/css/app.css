@@ -8851,7 +8851,11 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 .factory-cf-j-btn { min-height: 32px; padding: 0 14px; border-radius: 4px; border: 1px solid #a9a6a2; background: #ffffff; color: #161513; font: inherit; cursor: pointer; }
 .factory-cf-j-btn.is-cta { background: #227e9e; border-color: #227e9e; color: #ffffff; }
 .factory-cf-j-btn.is-icon { width: 32px; padding: 0; }
-.factory-cf-j-field { display: flex; flex-direction: column; gap: 4px; }
+.factory-cf-j-btn.is-secondary { background: #e4f0f5; border-color: #e4f0f5; color: #1b6585; }
+.factory-cf-j-btn.is-danger { background: #d63b25; border-color: #d63b25; color: #ffffff; }
+.factory-cf-j-input.is-area { height: auto; padding: 6px 8px; resize: vertical; }
+.factory-cf-j-count { align-self: flex-end; color: #5d5b57; font-size: 11px; }
+.factory-cf-j-field { display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; }
 .factory-cf-j-field span { color: #5d5b57; font-size: 12px; }
 .factory-cf-j-input { height: 32px; padding: 0 8px; border: 1px solid #a9a6a2; border-radius: 4px; background: #ffffff; color: #161513; font: inherit; min-width: 0; max-width: 100%; }
 .factory-cf-j-set { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -10155,7 +10159,7 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-cf-stage { display: flex; justify-content: center; }
 /* A pack's own gallery, framed to one component (React, Angular, React Native); it says its height (fitFrame). The frame
    keeps the light colour scheme of the page inside, so the browser does not paint it opaque in the dark theme. */
-.factory-cf-frame { display: block; width: 100%; height: 140px; border: 0; background: transparent; color-scheme: normal; transition: height var(--fx-dur-fast) var(--fx-ease-standard); }
+.factory-cf-frame { display: block; width: 100%; height: 140px; border: 0; background: transparent; color-scheme: normal; transition: height var(--fx-dur-panel) var(--fx-ease-out); }
 .factory-cf-frame.is-wide { height: 220px; }
 .factory-cf-stage:has(.factory-cf-frame) { flex: 1 1 auto; min-width: 0; }
 .factory-cf-stage > * { flex: 1; min-width: 0; }

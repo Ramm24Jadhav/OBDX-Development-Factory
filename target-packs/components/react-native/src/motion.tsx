@@ -5,10 +5,16 @@
  * --bx-ease-*). When the device asks for reduced motion (AccessibilityInfo), every effect shows its end state at once.
  */
 import { ComponentProps, ReactNode, useEffect, useRef, useSyncExternalStore } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 import { useTheme } from './theme';
 import { lightTokens } from './tokens';
+
+/**
+ * The style key for a CSS gradient: experimental_backgroundImage on devices (the new architecture), backgroundImage in a
+ * browser (react-native-web drops the experimental key), so the gradients show in the web gallery too.
+ */
+export const BG = (Platform.OS === 'web' ? 'backgroundImage' : 'experimental_backgroundImage') as 'experimental_backgroundImage';
 
 export const DURATION = { fast: lightTokens.motion.durationFast, base: lightTokens.motion.durationBase, slow: lightTokens.motion.durationSlow };
 export const EASING = { standard: Easing.bezier(0.2, 0, 0, 1), exit: Easing.bezier(0.4, 0, 1, 1) };

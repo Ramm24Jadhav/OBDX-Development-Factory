@@ -45,7 +45,7 @@ define(['knockout'], function (ko) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const bodies = {};
       doc.querySelectorAll('section[data-component]').forEach((sec) => { bodies[sec.getAttribute('data-component')] = sec.querySelector('.gate-body'); });
-      return { data: make(ko), view: (id) => (bodies[id] ? Array.from(document.importNode(bodies[id], true).childNodes) : null) };
+      return { data: make(ko), view: (id) => { const b = bodies[id]; if (!b) { return null; } const first = b.firstElementChild && b.firstElementChild.classList.contains('gate-row') ? b.firstElementChild.firstElementChild : b.firstElementChild; return first ? [document.importNode(first, true)] : null; } };
     }).catch(() => { examples_ = null; return { data: {}, view: () => null }; });
     return examples_;
   }

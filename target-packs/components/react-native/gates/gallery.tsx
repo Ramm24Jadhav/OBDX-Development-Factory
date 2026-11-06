@@ -7,6 +7,8 @@ import { ReactElement, ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Text } from 'react-native';
 
+import { SAMPLES } from './samples';
+
 import {
   AccountBalance, Accordion, AlertSubscriptions, AmountInput, ApprovalQueue, Autocomplete, BarChart, Button, Card, CardTile, CheckboxGroup, CurrencySelector,
   DataTable, DatePicker, DateRangePicker, DestructiveButton, Dialog, Dropdown, ErrorMessage, Faq, FileUpload, FilterChips, IconButton, LoanCalculator,
@@ -54,6 +56,8 @@ function Gallery() {
   return (
     <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
+        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone */}
+        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{SAMPLES[only][1]}</Section> : null}
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>
         <Section id="icon-button" title="Icon button"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /></Section>

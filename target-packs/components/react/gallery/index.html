@@ -13,14 +13,20 @@
         var css = document.createElement('style');
         css.textContent = 'html,body{margin:0;background:transparent!important}.gallery{padding:16px!important;gap:0!important;min-height:0!important;background:transparent!important}'
           + '.gallery>h1,[data-component]:not(' + sel + '){display:none!important}' + sel + '>h2{display:none!important}' + sel + '{padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important}'
+          // one instance, as each card on the board shows it
+          + sel + ' .gate-body>:not(:first-child),' + sel + ' .gate-body>.gate-row>:not(:first-child){display:none!important}'
           + (brand && /^#[0-9a-f]{6}$/i.test(brand) ? '.gallery{--bx-brand:' + brand + ';--bx-brand-2:' + brand + '}' : '');
         document.head.appendChild(css);
         var post = function () {
           var el = document.querySelector(sel);
-          parent.postMessage({ preview: only, height: el ? Math.ceil(el.getBoundingClientRect().height) + 32 : 0 }, '*');
+          // a sheet, dialog or menu drawn over the page (fixed) needs room of its own
+          var over = Array.prototype.some.call(document.querySelectorAll('body *'), function (n) { var s = getComputedStyle(n); var r = n.getBoundingClientRect(); return s.position === 'fixed' && r.width > 100 && r.height > 100; });
+          var h = el ? Math.ceil(el.getBoundingClientRect().height) + 32 : 0;
+          parent.postMessage({ preview: only, height: over ? Math.max(h, 420) : h }, '*');
         };
         new ResizeObserver(post).observe(document.documentElement);
         addEventListener('load', post);
+        setTimeout(post, 600);
       })();
     </script>
   </head>

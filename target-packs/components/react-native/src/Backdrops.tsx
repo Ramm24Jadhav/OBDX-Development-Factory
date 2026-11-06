@@ -5,7 +5,7 @@
  */
 import { Animated, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { useCycle } from './motion';
+import { BG, useCycle } from './motion';
 import { useTheme } from './theme';
 
 export interface BackdropProps {
@@ -33,8 +33,8 @@ export function GradientBackdrop({ testID, style, colors, period = 12 }: Backdro
   const v = useCycle(period * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
-      <View style={[StyleSheet.absoluteFill, { experimental_backgroundImage: `linear-gradient(135deg, ${a}, ${b})` }]} />
-      <Animated.View style={[StyleSheet.absoluteFill, { experimental_backgroundImage: `linear-gradient(45deg, ${b}, ${c})`,
+      <View style={[StyleSheet.absoluteFill, { [BG]: `linear-gradient(135deg, ${a}, ${b})` }]} />
+      <Animated.View style={[StyleSheet.absoluteFill, { [BG]: `linear-gradient(45deg, ${b}, ${c})`,
         opacity: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.7, 0] }) }]} />
     </View>
   );
@@ -48,7 +48,7 @@ export function SoftAurora({ testID, style, colors, period = 18 }: BackdropProps
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       {list.slice(0, 3).map((c, i) => (
         <Animated.View key={i} style={{ position: 'absolute', width: '90%', aspectRatio: 1, left: `${[-20, 30, 5][i]}%`, top: `${[-30, -10, 30][i]}%`, opacity: 0.45,
-          experimental_backgroundImage: `radial-gradient(circle, ${c}, transparent 65%)`,
+          [BG]: `radial-gradient(circle, ${c}, transparent 65%)`,
           transform: [{ translateX: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, (i % 2 ? -1 : 1) * 40, 0] }) },
             { translateY: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, (i === 1 ? 1 : -1) * 24, 0] }) }] }} />
       ))}
@@ -64,7 +64,7 @@ export function SilkBackdrop({ testID, style, colors, period = 16 }: BackdropPro
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: a }, style]}>
       {[0, 1, 2, 3].map((i) => (
         <Animated.View key={i} style={{ position: 'absolute', top: '-50%', bottom: '-50%', width: '45%', left: `${i * 30 - 20}%`, opacity: 0.35,
-          experimental_backgroundImage: `linear-gradient(to right, transparent, ${b}, transparent)`,
+          [BG]: `linear-gradient(to right, transparent, ${b}, transparent)`,
           transform: [{ rotate: '25deg' }, { translateX: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, i % 2 ? 30 : -30, 0] }) }] }} />
       ))}
     </View>
@@ -114,7 +114,7 @@ export function LightBeams({ testID, style, colors, period = 14, beams = 5 }: Ba
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       {Array.from({ length: beams }, (_, i) => (
         <Animated.View key={i} style={{ position: 'absolute', top: '-10%', height: '120%', width: 40 + seeded(i) * 40, left: `${(i + 0.5) * (100 / beams) - 8}%`,
-          opacity: 0.18 + seeded(i + 7) * 0.15, experimental_backgroundImage: `linear-gradient(to bottom, ${a}, transparent)`,
+          opacity: 0.18 + seeded(i + 7) * 0.15, [BG]: `linear-gradient(to bottom, ${a}, transparent)`,
           transform: [{ rotate: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: ['-6deg', `${4 + i}deg`, '-6deg'] }) }] }} />
       ))}
     </View>

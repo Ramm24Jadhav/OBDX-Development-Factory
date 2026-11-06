@@ -30,6 +30,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const BRANDS = [['workspace', 'Workspace brand', null], ['indigo', 'Indigo', '#4f46e5'], ['emerald', 'Emerald', '#059669'], ['burgundy', 'Burgundy', '#9f1239'], ['gold', 'Gold', '#b45309']];
     const LOGO = { 'jet-premium': 'J', react: 'R', 'react-native': 'N', angular: 'A' };
     // What each built component previews as (its kind in the live preview)
+    // Stock JET looks on the workspace side for parts the live preview draws from the gallery
+    const STOCK = { 'secondary-button': 'secondary', 'danger-button': 'danger', 'text-area': 'textarea' };
     const PREVIEW = { button: 'button', 'icon-button': 'iconbutton', 'text-field': 'field', amount: 'amount', select: 'select', 'checkbox-group': 'check',
       'choice-group': 'radio', date: 'date', dialog: 'dialog', toast: 'toast', card: 'card', tabs: 'tabs', 'data-grid': 'table' };
     const A11Y = {
@@ -246,7 +248,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             readiness: pill.apply(null, isNew ? ['Planned for ' + p.next.version, 'grey'] : READY[ip.readiness]),
             mapping: pill.apply(null, MAPPING[ip.mapping]), proposed: ip.mappingConfidence === 'proposed',
             where: q ? 'in ' + e.cat.name : (m.dashboard || ''), builtOn: 'Built on ' + (ip.builtOn || '—'),
-            jetUsed: usedHere, jetKind: kind, jetElement: m.workspaceElement || '', jetLabel: (m.sample && m.sample.label) || m.name,
+            jetUsed: usedHere, jetKind: STOCK[m.id] || kind, jetElement: m.workspaceElement || '', jetLabel: (m.sample && m.sample.label) || m.name,
             jetNote: m.workspaceKind === 'element' ? 'Not used in ' + self.workspaceName() + ' today' : m.workspaceKind === 'none' ? 'Nothing in ' + self.workspaceName() + ' today: this is new'
               : 'Today an OBDX ' + (m.workspaceKind === 'widget' ? 'widget' : 'screen') + ' built by hand',
             tag: isNew ? 'New in ' + p.next.version : 'New', logo: LOGO[p.id] || p.name[0], packName: p.name,
@@ -541,7 +543,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         loadAll(self.workspaceId()).then(() => self.error(null)).catch((e) => self.error(ui.errorText(e))).then(() => self.loading(false));
       };
       // The live previews' sample values
-      self.pv = { text: ko.observable('A. Sharma'), amount: ko.observable(1250), choice: ko.observable('S'), checks: ko.observable(['E']), day: ko.observable('2026-11-12'), tab: ko.observable('c'),
+      self.pv = { text: ko.observable('A. Sharma'), card: ko.observable('My savings'), amount: ko.observable(1250), choice: ko.observable('S'), checks: ko.observable(['E']), day: ko.observable('2026-11-12'), tab: ko.observable('c'),
         options: [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }], checkOptions: [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }],
         tabs: [{ id: 'c', label: 'Current' }, { id: 's', label: 'Savings' }, { id: 'd', label: 'Deposits' }],
         rows: [{ id: 1, date: '12 Nov', text: 'Electricity bill', amount: '-1,240.00' }, { id: 2, date: '11 Nov', text: 'Salary', amount: '85,000.00' }],
