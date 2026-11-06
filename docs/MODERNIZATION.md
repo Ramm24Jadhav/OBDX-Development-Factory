@@ -103,6 +103,6 @@ Every converted module is checked against the 8 OBDX rules: same digx services, 
 | 3 | Component factory (built); the foundation set in each pack; the rest in waves | Foundation set built in all four packs with unit, accessibility and browser gates; premium JET Available (parity on JET 6.2 and 21); the rest in waves next |
 | 4 | Technology catalogue and Migration planner | Built |
 | 5 | Workspace, Validation, Review, History; Upgrade plan; Technology settings | Built |
-| 6 | Angular target pack, Flutter for mobile, JET Core Pack | Angular target pack built (starter with the Angular pack, templates, `target.yml`, Angular screens from the scaffolder, designer preview). Flutter target pack built: a screen generated from a Screen Model passes `flutter analyze` and `flutter test` (checked in CI, job flutter-pack). The JET Core Pack next |
+| 6 | Angular target pack, Flutter for mobile, JET Core Pack | Angular target pack built (starter with the Angular pack, templates, `target.yml`, Angular screens from the scaffolder, designer preview). Flutter target pack built: a screen generated from a Screen Model passes `flutter analyze` and `flutter test` (checked in CI, job flutter-pack). JET Core Pack target pack built: a generated screen typechecks against the Core Pack's element types, passes its Jest tests and runs in an ojet build (CI job jet-core-pack) |
 
 Deferred: OBDX version upgrades (22.x to 25.x).

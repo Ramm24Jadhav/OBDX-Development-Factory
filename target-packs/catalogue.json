@@ -23,11 +23,11 @@
       "limits": [["Charts", "Keep the JET chart in a wrapper"], ["Print layouts", "Server-side PDF as today"]]
     },
     {
-      "id": "jet-core-pack", "pack": "jet-core-pack", "platform": "web", "name": "JET Core Pack", "logo": "J",
-      "text": "Oracle JET's newer components, for banks that stay with Oracle JET but leave Knockout.",
-      "meta": "Inside the OBDX UI", "language": "JavaScript", "usedByBanks": "Medium", "besideJet": true,
-      "points": ["Stays inside the OBDX UI", "Oracle-supported components", "The premium JET pack's Core Pack build", "Smallest change for the team"],
-      "limits": [["Older JET releases", "Needs JET 16 or later"]]
+      "id": "jet-core-pack", "pack": "jet-core-pack", "packVersions": [["1.0.0", "2026-11-06", "First release: VDOM screens on the Core Pack components, with Jest tests"]], "platform": "web", "name": "JET Core Pack", "logo": "J",
+      "text": "Oracle JET's own modern stack (VDOM and the Core Pack), for banks that stay with Oracle JET but leave Knockout.",
+      "meta": "Beside the OBDX UI, in Oracle JET", "language": "JavaScript", "usedByBanks": "Medium", "besideJet": true,
+      "points": ["Oracle's own framework and support line", "Core Pack components (oj-c) in the Redwood look", "The same OBDX REST services, cookie and nonce", "Module by module, beside today's JET screens"],
+      "limits": [["Knockout", "Screens are written again as VDOM (Preact and TypeScript), not edited in place"], ["JET release", "JET 21 with the Core Pack 21"]]
     },
     {
       "id": "vue", "pack": "vue", "platform": "web", "name": "Vue 3", "logo": "V",

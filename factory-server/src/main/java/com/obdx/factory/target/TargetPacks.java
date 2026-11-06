@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 @Component
 public class TargetPacks {
 
-    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter");
+    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter", "jet-core-pack");
     private static final Logger log = LoggerFactory.getLogger(TargetPacks.class);
     private static final String BASE = "target-packs";
 

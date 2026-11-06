@@ -21,7 +21,7 @@ class TargetPacksTest {
     @Test
     void builtInPacksLoadWithStarterProjects() {
         TargetPacks packs = TargetPacks.builtIn();
-        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter");
+        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter", "jet-core-pack");
         assertThat(packs.find("flutter").orElseThrow().isDart()).isTrue();
         assertThat(packs.find("flutter").orElseThrow().starter()).containsKeys("pubspec.yaml", "lib/api/client.dart", "lib/components/tokens.dart", "assets/i18n/en.json");
         assertThat(packs.jet().isJet()).isTrue();

@@ -41,14 +41,16 @@ public class TechnologySettings {
                            String savedBy, OffsetDateTime savedAt) {
     }
 
-    static final List<String> TECHNOLOGIES = List.of("react", "react-native", "angular", "flutter");
-    private static final Map<String, String> NAMES = Map.of("react", "React", "react-native", "React Native", "angular", "Angular", "flutter", "Flutter");
+    static final List<String> TECHNOLOGIES = List.of("react", "react-native", "angular", "flutter", "jet-core-pack");
+    private static final Map<String, String> NAMES = Map.of("react", "React", "react-native", "React Native", "angular", "Angular", "flutter", "Flutter",
+            "jet-core-pack", "JET Core Pack");
     /** The defaults that do not come from the pack files, per technology: build, unit tests, journey tests, Jenkins job. */
     private static final Map<String, String[]> DEFAULTS = Map.of(
             "react", new String[]{"Vite", "Vitest and Testing Library", "Playwright", "modernize-react"},
             "react-native", new String[]{"Expo (Gradle and Xcode)", "Jest and Testing Library", "Detox", "modernize-mobile"},
             "angular", new String[]{"Angular CLI", "The Angular test runner", "Playwright", "modernize-angular"},
-            "flutter", new String[]{"Flutter (Gradle and Xcode)", "flutter_test widget tests", "integration_test on a device", "modernize-flutter"});
+            "flutter", new String[]{"Flutter (Gradle and Xcode)", "flutter_test widget tests", "integration_test on a device", "modernize-flutter"},
+            "jet-core-pack", new String[]{"ojet build (RequireJS)", "Jest with the JET preset", "Playwright", "modernize-jet"});
     static final List<String> EDITABLE = List.of("project.library", "project.language", "project.build", "project.folder", "rules.lint", "rules.accessibility",
             "rules.labels", "rules.validation", "tests.unit", "tests.journey", "tests.job", "tests.coverage");
 
@@ -72,7 +74,7 @@ public class TechnologySettings {
     private Settings build(UUID workspaceId, String technology, boolean withSaved) {
         String tech = technology == null || technology.isBlank() ? "react" : technology;
         if (!TECHNOLOGIES.contains(tech)) {
-            throw new BadRequestException("Choose React, React Native, Angular or Flutter.");
+            throw new BadRequestException("Choose React, React Native, Angular, Flutter or the JET Core Pack.");
         }
         Optional<TargetPack> target = packs.find(tech);
         ComponentRegistry.Pack components = registry.pack(tech);

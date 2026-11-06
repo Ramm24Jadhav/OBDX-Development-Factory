@@ -136,6 +136,31 @@ jobs:
           flutter analyze
           flutter test
 
+  # The JET Core Pack target pack: a screen the factory writes (Fund Transfer) in the starter must typecheck against the
+  # Core Pack's element types, pass its Jest tests (the JET preset) and build with ojet build.
+  jet-core-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Write a screen with the scaffolder
+        run: mvn -B -pl factory-server -am test -Dtest=ScreenScaffolderTest -Dsurefire.failIfNoSpecifiedTests=false -Dscaffold.out=/tmp/scaffold
+      - name: Typecheck, test and build the app with the screen
+        run: |
+          cp -r target-packs/jet-core-pack/starter /tmp/app && cp -r /tmp/scaffold/jet-core-pack/. /tmp/app/
+          cd /tmp/app
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npx ojet build
+
   # The browser gates of the web packs (target-packs/components/gates): React, Angular and the premium JET pack on
   # JET 6.2 and the current release, in Chromium: accessibility with contrast, themes, phone to laptop, screenshots and
   # parity with the JET elements. Screenshots missing for Linux are written and uploaded (commit them from the artifact).

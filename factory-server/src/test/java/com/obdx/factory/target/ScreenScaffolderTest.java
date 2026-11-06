@@ -168,6 +168,25 @@ class ScreenScaffolderTest {
         }
     }
 
+    @Test
+    void scaffoldsAJetCorePackPage() throws Exception {
+        TargetPack pack = packs.find("jet-core-pack").orElseThrow();
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "web-jet", "web-jet/src/screens/payments/FundTransferPage.tsx",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.content()).contains("export function FundTransferPage(", "import { useState } from 'preact/hooks';",
+                "<AmountField", "amount: null as number | null,", "<TextArea", "<SelectField", "options={purposeOptions}",
+                "onPress={submit}").doesNotContain("from 'react'").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "web-jet", "web-jet/src/screens/payments/__tests__/FundTransferPage.spec.tsx",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.content()).contains("@testing-library/preact", "toHaveLength(3)").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "jet-core-pack/src/screens/payments/FundTransferPage.tsx"), page.content());
+            write(Path.of(out, "jet-core-pack/src/screens/payments/__tests__/FundTransferPage.spec.tsx"), test.content());
+            write(Path.of(out, "jet-core-pack/src/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("src/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content);

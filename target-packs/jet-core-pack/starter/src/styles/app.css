@@ -1,0 +1,5 @@
+/* The app's own layout around the Core Pack components; colours and type come from the Redwood theme. */
+.obdx-screen { padding-block: var(--oj-core-spacing-6x, 24px); }
+.obdx-section { margin-block-end: var(--oj-core-spacing-6x, 24px); }
+.obdx-actions { gap: var(--oj-core-spacing-2x, 8px); margin-block-start: var(--oj-core-spacing-4x, 16px); align-items: center; }
+.obdx-error { color: var(--oj-core-danger-3, #b42318); }
