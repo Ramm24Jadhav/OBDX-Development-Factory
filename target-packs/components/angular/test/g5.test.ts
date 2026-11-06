@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { ApplicationTracker, Certificates, ComposeMessage, DepositCalculator, EReceipts, EligibilityCalculator, Faq, FeedbackRating, GoalCalculator, LiveChat, Locator, Mailbox,
   Nominations, Period, Place, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification, TermsConsent, TrackRequests, maturity } from '../src';
+import { ForexCalculator, LoanCalculator } from '../src';
 import { violations } from './a11y';
 
 async function mount<T>(host: Type<T>) {
@@ -99,5 +100,26 @@ describe('group 5', () => {
     await userEvent.click(getByRole(el, 'radio', { name: '4 stars, Good' }));
     await settle();
     expect([host.stars(), el.querySelectorAll('.bx-star.is-on').length]).toEqual([4, 4]);
+  });
+});
+
+describe('group 5, the components React and JET have', () => {
+  it('the loan calculator and the currency converter work out their figures and pass axe', async () => {
+    @Component({ imports: [LoanCalculator, ForexCalculator], template: `
+      <bx-loan-calculator currency="USD" actionLabel="Apply for this loan" (action)="applied = $event.result" />
+      <bx-currency-converter currency="USD" toCurrency="EUR" [rate]="0.92" />` })
+    class Host { applied = 0; }
+    const { el, host, settle } = await mount(Host);
+    const fx = getByRole(el, 'region', { name: 'Currency converter' });
+    expect(within(fx).getByText('920.00 EUR')).toBeTruthy();
+    expect(within(fx).queryByLabelText('Months')).toBeNull();
+    expect(fx.textContent).toContain("The rate is fixed when you send.");
+    const loan = getByRole(el, 'region', { name: 'Loan calculator' });
+    fireEvent.input(within(loan).getByLabelText('Loan amount (USD)'), { target: { value: '12000' } });
+    await settle();
+    await userEvent.click(getByRole(el, 'button', { name: 'Apply for this loan' }));
+    expect(host.applied).toBeGreaterThan(0);
+    expect(loan.textContent).toContain('The bank confirms the figures when you apply.');
+    expect(await violations(el)).toEqual([]);
   });
 });

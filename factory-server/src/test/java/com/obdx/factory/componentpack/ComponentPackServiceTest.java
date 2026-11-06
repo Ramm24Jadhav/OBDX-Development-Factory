@@ -84,14 +84,14 @@ class ComponentPackServiceTest {
         // that replace nothing (the card, and group 1's that passed) are Available
         assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
-        // Angular does not carry the widgets
-        assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
+        // Angular carries the widgets too, built and in test
+        assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("in-test");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
         assertThat(c.packs().get(1).counts().available()).isEqualTo(11);
         assertThat(c.packs().get(1).counts().inTest()).isEqualTo(234);
         assertThat(c.packs().get(2).counts().available()).isZero();
         assertThat(c.packs().get(3).counts().available()).isEqualTo(9);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(202);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(236);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");
@@ -149,7 +149,7 @@ class ComponentPackServiceTest {
         assertThat(find(c, "data-grid").packs().get("react").mapping()).isEqualTo("custom-transformation");
         assertThat(find(c, "session-timeout").packs().get("react").mapping()).isEqualTo("manual-intervention");
         assertThat(find(c, "card").packs().get("react").mapping()).isEqualTo("new");
-        assertThat(find(c, "overview").packs().get("angular").mapping()).isEqualTo("unsupported");
+        assertThat(find(c, "overview").packs().get("angular").mapping()).isEqualTo("custom-transformation");
         assertThat(find(c, "overview").packs().get("react").mapping()).isEqualTo("custom-transformation");
     }
 

@@ -72,6 +72,21 @@ export class SecondaryButton {
   readonly action = output<MouseEvent>();
 }
 
+/** An action that deletes or cancels (oj-button chroming danger). */
+@Component({
+  selector: 'bx-danger-button',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Button],
+  template: `<bx-button [label]="label()" chroming="danger" [disabled]="disabled()" [busy]="busy()" [testID]="testID()" (action)="action.emit($event)" />`,
+})
+export class DestructiveButton {
+  readonly label = input.required<string>();
+  readonly disabled = input(false);
+  readonly busy = input(false);
+  readonly testID = input('');
+  readonly action = output<MouseEvent>();
+}
+
 /* ---------- Slider ---------- */
 
 export const SLIDER = `
@@ -191,6 +206,10 @@ export abstract class ChipsBase extends Part {
   }
 }
 
+/** Filters that turn on and off. [(value)]. */
+@Component({ selector: 'bx-filter-chips', changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
+export class FilterChips extends ChipsBase {}
+
 /* ---------- ActionMenu ---------- */
 
 export interface MenuItem extends Item { danger?: boolean }
@@ -273,6 +292,10 @@ export abstract class AccordionBase extends Part {
     this.expanded.set(open.includes(key) ? open.filter((x) => x !== key) : (this.multiple() ?? this.defaultMultiple) ? [...open, key] : [key]);
   }
 }
+
+/** Sections that open and close (oj-collapsible): a button with aria-expanded and a region for each. [(expanded)]. */
+@Component({ selector: 'bx-accordion', changeDetection: ChangeDetectionStrategy.OnPush, template: ACCORDION })
+export class Accordion extends AccordionBase {}
 
 /* ---------- Stepper (oj-train) ---------- */
 
@@ -451,6 +474,24 @@ export class Divider extends Part {
   readonly label = input('');
 }
 
+/** A photo, or the initials of a name; the name is what a screen reader says. */
+@Component({
+  selector: 'bx-avatar',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (src()) {
+      <img [class]="'bx-avatar is-' + size()" [src]="src()" [alt]="name()" [attr.data-testid]="testID() || null" />
+    } @else {
+      <span [class]="'bx-avatar is-' + size()" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null"><span aria-hidden="true">{{ letters() }}</span></span>
+    }`,
+})
+export class Avatar extends Part {
+  readonly name = input.required<string>();
+  readonly src = input('');
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
+  protected readonly letters = computed(() => initials(this.name()));
+}
+
 /* ---------- Pagination (oj-paging-control) ---------- */
 
 /** The pages to show: the first, the last and the ones around this page; 0 is a gap. */
@@ -542,6 +583,27 @@ export class Timeline extends TimelineBase {}
 export class Spinner extends Part {
   readonly label = input('Loading');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
+}
+
+/** Where content is coming: grey lines that shimmer. */
+@Component({
+  selector: 'bx-skeleton',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div [class]="'bx-skeleton is-' + shape()" role="status" aria-busy="true" [attr.data-testid]="testID() || null">
+      <span class="bx-visually-hidden">{{ label() }}</span>
+      @if (shape() !== 'text') { <span class="bx-skel-block" aria-hidden="true"></span> }
+      @for (css of rows(); track $index) { <span [class]="css" aria-hidden="true"></span> }
+    </div>`,
+})
+export class Skeleton extends Part {
+  readonly label = input('Loading');
+  readonly lines = input(3);
+  readonly shape = input<'text' | 'card' | 'circle'>('text');
+  protected readonly rows = computed(() => {
+    const n = Math.max(1, this.lines());
+    return Array.from({ length: n }, (_, i) => 'bx-skel-line' + (i === n - 1 && n > 1 ? ' is-short' : ''));
+  });
 }
 
 /** Nothing to show yet, and what to do. */
@@ -640,7 +702,7 @@ export const ROWS = `
   <section class="bx-panel" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
     @if (items().length === 0) {
-      <p class="bx-panel-empty">{{ emptyText() }}</p>
+      <p class="bx-panel-empty">{{ empty() }}</p>
     } @else {
       <ul class="bx-rows">
         @for (o of items(); track $index) {
@@ -663,9 +725,11 @@ export abstract class RowsBase extends Part {
   readonly items = input<ReadonlyArray<RowItem>>([]);
   /** The button on each row (its name says which row); leave out for the component's own. */
   readonly actionLabel = input<string | undefined>(undefined);
-  readonly emptyText = input('Nothing here yet.');
+  /** Leave out for the component's own. */
+  readonly emptyText = input<string | undefined>(undefined);
   readonly action = output<RowItem>();
-  protected readonly defaults: { heading?: string; actionLabel?: string } = {};
+  protected readonly defaults: { heading?: string; actionLabel?: string; emptyText?: string } = {};
+  protected readonly empty = computed(() => this.emptyText() ?? this.defaults.emptyText ?? 'Nothing here yet.');
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading ?? '');
   protected readonly act = computed(() => this.actionLabel() ?? this.defaults.actionLabel ?? '');
   protected rowClass(o: RowItem): string { return 'bx-row' + (o.tone ? ` is-${o.tone}` : '') + (o.unread ? ' is-unread' : ''); }
@@ -676,5 +740,5 @@ export abstract class RowsBase extends Part {
 export class NotificationPanel extends RowsBase { protected override readonly defaults = { heading: 'Notifications', actionLabel: 'Read' }; }
 
 /** Group 1's components, for a screen's imports. */
-export const G1_COMPONENTS = [SecondaryButton, Slider, ToggleGroup, ActionMenu, Stepper, Breadcrumb, SideNav, Sheet, Grid, Divider, Pagination, StatusBadge, Timeline,
-  Spinner, EmptyState, Tooltip, Alert, ErrorMessage, SuccessMessage, NotificationPanel] as const;
+export const G1_COMPONENTS = [SecondaryButton, DestructiveButton, Slider, ToggleGroup, FilterChips, ActionMenu, Accordion, Stepper, Breadcrumb, SideNav, Sheet, Grid, Divider,
+  Avatar, Pagination, StatusBadge, Timeline, Spinner, Skeleton, EmptyState, Tooltip, Alert, ErrorMessage, SuccessMessage, NotificationPanel] as const;

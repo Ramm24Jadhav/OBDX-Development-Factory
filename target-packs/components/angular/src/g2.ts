@@ -8,7 +8,7 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { Dropdown } from './dropdown';
 import { FieldBase, FieldShell } from './field';
-import { CHIPS, ChipsBase, Part, STEPS, StepsBase, initials } from './g1';
+import { CHIPS, ChipsBase, Part, ROWS, RowsBase, SEGMENTS, STEPS, SegmentsBase, StepsBase, initials } from './g1';
 import { decimalsOf } from './text-field';
 
 /** An amount with its currency's decimals and the code after it; text is shown as given. */
@@ -319,13 +319,9 @@ export class NewDepositForm extends FormBase { protected override readonly defau
 
 export interface Transaction { id: string; description: string; date?: string; meta?: string; amount: number | string; currency?: string }
 
-/** What came in and went out; money in is green with a plus, and a screen reader says which. */
-@Component({
-  selector: 'bx-transaction-list',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+export const TRANSACTIONS = `
     <section class="bx-panel" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
-      <h3 class="bx-panel-title" [id]="id">{{ heading() }}</h3>
+      <h3 class="bx-panel-title" [id]="id">{{ head() }}</h3>
       @if (rows().length === 0) { <p class="bx-panel-empty">{{ emptyText() }}</p> }
       <ul class="bx-rows">
         @for (o of rows(); track o.item.id) {
@@ -346,10 +342,15 @@ export interface Transaction { id: string; description: string; date?: string; m
           </li>
         }
       </ul>
-    </section>`,
-})
+    </section>`;
+
+/** What came in and went out; money in is green with a plus, and a screen reader says which. */
+@Component({ selector: 'bx-transaction-list', changeDetection: ChangeDetectionStrategy.OnPush, template: TRANSACTIONS })
 export class TransactionHistory extends Part {
-  readonly heading = input('Transactions');
+  /** Leave out for the component's own heading. */
+  readonly heading = input<string | undefined>(undefined);
+  protected readonly defaultHeading: string = 'Transactions';
+  protected readonly head = computed(() => this.heading() ?? this.defaultHeading);
   readonly items = input<ReadonlyArray<Transaction>>([]);
   readonly currency = input('');
   readonly interactive = input(true);
@@ -435,9 +436,42 @@ export class PaymentStatus extends StepsBase { protected override readonly defau
 /** What kind of transactions to show. [(value)]. */
 @Component({ selector: 'bx-transaction-filter', changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
 export class TransactionFilter extends ChipsBase { protected override readonly defaultLabel = 'Show'; }
+/** How often a payment goes. [(value)]. */
+@Component({ selector: 'bx-repeat', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+export class PaymentSchedule extends SegmentsBase { protected override readonly defaults = { label: 'Repeat', options: ['Once', 'Weekly', 'Monthly'] }; }
+/** Bills due soon, each with Pay. */
+@Component({ selector: 'bx-upcoming-bills', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
+export class UpcomingBills extends RowsBase { protected override readonly defaults = { heading: 'Upcoming bills', actionLabel: 'Pay', emptyText: 'No bills due.' }; }
+
+/* ---------- quick actions ---------- */
+
+export interface QuickItem { id: string; label: string; icon?: string }
+
+export const QUICK = `
+  <nav class="bx-quick" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+    <ul>
+      @for (o of items(); track o.id) {
+        <li><button type="button" class="bx-quick-item" (click)="action.emit(o.id)"><span class="bx-quick-icon" aria-hidden="true">{{ o.icon || '•' }}</span><span>{{ o.label }}</span></button></li>
+      }
+    </ul>
+  </nav>`;
+
+@Directive()
+export abstract class QuickBase extends Part {
+  /** Names the shortcuts; leave out for the component's own. */
+  readonly label = input<string | undefined>(undefined);
+  readonly items = input<ReadonlyArray<QuickItem>>([]);
+  readonly action = output<string>();
+  protected readonly defaultLabel: string = 'Quick actions';
+  protected readonly name = computed(() => this.label() ?? this.defaultLabel);
+}
+
+/** Shortcuts as tiles of an icon and a word. */
+@Component({ selector: 'bx-quick-actions', changeDetection: ChangeDetectionStrategy.OnPush, template: QUICK })
+export class QuickActions extends QuickBase {}
 
 /** Group 2's components, for a screen's imports. */
 export const G2_COMPONENTS = [AccountSelector, AccountSummary, AccountBalance, AccountCard, AccountDetails, AccountNumber, BeneficiarySelector, BeneficiaryCard, PaymentForm,
   TransferSummary, PaymentStatus, TransactionHistory, TransactionFilter, TransactionDetails, TransactionReceipt, DepositsSummary, NewDepositForm, MaturityInstructions,
-  DepositTopUp, DepositRedemption] as const;
+  DepositTopUp, DepositRedemption, QuickActions, PaymentSchedule, UpcomingBills] as const;
 

@@ -114,7 +114,7 @@ export const CALC = `
     </div>
     <div class="bx-calc-result" aria-live="polite"><span class="bx-calc-title">{{ title() }}</span><strong class="bx-calc-main">{{ result().main }}</strong>
       <span class="bx-calc-line">{{ result().line }}</span></div>
-    <p class="bx-help">{{ note() }}</p>
+    <p class="bx-help">{{ noteText() }}</p>
     @if (actionLabel()) {
       <div class="bx-kv-actions"><button type="button" class="bx-btn bx-btn--callToAction" (click)="action.emit({ amount: figures().a, rate: figures().r, months: figures().m, result: result().value })">{{ actionLabel() }}</button></div>
     }
@@ -131,13 +131,15 @@ export abstract class CalcBase extends Part {
   readonly months = input<number | undefined>(undefined);
   /** Times a year a deposit's interest is added. */
   readonly compounding = input(4);
-  readonly note = input('An estimate. The bank confirms the figures when you apply.');
+  /** Leave out for the component's own. */
+  readonly note = input<string | undefined>(undefined);
   readonly actionLabel = input('');
   readonly action = output<{ amount: number; rate: number; months: number; result: number }>();
   protected readonly mode: 'loan' | 'td' | 'fx' = 'loan';
   protected readonly isFx = computed(() => this.mode === 'fx');
-  protected readonly defaults: { heading: string; amount: number; rate: number; months: number } = { heading: 'Loan calculator', amount: 10000, rate: 9.5, months: 36 };
+  protected readonly defaults: { heading: string; amount: number; rate: number; months: number; note?: string } = { heading: 'Loan calculator', amount: 10000, rate: 9.5, months: 36 };
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading);
+  protected readonly noteText = computed(() => this.note() ?? this.defaults.note ?? 'An estimate. The bank confirms the figures when you apply.');
   protected readonly a = signal<number | null>(null);
   protected readonly r = signal<number | null>(null);
   protected readonly m = signal<number | null>(null);
@@ -161,6 +163,16 @@ export abstract class CalcBase extends Part {
 export class DepositCalculator extends CalcBase {
   protected override readonly mode: 'loan' | 'td' | 'fx' = 'td';
   protected override readonly defaults = { heading: 'Deposit calculator', amount: 10000, rate: 7, months: 12 };
+}
+/** The monthly instalment of a loan. */
+@Component({ selector: 'bx-loan-calculator', changeDetection: ChangeDetectionStrategy.OnPush, template: CALC })
+export class LoanCalculator extends CalcBase {}
+/** What an amount is in another currency at today's rate. */
+@Component({ selector: 'bx-currency-converter', changeDetection: ChangeDetectionStrategy.OnPush, template: CALC })
+export class ForexCalculator extends CalcBase {
+  protected override readonly mode: 'loan' | 'td' | 'fx' = 'fx';
+  protected override readonly defaults = { heading: 'Currency converter', amount: 1000, rate: 0.92, months: 1,
+    note: "An estimate at today's rate. The rate is fixed when you send." };
 }
 
 /* ---------- Locator ---------- */
@@ -333,4 +345,5 @@ export class Faq extends AccordionBase {}
 
 /** Group 5's components, for a screen's imports. */
 export const G5_COMPONENTS = [RaiseRequest, TrackRequests, Mailbox, ComposeMessage, EReceipts, Certificates, StatementRequest, StatementFormat, SelfRegister, TaxSelfCertification,
-  ProductCard, ApplicationTracker, TermsConsent, EligibilityCalculator, DepositCalculator, GoalCalculator, Locator, LiveChat, FeedbackRating, Nominations, Faq] as const;
+  ProductCard, ApplicationTracker, TermsConsent, EligibilityCalculator, DepositCalculator, GoalCalculator, Locator, LiveChat, FeedbackRating, Nominations, Faq, LoanCalculator,
+  ForexCalculator] as const;
