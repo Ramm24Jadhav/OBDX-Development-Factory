@@ -10118,3 +10118,20 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mh-pages button.is-on { background: var(--fx-primary); color: var(--fx-on-primary, #fff); }
 .factory-mh-card > .factory-mm-panel { padding: 14px; }
 @media (max-width: 1200px) { .factory-mh-top { max-width: none; } }
+
+/* The Approve and deliver dialog, as on the Decisions board: step rows, label and value rows, a checkbox */
+.factory-mb-approve .factory-mr-form { gap: 12px; }
+.factory-mb-h3 { margin: 4px 0 0; font-size: 14px; font-weight: 700; color: var(--fx-text); }
+.factory-mb-steprows { gap: 0; margin: 0; }
+.factory-mb-steprows .factory-mr-step { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; font-size: 14px; color: var(--fx-text); }
+.factory-mb-steprows .factory-mr-step + .factory-mr-step { border-top: var(--fx-border-width) solid var(--fx-border); }
+.factory-mb-steprows .factory-mz-dot { width: 20px; height: 20px; font-size: 11px; }
+.factory-mb-steprow-who { font-size: 13px; color: var(--fx-text-body); text-align: right; }
+.factory-mb-kv { margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.factory-mb-kv > div { display: flex; justify-content: space-between; gap: 16px; }
+.factory-mb-kv dt { color: var(--fx-text-muted); }
+.factory-mb-kv dd { margin: 0; color: var(--fx-text); text-align: right; }
+.factory-mb-checkrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fx-text-body); cursor: pointer; }
+.factory-mb-dialogfoot { display: flex; justify-content: flex-end; gap: 8px; }
+.factory-mb-approve [role="status"] .factory-mb-kv > div { padding-bottom: 8px; border-bottom: var(--fx-border-width) solid var(--fx-border); }
+.factory-mb-donehead strong { font-size: 18px; }

@@ -37,6 +37,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.noteFiles = ko.observableArray([]);
       self.newComment = ko.observable('');
       self.closeAfter = ko.observable(false);
+      self.pickCloseAfter = (event) => self.closeAfter(event.target.checked);
       self.closeNote = ko.observable('');
       self.delivered = ko.observable(null);
       self.deliverError = ko.observable('');
@@ -306,7 +307,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.deliverFacts = ko.pureComputed(() => {
         const d = self.delivery();
         return [['Files', files().length + ' files, ' + self.screens().length + ' screens'], ['SVN branch', d ? d.branch : 'A new branch for this change'],
-          ['Commit message', d ? d.message : (self.change() ? self.change().title : '')]].map((x) => ({ k: x[0], v: x[1], mono: x[0] !== 'Files' ? 'factory-mo-mono' : '' }));
+          ['Commit message', d ? d.message : (self.change() ? self.change().title : '')]].map((x) => ({ k: x[0], v: x[1], mono: x[0] === 'SVN branch' ? 'factory-mb-mono' : '' }));
       });
       const planProgress = () => (self.path() === 'migration'
         ? api.get('workspaces/' + self.workspaceId() + '/modernization/planner').then((p) => {

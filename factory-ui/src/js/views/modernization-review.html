@@ -155,33 +155,33 @@
     </fx-sheet>
 
     <fx-sheet id="mrApproveSheet" side="center" open="{{approveOpen}}" heading="[[delivered() ? 'Delivered to SVN' : 'Approve and deliver to SVN']]" subtitle="[[delivered() ? run().subject + ' is in SVN' : change().title]]">
-      <div class="factory-cf-detail-wrap"><oj-bind-if test="[[!delivered()]]"><div class="factory-mr-form">
-        <h3 class="factory-mm-module">Review steps</h3>
-        <ol class="factory-mr-steps"><oj-bind-for-each data="[[reviewSteps]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
-          <span class="factory-mr-step-text"><strong><oj-bind-text value="[[s.data.name]]"></oj-bind-text></strong><small class="fx-muted"><oj-bind-text value="[[s.data.who]]"></oj-bind-text></small></span><span :class="[[s.data.chipCss]]"><oj-bind-text value="[[s.data.chip]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
-        <h3 class="factory-mm-module">What will be delivered</h3>
-        <dl class="factory-mp-facts"><oj-bind-for-each data="[[deliverFacts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd :class="[[f.data.mono]]"><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
-        <fx-switch id="mrCloseAfter" label="Close the change once it is delivered" value="{{closeAfter}}"></fx-switch>
+      <div class="factory-cf-detail-wrap factory-mb factory-mb-approve"><oj-bind-if test="[[!delivered()]]"><div class="factory-mr-form">
+        <h3 class="factory-mb-h3">Review steps</h3>
+        <ol class="factory-mr-steps factory-mb-steprows"><oj-bind-for-each data="[[reviewSteps]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
+          <span class="factory-mr-step-text"><oj-bind-text value="[[s.data.name]]"></oj-bind-text><span class="fx-visually-hidden"><oj-bind-text value="[[', ' + s.data.chip]]"></oj-bind-text></span></span><span class="factory-mb-steprow-who"><oj-bind-text value="[[s.data.who]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
+        <h3 class="factory-mb-h3">What will be delivered</h3>
+        <dl class="factory-mb-kv"><oj-bind-for-each data="[[deliverFacts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd :class="[[f.data.mono]]"><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+        <label class="factory-mb-checkrow"><input type="checkbox" class="fx-check" id="mrCloseAfter" :checked="[[closeAfter]]" on-change="[[pickCloseAfter]]"/>Close the change once it is delivered</label>
         <p class="fx-help">Closing removes the delivery branch, so the factory closes it only once SVN shows the branch merged; otherwise it closes on its own after the merge.</p>
         <oj-bind-if test="[[blockedText()]]"><div class="fx-alert fx-alert--warning" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[blockedText]]"></oj-bind-text></span></div></oj-bind-if>
         <oj-bind-if test="[[deliverError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="mrDeliverError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
           <span class="fx-alert-text"><strong>SVN refused the commit.</strong> <oj-bind-text value="[[deliverError]]"></oj-bind-text> Nothing is marked delivered.</span>
           <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[deliver]]" :disabled="[[working()]]">Try again</button></div></oj-bind-if>
         <oj-bind-if test="[[working()]]"><p class="factory-mr-delivering" role="status"><span class="fx-spinner" aria-hidden="true"></span>Delivering to SVN: committing the files to the branch…</p></oj-bind-if>
-        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[closeDialog]]">Cancel</button>
-          <button type="button" class="fx-btn fx-btn--primary" id="mrDeliver" on-click="[[deliver]]" :disabled="[[!canDeliver() || working()]]" :title="[[approveTitle]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve and deliver</button></div>
+        <div class="factory-mm-sheetfoot factory-mb-dialogfoot"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[closeDialog]]">Cancel</button>
+          <button type="button" class="factory-mb-btn is-primary is-xs" id="mrDeliver" on-click="[[deliver]]" :disabled="[[!canDeliver() || working()]]" :title="[[approveTitle]]"><span aria-hidden="true">✓</span>Approve and deliver</button></div>
       </div></oj-bind-if>
       <oj-bind-if test="[[delivered()]]"><div class="factory-mr-form" role="status">
-        <div class="factory-mr-done"><span class="factory-mz-dot" aria-hidden="true">✓</span><div><strong><oj-bind-text value="[[run().subject + ' is delivered to SVN']]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[['Revision r' + delivered().revision + ' on its branch']]"></oj-bind-text></span></div></div>
-        <dl class="factory-mp-facts"><div><dt>SVN revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[['r' + delivered().revision]]"></oj-bind-text></dd></div>
+        <div class="factory-mr-done factory-mb-donehead"><span class="factory-mz-dot" aria-hidden="true">✓</span><div><strong><oj-bind-text value="[[run().subject + ' is delivered to SVN']]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[['Revision r' + delivered().revision + ' on its branch']]"></oj-bind-text></span></div></div>
+        <dl class="factory-mb-kv"><div><dt>SVN revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[['r' + delivered().revision]]"></oj-bind-text></dd></div>
           <div><dt>Branch</dt><dd class="factory-mo-mono"><oj-bind-text value="[[delivered().branch || '']]"></oj-bind-text></dd></div>
           <div><dt>Approved by</dt><dd><oj-bind-text value="[[delivered().by + ' · ' + delivered().when]]"></oj-bind-text></dd></div>
           <oj-bind-if test="[[planFact()]]"><div><dt><oj-bind-text value="[[path() === 'migration' ? 'Migration plan' : 'Upgrade plan']]"></oj-bind-text></dt><dd><oj-bind-text value="[[planFact]]"></oj-bind-text></dd></div></oj-bind-if>
           <div><dt>Told</dt><dd>The reviewers and the team, in Notifications</dd></div></dl>
         <oj-bind-if test="[[closeNote()]]"><p class="fx-help"><oj-bind-text value="[[closeNote]]"></oj-bind-text></p></oj-bind-if>
-        <h3 class="factory-mm-module">Next</h3>
-        <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--primary" id="mrNext" on-click="[[nextModule]]"><oj-bind-text value="[[next() ? next().label : 'Open the plan']]"></oj-bind-text><span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
-          <button type="button" class="fx-btn fx-btn--secondary" on-click="[[toHistory]]">See it in History</button><button type="button" class="fx-btn fx-btn--ghost" on-click="[[toOverview]]">Back to Overview</button></div>
+        <h3 class="factory-mb-h3">Next</h3>
+        <div class="factory-mr-next"><button type="button" class="factory-mb-btn is-primary is-xs" id="mrNext" on-click="[[nextModule]]"><oj-bind-text value="[[next() ? next().label : 'Open the plan']]"></oj-bind-text><span aria-hidden="true">→</span></button>
+          <button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[toHistory]]">See it in History</button><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[toOverview]]">Back to Overview</button></div>
       </div></oj-bind-if></div>
     </fx-sheet>
 
