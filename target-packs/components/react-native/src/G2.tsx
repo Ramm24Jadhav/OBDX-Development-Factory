@@ -423,14 +423,14 @@ export function TransactionHistory({ testID, label = 'Transactions', transaction
   const f = filter ?? own;
   const list = transactions.filter((x) => (f === 'in' ? x.amount > 0 : f === 'out' ? x.amount < 0 : true));
   const rows: Item[] = (limit ? list.slice(0, limit) : list).map((x) => ({ id: x.id, title: x.description, meta: x.date, tone: x.amount > 0 ? 'success' : undefined,
-    side: `${x.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(x.amount), x.currency)}${x.currency ? ` ${x.currency}` : ''}` }));
+    value: `${x.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(x.amount), x.currency)}${x.currency ? ` ${x.currency}` : ''}` }));
   return (
     <View testID={testID} style={{ gap: 8 }}>
       {limit ? null : (
         <Segment testID={`${testID}-filter`} label="Show" value={f} options={[{ value: 'all', label: 'All' }, { value: 'in', label: 'Money in' },
           { value: 'out', label: 'Money out' }]} onChange={(x) => { const v = x as 'all' | 'in' | 'out'; setOwn(v); onFilterChange?.(v); }} />
       )}
-      <ItemList testID={`${testID}-list`} label={label} items={rows} emptyText="No transactions in this view."
+      <ItemList testID={`${testID}-list`} heading={label} items={rows} emptyText="No transactions in this view."
                 onSelect={onSelect ? (i) => onSelect(transactions.find((x) => x.id === i.id)!) : undefined} />
       {onViewAll ? <Button testID={`${testID}-all`} label="View all" chroming="borderless" onAction={onViewAll} /> : null}
     </View>
@@ -508,8 +508,8 @@ export interface UpcomingBillsProps {
 /** Bills due soon, pay from the list; overdue ones are marked in words. */
 export function UpcomingBills({ testID, label = 'Upcoming bills', bills, onPay, actionLabel = 'Pay' }: UpcomingBillsProps) {
   const items: Item[] = bills.map((b) => ({ id: b.id, title: b.payee, meta: b.overdue ? `Overdue · ${b.due}` : b.due, tone: b.overdue ? 'danger' : undefined,
-    side: money(b.amount, b.currency) }));
-  return <ItemList testID={testID} label={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
+    value: money(b.amount, b.currency) }));
+  return <ItemList testID={testID} heading={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
                    onAction={(i) => onPay?.(bills.find((b) => b.id === i.id)!)} />;
 }
 

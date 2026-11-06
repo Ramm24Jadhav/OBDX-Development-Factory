@@ -108,11 +108,11 @@ function Gallery() {
         <Section id="danger-button" title="Destructive button"><DestructiveButton label="Cancel payment" /></Section>
         <Section id="segmented" title="Toggle group"><Held initial="Day">{(v, set) => <ToggleGroup testID="tg" label="Show" value={v} onChange={set} options={['Day', 'Week', 'Month']} />}</Held></Section>
         <Section id="filter-chips" title="Filter chips"><Held initial={['Card']}>{(v, set) => <FilterChips testID="fc" label="Filter" value={v} onChange={set} options={['Card', 'Transfer', 'Bills']} />}</Held></Section>
-        <Section id="accordion" title="Accordion"><Accordion testID="acc" sections={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }]} value={['a']} /></Section>
-        <Section id="stepper" title="Stepper"><Stepper testID="st" steps={['Details', 'Review', 'Done']} value={1} /></Section>
+        <Section id="accordion" title="Accordion"><Accordion testID="acc" items={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }]} expanded={['a']} /></Section>
+        <Section id="stepper" title="Stepper"><Stepper testID="st" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Section>
         <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" /></Section>
-        <Section id="timeline" title="Timeline"><Timeline testID="tl" events={[{ title: 'Initiated', detail: '09:12' }, { title: 'Completed', state: 'current' }]} /></Section>
-        <Section id="error-message" title="Error message"><ErrorMessage testID="em" label="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Section>
+        <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Section>
+        <Section id="error-message" title="Error message"><ErrorMessage testID="em" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Section>
         <Section id="balance-card" title="Account balance"><AccountBalance testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Section>
         <Section id="transaction-list" title="Transaction history">
           <TransactionHistory testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
@@ -127,7 +127,7 @@ function Gallery() {
         <Section id="alerts-subscription" title="Alerts"><Held initial={['Low balance']}>{(v, set) => <AlertSubscriptions testID="as" label="Tell me about" value={v} onChange={set}
                                                                                                                      options={['Low balance', 'Payments over 500.00']} />}</Held></Section>
         <Section id="loan-calculator" title="Loan calculator"><LoanCalculator testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Section>
-        <Section id="faq" title="FAQ"><Faq testID="faq" sections={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
+        <Section id="faq" title="FAQ"><Faq testID="faq" items={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
         <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 
         {/* The five effect categories: one of each moving kind (under reduced motion they show their end state) */}

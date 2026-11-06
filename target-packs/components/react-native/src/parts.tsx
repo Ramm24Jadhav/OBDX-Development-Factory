@@ -8,7 +8,8 @@ import { Animated, Modal, PanResponder, Pressable, StyleSheet, Text, TextInput, 
 
 import { Button } from './Button';
 import { formatAmount } from './TextField';
-import { FieldProps, Option, options as toOptions, styles, useField } from './field';
+import type { Severity } from './Toast';
+import { FieldProps, styles, useField } from './field';
 import { Enter, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
 
@@ -84,39 +85,69 @@ export function Sheet({ testID, open, title, onClose, children, side }: {
   );
 }
 
+/* ---------- Items (the web packs' ItemLike) ---------- */
+
+/** An entry of a list as the web packs take it: a string, or an object named by its label (or title, value, id). */
+export interface ListEntry {
+  id?: string;
+  label?: string;
+  title?: string;
+  value?: string | number;
+  disabled?: boolean;
+  [key: string]: unknown;
+}
+
+export type ItemLike = string | ListEntry;
+
+/** The entries with an id (value, else id, label, title) and a label, as the web packs read them. */
+export function toItems(items: ReadonlyArray<ItemLike> = []) {
+  return items.map((o, index) => {
+    if (typeof o !== 'object' || o === null) { return { id: String(o), key: String(o), label: String(o), disabled: false, index, source: o }; }
+    const id = String(o.id ?? o.value ?? o.label ?? o.title ?? index);
+    return { ...o, id, key: o.value !== undefined ? String(o.value) : id, label: String(o.label ?? o.title ?? o.value ?? id), disabled: !!o.disabled, index, source: o };
+  });
+}
+
 /* ---------- Banner ---------- */
+
 
 export interface BannerProps {
   testID: string;
-  /** What happened, in one sentence. */
-  label: string;
-  /** What to do next, under it. */
-  detail?: string;
-  tone?: Tone;
+  /** A short title above the message. */
+  heading?: string;
+  /** What happened and what to do next. */
+  message: string;
+  severity?: Severity;
   actionLabel?: string;
   onAction?: () => void;
+  /** Shows a Dismiss button that hides the message (and calls onClose). */
+  dismissible?: boolean;
   onClose?: () => void;
 }
 
+const TONE: Record<Severity, Tone> = { error: 'danger', warning: 'warning', confirmation: 'success', info: 'info' };
+
 /** A message across the screen: errors and warnings are alerts and are announced, the rest are read in turn. */
-export function Banner({ testID, label, detail, tone = 'info', actionLabel, onAction, onClose }: BannerProps) {
+export function Banner({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose }: BannerProps) {
   const t = useTheme();
-  const c = toneColors(t, tone);
-  const urgent = tone === 'danger' || tone === 'warning';
+  const [gone, setGone] = useState(false);
+  if (gone) { return null; }
+  const c = toneColors(t, TONE[severity]);
+  const urgent = severity === 'error' || severity === 'warning';
   return (
     <Enter testID={testID} style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: t.radius.card, backgroundColor: c.bg, borderLeftWidth: 4,
       borderLeftColor: c.line, alignItems: 'flex-start' }}>
       <View style={{ flex: 1, gap: 4 }} accessible accessibilityRole={urgent ? 'alert' : 'summary'} accessibilityLiveRegion={urgent ? 'assertive' : 'polite'}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: c.fg }}>{label}</Text>
-        {detail ? <Text style={{ fontSize: 13.5, color: t.color.textBody }}>{detail}</Text> : null}
+        {heading ? <Text style={{ fontSize: 14, fontWeight: '700', color: c.fg }}>{heading}</Text> : null}
+        <Text style={{ fontSize: 14, fontWeight: heading ? '400' : '600', color: heading ? t.color.textBody : c.fg }}>{message}</Text>
       </View>
       {actionLabel ? (
         <Touch testID={`${testID}-action`} label={actionLabel} onPress={onAction} style={{ paddingHorizontal: 8 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: c.fg }}>{actionLabel}</Text>
         </Touch>
       ) : null}
-      {onClose ? (
-        <Touch testID={`${testID}-close`} label="Close the message" onPress={onClose} style={{ width: t.minTouch, alignItems: 'center' }}>
+      {dismissible ? (
+        <Touch testID={`${testID}-close`} label="Dismiss" onPress={() => { setGone(true); onClose?.(); }} style={{ width: t.minTouch, alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: c.fg }} importantForAccessibility="no">×</Text>
         </Touch>
       ) : null}
@@ -215,7 +246,7 @@ export function Tiles({ testID, label, tiles, value, onChange }: TilesProps) {
   );
 }
 
-/* ---------- ItemList ---------- */
+/* ---------- ItemList (the web packs' Rows) ---------- */
 
 export interface Item {
   id: string;
@@ -223,7 +254,7 @@ export interface Item {
   /** A second line: the date, the account. */
   meta?: string;
   /** On the right: the amount, the kind. */
-  side?: string;
+  value?: string;
   tone?: Tone;
   /** Shown in bold with a dot until read. */
   unread?: boolean;
@@ -231,9 +262,9 @@ export interface Item {
 
 export interface ItemListProps {
   testID: string;
-  label?: string;
+  heading?: string;
   items: ReadonlyArray<Item>;
-  /** The button on each row ("Pay", "Download"); it is named with the row, for example "Pay Electricity". */
+  /** The button on each row ("Pay", "Download"); it is named with the row, for example "Pay: Electricity". */
   actionLabel?: string;
   onAction?: (item: Item) => void;
   /** A second button on each row (Reject beside Approve). */
@@ -247,14 +278,15 @@ export interface ItemListProps {
 }
 
 /** Rows with a title, a line under it, a value on the right and one action each. */
-export function ItemList({ testID, label, items, actionLabel, onAction, secondaryLabel, onSecondary, showAction, onSelect, emptyText = 'Nothing here yet.' }: ItemListProps) {
+export function ItemList({ testID, heading, items, actionLabel, onAction, secondaryLabel, onSecondary, showAction, onSelect, emptyText = 'Nothing here yet.' }:
+  ItemListProps) {
   const t = useTheme();
   return (
     <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 6 }]}>
-      {label ? <View style={{ paddingVertical: 8 }}><Heading t={t}>{label}</Heading></View> : null}
+      {heading ? <View style={{ paddingVertical: 8 }}><Heading t={t}>{heading}</Heading></View> : null}
       {items.length === 0 ? <Text style={{ fontSize: 14, color: t.color.textMuted, paddingVertical: 12 }}>{emptyText}</Text> : null}
       {items.map((x, i) => {
-        const name = [x.unread ? 'Unread' : '', x.title, x.meta, x.side].filter(Boolean).join(', ');
+        const name = [x.unread ? 'Unread' : '', x.title, x.meta, x.value].filter(Boolean).join(', ');
         const text = (
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontSize: 15, fontWeight: x.unread ? '700' : '500', color: t.color.text }}>{x.unread ? '● ' : ''}{x.title}</Text>
@@ -263,19 +295,19 @@ export function ItemList({ testID, label, items, actionLabel, onAction, secondar
         );
         return (
           <Enter key={x.id} effect="settle" testID={`${testID}-${x.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: t.minTouch + 8,
-            borderTopWidth: i || label ? StyleSheet.hairlineWidth : 0, borderColor: t.color.border }}>
+            borderTopWidth: i || heading ? StyleSheet.hairlineWidth : 0, borderColor: t.color.border }}>
             {onSelect
               ? <Touch testID={`${testID}-${x.id}-open`} label={name} onPress={() => onSelect(x)} style={{ flex: 1 }}>{text}</Touch>
               : <View style={{ flex: 1 }} accessible accessibilityLabel={name}>{text}</View>}
-            {x.side ? <Text importantForAccessibility="no" style={{ fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'],
-              color: x.tone ? toneColors(t, x.tone).fg : t.color.text }}>{x.side}</Text> : null}
+            {x.value ? <Text importantForAccessibility="no" style={{ fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'],
+              color: x.tone ? toneColors(t, x.tone).fg : t.color.text }}>{x.value}</Text> : null}
             {secondaryLabel ? (
-              <Touch testID={`${testID}-${x.id}-secondary`} label={`${secondaryLabel} ${x.title}`} onPress={() => onSecondary?.(x)} style={{ paddingHorizontal: 10 }}>
+              <Touch testID={`${testID}-${x.id}-secondary`} label={`${secondaryLabel}: ${x.title}`} onPress={() => onSecondary?.(x)} style={{ paddingHorizontal: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.color.dangerText }}>{secondaryLabel}</Text>
               </Touch>
             ) : null}
             {actionLabel && (!showAction || showAction(x)) ? (
-              <Touch testID={`${testID}-${x.id}-action`} label={`${actionLabel} ${x.title}`} onPress={() => onAction?.(x)} style={{ paddingHorizontal: 10 }}>
+              <Touch testID={`${testID}-${x.id}-action`} label={`${actionLabel}: ${x.title}`} onPress={() => onAction?.(x)} style={{ paddingHorizontal: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>{actionLabel}</Text>
               </Touch>
             ) : null}
@@ -286,42 +318,55 @@ export function ItemList({ testID, label, items, actionLabel, onAction, secondar
   );
 }
 
-/* ---------- Steps ---------- */
+/* ---------- Steps (the web packs' Stepper) ---------- */
+
+export type StepState = 'done' | 'current' | 'next' | 'failed';
+export interface StepItem extends ListEntry { state?: StepState }
 
 export interface StepsProps {
   testID: string;
+  /** Names the list of steps. */
   label?: string;
-  steps: ReadonlyArray<string>;
-  /** The index of the current step; steps before it are done. steps.length means all are done. */
-  value: number;
+  steps: ReadonlyArray<string | StepItem>;
+  /** The current step's id; the ones before it are done. A step's own state wins. */
+  selectedStep?: string;
 }
 
 /** Where the customer is in a flow: done steps ticked, the current one marked and announced as "Step 2 of 3". */
-export function Steps({ testID, label, steps, value }: StepsProps) {
+export function Steps({ testID, label = 'Progress', steps, selectedStep }: StepsProps) {
   const t = useTheme();
-  const current = Math.min(value, steps.length - 1);
-  const summary = value >= steps.length ? `All ${steps.length} steps done` : `Step ${current + 1} of ${steps.length}: ${steps[current]}`;
+  const list = toItems(steps);
+  const at = list.findIndex((s) => s.id === selectedStep);
+  const states = list.map((s, i) => ((s.source as StepItem).state ?? (i < at ? 'done' : i === at ? 'current' : 'next')) as StepState);
+  const current = states.indexOf('current');
+  const summary = states.every((s) => s === 'done') ? `All ${list.length} steps done`
+    : current >= 0 ? `Step ${current + 1} of ${list.length}: ${list[current].label}` : `${list.length} steps`;
+  const failed = states.indexOf('failed');
   return (
-    <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label ? `${label}, ${summary}` : summary}
-          accessibilityValue={{ min: 0, max: steps.length, now: Math.min(value, steps.length) }} style={{ gap: 8 }}>
-      {label ? <Text style={{ fontSize: 13, fontWeight: '600', color: t.color.textBody }}>{label}</Text> : null}
+    <View testID={testID} accessible accessibilityRole="progressbar"
+          accessibilityLabel={`${label}, ${summary}${failed >= 0 ? `, ${list[failed].label} failed` : ''}`}
+          accessibilityValue={{ min: 0, max: list.length, now: states.filter((s) => s === 'done').length }} style={{ gap: 8 }}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: t.color.textBody }}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        {steps.map((step, i) => {
-          const done = i < value;
-          const on = i === value;
+        {list.map((step, i) => {
+          const state = states[i];
+          const done = state === 'done';
+          const on = state === 'current';
+          const bad = state === 'failed';
+          const mark = bad ? t.color.danger : t.color.primary;
           return (
-            <View key={step} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+            <View key={step.id} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' }}>
                 <View style={{ flex: 1, height: 2, backgroundColor: i === 0 ? 'transparent' : done || on ? t.color.primary : t.color.border }} />
-                <Pop on={on && value} style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 2,
-                  borderColor: done || on ? t.color.primary : t.color.borderStrong, backgroundColor: done ? t.color.primary : t.color.surface }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: done ? t.color.onPrimary : on ? t.color.primaryText : t.color.textMuted }}>
-                    {done ? '✓' : i + 1}
+                <Pop on={on && selectedStep} style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 2,
+                  borderColor: done || on || bad ? mark : t.color.borderStrong, backgroundColor: done || bad ? mark : t.color.surface }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: done || bad ? t.color.onPrimary : on ? t.color.primaryText : t.color.textMuted }}>
+                    {done ? '✓' : bad ? '!' : i + 1}
                   </Text>
                 </Pop>
-                <View style={{ flex: 1, height: 2, backgroundColor: i === steps.length - 1 ? 'transparent' : done ? t.color.primary : t.color.border }} />
+                <View style={{ flex: 1, height: 2, backgroundColor: i === list.length - 1 ? 'transparent' : done ? t.color.primary : t.color.border }} />
               </View>
-              <Text style={{ fontSize: 12, textAlign: 'center', color: on ? t.color.text : t.color.textMuted, fontWeight: on ? '700' : '500' }}>{step}</Text>
+              <Text style={{ fontSize: 12, textAlign: 'center', color: on ? t.color.text : t.color.textMuted, fontWeight: on ? '700' : '500' }}>{step.label}</Text>
             </View>
           );
         })}
@@ -330,42 +375,44 @@ export function Steps({ testID, label, steps, value }: StepsProps) {
   );
 }
 
-/* ---------- TimelineList ---------- */
+/* ---------- TimelineList (the web packs' Timeline) ---------- */
 
-export interface Event {
-  title: string;
-  detail?: string;
-  /** done (ticked), current (marked) or todo (grey). Without states, every event is done. */
-  state?: 'done' | 'current' | 'todo';
+export interface TimelineItem {
+  id?: string;
+  label: string;
+  /** Who and when. */
+  meta?: string;
+  /** done (ticked), current (marked), pending (grey) or failed. Without a state, an event is done. */
+  state?: 'done' | 'current' | 'pending' | 'failed';
 }
 
 export interface TimelineListProps {
   testID: string;
   label?: string;
-  events: ReadonlyArray<Event>;
+  items: ReadonlyArray<TimelineItem>;
 }
 
 /** Events in order down a line, each one stop for a screen reader with its state. */
-export function TimelineList({ testID, label, events }: TimelineListProps) {
+export function TimelineList({ testID, label, items }: TimelineListProps) {
   const t = useTheme();
-  const said = { done: 'done', current: 'in progress', todo: 'not yet' } as const;
+  const said = { done: 'done', current: 'in progress', pending: 'not yet', failed: 'failed' } as const;
   return (
     <Enter testID={testID} style={panel(t)}>
       {label ? <Heading t={t}>{label}</Heading> : null}
-      {events.map((e, i) => {
+      {items.map((e, i) => {
         const state = e.state ?? 'done';
-        const dot = state === 'done' ? t.color.success : state === 'current' ? t.color.primary : t.color.borderStrong;
+        const dot = state === 'done' ? t.color.success : state === 'current' ? t.color.primary : state === 'failed' ? t.color.danger : t.color.borderStrong;
         return (
-          <Enter key={`${e.title}-${i}`} effect="settle" accessible accessibilityLabel={`${e.title}${e.detail ? `, ${e.detail}` : ''}, ${said[state]}`}
+          <Enter key={e.id ?? `${e.label}-${i}`} effect="settle" accessible accessibilityLabel={`${e.label}${e.meta ? `, ${e.meta}` : ''}, ${said[state]}`}
                 style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ alignItems: 'center', width: 14 }}>
-              <View style={{ width: 12, height: 12, borderRadius: 6, marginTop: 4, backgroundColor: state === 'todo' ? t.color.surface : dot, borderWidth: 2,
+              <View style={{ width: 12, height: 12, borderRadius: 6, marginTop: 4, backgroundColor: state === 'pending' ? t.color.surface : dot, borderWidth: 2,
                 borderColor: dot }} />
-              {i < events.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: t.color.border, marginTop: 2 }} /> : null}
+              {i < items.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: t.color.border, marginTop: 2 }} /> : null}
             </View>
             <View style={{ flex: 1, paddingBottom: 12, gap: 2 }}>
-              <Text style={{ fontSize: 14.5, fontWeight: state === 'current' ? '700' : '600', color: state === 'todo' ? t.color.textMuted : t.color.text }}>{e.title}</Text>
-              {e.detail ? <Text style={{ fontSize: 13, color: t.color.textMuted }}>{e.detail}</Text> : null}
+              <Text style={{ fontSize: 14.5, fontWeight: state === 'current' ? '700' : '600', color: state === 'pending' ? t.color.textMuted : t.color.text }}>{e.label}</Text>
+              {e.meta ? <Text style={{ fontSize: 13, color: t.color.textMuted }}>{e.meta}</Text> : null}
             </View>
           </Enter>
         );
@@ -479,7 +526,7 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
 /* ---------- Segment and Chips ---------- */
 
 export interface SegmentProps extends FieldProps<string> {
-  options: ReadonlyArray<string | Option>;
+  options: ReadonlyArray<ItemLike>;
 }
 
 /** One of a few options side by side (a segmented control), with the radio role so screen readers say "1 of 3". */
@@ -487,8 +534,8 @@ export function Segment(props: SegmentProps) {
   const { testID, label, value, onChange, readOnly, disabled, helpText, error } = props;
   const t = useTheme();
   const s = styles(t);
-  const list = toOptions(props.options);
-  const index = list.findIndex((o) => o.value === value);
+  const list = toItems(props.options);
+  const index = list.findIndex((o) => o.key === value);
   const at = useSlide(Math.max(index, 0));
   return (
     <Enter testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
@@ -499,10 +546,10 @@ export function Segment(props: SegmentProps) {
           left: at.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }), borderRadius: t.radius.control,
           backgroundColor: t.color.surface }} /> : null}
         {list.map((o) => {
-          const on = o.value === value;
+          const on = o.key === value;
           return (
-            <Touch key={o.value} testID={`${testID}-option-${o.value}`} role="radio" label={o.label} selected={on} disabled={disabled || readOnly || o.disabled}
-                   onPress={() => onChange?.(o.value)} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8, borderRadius: t.radius.control,
+            <Touch key={o.key} testID={`${testID}-option-${o.key}`} role="radio" label={o.label} selected={on} disabled={disabled || readOnly || o.disabled}
+                   onPress={() => onChange?.(o.key)} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8, borderRadius: t.radius.control,
                      minHeight: t.minTouch - 6 }}>
               <Text style={{ fontSize: 14, textAlign: 'center', fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{o.label}</Text>
             </Touch>
@@ -516,17 +563,18 @@ export function Segment(props: SegmentProps) {
 }
 
 export interface ChipsProps extends FieldProps<string[]> {
-  options: ReadonlyArray<string | Option>;
-  /** Only one chip at a time (re-categorise a transaction). */
-  single?: boolean;
+  options: ReadonlyArray<ItemLike>;
+  /** Several chips at once (the default); false keeps one at a time (re-categorise a transaction). */
+  multiple?: boolean;
 }
 
-/** Tags to narrow a list: each chip is a checkbox (a radio when single) and wraps onto more lines. */
+/** Tags to narrow a list: each chip is a checkbox (a radio when not multiple) and wraps onto more lines. */
 export function Chips(props: ChipsProps) {
-  const { testID, label, value, onChange, readOnly, disabled, helpText, error, single } = props;
+  const { testID, label, value, onChange, readOnly, disabled, helpText, error, multiple = true } = props;
+  const single = !multiple;
   const t = useTheme();
   const s = styles(t);
-  const list = toOptions(props.options);
+  const list = toItems(props.options);
   const chosen = value ?? [];
   const flip = (v: string) => onChange?.(single ? [v] : chosen.includes(v) ? chosen.filter((x) => x !== v) : [...chosen, v]);
   return (
@@ -534,11 +582,11 @@ export function Chips(props: ChipsProps) {
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {list.map((o) => {
-          const on = chosen.includes(o.value);
+          const on = chosen.includes(o.key);
           const off = !!(disabled || readOnly || o.disabled);
           return (
-            <Press key={o.value} testID={`${testID}-option-${o.value}`} accessibilityRole={single ? 'radio' : 'checkbox'} accessibilityLabel={o.label}
-                       accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => flip(o.value)}
+            <Press key={o.key} testID={`${testID}-option-${o.key}`} accessibilityRole={single ? 'radio' : 'checkbox'} accessibilityLabel={o.label}
+                       accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => flip(o.key)}
                        style={{ minHeight: t.minTouch - 8, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999,
                          borderWidth: 1, borderColor: on ? t.color.primary : t.color.borderStrong, backgroundColor: on ? t.color.primarySoft : t.color.surface,
                          opacity: off ? 0.5 : 1 }} hitSlop={4}>
@@ -612,11 +660,14 @@ export function CodeBoxes(props: CodeBoxesProps) {
 
 export interface SliderControlProps extends FieldProps<number> {
   min?: number;
-  max: number;
+  /** 100 unless set. */
+  max?: number;
   step?: number;
-  /** Shows the value as money in this currency. */
-  currency?: string;
-  /** How the value is read and shown; overrides currency. */
+  /** Shown before the value and the scale ("USD"). */
+  prefix?: string;
+  /** Digits after the point; 0 unless set. */
+  decimals?: number;
+  /** How the value is read and shown; overrides prefix and decimals. */
   format?: (n: number) => string;
   /** A line under the value (what it means: "You could borrow 120,000.00"). */
   note?: string;
@@ -627,11 +678,14 @@ export interface SliderControlProps extends FieldProps<number> {
  * swipe up and down to step it (the adjustable role).
  */
 export function SliderControl(props: SliderControlProps) {
-  const { testID, label, value, onChange, readOnly, disabled, helpText, error, min = 0, max, step = 1, currency, format, note } = props;
+  const { testID, label, value, onChange, readOnly, disabled, helpText, error, min = 0, max = 100, step = 1, prefix, decimals = 0, format, note } = props;
   const t = useTheme();
   const s = styles(t);
   const width = useRef(1);
-  const show = format ?? ((n: number) => (currency ? `${currency} ${formatAmount(n, currency)}` : String(n)));
+  const show = format ?? ((n: number) => {
+    const [whole, part] = n.toFixed(decimals).split('.');
+    return `${prefix ? `${prefix} ` : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}${part ? `.${part}` : ''}`;
+  });
   const clamp = (n: number) => Math.min(max, Math.max(min, Math.round((n - min) / step) * step + min));
   const current = clamp(value ?? min);
   const off = !!(disabled || readOnly);

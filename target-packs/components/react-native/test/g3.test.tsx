@@ -24,7 +24,7 @@ describe('group 3', () => {
                                        value={{ loan: '', amount: null, from: '' }} />],
       ['RepaymentSchedule', <RepaymentSchedule testID="x" currency="USD" instalments={[{ due: '05 Feb', principal: 380, interest: 32 }]} />],
       ['PromiseToPay', <PromiseToPay testID="x" label="Promise to pay" rows={[{ label: 'Overdue', value: '412.00' }]} value="" onSubmit={noop} />],
-      ['DisbursementTimeline', <DisbursementTimeline testID="x" events={[{ title: 'Sanctioned 30,000.00', detail: '02 Jan' }]} />],
+      ['DisbursementTimeline', <DisbursementTimeline testID="x" items={[{ label: 'Sanctioned 30,000.00', meta: '02 Jan' }]} />],
       ['CardTile', <CardTile testID="x" card={card} frozen={false} />],
       ['CardList', <CardList testID="x" tiles={tiles} onChange={noop} />],
       ['ActivateCard', <ActivateCard testID="x" label="Enter the activation code" value="" />],
@@ -42,8 +42,8 @@ describe('group 3', () => {
       ['SessionExpiryWarning', <SessionExpiryWarning testID="x" open={false} onStay={noop} onSignOut={noop} />],
       ['SecureConfirmation', <SecureConfirmation testID="x" rows={[{ label: 'Pay', value: 'A. Rao' }]} code="" onCodeChange={noop} onConfirm={noop} />],
       ['SensitiveField', <SensitiveField testID="x" label="Card number" value="4111 1111 1111 4821" />],
-      ['KycSteps', <KycSteps testID="x" steps={['ID', 'Selfie', 'Address']} value={0} />],
-      ['FraudAlert', <FraudAlert testID="x" label="We stopped a payment of 899.00 to Unknown Ltd." onAllow={noop} onBlock={noop} />],
+      ['KycSteps', <KycSteps testID="x" steps={['ID', 'Selfie', 'Address']} selectedStep="ID" />],
+      ['FraudAlert', <FraudAlert testID="x" message="We stopped a payment of 899.00 to Unknown Ltd." onAllow={noop} onBlock={noop} />],
     ];
     for (const [name, element] of all) {
       await render(element);

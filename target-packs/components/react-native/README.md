@@ -40,7 +40,7 @@ Groups 1 to 6 (`src/G1.tsx` … `src/G6.tsx`) are the components `catalogue.json
 shared parts in `src/parts.tsx` (sheet, banner, key-value card, tiles, item list, steps, timeline, progress bars, bar
 chart, segmented choice, chips, code boxes, slider), so they look and read alike. Fields take the same props as the
 foundation (`testID`, `label`, `value`, `onChange`, `required`, `readOnly`, `disabled`, `helpText`, `error`); display
-components take their data (`rows`, `tiles`, `items`, `events`, `steps`) and report actions as events. Account and card
+components take their data (`rows`, `tiles`, `items`, `steps`, with the web packs' names and shapes) and report actions as events. Account and card
 numbers show only their last four digits, IBANs are checked with their check digits, codes and PINs are never kept, and
 nothing calls a service: `AuthChallenge` takes the app's own biometric check as `authenticate`, as `FileUpload` takes
 `pick`. Charts are plain views, so the pack needs no drawing library.

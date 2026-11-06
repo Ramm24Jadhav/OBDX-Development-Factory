@@ -18,28 +18,28 @@ describe('group 1', () => {
     const all: [string, ReactElement][] = [
       ['SecondaryButton', <SecondaryButton testID="x" label="Save for later" onAction={noop} />],
       ['DestructiveButton', <DestructiveButton testID="x" label="Cancel payment" onAction={noop} />],
-      ['Slider', <Slider testID="x" label="Monthly saving" value={1500} max={5000} currency="USD" />],
+      ['Slider', <Slider testID="x" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} />],
       ['ToggleGroup', <ToggleGroup testID="x" label="Show" value="Day" options={['Day', 'Week', 'Month']} />],
       ['FilterChips', <FilterChips testID="x" label="Filter" value={[]} options={['Card', 'Transfer']} />],
-      ['ActionMenu', <ActionMenu testID="x" actions={[{ id: 'a', label: 'Download statement' }]} onAction={noop} />],
-      ['Accordion', <Accordion testID="x" sections={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day.' }]} />],
-      ['Stepper', <Stepper testID="x" steps={['Details', 'Review', 'Done']} value={1} />],
-      ['Drawer', <Drawer testID="x" label="Menu" open items={[{ value: 'a', label: 'Accounts' }]} value="a" onOpenChange={noop} />],
-      ['BottomSheet', <BottomSheet testID="x" title="Filter transactions" open onOpenChange={noop}><Text>Body</Text></BottomSheet>],
+      ['ActionMenu', <ActionMenu testID="x" items={[{ id: 'a', label: 'Download statement' }]} onAction={noop} />],
+      ['Accordion', <Accordion testID="x" items={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day.' }]} />],
+      ['Stepper', <Stepper testID="x" steps={['Details', 'Review', 'Done']} selectedStep="Review" />],
+      ['Drawer', <Drawer testID="x" label="Menu" open items={[{ value: 'a', label: 'Accounts' }]} selection="a" onOpenChange={noop} />],
+      ['BottomSheet', <BottomSheet testID="x" heading="Filter transactions" open onOpenChange={noop}><Text>Body</Text></BottomSheet>],
       ['Stack', <Stack columns={2}><Text>A</Text><Text>B</Text></Stack>],
       ['Divider', <Divider label="Older" />],
       ['Avatar', <Avatar name="Asha Rao" />],
-      ['Pagination', <Pagination testID="x" value={2} pageCount={4} onChange={noop} />],
+      ['Pagination', <Pagination testID="x" page={2} pageCount={4} onPageChange={noop} />],
       ['StatusBadge', <StatusBadge label="Completed" tone="success" />],
-      ['Timeline', <Timeline testID="x" events={[{ title: 'Initiated', detail: '09:12' }, { title: 'Completed', state: 'todo' }]} />],
+      ['Timeline', <Timeline testID="x" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'pending' }]} />],
       ['ActivityIndicator', <ActivityIndicator label="Loading transactions" />],
       ['Skeleton', <Skeleton />],
-      ['EmptyState', <EmptyState title="No payees yet" body="Add one to pay faster." actionLabel="Add a payee" onAction={noop} />],
+      ['EmptyState', <EmptyState heading="No payees yet" text="Add one to pay faster." actionLabel="Add a payee" onAction={noop} />],
       ['Tooltip', <Tooltip testID="x" label="Available balance" text="What you can spend now." />],
-      ['Alert', <Alert testID="x" label="Transfers after 6 pm arrive the next working day." />],
-      ['ErrorMessage', <ErrorMessage testID="x" label="The amount is more than your daily limit." actionLabel="Change the amount" onAction={noop} />],
-      ['SuccessMessage', <SuccessMessage testID="x" label="Payment sent." actionLabel="View receipt" onAction={noop} />],
-      ['NotificationPanel', <NotificationPanel testID="x" items={[{ id: '1', title: 'Card payment due', unread: true }]} onRead={noop} />],
+      ['Alert', <Alert testID="x" message="Transfers after 6 pm arrive the next working day." dismissible />],
+      ['ErrorMessage', <ErrorMessage testID="x" message="The amount is more than your daily limit." actionLabel="Change the amount" onAction={noop} />],
+      ['SuccessMessage', <SuccessMessage testID="x" message="Payment sent." actionLabel="View receipt" onAction={noop} />],
+      ['NotificationPanel', <NotificationPanel testID="x" items={[{ id: '1', title: 'Card payment due', unread: true }]} onAction={noop} />],
     ];
     for (const [name, element] of all) {
       await render(element);
@@ -59,7 +59,7 @@ describe('group 1', () => {
 
   it('Slider steps with the screen reader swipe, writes back and stays within max', async () => {
     let seen = 0;
-    await render(<Controlled initial={4900}>{(v, set) => <Slider testID="s" label="Monthly saving" value={v} min={0} max={5000} step={100} currency="USD"
+    await render(<Controlled initial={4900}>{(v, set) => <Slider testID="s" label="Monthly saving" value={v} min={0} max={5000} step={100} prefix="USD" decimals={2}
                                                                    onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
     const slider = screen.getByRole('adjustable', { name: 'Monthly saving' });
     await fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
@@ -88,7 +88,7 @@ describe('group 1', () => {
 
   it('ActionMenu opens a sheet and reports the action chosen', async () => {
     const act = jest.fn();
-    await render(<ActionMenu testID="m" actions={[{ id: 'nick', label: 'Set a nickname' }, { id: 'close', label: 'Close the account', danger: true }]} onAction={act} />);
+    await render(<ActionMenu testID="m" items={[{ id: 'nick', label: 'Set a nickname' }, { id: 'close', label: 'Close the account', danger: true }]} onAction={act} />);
     await fireEvent.press(screen.getByRole('button', { name: 'More actions' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Close the account' }));
     expect(act).toHaveBeenCalledWith('close');
@@ -96,7 +96,7 @@ describe('group 1', () => {
   });
 
   it('Accordion says whether each section is expanded and keeps one open when single', async () => {
-    await render(<Accordion testID="a" single sections={[{ id: 'a', title: 'Fees?', body: 'None.' }, { id: 'b', title: 'Cancel?', body: 'Until it is sent.' }]} />);
+    await render(<Accordion testID="a" items={[{ id: 'a', title: 'Fees?', body: 'None.' }, { id: 'b', title: 'Cancel?', body: 'Until it is sent.' }]} />);
     const fees = screen.getByRole('button', { name: 'Fees?' });
     expect(fees.props.accessibilityState.expanded).toBe(false);
     await fireEvent.press(fees);
@@ -109,7 +109,7 @@ describe('group 1', () => {
   it('Drawer marks the current page, and choosing one writes back and closes', async () => {
     let page = '';
     const open = jest.fn();
-    await render(<Drawer testID="d" label="Menu" open onOpenChange={open} value="acc" onChange={(x) => { page = x; }}
+    await render(<Drawer testID="d" label="Menu" open onOpenChange={open} selection="acc" onSelectionChange={(x) => { page = x; }}
                          items={[{ value: 'acc', label: 'Accounts' }, { value: 'pay', label: 'Payments' }]} />);
     expect(screen.getByRole('tab', { name: 'Accounts' }).props.accessibilityState.selected).toBe(true);
     await fireEvent.press(screen.getByRole('tab', { name: 'Payments' }));
@@ -118,7 +118,7 @@ describe('group 1', () => {
 
   it('Pagination cannot go before the first page and marks the current one', async () => {
     const go = jest.fn();
-    await render(<Pagination testID="p" value={1} pageCount={3} onChange={go} />);
+    await render(<Pagination testID="p" page={1} pageCount={3} onPageChange={go} />);
     expect(screen.getByRole('button', { name: 'Previous page' }).props.accessibilityState.disabled).toBe(true);
     expect(screen.getByRole('button', { name: 'Page 1 of 3' }).props.accessibilityState.selected).toBe(true);
     await fireEvent.press(screen.getByRole('button', { name: 'Next page' }));
@@ -135,19 +135,31 @@ describe('group 1', () => {
   });
 
   it('errors are alerts, success is not', async () => {
-    await render(<ErrorMessage testID="e" label="The amount is more than your daily limit." />);
+    await render(<ErrorMessage testID="e" message="The amount is more than your daily limit." />);
     expect(screen.getByRole('alert')).toHaveTextContent('The amount is more than your daily limit.');
-    await render(<SuccessMessage testID="s" label="Payment sent." />);
+    await render(<SuccessMessage testID="s" message="Payment sent." />);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('NotificationPanel counts the unread and offers Read only on them', async () => {
     const read = jest.fn();
-    await render(<NotificationPanel testID="n" onRead={read} items={[{ id: '1', title: 'Card payment due', unread: true }, { id: '2', title: 'New statement' }]} />);
+    await render(<NotificationPanel testID="n" onAction={read} items={[{ id: '1', title: 'Card payment due', unread: true }, { id: '2', title: 'New statement' }]} />);
     expect(screen.getByText('Notifications, 1 unread')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Read New statement' })).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Read Card payment due' }));
+    expect(screen.queryByRole('button', { name: 'Read: New statement' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Read: Card payment due' }));
     expect(read.mock.calls[0][0].id).toBe('1');
+  });
+
+  it('Alert can be dismissed, and Accordion opens several sections when multiple', async () => {
+    const closed = jest.fn();
+    await render(<Alert testID="al" heading="Cut-off" message="Transfers after 6 pm arrive the next working day." dismissible onClose={closed} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Dismiss' }));
+    expect([screen.queryByText('Cut-off'), closed.mock.calls.length]).toEqual([null, 1]);
+    let open: string[] = [];
+    await render(<Accordion testID="a" multiple onExpandedChange={(x) => { open = x; }} items={[{ id: 'a', title: 'Fees?', body: 'None.' }, { id: 'b', title: 'Cancel?', body: 'Yes.' }]} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Fees?' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel?' }));
+    expect(open).toEqual(['a', 'b']);
   });
 
   it('Avatar shows initials and reads the name', async () => {

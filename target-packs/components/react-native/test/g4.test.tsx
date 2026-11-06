@@ -23,8 +23,8 @@ describe('group 4', () => {
       ['SpendCategories', <SpendCategories testID="x" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} />],
       ['ApprovalQueue', <ApprovalQueue testID="x" items={queue} onApprove={noop} onReject={noop} />],
       ['ApprovalDetail', <ApprovalDetail testID="x" rows={rows} onApprove={noop} onReject={noop} onSendBack={noop} />],
-      ['ApprovalJourney', <ApprovalJourney testID="x" events={[{ title: 'Initiated', detail: 'A. Rao · 09:12' }, { title: 'Level 2', state: 'current' }]} />],
-      ['ModificationNotice', <ModificationNotice testID="x" label="PAY-4410 was sent back." onAction={noop} />],
+      ['ApprovalJourney', <ApprovalJourney testID="x" items={[{ label: 'Initiated', meta: 'A. Rao · 09:12' }, { label: 'Level 2', state: 'current' }]} />],
+      ['ModificationNotice', <ModificationNotice testID="x" message="PAY-4410 was sent back." onAction={noop} />],
       ['Profile', <Profile testID="x" rows={[{ label: 'Name', value: 'A. Rao' }]} onAction={noop} />],
       ['SignInOptions', <SignInOptions testID="x" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} />],
       ['CodeDelivery', <CodeDelivery testID="x" label="Send codes by" value="SMS" />],
@@ -35,7 +35,7 @@ describe('group 4', () => {
       ['DoNotDisturb', <DoNotDisturb testID="x" label="Quiet hours, 22:00 to 07:00" value />],
       ['Consents', <Consents testID="x" consents={[{ id: 'b', title: 'Budget app', meta: 'Granted 02 Jan' }]} onRevoke={noop} />],
       ['TransactionLimits', <TransactionLimits testID="x" currency="USD" items={[{ label: 'Daily transfers', value: 1200, max: 5000 }]} />],
-      ['SessionSummary', <SessionSummary testID="x" events={[{ title: 'Today 08:12', detail: 'iPhone 15 · London' }]} />],
+      ['SessionSummary', <SessionSummary testID="x" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} />],
     ];
     for (const [name, element] of all) {
       await render(element);
@@ -66,10 +66,10 @@ describe('group 4', () => {
     const approve = jest.fn();
     const reject = jest.fn();
     await render(<ApprovalQueue testID="q" items={queue} onApprove={approve} onReject={reject} />);
-    const approves = screen.getAllByRole('button', { name: /^Approve / });
-    expect(approves[0].props.accessibilityLabel).toBe('Approve Payroll Feb · prioritized');
+    const approves = screen.getAllByRole('button', { name: /^Approve: / });
+    expect(approves[0].props.accessibilityLabel).toBe('Approve: Payroll Feb · prioritized');
     await fireEvent.press(approves[0]);
-    await fireEvent.press(screen.getByRole('button', { name: 'Reject Vendor ABC Ltd' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Reject: Vendor ABC Ltd' }));
     expect([approve.mock.calls[0][0].id, reject.mock.calls[0][0].id]).toEqual(['10', '12']);
   });
 
@@ -87,8 +87,8 @@ describe('group 4', () => {
   it('Devices offers Remove on every device but this one', async () => {
     const remove = jest.fn();
     await render(<Devices testID="d" devices={[{ id: 'a', title: 'iPhone 15', current: true }, { id: 'b', title: 'Chrome on Windows' }]} onRemove={remove} />);
-    expect(screen.queryByRole('button', { name: 'Remove iPhone 15 · this device' })).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Remove Chrome on Windows' }));
+    expect(screen.queryByRole('button', { name: 'Remove: iPhone 15 · this device' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Remove: Chrome on Windows' }));
     expect(remove.mock.calls[0][0].id).toBe('b');
   });
 

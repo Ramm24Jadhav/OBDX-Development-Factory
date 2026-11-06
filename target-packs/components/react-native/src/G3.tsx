@@ -14,7 +14,7 @@ import { TextArea, Toggle } from './Forms';
 import { Account, AccountSelector } from './G2';
 import { AmountInput, TextField, formatAmount } from './TextField';
 import { FieldProps, Option, styles } from './field';
-import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, Event, Item, ItemList, KeyValues, KeyValuesProps, Segment, SliderControl, SliderControlProps, Steps,
+import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem, Item, ItemList, KeyValues, KeyValuesProps, Segment, SliderControl, SliderControlProps, Steps,
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
@@ -224,7 +224,7 @@ export function PromiseToPay({ testID, label, value, onChange, rows, min, max, o
 export interface DisbursementTimelineProps {
   testID: string;
   label?: string;
-  events: ReadonlyArray<Event>;
+  items: ReadonlyArray<TimelineItem>;
 }
 
 /** Each disbursement of the loan, in order; future ones take state "todo". */
@@ -457,7 +457,7 @@ export interface CardStatementsProps {
 
 /** Past statements, ready to download. */
 export function CardStatements({ testID, label = 'Statements', statements, onDownload }: CardStatementsProps) {
-  return <ItemList testID={testID} label={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
+  return <ItemList testID={testID} heading={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
 }
 
 /* ---------- AuthChallenge ---------- */
@@ -597,7 +597,7 @@ export function KycSteps({ label = 'Identity check', ...props }: StepsProps) {
   return <Steps {...props} label={label} />;
 }
 
-export interface FraudAlertProps extends Omit<BannerProps, 'tone' | 'actionLabel' | 'onAction'> {
+export interface FraudAlertProps extends Omit<BannerProps, 'severity' | 'actionLabel' | 'onAction'> {
   /** It was the customer: let it through. */
   onAllow?: () => void;
   /** It was not: block the card. */
@@ -608,7 +608,7 @@ export interface FraudAlertProps extends Omit<BannerProps, 'tone' | 'actionLabel
 export function FraudAlert({ onAllow, onBlock, ...props }: FraudAlertProps) {
   return (
     <View style={{ gap: 8 }}>
-      <Banner {...props} tone="danger" />
+      <Banner {...props} severity="error" />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {onAllow ? <View style={{ flex: 1 }}><Button testID={`${props.testID}-allow`} label="It was me" chroming="outlined" onAction={onAllow} /></View> : null}
         {onBlock ? <View style={{ flex: 1 }}><Button testID={`${props.testID}-block`} label="Block the card" chroming="danger" onAction={onBlock} /></View> : null}

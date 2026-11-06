@@ -31,7 +31,7 @@ export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePick
 export { Accordion, ActionMenu, ActivityIndicator, Alert, Avatar, BottomSheet, DestructiveButton, Divider, Drawer, EmptyState, ErrorMessage, FilterChips,
   NotificationPanel, Pagination, SecondaryButton, Skeleton, Slider, Stack, StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip, initials } from './G1';
 export type { AccordionProps, ActionMenuProps, ActivityIndicatorProps, AlertProps, AvatarProps, BottomSheetProps, DestructiveButtonProps, DrawerProps,
-  EmptyStateProps, FilterChipsProps, MenuAction, MessageProps, NotificationPanelProps, PaginationProps, SecondaryButtonProps, Section, SkeletonProps, SliderProps,
+  EmptyStateProps, FilterChipsProps, MenuItem, NavItem, MessageProps, NotificationPanelProps, PaginationProps, SecondaryButtonProps, PanelItem, SkeletonProps, SliderProps,
   StackProps, StatusBadgeProps, StepperProps, TimelineProps, ToggleGroupProps, TooltipProps } from './G1';
 export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption,
   DepositTopUp, DepositsSummary, MaturityInstructions, NewDepositForm, PaymentForm, PaymentSchedule, PaymentStatus, QuickActions, TransactionDetails,
@@ -47,7 +47,8 @@ export type { AddOnCardProps, AddOnValue, AuthChallengeProps, BlockCardProps, Ca
   RaiseDisputeProps, RedeemPointsProps, RepaymentScheduleProps, RepaymentValue, ResetPinProps, SecureConfirmationProps, SensitiveFieldProps,
   SessionExpiryWarningProps } from './G3';
 export { maskNumber } from './parts';
-export type { Bar, BannerProps, Event, Item, KeyValuesProps, Meter, Row, Tile, TilesProps, Tone } from './parts';
+export { toItems } from './parts';
+export type { Bar, BannerProps, ItemLike, ListEntry, StepItem, StepState, TimelineItem, Item, KeyValuesProps, Meter, Row, Tile, TilesProps, Tone } from './parts';
 export { AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, BarChart, CodeDelivery, Consents, Devices, DoNotDisturb, LanguagePicker,
   ModificationNotice, Profile, ProgressBar, SavingsGoal, SessionSummary, SignInOptions, SpendCategories, TransactionLimits } from './G4';
 export type { Approval, ApprovalDetailProps, ApprovalQueueProps, ChoicesProps, ConsentsProps, Device, DevicesProps, JourneyProps, LanguagePickerProps,

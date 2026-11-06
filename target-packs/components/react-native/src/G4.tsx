@@ -11,7 +11,7 @@ import { Dropdown } from './Dropdown';
 import { TextArea, Toggle } from './Forms';
 import { formatAmount } from './TextField';
 import { FieldProps, Option } from './field';
-import { Banner, BannerProps, Bars, BarsProps, Chips, ChipsProps, Event, Item, ItemList, KeyValues, KeyValuesProps, ProgressList, ProgressListProps,
+import { Banner, BannerProps, Bars, BarsProps, Chips, ChipsProps, TimelineItem, Item, ItemList, KeyValues, KeyValuesProps, ProgressList, ProgressListProps,
   Segment, SegmentProps, TimelineList } from './parts';
 import { useTheme } from './theme';
 
@@ -53,8 +53,8 @@ export function SavingsGoal({ testID, label, saved, target, currency, onAdd }: S
 }
 
 /** Re-categorise a transaction: one category at a time. */
-export function SpendCategories(props: Omit<ChipsProps, 'single'>) {
-  return <Chips {...props} single />;
+export function SpendCategories(props: Omit<ChipsProps, 'multiple'>) {
+  return <Chips {...props} multiple={false} />;
 }
 
 /** What is used of each limit today. */
@@ -84,7 +84,7 @@ export function ApprovalQueue({ testID, label = 'Pending for approval', items, o
   const sorted = [...items].sort((a, b) => Number(!!b.priority) - Number(!!a.priority))
     .map((x) => ({ ...x, title: x.priority ? `${x.title} · prioritized` : x.title }));
   const find = (i: Item) => items.find((x) => x.id === i.id)!;
-  return <ItemList testID={testID} label={`${label}, ${items.length}`} items={sorted} actionLabel="Approve" onAction={(i) => onApprove(find(i))}
+  return <ItemList testID={testID} heading={`${label}, ${items.length}`} items={sorted} actionLabel="Approve" onAction={(i) => onApprove(find(i))}
                    secondaryLabel={onReject ? 'Reject' : undefined} onSecondary={(i) => onReject?.(find(i))}
                    onSelect={onSelect ? (i) => onSelect(find(i)) : undefined} emptyText="Nothing is waiting for you." />;
 }
@@ -140,7 +140,7 @@ export function ApprovalDetail({ testID, onApprove, onReject, onSendBack, busy, 
 export interface JourneyProps {
   testID: string;
   label?: string;
-  events: ReadonlyArray<Event>;
+  items: ReadonlyArray<TimelineItem>;
 }
 
 /** Who approved, and who is next (the next level takes state "current"). */
@@ -156,8 +156,8 @@ export function SessionSummary({ label = 'Recent sign-ins', ...props }: JourneyP
 /* ---------- ModificationNotice ---------- */
 
 /** Sent back to the maker, with the reason and Modify it. */
-export function ModificationNotice({ actionLabel = 'Modify it', ...props }: Omit<BannerProps, 'tone'>) {
-  return <Banner {...props} tone="warning" actionLabel={actionLabel} />;
+export function ModificationNotice({ actionLabel = 'Modify it', ...props }: Omit<BannerProps, 'severity'>) {
+  return <Banner {...props} severity="warning" actionLabel={actionLabel} />;
 }
 
 /* ---------- Profile ---------- */
@@ -229,7 +229,7 @@ export interface DevicesProps {
 /** Devices that can sign in, with Remove on all but this one. */
 export function Devices({ testID, label = 'Registered devices', devices, onRemove }: DevicesProps) {
   const items = devices.map((d) => ({ ...d, title: d.current ? `${d.title} · this device` : d.title }));
-  return <ItemList testID={testID} label={label} items={items} actionLabel="Remove" showAction={(i) => !devices.find((d) => d.id === i.id)?.current}
+  return <ItemList testID={testID} heading={label} items={items} actionLabel="Remove" showAction={(i) => !devices.find((d) => d.id === i.id)?.current}
                    onAction={(i) => onRemove(devices.find((d) => d.id === i.id)!)} />;
 }
 
@@ -242,5 +242,5 @@ export interface ConsentsProps {
 
 /** Apps that can read the accounts, with Revoke. */
 export function Consents({ testID, label = 'Access and consent', consents, onRevoke }: ConsentsProps) {
-  return <ItemList testID={testID} label={label} items={consents} actionLabel="Revoke" onAction={onRevoke} emptyText="No app can read your accounts." />;
+  return <ItemList testID={testID} heading={label} items={consents} actionLabel="Revoke" onAction={onRevoke} emptyText="No app can read your accounts." />;
 }

@@ -285,7 +285,7 @@ export function Carousel({ testID, label, slides, value, onChange, width = 320 }
 /** An amount on a slider that stretches a little at either end, so the customer feels the limit. */
 export function ElasticSlider(props: SliderControlProps) {
   const at = props.value ?? props.min ?? 0;
-  const edge = at <= (props.min ?? 0) || at >= props.max;
+  const edge = at <= (props.min ?? 0) || at >= (props.max ?? 100);
   const bump = usePop(edge ? at : 'inside');
   return <Animated.View style={bump}><SliderControl {...props} /></Animated.View>;
 }
@@ -518,7 +518,7 @@ export function ProfileCard({ testID, name, role, photo, rows = [], actionLabel,
       <View style={{ height: 64, experimental_backgroundImage: `linear-gradient(135deg, ${t.color.primary}, ${t.color.info})` }} />
       <Animated.View style={{ marginTop: -28, alignSelf: 'center', borderRadius: 32, borderWidth: 3, borderColor: t.color.surface,
         transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
-        {photo ? <Image source={{ uri: photo }} style={{ width: 56, height: 56, borderRadius: 28 }} accessibilityLabel={name} /> : <Avatar name={name} size={56} />}
+        {photo ? <Image source={{ uri: photo }} style={{ width: 56, height: 56, borderRadius: 28 }} accessibilityLabel={name} /> : <Avatar name={name} size="lg" />}
       </Animated.View>
       <View style={{ alignItems: 'center', paddingHorizontal: 16 }}>
         <Text accessibilityRole="header" style={{ fontSize: 17, fontWeight: '700', color: t.color.text }}>{name}</Text>

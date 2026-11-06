@@ -133,7 +133,7 @@ describe('group 2', () => {
     const pay = jest.fn();
     await render(<UpcomingBills testID="u" onPay={pay} bills={[{ id: 'e', payee: 'Electricity', due: '18 Jan', amount: 86.2, currency: 'USD', overdue: true }]} />);
     expect(screen.getByLabelText('Electricity, Overdue · 18 Jan, 86.20 USD')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Pay Electricity' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Pay: Electricity' }));
     expect(pay.mock.calls[0][0].id).toBe('e');
   });
 

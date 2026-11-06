@@ -12,9 +12,9 @@ import { DateRange, DateRangePicker, NumberInput, TextArea } from './Forms';
 import { Accordion, AccordionProps } from './G1';
 import { Account, AccountSelector } from './G2';
 import { instalment } from './G3';
-import { AmountInput, TextField, formatAmount } from './TextField';
+import { AmountInput, TextField, decimalsOf, formatAmount } from './TextField';
 import { FieldProps, Option, styles } from './field';
-import { Event, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segment, SegmentProps, SliderControl, SliderControlProps, Steps, StepsProps, TimelineList,
+import { TimelineItem, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segment, SegmentProps, SliderControl, SliderControlProps, Steps, StepsProps, TimelineList,
   Touch, panel } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
@@ -63,7 +63,7 @@ export function RaiseRequest({ testID, label = 'Raise a request', value, onChang
 export interface TrackerProps {
   testID: string;
   label?: string;
-  events: ReadonlyArray<Event>;
+  items: ReadonlyArray<TimelineItem>;
 }
 
 /** Where each request is. */
@@ -89,7 +89,7 @@ export interface MailboxProps {
 /** Mails, alerts and notices from the bank. */
 export function Mailbox({ testID, label = 'Mailbox', messages, onOpen }: MailboxProps) {
   const unread = messages.filter((m) => m.unread).length;
-  return <ItemList testID={testID} label={unread ? `${label}, ${unread} unread` : label} items={messages} onSelect={onOpen} emptyText="No messages." />;
+  return <ItemList testID={testID} heading={unread ? `${label}, ${unread} unread` : label} items={messages} onSelect={onOpen} emptyText="No messages." />;
 }
 
 export interface DocumentsProps {
@@ -101,12 +101,12 @@ export interface DocumentsProps {
 
 /** Receipts for past transactions. */
 export function EReceipts({ testID, label = 'E-receipts', documents, onDownload }: DocumentsProps) {
-  return <ItemList testID={testID} label={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No receipts yet." />;
+  return <ItemList testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No receipts yet." />;
 }
 
 /** Interest, balance and tax certificates. */
 export function Certificates({ testID, label = 'Certificates', documents, onDownload }: DocumentsProps) {
-  return <ItemList testID={testID} label={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No certificates yet." />;
+  return <ItemList testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No certificates yet." />;
 }
 
 export interface NominationsProps {
@@ -119,7 +119,7 @@ export interface NominationsProps {
 
 /** Who receives the account, and their share. */
 export function Nominations({ testID, label = 'Nominations', nominees, onEdit }: NominationsProps) {
-  return <ItemList testID={testID} label={label} items={nominees} actionLabel={onEdit ? 'Edit' : undefined} onAction={onEdit} emptyText="No nominees yet." />;
+  return <ItemList testID={testID} heading={label} items={nominees} actionLabel={onEdit ? 'Edit' : undefined} onAction={onEdit} emptyText="No nominees yet." />;
 }
 
 /* ---------- ComposeMessage ---------- */
@@ -328,7 +328,9 @@ export function ForexCalculator({ testID, label = 'Forex calculator', value, onC
   );
 }
 
-export interface EligibilityCalculatorProps extends Omit<SliderControlProps, 'note' | 'format'> {
+export interface EligibilityCalculatorProps extends Omit<SliderControlProps, 'note' | 'format' | 'prefix' | 'decimals'> {
+  /** The income's currency: shown before the amounts, with its decimals. */
+  currency?: string;
   /** The share of income the bank lets go to instalments, a percentage. */
   share?: number;
   annualRate: number;
@@ -336,22 +338,24 @@ export interface EligibilityCalculatorProps extends Omit<SliderControlProps, 'no
 }
 
 /** How much the customer could borrow on their monthly income (the slider). */
-export function EligibilityCalculator({ share = 40, annualRate, months, ...props }: EligibilityCalculatorProps) {
+export function EligibilityCalculator({ share = 40, annualRate, months, currency, ...props }: EligibilityCalculatorProps) {
   const income = props.value ?? 0;
   const could = loanFor((income * share) / 100, annualRate, months);
-  return <SliderControl {...props} note={`You could borrow about ${money(Math.floor(could), props.currency)} over ${months} months.`} />;
+  return <SliderControl {...props} prefix={currency} decimals={decimalsOf(currency)} note={`You could borrow about ${money(Math.floor(could), currency)} over ${months} months.`} />;
 }
 
-export interface GoalCalculatorProps extends Omit<SliderControlProps, 'note' | 'format'> {
+export interface GoalCalculatorProps extends Omit<SliderControlProps, 'note' | 'format' | 'prefix' | 'decimals'> {
+  /** The goal's currency: shown before the amounts, with its decimals. */
+  currency?: string;
   /** The goal's amount. */
   target: number;
 }
 
 /** What to save each month (the slider) and when the goal is reached. */
-export function GoalCalculator({ target, ...props }: GoalCalculatorProps) {
+export function GoalCalculator({ target, currency, ...props }: GoalCalculatorProps) {
   const each = props.value ?? 0;
   const months = each > 0 ? Math.ceil(target / each) : 0;
-  return <SliderControl {...props} note={each > 0 ? `You reach ${money(target, props.currency)} in ${months} month${months === 1 ? '' : 's'}.`
+  return <SliderControl {...props} prefix={currency} decimals={decimalsOf(currency)} note={each > 0 ? `You reach ${money(target, currency)} in ${months} month${months === 1 ? '' : 's'}.`
     : 'Choose an amount to save each month.'} />;
 }
 
@@ -386,9 +390,9 @@ export function Locator({ testID, label = 'ATMs and branches', places, onDirecti
       {map}
       <Segment testID={`${testID}-kind`} label="Show" value={kind} onChange={setKind}
                options={[{ value: 'all', label: 'All' }, { value: 'atm', label: 'ATMs' }, { value: 'branch', label: 'Branches' }]} />
-      <ItemList testID={`${testID}-list`} label={label} actionLabel="Directions" emptyText="Nothing near here."
+      <ItemList testID={`${testID}-list`} heading={label} actionLabel="Directions" emptyText="Nothing near here."
                 items={shown.map((p) => ({ id: p.id, title: p.name, meta: [p.kind === 'atm' ? 'ATM' : 'Branch', p.address, p.hours].filter(Boolean).join(' · '),
-                  side: p.distance }))}
+                  value: p.distance }))}
                 onAction={(i) => onDirections(places.find((p) => p.id === i.id)!)} />
     </View>
   );
@@ -494,5 +498,5 @@ export function FeedbackRating({ testID, label, value, onChange, comment, onComm
 
 /** Answers that open in place, one at a time. */
 export function Faq({ label = 'Frequently asked questions', ...props }: AccordionProps) {
-  return <Accordion {...props} label={label} single />;
+  return <Accordion {...props} label={label} />;
 }
