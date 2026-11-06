@@ -5,7 +5,7 @@
  * search; ojSearch as oj-c-input-search fires it), <bx-autocomplete> (oj-combobox-one) and <bx-document-upload>
  * (oj-file-picker: accept, selection-mode, ojSelect and ojInvalidSelect). Each keeps the JET attribute and event names.
  */
-define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
+define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx, motion) {
   'use strict';
   var ko = bx.ko;
   var extend = function (a, b) { var o = {}; Object.keys(a).forEach(function (k) { o[k] = a[k]; }); Object.keys(b).forEach(function (k) { o[k] = b[k]; }); return o; };
@@ -102,7 +102,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       if (has(self.props.min) && next < self.props.min) { next = self.props.min; }
       if (has(self.props.max) && next > self.props.max) { next = self.props.max; }
       self.typed(null);
-      accept(self, next, '');
+      if (accept(self, next, '') && self.element.querySelector) { motion.play(self.element.querySelector('.bx-num'), 'roll'); }
     };
     self.canStep = ko.pureComputed(function () { return !self.props.disabled && !self.props.readonly && self.props.stepButtons !== 'off'; });
     self.atMin = ko.pureComputed(function () { return has(self.props.min) && has(self.props.value) && self.props.value <= self.props.min; });

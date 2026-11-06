@@ -25,6 +25,8 @@ export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload
   fileSize } from './Forms';
 export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePickerProps, FileUploadProps, MultiSelectProps, NumberInputProps,
   PasswordFieldProps, SearchFieldProps, TextAreaProps } from './Forms';
+export { EFFECTS, play, reducedMotion } from './motion';
+export type { Effect } from './motion';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { FieldProps, Option } from './field';

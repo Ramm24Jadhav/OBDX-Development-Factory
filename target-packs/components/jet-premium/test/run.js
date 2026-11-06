@@ -401,6 +401,41 @@ test('the skin has every design option and motion of the component style', () =>
   eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
 });
 
+// The motion layer (motion.json, bx.css and bx-motion.js)
+const motionSpec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'motion.json'), 'utf8')).components;
+const motion = load(path.join(BX, 'bx-motion.js'));
+const MOTION_KEYS = ['enter', 'hover', 'press', 'change', 'open', 'error', 'loading', 'packs'];
+test('motion.json has a motion for every element, built in the JET pack', () => {
+  eq(ELEMENTS.filter((e) => { const m = motionSpec[e.slice(3)]; return !m || JSON.stringify(Object.keys(m)) !== JSON.stringify(MOTION_KEYS) || m.packs['jet-premium'] !== true; }), [], 'no or bad motion');
+});
+test('play() animates once, and not under reduced motion or without the Web Animations API', () => {
+  const played = [];
+  const el = { animate: (frames, options) => { played.push(options.duration); return {}; } };
+  window.matchMedia = () => ({ matches: false });
+  eq(motion.play(el, 'roll') !== null, true, 'plays');
+  eq(motion.play({}, 'roll'), null, 'no API');
+  eq(motion.play(el, 'nothing'), null, 'unknown effect');
+  window.matchMedia = () => ({ matches: true });
+  eq(motion.play(el, 'pop'), null, 'reduced motion');
+  eq(played, [200], 'played');
+  delete window.matchMedia;
+});
+test('bx-number-input: a step rolls the number in', () => {
+  const played = [];
+  const n = create('bx-number-input', { value: 2, max: 3 });
+  n.vm.element.querySelector = (s) => (s === '.bx-num' ? { animate: (f, o) => { played.push(o.duration); } } : null);
+  n.vm.up();
+  eq([n.props.value, played.length], [3, 1], 'stepped and rolled');
+});
+test('the skin has the motion tokens, the effects and a reduced-motion rule for every bx- class', () => {
+  const need = ['--bx-dur-fast', '--bx-dur-base', '--bx-dur-slow', '--bx-ease-standard', '--bx-ease-spring', '@keyframes bx-shake', '@keyframes bx-pop', '@keyframes bx-settle',
+    '@keyframes bx-shimmer', '.bx-field.is-error .bx-control', '[class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important;'];
+  eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
+  // The effects animate from a start state, so with motion off the element shows its own (end) style
+  const toFrames = (css.match(/@keyframes [\w-]+ \{[^}]*\bto\b/g) || []).map((k) => k.split(' ')[1]).filter((k) => !['bx-ripple', 'bx-shimmer'].includes(k));
+  eq(toFrames, [], 'keyframes that end away from the element style');
+});
+
 console.log('Premium JET pack: ' + passed + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : '') + '.');
 failures.forEach((f) => console.log('  FAILED ' + f));
 if (process.argv.indexOf('--json') > 0) { fs.writeFileSync(path.join(__dirname, 'results.json'), JSON.stringify({ passed: passed, failed: failures }, null, 2)); }
