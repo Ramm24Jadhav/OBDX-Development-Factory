@@ -1460,6 +1460,326 @@
       "error": null,
       "loading": null,
       "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "quick-insights": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "recent-transactions": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "bills-widget": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "spend-analysis": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "goals": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "budgets": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "calculators": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "credit-score": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "rewards": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "financial-advisor": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "special-offers": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "credit-cards-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "loans-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "delinquency-notice": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "financial-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "position-by-currency": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "credit-line-usage": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "bills-receivable-payable": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "trade-instruments": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "reports": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "accounts-corp": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "corporate-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "transactions-widget": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "last-5-payments": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "bulk-file-upload": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "quick-links-corp": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "work-snapshot": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "notifications-widget": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "pending-for-action": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "my-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "pending-approvals": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
     }
   }
 }

@@ -79,7 +79,7 @@ export const TILES = `
     <ul class="bx-tiles">
       @for (o of items(); track $index) {
         <li>
-          @if (interactive()) {
+          @if (clickable()) {
             <button type="button" [class]="tileClass(o) + ' is-interactive'" (click)="action.emit(o)">
               <span class="bx-tile-label">{{ o.label }}</span><span class="bx-tile-value">{{ o.value }}</span>@if (o.meta) {<span class="bx-tile-meta">{{ o.meta }}</span>}
             </button>
@@ -97,7 +97,9 @@ export const TILES = `
 export abstract class TilesBase extends Titled {
   readonly items = input<ReadonlyArray<Tile>>([]);
   /** Each tile is a button that opens it. */
-  readonly interactive = input(true);
+  readonly interactive = input<boolean | undefined>(undefined);
+  protected readonly defaultInteractive: boolean = true;
+  protected readonly clickable = computed(() => this.interactive() ?? this.defaultInteractive);
   readonly action = output<Tile>();
   protected tileClass(o: Tile): string { return 'bx-tile' + (o.tone ? ` is-${o.tone}` : ''); }
 }

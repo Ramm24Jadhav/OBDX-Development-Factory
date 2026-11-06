@@ -618,6 +618,14 @@ bx-locator, bx-live-chat, bx-feedback, bx-nominations, bx-faq { display: block; 
 .bx-star:focus-within { box-shadow: var(--bx-focus); }
 .bx-star:hover { transform: scale(1.1); }
 .bx-rating-word { margin-left: 8px; color: var(--bx-text-body); font-size: 14px; font-weight: 600; }
+/* ---------- Group 6: dashboard widgets ---------- */
+bx-overview, bx-quick-insights, bx-recent-transactions, bx-bills-widget, bx-spend-analysis, bx-goals, bx-budgets, bx-calculators, bx-credit-score, bx-rewards, bx-financial-advisor,
+bx-special-offers, bx-credit-cards-overview, bx-loans-overview, bx-delinquency-notice, bx-financial-overview, bx-position-by-currency, bx-credit-line-usage, bx-bills-receivable-payable,
+bx-trade-instruments, bx-reports, bx-accounts-corp, bx-corporate-limits, bx-transactions-widget, bx-last-5-payments, bx-bulk-file-upload, bx-quick-links-corp, bx-work-snapshot,
+bx-notifications-widget, bx-pending-for-action, bx-my-limits, bx-pending-approvals { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+.bx-tabsum .bx-tabs { align-self: flex-start; margin-bottom: 8px; }
+.bx-tabsum-panel { display: flex; flex-direction: column; gap: 6px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-tabsum-figure { margin: 0; font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--bx-text); }
 /* Reduced motion: nothing moves, everything shows its end state */
 @media (prefers-reduced-motion: reduce) {
   [class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

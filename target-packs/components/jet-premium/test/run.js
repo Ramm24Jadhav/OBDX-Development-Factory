@@ -89,7 +89,11 @@ const G4 = ['bx-spending-chart', 'bx-budget-progress', 'bx-savings-goal', 'bx-sp
 const G5 = ['bx-raise-request', 'bx-track-requests', 'bx-mailbox', 'bx-compose-mail', 'bx-e-receipts', 'bx-certificates', 'bx-statement-request', 'bx-statement-format',
   'bx-self-register', 'bx-fatca-crs', 'bx-product-showcase', 'bx-application-tracker', 'bx-terms-consent', 'bx-loan-calculator', 'bx-eligibility-calculator', 'bx-td-calculator',
   'bx-currency-converter', 'bx-goal-calculator', 'bx-locator', 'bx-live-chat', 'bx-feedback', 'bx-nominations', 'bx-faq'];
-const GROUPS = [G1, G2, G3, G4, G5];
+const G6 = ['bx-overview', 'bx-quick-insights', 'bx-recent-transactions', 'bx-bills-widget', 'bx-spend-analysis', 'bx-goals', 'bx-budgets', 'bx-calculators', 'bx-credit-score',
+  'bx-rewards', 'bx-financial-advisor', 'bx-special-offers', 'bx-credit-cards-overview', 'bx-loans-overview', 'bx-delinquency-notice', 'bx-financial-overview', 'bx-position-by-currency',
+  'bx-credit-line-usage', 'bx-bills-receivable-payable', 'bx-trade-instruments', 'bx-reports', 'bx-accounts-corp', 'bx-corporate-limits', 'bx-transactions-widget', 'bx-last-5-payments',
+  'bx-bulk-file-upload', 'bx-quick-links-corp', 'bx-work-snapshot', 'bx-notifications-widget', 'bx-pending-for-action', 'bx-my-limits', 'bx-pending-approvals'];
+const GROUPS = [G1, G2, G3, G4, G5, G6];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -806,6 +810,32 @@ test('g5 compose, chat, locator and rating', () => {
 test('g5 reused kinds have their own defaults', () => {
   eq([create('bx-statement-format', {}).props.value, create('bx-self-register', {}).vm.items().length, create('bx-terms-consent', {}).props.control, create('bx-mailbox', {}).props.actionLabel],
     ['PDF', 4, 'checkbox', 'Open'], 'defaults');
+});
+
+// Group 6: dashboard widgets
+test('g6 tab summaries: the first tab until one is chosen; arrows move; View all says which', () => {
+  const a = create('bx-accounts-corp', { items: [{ id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M' }, { id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M' }] });
+  eq([a.vm.tabs().map((t) => t.selected), a.vm.current().summary], [['true', 'false'], '12 accounts · 3.4M'], 'first');
+  a.vm.onKey(key('ArrowRight'));
+  eq([a.props.selection, a.vm.current().summary, a.vm.current().tabId], ['td', '4 deposits · 1.2M', a.vm.tabs()[1].tabId], 'arrow');
+  a.vm.act();
+  eq(a.events[0].detail.value, 'td', 'view all');
+  if (!/role="tablist"/.test(registry['bx-accounts-corp'].view) || !/role="tabpanel"/.test(registry['bx-accounts-corp'].view)) { throw new Error('tab roles'); }
+});
+test('g6 bx-bulk-file-upload: uses bx-document-upload; Upload needs a file; the template is asked for', () => {
+  const u = create('bx-bulk-file-upload', {});
+  u.vm.upload();
+  eq(types(u), [], 'no file');
+  u.vm.onValue({ detail: { value: [{ name: 'payroll.csv', size: 10 }], updatedFrom: 'internal' } });
+  u.vm.upload();
+  u.vm.template();
+  eq(u.events.map((e) => e.detail.action), ['upload', 'template'], 'actions');
+  if (!/<bx-document-upload /.test(registry['bx-bulk-file-upload'].view)) { throw new Error('upload not reused'); }
+});
+test('g6 widgets keep their kinds\' behaviour with their own defaults', () => {
+  eq([create('bx-delinquency-notice', {}).vm.role(), create('bx-rewards', {}).props.interactive, create('bx-pending-approvals', {}).props.actionLabel, create('bx-calculators', {}).props.mode,
+    create('bx-quick-links-corp', {}).props.label, create('bx-credit-score', { items: [{ label: 'Credit score', value: 742, max: 900 }] }).vm.rows()[0].css],
+    ['alert', false, 'Approve', 'loan', 'Quick links', 'bx-meter-fill bx-w-80'], 'defaults');
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)

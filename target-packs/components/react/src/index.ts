@@ -52,3 +52,8 @@ export { ApplicationTracker, Calculator, Certificates, ComposeMessage, DepositCa
   GoalCalculator, LiveChat, LoanCalculator, Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification,
   TermsConsent, TrackRequests, instalment, maturity } from './G5';
 export type { CalculatorProps, ChatMessage, ComposeProps, LiveChatProps, LocatorProps, Period, PeriodProps, Place, RatingProps } from './G5';
+export { AccountsWidget, BillsWidget, BudgetsWidget, BulkUploadWidget, CalculatorsWidget, CorporateLimitsWidget, CreditCardsWidget, CreditLineWidget, CreditScoreWidget,
+  CurrencyPositionWidget, DelinquencyNotice, FinancialAdvisorWidget, FinancialOverviewWidget, GoalsWidget, LastPaymentsWidget, LoansWidget, MyLimitsWidget, NotificationsWidget,
+  OverviewWidget, PendingActionWidget, PendingApprovalsWidget, QuickInsightsWidget, QuickLinksWidget, RecentTransactionsWidget, ReportsWidget, RewardsWidget, SpecialOffersWidget,
+  SpendAnalysisWidget, TabSummary, TradeBillsWidget, TradeInstrumentsWidget, TransactionsWidget, WorkSnapshotWidget } from './G6';
+export type { BulkUploadProps, SummaryTab, TabSummaryProps } from './G6';
