@@ -26,7 +26,7 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
     // The page each notification opens, as the user knows it
     const PAGE = {
       build: ['Build & Test', 'flask'], requirements: ['Requirement', 'list'], reviews: ['Screen review', 'design'], impact: ['Change plan', 'branch'],
-      changes: ['Change', 'branch'], code: ['Code', 'code'], models: ['Models', 'chip']
+      changes: ['Change', 'branch'], code: ['Code', 'code'], models: ['Models', 'chip'], issues: ['Issue', 'alert']
     };
     // The kinds (chips): All and Unread always show, the others when they have notifications
     const KINDS = [
@@ -109,6 +109,9 @@ define(['knockout', '../accUtils', '../services/dashboard', '../services/notific
         if (page === 'code') {
           // An import's notification opens Code › Index; the code itself opens on Code › Explore
           pageRequests.codeTab(codeTab || (n.page === 'code' ? 'index' : 'explore'));
+        }
+        if (page === 'issues' && n.issueId) {
+          pageRequests.issue(n.issueId);
         }
         window.dispatchEvent(new CustomEvent('factory-navigate', { detail: page }));
       };

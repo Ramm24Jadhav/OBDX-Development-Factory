@@ -6,6 +6,7 @@ import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.common.BadRequestException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -131,8 +132,8 @@ public class IssueController {
     /** Shows the diagnosis to the bank on the issue's follow link (engineers: developers and leads). */
     @PostMapping(BASE + "/{id}/release")
     public IssueService.IssueDetail release(@PathVariable UUID workspaceId, @PathVariable UUID id) {
-        guard.require(workspaceId, Permission.MANAGE_CODE);
-        IssueService.IssueDetail detail = service.release(workspaceId, id);
+        AppUser user = guard.require(workspaceId, Permission.MANAGE_CODE);
+        IssueService.IssueDetail detail = service.release(workspaceId, id, user.getUsername());
         audit.record("ISSUE_RELEASED", workspaceId, detail.title(), null);
         return detail;
     }
@@ -161,6 +162,47 @@ public class IssueController {
     public IssueService.IssueDetail ask(@PathVariable UUID workspaceId, @PathVariable UUID id, @RequestBody TextRequest request) {
         AppUser user = guard.require(workspaceId, Permission.VIEW);
         return followUps.ask(workspaceId, id, request.text(), user.getUsername());
+    }
+
+    /** The hosts and ports of the issue that can be checked live (developers and leads). */
+    @GetMapping(BASE + "/{id}/live-targets")
+    public List<LiveChecks.Target> liveTargets(@PathVariable UUID workspaceId, @PathVariable UUID id) {
+        guard.require(workspaceId, Permission.MANAGE_CODE);
+        return service.liveTargets(workspaceId, id);
+    }
+
+    /** A read-only check of one of them from the factory: name, connection, certificate. PROD issues need a lead. */
+    @PostMapping(BASE + "/{id}/live-checks")
+    public IssueService.IssueDetail liveCheck(@PathVariable UUID workspaceId, @PathVariable UUID id, @RequestBody LiveCheckRequest request) {
+        AppUser user = guard.require(workspaceId, Permission.MANAGE_CODE);
+        if ("PROD".equals(service.detail(workspaceId, id).environment())) {
+            guard.require(workspaceId, Permission.APPROVE);
+        }
+        IssueService.IssueDetail detail = service.liveCheck(workspaceId, id, request.host(), request.port(), user.getUsername());
+        audit.record("ISSUE_LIVE_CHECK", workspaceId, detail.title(), request.host() + ":" + request.port());
+        return detail;
+    }
+
+    @DeleteMapping(BASE + "/{id}/files/{position}")
+    public IssueService.IssueDetail removeScreenshot(@PathVariable UUID workspaceId, @PathVariable UUID id, @PathVariable int position) {
+        guard.require(workspaceId, Permission.VIEW);
+        IssueService.IssueDetail detail = service.removeScreenshot(workspaceId, id, position);
+        audit.record("ISSUE_SCREENSHOT_REMOVED", workspaceId, detail.title(), String.valueOf(position));
+        return detail;
+    }
+
+    /** Issue events for the bell menu: all of them for leads, else those of issues the user filed or released. */
+    @GetMapping("/api/workspaces/{workspaceId}/issue-events")
+    public List<IssueRepository.Event> events(@PathVariable UUID workspaceId) {
+        AppUser user = guard.require(workspaceId, Permission.VIEW);
+        boolean lead;
+        try {
+            guard.require(workspaceId, Permission.APPROVE);
+            lead = true;
+        } catch (AccessDeniedException e) {
+            lead = false;
+        }
+        return service.events(workspaceId, user.getUsername(), lead);
     }
 
     /** Links bank administrators use to report errors (leads). */
@@ -226,5 +268,8 @@ public class IssueController {
     }
 
     public record LinkRequest(String label, Integer days) {
+    }
+
+    public record LiveCheckRequest(String host, Integer port) {
     }
 }

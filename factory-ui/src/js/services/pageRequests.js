@@ -17,6 +17,8 @@ define(['knockout'], function (ko) {
     /** A requirement or change id to open when its page loads (from the command palette) */
     requirement: ko.observable(null),
     change: ko.observable(null),
+    /** An issue id the Issues page opens when it loads (from a notification) */
+    issue: ko.observable(null),
     /** A screen to open in the Design Studio's Edit, and a requirement to open in the Design Studio */
     design: ko.observable(null),
     studio: ko.observable(null),

@@ -27,8 +27,16 @@ public class IssueRepository {
                         String source, String reporterEmail, OffsetDateTime releasedAt, UUID groupId) {
     }
 
-    /** @param kind LOG or SCREENSHOT; checkId: the fix check it came with, null for the first report */
-    public record IssueFile(int position, String name, String kind, String mimeType, String extractedText, UUID checkId) {
+    /**
+     * @param kind        LOG or SCREENSHOT; checkId: the fix check it came with, null for the first report
+     * @param hiddenAreas areas with customer data blacked out in a screenshot; null when not checked
+     */
+    public record IssueFile(int position, String name, String kind, String mimeType, String extractedText, UUID checkId,
+                            Integer hiddenAreas) {
+    }
+
+    /** What happened to an issue, for the bell menu. */
+    public record Event(UUID id, UUID issueId, String issueTitle, String kind, String text, boolean failed, OffsetDateTime createdAt) {
     }
 
     public record Knowledge(UUID id, UUID sourceIssueId, UUID sourceWorkspaceId, String obdxVersion, String component,
@@ -136,8 +144,38 @@ public class IssueRepository {
                 status.name(), resolution, OffsetDateTime.now(), id);
     }
 
-    public void setReleased(UUID id, OffsetDateTime when) {
-        jdbc.update("UPDATE issue SET released_at = ?, updated_at = ? WHERE id = ?", when, OffsetDateTime.now(), id);
+    public void setReleased(UUID id, OffsetDateTime when, String by) {
+        jdbc.update("UPDATE issue SET released_at = ?, released_by = ?, updated_at = ? WHERE id = ?", when, by, OffsetDateTime.now(), id);
+    }
+
+    /** Replaces a screenshot with its copy with customer data blacked out (the original is not kept). */
+    public void replaceScreenshot(UUID issueId, int position, byte[] content, int hiddenAreas) {
+        jdbc.update("UPDATE issue_file SET content = ?, hidden_areas = ? WHERE issue_id = ? AND position = ? AND kind = 'SCREENSHOT'",
+                content, hiddenAreas, issueId, position);
+    }
+
+    public boolean deleteFile(UUID issueId, int position) {
+        return jdbc.update("DELETE FROM issue_file WHERE issue_id = ? AND position = ?", issueId, position) > 0;
+    }
+
+    // --- events (bell menu) ---
+
+    public void addEvent(UUID workspaceId, UUID issueId, String kind, String text, boolean failed) {
+        jdbc.update("INSERT INTO issue_event (id, workspace_id, issue_id, kind, text, failed, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                UUID.randomUUID(), workspaceId, issueId, kind, text.length() > 500 ? text.substring(0, 497) + "..." : text, failed, OffsetDateTime.now());
+    }
+
+    /**
+     * A workspace's events since a moment, newest first: all of them, or only those of issues the user filed or
+     * released.
+     */
+    public List<Event> events(UUID workspaceId, OffsetDateTime since, String username, boolean all) {
+        return jdbc.query("SELECT e.id, e.issue_id, i.title, e.kind, e.text, e.failed, e.created_at FROM issue_event e JOIN issue i ON i.id = e.issue_id "
+                        + "WHERE e.workspace_id = ? AND e.created_at > ? AND (? OR i.created_by = ? OR i.released_by = ?) "
+                        + "ORDER BY e.created_at DESC LIMIT 200",
+                (rs, i) -> new Event(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3), rs.getString(4), rs.getString(5),
+                        rs.getBoolean(6), rs.getObject(7, OffsetDateTime.class)),
+                workspaceId, since, all, username, username);
     }
 
     public void touch(UUID id) {
@@ -162,13 +200,13 @@ public class IssueRepository {
 
     /** The files of the first report. */
     public List<IssueFile> files(UUID issueId) {
-        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id FROM issue_file WHERE issue_id = ? AND check_id IS NULL "
+        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id, hidden_areas FROM issue_file WHERE issue_id = ? AND check_id IS NULL "
                 + "ORDER BY position", fileMapper(), issueId);
     }
 
     /** Every file of an issue, the first report's and the fix checks'. */
     public List<IssueFile> allFiles(UUID issueId) {
-        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id FROM issue_file WHERE issue_id = ? ORDER BY position",
+        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id, hidden_areas FROM issue_file WHERE issue_id = ? ORDER BY position",
                 fileMapper(), issueId);
     }
 
@@ -201,7 +239,7 @@ public class IssueRepository {
     }
 
     public List<IssueFile> checkFiles(UUID checkId) {
-        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id FROM issue_file WHERE check_id = ? ORDER BY position",
+        return jdbc.query("SELECT position, name, kind, mime_type, extracted_text, check_id, hidden_areas FROM issue_file WHERE check_id = ? ORDER BY position",
                 fileMapper(), checkId);
     }
 
@@ -301,7 +339,8 @@ public class IssueRepository {
     }
 
     private static RowMapper<IssueFile> fileMapper() {
-        return (rs, i) -> new IssueFile(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getObject(6, UUID.class));
+        return (rs, i) -> new IssueFile(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getObject(6, UUID.class),
+                rs.getObject(7, Integer.class));
     }
 
     private static RowMapper<Link> linkMapper() {

@@ -52,8 +52,10 @@
             </ul>
           </oj-bind-if>
         </div>
-        <p class="fx-muted factory-is-note">Screenshots are sent to the chat model as they are: crop out customer names and
-          account numbers first. Passwords, tokens and card or account numbers in text are masked before anything is sent.</p>
+        <p class="fx-muted factory-is-note">With a chat model on this computer (Ollama), customer data in screenshots is found
+          and blacked out, and only the blurred copy is kept. With a model on another server, screenshots are sent to it as
+          they are: crop out customer names and account numbers first. Passwords, tokens and card or account numbers in
+          text are masked before anything is sent.</p>
         <div class="factory-btn-row">
           <button type="button" id="submitIssue" class="fx-btn fx-btn--primary" on-click="[[submit]]" :disabled="[[!canSubmit()]]">Analyze issue</button>
         </div>
@@ -244,6 +246,9 @@
                 <div><span :class="[[c.data.result.css]]"><oj-bind-text value="[[c.data.result.text]]"></oj-bind-text></span>
                   <span class="fx-muted"> <oj-bind-text value="[[c.data.meta]]"></oj-bind-text></span></div>
                 <div><oj-bind-text value="[[c.data.summary]]"></oj-bind-text></div>
+                <oj-bind-if test="[[c.data.details.length > 0]]">
+                  <ul class="fx-muted"><oj-bind-for-each data="[[c.data.details]]" as="d"><template><li><oj-bind-text value="[[d.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                </oj-bind-if>
                 <oj-bind-if test="[[c.data.files.length > 0]]">
                   <div class="fx-muted"><oj-bind-for-each data="[[c.data.files]]" as="f"><template><a :href="[[f.data.href]]" target="_blank" rel="noopener"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></a> </template></oj-bind-for-each></div>
                 </oj-bind-if>
@@ -262,6 +267,22 @@
             </ul>
           </oj-bind-if>
           <div class="factory-btn-row"><button type="button" id="runCheck" class="fx-btn fx-btn--secondary" on-click="[[runCheck]]" :disabled="[[!canCheck()]]">Check the fix</button></div>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[targets().length > 0]]">
+        <div class="factory-is-box" id="liveBox">
+          <h3>Check the bank's hosts</h3>
+          <p class="fx-muted">Hosts and ports this issue mentions. A check runs from the factory: it looks up the name, connects
+            to the port and, for TLS, reads the certificate. Nothing is sent, and the bank does not see the result.</p>
+          <oj-bind-if test="[[prodNote()]]"><p class="fx-muted"><oj-bind-text value="[[prodNote]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-for-each data="[[targets]]" as="t">
+            <template>
+              <div class="factory-is-step"><code><oj-bind-text value="[[t.data.label]]"></oj-bind-text></code>
+                <span class="fx-muted"> <oj-bind-text value="[[t.data.source]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[t.data.check]]" :disabled="[[prodNote() !== '']]">Check</button></div>
+            </template>
+          </oj-bind-for-each>
         </div>
       </oj-bind-if>
 
@@ -320,8 +341,12 @@
                   <oj-bind-if test="[[!shot.data.hasText]]">
                     <p class="fx-muted">Not read yet. Type the error text below and analyze again, or choose a chat model that reads images on the Models page.</p>
                   </oj-bind-if>
+                  <oj-bind-if test="[[shot.data.hidden]]"><p><span class="fx-badge fx-badge--success"><oj-bind-text value="[[shot.data.hidden]]"></oj-bind-text></span></p></oj-bind-if>
                   <fx-textarea label="[[shot.data.label]]" rows="4" value="{{shot.data.text}}"></fx-textarea>
-                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[shot.data.save]]" :disabled="[[analyzing]]">Save text</button>
+                  <div class="factory-btn-row">
+                    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[shot.data.save]]" :disabled="[[analyzing]]">Save text</button>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[shot.data.remove]]" :disabled="[[analyzing]]">Remove screenshot</button>
+                  </div>
                 </div>
               </div>
             </template>

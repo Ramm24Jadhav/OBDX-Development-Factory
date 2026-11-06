@@ -6,8 +6,8 @@
  * bank administrators report through. Issues with the same error within a day are grouped.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
-        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
-  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
+        '../services/dialog', '../services/toast', '../services/pageRequests', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast, pageRequests) {
     const POLL_MS = 2000;
     const DAY_MS = 24 * 3600 * 1000;
     const ACCEPTED = '.log,.txt,.out,.png,.jpg,.jpeg';
@@ -23,11 +23,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const issueStatus = (s) => ui.status(CATEGORY_OF[s] || s, WORDS[s]);
     const TONE = { PROBABLE: 'success', POSSIBLE: 'warning', INCONCLUSIVE: '', LOW: 'success', MEDIUM: 'warning', HIGH: 'danger',
       ERROR_GONE: 'success', BANK_WORKS: 'success', STILL_FAILING: 'danger', BANK_STILL_FAILING: 'danger', DIFFERENT_ERROR: 'warning',
-      NOT_COMPARABLE: '', CHECKING: 'primary', FAILED: 'danger', ADMIN: 'primary' };
+      NOT_COMPARABLE: '', CHECKING: 'primary', FAILED: 'danger', ADMIN: 'primary', LIVE_OK: 'success', LIVE_UNREACHABLE: 'danger',
+      LIVE_CERTIFICATE: 'warning' };
     const badge = (text, key) => ({ text: text, css: 'fx-badge' + (TONE[key] ? ' fx-badge--' + TONE[key] : '') });
     const CHECK_WORDS = { CHECKING: 'Checking', ERROR_GONE: 'Original error gone', STILL_FAILING: 'Still failing',
       DIFFERENT_ERROR: 'A different error', NOT_COMPARABLE: 'Cannot compare', FAILED: 'Check failed', BANK_WORKS: 'Bank: works now',
-      BANK_STILL_FAILING: 'Bank: still failing' };
+      BANK_STILL_FAILING: 'Bank: still failing', LIVE_OK: 'Live check: reachable', LIVE_UNREACHABLE: 'Live check: not reachable',
+      LIVE_CERTIFICATE: 'Live check: certificate' };
     const pageUrl = (params) => window.location.origin + window.location.pathname + '?ojr=report&embed=1&' + params;
 
     function IssuesViewModel() {
@@ -116,6 +118,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.canCheck = ko.pureComputed(() => !!(this.checkLog().trim() || this.checkFiles.files().length > 0));
       this.question = ko.observable('');
 
+      // Live checks of hosts the issue mentions (developers and leads; leads for PROD issues)
+      this.targets = ko.observableArray([]);
+      this.prodNote = ko.pureComputed(() => (this.detail() && this.detail().environment === 'PROD' && !this.canApprove()
+        ? 'This is a production issue: only a lead can run live checks.' : ''));
+      const loadTargets = (detail) => {
+        if (!this.canRelease() || !detail.evidence) {
+          this.targets([]);
+          return;
+        }
+        api.get('workspaces/' + detail.workspaceId + '/issues/' + detail.id + '/live-targets').then((list) => this.targets(list.map((t) => ({
+          label: t.host + ':' + t.port + (t.tls ? ' (TLS)' : ''),
+          source: 'from ' + t.source,
+          check: () => api.post('workspaces/' + detail.workspaceId + '/issues/' + detail.id + '/live-checks', { host: t.host, port: t.port })
+            .then((d) => { show(d); toast.info('Checked ' + t.host + ':' + t.port + '.'); }).catch(showError)
+        })))).catch(() => this.targets([]));
+      };
+
       /** The diagnosis with display text prepared, since templates cannot run JavaScript functions. */
       const viewOf = (detail) => {
         const d = detail.diagnosis;
@@ -196,6 +215,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             label: 'Text on ' + f.name,
             text: text,
             hasText: f.extractedText !== null,
+            hidden: f.hiddenAreas === null || f.hiddenAreas === undefined ? ''
+              : f.hiddenAreas === 0 ? 'No customer data found by the local model' : 'Customer data hidden (' + f.hiddenAreas + ' area' + (f.hiddenAreas === 1 ? '' : 's') + ')',
+            remove: () => dialog.confirm({
+              title: 'Remove this screenshot?', message: f.name + ' is deleted from the issue. Analyze again afterwards.', confirmLabel: 'Remove', danger: true
+            }).then((ok) => (ok ? api.del('workspaces/' + detail.workspaceId + '/issues/' + detail.id + '/files/' + f.position).then(show).catch(showError) : null)),
             save: () => api.put('workspaces/' + detail.workspaceId + '/issues/' + detail.id + '/files/' + f.position + '/text',
               { text: text() }).then((d) => { show(d); toast.success('Saved. Analyze again to use it.'); }).catch(showError)
           };
@@ -214,8 +238,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           result: badge(CHECK_WORDS[c.result] || label(c.result), c.result),
           summary: c.summary,
           meta: c.createdBy + ' · ' + when(c.createdAt),
+          details: c.result.indexOf('LIVE_') === 0 ? c.evidence.items.map((i) => i.text) : [],
           files: detail.checkFiles.filter((f) => f.checkId === c.id).map((f) => ({ name: f.name, href: filesBase + f.position }))
         })));
+        loadTargets(detail);
         this.questions(detail.questions.map((q) => ({
           question: q.question,
           answer: q.status === 'ANSWERING' ? 'Thinking…' : (q.answer || ''),
@@ -378,7 +404,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         accUtils.announce('Issues page loaded.');
         document.title = 'Issues';
         subscription = this.workspaceId.subscribe(() => { this.detail(null); this.groupFilter(null); this.newLinkUrl(''); loadList(); loadLinks(); });
-        workspaceSelection.load().then(() => { loadList(); loadLinks(); }).catch(showError);
+        workspaceSelection.load().then(() => {
+          loadList();
+          loadLinks();
+          // Opened from a notification
+          const requested = pageRequests.issue();
+          if (requested) {
+            pageRequests.issue(null);
+            this.open(requested);
+          }
+        }).catch(showError);
         loadKnowledge();
       };
       this.disconnected = () => {
