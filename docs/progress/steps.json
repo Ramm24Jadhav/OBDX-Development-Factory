@@ -203,7 +203,7 @@
    "items": [
     {
      "name": "Review and approval",
-     "done": false
+     "done": true
     },
     {
      "name": "Review decisions",

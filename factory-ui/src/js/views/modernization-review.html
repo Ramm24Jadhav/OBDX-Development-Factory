@@ -1,10 +1,11 @@
-<div class="factory-pg factory-mr">
-  <div class="factory-rq-head">
-    <div class="factory-rq-title">
+<!-- Review and approval, as on the approved board (docs/design/boards/Review-*.png) -->
+<div class="factory-pg factory-mb factory-mr">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
       <h1>Review and approval</h1>
-      <p class="factory-rq-lead"><oj-bind-text value="[[lead]]"></oj-bind-text></p>
+      <p><oj-bind-text value="[[lead]]"></oj-bind-text></p>
     </div>
-    <div class="factory-rq-headbar"><oj-bind-if test="[[run()]]"><span id="mrState" role="status" :class="[[run() ? mzRun(run().state).css : '']]"><oj-bind-text value="[[run() ? mzRun(run().state).text : '']]"></oj-bind-text></span></oj-bind-if></div>
+    <div class="factory-mb-headtools"><oj-bind-if test="[[run()]]"><span id="mrState" role="status" :class="[[run() ? mzRun(run().state).css : '']]"><oj-bind-text value="[[run() ? mzRun(run().state).text : '']]"></oj-bind-text></span></oj-bind-if></div>
   </div>
 
   <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 5 of 5</small></span>
@@ -27,8 +28,8 @@
     </div>
 
     <oj-bind-if test="[[top() === 'changes']]">
-    <div class="factory-mr-layout">
-      <aside class="fx-card factory-mr-tree" aria-labelledby="mrFilesTitle">
+    <div class="factory-mb-wslayout factory-mb-reviewlayout">
+      <aside class="factory-mb-card factory-mb-sidecard factory-mr-tree" aria-labelledby="mrFilesTitle">
         <div class="fx-card-head"><h2 class="fx-card-title" id="mrFilesTitle"><oj-bind-text value="[['Changed files (' + change().files.length + ')']]"></oj-bind-text></h2>
           <fx-menu-button id="mrFilesMenu" variant="ghost" size="sm" icon="more" icon-only label="File actions" align="end" items="[[filesMenu]]" on-fx-action="[[filesAction]]"></fx-menu-button></div>
         <fx-input id="mrSearch" type="search" icon="search" clearable label="Search files" hide-label placeholder="Search files" value="{{query}}"></fx-input>
@@ -39,7 +40,7 @@
         </li></template></oj-bind-for-each></ul>
       </aside>
 
-      <section class="fx-card factory-mr-diff" aria-label="Code changes">
+      <section class="factory-mb-card factory-mb-sidecard factory-mw-code factory-mr-diff" aria-label="Code changes">
         <div class="factory-mw-codebar"><strong class="factory-mo-mono"><oj-bind-text value="[[file() || 'Pick a file']]"></oj-bind-text></strong>
           <oj-bind-if test="[[fileState()]]"><span :class="[[fileState().css]]" id="mrFileState"><oj-bind-text value="[[fileState().text]]"></oj-bind-text></span></oj-bind-if>
           <oj-bind-if test="[[!isNew()]]"><fx-segmented id="mrLayout" label="Diff layout" options="[[layoutOptions]]" value="{{layout}}"></fx-segmented></oj-bind-if></div>
@@ -75,8 +76,8 @@
         </div>
       </section>
 
-      <aside class="factory-mw-side">
-        <section class="fx-card" aria-labelledby="mrStepsTitle">
+      <div class="factory-mb-wsbelow factory-mb-reviewbelow factory-mw-side">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mrStepsTitle">
           <h2 class="fx-card-title" id="mrStepsTitle">Review</h2>
           <ol class="factory-mr-steps"><oj-bind-for-each data="[[reviewSteps]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
             <span class="factory-mr-step-text"><strong><oj-bind-text value="[[s.data.name]]"></oj-bind-text></strong><small class="fx-muted"><oj-bind-text value="[[s.data.who]]"></oj-bind-text></small></span>
@@ -84,13 +85,13 @@
           <oj-bind-if test="[[!isFinal()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mrSecurity" on-click="[[toggleSecurity]]" :disabled="[[!canApprove()]]"
             :title="[[canApprove() ? null : 'Signing off the security review needs the Approve permission']]"><oj-bind-text value="[[securityDone() ? 'Withdraw the security sign-off' : 'Sign off the security review']]"></oj-bind-text></button></oj-bind-if>
         </section>
-        <section class="fx-card" aria-labelledby="mrCommentsTitle">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mrCommentsTitle">
           <h2 class="fx-card-title" id="mrCommentsTitle">Comments</h2>
           <oj-bind-if test="[[commentRows().length === 0]]"><p class="fx-muted">No comments yet.</p></oj-bind-if>
           <ul class="factory-mr-comments"><oj-bind-for-each data="[[commentRows().slice(-2)]]" as="c"><template><li><strong><oj-bind-text value="[[c.data.author]]"></oj-bind-text></strong> <span class="fx-muted"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></span><p><oj-bind-text value="[[c.data.text]]"></oj-bind-text></p></li></template></oj-bind-for-each></ul>
           <button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="mrCommentsLink" on-click="[[openComments]]"><oj-bind-text value="[['Comments (' + commentRows().length + ') →']]"></oj-bind-text></button>
         </section>
-      </aside>
+      </div>
     </div>
     </oj-bind-if>
 
@@ -121,16 +122,17 @@
       </section>
     </oj-bind-if>
 
-    <div class="factory-mz-actions">
-      <button type="button" class="fx-btn fx-btn--ghost" id="mrBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Validation</button>
-      <span class="fx-muted" id="mrWait" role="status"><oj-bind-text value="[[waitText]]"></oj-bind-text></span>
-      <div class="factory-mz-actions-end">
-        <fx-menu-button id="mrMore" variant="ghost" label="More" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
-        <button type="button" class="fx-btn fx-btn--secondary" id="mrRequest" on-click="[[openRequest]]" :disabled="[[isFinal() || !canManage()]]"
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mrBack" on-click="[[back]]"><span aria-hidden="true">←</span>Validation</button>
+      <span class="factory-mb-muted" id="mrWait" role="status"><oj-bind-text value="[[waitText]]"></oj-bind-text></span>
+      <span class="factory-mb-spacer"></span>
+      <div class="factory-mb-footer-end">
+        <fx-menu-button id="mrMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="factory-mb-btn is-outline" id="mrRequest" on-click="[[openRequest]]" :disabled="[[isFinal() || !canManage()]]"
                 :title="[[isFinal() ? 'This run is ' + run().state : canManage() ? null : 'Requesting changes needs the Manage code permission']]">Request changes</button>
-        <button type="button" class="fx-btn fx-btn--primary" id="mrApprove" on-click="[[openApprove]]" :disabled="[[!canDeliver()]]" :title="[[approveTitle]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve and deliver to SVN</button>
+        <button type="button" class="factory-mb-btn is-primary" id="mrApprove" on-click="[[openApprove]]" :disabled="[[!canDeliver()]]" :title="[[approveTitle]]"><span aria-hidden="true">✓</span>Approve and deliver to SVN</button>
       </div>
-    </div>
+    </footer>
 
     <fx-sheet id="mrRequestSheet" side="center" open="{{requestOpen}}" heading="Request changes" subtitle="[[change().title]]">
       <div class="factory-mr-form">
