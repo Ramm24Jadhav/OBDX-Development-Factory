@@ -8,8 +8,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
   function (ko, accUtils, api, workspaceSelection, ui, toast, mz) {
     function SettingsViewModel() {
       const self = this;
-      const ICONS = { project: 'folder', obdx: 'plug', rules: 'check', tests: 'flask', look: 'design' };
-      self.groupIcon = (id) => ICONS[id] || 'cog';
+      // The group marks and technology letters drawn on the board
+      const GLYPHS = { project: '▣', obdx: '⇄', rules: '✓', tests: '▶', look: '◐' };
+      self.groupGlyph = (id) => GLYPHS[id] || '•';
+      const LOGOS = { react: 'R', 'react-native': 'M', angular: 'A', flutter: 'F', 'jet-core-pack': 'J', vue: 'V', capacitor: 'C', native: 'S' };
       self.workspaceId = workspaceSelection.selectedId;
       self.canManage = mz.canManage;
       self.loading = ko.observable(true);
@@ -20,13 +22,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.draft = {};
 
       self.techs = ko.pureComputed(() => (self.data() ? self.data().technologies : []).map((t) => ({ id: t.id, name: t.name, state: t.state === 'ready' ? 'Ready' : 'Preview',
-        stateCss: ui.pill('', t.state === 'ready' ? 'green' : 'amber').css, checked: self.technology() === t.id ? 'true' : 'false',
-        css: 'factory-ms-tech' + (self.technology() === t.id ? ' is-on' : ''), pick: () => { if (self.technology() !== t.id) { self.technology(t.id); self.editing(false); load(); } } })));
+        stateCss: 'factory-mb-pill is-sm ' + (t.state === 'ready' ? 'is-success' : 'is-warning'), checked: self.technology() === t.id ? 'true' : 'false',
+        logo: LOGOS[t.id] || t.name.charAt(0),
+        css: 'factory-mb-techchip is-' + t.id + (self.technology() === t.id ? ' is-on' : ''), pick: () => { if (self.technology() !== t.id) { self.technology(t.id); self.editing(false); load(); } } })));
       self.preview = ko.pureComputed(() => !!self.data() && self.data().state !== 'ready');
       self.groups = ko.pureComputed(() => (self.data() ? self.data().groups : []).map((g) => ({ title: g.title, lead: g.lead, id: g.id,
         rows: g.rows.map((r) => {
           if (!self.draft[r.key]) { self.draft[r.key] = ko.observable(r.value); }
-          return { key: r.key, label: r.label, value: r.value, editable: r.editable, locked: r.locked, css: r.mono ? 'factory-mo-mono' : '', source: r.source === 'workspace' ? 'Changed for this workspace' : '',
+          return { key: r.key, label: r.label, value: r.value, editable: r.editable, locked: r.locked, css: r.mono ? 'factory-mb-mono' : '', source: r.source === 'workspace' ? 'Changed for this workspace' : '',
             draft: self.draft[r.key] };
         }) })));
       self.savedText = ko.pureComputed(() => {
@@ -47,7 +50,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           toast.success(d.name + ' settings saved for this workspace. Running migrations keep their settings.');
         }).catch((e) => toast.error(ui.errorText(e)));
       };
-      self.openFactory = () => mz.open('components');
+      self.openFactory = (event) => { if (event && (event.ctrlKey || event.metaKey)) { return; } if (event) { event.preventDefault(); } mz.open('components'); };
 
       const load = () => {
         const id = self.workspaceId();

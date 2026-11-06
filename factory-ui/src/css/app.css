@@ -9834,3 +9834,39 @@ a.factory-mb-finding:hover { background: var(--fx-surface-2); }
 @media (max-width: 1100px) { .factory-mb-choose { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .factory-mb-grid3 { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .factory-mb-choose-card { transition: none; } }
+
+/* A page head with its main action on the right (Technology settings) */
+.factory-mb-headrow { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.factory-mb-headrow > .factory-mb-pagehead { flex: 1; min-width: 280px; }
+.factory-mb-pagehead.is-sm { gap: 3px; }
+.factory-mb-pagehead.is-sm h1 { font-size: 26px; line-height: 32px; }
+.factory-mb-pagehead.is-sm p { font-size: 13px; }
+/* Technology chips: a pill with the technology's letter and its state */
+.factory-mb-techchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.factory-mb-techchip { font: inherit; cursor: pointer; height: 38px; padding: 0 14px 0 8px; border-radius: var(--fx-radius-pill); border: var(--fx-border-width) solid var(--fx-border-strong);
+  background: var(--fx-surface); color: var(--fx-text); display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.factory-mb-techchip.is-on { background: var(--fx-primary-soft); border-color: var(--fx-primary); }
+.factory-mb-techchip:focus-visible { outline: 2px solid var(--fx-primary); outline-offset: 2px; }
+.factory-mb-techlogo { width: 26px; height: 26px; border-radius: 50%; background: var(--fx-info-soft); color: var(--fx-info-text); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.factory-mb-techchip.is-angular .factory-mb-techlogo { background: var(--fx-danger-soft); color: var(--fx-danger-text); }
+.factory-mb-techchip.is-jet-core-pack .factory-mb-techlogo { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+.factory-mb-banner { padding: 10px 14px; border-radius: var(--fx-radius); }
+.factory-mb-banner.is-warning { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+/* Settings groups: a card per group, each setting on one line */
+.factory-mb-setgroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.factory-mb-setgroup { border-radius: var(--fx-radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.factory-mb-sethead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.factory-mb-sethead > span:last-child { display: flex; flex-direction: column; }
+.factory-mb-sethead h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--fx-text); }
+.factory-mb-sethead h2 + span { font-size: 12px; color: var(--fx-text-muted); }
+.factory-mb-seticon { width: 30px; height: 30px; flex: none; border-radius: var(--fx-radius); background: var(--fx-primary-soft); color: var(--fx-primary-text); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.factory-mb-setrows { margin: 0; }
+.factory-mb-setrows > div { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: var(--fx-border-width) solid var(--fx-border); min-height: 24px; }
+.factory-mb-setrows dt { flex: 1; min-width: 0; color: var(--fx-text-muted); }
+.factory-mb-setrows dd { flex: 1.3; min-width: 0; margin: 0; text-align: right; color: var(--fx-text); }
+.factory-mb-setrows dd .fx-field { margin: 0; }
+.factory-mb-setrows .factory-mb-mono { font-size: 11.5px; }
+.factory-mb-fixed { height: 18px; padding: 0 6px; margin-right: 6px; border-radius: var(--fx-radius-pill); background: var(--fx-surface-3); color: var(--fx-text-muted); font-size: 10.5px; font-weight: 700;
+  display: inline-flex; align-items: center; vertical-align: middle; }
+.factory-mb-footnote { margin: 0; font-size: 12px; color: var(--fx-text-muted); }
+.factory-mb-footnote a { color: var(--fx-primary); font-weight: 600; }
