@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design system additions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-primary:#4f46e5;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-success:#10b981;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-pill:999px;--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.mono{font-family:var(--fx-font-mono);font-size:12px}
+</style>
+</helmet>
+<div style="width:1440px;height:1000px;box-sizing:border-box;padding:28px 32px;display:flex;flex-direction:column;gap:16px;background:var(--fx-bg);font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body)">
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <span style="font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--fx-text-muted)">DESIGN SYSTEM · THREE NEW PARTS</span>
+    <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Chart parts the Modernization screens need</h1>
+    <p style="margin:0;max-width:980px">The factory's design system has only the ring chart today. These three would be added to <span class="mono">docs/DESIGN-SYSTEM.md</span> and the Design System page, built from the same tokens, and used only where a table alone would hide the point.</p>
+  </div>
+
+  <div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+    <section aria-labelledby="c1" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <h2 id="c1" style="margin:0;font-size:16px;font-weight:700;color:var(--fx-text)">Stacked bars <span class="mono" style="color:var(--fx-text-muted)">fx-bar-chart</span></h2>
+      <span>Used by: History (runs per week). Counts by state over time.</span>
+      <div role="img" aria-label="Example: runs per week, 8 weeks" style="height:160px;display:flex;gap:8px;align-items:flex-end;padding:8px;border:1px solid var(--fx-border);border-radius:var(--fx-radius);background:repeating-linear-gradient(to top,#ffffff 0,#ffffff 35px,var(--fx-surface-3) 35px,var(--fx-surface-3) 36px)">
+        <sc-for list="{{bars}}" as="b" hint-placeholder-count="8"><div style="flex:1;display:flex;flex-direction:column-reverse;border-radius:4px 4px 0 0;overflow:hidden"><span style="height:{{b.a}};background:var(--fx-primary)"></span><span style="height:{{b.w}};background:var(--fx-warning)"></span><span style="height:{{b.f}};background:var(--fx-danger)"></span></div></sc-for>
+      </div>
+      <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:18px">
+        <li>Colours from the status tokens: done <span class="mono">--fx-primary</span>, warning <span class="mono">--fx-warning</span>, failed <span class="mono">--fx-danger</span>; a legend with words, never colour alone.</li>
+        <li>Axis from 0 with whole-number ticks; bars 20–32 px; 2 px gap between segments.</li>
+        <li><span class="mono">role="img"</span> with a summary, and a "Show as a table" link for the values.</li>
+        <li>Focus moves bar by bar with the arrow keys; the tooltip shows the week and each count.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="c2" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <h2 id="c2" style="margin:0;font-size:16px;font-weight:700;color:var(--fx-text)">Timeline <span class="mono" style="color:var(--fx-text-muted)">fx-timeline</span></h2>
+      <span>Used by: Migration planner. The team's planned weeks per module, and what is done.</span>
+      <div role="img" aria-label="Example timeline for five modules over six weeks" style="position:relative;height:160px;border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:8px;display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:8px;height:20px"><span style="width:90px;font-size:11.5px;color:var(--fx-text)">{{r.n}}</span><span style="flex:1;position:relative;height:12px"><span style="position:absolute;top:0;height:12px;border-radius:var(--fx-radius-pill);left:{{r.l}};width:{{r.w}};background:{{r.c}}"></span></span></div></sc-for>
+        <span aria-hidden="true" style="position:absolute;top:6px;bottom:6px;left:calc(106px + (100% - 114px) * .4);width:2px;background:var(--fx-primary)"></span>
+      </div>
+      <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:18px">
+        <li>Bar colour by state: delivered <span class="mono">--fx-success</span>, in progress <span class="mono">--fx-info</span>, planned <span class="mono">--fx-primary</span>, not started <span class="mono">--fx-border-strong</span>; state also written in the row.</li>
+        <li>A "Today" line; weeks or months; dragging a bar is not offered (weeks are edited in the row's ⋯ menu).</li>
+        <li>Each row is a list item that reads "Payments, planned weeks 4 to 5, not started".</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="c3" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <h2 id="c3" style="margin:0;font-size:16px;font-weight:700;color:var(--fx-text)">Dependency diagram <span class="mono" style="color:var(--fx-text-muted)">fx-dep-graph</span></h2>
+      <span>Used by: Migration planner (small and full screen). Which module needs which.</span>
+      <div role="img" aria-label="Example: four columns of modules" style="height:160px;border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:10px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-content:start">
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:6px"><sc-for list="{{c.items}}" as="i" hint-placeholder-count="2"><span style="padding:6px 6px;border-radius:var(--fx-radius);font-size:11px;font-weight:600;text-align:center;background:{{i.bg}};color:{{i.fg}};border:{{i.b}}">{{i.n}}</span></sc-for></div></sc-for>
+      </div>
+      <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:18px">
+        <li>Laid out in columns by what each module needs, so lines only go left to right; solid line "needs", dashed "needed by".</li>
+        <li>Nodes are buttons: picking one highlights it in the table and the order.</li>
+        <li>The same data as a table on the Dependencies tab, for screen readers and printing.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const B = [[3, 0, 0], [3, 0, 0], [3, 1, 0], [3, 1, 0], [3, 0, 0], [1, 0, 1], [2, 0, 0], [1, 1, 0]];
+    const px = (n) => (n * 36) + 'px';
+    const TL = [['Dashboard', 0, 16, 'var(--fx-success)'], ['Accounts', 16, 20, 'var(--fx-info)'], ['Payees', 30, 20, 'var(--fx-primary)'], ['Payments', 50, 32, 'var(--fx-primary)'], ['Cards', 76, 16, 'var(--fx-border-strong)']];
+    const node = (n, on) => ({ n: n, bg: on ? 'var(--fx-primary)' : '#ffffff', fg: on ? '#ffffff' : 'var(--fx-text)', b: on ? '0' : '1px solid var(--fx-border)' });
+    return {
+      bars: B.map((b) => ({ a: px(b[0]), w: px(b[1]), f: px(b[2]) })),
+      rows: TL.map((r) => ({ n: r[0], l: r[1] + '%', w: r[2] + '%', c: r[3] })),
+      cols: [[node('Login'), node('Common UI')], [node('Accounts')], [node('Payees'), node('Cards')], [node('Payments', true), node('Reports')]].map((c) => ({ items: c }))
+    };
+  }
+}
+</script>
+</body>
+</html>

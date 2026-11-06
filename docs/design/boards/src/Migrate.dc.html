@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Migration planner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+@media (max-width:1440px){.fx-stack1440{grid-template-columns:minmax(0,1fr) !important}}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:12.5px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="planner" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <main style="flex:1;min-height:0;padding:12px 22px;display:flex;flex-direction:column;gap:10px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> Migration planner</div>
+          <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Migration planner</h1>
+          <p style="margin:0;color:var(--fx-text-body);font-size:13px">The order to move the modules in, from what each one needs first.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="mig" step="3" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="6"><span style="height:30px;padding:0 12px;border-radius:var(--fx-radius-pill);background:var(--fx-surface);display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;border:1px solid var(--fx-border)"><b style="color:{{k.fg}};font-variant-numeric:tabular-nums">{{k.v}}</b><span style="color:var(--fx-text-muted)">{{k.k}}</span></span></sc-for></div>
+
+      <div role="tablist" aria-label="Planner views" style="display:flex;gap:26px;border-bottom:1px solid var(--fx-border)">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+          <button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;font-size:14px;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:36px;padding:0 4px;color:{{t.fg}};font-weight:{{t.weight}}">{{t.name}}</button>
+        </sc-for>
+      </div>
+<sc-if value="{{tbMigrateFirst}}" hint-placeholder-val="{{true}}">
+
+      <div class="fx-cols2 fx-stack1440" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:12px">
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <section aria-label="Modules" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px">
+              <label style="flex:1;max-width:330px;height:32px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--fx-text-muted)"><span aria-hidden="true">⌕</span><span style="position:absolute;left:-9999px">Search modules</span><input type="search" placeholder="Search modules, e.g. Payments" style="flex:1;border:0;outline:0;font:inherit;background:transparent"></label>
+              <span style="margin-left:auto;height:32px;padding:0 10px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;gap:14px">Group by: none <span aria-hidden="true">⌄</span></span>
+              <button onClick="{{say0}}" type="button" style="height:32px;padding:0 12px;border-radius:var(--fx-radius);border:1px solid var(--fx-primary-border);background:var(--fx-primary-soft);color:var(--fx-primary-text);font:inherit;font-weight:600">Filters · 2</button>
+            </div>
+            <div style="min-width:900px;display:grid;grid-template-columns:24px 1.5fr .6fr .8fr .8fr .9fr 1.5fr .8fr 1.1fr 22px;gap:6px;padding:7px 12px;background:var(--fx-surface-2);font-weight:700;color:var(--fx-text);font-size:12px;border-top:1px solid var(--fx-border)">
+              <span></span><span>Module</span><span>Screens</span><span>Comp.</span><span>Size</span><span>Priority</span><span>Needs first</span><span>Planned</span><span>State</span><span></span>
+            </div>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+              <div style="min-width:900px;display:grid;grid-template-columns:24px 1.5fr .6fr .8fr .8fr .9fr 1.5fr .8fr 1.1fr 22px;gap:6px;align-items:center;padding:6px 12px;border-top:1px solid var(--fx-border);background:{{r.bg}}">
+                <input type="checkbox" checked="{{r.sel}}" onChange="{{r.pick}}" aria-label="Select {{r.name}}" style="accent-color:var(--fx-primary);width:15px;height:15px;margin:0">
+                <b style="color:var(--fx-text)">{{r.name}}</b>
+                <span style="font-variant-numeric:tabular-nums">{{r.screens}}</span>
+                <span style="font-variant-numeric:tabular-nums">{{r.comps}}</span>
+                <span><span style="height:20px;padding:0 8px;border-radius:7px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:{{r.sBg}};color:{{r.sFg}}">{{r.size}}</span></span>
+                <span><span style="height:20px;padding:0 8px;border-radius:7px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:{{r.pBg}};color:{{r.pFg}}">{{r.prio}}</span></span>
+                <span style="color:var(--fx-text-body)">{{r.deps}}</span>
+                <span style="color:var(--fx-text-body)">{{r.weeks}}</span>
+                <span style="display:flex;align-items:center;gap:6px;color:{{r.stFg}};font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:{{r.stDot}};border:{{r.stRing}}" aria-hidden="true"></span>{{r.state}}</span>
+                <button type="button" aria-label="More for {{r.name}}" style="border:0;background:transparent;cursor:pointer;color:var(--fx-text-muted);font-size:15px">⋮</button>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;padding:7px 12px;border-top:1px solid var(--fx-border);color:var(--fx-text-muted)"><span>Showing 1–8 of 18 modules</span><span style="margin-left:auto">‹ <b style="display:inline-flex;width:24px;height:24px;border-radius:7px;background:var(--fx-primary);color:#ffffff;align-items:center;justify-content:center">1</b> 2 3 ›</span></div>
+          </section>
+
+          <section aria-labelledby="ganttTitle" style="flex:1;min-height:0;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px"><h2 id="ganttTitle" style="margin:0;flex:1;font-size:15px;font-weight:700;color:var(--fx-text)">Timeline</h2>
+              <div role="group" aria-label="Scale" style="display:flex;background:var(--fx-surface-3);border-radius:var(--fx-radius);padding:3px"><sc-for list="{{scales}}" as="c" hint-placeholder-count="2"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="font:inherit;cursor:pointer;height:26px;padding:0 12px;border-radius:7px;border:0;background:{{c.bg}};color:{{c.fg}};font-weight:600">{{c.name}}</button></sc-for></div>
+            </div>
+            <div style="position:relative;display:grid;grid-template-columns:150px 70px repeat(6,minmax(0,1fr));font-size:11.5px">
+              <b style="padding:4px 0;color:var(--fx-text)">Module</b><b style="padding:4px 0;color:var(--fx-text)">Planned</b>
+              <sc-for list="{{weeks}}" as="w" hint-placeholder-count="6"><span style="padding:4px 0;text-align:center;border-left:1px solid var(--fx-border);display:flex;flex-direction:column"><b style="color:var(--fx-text)">{{w.n}}</b><span style="color:var(--fx-text-muted)">{{w.d}}</span></span></sc-for>
+              <sc-for list="{{bars}}" as="b" hint-placeholder-count="5">
+                <span style="padding:6px 0;border-top:1px solid var(--fx-border);display:flex;align-items:center;gap:6px;font-weight:600;color:var(--fx-text)"><span style="width:10px;height:10px;border-radius:50%;background:{{b.dot}};border:{{b.ring}}" aria-hidden="true"></span>{{b.name}}</span>
+                <span style="padding:6px 0;border-top:1px solid var(--fx-border);color:var(--fx-text-body)">{{b.len}}</span>
+                <span style="grid-column:span 6;border-top:1px solid var(--fx-border);position:relative;height:28px"><span style="position:absolute;top:7px;height:14px;left:{{b.left}};width:{{b.width}};border-radius:var(--fx-radius-pill);background:{{b.color}};color:#ffffff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;box-sizing:border-box">{{b.label}}</span></span>
+              </sc-for>
+              <span aria-hidden="true" style="position:absolute;top:30px;bottom:0;left:calc(220px + (100% - 220px) * 0.39);width:2px;background:var(--fx-primary)"></span>
+              <span style="position:absolute;top:30px;left:calc(220px + (100% - 220px) * 0.39 - 20px);height:18px;padding:0 6px;border-radius:6px;background:var(--fx-primary);color:#ffffff;font-size:10px;font-weight:700;display:inline-flex;align-items:center">Today</span>
+            </div>
+            <div style="display:flex;gap:16px;color:var(--fx-text-muted);font-size:11.5px">
+              <span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:8px;border-radius:4px;background:var(--fx-success)"></span>Delivered</span>
+              <span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:8px;border-radius:4px;background:var(--fx-info)"></span>In progress</span>
+              <span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:8px;border-radius:4px;background:#6366f1"></span>Planned</span>
+              <span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:8px;border-radius:4px;background:#a5b4fc"></span>Not started</span>
+              <span style="margin-left:auto">Weeks are the team's plan; bars turn green when the module's change is delivered.</span>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <section aria-labelledby="graphTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 14px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center"><h2 id="graphTitle" style="margin:0;flex:1;font-size:15px;font-weight:700;color:var(--fx-text)">Module dependencies</h2><button type="button" onClick="{{openPanel}}" style="border:0;background:transparent;cursor:pointer;font:inherit;font-weight:600;color:var(--fx-primary)">Full screen</button></div>
+            <div style="position:relative;height:214px">
+              <svg aria-hidden="true" width="472" height="214" viewBox="0 0 472 214" style="position:absolute;left:0;top:0" fill="none" stroke="#6366f1" stroke-width="2">
+                <path d="M128 30 C170 30 170 100 196 100"></path>
+                <path d="M128 100 L196 100"></path>
+                <path d="M128 170 C170 170 170 100 196 100"></path>
+                <path d="M300 100 C330 100 330 30 352 30" stroke-dasharray="5 4"></path>
+                <path d="M300 100 L352 100" stroke-dasharray="5 4"></path>
+                <path d="M300 100 C330 100 330 170 352 170" stroke-dasharray="5 4"></path>
+              </svg>
+              <sc-for list="{{nodes}}" as="n" hint-placeholder-count="7">
+                <button type="button" onClick="{{n.pick}}" aria-pressed="{{n.on}}" style="position:absolute;left:{{n.x}};top:{{n.y}};width:{{n.w}};height:40px;font:inherit;font-weight:700;cursor:pointer;border-radius:12px;border:{{n.border}};background:{{n.bg}};color:{{n.fg}};box-shadow:0 2px 6px rgba(60,40,160,.08)">{{n.name}}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:16px;color:var(--fx-text-muted);font-size:11.5px"><span>● Chosen module</span><span>── Needs it first</span><span>- - Depends on it</span></div>
+          </section>
+
+          <section aria-labelledby="ordTitle" style="flex:1;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 14px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><h2 id="ordTitle" style="margin:0;flex:1;font-size:15px;font-weight:700;color:var(--fx-text)">Suggested order</h2><span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center">From the dependencies</span></div>
+            <span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Move the modules in this order to avoid rework:</span>
+            <ol aria-label="Order" style="list-style:none;margin:0;padding:8px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--fx-border);border-radius:12px">
+              <sc-for list="{{order}}" as="o" hint-placeholder-count="5">
+                <li style="display:flex;align-items:center;gap:8px"><span style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:28px;height:28px;border-radius:50%;background:{{o.bg}};color:{{o.fg}};display:inline-flex;align-items:center;justify-content:center;font-weight:700">{{o.n}}</span><span style="font-size:11.5px;font-weight:{{o.weight}};color:var(--fx-text);text-align:center;max-width:72px">{{o.name}}</span></span><sc-if value="{{o.arrow}}" hint-placeholder-val="{{true}}"><span aria-hidden="true" style="color:var(--fx-text-muted)">→</span></sc-if></li>
+              </sc-for>
+            </ol>
+            <sc-for list="{{why}}" as="w" hint-placeholder-count="3"><span style="display:flex;gap:9px;line-height:17px"><span style="width:17px;height:17px;flex:none;border-radius:50%;background:var(--fx-success-soft);color:var(--fx-success-text);display:inline-flex;align-items:center;justify-content:center;font-size:10px" aria-hidden="true">✓</span>{{w}}</span></sc-for>
+          </section>
+        </div>
+      </div></sc-if>
+<sc-if value="{{tbMigrateOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbMigrateGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbMigrateGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbMigrateGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbMigrateGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbMigrateGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbMigrateGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbMigrateGen.note}}</p></sc-if></section></sc-if>
+
+    </main>
+
+    <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)"><a href="Catalogue.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface)">← Technology</a><span style="flex:1;min-width:12px"></span><div style="position:relative"><button type="button" onClick="{{toggleMore}}" aria-haspopup="menu" aria-expanded="{{moreStr}}" aria-label="More actions" title="More actions" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 12px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">More ⋯</button><sc-if value="{{moreOn}}" hint-placeholder-val="{{false}}"><div role="menu" aria-label="More actions" style="position:absolute;right:0;bottom:48px;min-width:250px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:8"><button type="button" role="menuitem" onClick="{{m_say3}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Save as draft</button><button type="button" role="menuitem" onClick="{{m_say2}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Export the plan</button></div></sc-if></div><a href="Workspace.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 22px;background:var(--fx-primary);color:#ffffff">Make the plan and start →</a></footer>
+    </div>
+    </div>
+  </div>
+<sc-if value="{{panelOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:5"><section role="dialog" aria-modal="true" aria-label="Module dependencies" style="width:1180px;height:760px;background:var(--fx-surface);border-radius:var(--fx-radius-xl);box-shadow:0 24px 48px rgba(15,23,42,.25);display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;flex:1;font-size:18px;font-weight:700;color:var(--fx-text)">Module dependencies · all 18 modules</h2><span style="color:var(--fx-text-muted)">Left needs nothing; each column needs the ones to its left.</span><button type="button" onClick="{{closePanel}}" aria-label="Close" style="width:32px;height:32px;border-radius:var(--fx-radius);border:0;background:var(--fx-surface-3);cursor:pointer">✕</button></div><div style="flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding:20px"><div style="display:flex;flex-direction:column;gap:10px"><b style="color:var(--fx-text-muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase">1 · Moves first</b><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Login and 2FA</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Common UI</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Dashboard</span></div><div style="display:flex;flex-direction:column;gap:10px"><b style="color:var(--fx-text-muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase">2 · Core</b><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Accounts</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Settings</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Alerts</span></div><div style="display:flex;flex-direction:column;gap:10px"><b style="color:var(--fx-text-muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase">3 · Needs Accounts</b><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Payee management</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Cards</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Loans</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Deposits</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Service requests</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Statements</span></div><div style="display:flex;flex-direction:column;gap:10px"><b style="color:var(--fx-text-muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase">4 · Needs payees</b><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:0;background:var(--fx-primary);color:#ffffff;font-weight:600">Payments</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Transfers</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Bill payments</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Standing orders</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Reports</span><span style="padding:10px 12px;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-border);background:var(--fx-surface);color:var(--fx-text);font-weight:600">Forex</span></div></div><div style="padding:12px 20px;border-top:1px solid var(--fx-border);display:flex;gap:16px;color:var(--fx-text-muted);font-size:12px"><span>Read from the code: which module calls or imports which.</span><span style="margin-left:auto">Payments highlighted: it needs Accounts, Payee management and Login.</span></div></section></div></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { pick: 'Payments', scale: 'weeks' }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    {
+      const D = [null,{"title":"Dependencies","lead":"Which modules each module needs, read from the code.","cols":"1.3fr 1.8fr 1.8fr .8fr","head":["Module","Needs first","Needed by","Calls"],"rows":[["Login and 2FA","—","every module","14"],["Accounts","Login and 2FA, Common UI","Payments, Cards, Loans, Deposits","22"],["Payee management","Accounts","Payments, Transfers","9"],["Payments","Accounts, Payee management","Reports","31"],["Cards","Accounts","—","11"],["Service requests","Login and 2FA, Common UI","—","8"]],"note":""},{"title":"Timeline","lead":"The weeks the team planned, and what is done.","cols":".7fr 1.4fr 1fr 2fr","head":["Week","Module","State","Note"],"rows":[["W1","Dashboard","✓ Delivered","CHG-0051"],["W2","Accounts","! In progress","38 of 42 files written"],["W3","Payee management","Planned","After Accounts"],["W4–W5","Payments","Planned","Largest module"],["W6","Cards","Planned",""]],"note":"The full Gantt view uses the new timeline part (see Design system additions)."},{"title":"Risk and size","lead":"Why some modules need more care.","cols":"1.3fr .7fr .8fr 2fr 2fr","head":["Module","Screens","Size","Why","What we do"],"rows":[["Payments","38","! Large","2FA on submit, masked accounts","Move after its dependencies; extra 2FA tests"],["Accounts","24","Medium","Custom table cells","Map cells to DataGrid columns"],["Login and 2FA","9","! Security","Password encryption, nonce","Security review before anything else"]],"note":""},{"title":"Findings (8)","lead":"From the analysis of the source.","cols":"2fr 1.2fr 2fr","head":["Finding","Module","What to do"],"rows":[["Direct jQuery DOM calls","Payments","Replace with component state"],["Shared Knockout observable across modules","Accounts, Cards","Move into a shared store"],["Hard-coded labels","Service requests","Move to the resource bundle"],["Custom 2FA plugin","Login and 2FA","Keep the server plugin; draw its screen"]],"note":"Showing 4 of 8."}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.tabs || []);
+      const a = st.tbMigrate || 0;
+      v.tabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbMigrate: i }) }));
+      v.tbMigrateFirst = a === 0;
+      v.tbMigrateOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbMigrateGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    v.panelOn = !!st.panel;
+    v.panelKey = st.panel || '';
+    v.openPanel = () => this.setState({ panel: 'open' });
+    v.closePanel = () => this.setState({ panel: '' });
+    const M = ["Opens the filters: size, priority, state.","Not designed yet: the full-size dependency diagram.","Downloading migration-plan.csv","Plan saved as a draft."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    ["say3","say2"].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', 'Mapping.dc.html'], ['Technology catalogue', 'Catalogue.dc.html'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', '#'], ['Validation centre', '#'], ['Review and approval', '#'], ['History', '#']];
+    const SZ = { Small: ['var(--fx-success-soft)', 'var(--fx-success-text)'], Medium: ['var(--fx-warning-soft)', 'var(--fx-warning-text)'], Large: ['var(--fx-danger-soft)', 'var(--fx-danger-text)'] };
+    const PR = { Critical: ['var(--fx-primary-soft)', 'var(--fx-primary-text)'], High: ['var(--fx-danger-soft)', 'var(--fx-danger-text)'], Medium: ['var(--fx-warning-soft)', 'var(--fx-warning-text)'] };
+    const ST = { done: ['Delivered', 'var(--fx-success-text)', 'var(--fx-success)', '0'], prog: ['In progress', 'var(--fx-info-text)', 'var(--fx-info)', '0'], plan: ['Planned', 'var(--fx-primary)', '#6366f1', '0'], none: ['Not started', 'var(--fx-text-muted)', 'var(--fx-surface)', '1.5px solid #9ca3af'] };
+    const M = [
+      ['Dashboard', 12, 86, 'Small', 'High', 'none', '1 week', 'done'],
+      ['Accounts', 24, 182, 'Medium', 'High', 'Login and 2FA, Common UI', '1 week', 'prog'],
+      ['Payments', 38, 286, 'Large', 'Critical', 'Accounts, Payees, Login', '2 weeks', 'plan'],
+      ['Payee management', 20, 164, 'Medium', 'High', 'Accounts, Payments', '1 week', 'none'],
+      ['Cards', 16, 132, 'Medium', 'Medium', 'Accounts', '1 week', 'none'],
+      ['Loans', 14, 118, 'Medium', 'Medium', 'Accounts', '1 week', 'none'],
+      ['Deposits', 10, 96, 'Small', 'Medium', 'Accounts', '1 week', 'none'],
+      ['Service requests', 18, 126, 'Medium', 'Medium', 'Login and 2FA, Common UI', '1 week', 'none']
+    ];
+    const N = [['Accounts', 0, 10, 128], ['Payee management', 0, 80, 128], ['Login and 2FA', 0, 150, 128], ['Payments', 196, 80, 104], ['Cards', 352, 10, 118], ['Service requests', 352, 80, 118], ['Reports', 352, 150, 118]];
+    const B = [['Dashboard', '1 week', 0, 1, 'var(--fx-success)', 'done', '✓'], ['Accounts', '1 week', 1, 1.2, 'var(--fx-info)', 'prog', '40%'], ['Payee management', '1 week', 1.8, 1.2, '#6366f1', 'plan', ''], ['Payments', '2 weeks', 3, 1.9, '#6366f1', 'plan', ''], ['Cards', '1 week', 4.6, 1, '#a5b4fc', 'none', '']];
+    const ord = ['Dashboard', 'Accounts', 'Payee management', 'Payments', 'Cards'];
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 5 ? 'page' : 'false', bg: i === 5 ? 'var(--fx-primary)' : 'transparent', fg: i === 5 ? '#ffffff' : '#dcd7ff', weight: i === 5 ? 600 : 400 })),
+      kpis: [
+        { icon: '▤', v: '18', k: 'Modules', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)' },
+        { icon: '▭', v: '214', k: 'Screens', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)' },
+        { icon: '◇', v: '1,386', k: 'Components', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)' },
+        { icon: '!', v: '4', k: 'Large modules', bg: 'var(--fx-danger-soft)', fg: 'var(--fx-danger-text)' },
+        { icon: '∞', v: '12', k: 'Dependency groups', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)' },
+        { icon: '◷', v: '6 weeks', k: 'Planned by the team', bg: 'var(--fx-success-soft)', fg: 'var(--fx-success-text)' }
+      ],
+      tabs: [['Module plan', true], ['Dependencies', false], ['Timeline', false], ['Risk and size', false], ['Findings (8)', false]].map((t) => ({ name: t[0], on: t[1] ? 'true' : 'false', line: t[1] ? 'var(--fx-primary)' : 'transparent', fg: t[1] ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: t[1] ? 700 : 500 })),
+      rows: M.map((m) => ({ name: m[0], screens: m[1], comps: m[2], size: m[3], sBg: SZ[m[3]][0], sFg: SZ[m[3]][1], prio: m[4], pBg: PR[m[4]][0], pFg: PR[m[4]][1], deps: m[5] === 'none' ? '—' : m[5], weeks: m[6], state: ST[m[7]][0], stFg: ST[m[7]][1], stDot: ST[m[7]][2], stRing: ST[m[7]][3], sel: s.pick === m[0], bg: s.pick === m[0] ? 'var(--fx-primary-soft)' : 'var(--fx-surface)', pick: () => this.setState({ pick: m[0] }) })),
+      scales: [['weeks', 'Weeks'], ['months', 'Months']].map((c) => ({ name: c[1], on: s.scale === c[0] ? 'true' : 'false', bg: s.scale === c[0] ? 'var(--fx-primary)' : 'transparent', fg: s.scale === c[0] ? '#ffffff' : 'var(--fx-text-body)', pick: () => this.setState({ scale: c[0] }) })),
+      weeks: s.scale === 'weeks' ? [['W1', '13–19 Jan'], ['W2', '20–26 Jan'], ['W3', '27 Jan–2 Feb'], ['W4', '3–9 Feb'], ['W5', '10–16 Feb'], ['W6', '17–23 Feb']].map((w) => ({ n: w[0], d: w[1] })) : [['Jan', ''], ['', ''], ['', ''], ['Feb', ''], ['', ''], ['', '']].map((w) => ({ n: w[0], d: w[1] })),
+      bars: B.map((b) => ({ name: b[0], len: b[1], left: (b[2] / 6 * 100) + '%', width: (b[3] / 6 * 100) + '%', color: b[4], label: b[6], dot: ST[b[5]][2], ring: ST[b[5]][3] })),
+      nodes: N.map((n) => ({ name: n[0], x: n[1] + 'px', y: n[2] + 'px', w: n[3] + 'px', on: s.pick === n[0] ? 'true' : 'false', bg: s.pick === n[0] ? 'var(--fx-primary)' : 'var(--fx-surface)', fg: s.pick === n[0] ? '#ffffff' : 'var(--fx-text)', border: s.pick === n[0] ? '0' : '1px solid var(--fx-border)', pick: () => this.setState({ pick: n[0] }) })),
+      order: ord.map((o, i) => ({ n: i + 1, name: o, bg: s.pick === o ? 'var(--fx-primary)' : 'var(--fx-primary-soft)', fg: s.pick === o ? '#ffffff' : 'var(--fx-primary-text)', weight: s.pick === o ? 800 : 500, arrow: i < ord.length - 1 })),
+      why: ['Accounts and Payee management have to move before Payments.', 'Payments is the largest module, so it goes after the core it depends on.', 'Login and 2FA move with the first module so the new app can sign in.']
+    };
+  }
+}
+</script>
+</body>
+</html>

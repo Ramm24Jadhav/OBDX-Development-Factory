@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Modernization plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-primary:#4f46e5;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-pill:999px;--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+a{color:var(--fx-primary-text)}
+</style>
+</helmet>
+<div style="width:1440px;height:1900px;box-sizing:border-box;padding:48px 56px;display:flex;flex-direction:column;gap:22px;background:var(--fx-bg);color:var(--fx-text-body);font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.55">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--fx-text-muted)">MODERNIZATION · PLAN FOR FINAL REVIEW · 5 NOV 2026</span>
+    <h1 style="margin:0;font-size:34px;line-height:42px;font-weight:700;color:var(--fx-text)">Modernization: eleven screens, two paths, one flow</h1>
+    <p style="margin:0;max-width:980px">A bank keeps OBDX and gives its screens premium components, or it moves the UI to another technology module by module. The OBDX server and its services stay exactly as they are on both paths. Every screen below is drawn in the factory's own design system and shell, and every action is listed on the <a href="Actions.dc.html">Actions and links map</a>.</p>
+  </div>
+
+  <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+    <h2 style="margin:0;font-size:18px;color:var(--fx-text)">The flow</h2>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <a href="Landing.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">1 Overview</a><span aria-hidden="true">→</span>
+      <a href="ChoosePath.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">2 Choose a path</a><span aria-hidden="true">→</span>
+      <span style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px dashed var(--fx-border);border-radius:var(--fx-radius)">
+        <span style="display:flex;gap:8px;align-items:center"><b style="font-size:12px;color:var(--fx-text-muted);width:80px">UI path</b><a href="Components.dc.html" style="padding:4px 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">3 Component inventory</a>→<a href="Mapping.dc.html" style="padding:4px 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">4 Component mapping</a>→<a href="UpgradePlan.dc.html" style="padding:4px 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">Upgrade plan</a></span>
+        <span style="display:flex;gap:8px;align-items:center"><b style="font-size:12px;color:var(--fx-text-muted);width:80px">Migration</b><a href="Catalogue.dc.html" style="padding:4px 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">5 Technology catalogue</a>→<a href="Migrate.dc.html" style="padding:4px 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">6 Migration planner</a></span>
+      </span><span aria-hidden="true">→</span>
+      <a href="Workspace.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">7 Workspace</a><span aria-hidden="true">→</span>
+      <a href="Validation.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">8 Validation</a><span aria-hidden="true">→</span>
+      <a href="Review.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">9 Review and approval</a><span aria-hidden="true">+</span><a href="Decisions.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">Decisions</a><span aria-hidden="true">→</span>
+      <a href="History.dc.html" style="padding:6px 12px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);font-weight:600;text-decoration:none">10 History</a>
+    </div>
+    <p style="margin:0;font-size:13px;color:var(--fx-text-muted)">Both paths end in an ordinary factory change, so Workspace, Validation, Review and History serve both: the UI path changes components in the JET code, the migration path writes the new app.</p>
+  </section>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+    <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:10px">
+      <h2 style="margin:0;font-size:18px;color:var(--fx-text)">How it fits the factory as it is built</h2>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+        <li><b>Menu:</b> one entry, Modernization, under Modernize. It folds open four pages, the way Administration does: Overview, Component factory, Technology settings and History. The steps of each path are reached from the flow, not the menu. The top bar (workspace, search, theme, bell, help, account) is unchanged.</li>
+        <li><b>Pages:</b> one page module per screen (<span style="font-family:var(--fx-font-mono);font-size:12.5px">views/modernization-*.html</span> and its view model), registered in <span style="font-family:var(--fx-font-mono);font-size:12.5px">appController.js</span> under the <span style="font-family:var(--fx-font-mono);font-size:12.5px">modernize</span> group; the breadcrumb row is the factory's own.</li>
+        <li><b>Elements:</b> <span style="font-family:var(--fx-font-mono);font-size:12.5px">bx-select</span> for the pickers, <span style="font-family:var(--fx-font-mono);font-size:12.5px">fx-menu-button</span> for every ⋯ menu, <span style="font-family:var(--fx-font-mono);font-size:12.5px">fx-sheet</span> for the side panels, <span style="font-family:var(--fx-font-mono);font-size:12.5px">fx-table</span> rows, <span style="font-family:var(--fx-font-mono);font-size:12.5px">ui.status()</span> chips, the ring chart, tab strips from <span style="font-family:var(--fx-font-mono);font-size:12.5px">strips.js</span>.</li>
+        <li><b>Look:</b> only <span style="font-family:var(--fx-font-mono);font-size:12.5px">--fx-*</span> tokens, so the dark theme works; radius sm, lg, xl and pill; motion from the <span style="font-family:var(--fx-font-mono);font-size:12.5px">--fx-dur-*</span> tokens.</li>
+        <li><b>Feedback:</b> Analyze, Run the tests and Write it again use <span style="font-family:var(--fx-font-mono);font-size:12.5px">busy.js</span>: the button spins and the top progress bar runs.</li>
+        <li><b>Reuse:</b> the code view and diff reuse the Changes page's diff; Validation reads the same Jenkins results as Build, Test &amp; Review; Review uses the change's existing approval steps.</li>
+      </ul>
+    </section>
+    <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:10px">
+      <h2 style="margin:0;font-size:18px;color:var(--fx-text)">Server and data</h2>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+        <li><b>Component inventory:</b> the analysis counts each <span style="font-family:var(--fx-font-mono);font-size:12.5px">oj-*</span> element per screen and module from the code index.</li>
+        <li><b>Component packs:</b> four packs from one bank design system, under <span style="font-family:var(--fx-font-mono);font-size:12.5px">target-packs/components/</span>: Premium Oracle JET (<span style="font-family:var(--fx-font-mono);font-size:12.5px">bx-</span> elements, all 176 components), React, React Native and Angular (preview). A metadata registry and a JET mapping registry (six statuses, each with evidence) drive the Component factory; a pack shows a component as Available only when its checks pass. A factory update brings a new version; moving screens to it is proposed as a change, never applied by itself.</li><li><b>Component style:</b> the design option, motion and theme chosen in the Component factory are saved per workspace; Technology settings shows them, and new code and pack upgrades use them.</li>
+        <li><b>Progress:</b> a module counts as moved only when its change is delivered to SVN. The planner's weeks are the team's own plan. No estimated days, risk scores or star ratings.</li>
+        <li><b>Records:</b> the plan (modules, order, weeks) and the chosen path are saved per workspace: a new Flyway migration, V34.</li>
+        <li><b>OBDX rules:</b> every converted module is checked against the 8 rules: same digx services, session cookie through OHS, nonce from <span style="font-family:var(--fx-font-mono);font-size:12.5px">/digx/v1/session/nonce</span>, server-driven 2FA, masked tokens, password encryption, role menus, labels and validations.</li>
+        <li><b>Models:</b> only the conversion and the assistant call a model, through Models &amp; AI as today.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0;flex:1;font-size:18px;color:var(--fx-text)">What the check of every action found</h2><a href="Actions.dc.html" style="font-weight:600">Open the map →</a></div>
+    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px"><div style="border-radius:var(--fx-radius);background:var(--fx-success-soft);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-success-text)">36</b>go to a screen</div><div style="border-radius:var(--fx-radius);background:var(--fx-primary-soft);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-primary-text)">45</b>work on the page</div><div style="border-radius:var(--fx-radius);background:var(--fx-warning-soft);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-warning-text)">8</b>open a panel or dialog</div><div style="border-radius:var(--fx-radius);background:var(--fx-surface-3);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-text)">17</b>run and report</div><div style="border-radius:var(--fx-radius);background:var(--fx-surface-3);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-text)">5</b>menus</div><div style="border-radius:var(--fx-radius);background:var(--fx-surface-3);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-text)">3</b>factory pages</div><div style="border-radius:var(--fx-radius);background:var(--fx-success-soft);padding:10px 12px"><b style="display:block;font-size:22px;color:var(--fx-success-text)">0</b>still to design</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;font-size:13.5px"><div><b style="color:var(--fx-success-text)">Drawn since the first check</b><br>The <a href="UpgradePlan.dc.html">Upgrade plan</a> for the UI path; the <a href="Decisions.dc.html">Approve dialog and delivered state</a>; Request changes and Reject on Review; six panels; every tab on every screen.</div><div><b style="color:var(--fx-success-text)">Also drawn</b><br><a href="States.dc.html">Empty, running, failed and not-allowed states</a> for every screen, and the <a href="Charts.dc.html">three chart parts</a> the design system needs: stacked bars, timeline, dependency diagram.</div><div><b style="color:var(--fx-success-text)">Phone, tablet and dark</b><br>Every screen on <a href="Phone.dc.html">a phone</a> and <a href="Tablet.dc.html">a tablet</a>, and in the <a href="DarkTheme.dc.html">dark theme</a> (each screen also has a Dark switch under Tweaks).</div></div>
+  </section>
+
+  <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+    <h2 style="margin:0;font-size:18px;color:var(--fx-text)">Build order, after your approval</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;font-size:13.5px">
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">0 · Finish the design</b><span>Your approval of these boards. Then add the three chart parts to the design system and its page. Nothing is built before this.</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">1 · Shell, Overview, Choose a path</b><span>The menu fold, the ten routes, Overview from today's analysis, the saved path choice (V34).</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">2 · Inventory and mapping</b><span>Count <span style="font-family:var(--fx-font-mono);font-size:12.5px">oj-*</span> elements in the analysis; the mapping screen from the pack manifest.</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">3 · Component factory and the foundation set</b><span>The explorer reads the pack registry. Then the 13 foundation components in each pack (button, icon button, text field, amount, dropdown, checkbox, radio group, date picker, dialog, toast, card, tabs, data table), then the rest in waves, each after its checks pass. Plan: docs/COMPONENT-PACKS.md.</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">4 · Catalogue and planner</b><span>The catalogue from the target packs; the planner from the code's module dependencies and the team's weeks.</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><b style="color:var(--fx-text)">5 · Workspace, Validation, Review, History</b><span>On the existing change, Jenkins and approval data; then the Angular target pack, Flutter for mobile, and the JET Core Pack.</span></div>
+    </div>
+  </section>
+
+  <section style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px 24px;display:flex;flex-direction:column;gap:10px">
+    <h2 style="margin:0;font-size:18px;color:var(--fx-text)">Decided, and set aside</h2>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;font-size:13.5px">
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px">
+        <li>Technologies: React and React Native (packs ready), Angular (next), JET Core Pack, Vue 3, Flutter for mobile, native Swift and Kotlin, Capacitor.</li>
+        <li>Not offered: Next.js server rendering, Flutter Web, SvelteKit, Blazor, .NET MAUI, each with its reason in the catalogue.</li>
+        <li>Wording: results come from the analysis, Jenkins or the factory's checks, so no panel is called "AI" unless a model wrote it.</li>
+      </ul>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px">
+        <li>Deferred: OBDX version upgrades (22.x to 25.x).</li>
+        <li>Open: the screenshots used a top menu bar. These boards keep the factory's left menu so every page stays the same; moving the whole factory to a top bar would be a separate decision.</li>
+        <li>The numbers on the boards are examples to show the layout.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

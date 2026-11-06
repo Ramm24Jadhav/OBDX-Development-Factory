@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Technology settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+.mono{font-family:var(--fx-font-mono);font-size:11.5px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="techconfig" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+    <main style="flex:1;min-height:0;padding:16px 24px 24px;display:flex;flex-direction:column;gap:16px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px">
+        <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> Technology settings</div>
+          <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Technology settings</h1>
+          <p style="margin:0;color:var(--fx-text-body);font-size:13px">What the factory uses when it moves a module to each technology. Administrators can change them for this workspace.</p>
+        </div>
+        <sc-if value="{{viewing}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{startEdit}}" style="height:40px;padding:0 18px;border-radius:var(--fx-radius);border:0;background:var(--fx-primary);color:#ffffff;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap">Edit settings</button></sc-if>
+      </div>
+
+      <div role="tablist" aria-label="Technology" style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{techs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="font:inherit;cursor:pointer;height:38px;padding:0 14px 0 8px;border-radius:var(--fx-radius-pill);border:1px solid {{t.border}};background:{{t.bg}};color:var(--fx-text);display:inline-flex;align-items:center;gap:8px;font-weight:600"><span aria-hidden="true" style="width:26px;height:26px;border-radius:50%;background:{{t.logoBg}};color:{{t.logoFg}};font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">{{t.logo}}</span>{{t.name}}<span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:{{t.sBg}};color:{{t.sFg}};font-size:10.5px;font-weight:700;display:inline-flex;align-items:center">{{t.state}}</span></button></sc-for>
+      </div>
+
+      <sc-if value="{{preview}}" hint-placeholder-val="{{false}}"><div role="status" style="padding:10px 14px;border-radius:var(--fx-radius);background:var(--fx-warning-soft);color:var(--fx-warning-text)">The Angular target pack is still being built. These settings are a preview and can't be used for a migration yet.</div></sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+          <section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span aria-hidden="true" style="width:30px;height:30px;border-radius:var(--fx-radius);background:var(--fx-primary-soft);color:var(--fx-primary-text);font-weight:700;display:inline-flex;align-items:center;justify-content:center">{{g.icon}}</span><span style="display:flex;flex-direction:column"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{g.title}}</h2><span style="font-size:12px;color:var(--fx-text-muted)">{{g.lead}}</span></span></div>
+            <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--fx-border);min-height:24px">
+                <span style="flex:1;min-width:0;color:var(--fx-text-muted)">{{r.k}}</span>
+                <sc-if value="{{r.show}}" hint-placeholder-val="{{true}}"><span style="flex:1.3;min-width:0;text-align:right;color:var(--fx-text);font-family:{{r.font}};font-size:{{r.size}}">{{r.v}}</span></sc-if>
+                <sc-if value="{{r.edit}}" hint-placeholder-val="{{false}}"><input type="text" value="{{r.v}}" aria-label="{{r.k}}" style="flex:1.3;min-width:0;height:32px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);padding:0 10px;font:inherit;font-family:{{r.font}};font-size:{{r.size}};color:var(--fx-text);background:var(--fx-surface)"></sc-if>
+                <sc-if value="{{r.lock}}" hint-placeholder-val="{{false}}"><span title="Fixed: this keeps OBDX working as it is" style="flex:1.3;min-width:0;text-align:right;color:var(--fx-text);font-family:{{r.font}};font-size:{{r.size}}"><span style="height:18px;padding:0 6px;margin-right:6px;border-radius:var(--fx-radius-pill);background:var(--fx-surface-3);color:var(--fx-text-muted);font-family:Inter,sans-serif;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;vertical-align:middle">Fixed</span>{{r.v}}</span></sc-if>
+              </div>
+            </sc-for>
+          </section>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:12px;color:var(--fx-text-muted)">The Look rows come from the component style saved in the <a href="Packs.dc.html" style="font-weight:600">Component factory</a>; change them there. Locked settings are the OBDX rules: changing them would break the bank's session, security or services, so they are fixed for every technology.</p>
+    </main>
+    <sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+      <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)">
+        <span style="color:var(--fx-text-muted)">Changes apply to new migrations in bank-b-25. Running ones keep their settings.</span>
+        <span style="flex:1"></span>
+        <button type="button" onClick="{{cancelEdit}}" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text);font:inherit;font-weight:600;cursor:pointer">Cancel</button>
+        <button type="button" onClick="{{save}}" style="height:40px;padding:0 22px;border-radius:var(--fx-radius);border:0;background:var(--fx-primary);color:#ffffff;font:inherit;font-weight:600;cursor:pointer">Save settings</button>
+      </footer>
+    </sc-if>
+    </div>
+  </div>
+  <sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25)">{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tech: 'react', edit: false, toast: '' }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const s = this.state;
+    const mono = 'var(--fx-font-mono)';
+    const T = {
+      react: { name: 'React', logo: 'R', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', state: 'Ready', ready: true, pack: '1.2.0', ui: 'Factory UI for React 2.0', lang: 'TypeScript 5, strict', build: 'Vite', folder: 'src/modules/<module>', unit: 'Jest and Testing Library', journey: 'Playwright', job: 'modernize-react' },
+      rn: { name: 'React Native', logo: 'M', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', state: 'Ready', ready: true, pack: '1.1.0', ui: 'Factory UI Mobile 1.1', lang: 'TypeScript 5, strict', build: 'Gradle and Xcode', folder: 'app/modules/<module>', unit: 'Jest and Testing Library', journey: 'Detox', job: 'modernize-mobile' },
+      ng: { name: 'Angular', logo: 'A', logoBg: 'var(--fx-danger-soft)', logoFg: 'var(--fx-danger-text)', state: 'Preview', ready: false, pack: '0.6.0', ui: 'Factory UI for Angular 0.6', lang: 'TypeScript 5, strict', build: 'Angular CLI', folder: 'src/app/<module>', unit: 'Jasmine and Karma', journey: 'Playwright', job: 'modernize-angular' }
+    };
+    const t = T[s.tech] || T.react;
+    const row = (k, v, kind) => ({ k: k, v: v, font: kind === 'mono' || kind === 'lockmono' ? mono : 'inherit', size: kind === 'mono' || kind === 'lockmono' ? '12px' : '13px', lock: kind === 'lock' || kind === 'lockmono', edit: s.edit && kind !== 'lock' && kind !== 'lockmono', show: !(kind === 'lock' || kind === 'lockmono') && !s.edit });
+    const groups = [
+      { icon: '▣', title: 'Project', lead: 'How the new code is laid out.', rows: [row('Target pack', t.pack, 'mono'), row('Component library', t.ui), row('Language', t.lang), row('Build', t.build), row('Module folder', t.folder, 'mono')] },
+      { icon: '⇄', title: 'OBDX connection', lead: 'How the new UI talks to OBDX. Fixed.', rows: [row('Services', '/digx/v1, /digx/ext, /digx-auth', 'lockmono'), row('Session', 'Secure, HttpOnly cookie through OHS', 'lock'), row('Nonce', '/digx/v1/session/nonce, one per request', 'lockmono'), row('2FA', 'Screens the server asks for', 'lock'), row('Sensitive data', 'Masked tokens only', 'lock')] },
+      { icon: '✓', title: 'Code rules', lead: 'Checks every converted module must pass.', rows: [row('Lint', 'Factory ESLint rules'), row('Accessibility', 'WCAG 2.2 AA'), row('Labels', 'From resources/nls to src/i18n', 'mono'), row('Validation rules', 'From data-types.js', 'mono')] },
+      { icon: '▶', title: 'Tests and build', lead: 'What runs before a change can be reviewed.', rows: [row('Unit tests', t.unit), row('Journey tests', t.journey), row('Jenkins job', t.job, 'mono'), row('Coverage gate', '80%')] },
+      { icon: '◐', title: 'Look', lead: 'The component style saved in the Component factory. New code and pack upgrades use it.', rows: [row('Design', 'Elevated, 3 components with their own design'), row('Motion', 'Lift on hover · Press on click · Fade up on scroll'), row('Theme', 'bank-b-25 brand, light; dark follows the device'), row('Fonts', 'Bank font, then Inter')] }
+    ];
+    return {
+      yes: true, themeClass: this.props.dark ? 'fx-dark' : '', darkOn: !!this.props.dark,
+      techs: Object.keys(T).map((k) => ({ name: T[k].name, logo: T[k].logo, logoBg: T[k].logoBg, logoFg: T[k].logoFg, state: T[k].state, sBg: T[k].ready ? 'var(--fx-success-soft)' : 'var(--fx-warning-soft)', sFg: T[k].ready ? 'var(--fx-success-text)' : 'var(--fx-warning-text)', on: s.tech === k ? 'true' : 'false', bg: s.tech === k ? 'var(--fx-primary-soft)' : 'var(--fx-surface)', border: s.tech === k ? 'var(--fx-primary)' : 'var(--fx-border-strong)', pick: () => this.setState({ tech: k, edit: false }) })),
+      preview: !t.ready, groups: groups,
+      viewing: !s.edit, editing: s.edit,
+      startEdit: () => this.setState({ edit: true }),
+      cancelEdit: () => this.setState({ edit: false }),
+      save: () => { this.setState({ edit: false }); this.say(t.name + ' settings saved for bank-b-25.'); },
+      toastOn: !!s.toast, toastText: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,17 +1,17 @@
 {
- "generated": "2026-11-06T09:18:16.008Z",
+ "generated": "2026-11-06T09:30:39.156Z",
  "rows": [
   {
    "id": "P0",
    "track": "Set up",
    "task": "Board reference images, side-by-side check, plan",
    "session": "Main",
-   "done": 2,
+   "done": 5,
    "total": 5,
    "unit": "steps",
-   "status": "In progress",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "SCR",
@@ -23,7 +23,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Work, but do not match the boards yet",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "S0",
@@ -35,7 +35,7 @@
    "unit": "parts",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "S1",
@@ -47,7 +47,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "S2",
@@ -59,7 +59,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "C0",
@@ -95,7 +95,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "M1",
@@ -107,7 +107,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W1",
@@ -119,7 +119,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W2",
@@ -131,7 +131,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W3",
@@ -143,7 +143,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W4",
@@ -155,7 +155,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W5",
@@ -167,7 +167,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W6",
@@ -179,7 +179,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "W7",
@@ -191,7 +191,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "N1",
@@ -203,7 +203,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "N2",
@@ -215,7 +215,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "N3",
@@ -227,7 +227,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "TP0",
@@ -239,7 +239,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "T1",
@@ -251,7 +251,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "T2",
@@ -263,7 +263,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "G0",
@@ -275,7 +275,7 @@
    "unit": "gates",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "Q1",
@@ -287,7 +287,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   },
   {
    "id": "SHIP",
@@ -299,7 +299,7 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T09:30:39.156Z"
   }
  ]
 }

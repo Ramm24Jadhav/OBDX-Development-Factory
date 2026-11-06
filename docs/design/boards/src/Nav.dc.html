@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Factory menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="Main" style="width:244px;height:{{h}};position:sticky;top:0;overflow-y:auto;box-sizing:border-box;display:flex;flex-direction:column;background:linear-gradient(180deg,#0f172a 0%,#1e1b4b 100%);color:#cbd5e1;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13.5px;padding:14px 12px;gap:1px">
+  <a href="Landing.dc.html" style="display:flex;align-items:center;gap:10px;padding:4px 6px 10px;text-decoration:none">
+    <span aria-hidden="true" style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#4338ca);box-shadow:0 4px 12px rgba(37,99,235,.35);display:inline-flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4 20 8l-8 4-8-4z"></path><path d="m4 12 8 4 8-4"></path><path d="m4 16 8 4 8-4"></path></svg></span>
+    <span style="display:flex;flex-direction:column;line-height:15px"><b style="color:#ffffff;font-size:15px">OBDX</b><span style="color:#cbd5e1;font-size:12px">Development Factory</span><span style="color:#8b97b8;font-size:10.5px">Powered by AI</span></span>
+  </a>
+  <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+    <h2 style="margin:16px 10px 5px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#7f90aa">{{g.label}}</h2>
+    <sc-for list="{{g.links}}" as="l" hint-placeholder-count="3">
+      <a href="{{l.href}}" aria-current="{{l.current}}" style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;text-decoration:none;color:{{l.fg}};background:{{l.bg}};font-weight:{{l.weight}}">
+        <span aria-hidden="true" style="width:16px;height:16px;border:1.6px solid currentColor;border-radius:4px;opacity:.85"></span>{{l.name}}
+      </a>
+      <sc-if value="{{l.open}}" hint-placeholder-val="{{false}}">
+        <div role="group" aria-label="Modernization pages" style="display:flex;flex-direction:column;gap:1px;margin:2px 0 4px 20px;padding-left:10px;border-left:1px solid rgba(255,255,255,.12)">
+          <sc-for list="{{subs}}" as="s" hint-placeholder-count="10">
+            <a href="{{s.href}}" aria-current="{{s.current}}" style="display:block;padding:6px 10px;border-radius:7px;text-decoration:none;font-size:12.5px;color:{{s.fg}};background:{{s.bg}};font-weight:{{s.weight}}">{{s.name}}</a>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-for>
+  </sc-for>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"current":{"editor":"enum","options":["overview","inventory","mapping","upgrade","catalogue","planner","workspace","validation","review","history"],"default":"overview"},"h":{"editor":"text","default":"1010px"},"$preview":{"width":244,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cur = this.props.current || 'overview';
+    const h = this.props.h || '1010px';
+    const subs = [['overview', 'Overview', 'Landing.dc.html'], ['packs', 'Component factory', 'Packs.dc.html'], ['techconfig', 'Technology settings', 'TechConfig.dc.html'], ['history', 'History', 'History.dc.html']];
+    const link = (name, href, on, open) => ({ name: name, href: href, current: on ? 'page' : 'false', bg: on ? 'linear-gradient(90deg,#4f46e5,#6366f1)' : 'transparent', fg: on ? '#ffffff' : '#cbd5e1', weight: on ? 600 : 400, open: !!open });
+    return {
+      h: h,
+      groups: [
+        { label: 'Overview', links: [link('Home', '#', false), link('Workspaces', '#', false)] },
+        { label: 'Analyze', links: [link('Requirements', '#', false), link('Code', '#', false), link('OBDX Library', '#', false)] },
+        { label: 'Design', links: [link('Design Studio', '#', false)] },
+        { label: 'Build & Deliver', links: [link('Changes', '#', false), link('Build, Test & Review', '#', false), link('External Review', '#', false)] },
+        { label: 'Modernize', links: [link('Modernization', 'Landing.dc.html', true, true)] },
+        { label: 'Administration', links: [link('Models & AI', '#', false), link('Integrations', '#', false), link('Administration', '#', false)] }
+      ],
+      subs: subs.map((s) => ({ name: s[1], href: s[2], current: s[0] === cur ? 'page' : 'false', bg: s[0] === cur ? 'rgba(255,255,255,.12)' : 'transparent', fg: s[0] === cur ? '#ffffff' : '#a9b4cc', weight: s[0] === cur ? 600 : 400 }))
+    };
+  }
+}
+</script>
+</body>
+</html>
