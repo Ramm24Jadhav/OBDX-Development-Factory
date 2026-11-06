@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { Enter, Press } from './motion';
 import { useTheme } from './theme';
 
 export interface CardProps {
@@ -34,12 +35,14 @@ export function Card({ heading, subheading, children, actions, onAction, selecte
       {actions ? <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>{actions}</View> : null}
     </>
   );
-  if (!onAction) { return <View testID={testID} style={box}>{body}</View>; }
+  if (!onAction) { return <Enter testID={testID} style={box}>{body}</Enter>; }
   return (
-    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={[heading, subheading].filter(Boolean).join(', ') || undefined}
+    <Enter>
+    <Press testID={testID} accessibilityRole="button" accessibilityLabel={[heading, subheading].filter(Boolean).join(', ') || undefined}
                accessibilityState={selected === undefined ? undefined : { selected }} onPress={onAction}
-               style={({ pressed }) => [box, { transform: [{ scale: pressed ? t.pressScale : 1 }] }]}>
+           style={box}>
       {body}
-    </Pressable>
+    </Press>
+    </Enter>
   );
 }

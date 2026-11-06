@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { Enter, Shake } from './motion';
 import { Theme, useTheme } from './theme';
 
 /** Props every field takes, the same as the web pack and the starter's components. */
@@ -52,16 +53,16 @@ export function FieldShell({ testID, label, required, error, helpText, children 
   const t = useTheme();
   const s = styles(t);
   return (
-    <View testID={testID} style={s.field}>
+    <Enter testID={testID} style={s.field}>
       <Text style={s.label} importantForAccessibility="no">
         {label}
         {required ? <Text style={s.req}> *</Text> : null}
       </Text>
-      {children}
+      <Shake testID={`${testID}-control`} error={error}>{children}</Shake>
       {error
         ? <Text testID={`${testID}-error`} style={s.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">{error}</Text>
         : helpText ? <Text testID={`${testID}-help`} style={s.help}>{helpText}</Text> : null}
-    </View>
+    </Enter>
   );
 }
 

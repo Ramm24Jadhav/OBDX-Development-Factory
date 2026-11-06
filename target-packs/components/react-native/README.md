@@ -43,3 +43,18 @@ components take their data (`rows`, `tiles`, `items`, `events`, `steps`) and rep
 numbers show only their last four digits, IBANs are checked with their check digits, codes and PINs are never kept, and
 nothing calls a service: `AuthChallenge` takes the app's own biometric check as `authenticate`, as `FileUpload` takes
 `pick`. Charts are plain views, so the pack needs no drawing library.
+
+## Motion
+
+`src/motion.tsx` is the motion layer, on React Native's own `Animated` (no Reanimated, no other library), following
+`../motion.json`: enter (the component style's scroll effect: fade up, scale, slide or blur), press (its click
+effect: press, bounce, or the Android ripple), shake (a field's error), pop (a chosen mark, chip or code slot), roll (a
+changed number), grow (bars and meters), settle (new rows and files), spring (sheets and dialogs), slide (the chosen
+tab or segment) and shimmer (a busy button, a skeleton). The shared parts carry it, so every component moves the same
+way. Durations come from the bank tokens. When the device asks for reduced motion (`AccessibilityInfo`), everything
+shows its end state at once.
+
+The five effect categories (69 components, our own code) are in `TextEffects.tsx`, `MotionEffects.tsx`,
+`Showcase.tsx`, `Backdrops.tsx` and `Micro.tsx`. Phones have no hover or cursor, so the hover ideas answer the finger
+instead. Every gesture has a screen reader action as well, text effects read their whole text at once, and backdrops
+are hidden from screen readers and take no touches.

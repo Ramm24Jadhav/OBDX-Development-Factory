@@ -64,3 +64,21 @@ export { AccountsWidget, BillsWidget, BudgetsWidget, CalculatorsWidget, CreditCa
 export type { CalculatorsWidgetProps, CreditScoreWidgetProps, DelinquencyNoticeProps, ProgressWidgetProps, QuickInsightsWidgetProps, SummaryTab,
   TabsWidgetProps } from './G6';
 export type { BarsProps, InfoCardProps, ProgressListProps } from './parts';
+export { DURATION, EASING, Enter, Pop, Press, Roll, Shake, useCycle, useEnter, useGrow, useOpen, usePop, useProgress, useReducedMotion, useRoll, useShake, useShimmer,
+  useSlide, useStagger } from './motion';
+export type { EnterEffect, PressProps } from './motion';
+export { BlurInText, CountUp, FocusWord, GradientText, RevealDigits, RollingDigits, RotatingText, ScrollFloatText, ShimmerText, SplitFlapBoard, TextReveal, TypedText,
+  mix } from './TextEffects';
+export type { CountUpProps, FocusWordProps, GradientTextProps, RevealDigitsProps, RollingDigitsProps, RotatingTextProps, ScrollFloatTextProps, SplitFlapBoardProps,
+  TextEffectProps, TextProps, TypedTextProps } from './TextEffects';
+export { ClickBurst, EdgeBlur, FadeInContent, GlareHover, HighlightBorder, MagneticButton, Marquee, ScrollExpand, ScrollReveal } from './MotionEffects';
+export type { MagneticButtonProps, MarqueeProps, ScrollExpandProps, ScrollRevealProps, WrapProps } from './MotionEffects';
+export { AnimatedList, BentoGrid, CardNav, CardStack, Carousel, DockNav, DocumentFolder, ElasticSlider, FlipCard, GlassPanel, GlowBorderCard, OptionWheel, PillNav,
+  ProfileCard, ScrollStack, SpotlightCard, StaggeredMenu, TiltCard } from './Showcase';
+export type { AnimatedListProps, BentoTile, CardStackProps, CarouselProps, DocumentFolderProps, FlipCardProps, MenuGroup, NavProps, OptionWheelProps,
+  ProfileCardProps } from './Showcase';
+export { DotGrid, GradientBackdrop, LightBeams, LineWaves, ParticleBackdrop, SilkBackdrop, SoftAurora, Topography } from './Backdrops';
+export type { BackdropProps } from './Backdrops';
+export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
+  RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
+export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';

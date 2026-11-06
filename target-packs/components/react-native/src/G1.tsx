@@ -10,6 +10,7 @@ import { Dialog } from './Dialog';
 import { FieldProps, Option } from './field';
 import { Banner, BannerProps, Chips, ChipsProps, Event, Item, ItemList, Segment, SegmentProps, Sheet, SliderControl, SliderControlProps, Steps, StepsProps,
   TimelineList, TimelineListProps, Tone, Touch, panel, toneColors } from './parts';
+import { Enter } from './motion';
 import { useTheme } from './theme';
 
 /* ---------- SecondaryButton and DestructiveButton ---------- */
@@ -141,7 +142,7 @@ export function Accordion({ testID, label, sections, value, onChange, single }: 
     onChange?.(next);
   };
   return (
-    <View testID={testID} style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
+    <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text, paddingVertical: 8 }}>{label}</Text> : null}
       {sections.map((x, i) => {
         const on = open.includes(x.id);
@@ -159,7 +160,7 @@ export function Accordion({ testID, label, sections, value, onChange, single }: 
           </View>
         );
       })}
-    </View>
+    </Enter>
   );
 }
 

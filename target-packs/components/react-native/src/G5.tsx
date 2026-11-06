@@ -16,6 +16,7 @@ import { AmountInput, TextField, formatAmount } from './TextField';
 import { FieldProps, Option, styles } from './field';
 import { Event, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segment, SegmentProps, SliderControl, SliderControlProps, Steps, StepsProps, TimelineList,
   Touch, panel } from './parts';
+import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
@@ -44,7 +45,7 @@ export function RaiseRequest({ testID, label = 'Raise a request', value, onChang
   const set = (patch: Partial<RequestValue>) => onChange?.({ ...v, ...patch });
   const problems = { type: v.type ? '' : 'Choose a request.', account: v.account ? '' : 'Choose the account.' };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Dropdown testID={`${testID}-type`} label="Request" options={types} value={v.type} onChange={(x) => set({ type: x })} required disabled={disabled}
                 error={tried ? problems.type : undefined} />
@@ -53,7 +54,7 @@ export function RaiseRequest({ testID, label = 'Raise a request', value, onChang
       <TextArea testID={`${testID}-details`} label="Details" value={v.details} onChange={(x) => set({ details: x })} maxLength={500} disabled={disabled} />
       <Button testID={`${testID}-submit`} label="Raise request" busy={busy} disabled={disabled}
               onAction={() => { setTried(true); if (!problems.type && !problems.account) { onSubmit(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -141,7 +142,7 @@ export function ComposeMessage({ testID, label = 'Message to the bank', value, o
   const v = value ?? { subject: '', body: '' };
   const problems = { subject: v.subject ? '' : 'Choose a subject.', body: v.body.trim() ? '' : 'Write your message.' };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Dropdown testID={`${testID}-subject`} label="Subject" options={subjects} value={v.subject} onChange={(x) => onChange?.({ ...v, subject: x })} required
                 disabled={disabled} error={tried ? problems.subject : undefined} />
@@ -149,7 +150,7 @@ export function ComposeMessage({ testID, label = 'Message to the bank', value, o
                 disabled={disabled} error={tried ? problems.body : undefined} />
       <Button testID={`${testID}-send`} label="Send" busy={busy} disabled={disabled}
               onAction={() => { setTried(true); if (!problems.subject && !problems.body) { onSend(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -247,7 +248,7 @@ function Result({ testID, label, value, note }: { testID: string; label: string;
     <View testID={testID} accessible accessibilityLabel={`${label}: ${value}${note ? `. ${note}` : ''}`} accessibilityLiveRegion="polite"
           style={{ padding: 14, borderRadius: t.radius.control, backgroundColor: t.color.primarySoft, gap: 2 }}>
       <Text style={{ fontSize: 13, color: t.color.textBody }}>{label}</Text>
-      <Text style={{ fontSize: 22, fontWeight: '700', color: t.color.primaryText, fontVariant: ['tabular-nums'] }}>{value}</Text>
+      <Roll on={value}><Text style={{ fontSize: 22, fontWeight: '700', color: t.color.primaryText, fontVariant: ['tabular-nums'] }}>{value}</Text></Roll>
       {note ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>{note}</Text> : null}
     </View>
   );
@@ -276,7 +277,7 @@ export function LoanCalculator({ testID, label = 'Loan instalment calculator', v
   const v = value;
   const each = v.amount && v.rate !== null && v.months ? instalment(v.amount, v.rate, v.months) : null;
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="Loan amount" currency={currency} value={v.amount} onChange={(x) => onChange?.({ ...v, amount: x })} min={0} />
       <NumberInput testID={`${testID}-rate`} label="Interest rate (% a year)" value={v.rate} decimals={2} min={0} max={60} step={0.25}
@@ -284,7 +285,7 @@ export function LoanCalculator({ testID, label = 'Loan instalment calculator', v
       <NumberInput testID={`${testID}-months`} label="Months" value={v.months} min={1} max={480} step={12} onChange={(x) => onChange?.({ ...v, months: x })} />
       {each !== null ? <Result testID={`${testID}-result`} label="Each month" value={money(each, currency)}
                                note={`Interest over the loan ${money(each * v.months! - v.amount!, currency)}. ${NOTE}`} /> : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -294,7 +295,7 @@ export function DepositCalculator({ testID, label = 'Term deposit calculator', v
   const v = value;
   const end = v.amount && v.rate !== null && v.months ? maturityValue(v.amount, v.rate, v.months) : null;
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="Deposit amount" currency={currency} value={v.amount} onChange={(x) => onChange?.({ ...v, amount: x })} min={0} />
       <NumberInput testID={`${testID}-rate`} label="Interest rate (% a year)" value={v.rate} decimals={2} min={0} max={30} step={0.25}
@@ -302,7 +303,7 @@ export function DepositCalculator({ testID, label = 'Term deposit calculator', v
       <NumberInput testID={`${testID}-months`} label="Months" value={v.months} min={1} max={120} step={3} onChange={(x) => onChange?.({ ...v, months: x })} />
       {end !== null ? <Result testID={`${testID}-result`} label="At maturity" value={money(end, currency)}
                               note={`Interest ${money(end - v.amount!, currency)}, compounded quarterly. ${NOTE}`} /> : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -319,11 +320,11 @@ export interface ForexCalculatorProps extends CalculatorProps<number | null> {
 export function ForexCalculator({ testID, label = 'Forex calculator', value, onChange, currency, to, rate }: ForexCalculatorProps) {
   const t = useTheme();
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="You send" currency={currency} value={value} onChange={(x) => onChange?.(x)} min={0} />
       {value ? <Result testID={`${testID}-result`} label="The payee gets" value={money(value * rate, to)} note={`1 ${currency} = ${rate} ${to}. ${NOTE}`} /> : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -420,7 +421,7 @@ export function LiveChat({ testID, label = 'Chat with us', messages, suggestions
   const send = (text: string) => { const x = text.trim(); if (x) { onSend(x); setDraft(''); } };
   const started = messages.some((m) => m.from === 'customer');
   return (
-    <View testID={testID} style={[panel(t), { gap: 8 }]}>
+    <Enter testID={testID} style={[panel(t), { gap: 8 }]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <FlatList data={messages} keyExtractor={(m) => m.id} scrollEnabled={false} contentContainerStyle={{ gap: 6 }} renderItem={({ item: m }) => {
         const mine = m.from === 'customer';
@@ -449,7 +450,7 @@ export function LiveChat({ testID, label = 'Chat with us', messages, suggestions
         <View style={{ flex: 1 }}><TextField testID={`${testID}-draft`} label="Your message" value={draft} onChange={setDraft} maxLength={1000} /></View>
         <View style={{ marginTop: 22 }}><Button testID={`${testID}-send`} label="Send" disabled={!draft.trim()} onAction={() => send(draft)} /></View>
       </View>
-    </View>
+    </Enter>
   );
 }
 
