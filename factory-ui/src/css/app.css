@@ -10029,3 +10029,15 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mb .factory-mb-order ol.factory-mpl-suggested { flex-direction: row; flex-wrap: nowrap; }
 .factory-mb .factory-mb-order ol.factory-mpl-suggested > li { flex-direction: row; }
 .factory-mb .factory-mpl-tablecard tbody th { background: transparent; }
+/* Migration workspace, as drawn: a one-line run bar, the file tree beside the code, the assistant and steps under both */
+.factory-mb-headtools { display: flex; align-items: center; gap: 10px; }
+.factory-mb-runbar { border-radius: var(--fx-radius-lg); padding: 10px 16px; margin: 0; }
+.factory-mb-runbar .factory-mw-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; margin: 0; }
+.factory-mb-runbar .factory-mw-facts > div { display: flex; flex-direction: column; min-width: 0; }
+.factory-mb-runbar .factory-mw-facts dt { font-size: 11px; color: var(--fx-text-muted); }
+.factory-mb-runbar .factory-mw-facts dd { margin: 0; font-weight: 600; color: var(--fx-text); font-size: 12.5px; }
+.factory-mb-wslayout { display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-areas: "tree code" "below below"; gap: 14px; align-items: start; }
+.factory-mb-wslayout > .factory-mr-tree { grid-area: tree; }
+.factory-mb-wslayout > .factory-mw-code { grid-area: code; min-width: 0; }
+.factory-mb-wsbelow { grid-area: below; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (max-width: 1100px) { .factory-mb-wslayout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tree" "code" "below"; } }

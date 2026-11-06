@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { exampleRoutes } from './example-run.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const { chromium } = await import(pathToFileURL(path.join(root, 'target-packs/components/gates/node_modules/playwright/index.mjs')).href);
@@ -46,6 +47,8 @@ try {
     }
     server.close();
   } else if (mode === 'pages') {
+    const example = args[0] === '--example';
+    if (example) { args.shift(); if (!process.env.EXAMPLE_CHANGE) { throw new Error('Set EXAMPLE_CHANGE to a change id of the test factory'); } }
     const base = process.env.FACTORY_URL || 'http://localhost:8081';
     const password = process.env.FACTORY_PASSWORD;
     if (!password) { throw new Error('Set FACTORY_PASSWORD (and FACTORY_USER if not admin) to sign in to ' + base); }
@@ -54,6 +57,15 @@ try {
     for (const theme of ['light', 'dark']) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', colorScheme: theme });
       const page = await context.newPage();
+      if (example) {
+        // The run pages get the example run (tools/fidelity/example-run.mjs) in place of the run endpoints, in this browser only
+        const routes = exampleRoutes(process.env.EXAMPLE_CHANGE);
+        await page.route(/\/api\/workspaces\/[^?]*\/modernization\/(runs|history)/, (route) => {
+          const url = new URL(route.request().url()).pathname;
+          const hit = routes.find((r) => r[0].test(url));
+          return hit && route.request().method() === 'GET' ? route.fulfill({ json: hit[1] }) : route.continue();
+        });
+      }
       await page.goto(base + '/', { waitUntil: 'networkidle' });
       await page.locator('#loginUsernameInput').fill(process.env.FACTORY_USER || 'admin');
       await page.locator('input[type=password]').first().fill(password);

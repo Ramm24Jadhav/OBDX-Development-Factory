@@ -1,10 +1,11 @@
-<div class="factory-pg factory-mw">
-  <div class="factory-rq-head">
-    <div class="factory-rq-title">
+<!-- Migration workspace, as on the approved board (docs/design/boards/Workspace-*.png) -->
+<div class="factory-pg factory-mb factory-mw">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
       <h1>Migration workspace</h1>
-      <p class="factory-rq-lead"><oj-bind-text value="[[title]]"></oj-bind-text></p>
+      <p><oj-bind-text value="[[title]]"></oj-bind-text></p>
     </div>
-    <div class="factory-rq-headbar">
+    <div class="factory-mb-headtools">
       <oj-bind-if test="[[runs().length > 1]]"><fx-select id="mwRun" label="Run" hide-label options="[[runOptions]]" value="[[runId]]" on-value-changed="[[pickRun]]"></fx-select></oj-bind-if>
       <oj-bind-if test="[[runPill()]]"><span id="mwState" role="status" :class="[[runPill().css]]"><oj-bind-text value="[[runPill().text]]"></oj-bind-text></span></oj-bind-if>
     </div>
@@ -20,7 +21,7 @@
   <oj-bind-if test="[[loading() && !detail()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the workspace"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[detail()]]">
-    <section class="fx-card factory-mw-strip" aria-label="Run"><dl class="factory-mw-facts"><oj-bind-for-each data="[[facts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd>
+    <section class="factory-mb-card factory-mb-runbar factory-mw-strip" aria-label="Run"><dl class="factory-mw-facts"><oj-bind-for-each data="[[facts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd>
       <oj-bind-if test="[[f.data.sub]]"><small class="fx-muted"><oj-bind-text value="[[f.data.sub]]"></oj-bind-text></small></oj-bind-if></div></template></oj-bind-for-each></dl>
       <div class="fx-progress factory-mw-progress" role="progressbar" aria-label="Steps done" aria-valuemin="0" aria-valuemax="5" :aria-valuenow="[[doneSteps]]"><span :style="[[progress]]"></span></div></section>
 
@@ -33,8 +34,8 @@
     <oj-bind-if test="[[status() === 'FAILED']]"><div class="fx-alert fx-alert--danger factory-mw-gate" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>The factory stopped.</strong> <oj-bind-text value="[[message]]"></oj-bind-text></span>
       <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[analyzeAgain]]" :disabled="[[!canManage()]]">Analyze again</button></div></oj-bind-if>
 
-    <div class="factory-mw-layout">
-      <aside class="fx-card factory-mr-tree" aria-labelledby="mwFilesTitle">
+    <div class="factory-mb-wslayout">
+      <aside class="factory-mb-card factory-mb-sidecard factory-mr-tree" aria-labelledby="mwFilesTitle">
         <div class="fx-card-head"><h2 class="fx-card-title" id="mwFilesTitle">New module files</h2><span class="fx-muted"><oj-bind-text value="[[fileCount]]"></oj-bind-text></span></div>
         <fx-input id="mwSearch" type="search" icon="search" clearable label="Search files" hide-label placeholder="Search files" value="{{query}}"></fx-input>
         <oj-bind-if test="[[tree().length === 0]]"><p class="fx-muted">No files yet: they appear once the plan is made.</p></oj-bind-if>
@@ -45,7 +46,7 @@
         </li></template></oj-bind-for-each></ul>
       </aside>
 
-      <section class="fx-card factory-mw-code" aria-label="Code">
+      <section class="factory-mb-card factory-mb-sidecard factory-mw-code" aria-label="Code">
         <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Code views" on-keydown="[[tabKey]]">
           <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mwTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
         </div>
@@ -118,8 +119,8 @@
         </div>
       </section>
 
-      <aside class="factory-mw-side">
-        <section class="fx-card" aria-labelledby="mwWhatTitle">
+      <div class="factory-mb-wsbelow factory-mw-side">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mwWhatTitle">
           <div class="fx-card-head"><h2 class="fx-card-title" id="mwWhatTitle">Assistant</h2><span :class="[[assistantState().css]]"><oj-bind-text value="[[assistantState().text]]"></oj-bind-text></span></div>
           <p class="factory-mw-request"><oj-bind-text value="[[request]]"></oj-bind-text></p>
           <oj-bind-if test="[[doneList().length > 0]]"><h3 class="factory-mm-module">Conversion done</h3>
@@ -131,23 +132,23 @@
           <button type="button" class="fx-btn fx-btn--secondary fx-btn--block" id="mwWriteAgain" on-click="[[writeAgain]]" :disabled="[[!canManage() || !generated2() || !file()]]"
                   :title="[[!canManage() ? 'Writing again needs the Manage code permission' : !generated2() ? 'Greyed out until the code is written' : !file() ? 'Pick a file first' : null]]">Write it again</button>
         </section>
-        <section class="fx-card" aria-labelledby="mwStepsTitle">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mwStepsTitle">
           <h2 class="fx-card-title" id="mwStepsTitle">Steps</h2>
           <ol class="factory-mw-steps"><oj-bind-for-each data="[[pipeline]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
             <span class="factory-mr-step-text"><oj-bind-text value="[[s.data.name]]"></oj-bind-text><small class="fx-muted"><oj-bind-text value="[[s.data.text]]"></oj-bind-text></small></span>
             <span class="factory-mw-steptime"><oj-bind-text value="[[s.data.time || s.data.stateText]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
         </section>
-      </aside>
-    </div>
-
-    <div class="factory-mz-actions">
-      <button type="button" class="fx-btn fx-btn--ghost" id="mwBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Plan</button>
-      <div class="factory-mz-actions-end">
-        <fx-menu-button id="mwMore" variant="ghost" label="More" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
-        <button type="button" class="fx-btn fx-btn--secondary" id="mwCompare" on-click="[[compare]]" :disabled="[[!generated2()]]" :title="[[generated2() ? null : 'Greyed out until the code is written']]">Compare source and new</button>
-        <button type="button" class="fx-btn fx-btn--primary" id="mwRunTests" on-click="[[runTests]]" :disabled="[[!generated2() || !canManage()]]" :title="[[!canManage() ? 'Running the tests needs the Manage code permission' : generated2() ? null : 'Greyed out until the code is written']]">Run the tests<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
       </div>
     </div>
+
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mwBack" on-click="[[back]]"><span aria-hidden="true">←</span>Plan</button>
+      <span class="factory-mb-spacer"></span>
+      <div class="factory-mb-footer-end">
+        <fx-menu-button id="mwMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="factory-mb-btn is-primary" id="mwRunTests" on-click="[[runTests]]" :disabled="[[!generated2() || !canManage()]]" :title="[[!canManage() ? 'Running the tests needs the Manage code permission' : generated2() ? null : 'Greyed out until the code is written']]">Run the tests<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
+      </div>
+    </footer>
 
     <fx-sheet id="mwBriefSheet" open="{{briefOpen}}" heading="The brief" subtitle="What the change was asked to do, written from the code analysis">
       <div class="factory-cf-detail-wrap"><pre class="factory-code factory-code-light factory-mw-brief"><oj-bind-text value="[[brief() || 'No brief.']]"></oj-bind-text></pre>
