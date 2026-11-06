@@ -32,3 +32,14 @@ app's document picker (expo-document-picker, for example) and resolves with the 
 `npm ci` then `npm run check` (Node 22): the typecheck, then Jest with React Native Testing Library for behaviour,
 writeback and announcements. The same run checks every control's role, name, state and touch target. Screen reader
 runs on devices, screenshots and themes are the next gates.
+
+## The banking groups
+
+Groups 1 to 6 (`src/G1.tsx` … `src/G6.tsx`) are the components `catalogue.json` names for React Native, built on the
+shared parts in `src/parts.tsx` (sheet, banner, key-value card, tiles, item list, steps, timeline, progress bars, bar
+chart, segmented choice, chips, code boxes, slider), so they look and read alike. Fields take the same props as the
+foundation (`testID`, `label`, `value`, `onChange`, `required`, `readOnly`, `disabled`, `helpText`, `error`); display
+components take their data (`rows`, `tiles`, `items`, `events`, `steps`) and report actions as events. Account and card
+numbers show only their last four digits, IBANs are checked with their check digits, codes and PINs are never kept, and
+nothing calls a service: `AuthChallenge` takes the app's own biometric check as `authenticate`, as `FileUpload` takes
+`pick`. Charts are plain views, so the pack needs no drawing library.
