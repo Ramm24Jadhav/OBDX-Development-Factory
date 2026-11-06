@@ -35,7 +35,7 @@
    "task": "Screens built and working (all 14)",
    "session": "Earlier",
    "unit": "screens",
-   "note": "Work, but do not match the boards yet",
+   "note": "Work; being brought to the boards one by one",
    "items": [
     {
      "done": true
@@ -94,11 +94,11 @@
     },
     {
      "name": "Count chips",
-     "done": false
+     "done": true
     },
     {
      "name": "Ring chart and legend",
-     "done": false
+     "done": true
     },
     {
      "name": "Stacked bars",
@@ -114,11 +114,11 @@
     },
     {
      "name": "Path card",
-     "done": false
+     "done": true
     },
     {
      "name": "Activity list",
-     "done": false
+     "done": true
     },
     {
      "name": "Screen states",
@@ -136,7 +136,7 @@
    "items": [
     {
      "name": "Overview",
-     "done": false
+     "done": true
     },
     {
      "name": "Choose a path",
