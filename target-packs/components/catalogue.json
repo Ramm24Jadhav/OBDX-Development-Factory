@@ -11167,13 +11167,14 @@
           "names": {
             "jet-premium": "bx-overview",
             "react": "OverviewWidget",
-            "react-native": "OverviewWidget"
+            "react-native": "OverviewWidget",
+            "angular": "bx-overview"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard set"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11215,7 +11216,8 @@
             ],
             "example": {
               "jet-premium": "<bx-overview items='[{\"label\":\"Current and savings\",\"value\":\"15,610.50\",\"meta\":\"3 accounts\"},{\"label\":\"Term deposits\",\"value\":\"25,000.00\",\"meta\":\"2 deposits\"},{\"label\":\"Loans\",\"value\":\"18,420.00\",\"meta\":\"1 loan outstanding\"},{\"label\":\"Credit cards\",\"value\":\"640.00 due\",\"meta\":\"2 cards\"},{\"label\":\"Mutual funds\",\"value\":\"4,120.00\",\"meta\":\"1 fund\"}]'></bx-overview>",
-              "react": "<OverviewWidget items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} />"
+              "react": "<OverviewWidget items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} />",
+              "angular": "<bx-overview [items]=\"holdings\" (action)=\"open($event)\" />"
             }
           }
         },
@@ -11232,13 +11234,14 @@
           "names": {
             "jet-premium": "bx-quick-insights",
             "react": "QuickInsightsWidget",
-            "react-native": "QuickInsightsWidget"
+            "react-native": "QuickInsightsWidget",
+            "angular": "bx-quick-insights"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatList"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11287,7 +11290,8 @@
             ],
             "example": {
               "jet-premium": "<bx-quick-insights items='[{\"title\":\"Term deposit matures\",\"meta\":\"In 5 days · ·· 9011\",\"value\":\"25,000.00\"},{\"title\":\"Card payment due\",\"meta\":\"18 Jan · ·· 4821\",\"value\":\"640.00\"},{\"title\":\"Low balance\",\"meta\":\"Current ·· 7730\",\"value\":\"210.00\"}]'></bx-quick-insights>",
-              "react": "<QuickInsightsWidget items={[{title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00'}, {title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00'}, {title: 'Low balance', meta: 'Current ·· 7730', value: '210.00'}]} />"
+              "react": "<QuickInsightsWidget items={[{title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00'}, {title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00'}, {title: 'Low balance', meta: 'Current ·· 7730', value: '210.00'}]} />",
+              "angular": "<bx-quick-insights [items]=\"insights\" (action)=\"act($event)\" />"
             }
           }
         },
@@ -11304,13 +11308,14 @@
           "names": {
             "jet-premium": "bx-recent-transactions",
             "react": "RecentTransactionsWidget",
-            "react-native": "RecentTransactionsWidget"
+            "react-native": "RecentTransactionsWidget",
+            "angular": "bx-recent-transactions"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatList"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "api": {
@@ -11361,7 +11366,8 @@
             ],
             "example": {
               "jet-premium": "<bx-recent-transactions currency=\"USD\" items=\"[[txns]]\"></bx-recent-transactions>",
-              "react": "<RecentTransactionsWidget currency=\"USD\" items={txns} />"
+              "react": "<RecentTransactionsWidget currency=\"USD\" items={txns} />",
+              "angular": "<bx-recent-transactions currency=\"USD\" [items]=\"txns\" />"
             }
           }
         },
@@ -11378,13 +11384,14 @@
           "names": {
             "jet-premium": "bx-bills-widget",
             "react": "BillsWidget",
-            "react-native": "BillsWidget"
+            "react-native": "BillsWidget",
+            "angular": "bx-bills-widget"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatList"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11432,7 +11439,8 @@
             ],
             "example": {
               "jet-premium": "<bx-bills-widget items='[{\"title\":\"Electricity\",\"meta\":\"Due 20 Jan\",\"value\":\"86.20\"},{\"title\":\"Water\",\"meta\":\"Due 25 Jan\",\"value\":\"24.10\"}]'></bx-bills-widget>",
-              "react": "<BillsWidget items={[{title: 'Electricity', meta: 'Due 20 Jan', value: '86.20'}, {title: 'Water', meta: 'Due 25 Jan', value: '24.10'}]} />"
+              "react": "<BillsWidget items={[{title: 'Electricity', meta: 'Due 20 Jan', value: '86.20'}, {title: 'Water', meta: 'Due 25 Jan', value: '24.10'}]} />",
+              "angular": "<bx-bills-widget [items]=\"bills\" (action)=\"pay($event)\" />"
             }
           }
         },
@@ -11449,13 +11457,14 @@
           "names": {
             "jet-premium": "bx-spend-analysis",
             "react": "SpendAnalysisWidget",
-            "react-native": "SpendAnalysisWidget"
+            "react-native": "SpendAnalysisWidget",
+            "angular": "bx-spend-analysis"
           },
           "builtOn": {
             "jet-premium": "figure and list of bars (oj-chart look), widths as classes",
             "react": "figure and list of bars, widths as classes",
             "react-native": "Own, on react-native-svg",
-            "angular": "Own, on the CDK (Material has no chart)"
+            "angular": "figure and list of bars, widths as classes"
           },
           "dashboard": "Retail and SMB dashboard",
           "api": {
@@ -11506,7 +11515,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-spend-analysis items='[{\"label\":\"Groceries\",\"value\":320},{\"label\":\"Travel\",\"value\":180},{\"label\":\"Eating out\",\"value\":210},{\"label\":\"Shopping\",\"value\":140}]' unit=\"USD\"></bx-spend-analysis>",
-              "react": "<SpendAnalysisWidget items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit=\"USD\" />"
+              "react": "<SpendAnalysisWidget items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit=\"USD\" />",
+              "angular": "<bx-spend-analysis [items]=\"spend\" unit=\"USD\" />"
             }
           }
         },
@@ -11523,13 +11533,14 @@
           "names": {
             "jet-premium": "bx-goals",
             "react": "GoalsWidget",
-            "react-native": "GoalsWidget"
+            "react-native": "GoalsWidget",
+            "angular": "bx-goals"
           },
           "builtOn": {
             "jet-premium": "the progressbar role (oj-progress-bar look)",
             "react": "the progressbar role",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatProgressBar"
+            "angular": "the progressbar role"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11571,7 +11582,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-goals items='[{\"label\":\"Holiday fund\",\"value\":1800,\"max\":3000},{\"label\":\"New car\",\"value\":4200,\"max\":15000}]'></bx-goals>",
-              "react": "<GoalsWidget items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} />"
+              "react": "<GoalsWidget items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} />",
+              "angular": "<bx-goals [items]=\"goals\" />"
             }
           }
         },
@@ -11588,13 +11600,14 @@
           "names": {
             "jet-premium": "bx-budgets",
             "react": "BudgetsWidget",
-            "react-native": "BudgetsWidget"
+            "react-native": "BudgetsWidget",
+            "angular": "bx-budgets"
           },
           "builtOn": {
             "jet-premium": "the progressbar role (oj-progress-bar look)",
             "react": "the progressbar role",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatProgressBar"
+            "angular": "the progressbar role"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11636,7 +11649,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-budgets items='[{\"label\":\"Groceries\",\"value\":320,\"max\":400},{\"label\":\"Travel\",\"value\":180,\"max\":300},{\"label\":\"Eating out\",\"value\":210,\"max\":200}]'></bx-budgets>",
-              "react": "<BudgetsWidget items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} />"
+              "react": "<BudgetsWidget items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} />",
+              "angular": "<bx-budgets [items]=\"budgets\" />"
             }
           }
         },
@@ -11653,13 +11667,14 @@
           "names": {
             "jet-premium": "bx-calculators",
             "react": "CalculatorsWidget",
-            "react-native": "CalculatorsWidget"
+            "react-native": "CalculatorsWidget",
+            "angular": "bx-calculators"
           },
           "builtOn": {
             "jet-premium": "oj-c-input-number",
             "react": "shadcn Input Group + Button",
             "react-native": "Paper TextInput + IconButton",
-            "angular": "MatInput + MatButton"
+            "angular": "native number inputs, a polite live result"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11679,13 +11694,14 @@
           "names": {
             "jet-premium": "bx-credit-score",
             "react": "CreditScoreWidget",
-            "react-native": "CreditScoreWidget"
+            "react-native": "CreditScoreWidget",
+            "angular": "bx-credit-score"
           },
           "builtOn": {
             "jet-premium": "the progressbar role (oj-progress-bar look)",
             "react": "the progressbar role",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatProgressSpinner (determinate)"
+            "angular": "the progressbar role"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11727,7 +11743,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-credit-score items='[{\"label\":\"Credit score\",\"value\":742,\"max\":900}]'></bx-credit-score>",
-              "react": "<CreditScoreWidget items={[{label: 'Credit score', value: 742, max: 900}]} />"
+              "react": "<CreditScoreWidget items={[{label: 'Credit score', value: 742, max: 900}]} />",
+              "angular": "<bx-credit-score [items]=\"[{label: 'Credit score', value: 742, max: 900}]\" />"
             }
           }
         },
@@ -11744,13 +11761,14 @@
           "names": {
             "jet-premium": "bx-rewards",
             "react": "RewardsWidget",
-            "react-native": "RewardsWidget"
+            "react-native": "RewardsWidget",
+            "angular": "bx-rewards"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard set"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11792,7 +11810,8 @@
             ],
             "example": {
               "jet-premium": "<bx-rewards items='[{\"label\":\"Points\",\"value\":\"12,400\",\"meta\":\"Redeem for merchandise, vouchers or air miles\"},{\"label\":\"Vouchers\",\"value\":\"3\",\"meta\":\"Expire 31 Mar\"},{\"label\":\"Cashback\",\"value\":\"45.00\",\"meta\":\"Paid on the 1st\"}]'></bx-rewards>",
-              "react": "<RewardsWidget items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />"
+              "react": "<RewardsWidget items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />",
+              "angular": "<bx-rewards [items]=\"rewards\" />"
             }
           }
         },
@@ -11809,13 +11828,14 @@
           "names": {
             "jet-premium": "bx-financial-advisor",
             "react": "FinancialAdvisorWidget",
-            "react-native": "FinancialAdvisorWidget"
+            "react-native": "FinancialAdvisorWidget",
+            "angular": "bx-financial-advisor"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11866,7 +11886,8 @@
             ],
             "example": {
               "jet-premium": "<bx-financial-advisor heading=\"Priya Nair\" text=\"priya.nair@bank.example · +44 20 7946 0123\" badge=\"Relationship manager\"></bx-financial-advisor>",
-              "react": "<FinancialAdvisorWidget heading=\"Priya Nair\" text=\"priya.nair@bank.example · +44 20 7946 0123\" badge=\"Relationship manager\" />"
+              "react": "<FinancialAdvisorWidget heading=\"Priya Nair\" text=\"priya.nair@bank.example · +44 20 7946 0123\" badge=\"Relationship manager\" />",
+              "angular": "<bx-financial-advisor heading=\"Priya Nair\" text=\"+44 20 7946 0123\" badge=\"Relationship manager\" (action)=\"write()\" />"
             }
           }
         },
@@ -11883,13 +11904,14 @@
           "names": {
             "jet-premium": "bx-special-offers",
             "react": "SpecialOffersWidget",
-            "react-native": "SpecialOffersWidget"
+            "react-native": "SpecialOffersWidget",
+            "angular": "bx-special-offers"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -11940,7 +11962,8 @@
             ],
             "example": {
               "jet-premium": "<bx-special-offers heading=\"Pre-approved personal loan\" text=\"Up to 25,000.00 at 9.5% a year.\" badge=\"Offer\"></bx-special-offers>",
-              "react": "<SpecialOffersWidget heading=\"Pre-approved personal loan\" text=\"Up to 25,000.00 at 9.5% a year.\" badge=\"Offer\" />"
+              "react": "<SpecialOffersWidget heading=\"Pre-approved personal loan\" text=\"Up to 25,000.00 at 9.5% a year.\" badge=\"Offer\" />",
+              "angular": "<bx-special-offers heading=\"Pre-approved personal loan\" text=\"Up to 25,000.00 at 9.5% a year.\" (action)=\"apply()\" />"
             }
           }
         },
@@ -11957,13 +11980,14 @@
           "names": {
             "jet-premium": "bx-credit-cards-overview",
             "react": "CreditCardsWidget",
-            "react-native": "CreditCardsWidget"
+            "react-native": "CreditCardsWidget",
+            "angular": "bx-credit-cards-overview"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard set"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -12005,7 +12029,8 @@
             ],
             "example": {
               "jet-premium": "<bx-credit-cards-overview items='[{\"label\":\"Total due\",\"value\":\"640.00\",\"meta\":\"Due 18 Jan\"},{\"label\":\"Minimum due\",\"value\":\"32.00\",\"meta\":\"Pay to avoid charges\"},{\"label\":\"Available limit\",\"value\":\"9,360.00\",\"meta\":\"Of 10,000.00\"}]'></bx-credit-cards-overview>",
-              "react": "<CreditCardsWidget items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} />"
+              "react": "<CreditCardsWidget items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} />",
+              "angular": "<bx-credit-cards-overview [items]=\"cards\" />"
             }
           }
         },
@@ -12022,13 +12047,14 @@
           "names": {
             "jet-premium": "bx-loans-overview",
             "react": "LoansWidget",
-            "react-native": "LoansWidget"
+            "react-native": "LoansWidget",
+            "angular": "bx-loans-overview"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatCard set"
+            "angular": "standalone component, signal inputs"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -12070,7 +12096,8 @@
             ],
             "example": {
               "jet-premium": "<bx-loans-overview items='[{\"label\":\"Loans\",\"value\":\"2\",\"meta\":\"Home and car\"},{\"label\":\"Outstanding\",\"value\":\"18,420.00\",\"meta\":\"Next instalment 5 Feb\"},{\"label\":\"Sanctioned\",\"value\":\"30,000.00\",\"meta\":\"Both loans\"}]'></bx-loans-overview>",
-              "react": "<LoansWidget items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} />"
+              "react": "<LoansWidget items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} />",
+              "angular": "<bx-loans-overview [items]=\"loans\" />"
             }
           }
         },
@@ -12087,13 +12114,14 @@
           "names": {
             "jet-premium": "bx-delinquency-notice",
             "react": "DelinquencyNotice",
-            "react-native": "DelinquencyNotice"
+            "react-native": "DelinquencyNotice",
+            "angular": "bx-delinquency-notice"
           },
           "builtOn": {
             "jet-premium": "the status or alert role (oj-messages inline look)",
             "react": "the status or alert role",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "Own, on MatCard"
+            "angular": "the status or alert role"
           },
           "dashboard": "Retail and SMB dashboard",
           "sample": {
@@ -12154,7 +12182,8 @@
             ],
             "example": {
               "jet-premium": "<bx-delinquency-notice message=\"Your car loan ·· 3310 is 12 days overdue: 412.00.\"></bx-delinquency-notice>",
-              "react": "<DelinquencyNotice message=\"Your car loan ·· 3310 is 12 days overdue: 412.00.\" />"
+              "react": "<DelinquencyNotice message=\"Your car loan ·· 3310 is 12 days overdue: 412.00.\" />",
+              "angular": "<bx-delinquency-notice message=\"Your car loan ·· 3310 is 12 days overdue: 412.00.\" (action)=\"pay()\" />"
             }
           }
         },

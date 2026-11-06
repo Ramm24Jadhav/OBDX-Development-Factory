@@ -11694,6 +11694,81 @@
           "component": "currency-converter",
           "source": "target-packs/components/angular/src",
           "export": "bx-currency-converter"
+        },
+        {
+          "component": "overview",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-overview"
+        },
+        {
+          "component": "quick-insights",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-quick-insights"
+        },
+        {
+          "component": "recent-transactions",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-recent-transactions"
+        },
+        {
+          "component": "bills-widget",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-bills-widget"
+        },
+        {
+          "component": "spend-analysis",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-spend-analysis"
+        },
+        {
+          "component": "goals",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-goals"
+        },
+        {
+          "component": "budgets",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-budgets"
+        },
+        {
+          "component": "calculators",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-calculators"
+        },
+        {
+          "component": "credit-score",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-credit-score"
+        },
+        {
+          "component": "rewards",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-rewards"
+        },
+        {
+          "component": "financial-advisor",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-financial-advisor"
+        },
+        {
+          "component": "special-offers",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-special-offers"
+        },
+        {
+          "component": "credit-cards-overview",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-credit-cards-overview"
+        },
+        {
+          "component": "loans-overview",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-loans-overview"
+        },
+        {
+          "component": "delinquency-notice",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-delinquency-notice"
         }
       ],
       "checks": {

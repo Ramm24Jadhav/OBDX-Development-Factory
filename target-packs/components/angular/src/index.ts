@@ -43,9 +43,10 @@ export { ApplicationTracker, Certificates, ComposeMessage, DepositCalculator, ER
   GoalCalculator, LiveChat, LoanCalculator, Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification,
   TermsConsent, TrackRequests, instalment, maturity } from './g5';
 export type { ChatMessage, Period, Place } from './g5';
-export { AccountsWidget, BulkUploadWidget, CorporateLimitsWidget, CreditLineWidget, CurrencyPositionWidget, FinancialOverviewWidget, G6_COMPONENTS, LastPaymentsWidget,
-  MyLimitsWidget, NotificationsWidget, PendingActionWidget, PendingApprovalsWidget, QuickLinksWidget, ReportsWidget, TradeBillsWidget, TradeInstrumentsWidget, TransactionsWidget,
-  WorkSnapshotWidget } from './g6';
+export { AccountsWidget, BillsWidget, BudgetsWidget, BulkUploadWidget, CalculatorsWidget, CorporateLimitsWidget, CreditCardsWidget, CreditLineWidget, CreditScoreWidget,
+  CurrencyPositionWidget, DelinquencyNotice, FinancialAdvisorWidget, FinancialOverviewWidget, G6_COMPONENTS, GoalsWidget, LastPaymentsWidget, LoansWidget, MyLimitsWidget,
+  NotificationsWidget, OverviewWidget, PendingActionWidget, PendingApprovalsWidget, QuickInsightsWidget, QuickLinksWidget, RecentTransactionsWidget, ReportsWidget,
+  RewardsWidget, SpecialOffersWidget, SpendAnalysisWidget, TradeBillsWidget, TradeInstrumentsWidget, TransactionsWidget, WorkSnapshotWidget } from './g6';
 export type { QuickItem, SummaryTab } from './g6';
 export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip, CardNav, CardStack, Carousel, ClickBurst, CountUp, DockNav, DocumentFolder, DotGrid, EdgeBlur,
   ElasticSlider, FadeInContent, FavouriteHeart, FlipCard, FocusWord, G7_COMPONENTS, GlareHover, GlassPanel, GlideSelect, GlowBorderCard, GradientBackdrop, GradientText,
