@@ -37,4 +37,5 @@ and `src/native/device.ts` (as `src/app/native/device.ts`), calls `startNative()
 Capacitor packages and the `cap:sync` (`ng build && cap sync`), `android` and `ios` scripts at this starter's
 versions. Running it again changes nothing. Then `npm install`, `npx cap add android`, `npx cap add ios` and the
 commands above. Set `baseUrl` in `src/app/api/config.ts` to the bank's https address before `cap:sync`: in the app the
-screens are served from the device. Screens stay Angular pages written as in the Angular pack.
+screens are served from the device. The factory sees `angular.json` in the app folder and writes the screens as
+Angular pages from the Angular pack, not React ones.

@@ -72,7 +72,7 @@ public class TargetService {
     public WorkspaceTarget get(UUID workspaceId) {
         Workspace workspace = workspace(workspaceId);
         TargetPack pack = packs.find(workspace.getTarget()).orElse(packs.jet());
-        return new WorkspaceTarget(pack.id(), pack.title(), pack.preview(), workspace.getAppFolder(), appExists(workspace));
+        return new WorkspaceTarget(pack.id(), pack.title(), screens(workspace).orElse(pack).preview(), workspace.getAppFolder(), appExists(workspace));
     }
 
     @Transactional
@@ -118,7 +118,7 @@ public class TargetService {
     @Transactional(readOnly = true)
     public List<CodeFile> code(UUID workspaceId, ScreenModel model, String module) {
         Workspace workspace = workspace(workspaceId);
-        TargetPack pack = packs.find(workspace.getTarget()).orElse(packs.jet());
+        TargetPack pack = screens(workspace).orElse(packs.jet());
         if (pack.isJet() || workspace.getAppFolder() == null) {
             throw new BadRequestException("Code previews are for app targets (React Native, React or Angular); this workspace enhances the OBDX JET UI");
         }
@@ -148,14 +148,24 @@ public class TargetService {
         if (!appExists(workspace)) {
             guide.append("The app folder has no starter project yet; plan the screen files anyway (the starter project is committed separately).\n");
         }
+        TargetPack screens = screens(workspace).orElse(pack);
+        if (screens != pack) {
+            guide.append("The app wraps the bank's Angular app (angular.json in the app folder): write its screens as Angular pages, not React.\n");
+        }
         guide.append("For each approved screen design plan these files (layer ui), with {module} a lowercase module folder:\n");
         for (String kind : List.of("screen", "test", "api", "texts", "navigation")) {
-            guide.append("- ").append(kind).append(": ").append(app).append(pack.structure().get(kind))
+            guide.append("- ").append(kind).append(": ").append(app).append(screens.structure().get(kind))
                     .append(kind.equals("texts") || kind.equals("navigation") ? " (modify; create only if it does not exist)" : "").append('\n');
         }
         guide.append("{Screen} is the design's name in PascalCase (for example \"Fund Transfer\" gives FundTransfer); {screen_file} the same in snake_case (fund_transfer).\n");
         guide.append("Change OBDX backend services only when the requirement needs new service behavior; the app calls the existing OBDX REST services.\n");
         return guide.toString();
+    }
+
+    /** The pack the workspace's screens are written with (Angular for a Capacitor app wrapping the Angular app). */
+    java.util.Optional<TargetPack> screens(Workspace workspace) {
+        return packs.screens(workspace.getTarget(), workspace.getAppFolder(),
+                path -> Files.isRegularFile(storage.workingCopy(workspace.getId()).resolve(path)));
     }
 
     /** Whether the app's package.json is in the imported code. */

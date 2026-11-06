@@ -1,6 +1,7 @@
 # Capacitor target pack: the bank's web app in a Capacitor shell, as an Android and iOS app on the bank's OBDX REST
 # services. The starter is the React web app (Vite, React, TypeScript); wrap-angular.mjs wraps the Angular pack's app
-# in the same shell. Screens are generated as React pages; an Angular app gets its screens from the Angular pack.
+# in the same shell. The factory writes React pages, or Angular pages from the Angular pack when the app folder has
+# angular.json (TargetPacks.screens).
 id: capacitor
 title: Capacitor (mobile, from the web screens)
 description: An Android and iOS app made of the bank's React or Angular web screens in a Capacitor shell, calling the bank's OBDX REST services.
