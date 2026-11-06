@@ -213,6 +213,28 @@
     "my-limits",
     "pending-approvals"
    ]
+  },
+  {
+   "id": "W7",
+   "task": "W7 Motion: count-up, reveals, cards, backdrops (web)",
+   "ids": [
+    "count-up",
+    "text-reveal",
+    "rotating-text",
+    "shimmer-text",
+    "animated-list",
+    "spotlight-card",
+    "tilt-card",
+    "flip-card",
+    "success-check",
+    "click-burst",
+    "marquee",
+    "card-stack",
+    "dock-nav",
+    "gradient-backdrop",
+    "particle-backdrop",
+    "scroll-reveal"
+   ]
   }
  ],
  "phone": [
@@ -232,6 +254,13 @@
     "W4",
     "W5",
     "W6"
+   ]
+  },
+  {
+   "id": "N3",
+   "task": "N3 React Native, motion",
+   "groups": [
+    "W7"
    ]
   }
  ]

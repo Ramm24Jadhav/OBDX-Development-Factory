@@ -161,3 +161,21 @@ hover.
   work-snapshot, notifications-widget, pending-for-action, my-limits, pending-approvals
 
 A component a pack's `names` leaves out is not built in that pack.
+
+## Group 7: motion (added 6 Nov 2026)
+
+Effects of the kind animated-component libraries offer, written as our own components. **Clean room:** no code is
+copied, ported or translated from React Bits or any other library (its licence, MIT with the Commons Clause, forbids
+redistributing its components in a bundle or as a port, which is what a pack is), and the agent does not work from
+their source. Our names, the `bx-` look and the motion tokens; no new dependency (CSS and the Web Animations API on the
+web, React Native's `Animated`, plain canvas for backgrounds); every one shows its end state under reduced motion and
+keeps its text readable to screen readers. The integrator adds them to the catalogue as a new category, `motion`.
+
+- **G7** count-up (balances and totals), text-reveal (a heading that writes in), rotating-text, shimmer-text,
+  animated-list (rows that stagger in), spotlight-card (a soft light that follows the pointer), tilt-card (a card that
+  leans to the pointer, for payment cards), flip-card (a card's front and back), success-check (a payment done),
+  click-burst (a short burst on a pressed button), marquee (partner logos), card-stack (offers that swap), dock-nav
+  (a bottom bar that grows on hover or press), gradient-backdrop (a slow colour field behind a hero or sign-in),
+  particle-backdrop (a light field of points), scroll-reveal (sections that rise in)
+
+W7 builds them in the web packs after W6, and N3 in React Native after N2.

@@ -23,13 +23,14 @@ for (const s of steps.rows) { add(s.id, s.track, s.task, s.session, s.items.filt
 
 // Components: a web group's component is done when every web pack that names it has built it; a phone group's when React Native has
 const web = ['jet-premium', 'react', 'angular'];
-const doneWeb = (c) => { const e = entries.get(c); return web.filter((p) => e.names?.[p]).every((p) => built(p, c)); };
-const doneRn = (c) => !entries.get(c).names?.['react-native'] || built('react-native', c);
+// A planned component not yet in the catalogue (the motion group) counts as to do in every pack
+const doneWeb = (c) => { const e = entries.get(c); if (!e) { return false; } return web.filter((p) => e.names?.[p]).every((p) => built(p, c)); };
+const doneRn = (c) => (entries.get(c) && !entries.get(c).names?.['react-native']) || built('react-native', c);
 const first = new Set(groups.done);
 add('C0', 'Components', 'Foundation set and forms wave (all four packs)', 'Earlier', groups.done.filter((c) => doneWeb(c) && doneRn(c)).length, first.size, 'components');
 for (const g of groups.web) { add(g.id, 'Components', g.task, 'Catalogue (web)', g.ids.filter(doneWeb).length, g.ids.length, 'components'); }
 for (const g of groups.phone) {
-  const ids = g.groups.flatMap((n) => groups.web.find((w) => w.id === n).ids).filter((c) => entries.get(c).names?.['react-native']);
+  const ids = g.groups.flatMap((n) => groups.web.find((w) => w.id === n).ids).filter((c) => !entries.get(c) || entries.get(c).names?.['react-native']);
   add(g.id, 'Components', g.task, 'Phone and packs', ids.filter(doneRn).length, ids.length, 'components');
 }
 
@@ -52,7 +53,7 @@ add('G0', 'Gates', 'Premium JET parity on JET 6.2 and the current JET', 'Earlier
 add('Q1', 'Gates', 'Q1 React and Angular parity; React Native screenshots and themes', 'Phone and packs',
   [allPassed('react', 'parity'), allPassed('angular', 'parity'), allPassed('react-native', 'visual') && allPassed('react-native', 'themes')].filter(Boolean).length, 3, 'gates');
 
-const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'N1', 'N2', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP'];
+const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'N1', 'N2', 'N3', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP'];
 rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 const asOf = new Date().toISOString();
 for (const r of rows) { r.asOf = asOf; }
