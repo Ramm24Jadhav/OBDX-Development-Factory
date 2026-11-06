@@ -127,7 +127,7 @@ export function NumberInput(props: NumberInputProps) {
       <View style={[controlStyle(t, { focused: f.focused, error: f.error, disabled, readOnly }), { paddingHorizontal: 4, gap: 4 }]}>
         {steppable ? <Stepper testID={`${testID}-decrease`} label={`Decrease ${label}`} sign="−" t={t} onPress={() => nudge(-step)}
                               disabled={min !== undefined && value !== null && value <= min} /> : null}
-        <Roll on={value} style={{ flex: 1 }}>
+        <Roll on={value} style={{ flex: 1, alignSelf: 'stretch' }}>
         <TextInput testID={`${testID}-input`} style={[s.input, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}
                    keyboardType={decimals ? 'decimal-pad' : 'number-pad'} value={typed ?? (value === null || value === undefined ? '' : String(value))}
                    placeholder={placeholder} placeholderTextColor={t.color.textMuted} editable={!readOnly && !disabled}
@@ -490,7 +490,7 @@ export function FileUpload(props: FileUploadProps) {
     <Enter testID={testID} style={s.field}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
       <Shake error={message}>
-      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}, ${label}${hint ? `, ${hint}` : ''}`}
+      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}${hint ? `, ${hint}` : ''}, ${label}`}
                  accessibilityHint={message || hint || helpText} accessibilityState={{ disabled: !!disabled }} disabled={disabled} onPress={choose}
                  style={{ minHeight: t.minTouch + 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: message ? t.color.danger : t.color.borderStrong,
                    borderRadius: t.radius.card, alignItems: 'center', justifyContent: 'center', padding: 12, opacity: disabled ? 0.6 : 1 }}>
