@@ -180,6 +180,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # Capacitor wraps the React starter and the Angular pack's app (wrap-angular.mjs) in the same shell
   capacitor-starter:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: target-packs/capacitor/starter}}
@@ -190,6 +191,16 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
+      - name: Wrap the Angular app, build it and add the Android app from the build
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp -r target-packs/angular/starter /tmp/angular-app
+          node target-packs/capacitor/wrap-angular.mjs /tmp/angular-app
+          cd /tmp/angular-app
+          npm install --no-audit --no-fund
+          npx tsc -p tsconfig.app.json --noEmit
+          npx ng build
+          npx cap add android
 
   # The Swift and Kotlin target pack: the Android app's Compose tests (the iOS tests need a macOS runner and run there by hand).
   native-android:

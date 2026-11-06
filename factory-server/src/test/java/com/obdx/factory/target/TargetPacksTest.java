@@ -42,7 +42,11 @@ class TargetPacksTest {
         TargetPack capacitor = packs.find("capacitor").orElseThrow();
         assertThat(capacitor.syntax()).isEqualTo("jsx");
         assertThat(capacitor.starter()).containsKeys("capacitor.config.ts", "src/native/device.ts", "src/components/fields.tsx", "vite.config.ts");
-        assertThat(capacitor.rules()).extracting(r -> r.id()).contains("capacitor-no-live-server", "capacitor-no-secrets-on-device", "react-no-react-native");
+        assertThat(capacitor.rules()).extracting(r -> r.id()).contains("capacitor-no-live-server", "capacitor-no-secrets-on-device", "react-no-react-native",
+                "angular-no-react");
+        // The same shell wraps the Angular app: wrap-angular.mjs points its webDir at the Angular build
+        assertThat(capacitor.starter().get("capacitor.config.ts")).contains("webDir: 'dist'");
+        assertThat(capacitor.recipes()).extracting(r -> r.id()).contains("app-screen", "app-screen-angular");
         assertThat(packs.find("flutter").orElseThrow().isDart()).isTrue();
         assertThat(packs.find("flutter").orElseThrow().starter()).containsKeys("pubspec.yaml", "lib/api/client.dart", "lib/components/tokens.dart", "assets/i18n/en.json");
         assertThat(packs.jet().isJet()).isTrue();
