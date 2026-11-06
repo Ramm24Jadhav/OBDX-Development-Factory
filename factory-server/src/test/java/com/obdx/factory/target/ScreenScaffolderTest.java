@@ -188,6 +188,42 @@ class ScreenScaffolderTest {
         }
     }
 
+    @Test
+    void scaffoldsAVuePage() throws Exception {
+        TargetPack pack = packs.find("vue").orElseThrow();
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "web-vue", "web-vue/src/screens/payments/FundTransferPage.vue",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed", "alerts", "save",
+                "fee", "count", "ref", "submit", "cancel", "help");
+        assertThat(page.content()).contains("<script setup lang=\"ts\">",
+                "import { AccountField, AmountField, Button, CheckboxGroup, DateField, NumberField, RadioGroup, ReadOnlyField, Screen, "
+                        + "Section, SelectField, SwitchField, TextArea, TextField } from '../../components';",
+                "const purposeOptions = ['Family support', 'Rent', 'Other\\'s \"bill\"'];", "  amount: null as number | null,",
+                "  alerts: ['SMS'] as string[],", "  savePayee: true as boolean,",
+                "<Section :title=\"t('fundTransfer.detailsSection')\" :columns=\"2\">", "<AmountField", "testID=\"amount\"",
+                "v-model=\"form.values.amount\"", ":error=\"form.errors.amount\"", ":modelValue=\"form.values.fee\"", ":options=\"purposeOptions\"",
+                ":maxLength=\"35\"", "<Button testID=\"submit\" :label=\"t('fundTransfer.submit')\" variant=\"primary\" :busy=\"busy\" @press=\"submit\" />",
+                "@press=\"emit('action', 'cancel')\"", "src/api/paymentsApi.ts")
+                .doesNotContain("className", "onPress=", "from 'react'", "ValueKey").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "web-vue", "web-vue/src/screens/payments/__tests__/FundTransferPage.spec.ts",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.content()).contains("import FundTransferPage from '../FundTransferPage.vue';", "@vue/test-utils", "toHaveLength(3)")
+                .doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "vue/src/screens/payments/FundTransferPage.vue"), page.content());
+            write(Path.of(out, "vue/src/screens/payments/__tests__/FundTransferPage.spec.ts"), test.content());
+            write(Path.of(out, "vue/src/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("src/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
+    @Test
+    void scaffoldsACapacitorPageAsTheReactOne() {
+        TargetPack capacitor = packs.find("capacitor").orElseThrow();
+        TargetPack react = packs.find("react").orElseThrow();
+        assertThat(ScreenScaffolder.screen(capacitor, TRANSFER, "payments").content()).isEqualTo(ScreenScaffolder.screen(react, TRANSFER, "payments").content());
+    }
+
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content);

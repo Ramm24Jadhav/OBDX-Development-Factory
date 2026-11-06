@@ -115,6 +115,9 @@ public final class ScreenScaffolder {
         if (pack.isDart()) {
             return dartScreen(pack, model, module);
         }
+        if (pack.isVue()) {
+            return vueScreen(pack, model, module);
+        }
         Naming names = new Naming(model);
         String key = camel(model.name());
         Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
@@ -294,6 +297,114 @@ public final class ScreenScaffolder {
             e.append(pad).append(mapping.props()).append('\n');
         }
         return e.append("        />\n").toString();
+    }
+
+    /**
+     * A Vue screen: a single-file component whose template uses the pack's components with v-model on the form values,
+     * the same texts, rules and testIDs as the JSX packs.
+     */
+    static Scaffold vueScreen(TargetPack pack, ScreenModel model, String module) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            sections.append("    <Section").append(section.title() == null || section.title().isBlank() ? ""
+                            : " :title=\"t('" + key + "." + names.section(section) + "')\"")
+                    .append(" :columns=\"").append(section.columns() == null ? 1 : section.columns()).append("\">\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                imports.add(mapping.component());
+                ids.add(c.id());
+                initial.append("  ").append(name).append(": ").append(initialValue(mapping, c)).append(",\n");
+                boolean display = "display".equals(c.type()) || "ReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append("  // From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(" (add a check: (value) => message when not valid)\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    rules.append("  ").append(name).append(": { label: t('").append(key).append('.').append(name).append("')")
+                            .append(required ? ", required: true" : "").append(c.maxLength() != null ? ", maxLength: " + c.maxLength() : "")
+                            .append(" },\n");
+                }
+                if (mapping.options()) {
+                    options.append("const ").append(name).append("Options");
+                    if ("account".equals(c.type())) {
+                        options.append(": string[] = []; // The customer's accounts (masked numbers): load them with the accounts API.\n");
+                    } else if (c.options() == null || c.options().isEmpty()) {
+                        options.append(": string[] = []; // Options: from the OBDX service or the spec.\n");
+                    } else {
+                        options.append(" = [").append(c.options().stream().map(ScreenScaffolder::quote).collect(Collectors.joining(", "))).append("];\n");
+                    }
+                }
+                sections.append(vueElement(mapping, c, name, key, display));
+            }
+            sections.append("    </Section>\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            actions.append("      <Button testID=").append(attribute(action.id())).append(" :label=\"t('").append(key).append('.')
+                    .append(names.action(action)).append("')\" variant=\"").append(kind).append('"')
+                    .append(submit ? " :busy=\"busy\" @press=\"submit\"" : " @press=\"emit('action', " + quote(action.id()).replace("\"", "&quot;") + ")\"")
+                    .append(" />\n");
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("imports", String.join(", ", imports));
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get("screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /** One field in a Vue template: the pack's component with v-model on the form and its props bound to the texts. */
+    private static String vueElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display) {
+        String pad = "        ";
+        StringBuilder e = new StringBuilder("      <").append(mapping.component()).append('\n');
+        e.append(pad).append("testID=").append(attribute(c.id())).append('\n');
+        e.append(pad).append(":label=\"t('").append(key).append('.').append(name).append("')\"\n");
+        if (display) {
+            e.append(pad).append(":modelValue=\"form.values.").append(name).append("\"\n");
+        } else {
+            e.append(pad).append("v-model=\"form.values.").append(name).append("\"\n");
+            e.append(pad).append(":error=\"form.errors.").append(name).append("\"\n");
+        }
+        if (mapping.options()) {
+            e.append(pad).append(":options=\"").append(name).append("Options\"\n");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            e.append(pad).append("required\n");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            e.append(pad).append(":readOnly=\"true\"\n");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())) {
+            e.append(pad).append(":maxLength=\"").append(c.maxLength()).append("\"\n");
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            e.append(pad).append(":helpText=\"t('").append(key).append('.').append(name).append("Help')\"\n");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            e.append(pad).append(":placeholder=\"t('").append(key).append('.').append(name).append("Placeholder')\"\n");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            e.append(pad).append(mapping.props()).append('\n');
+        }
+        return e.append("      />\n").toString();
     }
 
     /**

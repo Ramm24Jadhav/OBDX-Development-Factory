@@ -46,7 +46,8 @@ public class TechnologyCatalogue {
     /** The libraries named in the catalogue, in the order shown, with the name shown. */
     private static final List<String[]> LIBRARIES = List.of(new String[]{"react", "React"}, new String[]{"react-native", "React Native"},
             new String[]{"expo", "Expo"}, new String[]{"@angular/core", "Angular"}, new String[]{"@oracle/oraclejet", "Oracle JET"},
-            new String[]{"@oracle/oraclejet-core-pack", "Core Pack"}, new String[]{"typescript", "TypeScript"}, new String[]{"vite", "Vite"});
+            new String[]{"@oracle/oraclejet-core-pack", "Core Pack"}, new String[]{"vue", "Vue"}, new String[]{"@capacitor/core", "Capacitor"},
+            new String[]{"typescript", "TypeScript"}, new String[]{"vite", "Vite"});
 
     private final JsonNode data;
     private final TargetPacks packs;
@@ -128,7 +129,8 @@ public class TechnologyCatalogue {
 
     static String build(List<String[]> stack) {
         List<String> names = stack.stream().map(s -> s[0]).toList();
-        return names.contains("Flutter") ? "Flutter (Gradle and Xcode)" : names.contains("Oracle JET") ? "ojet build" : names.contains("Expo") ? "Expo (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
+        return names.contains("Flutter") ? "Flutter (Gradle and Xcode)" : names.contains("Oracle JET") ? "ojet build" : names.contains("Expo") ? "Expo (Gradle and Xcode)"
+                : names.contains("Capacitor") ? "Vite and Capacitor (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
     }
 
     private static List<String[]> triples(JsonNode node) {
