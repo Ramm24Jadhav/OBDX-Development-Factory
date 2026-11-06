@@ -23,6 +23,24 @@ Oracle JET 6 (the release OBDX 22.1 ships) to JET 19: each element registers wit
 | `bx-tabs` | `oj-tab-bar` | `selection` (writes back), `options` or `data`; arrow keys, Home, End |
 | `bx-data-grid` | `oj-table` | `data` (array or provider), `columns` (`headerText`, `field`, `sortable`, `style`), `selection-mode`, `selected`, `on-oj-sort` |
 
+## The forms wave (0.2.0)
+
+| Element | Replaces | Notes |
+|---|---|---|
+| `bx-text-area` | `oj-text-area` | `value` on blur, `raw-value`, `rows`, `length.max` with a counter |
+| `bx-password` | `oj-input-password` | masked, Show and Hide (`mask-icon="hidden"` removes it), `autocomplete` for password managers |
+| `bx-number-input` | `oj-input-number` | a number `value`, `min`, `max`, `step`, - and + buttons and the arrow keys, `converter` |
+| `bx-currency-picker` | `oj-select-single` of currencies | the code with its name beside it; `currencies` for the bank's list |
+| `bx-multi-select` | `oj-select-many` | an array `value`, chips with Remove, a list to filter (the ARIA combobox), Backspace removes the last |
+| `bx-switch` | `oj-switch` | a boolean `value`, the switch role, `readonly` |
+| `bx-date-range` | two `oj-input-date` | `value` is `{ from, to }` (ISO), `min`, `max`, `max-days`; says when the end is before the start |
+| `bx-search` | `oj-input-text` as a search | a search landmark; Enter fires `ojSearch` (as `oj-c-input-search`), Escape clears |
+| `bx-autocomplete` | `oj-combobox-one` | suggestions as the customer types, arrows and Enter, `free-text` for a new value |
+| `bx-document-upload` | `oj-file-picker` | `accept`, `selection-mode`, `max-size`, a drop area, `ojSelect` and `ojInvalidSelect` |
+
+One difference from JET 6.2: its `oj-file-picker` passes a picked file of any type to `ojSelect` (`accept` only filters
+the browser's chooser). `bx-document-upload` refuses it with `ojInvalidSelect`, as the current JET does.
+
 What each JET attribute becomes, and what does not carry over, is in `../mapping/jet-premium.json`.
 
 ## Install in the bank's UI

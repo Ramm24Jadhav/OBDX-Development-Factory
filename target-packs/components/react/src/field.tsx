@@ -67,9 +67,9 @@ export function FieldMessage({ id, error, helpText }: { id: string; error: strin
 }
 
 /** The shell of a field, the same markup as the premium JET pack so one skin serves both. */
-export function FieldShell({ testID, id, label, required, error, focused, disabled, readOnly, helpText, children }: {
+export function FieldShell({ testID, id, label, required, error, focused, disabled, readOnly, helpText, multiline, children }: {
   testID: string; id: string; label: string; required?: boolean; error: string; focused: boolean; disabled?: boolean; readOnly?: boolean;
-  helpText?: string; children: ReactNode;
+  helpText?: string; multiline?: boolean; children: ReactNode;
 }) {
   return (
     <div className={fieldClass(error, focused, disabled, readOnly)} data-testid={testID}>
@@ -77,7 +77,7 @@ export function FieldShell({ testID, id, label, required, error, focused, disabl
         {label}
         {required ? <span className="bx-req" aria-hidden="true"> *</span> : null}
       </label>
-      <div className="bx-control">{children}</div>
+      <div className={'bx-control' + (multiline ? ' is-multiline' : '')}>{children}</div>
       <FieldMessage id={id} error={error} helpText={helpText} />
     </div>
   );

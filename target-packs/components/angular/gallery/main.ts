@@ -69,6 +69,40 @@ const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark
       <section class="gate" data-component="data-grid" aria-labelledby="dg-h"><h2 id="dg-h">Data table</h2><div class="gate-body">
         <bx-data-grid caption="Recent transactions" [rows]="rows" [columns]="columns" selectionMode="multiple" [(selected)]="selected" />
       </div></section>
+      <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
+        <bx-text-area testID="ta1" label="Remarks" [(value)]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" />
+        <bx-text-area testID="ta2" label="Reason" value="" [required]="true" error="Say why you are cancelling." />
+      </div></section>
+      <section class="gate" data-component="password" aria-labelledby="pw-h"><h2 id="pw-h">Password</h2><div class="gate-body">
+        <bx-password testID="pw1" label="Password" [(value)]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" />
+        <bx-password testID="pw2" label="Transaction PIN" value="1234" autoComplete="one-time-code" error="The PIN is wrong. 2 tries left." />
+      </div></section>
+      <section class="gate" data-component="number-input" aria-labelledby="ni-h"><h2 id="ni-h">Number</h2><div class="gate-body">
+        <bx-number-input testID="ni1" label="Cheque leaves" [(value)]="copies" [min]="1" [max]="5" helpText="Up to 5 books" />
+        <bx-number-input testID="ni2" label="Tenure (months)" [value]="84" error="Enter 60 or less." />
+      </div></section>
+      <section class="gate" data-component="currency-picker" aria-labelledby="cp-h"><h2 id="cp-h">Currency</h2><div class="gate-body">
+        <bx-currency-picker testID="cp1" label="Currency" [(value)]="currency" [required]="true" />
+      </div></section>
+      <section class="gate" data-component="multi-select" aria-labelledby="ms-h"><h2 id="ms-h">Multi select</h2><div class="gate-body">
+        <bx-multi-select testID="ms1" label="Accounts on the statement" [options]="accounts" [(value)]="picked" helpText="Choose one or more" />
+      </div></section>
+      <section class="gate" data-component="switch" aria-labelledby="sw-h"><h2 id="sw-h">Switch</h2><div class="gate-body">
+        <bx-switch testID="sw1" label="Paperless statements" [(value)]="paperless" helpText="We email them on the 1st" />
+        <bx-switch testID="sw2" label="International use" [value]="false" [disabled]="true" />
+      </div></section>
+      <section class="gate" data-component="date-range" aria-labelledby="dr-h"><h2 id="dr-h">Date range</h2><div class="gate-body">
+        <bx-date-range testID="dr1" label="Statement period" [(value)]="period" [maxDays]="92" helpText="Up to 3 months" />
+      </div></section>
+      <section class="gate" data-component="search" aria-labelledby="se-h"><h2 id="se-h">Search</h2><div class="gate-body">
+        <bx-search testID="se1" label="Search transactions" [(value)]="query" placeholder="Payee, amount or reference" />
+      </div></section>
+      <section class="gate" data-component="autocomplete" aria-labelledby="ac-h"><h2 id="ac-h">Autocomplete</h2><div class="gate-body">
+        <bx-autocomplete testID="ac1" label="Payee" [options]="payees" [(value)]="payee" />
+      </div></section>
+      <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
+        <bx-document-upload testID="du1" label="Proof of address" [(value)]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" />
+      </div></section>
     </main>
   `,
 })
@@ -82,6 +116,17 @@ class Gallery {
   day = signal('2026-11-12');
   tab = signal('c');
   selected = signal<readonly string[]>(['t2']);
+  remarks = signal('Rent for November');
+  secret = signal('s3cret-pass');
+  copies = signal<number | null>(2);
+  currency = signal('INR');
+  picked = signal(['S']);
+  paperless = signal(true);
+  period = signal({ from: '2026-10-01', to: '2026-10-31' });
+  query = signal('rent');
+  payee = signal('P1');
+  proof = signal([new File([new Uint8Array(248000)], 'statement-october.pdf', { type: 'application/pdf' })]);
+  payees = [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }];
   accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
   channels = [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }];
   speeds = [{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }];

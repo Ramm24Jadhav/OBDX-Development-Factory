@@ -121,11 +121,13 @@ export interface FieldView {
       <label class="bx-label" [attr.for]="field().id" [id]="field().id + '-label'">
         {{ field().label() }}@if (field().required()) {<span class="bx-req" aria-hidden="true"> *</span>}
       </label>
-      <div class="bx-control"><ng-content /></div>
+      <div [class]="multiline() ? 'bx-control is-multiline' : 'bx-control'"><ng-content /></div>
       <bx-field-message [id]="field().id" [error]="field().message()" [helpText]="field().helpText()" />
     </div>
   `,
 })
 export class FieldShell {
   readonly field = input.required<FieldView>();
+  /** A control of several lines (a text area): the counter sits at the bottom. */
+  readonly multiline = input(false);
 }

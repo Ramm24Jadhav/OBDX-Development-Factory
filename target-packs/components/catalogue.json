@@ -317,12 +317,89 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-text-area",
-            "react": "shadcn Textarea",
-            "react-native": "Paper TextInput (multiline)",
-            "angular": "MatInput, textarea"
+            "react": "native textarea",
+            "react-native": "TextInput (multiline)",
+            "angular": "native textarea, ControlValueAccessor"
           },
           "sample": {
             "label": "Note to the payee"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "maxLength",
+                "type": "number",
+                "default": "—",
+                "doc": "Length limit, with a counter"
+              },
+              {
+                "name": "rows",
+                "type": "number",
+                "default": "3",
+                "doc": "Lines shown before it scrolls"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the new text",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-text-area label-hint=\"Remarks\" value=\"{{remarks}}\" length.max=\"140\"></bx-text-area>",
+              "react": "<TextArea testID=\"remarks\" label=\"Remarks\" value={remarks} onChange={setRemarks} maxLength={140} />",
+              "react-native": "<TextArea testID=\"remarks\" label=\"Remarks\" value={remarks} onChange={setRemarks} maxLength={140} />",
+              "angular": "<bx-text-area testID=\"remarks\" label=\"Remarks\" [(value)]=\"remarks\" [maxLength]=\"140\" />"
+            }
           }
         },
         {
@@ -343,13 +420,90 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-password",
-            "react": "Radix PasswordToggleField",
-            "react-native": "Paper TextInput (secure)",
-            "angular": "MatInput, type password"
+            "react": "native password input",
+            "react-native": "TextInput (secureTextEntry)",
+            "angular": "native password input, ControlValueAccessor"
           },
           "sample": {
             "label": "Password",
             "value": "secret12"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "autoComplete",
+                "type": "'current-password' | 'new-password' | 'one-time-code'",
+                "default": "'current-password'",
+                "doc": "Tells the password manager what it is (React Native: password for current-password)"
+              },
+              {
+                "name": "revealable",
+                "type": "boolean",
+                "default": "true",
+                "doc": "A Show and Hide button (JET: mask-icon=\"hidden\" turns it off)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the new text",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-password label-hint=\"Password\" value=\"{{password}}\" autocomplete=\"new-password\" required=\"true\"></bx-password>",
+              "react": "<PasswordField testID=\"password\" label=\"Password\" value={password} onChange={setPassword} autoComplete=\"new-password\" required />",
+              "react-native": "<PasswordField testID=\"password\" label=\"Password\" value={password} onChange={setPassword} autoComplete=\"new-password\" required />",
+              "angular": "<bx-password testID=\"password\" label=\"Password\" [(value)]=\"password\" autoComplete=\"new-password\" [required]=\"true\" />"
+            }
           }
         },
         {
@@ -370,14 +524,103 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-number",
-            "react": "shadcn Input, numeric",
-            "react-native": "Paper TextInput, numeric",
-            "angular": "MatInput, number"
+            "react": "native input with steppers",
+            "react-native": "TextInput (number pad) with steppers",
+            "angular": "native input with steppers, ControlValueAccessor"
           },
           "sample": {
             "label": "Instalments",
             "value": "12",
             "extra": "#"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "number | null",
+                "default": "null",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "default": "—",
+                "doc": "Smallest value"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "—",
+                "doc": "Largest value"
+              },
+              {
+                "name": "step",
+                "type": "number",
+                "default": "1",
+                "doc": "What - and + (and the arrow keys) add"
+              },
+              {
+                "name": "decimals",
+                "type": "number",
+                "default": "0",
+                "doc": "Digits after the point; 0 for whole numbers"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the number, or null when empty",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-number-input label-hint=\"Cheque leaves\" value=\"{{leaves}}\" min=\"1\" max=\"5\"></bx-number-input>",
+              "react": "<NumberInput testID=\"leaves\" label=\"Cheque leaves\" value={leaves} onChange={setLeaves} min={1} max={5} />",
+              "react-native": "<NumberInput testID=\"leaves\" label=\"Cheque leaves\" value={leaves} onChange={setLeaves} min={1} max={5} />",
+              "angular": "<bx-number-input testID=\"leaves\" label=\"Cheque leaves\" [(value)]=\"leaves\" [min]=\"1\" [max]=\"5\" />"
+            }
           }
         },
         {
@@ -498,17 +741,89 @@
           "names": {
             "jet-premium": "bx-currency-picker",
             "react": "CurrencySelector",
-            "react-native": "CurrencySelector"
+            "react-native": "CurrencySelector",
+            "angular": "bx-currency-picker"
           },
           "builtOn": {
             "jet-premium": "oj-c-select-single",
-            "react": "Radix Select",
-            "react-native": "Paper Menu",
-            "angular": "MatSelect"
+            "react": "native select",
+            "react-native": "Modal sheet + FlatList",
+            "angular": "native select, ControlValueAccessor"
           },
           "sample": {
             "label": "Currency",
             "value": "USD · US dollar|EUR · Euro|GBP · Pound|INR · Rupee"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string (ISO 4217 code)",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "currencies",
+                "type": "Option[] (code and name)",
+                "default": "common currencies",
+                "doc": "The bank's currencies; the common ones by default"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the currency code",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-currency-picker label-hint=\"Currency\" value=\"{{currency}}\" required=\"true\"></bx-currency-picker>",
+              "react": "<CurrencySelector testID=\"currency\" label=\"Currency\" value={currency} onChange={setCurrency} required />",
+              "react-native": "<CurrencySelector testID=\"currency\" label=\"Currency\" value={currency} onChange={setCurrency} required />",
+              "angular": "<bx-currency-picker testID=\"currency\" label=\"Currency\" [(value)]=\"currency\" [required]=\"true\" />"
+            }
           }
         },
         {
@@ -627,13 +942,84 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-select-multiple",
-            "react": "shadcn Combobox (multiple)",
-            "react-native": "Paper Chip + Menu",
-            "angular": "MatSelect, multiple"
+            "react": "ARIA combobox with chips",
+            "react-native": "Modal sheet of checkboxes + chips",
+            "angular": "ARIA combobox with chips, ControlValueAccessor"
           },
           "sample": {
             "label": "Accounts in the report",
             "value": "Savings ·· 4821|Current ·· 7730|Salary ·· 1094"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string[]",
+                "default": "[]",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "options",
+                "type": "Option[] | string[]",
+                "default": "[]",
+                "doc": "The values to choose from"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the chosen values",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-multi-select label-hint=\"Accounts\" options=\"[[accounts]]\" value=\"{{chosen}}\"></bx-multi-select>",
+              "react": "<MultiSelect testID=\"accounts\" label=\"Accounts\" options={accounts} value={chosen} onChange={setChosen} />",
+              "react-native": "<MultiSelect testID=\"accounts\" label=\"Accounts\" options={accounts} value={chosen} onChange={setChosen} />",
+              "angular": "<bx-multi-select testID=\"accounts\" label=\"Accounts\" [options]=\"accounts\" [(value)]=\"chosen\" />"
+            }
           }
         },
         {
@@ -654,13 +1040,90 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-search",
-            "react": "shadcn Combobox (Command)",
-            "react-native": "Paper Searchbar + Menu",
-            "angular": "MatAutocomplete"
+            "react": "ARIA combobox",
+            "react-native": "TextInput + suggestion list",
+            "angular": "ARIA combobox, ControlValueAccessor"
           },
           "sample": {
             "label": "Bank",
             "value": "HSBC UK|Barclays|Lloyds Bank|NatWest"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              },
+              {
+                "name": "options",
+                "type": "Option[] | string[]",
+                "default": "[]",
+                "doc": "The suggestions"
+              },
+              {
+                "name": "freeText",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Accepts text that is not a suggestion (a new payee)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the chosen value, or the text when freeText",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-autocomplete label-hint=\"Payee\" options=\"[[payees]]\" value=\"{{payee}}\"></bx-autocomplete>",
+              "react": "<Autocomplete testID=\"payee\" label=\"Payee\" options={payees} value={payee} onChange={setPayee} />",
+              "react-native": "<Autocomplete testID=\"payee\" label=\"Payee\" options={payees} value={payee} onChange={setPayee} />",
+              "angular": "<bx-autocomplete testID=\"payee\" label=\"Payee\" [options]=\"payees\" [(value)]=\"payee\" />"
+            }
           }
         },
         {
@@ -681,14 +1144,66 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-input-search",
-            "react": "shadcn Input Group",
-            "react-native": "Paper Searchbar",
-            "angular": "MatInput + MatAutocomplete"
+            "react": "native search input in a search landmark",
+            "react-native": "TextInput (Search key)",
+            "angular": "native search input, ControlValueAccessor"
           },
           "sample": {
             "label": "Search transactions",
             "value": "Coffee",
             "extra": "⌕"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The text; written back as the customer types"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "placeholder",
+                "type": "string",
+                "default": "''",
+                "doc": "Hint inside the field"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the new text",
+                "when": "The customer changes the value"
+              },
+              {
+                "name": "onSearch",
+                "payload": "the text",
+                "when": "The customer presses Enter or the Search key (JET: ojSearch, Angular: (search))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-search label-hint=\"Search transactions\" value=\"{{query}}\" on-oj-search=\"[[runSearch]]\"></bx-search>",
+              "react": "<SearchField testID=\"query\" label=\"Search transactions\" value={query} onChange={setQuery} onSearch={runSearch} />",
+              "react-native": "<SearchField testID=\"query\" label=\"Search transactions\" value={query} onChange={setQuery} onSearch={runSearch} />",
+              "angular": "<bx-search testID=\"query\" label=\"Search transactions\" [(value)]=\"query\" (search)=\"runSearch($event)\" />"
+            }
           }
         },
         {
@@ -904,12 +1419,65 @@
           },
           "builtOn": {
             "jet-premium": "oj-c-switch",
-            "react": "Radix Switch",
-            "react-native": "Paper Switch",
-            "angular": "MatSlideToggle"
+            "react": "button with the switch role",
+            "react-native": "Switch",
+            "angular": "button with the switch role, ControlValueAccessor"
           },
           "sample": {
             "label": "Save as payee"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "boolean",
+                "default": "false",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "true or false",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-switch label-hint=\"Paperless statements\" value=\"{{paperless}}\"></bx-switch>",
+              "react": "<Toggle testID=\"paperless\" label=\"Paperless statements\" value={paperless} onChange={setPaperless} />",
+              "react-native": "<Toggle testID=\"paperless\" label=\"Paperless statements\" value={paperless} onChange={setPaperless} />",
+              "angular": "<bx-switch testID=\"paperless\" label=\"Paperless statements\" [(value)]=\"paperless\" />"
+            }
           }
         },
         {
@@ -1034,13 +1602,102 @@
           },
           "builtOn": {
             "jet-premium": "two oj-c-input-date-picker",
-            "react": "shadcn Calendar (range)",
-            "react-native": "two native pickers",
-            "angular": "MatDateRangeInput"
+            "react": "two native date inputs in a fieldset",
+            "react-native": "two DatePicker fields",
+            "angular": "two native date inputs, ControlValueAccessor"
           },
           "sample": {
             "label": "Statement period",
             "value": "2025-12-01|2025-12-31"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "{ from, to } (yyyy-mm-dd)",
+                "default": "{ from: '', to: '' }",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "readOnly",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows the value, no editing"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "min",
+                "type": "string",
+                "default": "—",
+                "doc": "Earliest date"
+              },
+              {
+                "name": "max",
+                "type": "string",
+                "default": "—",
+                "doc": "Latest date"
+              },
+              {
+                "name": "maxDays",
+                "type": "number",
+                "default": "—",
+                "doc": "The longest range, in days (a statement period)"
+              },
+              {
+                "name": "fromLabel",
+                "type": "string",
+                "default": "'From'",
+                "doc": "Label of the first date"
+              },
+              {
+                "name": "toLabel",
+                "type": "string",
+                "default": "'To'",
+                "doc": "Label of the second date"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the range, { from, to }",
+                "when": "The customer changes the value"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-date-range label-hint=\"Statement period\" value=\"{{period}}\" max-days=\"92\"></bx-date-range>",
+              "react": "<DateRangePicker testID=\"period\" label=\"Statement period\" value={period} onChange={setPeriod} maxDays={92} />",
+              "react-native": "<DateRangePicker testID=\"period\" label=\"Statement period\" value={period} onChange={setPeriod} maxDays={92} />",
+              "angular": "<bx-date-range testID=\"period\" label=\"Statement period\" [(value)]=\"period\" [maxDays]=\"92\" />"
+            }
           }
         },
         {
@@ -1165,13 +1822,96 @@
           "names": {
             "jet-premium": "bx-document-upload",
             "react": "FileUpload",
-            "react-native": "FileUpload"
+            "react-native": "FileUpload",
+            "angular": "bx-document-upload"
           },
           "builtOn": {
             "jet-premium": "oj-c-file-picker",
-            "react": "Own, on a file input",
-            "react-native": "expo-document-picker + Paper Button",
-            "angular": "Own, on the CDK"
+            "react": "native file input with a drop area",
+            "react-native": "the app's document picker (pick)",
+            "angular": "native file input with a drop area, ControlValueAccessor"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label, tied to the control"
+              },
+              {
+                "name": "value",
+                "type": "File[] (React Native: PickedFile[])",
+                "default": "[]",
+                "doc": "The value; written back as the customer changes it"
+              },
+              {
+                "name": "required",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Says the field is required; the message shows after the customer leaves it"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "error",
+                "type": "string",
+                "default": "''",
+                "doc": "A message from the screen (rules, the server); shown in place of its own"
+              },
+              {
+                "name": "accept",
+                "type": "string",
+                "default": "''",
+                "doc": "File types: .pdf,.jpg or image/* (JET: an array, as oj-file-picker)"
+              },
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Several files (JET: selection-mode=\"multiple\")"
+              },
+              {
+                "name": "maxSize",
+                "type": "number (bytes)",
+                "default": "—",
+                "doc": "The largest file"
+              },
+              {
+                "name": "pick",
+                "type": "() => Promise<PickedFile[]>",
+                "default": "—",
+                "doc": "React Native only: opens the app's document picker"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the chosen files",
+                "when": "The customer changes the value"
+              },
+              {
+                "name": "ojSelect / ojInvalidSelect",
+                "payload": "the files, or the message",
+                "when": "JET only, as oj-file-picker: a file is added or refused"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-document-upload label-hint=\"Proof of address\" accept='[\".pdf\", \"image/*\"]' max-size=\"5242880\" value=\"{{proof}}\"></bx-document-upload>",
+              "react": "<FileUpload testID=\"proof\" label=\"Proof of address\" value={proof} onChange={setProof} accept=\".pdf,image/*\" maxSize={5242880} />",
+              "react-native": "<FileUpload testID=\"proof\" label=\"Proof of address\" value={proof} onChange={setProof} accept=\".pdf,image/*\" maxSize={5242880} pick={pickDocument} />",
+              "angular": "<bx-document-upload testID=\"proof\" label=\"Proof of address\" [(value)]=\"proof\" accept=\".pdf,image/*\" [maxSize]=\"5242880\" />"
+            }
           }
         }
       ]

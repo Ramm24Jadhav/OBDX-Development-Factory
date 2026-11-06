@@ -24,3 +24,7 @@ export type { Column, DataTableProps } from './DataTable';
 export { ThemeProvider, makeTheme, useTheme } from './theme';
 export type { ComponentStyle, Theme } from './theme';
 export type { FieldProps, Option } from './field';
+export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle,
+  fileSize } from './Forms';
+export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePickerProps, FileUploadProps, MultiSelectProps, NumberInputProps, PasswordFieldProps,
+  PickedFile, SearchFieldProps, TextAreaProps } from './Forms';

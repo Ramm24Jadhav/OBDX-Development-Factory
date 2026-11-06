@@ -71,12 +71,15 @@ class ComponentPackServiceTest {
         assertThat(find(c, "data-grid").packs().get("angular").source()).isEqualTo("target-packs/components/angular/src#DataTable");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("accessibility")).isEqualTo("passed");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("not-run");
-        // What the starters had beyond the foundation set stays listed from the starter
-        assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#SwitchField");
-        // The premium JET pack's foundation set passed every gate, parity on JET 6.2 and the current release included
+        // What the starters had beyond the packs stays listed from the starter; the forms wave replaced their switch
+        assertThat(find(c, "account-picker").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#AccountField");
+        assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/components/react/src#Toggle");
+        assertThat(find(c, "document-upload").packs().get("react-native").source()).isEqualTo("target-packs/components/react-native/src#FileUpload");
+        // The premium JET pack's foundation set and forms wave passed every gate, parity on JET 6.2 and the current release included
         assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("jet-premium").gates().get("parity")).isEqualTo("passed");
-        assertThat(c.packs().get(0).counts().available()).isEqualTo(13);
+        assertThat(find(c, "date-range").packs().get("jet-premium").readiness()).isEqualTo("available");
+        assertThat(c.packs().get(0).counts().available()).isEqualTo(23);
         // React and Angular passed the browser gates; parity with the JET screens is still to run, so only the card
         // (which replaces nothing) is Available
         assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
@@ -85,10 +88,10 @@ class ComponentPackServiceTest {
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(176));
         assertThat(c.packs().get(1).counts().available()).isEqualTo(1);
-        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(15);
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(23);
         assertThat(c.packs().get(2).counts().available()).isZero();
         assertThat(c.packs().get(3).counts().available()).isEqualTo(1);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(12);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(22);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");

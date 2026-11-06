@@ -19,6 +19,10 @@ from an upgraded JET screen unchanged; load one pack per page.
 | `bx-tabs` | `oj-tab-bar` | `[(selection)]`, arrow keys, Home and End; `panelId()` and `tabId()` for the panels |
 | `bx-data-grid` | `oj-table` | sortable headers, `[(selected)]` rows, an empty state |
 
+The forms wave (0.2.0): `bx-text-area`, `bx-password`, `bx-number-input`, `bx-currency-picker`, `bx-multi-select`,
+`bx-switch`, `bx-date-range`, `bx-search` (`(search)` on Enter), `bx-autocomplete` and `bx-document-upload`, with the
+inputs of the React pack (`TextArea` ... `FileUpload`).
+
 Every field is a `ControlValueAccessor`, so reactive forms and `ngModel` work as well as `[(value)]`. Add `src/bx.css`
 to the app's styles and put `styleClasses(style)` on the root element. `OBDX_COMPONENTS` lists all of them for a
 screen's `imports`.

@@ -8,6 +8,10 @@ const AXE = require.resolve('axe-core/axe.min.js');
 export const FOUNDATION = ['button', 'icon-button', 'text-field', 'amount', 'select', 'checkbox-group', 'choice-group', 'date', 'dialog', 'toast', 'card',
   'tabs', 'data-grid'] as const;
 
+/** The forms wave (0.2.0), in the galleries of the packs that have it. */
+export const FORMS = ['text-area', 'password', 'number-input', 'currency-picker', 'multi-select', 'switch', 'date-range', 'search', 'autocomplete',
+  'document-upload'] as const;
+
 export const VIEWPORTS = { phone: { width: 375, height: 812 }, tablet: { width: 768, height: 1024 }, laptop: { width: 1280, height: 800 } } as const;
 export const THEMES = ['light', 'dark'] as const;
 
@@ -46,7 +50,7 @@ export async function layout(page: Page, selector: string, phone: boolean): Prom
       if (r.right > box.right + 1) { out.push(`${el.tagName.toLowerCase()}.${el.className} ends ${Math.round(r.right - box.right)}px past the section`); }
     });
     if (phone) {
-      section.querySelectorAll<HTMLElement>('button, [role="button"], [role="tab"], select, input:not([type="checkbox"]):not([type="radio"]), a[href], label.bx-choice')
+      section.querySelectorAll<HTMLElement>('button, [role="button"], [role="tab"], select, input:not([type="checkbox"]):not([type="radio"]):not(.bx-visually-hidden), a[href], label.bx-choice')
         .forEach((el) => {
           const r = el.getBoundingClientRect();
           if (r.width > 0 && (r.width < 24 || r.height < 24)) { out.push(`${el.tagName.toLowerCase()} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30)}" is ${Math.round(r.width)}x${Math.round(r.height)}`); }

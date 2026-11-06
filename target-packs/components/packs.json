@@ -5,7 +5,7 @@
       "id": "jet-premium",
       "name": "Premium Oracle JET",
       "package": "obdx-jet",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "ui",
       "frameworkRange": "Oracle JET 6 and later, the release found in the bank’s code",
       "builds": [
@@ -148,6 +148,56 @@
           "component": "dialog",
           "source": "target-packs/components/jet-premium/bx",
           "export": "bx-dialog"
+        },
+        {
+          "component": "text-area",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-text-area"
+        },
+        {
+          "component": "password",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-password"
+        },
+        {
+          "component": "number-input",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-number-input"
+        },
+        {
+          "component": "currency-picker",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-currency-picker"
+        },
+        {
+          "component": "multi-select",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-multi-select"
+        },
+        {
+          "component": "switch",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-switch"
+        },
+        {
+          "component": "date-range",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-date-range"
+        },
+        {
+          "component": "search",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-search"
+        },
+        {
+          "component": "autocomplete",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-autocomplete"
+        },
+        {
+          "component": "document-upload",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-document-upload"
         }
       ],
       "checks": {
@@ -484,26 +534,285 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
           }
+        },
+        "text-area": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "password": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "number-input": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "currency-picker": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "multi-select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "switch": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "date-range": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "search": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "autocomplete": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
+        },
+        "document-upload": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks pass with every factory build"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included (JET 6.2 and JET 21)"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it (JET 6.2 and JET 21)"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24 (JET 6.2 and JET 21)"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21)"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/specs/parity.spec.ts: the JET element and the bx- element driven the same way give the screen the same values, events and methods (JET 6.2 and JET 21)"
+          }
         }
       },
       "folder": "target-packs/components/jet-premium",
       "next": {
-        "version": "0.2.0",
+        "version": "0.3.0",
         "state": "planned",
         "adds": [
-          "text-area",
-          "password",
-          "number-input",
-          "currency-picker",
-          "multi-select",
-          "switch",
-          "date-range",
-          "search",
-          "autocomplete",
-          "document-upload"
+          "account-picker",
+          "iban",
+          "balance-card",
+          "account-card",
+          "payee-list",
+          "beneficiary-card",
+          "transfer-summary",
+          "payment-status",
+          "receipt"
         ],
         "notes": [
-          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
         ]
       }
     },
@@ -511,7 +820,7 @@
       "id": "react",
       "name": "React",
       "package": "obdx-react",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "migration",
       "frameworkRange": "React 19, TypeScript 5.9, Vite 8",
       "state": "preview",
@@ -601,19 +910,59 @@
           "export": "DataTable"
         },
         {
-          "component": "number-input",
-          "source": "target-packs/react/starter/src/components",
-          "export": "NumberField"
-        },
-        {
           "component": "account-picker",
           "source": "target-packs/react/starter/src/components",
           "export": "AccountField"
         },
         {
+          "component": "text-area",
+          "source": "target-packs/components/react/src",
+          "export": "TextArea"
+        },
+        {
+          "component": "password",
+          "source": "target-packs/components/react/src",
+          "export": "PasswordField"
+        },
+        {
+          "component": "number-input",
+          "source": "target-packs/components/react/src",
+          "export": "NumberInput"
+        },
+        {
+          "component": "currency-picker",
+          "source": "target-packs/components/react/src",
+          "export": "CurrencySelector"
+        },
+        {
+          "component": "multi-select",
+          "source": "target-packs/components/react/src",
+          "export": "MultiSelect"
+        },
+        {
           "component": "switch",
-          "source": "target-packs/react/starter/src/components",
-          "export": "SwitchField"
+          "source": "target-packs/components/react/src",
+          "export": "Toggle"
+        },
+        {
+          "component": "date-range",
+          "source": "target-packs/components/react/src",
+          "export": "DateRangePicker"
+        },
+        {
+          "component": "search",
+          "source": "target-packs/components/react/src",
+          "export": "SearchField"
+        },
+        {
+          "component": "autocomplete",
+          "source": "target-packs/components/react/src",
+          "export": "Autocomplete"
+        },
+        {
+          "component": "document-upload",
+          "source": "target-packs/components/react/src",
+          "export": "FileUpload"
         }
       ],
       "checks": {
@@ -902,26 +1251,245 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
           }
+        },
+        "text-area": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "password": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "number-input": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "currency-picker": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "multi-select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "switch": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "date-range": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "search": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "autocomplete": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "document-upload": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test: vitest and Testing Library (behaviour, keyboard, writeback) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
         }
       },
       "folder": "target-packs/components/react",
       "next": {
-        "version": "0.2.0",
+        "version": "0.3.0",
         "state": "planned",
         "adds": [
-          "text-area",
-          "password",
-          "number-input",
-          "currency-picker",
-          "multi-select",
-          "switch",
-          "date-range",
-          "search",
-          "autocomplete",
-          "document-upload"
+          "account-picker",
+          "iban",
+          "balance-card",
+          "account-card",
+          "payee-list",
+          "beneficiary-card",
+          "transfer-summary",
+          "payment-status",
+          "receipt"
         ],
         "notes": [
-          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
         ]
       }
     },
@@ -929,7 +1497,7 @@
       "id": "react-native",
       "name": "React Native",
       "package": "obdx-react-native",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "migration",
       "frameworkRange": "React Native 0.88, Expo 58",
       "state": "preview",
@@ -1009,19 +1577,59 @@
           "export": "DataTable"
         },
         {
-          "component": "number-input",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "NumberField"
-        },
-        {
           "component": "account-picker",
           "source": "target-packs/react-native/starter/src/components",
           "export": "AccountField"
         },
         {
+          "component": "text-area",
+          "source": "target-packs/components/react-native/src",
+          "export": "TextArea"
+        },
+        {
+          "component": "password",
+          "source": "target-packs/components/react-native/src",
+          "export": "PasswordField"
+        },
+        {
+          "component": "number-input",
+          "source": "target-packs/components/react-native/src",
+          "export": "NumberInput"
+        },
+        {
+          "component": "currency-picker",
+          "source": "target-packs/components/react-native/src",
+          "export": "CurrencySelector"
+        },
+        {
+          "component": "multi-select",
+          "source": "target-packs/components/react-native/src",
+          "export": "MultiSelect"
+        },
+        {
           "component": "switch",
-          "source": "target-packs/react-native/starter/src/components",
-          "export": "SwitchField"
+          "source": "target-packs/components/react-native/src",
+          "export": "Toggle"
+        },
+        {
+          "component": "date-range",
+          "source": "target-packs/components/react-native/src",
+          "export": "DateRangePicker"
+        },
+        {
+          "component": "search",
+          "source": "target-packs/components/react-native/src",
+          "export": "SearchField"
+        },
+        {
+          "component": "autocomplete",
+          "source": "target-packs/components/react-native/src",
+          "export": "Autocomplete"
+        },
+        {
+          "component": "document-upload",
+          "source": "target-packs/components/react-native/src",
+          "export": "FileUpload"
         }
       ],
       "checks": {
@@ -1154,26 +1762,125 @@
             "status": "passed",
             "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
           }
+        },
+        "text-area": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "password": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "number-input": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "currency-picker": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "multi-select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "switch": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "date-range": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "search": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "autocomplete": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
+        },
+        "document-upload": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: Jest and React Native Testing Library (behaviour, writeback, announcements) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test: roles, names, states and touch targets of every control on every push; screen reader runs on devices are the next gate"
+          }
         }
       },
       "folder": "target-packs/components/react-native",
       "next": {
-        "version": "0.2.0",
+        "version": "0.3.0",
         "state": "planned",
         "adds": [
-          "text-area",
-          "password",
-          "number-input",
-          "currency-picker",
-          "multi-select",
-          "switch",
-          "date-range",
-          "search",
-          "autocomplete",
-          "document-upload"
+          "account-picker",
+          "iban",
+          "balance-card",
+          "account-card",
+          "payee-list",
+          "beneficiary-card",
+          "transfer-summary",
+          "payment-status",
+          "receipt"
         ],
         "notes": [
-          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
         ]
       }
     },
@@ -1181,7 +1888,7 @@
       "id": "angular",
       "name": "Angular",
       "package": "obdx-angular",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "migration",
       "frameworkRange": "Angular 20 and later (built and tested on 22.2), CDK 22.2",
       "state": "preview",
@@ -1264,6 +1971,56 @@
           "component": "data-grid",
           "source": "target-packs/components/angular/src",
           "export": "DataTable"
+        },
+        {
+          "component": "text-area",
+          "source": "target-packs/components/angular/src",
+          "export": "TextArea"
+        },
+        {
+          "component": "password",
+          "source": "target-packs/components/angular/src",
+          "export": "PasswordField"
+        },
+        {
+          "component": "number-input",
+          "source": "target-packs/components/angular/src",
+          "export": "NumberInput"
+        },
+        {
+          "component": "currency-picker",
+          "source": "target-packs/components/angular/src",
+          "export": "CurrencySelector"
+        },
+        {
+          "component": "multi-select",
+          "source": "target-packs/components/angular/src",
+          "export": "MultiSelect"
+        },
+        {
+          "component": "switch",
+          "source": "target-packs/components/angular/src",
+          "export": "Toggle"
+        },
+        {
+          "component": "date-range",
+          "source": "target-packs/components/angular/src",
+          "export": "DateRangePicker"
+        },
+        {
+          "component": "search",
+          "source": "target-packs/components/angular/src",
+          "export": "SearchField"
+        },
+        {
+          "component": "autocomplete",
+          "source": "target-packs/components/angular/src",
+          "export": "Autocomplete"
+        },
+        {
+          "component": "document-upload",
+          "source": "target-packs/components/angular/src",
+          "export": "FileUpload"
         }
       ],
       "checks": {
@@ -1552,26 +2309,245 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
           }
+        },
+        "text-area": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "password": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "number-input": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "currency-picker": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "multi-select": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "switch": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "date-range": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "search": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "autocomplete": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
+        },
+        "document-upload": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) on every push"
+          },
+          "accessibility": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: axe in Chromium with every rule, colour contrast included"
+          },
+          "themes": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: the dark theme changes the component and axe (contrast included) passes in it"
+          },
+          "responsive": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates: phone, tablet and laptop widths, nothing past the edge, controls at least 24 by 24"
+          },
+          "visual": {
+            "status": "passed",
+            "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones"
+          }
         }
       },
       "folder": "target-packs/components/angular",
       "next": {
-        "version": "0.2.0",
+        "version": "0.3.0",
         "state": "planned",
         "adds": [
-          "text-area",
-          "password",
-          "number-input",
-          "currency-picker",
-          "multi-select",
-          "switch",
-          "date-range",
-          "search",
-          "autocomplete",
-          "document-upload"
+          "account-picker",
+          "iban",
+          "balance-card",
+          "account-card",
+          "payee-list",
+          "beneficiary-card",
+          "transfer-summary",
+          "payment-status",
+          "receipt"
         ],
         "notes": [
-          "The forms wave: text area, password, number, currency, multi select, switch, date range, search, autocomplete and document upload, each through every check before the version ships."
+          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
         ]
       }
     }

@@ -67,6 +67,46 @@
       <div data-side="jet"><oj-table id="jet-data-grid" aria-label="Recent transactions" data="[[rowsProvider]]" columns="[[columns]]" selection-mode='{"row": "multiple"}' selection="{{jet.rowsSelected}}"></oj-table></div>
       <div data-side="bx"><bx-data-grid id="bx-data-grid" caption="Recent transactions" data="[[rowsProvider]]" columns="[[columns]]" key-attributes="id" selection-mode='{"row": "multiple"}'></bx-data-grid></div>
     </section>
+    <section class="pair" data-parity="text-area"><h2>oj-text-area · bx-text-area</h2>
+      <div data-side="jet"><oj-text-area id="jet-text-area" label-hint="Remarks" value="{{jet.remarks}}"></oj-text-area></div>
+      <div data-side="bx"><bx-text-area id="bx-text-area" label-hint="Remarks" value="{{bx.remarks}}"></bx-text-area></div>
+    </section>
+    <section class="pair" data-parity="password"><h2>oj-input-password · bx-password</h2>
+      <div data-side="jet"><oj-input-password id="jet-password" label-hint="Password" value="{{jet.secret}}" required="true" valid="{{jet.secretValid}}"></oj-input-password></div>
+      <div data-side="bx"><bx-password id="bx-password" label-hint="Password" value="{{bx.secret}}" required="true" valid="{{bx.secretValid}}"></bx-password></div>
+    </section>
+    <section class="pair" data-parity="number-input"><h2>oj-input-number · bx-number-input</h2>
+      <div data-side="jet"><oj-input-number id="jet-number-input" label-hint="Cheque leaves" value="{{jet.copies}}" min="1" max="5" step="1"></oj-input-number></div>
+      <div data-side="bx"><bx-number-input id="bx-number-input" label-hint="Cheque leaves" value="{{bx.copies}}" min="1" max="5" step="1"></bx-number-input></div>
+    </section>
+    <section class="pair" data-parity="currency-picker"><h2>oj-select-one · bx-currency-picker</h2>
+      <div data-side="jet"><oj-select-one id="jet-currency-picker" label-hint="Currency" value="{{jet.currency}}"><oj-option value="INR">INR · Indian rupee</oj-option><oj-option value="EUR">EUR · Euro</oj-option><oj-option value="USD">USD · US dollar</oj-option></oj-select-one></div>
+      <div data-side="bx"><bx-currency-picker id="bx-currency-picker" label-hint="Currency" value="{{bx.currency}}"></bx-currency-picker></div>
+    </section>
+    <section class="pair" data-parity="multi-select"><h2>oj-select-many · bx-multi-select</h2>
+      <div data-side="jet"><oj-select-many id="jet-multi-select" label-hint="Accounts" value="{{jet.picked}}"><oj-option value="S">Savings •••• 4521</oj-option><oj-option value="C">Current •••• 0187</oj-option></oj-select-many></div>
+      <div data-side="bx"><bx-multi-select id="bx-multi-select" label-hint="Accounts" value="{{bx.picked}}" options="[[accounts]]"></bx-multi-select></div>
+    </section>
+    <section class="pair" data-parity="switch"><h2>oj-switch · bx-switch</h2>
+      <div data-side="jet"><oj-label for="jet-switch">Paperless statements</oj-label><oj-switch id="jet-switch" value="{{jet.paperless}}"></oj-switch></div>
+      <div data-side="bx"><bx-switch id="bx-switch" label-hint="Paperless statements" value="{{bx.paperless}}"></bx-switch></div>
+    </section>
+    <section class="pair" data-parity="date-range"><h2>two oj-input-date · bx-date-range</h2>
+      <div data-side="jet"><oj-input-date id="jet-date-from" label-hint="From" value="{{jet.from}}"></oj-input-date><oj-input-date id="jet-date-to" label-hint="To" value="{{jet.to}}"></oj-input-date></div>
+      <div data-side="bx"><bx-date-range id="bx-date-range" label-hint="Statement period" value="{{bx.period}}"></bx-date-range></div>
+    </section>
+    <section class="pair" data-parity="search"><h2>oj-input-text · bx-search</h2>
+      <div data-side="jet"><oj-input-text id="jet-search" label-hint="Search transactions" value="{{jet.query}}"></oj-input-text></div>
+      <div data-side="bx"><bx-search id="bx-search" label-hint="Search transactions" value="{{bx.query}}"></bx-search></div>
+    </section>
+    <section class="pair" data-parity="autocomplete"><h2>oj-combobox-one · bx-autocomplete</h2>
+      <div data-side="jet"><oj-combobox-one id="jet-autocomplete" label-hint="Payee" value="{{jet.payee}}"><oj-option value="P1">Asha Sharma</oj-option><oj-option value="P2">Ravi Kumar</oj-option><oj-option value="P3">Asha Patel</oj-option></oj-combobox-one></div>
+      <div data-side="bx"><bx-autocomplete id="bx-autocomplete" label-hint="Payee" value="{{bx.payee}}" options="[[payees]]"></bx-autocomplete></div>
+    </section>
+    <section class="pair" data-parity="document-upload"><h2>oj-file-picker · bx-document-upload</h2>
+      <div data-side="jet"><oj-file-picker id="jet-document-upload" accept='[".pdf"]' selection-mode="single" on-oj-select="[[jet.chose]]" on-oj-invalid-select="[[jet.refused]]"></oj-file-picker></div>
+      <div data-side="bx"><bx-document-upload id="bx-document-upload" label-hint="Proof of address" accept='[".pdf"]' selection-mode="single" on-oj-select="[[bx.chose]]" on-oj-invalid-select="[[bx.refused]]"></bx-document-upload></div>
+    </section>
   </main>
   <script>
     var params = new URLSearchParams(location.search);
@@ -91,12 +131,17 @@
         shim: { jquery: { exports: ['jQuery', '$'] } }
       });
       require(['knockout', 'ojs/ojcore', 'ojs/ojarraydataprovider', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojinputnumber', 'ojs/ojselectcombobox', 'ojs/ojcheckboxset',
-               'ojs/ojradioset', 'ojs/ojdatetimepicker', 'ojs/ojbutton', 'ojs/ojdialog', 'ojs/ojmessages', 'ojs/ojnavigationlist', 'ojs/ojtable', 'bx/bx'],
+               'ojs/ojradioset', 'ojs/ojdatetimepicker', 'ojs/ojbutton', 'ojs/ojdialog', 'ojs/ojmessages', 'ojs/ojnavigationlist', 'ojs/ojtable', 'ojs/ojswitch', 'ojs/ojlabel', 'ojs/ojfilepicker', 'bx/bx'],
       function (ko, oj, ArrayDataProvider) {
         var side = function () {
           var s = { text: ko.observable(''), textRaw: ko.observable(''), textValid: ko.observable(''), amount: ko.observable(null), account: ko.observable(null),
             alerts: ko.observableArray([]), speed: ko.observable(null), day: ko.observable(null), tab: ko.observable('c'), rowsSelected: ko.observable(null),
-            presses: 0, iconPresses: 0, closes: 0 };
+            presses: 0, iconPresses: 0, closes: 0,
+            remarks: ko.observable(''), secret: ko.observable(''), secretValid: ko.observable(''), copies: ko.observable(null), currency: ko.observable(null),
+            picked: ko.observableArray([]), paperless: ko.observable(false), from: ko.observable(null), to: ko.observable(null), period: ko.observable({ from: '', to: '' }),
+            query: ko.observable(''), payee: ko.observable(null), files: [], refusals: 0 };
+          s.chose = function (event) { s.files = Array.prototype.map.call(event.detail.files, function (f) { return f.name; }); };
+          s.refused = function () { s.refusals += 1; };
           s.press = function () { s.presses += 1; };
           s.pressIcon = function () { s.iconPresses += 1; };
           s.closed = function () { s.closes += 1; };
@@ -109,6 +154,7 @@
           accounts: [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }],
           channels: [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }],
           speeds: [{ value: 'N', label: 'NEFT' }, { value: 'I', label: 'IMPS' }],
+          payees: [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }],
           tabs: [{ id: 'c', label: 'Current' }, { id: 's', label: 'Savings' }, { id: 'd', label: 'Deposits' }],
           messages: ko.observableArray([{ severity: 'error', summary: 'Payment failed', detail: 'The account is blocked.', autoTimeout: -1 },
             { severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: -1 }]),
@@ -118,7 +164,10 @@
         // What each side's view model sees, for the spec to compare
         window.parityState = function () {
           var view = function (s) { return { text: s.text(), textRaw: s.textRaw(), textValid: s.textValid(), amount: s.amount(), account: s.account(), alerts: s.alerts().slice().sort(),
-            speed: s.speed(), day: s.day(), tab: s.tab(), presses: s.presses, iconPresses: s.iconPresses, closes: s.closes }; };
+            speed: s.speed(), day: s.day(), tab: s.tab(), presses: s.presses, iconPresses: s.iconPresses, closes: s.closes,
+            remarks: s.remarks(), secret: s.secret(), secretValid: s.secretValid(), copies: s.copies(), currency: s.currency(), picked: s.picked().slice().sort(),
+            paperless: s.paperless(), period: s === vm.jet ? { from: s.from() || '', to: s.to() || '' } : s.period(), query: s.query(), payee: s.payee(),
+            files: s.files, refusals: s.refusals }; };
           return { jet: view(vm.jet), bx: view(vm.bx) };
         };
         var start = function () {

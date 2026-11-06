@@ -21,6 +21,10 @@ export { Tabs } from './Tabs';
 export type { Tab, TabsProps } from './Tabs';
 export { DataTable } from './DataTable';
 export type { Column, DataTableProps } from './DataTable';
+export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle,
+  fileSize } from './Forms';
+export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePickerProps, FileUploadProps, MultiSelectProps, NumberInputProps,
+  PasswordFieldProps, SearchFieldProps, TextAreaProps } from './Forms';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { FieldProps, Option } from './field';

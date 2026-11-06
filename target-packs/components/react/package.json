@@ -1,6 +1,6 @@
 {
   "name": "obdx-react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The premium React components for a bank's OBDX UI: the foundation set, themed from the bank tokens.",
   "license": "UNLICENSED",
   "private": true,

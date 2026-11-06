@@ -6,7 +6,8 @@ import { ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import '../src/bx.css';
-import { AmountInput, Button, Card, CheckboxGroup, DataTable, DatePicker, Dialog, Dropdown, IconButton, RadioGroup, Tabs, TextField, Toast, styleClasses } from '../src';
+import { AmountInput, Autocomplete, Button, Card, CheckboxGroup, CurrencySelector, DataTable, DatePicker, DateRangePicker, Dialog, Dropdown, FileUpload, IconButton,
+  MultiSelect, NumberInput, PasswordField, RadioGroup, SearchField, Tabs, TextArea, TextField, Toast, Toggle, styleClasses } from '../src';
 import './gallery.css';
 
 const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
@@ -36,6 +37,16 @@ function Gallery() {
   const [tab, setTab] = useState('c');
   const [selected, setSelected] = useState<string[]>(['t2']);
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [remarks, setRemarks] = useState('Rent for November');
+  const [secret, setSecret] = useState('s3cret-pass');
+  const [copies, setCopies] = useState<number | null>(2);
+  const [currency, setCurrency] = useState('INR');
+  const [picked, setPicked] = useState(['S']);
+  const [paperless, setPaperless] = useState(true);
+  const [period, setPeriod] = useState({ from: '2026-10-01', to: '2026-10-31' });
+  const [query, setQuery] = useState('rent');
+  const [payee, setPayee] = useState('P1');
+  const [proof] = useState(() => [new File([new Uint8Array(248000)], 'statement-october.pdf', { type: 'application/pdf' })]);
   return (
     <main className={styleClasses({ look: 'elevated', mode }) + ' gallery'} data-gallery-ready>
       <h1>obdx-react foundation set</h1>
@@ -108,6 +119,41 @@ function Gallery() {
         <DataTable caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
           { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
           { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} />
+      </Section>
+      <Section id="text-area" title="Text area">
+        <TextArea testID="ta1" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" />
+        <TextArea testID="ta2" label="Reason" value="" required error="Say why you are cancelling." />
+      </Section>
+      <Section id="password" title="Password">
+        <PasswordField testID="pw1" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" />
+        <PasswordField testID="pw2" label="Transaction PIN" value="1234" error="The PIN is wrong. 2 tries left." autoComplete="one-time-code" />
+      </Section>
+      <Section id="number-input" title="Number">
+        <NumberInput testID="ni1" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" />
+        <NumberInput testID="ni2" label="Tenure (months)" value={84} error="Enter 60 or less." />
+      </Section>
+      <Section id="currency-picker" title="Currency">
+        <CurrencySelector testID="cp1" label="Currency" value={currency} onChange={setCurrency} required />
+      </Section>
+      <Section id="multi-select" title="Multi select">
+        <MultiSelect testID="ms1" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" />
+      </Section>
+      <Section id="switch" title="Switch">
+        <Toggle testID="sw1" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" />
+        <Toggle testID="sw2" label="International use" value={false} disabled />
+      </Section>
+      <Section id="date-range" title="Date range">
+        <DateRangePicker testID="dr1" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" />
+      </Section>
+      <Section id="search" title="Search">
+        <SearchField testID="se1" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" />
+      </Section>
+      <Section id="autocomplete" title="Autocomplete">
+        <Autocomplete testID="ac1" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} />
+      </Section>
+      <Section id="document-upload" title="Document upload">
+        <FileUpload testID="du1" label="Proof of address" value={proof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" />
       </Section>
     </main>
   );

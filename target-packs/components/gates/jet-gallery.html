@@ -63,6 +63,40 @@
     <section class="gate" data-component="data-grid" aria-labelledby="dg-h"><h2 id="dg-h">Data table</h2><div class="gate-body">
       <bx-data-grid caption="Recent transactions" data="[[rows]]" columns="[[columns]]" key-attributes="id" selection-mode='{"row": "multiple"}' selected="{{selected}}"></bx-data-grid>
     </div></section>
+    <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
+      <bx-text-area label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area>
+      <bx-text-area label-hint="Reason" required="true" messages-custom="[[reasonError]]"></bx-text-area>
+    </div></section>
+    <section class="gate" data-component="password" aria-labelledby="pw-h"><h2 id="pw-h">Password</h2><div class="gate-body">
+      <bx-password label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password>
+      <bx-password label-hint="Transaction PIN" value="1234" autocomplete="one-time-code" messages-custom="[[pinError]]"></bx-password>
+    </div></section>
+    <section class="gate" data-component="number-input" aria-labelledby="ni-h"><h2 id="ni-h">Number</h2><div class="gate-body">
+      <bx-number-input label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input>
+      <bx-number-input label-hint="Tenure (months)" value="84" messages-custom="[[tenureError]]"></bx-number-input>
+    </div></section>
+    <section class="gate" data-component="currency-picker" aria-labelledby="cp-h"><h2 id="cp-h">Currency</h2><div class="gate-body">
+      <bx-currency-picker label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker>
+    </div></section>
+    <section class="gate" data-component="multi-select" aria-labelledby="ms-h"><h2 id="ms-h">Multi select</h2><div class="gate-body">
+      <bx-multi-select label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select>
+    </div></section>
+    <section class="gate" data-component="switch" aria-labelledby="sw-h"><h2 id="sw-h">Switch</h2><div class="gate-body">
+      <bx-switch label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch>
+      <bx-switch label-hint="International use" disabled="true"></bx-switch>
+    </div></section>
+    <section class="gate" data-component="date-range" aria-labelledby="dr-h"><h2 id="dr-h">Date range</h2><div class="gate-body">
+      <bx-date-range label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range>
+    </div></section>
+    <section class="gate" data-component="search" aria-labelledby="se-h"><h2 id="se-h">Search</h2><div class="gate-body">
+      <bx-search label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search>
+    </div></section>
+    <section class="gate" data-component="autocomplete" aria-labelledby="ac-h"><h2 id="ac-h">Autocomplete</h2><div class="gate-body">
+      <bx-autocomplete label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete>
+    </div></section>
+    <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
+      <bx-document-upload label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload>
+    </div></section>
   </main>
   <script>
     // The JET release to load: its libraries are where npm put them
@@ -101,6 +135,20 @@
           speed: ko.observable('N'),
           day: ko.observable('2026-11-12'),
           tab: ko.observable('c'),
+          remarks: ko.observable('Rent for November'),
+          secret: ko.observable('s3cret-pass'),
+          copies: ko.observable(2),
+          currency: ko.observable('INR'),
+          picked: ko.observableArray(['S']),
+          paperless: ko.observable(true),
+          period: ko.observable({ from: '2026-10-01', to: '2026-10-31' }),
+          query: ko.observable('rent'),
+          payee: ko.observable('P1'),
+          proof: ko.observableArray([{ name: 'statement-october.pdf', type: 'application/pdf', size: 248000 }]),
+          reasonError: [{ severity: 'error', summary: 'Say why you are cancelling.', detail: 'Say why you are cancelling.' }],
+          pinError: [{ severity: 'error', summary: 'The PIN is wrong. 2 tries left.', detail: 'The PIN is wrong. 2 tries left.' }],
+          tenureError: [{ severity: 'error', summary: 'Enter 60 or less.', detail: 'Enter 60 or less.' }],
+          payees: [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }],
           selected: ko.observable({ row: ['t2'], column: [] }),
           refError: [{ severity: 'error', summary: 'Use letters and numbers only.', detail: 'Use letters and numbers only.' }],
           kwdError: [{ severity: 'error', summary: 'Enter at most 10.000.', detail: 'Enter at most 10.000.' }],

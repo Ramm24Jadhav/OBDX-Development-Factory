@@ -19,6 +19,9 @@ export type { Column } from './data-table';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { Option } from './field';
+export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle,
+  fileSize } from './forms';
+export type { DateRange } from './forms';
 
 import { AmountInput, TextField } from './text-field';
 import { Button, IconButton } from './button';
@@ -30,7 +33,8 @@ import { Dialog } from './dialog';
 import { Dropdown } from './dropdown';
 import { Tabs } from './tabs';
 import { Toast } from './toast';
+import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle } from './forms';
 
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
-  DataTable] as const;
+  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload] as const;

@@ -17,9 +17,15 @@ The components and their props match the React pack (`Button`, `IconButton`, `Te
 - Field errors are alerts (a live region on Android). Toasts are announced when they arrive.
 - The dropdown opens a sheet of options. The dialog is modal for screen readers, and the back button closes it unless
   `cancelBehavior` is `none`.
-- The date is typed as dd/mm/yyyy on the number pad. A calendar sheet comes with the forms wave, with the same props.
+- The date is typed as dd/mm/yyyy on the number pad (a calendar sheet is still to come, with the same props).
 - The table shows each row as a card of "header: value" pairs, so nothing scrolls sideways.
 - Amounts are formatted without the platform's locale data (Hermes).
+
+The forms wave (0.2.0) adds `TextArea`, `PasswordField` (no suggestions, the platforms' password autofill),
+`NumberInput` (the number pad and steppers), `CurrencySelector` and `MultiSelect` (sheets), `Toggle` (the platform
+switch), `DateRangePicker`, `SearchField` (the keyboard's Search key), `Autocomplete` (suggestions under the field)
+and `FileUpload`. React Native has no file picker of its own, so `FileUpload` takes `pick`: a function that opens the
+app's document picker (expo-document-picker, for example) and resolves with the files.
 
 ## Checks
 

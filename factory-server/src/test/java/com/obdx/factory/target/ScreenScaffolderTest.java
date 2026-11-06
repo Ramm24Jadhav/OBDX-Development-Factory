@@ -115,8 +115,9 @@ class ScreenScaffolderTest {
         assertThat(page.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed", "alerts", "save",
                 "fee", "count", "ref", "submit", "cancel", "help");
         assertThat(page.content()).contains("export class FundTransferPage {", "selector: 'app-fund-transfer'",
-                "import { AmountInput, Button, CheckboxGroup, DatePicker, Dropdown, RadioGroup, ReadOnlyField, Screen, Section, SwitchField, TextArea, "
-                        + "TextField } from '../../components';",
+                "import { AmountInput, Button, CheckboxGroup, DatePicker, Dropdown, RadioGroup, ReadOnlyField, Screen, Section, TextArea, "
+                        + "TextField, Toggle } from '../../components';",
+                "<bx-switch", "<bx-text-area",
                 "protected readonly purposeOptions = ['Family support', 'Rent', 'Other\\'s \"bill\"'];",
                 "amount: null as number | null,", "alerts: ['SMS'] as string[],", "savePayee: true as boolean,",
                 "<obdx-section [title]=\"t('fundTransfer.detailsSection')\" [columns]=\"2\">",

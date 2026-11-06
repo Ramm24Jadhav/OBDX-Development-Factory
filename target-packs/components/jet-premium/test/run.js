@@ -71,8 +71,11 @@ function eq(actual, expected, what) {
 }
 const input = (value) => ({ target: { value: value } });
 
-const ELEMENTS = ['bx-button', 'bx-icon-button', 'bx-text-field', 'bx-amount', 'bx-select', 'bx-checkbox-group', 'bx-choice-group', 'bx-date', 'bx-dialog', 'bx-toast', 'bx-card', 'bx-tabs', 'bx-data-grid'];
-test('every foundation element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
+const FOUNDATION = ['bx-button', 'bx-icon-button', 'bx-text-field', 'bx-amount', 'bx-select', 'bx-checkbox-group', 'bx-choice-group', 'bx-date', 'bx-dialog', 'bx-toast', 'bx-card', 'bx-tabs', 'bx-data-grid'];
+const FORMS = ['bx-text-area', 'bx-password', 'bx-number-input', 'bx-currency-picker', 'bx-multi-select', 'bx-switch', 'bx-date-range', 'bx-search', 'bx-autocomplete', 'bx-document-upload'];
+const ELEMENTS = FOUNDATION.concat(FORMS);
+test('every foundation and forms element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
+test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
 
 test('bx-text-field: raw-value as typed, value on blur, required and JET validators', () => {
   const t = create('bx-text-field', { labelHint: 'Beneficiary name', required: true,
@@ -207,6 +210,150 @@ test('bx-data-grid: sort by a column, select rows', () => {
   eq(g.props.selected.row, [1, 3], 'selected');
   eq(g.events.map((e) => e.detail.direction), ['ascending', 'descending'], 'ojSort');
   eq(create('bx-data-grid', { data: [] }).vm.empty(), true, 'empty');
+});
+
+// ---------- The forms wave ----------
+const key = (k) => ({ key: k, preventDefault: () => {} });
+test('bx-text-area: value on blur, length.max counter', () => {
+  const t = create('bx-text-area', { labelHint: 'Remarks', length: { max: 100 } });
+  t.vm.onInput(input('Rent\nNovember'));
+  eq(t.props.rawValue, 'Rent\nNovember', 'raw-value');
+  eq(t.vm.counter(), '13 / 100', 'counter');
+  t.vm.onBlur();
+  eq(t.props.value, 'Rent\nNovember', 'value');
+  const r = create('bx-text-area', { labelHint: 'Reason', required: true });
+  r.vm.onInput(input(''));
+  r.vm.onBlur();
+  eq(r.vm.error(), 'Reason is required.', 'required');
+});
+test('bx-password: masked, Show and Hide with aria-pressed, mask-icon hidden', () => {
+  const p = create('bx-password', { labelHint: 'Password', value: 's3cret', autocomplete: 'new-password' });
+  eq(p.vm.type(), 'password', 'masked');
+  eq(p.vm.revealLabel(), 'Show Password', 'label');
+  p.vm.toggle();
+  eq([p.vm.type(), p.vm.pressed(), p.vm.revealLabel()], ['text', 'true', 'Hide Password'], 'shown');
+  eq(create('bx-password', { maskIcon: 'hidden' }).vm.canReveal(), false, 'mask-icon hidden');
+  if (!/:autocomplete="\[\[\$properties\.autocomplete\]\]"/.test(p.view)) { throw new Error('autocomplete not bound'); }
+});
+test('bx-number-input: steps, arrow keys, min and max, not a number', () => {
+  const n = create('bx-number-input', { labelHint: 'Copies', value: 2, min: 1, max: 3 });
+  n.vm.up();
+  eq(n.props.value, 3, 'up');
+  eq(n.vm.atMax(), true, 'at max');
+  n.vm.up();
+  eq(n.props.value, 3, 'stays at max');
+  n.vm.onKey(key('ArrowDown'));
+  eq(n.props.value, 2, 'arrow down');
+  n.vm.onInput(input('abc'));
+  n.vm.onBlur();
+  eq(n.vm.error(), 'Enter a number.', 'not a number');
+  n.vm.onInput(input('9'));
+  n.vm.onBlur();
+  eq([n.vm.error(), n.props.value], ['Enter 3 or less.', 2], 'max');
+  eq(create('bx-number-input', { step: 0.5, value: 1 }).vm.up() || undefined, undefined, 'step');
+});
+test('bx-currency-picker: code with its name, own list', () => {
+  const c = create('bx-currency-picker', { labelHint: 'Currency' });
+  c.vm.onChange(input('EUR'));
+  eq([c.props.value, c.vm.name()], ['EUR', 'Euro'], 'picked');
+  eq(c.vm.choices().filter((o) => o.selected).map((o) => o.text), ['EUR · Euro'], 'selected option');
+  eq(create('bx-currency-picker', { currencies: [{ value: 'OMR', label: 'Omani rial' }] }).vm.choices().length, 1, 'own currencies');
+});
+test('bx-multi-select: keyboard picks, chips, Backspace and remove', () => {
+  const options = [{ value: 'S', label: 'Savings' }, { value: 'C', label: 'Current' }, { value: 'D', label: 'Deposits' }];
+  const m = create('bx-multi-select', { labelHint: 'Accounts', options: options });
+  m.vm.onFocus();
+  m.vm.onKey(key('ArrowDown'));
+  eq(m.vm.activeId(), m.vm.listId + '-0', 'active descendant');
+  m.vm.onKey(key('Enter'));
+  eq(m.props.value, ['S'], 'first');
+  m.vm.onInput(input('dep'));
+  eq(m.vm.rows().map((r) => r.label), ['Deposits'], 'filtered');
+  m.vm.onKey(key('ArrowDown'));
+  m.vm.onKey(key('Enter'));
+  eq(m.props.value, ['S', 'D'], 'second');
+  eq(m.vm.chips().map((c) => c.remove), ['Remove Savings', 'Remove Deposits'], 'chip names');
+  m.vm.chips()[0].drop();
+  eq(m.props.value, ['D'], 'removed');
+  m.vm.onKey(key('Backspace'));
+  eq(m.props.value, [], 'backspace');
+  m.vm.onKey(key('Escape'));
+  eq(m.vm.expanded(), 'false', 'closed');
+});
+test('bx-switch: role switch, flips, read only stays', () => {
+  const s = create('bx-switch', { labelHint: 'Paperless statements' });
+  eq(s.vm.checked(), 'false', 'off');
+  s.vm.flip();
+  eq([s.props.value, s.vm.checked()], [true, 'true'], 'on');
+  const r = create('bx-switch', { value: true, readonly: true });
+  r.vm.flip();
+  eq(r.props.value, true, 'read only');
+  if (!/role="switch"/.test(s.view) || !/:aria-checked="\[\[checked\]\]"/.test(s.view)) { throw new Error('switch role'); }
+});
+test('bx-date-range: end before start, max-days, both written', () => {
+  const d = create('bx-date-range', { labelHint: 'Statement period', maxDays: 31 });
+  d.vm.onFrom(input('2026-10-10'));
+  d.vm.onTo(input('2026-10-01'));
+  eq(d.vm.error(), 'The end date is before the start date.', 'order');
+  d.vm.onTo(input('2026-12-01'));
+  eq(d.vm.error(), 'Choose at most 31 days.', 'max-days');
+  d.vm.onTo(input('2026-10-31'));
+  eq([d.vm.error(), d.props.value, d.props.valid], ['', { from: '2026-10-10', to: '2026-10-31' }, 'valid'], 'range');
+  eq(d.vm.toMin(), '2026-10-10', 'to min');
+});
+test('bx-search: Enter fires ojSearch, Escape and Clear empty it', () => {
+  const s = create('bx-search', { labelHint: 'Search transactions', value: 'rent' });
+  s.vm.onKey(key('Enter'));
+  eq(s.events.map((e) => [e.type, e.detail.value]), [['ojSearch', 'rent']], 'ojSearch');
+  s.vm.onKey(key('Escape'));
+  eq(s.props.value, '', 'escape');
+  s.vm.onInput(input('atm'));
+  s.vm.clear();
+  eq(s.props.value, '', 'clear');
+  if (!/role="search"/.test(s.view) || !/type="search"/.test(s.view)) { throw new Error('search landmark'); }
+});
+test('bx-autocomplete: suggestions, arrows and Enter pick, a choice is required unless free-text', () => {
+  const payees = [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }];
+  const a = create('bx-autocomplete', { labelHint: 'Payee', options: payees });
+  a.vm.onInput(input('asha'));
+  eq(a.vm.rows().map((r) => r.label), ['Asha Sharma', 'Asha Patel'], 'suggestions');
+  a.vm.onKey(key('ArrowDown'));
+  a.vm.onKey(key('ArrowDown'));
+  eq(a.vm.activeId(), a.vm.listId + '-1', 'active');
+  a.vm.onKey(key('Enter'));
+  eq([a.props.value, a.vm.text()], ['P3', 'Asha Patel'], 'picked');
+  a.vm.onInput(input('Nobody'));
+  a.vm.onBlur();
+  eq(a.vm.error(), 'Choose one of the suggestions.', 'no match');
+  const f = create('bx-autocomplete', { options: payees, freeText: true });
+  f.vm.onInput(input('Nobody'));
+  f.vm.onBlur();
+  eq(f.props.value, 'Nobody', 'free text');
+});
+test('bx-document-upload: accept and max-size, ojSelect and ojInvalidSelect, remove', () => {
+  const u = create('bx-document-upload', { labelHint: 'Proof of address', accept: ['.pdf', 'image/*'], maxSize: 1048576 });
+  u.vm.add([{ name: 'statement.pdf', type: 'application/pdf', size: 4 }]);
+  eq([u.props.value.map((f) => f.name), u.vm.rows()[0].size], [['statement.pdf'], '4 B'], 'added');
+  u.vm.add([{ name: 'setup.exe', type: 'application/octet-stream', size: 2 }]);
+  eq(u.vm.error(), 'setup.exe is not a file type this accepts (.pdf, image/*).', 'type');
+  u.vm.add([{ name: 'scan.png', type: 'image/png', size: 3145728 }]);
+  eq(u.vm.error(), 'scan.png is larger than 1.0 MB.', 'size');
+  eq(u.events.map((e) => e.type), ['ojSelect', 'ojInvalidSelect', 'ojInvalidSelect'], 'events');
+  u.vm.rows()[0].drop();
+  eq(u.props.value, [], 'removed');
+  const many = create('bx-document-upload', { selectionMode: 'multiple' });
+  many.vm.add([{ name: 'a.pdf', size: 1 }]);
+  many.vm.add([{ name: 'b.pdf', size: 1 }]);
+  eq(many.props.value.length, 2, 'multiple');
+});
+test('forms fields tie their label and messages to the control', () => {
+  ['bx-text-area', 'bx-password', 'bx-number-input', 'bx-currency-picker', 'bx-multi-select', 'bx-search', 'bx-autocomplete'].forEach((e) => {
+    const v = registry[e].view;
+    if (!/<label class="bx-label" :for="\[\[id\]\]"/.test(v)) { throw new Error(e + ': no label for the control'); }
+    if (!/:aria-describedby="\[\[describedBy\]\]"/.test(v) || !/:aria-invalid="\[\[invalid\]\]"/.test(v)) { throw new Error(e + ': messages not tied'); }
+  });
+  ['bx-multi-select', 'bx-autocomplete'].forEach((e) => { if (!/role="combobox"/.test(registry[e].view) || !/role="listbox"/.test(registry[e].view)) { throw new Error(e + ': combobox roles'); } });
+  if (!/<fieldset/.test(registry['bx-date-range'].view) || !/<legend/.test(registry['bx-date-range'].view)) { throw new Error('date range: no fieldset'); }
 });
 
 // The markup accessibility needs, in every view

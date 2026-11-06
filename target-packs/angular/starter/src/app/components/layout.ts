@@ -1,11 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, forwardRef, input } from '@angular/core';
-import { NG_VALUE_ACCESSOR } from '@angular/forms';
-
-import { FieldBase, FieldMessage, FieldShell } from './field';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /*
- * The starter's own parts around the premium components: the frame of a screen, a titled group of fields, and the
- * field types the premium foundation set does not have yet (text area, switch, read-only value). Same skin.
+ * The starter's own parts around the premium components: the frame of a screen, a titled group of fields, and
+ * a value to show and not edit (the text area and switch are the pack's bx-text-area and bx-switch now). Same skin.
  */
 
 /** The frame of a screen, with its title and, at the bottom, its actions (put them in an element with "actions"). */
@@ -51,46 +48,6 @@ export class Section {
   readonly columns = input(1);
   protected readonly grid = computed(() => `obdx-grid obdx-columns-${Math.min(Math.max(this.columns(), 1), 3)}`);
 }
-
-/** Several lines of text. */
-@Component({
-  selector: 'obdx-text-area',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldShell],
-  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => TextArea), multi: true }],
-  template: `
-    <bx-field-shell [field]="this">
-      <textarea class="bx-input" rows="3" [id]="id" [attr.data-testid]="testID() ? testID() + '-input' : null" [value]="value() ?? ''"
-                [attr.placeholder]="placeholder() || null" [disabled]="isDisabled()" [readOnly]="readOnly()" [attr.maxlength]="maxLength() ?? null"
-                [attr.aria-required]="required() || null" [attr.aria-invalid]="message() ? true : null" [attr.aria-describedby]="describedBy()"
-                style="height:auto;padding-top:10px;padding-bottom:10px;resize:vertical"
-                (focus)="focus()" (blur)="blur()" (input)="change($any($event.target).value)"></textarea>
-    </bx-field-shell>
-  `,
-})
-export class TextArea extends FieldBase<string> {
-  readonly maxLength = input<number>();
-}
-
-/** On or off. */
-@Component({
-  selector: 'obdx-switch',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldMessage],
-  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => SwitchField), multi: true }],
-  template: `
-    <div class="bx-field" [attr.data-testid]="testID() || null">
-      <label class="bx-choice" [class.is-on]="!!value()" [attr.for]="id">
-        <input type="checkbox" role="switch" class="bx-choice-input" [id]="id" [checked]="!!value()" [disabled]="isDisabled() || readOnly()"
-               [attr.aria-describedby]="describedBy()" (change)="change($any($event.target).checked)" (blur)="blur()" />
-        <span class="bx-choice-mark" aria-hidden="true"></span>
-        <span class="bx-choice-label">{{ label() }}</span>
-      </label>
-      <bx-field-message [id]="id" [error]="message()" [helpText]="helpText()" />
-    </div>
-  `,
-})
-export class SwitchField extends FieldBase<boolean> {}
 
 /** A value to show, not to edit. */
 @Component({

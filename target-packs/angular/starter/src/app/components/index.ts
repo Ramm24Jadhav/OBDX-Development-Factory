@@ -19,4 +19,7 @@ export type { Column } from './data-table';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { Option } from './field';
-export { ReadOnlyField, Screen, Section, SwitchField, TextArea } from './layout';
+export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle,
+  fileSize } from './forms';
+export type { DateRange } from './forms';
+export { ReadOnlyField, Screen, Section } from './layout';

@@ -19,6 +19,21 @@ native elements, which every screen reader and phone already knows.
 | `Tabs` | `oj-tab-bar` | arrow keys, Home and End; panels tied to their tabs |
 | `DataTable` | `oj-table` | sortable headers (`aria-sort`), single or multiple selection, an empty state |
 
+The forms wave (0.2.0):
+
+| Component | Replaces | Notes |
+|---|---|---|
+| `TextArea` | `oj-text-area` | `maxLength` with a counter, `rows` |
+| `PasswordField` | `oj-input-password` | masked, Show and Hide, `autoComplete` for password managers |
+| `NumberInput` | `oj-input-number` | a number or null, - and + and the arrow keys, `min`, `max`, `step`, `decimals` |
+| `CurrencySelector` | `oj-select-single` of currencies | the code with its name beside it |
+| `MultiSelect` | `oj-select-many` | chips with Remove and a list to filter (the ARIA combobox) |
+| `Toggle` | `oj-switch` | the switch role |
+| `DateRangePicker` | two `oj-input-date` | `{ from, to }`, `maxDays` |
+| `SearchField` | `oj-input-text` as a search | a search landmark, `onSearch` on Enter, Escape clears |
+| `Autocomplete` | `oj-combobox-one` | suggestions as the customer types, `freeText` |
+| `FileUpload` | `oj-file-picker` | `accept`, `multiple`, `maxSize`, a drop area |
+
 Every field takes the same props as the starter's components (`testID`, `label`, `value`, `onChange`, `required`,
 `readOnly`, `disabled`, `helpText`, `placeholder`, `error`). Validation rules come from the screen through `error`; a
 field checks only required and its own format, after the customer leaves it.

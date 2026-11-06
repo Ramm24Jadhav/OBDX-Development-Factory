@@ -20,7 +20,7 @@ structure:
 # value: string, list (string[]), boolean or number.
 components:
   text: {component: TextField, tag: bx-text-field, value: string}
-  textarea: {component: TextArea, tag: obdx-text-area, value: string}
+  textarea: {component: TextArea, tag: bx-text-area, value: string}
   number: {component: TextField, tag: bx-text-field, value: string, props: 'inputMode="numeric"'}
   amount: {component: AmountInput, tag: bx-amount, value: number}
   date: {component: DatePicker, tag: bx-date, value: string}
@@ -28,7 +28,7 @@ components:
   account: {component: Dropdown, tag: bx-select, value: string, options: true}
   radio: {component: RadioGroup, tag: bx-choice-group, value: string, options: true}
   checkbox: {component: CheckboxGroup, tag: bx-checkbox-group, value: list, options: true}
-  switch: {component: SwitchField, tag: obdx-switch, value: boolean}
+  switch: {component: Toggle, tag: bx-switch, value: boolean}
   display: {component: ReadOnlyField, tag: obdx-read-only, value: string}
   # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
   table: {component: ReadOnlyField, tag: obdx-read-only, value: string}
@@ -43,7 +43,8 @@ guidance: |
     OBDX REST services. Do not change the OBDX JET UI for it.
   - Build pages only from the components in src/app/components: the premium components (bx-text-field, bx-amount,
     bx-select, bx-checkbox-group, bx-choice-group, bx-date, bx-button, bx-icon-button, bx-dialog, bx-toast, bx-card,
-    bx-tabs, bx-data-grid) and the starter's obdx-screen, obdx-section, obdx-text-area, obdx-switch, obdx-read-only.
+    bx-tabs, bx-data-grid, bx-text-area, bx-password, bx-number-input, bx-currency-picker, bx-multi-select, bx-switch,
+    bx-date-range, bx-search, bx-autocomplete, bx-document-upload) and the starter's obdx-screen, obdx-section, obdx-read-only.
     They take testID, label, [(value)], error, required, readOnly, helpText and placeholder (and options). Style with
     the skin's classes (bx.css) and its CSS variables, not inline colors.
   - Every field and action of the approved Screen Model keeps its Screen Model id as testID (rendered as data-testid).

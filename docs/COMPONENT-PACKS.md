@@ -14,8 +14,13 @@ and `react-native/src/tokens.ts` (`--check` in CI). The browser gates (`componen
 the `component-gates` CI job) run on each web pack's gallery: axe with contrast, light and dark, phone to laptop and
 screenshots. Parity runs the premium JET pack beside the JET elements it replaces, in a real JET 6.2 app and the current
 release; `gates/record.mjs` writes the results into `packs.json`. The premium JET foundation set passes every gate and
-is Available; in React and Angular the card is, and the rest waits for parity with the JET screens. Next: React and
-Angular parity, React Native on devices, the starters switching to the packs, then the rest of the catalogue in waves.
+is Available; in React and Angular the card is, and the rest waits for parity with the JET screens. Wave 1 (forms:
+text area, password, number, currency, multi select, switch, date range, search, autocomplete, document upload) is
+built in all four packs and shipped as 0.2.0: unit tests in each, the browser gates in React, Angular and JET 6.2 and
+the current JET, and parity with oj-text-area, oj-input-password, oj-input-number, oj-select-one, oj-select-many,
+oj-switch, oj-input-date, oj-input-text, oj-combobox-one and oj-file-picker, so the ten are Available in the premium
+JET pack. The Angular starter uses the pack's bx-text-area and bx-switch in place of its own. Next: wave 2 (banking),
+React and Angular parity, React Native on devices, then the remaining waves.
 
 The goal: one design system for the bank's channel UI, implemented four times — Oracle JET (the UI path), React,
 React Native and Angular (the migration path) — with a metadata registry the factory reads to show, compare, map and

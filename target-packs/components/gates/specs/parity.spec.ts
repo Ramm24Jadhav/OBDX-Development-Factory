@@ -111,6 +111,83 @@ for (const jet of ['6', '21']) {
       expect(s.bx.tab).toBe('s');
     });
 
+    // ---------- The forms wave ----------
+    const typed = (page: Page, field: string, text: string) => async (side: Side) => {
+      const i = page.locator(`#${side}-${field} ${field === 'text-area' ? 'textarea' : 'input'}`).first(); await i.fill(text); await i.press('Tab');
+    };
+    test('text-area · several lines written back on blur', async ({ page }) => {
+      const s = await both(page, typed(page, 'text-area', 'Rent\nNovember'), ['remarks']);
+      expect(s.bx.remarks).toBe('Rent\nNovember');
+    });
+
+    test('password · value and valid, masked', async ({ page }) => {
+      expect((await state(page)).bx.secretValid).toBe((await state(page)).jet.secretValid);
+      await both(page, typed(page, 'password', 's3cret'), ['secret', 'secretValid']);
+      const s = await both(page, typed(page, 'password', ''), ['secret', 'secretValid']);
+      expect(s.bx.secretValid).toBe('invalidShown');
+      for (const side of ['jet', 'bx']) { expect(await page.locator(`#${side}-password input`).first().getAttribute('type')).toBe('password'); }
+    });
+
+    test('number-input · a number, and out of range is not written', async ({ page }) => {
+      await both(page, typed(page, 'number-input', '3'), ['copies']);
+      const s = await both(page, typed(page, 'number-input', '9'), ['copies']);
+      expect(s.bx.copies).toBe(3);
+    });
+
+    test('currency-picker · value', async ({ page }) => {
+      const s = await both(page, (side) => page.evaluate((id) => { (document.getElementById(id) as unknown as { value: string }).value = 'EUR'; }, `${side}-currency-picker`), ['currency']);
+      expect(s.bx.currency).toBe('EUR');
+    });
+
+    test('multi-select · an array of values', async ({ page }) => {
+      const s = await both(page, (side) => page.evaluate((id) => { (document.getElementById(id) as unknown as { value: string[] }).value = ['S', 'C']; }, `${side}-multi-select`), ['picked']);
+      expect(s.bx.picked).toEqual(['C', 'S']);
+    });
+
+    test('switch · a boolean flipped by a click', async ({ page }) => {
+      const s = await both(page, async (side) => { await page.locator(`#${side}-switch`).getByRole('switch').first().click(); }, ['paperless']);
+      expect(s.bx.paperless).toBe(true);
+    });
+
+    test('date-range · the same ISO days as two date fields', async ({ page }) => {
+      await page.evaluate(() => {
+        (document.getElementById('jet-date-from') as unknown as { value: string }).value = '2026-10-01';
+        (document.getElementById('jet-date-to') as unknown as { value: string }).value = '2026-10-31';
+      });
+      await page.locator('#bx-date-range input[type=date]').nth(0).fill('2026-10-01');
+      await page.locator('#bx-date-range input[type=date]').nth(1).fill('2026-10-31');
+      await page.waitForTimeout(150);
+      const s = await state(page);
+      expect(s.bx.period).toEqual(s.jet.period);
+      expect(s.bx.period).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    });
+
+    test('search · the text written back', async ({ page }) => {
+      const s = await both(page, typed(page, 'search', 'rent'), ['query']);
+      expect(s.bx.query).toBe('rent');
+    });
+
+    test('autocomplete · value', async ({ page }) => {
+      const s = await both(page, (side) => page.evaluate((id) => { (document.getElementById(id) as unknown as { value: string }).value = 'P3'; }, `${side}-autocomplete`), ['payee']);
+      expect(s.bx.payee).toBe('P3');
+    });
+
+    test('document-upload · ojSelect with the chosen file, ojInvalidSelect for a type it does not accept', async ({ page }) => {
+      const choose = (name: string, mimeType: string) => async (side: Side) => {
+        const chooser = page.waitForEvent('filechooser');
+        // JET 6 draws the picker as a drop area without a button role: the element itself is what the customer clicks
+        await (side === 'jet' ? page.locator('#jet-document-upload') : page.locator('#bx-document-upload').getByRole('button', { name: 'Choose a file' })).click();
+        await (await chooser).setFiles({ name, mimeType, buffer: Buffer.from('%PDF-1.4') });
+      };
+      const s = await both(page, choose('statement.pdf', 'application/pdf'), ['files']);
+      expect(s.bx.files).toEqual(['statement.pdf']);
+      // JET 6.2 passes a picked file of any type to ojSelect (accept only filters the browser's chooser); JET 21 refuses it, and so does
+      // bx-document-upload on both, so a bank's screen never gets a file type it said it does not take
+      const t = await both(page, choose('setup.exe', 'application/octet-stream'), jet === '6' ? [] : ['refusals', 'files']);
+      expect(t.bx.refusals).toBe(1);
+      expect(t.bx.files).toEqual(['statement.pdf']);
+    });
+
     test('data-grid · the same headers and rows from a data provider', async ({ page }) => {
       const table = async (side: Side) => {
         const el = page.locator(`#${side}-data-grid`);
