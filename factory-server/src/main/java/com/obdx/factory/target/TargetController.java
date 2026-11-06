@@ -40,7 +40,17 @@ public class TargetController {
 
     @GetMapping("/api/targets/{id}/starter.zip")
     public ResponseEntity<byte[]> starter(@PathVariable String id) {
-        byte[] zip = service.starterZip(id);
+        return zip(id, service.starterZip(id));
+    }
+
+    /** The starter with the workspace's saved component style in its style file (the design the bank chose). */
+    @GetMapping("/api/workspaces/{workspaceId}/targets/{id}/starter.zip")
+    public ResponseEntity<byte[]> starter(@PathVariable UUID workspaceId, @PathVariable String id) {
+        guard.require(workspaceId, Permission.VIEW);
+        return zip(id, service.starterZip(id, workspaceId));
+    }
+
+    private static ResponseEntity<byte[]> zip(String id, byte[] zip) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + id + "-starter.zip\"")
                 .contentType(MediaType.parseMediaType("application/zip"))

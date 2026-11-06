@@ -1,3 +1,3 @@
 {
-  "defaults": { "look": "elevated", "motion": { "hover": "none", "click": "press", "scroll": "none" }, "mode": "light", "brand": "workspace" }
+  "defaults": { "look": "elevated", "motion": { "hover": "lift", "click": "press", "scroll": "fadeup" }, "mode": "light", "brand": "workspace" }
 }

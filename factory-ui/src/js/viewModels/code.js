@@ -521,6 +521,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // UI target: Oracle JET (the bank's OBDX UI) or a new React Native / React app in its own folder
       this.targets = ko.observableArray([]);
       this.targetId = ko.observable('jet');
+      // The workspace's starter: its saved component style is in the starter's style file
+      this.starterHref = ko.pureComputed(() => (this.workspaceId() ? 'api/workspaces/' + encodeURIComponent(this.workspaceId()) + '/targets/' : 'api/targets/') + encodeURIComponent(this.targetId()) + '/starter.zip');
       this.appFolder = ko.observable('');
       this.targetMessage = ko.observable('');
       this.targetWarning = ko.observable(false);

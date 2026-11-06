@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// The nine designs of the factory's Component factory.
 enum BxLook { elevated, soft, glass, outline, vivid, pill, brutal, redwood, liquid }
@@ -28,8 +30,15 @@ class ComponentStyle {
   static const brands = {'indigo': Color(0xFF4F46E5), 'emerald': Color(0xFF059669), 'burgundy': Color(0xFF9F1239), 'gold': Color(0xFFB45309)};
 }
 
-/// The workspace's component style. Replace it with the factory's (ComponentStyle.fromJson of the style's defaults).
-const savedStyle = ComponentStyle();
+/// The workspace's component style, from assets/component-style.json (the factory writes it there: its starter download,
+/// and changes); the default style until main has loaded it.
+ComponentStyle savedStyle = const ComponentStyle();
+
+/// Loads assets/component-style.json into savedStyle; main calls it before the app starts.
+Future<void> loadComponentStyle([AssetBundle? bundle]) async {
+  final saved = jsonDecode(await (bundle ?? rootBundle).loadString('assets/component-style.json')) as Map<String, dynamic>;
+  savedStyle = ComponentStyle.fromJson(saved['defaults'] as Map<String, dynamic>);
+}
 
 /// The look on the theme, so components can draw it (`Theme.of(context).extension<BxLookTheme>()`).
 class BxLookTheme extends ThemeExtension<BxLookTheme> {

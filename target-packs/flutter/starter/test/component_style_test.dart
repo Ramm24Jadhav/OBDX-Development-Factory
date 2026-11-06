@@ -21,6 +21,13 @@ void main() {
     expect(bxTheme(style: style).colorScheme.primary, const Color(0xFF059669));
   });
 
+  test('loads the style the factory writes into assets/component-style.json', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await loadComponentStyle();
+    expect(savedStyle.look, BxLook.elevated);
+    expect(savedStyle.click, 'press');
+  });
+
   test('every design makes a theme', () {
     for (final look in BxLook.values) {
       expect(bxTheme(style: ComponentStyle(look: look)).extension<BxLookTheme>()!.look, look);

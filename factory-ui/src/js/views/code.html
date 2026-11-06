@@ -903,7 +903,7 @@
         <div class="factory-cd-actions">
           <button type="button" id="saveTargetButton" class="fx-btn fx-btn--primary" on-click="[[saveTarget]]" :disabled="[[busy() || !canManage()]]">Save</button>
           <oj-bind-if test="[[targetId() !== 'jet']]">
-            <a id="starterLink" class="fx-btn fx-btn--secondary" :href="[['api/targets/' + targetId() + '/starter.zip']]" download>Download starter project</a>
+            <a id="starterLink" class="fx-btn fx-btn--secondary" :href="[[starterHref]]" download>Download starter project</a>
           </oj-bind-if>
         </div>
         <oj-bind-if test="[[targetMessage()]]">

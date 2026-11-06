@@ -10,8 +10,8 @@ target pack. Screens are generated from approved Screen Models; this starter hol
   something (`config.ts`). One `<module>Api.ts` per module.
 - `src/app/forms/form.ts`: field values as signals, their rules and validate().
 - `src/app/i18n/`: all visible texts, by screen.
-- `src/app/component-style.json`: the factory's component style (copy the workspace's from the Component factory, or
-  `GET /api/workspaces/{id}/component-style`); `app.ts` puts its look, motion, dark mode and brand on the root, and
+- `src/app/component-style.json`: the factory's component style (the factory writes the workspace's there: its
+  starter download `/api/workspaces/{id}/targets/{target}/starter.zip`, and changes); `app.ts` puts its look, motion, dark mode and brand on the root, and
   `bx.css` draws the nine designs, Liquid glass included.
 - `src/app/app.routes.ts`: the screen registry (routes).
 

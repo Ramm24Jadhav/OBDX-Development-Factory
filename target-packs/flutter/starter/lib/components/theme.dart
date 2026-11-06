@@ -6,7 +6,8 @@ import 'tokens.dart';
 /// The app's Material theme from the bank's tokens (light, or dark with dark: true) in the design of the component
 /// style (component_style.dart): its corners, borders, fills, brand colour and click effect. Glass and Liquid glass
 /// surfaces are drawn by BxGlass (sections and secondary buttons).
-ThemeData bxTheme({bool dark = false, ComponentStyle style = savedStyle}) {
+ThemeData bxTheme({bool dark = false, ComponentStyle? style}) {
+  style ??= savedStyle;
   final look = style.look;
   final primary = style.brand ?? (look == BxLook.redwood ? const Color(0xFFC74634) : dark ? BxDarkColors.primary : BxColors.primary);
   final text = dark ? BxDarkColors.text : BxColors.text;

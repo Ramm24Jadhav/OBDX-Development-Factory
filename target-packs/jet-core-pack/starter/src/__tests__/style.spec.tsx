@@ -15,7 +15,7 @@ describe('The component style', () => {
     expect(root.style.getPropertyValue('--obdx-brand')).toBe('#b45309');
     const own = document.createElement('html');
     applyStyle(own, saved.defaults);
-    expect(own.className).toBe('obdx-look-elevated obdx-motion-click-press');
+    expect(own.className).toBe('obdx-look-elevated obdx-motion-hover-lift obdx-motion-click-press obdx-motion-scroll-fadeup');
     expect(own.style.getPropertyValue('--obdx-brand')).toBe('');
   });
 

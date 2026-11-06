@@ -13,9 +13,9 @@ testing (`ojet add testing --jest`).
 - `src/forms/useForm.ts`: a screen's values, rules and messages. `src/i18n/en.json`: every visible text, read with
   `t('screenKey.name')`. `src/navigation/routes.tsx`: the pages by path.
 - `src/screens/<module>/<Screen>Page.tsx`: the screens, each with a test in `__tests__`.
-- The design: `saved` in `src/style.ts` is the factory's component style (copy the workspace's from the Component
-  factory, or `GET /api/workspaces/{id}/component-style`). `index.ts` puts its look, motion, dark mode (the Core Pack's
-  `oj-c-colorscheme-dark`) and brand on `<html>`, and `styles/looks.css` draws the nine designs over Redwood through the
+- The design: `src/component-style.json` is the factory's component style (the factory writes the workspace's there
+  in its starter download and in changes; `style.ts` reads it). `index.ts` puts its look, motion, dark mode (the Core
+  Pack's `oj-c-colorscheme-dark`) and brand on `<html>`, and `styles/looks.css` draws the nine designs over Redwood through the
   Core Pack's `--oj-c-*` variables: Elevated, Soft, Glass, Outline, Vivid, Pill, Neo-brutalist, Redwood and Liquid
   glass. Liquid glass frosts sections and buttons and keeps fields solid, with the fallbacks of
   `target-packs/components/glass.json`.

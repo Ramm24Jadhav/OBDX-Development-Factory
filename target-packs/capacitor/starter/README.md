@@ -21,8 +21,8 @@ npm run android           # opens Android Studio; npm run ios opens Xcode
   kept as in a browser; set `VITE_OBDX_BASE_URL` to the bank's https address before `cap:sync`.
 - `src/native/device.ts`: the Android back button. Add device features (biometric sign-in, sharing a receipt) as
   Capacitor plugins here, behind `isNative()`, so the screens still run in a browser.
-- The design: `src/component-style.json` is the factory's component style (copy the workspace's from the Component
-  factory, or `GET /api/workspaces/{id}/component-style`); `style.ts` and `components/looks.css` draw its nine designs,
+- The design: `src/component-style.json` is the factory's component style (the factory writes the workspace's there: its
+  starter download `/api/workspaces/{id}/targets/{target}/starter.zip`, and changes); `style.ts` and `components/looks.css` draw its nine designs,
   Liquid glass included, the same files as the Vue starter.
 - Nothing secret is kept on the device: no passwords, tokens or one-time codes in Preferences or local storage; OBDX
   keeps the session.

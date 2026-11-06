@@ -1,7 +1,9 @@
+import raw = require('text!./component-style.json');
+
 /**
- * The component style saved in the factory's Component factory: a design (look), motion, light or dark, and a brand
- * colour. Replace `saved` with the workspace's style (the Component factory, or GET /api/workspaces/{id}/component-style)
- * and the whole app follows it. The designs are drawn over the Redwood theme in styles/looks.css (linked in index.html).
+ * The component style saved in the factory's Component factory (component-style.json): a design (look), motion, light or
+ * dark, and a brand colour. The factory writes the workspace's style there (its starter download, and changes); the
+ * designs are drawn over the Redwood theme in styles/looks.css (linked in index.html).
  */
 export type Look = 'elevated' | 'soft' | 'glass' | 'outline' | 'vivid' | 'pill' | 'brutal' | 'redwood' | 'liquid';
 
@@ -12,9 +14,8 @@ export interface ComponentStyle {
   brand?: 'workspace' | 'indigo' | 'emerald' | 'burgundy' | 'gold';
 }
 
-export const saved: { defaults: ComponentStyle } = {
-  defaults: { look: 'elevated', motion: { hover: 'none', click: 'press', scroll: 'none' }, mode: 'light', brand: 'workspace' },
-};
+// RequireJS's text plugin gives the file as a string; the JET Jest preset gives it parsed
+export const saved: { defaults: ComponentStyle } = typeof raw === 'string' ? JSON.parse(raw) : (raw as unknown as { defaults: ComponentStyle });
 
 /** The Component factory's brand swatches; "workspace" keeps the Redwood theme's own colours. */
 export const BRANDS: Record<string, string | undefined> = { indigo: '#4f46e5', emerald: '#059669', burgundy: '#9f1239', gold: '#b45309' };

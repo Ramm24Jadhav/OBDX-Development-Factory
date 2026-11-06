@@ -53,8 +53,8 @@ guidance: |
     request and response classes; the client keeps the session cookie, adds the nonce and can pin the certificate.
   - Pages do not navigate themselves: they call onAction with an action id and onDone, which lib/app.dart wires up.
   - Write widget tests with flutter_test; find fields by find.byKey(ValueKey('id')).
-  - The app's design comes from the factory's component style in lib/components/component_style.dart (savedStyle:
-    look, mode, brand, click effect); bxTheme draws the nine designs and BxGlass the glass of Glass and Liquid glass
+  - The app's design comes from the factory's component style in assets/component-style.json (look, mode,
+    brand, click effect; loaded into savedStyle); bxTheme draws the nine designs and BxGlass the glass of Glass and Liquid glass
     (BackdropFilter). Do not style a page for one design: use the components and the theme, and every design applies.
 
 rules:
