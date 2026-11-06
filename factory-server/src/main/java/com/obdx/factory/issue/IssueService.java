@@ -6,6 +6,9 @@ import com.obdx.factory.issue.IssueRepository.Issue;
 import com.obdx.factory.issue.IssueRepository.IssueFile;
 import com.obdx.factory.issue.IssueRepository.Knowledge;
 import com.obdx.factory.issue.IssueRepository.Status;
+import com.obdx.factory.knowledge.KnowledgeImporter;
+import com.obdx.factory.knowledge.KnowledgeRepository;
+import com.obdx.factory.knowledge.KnowledgeSearch;
 import com.obdx.factory.model.ModelGatewayException;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.search.CodeSearchService;
@@ -14,6 +17,7 @@ import com.obdx.factory.workspace.WorkspaceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.task.TaskExecutor;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,20 +58,30 @@ public class IssueService {
     private static final int MAX_QUERIES = 8;
     private static final int MAX_CODE_ITEMS = 8;
     private static final int MAX_SNIPPET = 1500;
+    private static final int MAX_NOTES = 4;
+    private static final int MAX_MANUAL_SECTIONS = 3;
+    private static final int MAX_LIBRARY_QUERIES = 5;
 
     /** A file sent with a new issue. */
     public record Upload(String name, byte[] content) {
     }
 
     public record IssueSummary(UUID id, String title, Status status, String category, String environment, String createdBy,
-                               OffsetDateTime updatedAt) {
+                               OffsetDateTime createdAt, OffsetDateTime updatedAt, String source, UUID groupId) {
     }
 
-    /** @param sharedKnowledgeId the shared knowledge made from this issue; null when not shared */
+    /**
+     * @param sharedKnowledgeId the shared knowledge made from this issue; null when not shared
+     * @param group             the other issues with the same error (repeated issues); empty when alone
+     * @param checks            fix checks and the bank's answers, oldest first
+     * @param checkFiles        the files sent with fix checks
+     */
     public record IssueDetail(UUID id, UUID workspaceId, String title, String description, String environment, String logText,
                               Status status, String message, Evidence evidence, Diagnosis diagnosis, String resolution,
                               String srDraft, List<IssueFile> files, String createdBy, OffsetDateTime createdAt,
-                              OffsetDateTime updatedAt, UUID sharedKnowledgeId) {
+                              OffsetDateTime updatedAt, UUID sharedKnowledgeId, String source, String reporterEmail,
+                              OffsetDateTime releasedAt, UUID groupId, List<IssueSummary> group, List<IssueRepository.Check> checks,
+                              List<IssueFile> checkFiles, List<IssueRepository.Question> questions) {
     }
 
     public record ShareRequest(String title, String component, String category, String rootCause, String resolution) {
@@ -81,34 +97,56 @@ public class IssueService {
     private final CodeSearchService codeSearch;
     private final ProjectProfileService profiles;
     private final WorkspaceRepository workspaces;
+    private final KnowledgeSearch knowledgeSearch;
+    private final KnowledgeRepository knowledgeDocuments;
     private final TaskExecutor executor;
+    private final Duration repeatWindow;
 
     public IssueService(IssueRepository issues, IssueAnalyzer analyzer, CodeSearchService codeSearch, ProjectProfileService profiles,
-                        WorkspaceRepository workspaces, @Qualifier("issueExecutor") TaskExecutor executor) {
+                        WorkspaceRepository workspaces, KnowledgeSearch knowledgeSearch, KnowledgeRepository knowledgeDocuments,
+                        @Qualifier("issueExecutor") TaskExecutor executor,
+                        @Value("${factory.issue.repeat-window:24h}") Duration repeatWindow) {
         this.issues = issues;
         this.analyzer = analyzer;
         this.codeSearch = codeSearch;
         this.profiles = profiles;
         this.workspaces = workspaces;
+        this.knowledgeSearch = knowledgeSearch;
+        this.knowledgeDocuments = knowledgeDocuments;
         this.executor = executor;
+        this.repeatWindow = repeatWindow;
     }
 
     public List<IssueSummary> list(UUID workspaceId) {
-        return issues.list(workspaceId).stream().map(i -> new IssueSummary(i.id(), i.title(), i.status(),
-                i.diagnosis() == null ? null : i.diagnosis().category(), i.environment(), i.createdBy(), i.updatedAt())).toList();
+        return issues.list(workspaceId).stream().map(IssueService::summary).toList();
+    }
+
+    private static IssueSummary summary(Issue i) {
+        return new IssueSummary(i.id(), i.title(), i.status(), i.diagnosis() == null ? null : i.diagnosis().category(), i.environment(),
+                i.createdBy(), i.createdAt(), i.updatedAt(), i.source(), i.groupId());
     }
 
     public IssueDetail detail(UUID workspaceId, UUID id) {
         Issue issue = find(workspaceId, id);
+        List<IssueSummary> group = issue.groupId() == null ? List.of()
+                : issues.group(issue.groupId()).stream().filter(i -> !i.id().equals(id)).map(IssueService::summary).toList();
+        List<IssueFile> checkFiles = issues.allFiles(id).stream().filter(f -> f.checkId() != null).toList();
         return new IssueDetail(issue.id(), issue.workspaceId(), issue.title(), issue.description(), issue.environment(), issue.logText(),
                 issue.status(), issue.message(), issue.evidence(), issue.diagnosis(), issue.resolution(), issue.srDraft(),
                 issues.files(id), issue.createdBy(), issue.createdAt(), issue.updatedAt(),
-                issues.knowledgeOf(id).map(Knowledge::id).orElse(null));
+                issues.knowledgeOf(id).map(Knowledge::id).orElse(null), issue.source(), issue.reporterEmail(), issue.releasedAt(),
+                issue.groupId(), group, issues.checks(id), checkFiles, issues.questions(id));
     }
 
     /** Creates the issue and starts analyzing it. No transaction: the analysis thread must see the inserted rows. */
     public IssueDetail create(UUID workspaceId, String title, String description, String environment, String logText,
                               List<Upload> uploads, String username) {
+        return create(workspaceId, title, description, environment, logText, uploads, username, "FACTORY", null);
+    }
+
+    /** @param source FACTORY or BANK (through an issue link); reporterEmail: the bank's contact, optional */
+    public IssueDetail create(UUID workspaceId, String title, String description, String environment, String logText,
+                              List<Upload> uploads, String username, String source, String reporterEmail) {
         if (!workspaces.existsById(workspaceId)) {
             throw new NotFoundException("Workspace not found: " + workspaceId);
         }
@@ -125,9 +163,10 @@ public class IssueService {
         List<String[]> kinds = uploads.stream().map(IssueService::kindOf).toList();
         String name = blank(title) ? firstLine(description, logText, uploads) : title.strip();
         UUID id = UUID.randomUUID();
-        issues.insert(id, workspaceId, cap(name, 300), blankToNull(description), env, blankToNull(logText), username);
+        issues.insert(id, workspaceId, cap(name, 300), blankToNull(description), env, blankToNull(logText), username, source,
+                blankToNull(cap(reporterEmail, 200)));
         for (int i = 0; i < uploads.size(); i++) {
-            issues.insertFile(id, i, cap(uploads.get(i).name(), 300), kinds.get(i)[0], kinds.get(i)[1], uploads.get(i).content());
+            issues.insertFile(id, i, cap(uploads.get(i).name(), 300), kinds.get(i)[0], kinds.get(i)[1], uploads.get(i).content(), null);
         }
         return analyze(workspaceId, id);
     }
@@ -138,7 +177,7 @@ public class IssueService {
         if (issue.status() == Status.ANALYZING) {
             throw new BadRequestException("The issue is being analyzed; wait until it finishes");
         }
-        issues.setStatus(id, Status.ANALYZING, "Reading the evidence and the bank's code, then asking the model...");
+        issues.startAnalysis(id, "Reading the evidence, the bank's code and the Library, then asking the model...");
         executor.execute(() -> run(id));
         return detail(workspaceId, id);
     }
@@ -153,12 +192,11 @@ public class IssueService {
         try {
             Workspace workspace = workspaces.findById(issue.workspaceId()).orElseThrow();
             readScreenshots(id, notes);
-            evidence = withCode(issue.workspaceId(), LogEvidenceParser.parse(sources(issue)));
+            evidence = withLibrary(workspace, withCode(issue.workspaceId(), LogEvidenceParser.parse(sources(issue))));
             List<Diagnosis.Similar> similar = similar(issue.workspaceId(), id, evidence.signature());
-            IssueAnalyzer.Context context = new IssueAnalyzer.Context(issue.title(), issue.description(), issue.environment(),
-                    workspace.getObdxVersion(), profile(issue.workspaceId()));
-            Diagnosis diagnosis = analyzer.diagnose(context, evidence, similar);
+            Diagnosis diagnosis = analyzer.diagnose(context(issue, workspace), evidence, similar);
             issues.saveAnalysis(id, evidence, diagnosis, Status.DIAGNOSED, notes.isEmpty() ? null : String.join(" ", notes));
+            group(issue, evidence.signature());
         } catch (ModelGatewayException e) {
             issues.saveAnalysis(id, evidence, null, Status.FAILED,
                     "The model could not be used: " + e.getMessage() + " Check the Models page, then analyze again.");
@@ -170,7 +208,11 @@ public class IssueService {
 
     /** Reads screenshots that have no text yet; when the chat model cannot, notes why and goes on with text only. */
     private void readScreenshots(UUID id, List<String> notes) {
-        for (IssueFile file : issues.files(id)) {
+        readScreenshots(id, issues.files(id), notes);
+    }
+
+    void readScreenshots(UUID id, List<IssueFile> files, List<String> notes) {
+        for (IssueFile file : files) {
             if (!file.kind().equals("SCREENSHOT") || file.extractedText() != null) {
                 continue;
             }
@@ -189,11 +231,20 @@ public class IssueService {
         List<LogEvidenceParser.Source> sources = new ArrayList<>();
         sources.add(new LogEvidenceParser.Source("description", issue.description(), false));
         sources.add(new LogEvidenceParser.Source("pasted log", issue.logText(), false));
-        for (IssueFile file : issues.files(issue.id())) {
+        sources.addAll(fileSources(issue.id(), issues.files(issue.id())));
+        return sources;
+    }
+
+    /** Logs as text and screenshots as the text read from them. Re-reads the files, so screenshot text is current. */
+    List<LogEvidenceParser.Source> fileSources(UUID issueId, List<IssueFile> files) {
+        List<LogEvidenceParser.Source> sources = new ArrayList<>();
+        Map<Integer, String> texts = issues.allFiles(issueId).stream().filter(f -> f.extractedText() != null)
+                .collect(Collectors.toMap(IssueFile::position, IssueFile::extractedText));
+        for (IssueFile file : files) {
             if (file.kind().equals("SCREENSHOT")) {
-                sources.add(new LogEvidenceParser.Source(file.name(), file.extractedText(), true));
+                sources.add(new LogEvidenceParser.Source(file.name(), texts.get(file.position()), true));
             } else {
-                byte[] content = issues.fileContent(issue.id(), file.position()).orElse(new byte[0]);
+                byte[] content = issues.fileContent(issueId, file.position()).orElse(new byte[0]);
                 sources.add(new LogEvidenceParser.Source(file.name(), new String(content, StandardCharsets.UTF_8), false));
             }
         }
@@ -234,6 +285,110 @@ public class IssueService {
             items.add(new Evidence.Item("C" + n++, item.kind(), item.source(), item.line(), item.text()));
         }
         return new Evidence(items, evidence.signature());
+    }
+
+    /**
+     * Adds the Oracle notes (O ids) and OBDX manual sections (M ids) the Library finds for the evidence, for the
+     * workspace's OBDX version: shared documents and the bank's own.
+     */
+    Evidence withLibrary(Workspace workspace, Evidence evidence) {
+        List<String> wordings = libraryQueries(evidence);
+        if (wordings.isEmpty()) {
+            return evidence;
+        }
+        List<KnowledgeSearch.Hit> hits;
+        try {
+            hits = knowledgeSearch.search(wordings, KnowledgeImporter.versionLine(workspace.getObdxVersion()), workspace.getId(), 12, false).hits();
+        } catch (RuntimeException e) {
+            log.debug("Library search for issue evidence failed: {}", e.getMessage());
+            return evidence;
+        }
+        Map<UUID, KnowledgeRepository.Document> documents = knowledgeDocuments.documents(
+                hits.stream().map(KnowledgeSearch.Hit::documentId).filter(Objects::nonNull).collect(Collectors.toSet()));
+        List<Evidence.Item> items = new ArrayList<>(evidence.items());
+        int notes = 0;
+        int manuals = 0;
+        for (KnowledgeSearch.Hit hit : hits) {
+            KnowledgeRepository.Document document = hit.documentId() == null ? null : documents.get(hit.documentId());
+            boolean note = document != null && KnowledgeRepository.Document.ORACLE_NOTE.equals(document.kind());
+            if (note ? notes >= MAX_NOTES : manuals >= MAX_MANUAL_SECTIONS) {
+                continue;
+            }
+            String id = note ? "O" + ++notes : "M" + ++manuals;
+            String version = hit.obdxVersion() == null ? null : hit.obdxVersion() + (hit.patchset() == null ? "" : ", patchset " + hit.patchset());
+            String source = hit.title() + (hit.heading() == null || hit.heading().isBlank() ? "" : " > " + hit.heading());
+            items.add(new Evidence.Item(id, note ? "ORACLE_NOTE" : "MANUAL", source, hit.pageFrom() > 0 ? hit.pageFrom() : null,
+                    cap(hit.text(), MAX_SNIPPET), hit.documentId(), note ? document.reference() : null, version));
+        }
+        return new Evidence(items, evidence.signature());
+    }
+
+    /** What to look up in the Library: error codes, the root exception and its message, screenshot errors, the top frame. */
+    static List<String> libraryQueries(Evidence evidence) {
+        Set<String> queries = new LinkedHashSet<>();
+        for (Evidence.Item item : evidence.items()) {
+            switch (item.kind()) {
+                case "ERROR_CODE" -> queries.add(item.text().split(" in: ")[0]);
+                case "CAUSE", "EXCEPTION" -> queries.add(cap(item.text(), 150));
+                case "SCREENSHOT" -> item.text().lines().filter(l -> l.startsWith("Error message:") || l.startsWith("Error code:"))
+                        .map(l -> l.substring(l.indexOf(':') + 1).strip()).filter(l -> !l.isEmpty()).forEach(queries::add);
+                case "FRAME" -> {
+                    if (queries.stream().noneMatch(q -> q.startsWith("frame:"))) {
+                        queries.add("frame:" + frameQuery(item.text()));
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+        return queries.stream().map(q -> q.startsWith("frame:") ? q.substring(6) : q).limit(MAX_LIBRARY_QUERIES).toList();
+    }
+
+    IssueAnalyzer.Context context(Issue issue, Workspace workspace) {
+        return new IssueAnalyzer.Context(issue.title(), issue.description(), issue.environment(), workspace.getObdxVersion(),
+                profile(issue.workspaceId()));
+    }
+
+    /** Joins the group of an issue of the same workspace with the same error, filed within the repeat window. */
+    void group(Issue issue, String signature) {
+        if (signature == null || signature.isBlank()) {
+            return;
+        }
+        for (Issue other : issues.filedBetween(issue.workspaceId(), issue.id(), issue.createdAt().minus(repeatWindow),
+                issue.createdAt().plus(repeatWindow))) {
+            if (Signatures.sameError(signature, other.signature())) {
+                UUID groupId = other.groupId() != null ? other.groupId() : other.id();
+                if (other.groupId() == null) {
+                    issues.setGroup(other.id(), groupId);
+                }
+                issues.setGroup(issue.id(), groupId);
+                return;
+            }
+        }
+    }
+
+    /** Shows the diagnosis to the bank on the issue's follow link. */
+    public IssueDetail release(UUID workspaceId, UUID id) {
+        Issue issue = find(workspaceId, id);
+        if (issue.diagnosis() == null || issue.status() == Status.ANALYZING) {
+            throw new BadRequestException("Release a diagnosis once the analysis has finished");
+        }
+        issues.setReleased(id, OffsetDateTime.now());
+        return detail(workspaceId, id);
+    }
+
+    /** The same outcome for every issue of the group (the same error reported several times). */
+    public IssueDetail groupOutcome(UUID workspaceId, UUID id, Status status, String resolution) {
+        Issue issue = find(workspaceId, id);
+        if (issue.groupId() == null) {
+            throw new BadRequestException("This issue is not in a group");
+        }
+        for (Issue member : issues.group(issue.groupId())) {
+            if (member.status() != Status.ANALYZING) {
+                outcome(workspaceId, member.id(), status, resolution);
+            }
+        }
+        return detail(workspaceId, id);
     }
 
     /** "com.bank.payments.FundTransferService.transfer(FundTransferService.java:142)" becomes "FundTransferService transfer". */
@@ -350,8 +505,15 @@ public class IssueService {
                 sr.append("- Similar issues checked: ").append(d.similar().stream().map(Diagnosis.Similar::title).collect(Collectors.joining("; ")))
                         .append('\n');
             }
+            List<Diagnosis.OracleReference> oracle = d.oracleReferences() == null ? List.of() : d.oracleReferences();
+            oracle.stream().filter(r -> "ORACLE_NOTE".equals(r.kind())).forEach(r -> sr.append("- Oracle note checked: ").append(r.title())
+                    .append(r.reference() == null ? "" : " (" + r.reference() + ")").append(r.version() == null ? "" : ", for " + r.version())
+                    .append(r.why() == null ? "" : ": " + r.why()).append('\n'));
         } else {
             sr.append("- (not analyzed yet)\n");
+        }
+        for (IssueRepository.Check check : issues.checks(id)) {
+            sr.append("- Fix check (").append(check.createdAt().toLocalDate()).append("): ").append(check.summary()).append('\n');
         }
         if (!blank(issue.resolution())) {
             sr.append("- Tried: ").append(issue.resolution()).append('\n');
@@ -424,18 +586,18 @@ public class IssueService {
     }
 
     public String mimeType(UUID id, int position) {
-        return issues.files(id).stream().filter(f -> f.position() == position).map(IssueFile::mimeType).findFirst().orElse("application/octet-stream");
+        return issues.allFiles(id).stream().filter(f -> f.position() == position).map(IssueFile::mimeType).findFirst().orElse("application/octet-stream");
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void failInterrupted() {
-        int count = issues.failAnalyzing("Interrupted because the server restarted. Analyze again.");
+        int count = issues.failRunning("Interrupted because the server restarted. Analyze again.");
         if (count > 0) {
-            log.warn("Marked {} issue analysis(es) as failed after restart", count);
+            log.warn("Marked {} issue analysis(es), check(s) or answer(s) as failed after restart", count);
         }
     }
 
-    private Issue find(UUID workspaceId, UUID id) {
+    Issue find(UUID workspaceId, UUID id) {
         return issues.find(id).filter(i -> i.workspaceId().equals(workspaceId))
                 .orElseThrow(() -> new NotFoundException("Issue not found: " + id));
     }

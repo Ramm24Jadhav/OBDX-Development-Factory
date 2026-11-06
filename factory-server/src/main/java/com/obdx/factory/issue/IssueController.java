@@ -34,11 +34,15 @@ public class IssueController {
     private static final String BASE = "/api/workspaces/{workspaceId}/issues";
 
     private final IssueService service;
+    private final IssueFollowUps followUps;
+    private final IssueLinks links;
     private final AccessGuard guard;
     private final AuditLog audit;
 
-    public IssueController(IssueService service, AccessGuard guard, AuditLog audit) {
+    public IssueController(IssueService service, IssueFollowUps followUps, IssueLinks links, AccessGuard guard, AuditLog audit) {
         this.service = service;
+        this.followUps = followUps;
+        this.links = links;
         this.guard = guard;
         this.audit = audit;
     }
@@ -58,12 +62,7 @@ public class IssueController {
                                            @RequestParam(value = "logText", required = false) String logText,
                                            @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
         AppUser user = guard.require(workspaceId, Permission.VIEW);
-        List<IssueService.Upload> uploads = new ArrayList<>();
-        for (MultipartFile file : files == null ? List.<MultipartFile>of() : files) {
-            if (!file.isEmpty()) {
-                uploads.add(new IssueService.Upload(file.getOriginalFilename(), file.getBytes()));
-            }
-        }
+        List<IssueService.Upload> uploads = uploads(files);
         IssueService.IssueDetail created = service.create(workspaceId, title, description, environment, logText, uploads, user.getUsername());
         audit.record("ISSUE_CREATED", workspaceId, created.title(), uploads.size() + " file(s)");
         return created;
@@ -99,12 +98,7 @@ public class IssueController {
     @PostMapping(BASE + "/{id}/outcome")
     public IssueService.IssueDetail outcome(@PathVariable UUID workspaceId, @PathVariable UUID id, @RequestBody OutcomeRequest request) {
         guard.require(workspaceId, Permission.VIEW);
-        IssueRepository.Status status;
-        try {
-            status = IssueRepository.Status.valueOf(request.status());
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new BadRequestException("The outcome must be RESOLVED, NOT_RESOLVED or ESCALATED");
-        }
+        IssueRepository.Status status = status(request);
         IssueService.IssueDetail detail = service.outcome(workspaceId, id, status, request.resolution());
         audit.record("ISSUE_" + status.name(), workspaceId, detail.title(), null);
         return detail;
@@ -134,6 +128,82 @@ public class IssueController {
         return shared;
     }
 
+    /** Shows the diagnosis to the bank on the issue's follow link (engineers: developers and leads). */
+    @PostMapping(BASE + "/{id}/release")
+    public IssueService.IssueDetail release(@PathVariable UUID workspaceId, @PathVariable UUID id) {
+        guard.require(workspaceId, Permission.MANAGE_CODE);
+        IssueService.IssueDetail detail = service.release(workspaceId, id);
+        audit.record("ISSUE_RELEASED", workspaceId, detail.title(), null);
+        return detail;
+    }
+
+    /** The same outcome for every issue with the same error (leads). */
+    @PostMapping(BASE + "/{id}/group-outcome")
+    public IssueService.IssueDetail groupOutcome(@PathVariable UUID workspaceId, @PathVariable UUID id, @RequestBody OutcomeRequest request) {
+        guard.require(workspaceId, Permission.APPROVE);
+        IssueService.IssueDetail detail = service.groupOutcome(workspaceId, id, status(request), request.resolution());
+        audit.record("ISSUE_GROUP_" + request.status(), workspaceId, detail.title(), (detail.group().size() + 1) + " issue(s)");
+        return detail;
+    }
+
+    /** Logs or screenshots taken after a fix, compared with the original error (background). */
+    @PostMapping(path = BASE + "/{id}/checks", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public IssueService.IssueDetail check(@PathVariable UUID workspaceId, @PathVariable UUID id,
+                                          @RequestParam(value = "logText", required = false) String logText,
+                                          @RequestParam(value = "files", required = false) List<MultipartFile> files) throws IOException {
+        AppUser user = guard.require(workspaceId, Permission.VIEW);
+        return followUps.check(workspaceId, id, logText, uploads(files), user.getUsername());
+    }
+
+    @PostMapping(BASE + "/{id}/questions")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public IssueService.IssueDetail ask(@PathVariable UUID workspaceId, @PathVariable UUID id, @RequestBody TextRequest request) {
+        AppUser user = guard.require(workspaceId, Permission.VIEW);
+        return followUps.ask(workspaceId, id, request.text(), user.getUsername());
+    }
+
+    /** Links bank administrators use to report errors (leads). */
+    @GetMapping("/api/workspaces/{workspaceId}/issue-links")
+    public List<IssueLinks.LinkView> links(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.APPROVE);
+        return links.list(workspaceId);
+    }
+
+    @PostMapping("/api/workspaces/{workspaceId}/issue-links")
+    public IssueLinks.CreatedLink createLink(@PathVariable UUID workspaceId, @RequestBody LinkRequest request) {
+        AppUser user = guard.require(workspaceId, Permission.APPROVE);
+        IssueLinks.CreatedLink created = links.create(workspaceId, request.label(), request.days(), user.getUsername());
+        audit.record("ISSUE_LINK_CREATED", workspaceId, created.link().label(), "until " + created.link().expiresAt().toLocalDate());
+        return created;
+    }
+
+    @DeleteMapping("/api/workspaces/{workspaceId}/issue-links/{linkId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeLink(@PathVariable UUID workspaceId, @PathVariable UUID linkId) {
+        guard.require(workspaceId, Permission.APPROVE);
+        links.revoke(workspaceId, linkId);
+        audit.record("ISSUE_LINK_REVOKED", workspaceId, linkId.toString(), null);
+    }
+
+    static List<IssueService.Upload> uploads(List<MultipartFile> files) throws IOException {
+        List<IssueService.Upload> uploads = new ArrayList<>();
+        for (MultipartFile file : files == null ? List.<MultipartFile>of() : files) {
+            if (!file.isEmpty()) {
+                uploads.add(new IssueService.Upload(file.getOriginalFilename(), file.getBytes()));
+            }
+        }
+        return uploads;
+    }
+
+    private static IssueRepository.Status status(OutcomeRequest request) {
+        try {
+            return IssueRepository.Status.valueOf(request.status());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException("The outcome must be RESOLVED, NOT_RESOLVED or ESCALATED");
+        }
+    }
+
     /** Shared product knowledge, for every signed-in user. */
     @GetMapping("/api/issue-knowledge")
     public List<IssueService.KnowledgeView> knowledge() {
@@ -153,5 +223,8 @@ public class IssueController {
     }
 
     public record OutcomeRequest(String status, String resolution) {
+    }
+
+    public record LinkRequest(String label, Integer days) {
     }
 }

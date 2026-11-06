@@ -85,7 +85,8 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'impact', detail: { label: 'Impact Analysis', hidden: true, parent: 'changes' } },
         // Not in the navigation: the screen preview (shown inside the Design Studio) and the customer review page.
         { path: 'preview', detail: { label: 'Preview', hidden: true } },
-        { path: 'review', detail: { label: 'Review', hidden: true } }
+        { path: 'review', detail: { label: 'Review', hidden: true } },
+        { path: 'report', detail: { label: 'Report an issue', hidden: true } }
       ];
       // The sidebar sections, in order. Administration folds away; the others are always open.
       const NAV_GROUPS = [

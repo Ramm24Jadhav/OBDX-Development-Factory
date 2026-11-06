@@ -298,6 +298,11 @@ guided: the factory never changes the bank's systems. Resolutions become knowled
 shares them without bank data, for every workspace. Product defects get an Oracle SR draft to copy into My Oracle
 Support (no MOS integration: it has no open API).
 
+Phase 2 adds Oracle support notes, bug texts and patch readmes as a kind of Library document, found for an issue's
+errors and cited with their version; links that let bank administrators report and follow an issue without an
+account, seeing only what an engineer released and the steps meant for them; fix checks that compare new logs with
+the original error without a model; questions about an issue; and groups of the same error reported within a day.
+
 ---
 
 ## 6. Modernization mode

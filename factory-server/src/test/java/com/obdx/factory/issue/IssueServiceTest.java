@@ -25,6 +25,32 @@ class IssueServiceTest {
     }
 
     @Test
+    void looksUpErrorsInTheLibrary() {
+        Evidence evidence = LogEvidenceParser.parse(java.util.List.of(
+                new LogEvidenceParser.Source("server.log", """
+                        ERROR Host returned DIGX_PY_0131
+                        java.net.ConnectException: Connection refused
+                            at com.bank.obdx.payments.FundTransferService.transfer(FundTransferService.java:142)
+                            at com.bank.obdx.payments.Other.call(Other.java:1)
+                        """, false),
+                new LogEvidenceParser.Source("error.png", "Error message: Transfer could not be completed\nScreen: Own Account Transfer", true)));
+        assertThat(IssueService.libraryQueries(evidence)).containsExactly("DIGX_PY_0131", "java.net.ConnectException: Connection refused",
+                "FundTransferService transfer", "Transfer could not be completed");
+    }
+
+    @Test
+    void limitsRequestsFromOneAddress() {
+        IssueLinks links = new IssueLinks(null, null, null, null);
+        for (int i = 0; i < IssueLinks.REQUESTS_PER_MINUTE; i++) {
+            links.limit("10.0.0.1");
+        }
+        assertThatThrownBy(() -> links.limit("10.0.0.1")).hasMessageContaining("Too many requests");
+        links.limit("10.0.0.2");
+        assertThat(IssueLinks.hash("abc")).hasSize(64).isEqualTo(IssueLinks.hash("abc")).isNotEqualTo(IssueLinks.hash("abd"));
+        assertThat(IssueLinks.newToken()).hasSize(32).isNotEqualTo(IssueLinks.newToken());
+    }
+
+    @Test
     void turnsEvidenceIntoCodeSearches() {
         assertThat(IssueService.frameQuery("com.bank.obdx.payments.FundTransferService.transfer(FundTransferService.java:142)"))
                 .isEqualTo("FundTransferService transfer");

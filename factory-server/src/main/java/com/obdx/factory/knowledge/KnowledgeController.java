@@ -128,11 +128,14 @@ public class KnowledgeController {
     @PostMapping(path = "/api/knowledge/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public KnowledgeImporter.Imported upload(@RequestParam("file") MultipartFile file, @RequestParam("obdxVersion") String obdxVersion,
                                              @RequestParam(value = "workspaceId", required = false) UUID workspaceId,
-                                             @RequestParam(value = "patchset", required = false) String patchset) throws IOException {
+                                             @RequestParam(value = "patchset", required = false) String patchset,
+                                             @RequestParam(value = "kind", required = false) String kind,
+                                             @RequestParam(value = "reference", required = false) String reference) throws IOException {
         AppUser user = requireImporter(workspaceId);
         KnowledgeImporter.Imported imported = importer.importFile(file.getOriginalFilename(), file.getBytes(), obdxVersion, workspaceId, patchset,
-                user.getUsername());
-        audit.record("KNOWLEDGE_IMPORTED", workspaceId, file.getOriginalFilename(), "OBDX " + obdxVersion);
+                user.getUsername(), kind, reference);
+        audit.record("KNOWLEDGE_IMPORTED", workspaceId, file.getOriginalFilename(), "OBDX " + obdxVersion
+                + (reference == null || reference.isBlank() ? "" : ", Oracle note " + reference.strip()));
         return imported;
     }
 

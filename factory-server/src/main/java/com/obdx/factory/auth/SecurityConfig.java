@@ -69,7 +69,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.spa())
                 .securityContext(context -> context.securityContextRepository(contextRepository))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/api/auth/login", "/api/auth/config", "/api/review/**",
+                        .requestMatchers("/api/auth/login", "/api/auth/config", "/api/review/**", "/api/issue-report/**", "/api/issue-follow/**",
                                 "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/**", "/actuator/**").authenticated()
                         .anyRequest().permitAll())

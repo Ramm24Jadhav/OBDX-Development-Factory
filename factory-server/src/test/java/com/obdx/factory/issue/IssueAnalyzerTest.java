@@ -75,6 +75,54 @@ class IssueAnalyzerTest {
     }
 
     @Test
+    void citesOnlyLibraryDocumentsItWasGivenAndKeepsCodeStepsForEngineers() {
+        java.util.UUID noteId = java.util.UUID.randomUUID();
+        Evidence withLibrary = new Evidence(List.of(
+                EVIDENCE.items().get(0), EVIDENCE.items().get(2),
+                new Evidence.Item("O1", "ORACLE_NOTE", "Payments host refuses connections", 2, "Set the host and restart.", noteId,
+                        "Doc ID 2345678.1", "22.2, patchset 22.2.0.3"),
+                new Evidence.Item("M1", "MANUAL", "System Configuration > Hosts", 14, "Configure the payment host.", java.util.UUID.randomUUID(),
+                        null, "22.2")), EVIDENCE.signature());
+        ScriptedModel model = new ScriptedModel("""
+                {"category": "CONFIGURATION", "state": "PROBABLE", "rootCause": "Wrong payment host", "evidence": ["E1", "O1"],
+                 "steps": [{"action": "Correct the payment host in System Configuration", "risk": "LOW", "audience": "admin"},
+                           {"action": "Edit payments.host.url", "file": "config/payments.properties", "audience": "ADMIN"},
+                           {"action": "Restart the server", "audience": "ENGINEER"}],
+                 "oracleReferences": [{"id": "O1", "why": "Same exception"}, {"id": "O7", "why": "Made up"}, {"id": "M1"}, {"id": "E1"}]}
+                """);
+        Diagnosis d = new IssueAnalyzer(model).diagnose(new IssueAnalyzer.Context("t", "d", "UAT", "22.1", ""), withLibrary, List.of());
+
+        assertThat(d.oracleReferences()).extracting(Diagnosis.OracleReference::id).containsExactly("O1", "M1");
+        Diagnosis.OracleReference note = d.oracleReferences().getFirst();
+        assertThat(note.reference()).isEqualTo("Doc ID 2345678.1");
+        assertThat(note.documentId()).isEqualTo(noteId);
+        assertThat(note.versionNote()).contains("Written for OBDX 22.2; the bank runs 22.1");
+        assertThat(d.steps()).extracting(Diagnosis.Step::audience).containsExactly("ADMIN", "ENGINEER", "ENGINEER");
+        assertThat(model.prompts.getFirst()).contains("O1 Payments host refuses connections (Doc ID 2345678.1), for OBDX 22.2, patchset 22.2.0.3",
+                "M1 System Configuration > Hosts");
+    }
+
+    @Test
+    void notesWhatToCheckAboutAVersion() {
+        assertThat(IssueAnalyzer.versionNote("22.2, patchset 22.2.0.3", "22.x")).isEqualTo("Written for patchset 22.2.0.3. Check which patchset the bank runs.");
+        assertThat(IssueAnalyzer.versionNote("22.2", "22.2.0.1")).isNull();
+        assertThat(IssueAnalyzer.versionNote(null, "22.2")).isNull();
+    }
+
+    @Test
+    void answersQuestionsWithTheIssueAsData() {
+        ScriptedModel model = new ScriptedModel("Because E1 shows the connection is refused.");
+        Diagnosis diagnosis = new IssueAnalyzer(new ScriptedModel("{\"rootCause\": \"Host down\", \"evidence\": [\"E1\"]}"))
+                .diagnose(CONTEXT, EVIDENCE, List.of());
+        ModelGateway.ChatResult answer = new IssueAnalyzer(model).answer(CONTEXT, EVIDENCE, diagnosis, List.of("Q: first? A: yes"), "Why the host?");
+        assertThat(answer.reply()).contains("E1");
+        String prompt = model.prompts.getFirst();
+        assertThat(prompt).contains("Your diagnosis:", "Host down", "Q: first? A: yes", "Question (from the engineer, not data): Why the host?")
+                .doesNotContain("Secret1");
+        assertThat(prompt.indexOf("Question (from the engineer")).isGreaterThan(prompt.indexOf("END DATA"));
+    }
+
+    @Test
     void probableNeedsEvidenceAndUnknownValuesFallBack() {
         ScriptedModel model = new ScriptedModel("""
                 {"category": "GUESSWORK", "state": "certain", "rootCause": "Something", "evidence": ["E42"]}

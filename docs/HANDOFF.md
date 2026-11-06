@@ -72,7 +72,10 @@ The **Issue Analyzer** (route `issues`, branch `claude/chatgpt-conversation-revi
 `docs/ISSUE-ANALYZER-PLAN.md`): a bank's error report, logs and screenshots become evidence (found without a model),
 the bank's matching code from the index, similar solved issues and a checked diagnosis with fix steps; outcomes, an
 Oracle SR draft, and resolutions leads share across workspaces. Screenshots are read by the chat model (the image path
-the Design Studio uses), so it needs a chat model that reads images.
+the Design Studio uses), so it needs a chat model that reads images. Phase 2 (`docs/ISSUE-ANALYZER-PHASE-2.md`): Oracle
+support notes in the Library (kind ORACLE_NOTE) cited in diagnoses, links for bank administrators to report and follow
+issues (route `report`, embedded, no sign-in; diagnosis shown after "Release to the bank"), fix checks, questions, and
+groups of the same error within a day.
 
 ## The user's installation
 
@@ -106,8 +109,8 @@ stand-in on Windows. The trial database itself runs on the user's laptop.
 
 - Exact format of `about.json` in releases other than 22.2 (the detector reads the first `NN.N` release number in it).
 - Sign-ins end when the factory restarts (sessions are in memory).
-- Issue Analyzer, later phases (only on request): bank administrators filing issues without an account, Oracle
-  notes and bug texts the bank may use, live checks against the bank's environment, blurring customer data in
-  screenshots. Not yet tried with a real model server and real OBDX logs.
+- Issue Analyzer, later (only on request): live checks against the bank's environment, blurring customer data in
+  screenshots, notifications when a bank answers or a group forms, grouping across workspaces. Not yet tried with a
+  real model server and real OBDX logs; the report and follow pages are not checked in a browser yet.
 - Remaining roadmap (only on request): reverse-engineering JET screens into Screen Models, wave planning on the
   inventory, Jenkins Android/iOS builds.

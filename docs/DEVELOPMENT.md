@@ -85,6 +85,7 @@ Settings come from environment variables (defaults in `factory-server/src/main/r
 | `FACTORY_MODEL_CHAT` | `qwen2.5-coder:7b` |
 | `FACTORY_MODEL_EMBEDDING` | `nomic-embed-text` |
 | `FACTORY_MODEL_TIMEOUT` | `120s` |
+| `FACTORY_ISSUE_REPEAT_WINDOW` | `24h` (issues with the same error filed within this time are grouped) |
 | `FACTORY_MODEL_EMBEDDING_BASE_URL` | empty (the embedding model is on `FACTORY_MODEL_BASE_URL`) |
 | `FACTORY_MODEL_EMBEDDING_API_KEY` | empty |
 | `FACTORY_MODEL_MAX_CONTEXT` | `16384`: the most context (tokens) asked of an Ollama server |
@@ -649,6 +650,36 @@ knowledge: title, component, category, root cause and fix only, refused when it 
 bank's or workspace's name. Every workspace's analysis then uses it; the person who shared it or an administrator can
 withdraw it. Leads delete issues. Analyses running when the server stops are marked failed at the next start.
 
+Phase 2 (plan and decisions in `docs/ISSUE-ANALYZER-PHASE-2.md`):
+
+- **Oracle notes.** A Library upload is a manual or an **Oracle support note** (bug text, patch readme, knowledge
+  article) with Oracle's reference ("Doc ID 2345678.1"); `knowledge_document.kind` and `.reference`. Uploads follow the
+  Library's rules (administrators for shared notes, code managers for one workspace's). Analysis searches the Library
+  with the error codes, the root exception, screenshot errors and the top frame, for the workspace's OBDX version line
+  (shared and the bank's own documents): up to 4 notes (`O1`...) and 3 manual sections (`M1`...) go to the model. The
+  diagnosis cites them under **Oracle notes and manuals** with a link to the file; a note for another release or for a
+  patchset is marked "Check the version". The model may name an Oracle fix only from these notes. The SR draft lists
+  the notes checked.
+- **Bank administrators.** A lead makes a **link for the bank** on the Issues page (label, 1 to 90 days, default 30;
+  revocable; only the SHA-256 of the token is stored, and the token is shown once). It opens
+  `?ojr=report&embed=1&token=...` without signing in: name, optional email, what happened, environment, logs and
+  screenshots. The issue is filed as "bank: <name>" (source BANK) and analyzed; the page then shows the report's own
+  **follow link** (`&follow=...`). There the bank sees "being looked at" until an engineer (developers and leads)
+  clicks **Release to the bank**; then the summary and only the steps the model marked for a bank administrator
+  (never evidence, code, files or ids). Analyzing again takes the release back. They can say "It works now" or "It
+  still fails" (with new logs, which runs a fix check). Limits: 20 reports a day per link, 60 requests a minute per
+  address (in memory). Public endpoints: `/api/issue-report/**`, `/api/issue-follow/**`; tokens are hidden in messages.
+- **Fix checks.** "Check the fix" takes new logs or screenshots and compares them with the original error without a
+  model (`Signatures.compare`): original error gone, still failing (with the error names), a different error, or
+  cannot compare (the first report had no recognisable error). Checks run in the background and are kept with their
+  files; "Resolved" stays the person's confirmation.
+- **Questions.** Anyone in the workspace asks about an issue; the chat model answers in the background with the
+  issue's evidence, code, Library documents, diagnosis and earlier questions as data, citing ids.
+- **Repeated issues.** When an analysis finishes, an issue joins the group of an issue of the same workspace filed
+  within `FACTORY_ISSUE_REPEAT_WINDOW` (default `24h`) with the same error (two signature tokens in common, or the same
+  error code). The Issues page shows a bar for groups with an issue in the last day and can filter to one group; the
+  issue lists the others, and a lead can resolve or escalate the whole group at once.
+
 ## Recipes, templates and reference examples
 
 The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
@@ -1035,6 +1066,13 @@ object: compute those in the view model.
 | `DELETE /api/workspaces/{id}/issues/{issueId}` | Delete an issue (leads) |
 | `GET /api/issue-knowledge` | Shared product knowledge |
 | `DELETE /api/issue-knowledge/{id}` | Withdraw shared knowledge (the person who shared it, or administrators) |
+| `POST /api/workspaces/{id}/issues/{issueId}/release` | Show the diagnosis to the bank on the follow link (developers, leads) |
+| `POST /api/workspaces/{id}/issues/{issueId}/group-outcome` | One outcome for every issue with the same error (`status`, `resolution`) (leads) |
+| `POST /api/workspaces/{id}/issues/{issueId}/checks` | Check the fix with new logs or screenshots (multipart: `logText`, `files`; background) |
+| `POST /api/workspaces/{id}/issues/{issueId}/questions` | Ask about the issue (`text`; answered in the background) |
+| `GET` / `POST /api/workspaces/{id}/issue-links`, `DELETE .../issue-links/{linkId}` | Links for the bank: list, make (`label`, `days`; the answer has the token, once), revoke (leads) |
+| `GET` / `POST /api/issue-report/{token}` | No sign-in: the report page's details; report an issue (multipart: `name`, `email`, `description`, `environment`, `logText`, `files`); answers the follow token |
+| `GET /api/issue-follow/{token}`, `POST .../works`, `POST .../still-failing` | No sign-in: the reported issue as the bank sees it; "it works now" (`name`); "it still fails" (multipart: `name`, `logText`, `files`) |
 | `GET /actuator/health` | Health check |
 
 Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.

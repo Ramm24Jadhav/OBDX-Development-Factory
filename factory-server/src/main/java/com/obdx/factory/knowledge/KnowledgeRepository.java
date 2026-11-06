@@ -34,7 +34,11 @@ public class KnowledgeRepository {
     public record Document(UUID id, UUID workspaceId, String obdxVersion, String versionLine, String title, String fileName,
                            String sha256, int pages, int sections, int embedded, String status, String message,
                            String importedBy, Instant createdAt, Instant updatedAt, String patchset, UUID supersededBy,
-                           Instant supersededAt, UUID sourceId) {
+                           Instant supersededAt, UUID sourceId, String kind, String reference) {
+
+        /** A manual or note of another kind; kind MANUAL or ORACLE_NOTE. */
+        public static final String MANUAL = "MANUAL";
+        public static final String ORACLE_NOTE = "ORACLE_NOTE";
     }
 
     public record Note(UUID id, UUID workspaceId, String versionLine, String topic, String title, String body, String status,
@@ -53,7 +57,7 @@ public class KnowledgeRepository {
     // --- documents ---
 
     private static final String DOCUMENT_COLUMNS = "id, workspace_id, obdx_version, version_line, title, file_name, sha256, pages, "
-            + "sections, embedded, status, message, imported_by, created_at, updated_at, patchset, superseded_by, superseded_at, source_id";
+            + "sections, embedded, status, message, imported_by, created_at, updated_at, patchset, superseded_by, superseded_at, source_id, kind, reference";
 
     private static final RowMapper<Document> DOCUMENT = (rs, row) -> new Document(rs.getObject("id", UUID.class),
             rs.getObject("workspace_id", UUID.class), rs.getString("obdx_version"), rs.getString("version_line"),
@@ -61,12 +65,24 @@ public class KnowledgeRepository {
             rs.getInt("embedded"), rs.getString("status"), rs.getString("message"), rs.getString("imported_by"),
             instant(rs.getTimestamp("created_at")), instant(rs.getTimestamp("updated_at")),
             rs.getString("patchset"), rs.getObject("superseded_by", UUID.class), instant(rs.getTimestamp("superseded_at")),
-            rs.getObject("source_id", UUID.class));
+            rs.getObject("source_id", UUID.class), rs.getString("kind"), rs.getString("reference"));
 
     public void insertDocument(Document d) {
-        jdbc.update("INSERT INTO knowledge_document (" + DOCUMENT_COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now(), ?, NULL, NULL, ?)",
+        jdbc.update("INSERT INTO knowledge_document (" + DOCUMENT_COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), now(), ?, NULL, NULL, ?, ?, ?)",
                 d.id(), d.workspaceId(), d.obdxVersion(), d.versionLine(), d.title(), d.fileName(), d.sha256(), d.pages(),
-                d.sections(), d.embedded(), d.status(), d.message(), d.importedBy(), d.patchset(), d.sourceId());
+                d.sections(), d.embedded(), d.status(), d.message(), d.importedBy(), d.patchset(), d.sourceId(),
+                d.kind() == null ? Document.MANUAL : d.kind(), d.reference());
+    }
+
+    /** kind and reference of documents, by id (for search hits, which do not carry them). */
+    public Map<UUID, Document> documents(java.util.Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Document> byId = new HashMap<>();
+        jdbc.query("SELECT " + DOCUMENT_COLUMNS + " FROM knowledge_document WHERE id = ANY(?)", DOCUMENT, (Object) ids.toArray(new UUID[0]))
+                .forEach(d -> byId.put(d.id(), d));
+        return byId;
     }
 
     /**

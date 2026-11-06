@@ -103,12 +103,27 @@ public class KnowledgeImporter {
     }
 
     public Imported importFile(String fileName, byte[] bytes, String obdxVersion, UUID workspaceId, String patchset, String user) {
+        return importFile(fileName, bytes, obdxVersion, workspaceId, patchset, user, KnowledgeRepository.Document.MANUAL, null);
+    }
+
+    /**
+     * @param kind      MANUAL or ORACLE_NOTE (an Oracle support note, bug text or patch readme)
+     * @param reference Oracle's reference of a note ("Doc ID 2345678.1", "Bug 34567890"); null for manuals
+     */
+    public Imported importFile(String fileName, byte[] bytes, String obdxVersion, UUID workspaceId, String patchset, String user,
+                               String kind, String reference) {
         if (!supported(fileName)) {
             throw new BadRequestException("Upload a PDF, Word (.docx, .doc), text, Markdown or HTML file.");
         }
+        String k = kind == null || kind.isBlank() ? KnowledgeRepository.Document.MANUAL : kind.strip().toUpperCase(java.util.Locale.ROOT);
+        if (!k.equals(KnowledgeRepository.Document.MANUAL) && !k.equals(KnowledgeRepository.Document.ORACLE_NOTE)) {
+            throw new BadRequestException("Choose a manual or an Oracle support note.");
+        }
+        String ref = reference == null || reference.isBlank() || k.equals(KnowledgeRepository.Document.MANUAL) ? null
+                : reference.strip().substring(0, Math.min(200, reference.strip().length()));
         List<KnowledgeRepository.Document> queued = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
-        add(fileName, bytes, normalizeVersion(obdxVersion), workspaceId, patchset(patchset), null, user, queued, skipped);
+        add(fileName, bytes, normalizeVersion(obdxVersion), workspaceId, patchset(patchset), null, user, queued, skipped, k, ref);
         return new Imported(queued, skipped);
     }
 
@@ -184,7 +199,8 @@ public class KnowledgeImporter {
         List<String> skipped = new ArrayList<>();
         for (Path f : files) {
             try {
-                add(f.getFileName().toString(), Files.readAllBytes(f), version, workspaceId, patchset, sourceId, user, queued, skipped);
+                add(f.getFileName().toString(), Files.readAllBytes(f), version, workspaceId, patchset, sourceId, user, queued, skipped,
+                        KnowledgeRepository.Document.MANUAL, null);
             } catch (IOException e) {
                 skipped.add(f.getFileName() + " (cannot be read: " + e.getMessage() + ")");
             }
@@ -193,7 +209,7 @@ public class KnowledgeImporter {
     }
 
     private void add(String fileName, byte[] bytes, String version, UUID workspaceId, String patchset, UUID sourceId, String user,
-                     List<KnowledgeRepository.Document> queued, List<String> skipped) {
+                     List<KnowledgeRepository.Document> queued, List<String> skipped, String kind, String reference) {
         String sha = sha256(bytes);
         var existing = repository.findDocument(version, sha, workspaceId);
         if (existing.isPresent() && !"FAILED".equals(existing.get().status())) {
@@ -211,7 +227,7 @@ public class KnowledgeImporter {
             return;
         }
         var document = new KnowledgeRepository.Document(id, workspaceId, version, versionLine(version), title(fileName), fileName, sha,
-                0, 0, 0, "QUEUED", null, user, null, null, patchset, null, null, sourceId);
+                0, 0, 0, "QUEUED", null, user, null, null, patchset, null, null, sourceId, kind, reference);
         repository.insertDocument(document);
         queued.add(document);
         executor.execute(() -> read(id));
@@ -498,7 +514,7 @@ public class KnowledgeImporter {
     }
 
     /** The major version: 22.2 and 22.x are both 22. */
-    static String versionLine(String version) {
+    public static String versionLine(String version) {
         if (version == null) {
             return null;
         }

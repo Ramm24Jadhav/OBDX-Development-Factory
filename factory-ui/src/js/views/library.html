@@ -452,6 +452,13 @@
         </div>
       </oj-bind-if>
       <oj-bind-if test="[[addMode() === 'UPLOAD']]">
+        <div class="fx-form fx-form--2">
+          <fx-select id="importKind" label="What it is" options="[[importKindOptions]]" value="{{importKind}}"></fx-select>
+          <oj-bind-if test="[[importKind() === 'ORACLE_NOTE']]">
+            <fx-input id="importReference" label="Oracle reference" value="{{importReference}}" placeholder="Doc ID 2345678.1, Bug 34567890"
+                      help="As Oracle names it, so the Issues page can cite it."></fx-input>
+          </oj-bind-if>
+        </div>
         <div class="fx-field"><span class="fx-label" id="lbFilesLabel">Files</span>
           <button type="button" :class="[[dropOver() ? 'fx-dropzone factory-lb-drop is-over' : 'fx-dropzone factory-lb-drop']]" id="uploadButton" aria-describedby="lbFilesLabel" on-click="[[chooseFiles]]" on-dragover="[[dragOver]]" on-dragleave="[[dragLeave]]" on-drop="[[dropFiles]]">
             <span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>

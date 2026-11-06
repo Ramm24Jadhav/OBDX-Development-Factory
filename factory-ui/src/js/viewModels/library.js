@@ -151,14 +151,16 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           if (admin) { menu.push({ value: 'remove', label: 'Remove…', icon: 'trash', danger: true }); }
           const row = Object.assign({}, d, {
             statusCss: s.css, statusIcon: s.iconCss, statusText: s.text, older: older, rowCss: older ? 'is-older' : '',
-            scope: (d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
+            scope: (d.kind === 'ORACLE_NOTE' ? 'Oracle support note' + (d.reference ? ' ' + d.reference : '') + (d.workspaceId ? ' · this bank' : '')
+              : d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
               + (older ? ' · replaced ' + when(d.supersededAt) : ''),
-            subtitle: (d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
+            subtitle: (d.kind === 'ORACLE_NOTE' ? 'Oracle support note' + (d.reference ? ' ' + d.reference : '') + (d.workspaceId ? ' · this bank' : '')
+              : d.workspaceId ? 'This bank' : 'Oracle manual') + (d.patchset ? ' · patchset ' + d.patchset : '')
               + (older ? ' · replaced ' + when(d.supersededAt) : '') + (source === 'UPLOAD' && d.importedBy ? ' · uploaded by ' + d.importedBy : ''),
             progress: progress, busy: busy, canEmbed: canEmbed,
             url: 'api/knowledge/documents/' + d.id + '/file',
             admin: admin,
-            type: d.workspaceId ? 'BANK' : 'ORACLE', patch: !!d.patchset,
+            type: d.kind === 'ORACLE_NOTE' ? 'NOTE' : d.workspaceId ? 'BANK' : 'ORACLE', patch: !!d.patchset,
             source: source,
             sourceChip: source === 'SITE' ? 'Oracle\'s site' : source === 'FOLDER' ? 'Folder' : 'Uploaded',
             sourceCss: 'fx-badge fx-badge--plain ' + (source === 'SITE' ? 'fx-badge--primary' : d.workspaceId ? 'fx-badge--success' : 'fx-badge--neutral'),
@@ -229,7 +231,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.docStatus = ko.observable('');
       this.docVersionOptions = ko.pureComputed(() => [{ value: '', label: 'All versions' }].concat(Array.from(new Set(this.documents().map((d) => d.obdxVersion))).sort().reverse()
         .map((v) => ({ value: v, label: 'OBDX ' + v }))));
-      this.docTypeOptions = [{ value: '', label: 'All types' }, { value: 'ORACLE', label: 'Oracle manuals' }, { value: 'BANK', label: 'Bank documents' }, { value: 'PATCH', label: 'Patchset documents' }];
+      this.docTypeOptions = [{ value: '', label: 'All types' }, { value: 'ORACLE', label: 'Oracle manuals' }, { value: 'BANK', label: 'Bank documents' }, { value: 'NOTE', label: 'Oracle support notes' }, { value: 'PATCH', label: 'Patchset documents' }];
       this.docSourceOptions = [{ value: '', label: 'All sources' }, { value: 'SITE', label: 'Oracle\'s site' }, { value: 'FOLDER', label: 'Watched folders' }, { value: 'UPLOAD', label: 'Uploaded' }];
       this.docStatusOptions = [{ value: '', label: 'Any state' }, { value: 'FAILED', label: 'Failed' }, { value: 'RUNNING', label: 'In progress' },
         { value: 'PARTIAL', label: 'Keywords only' }, { value: 'OLDER', label: 'Older revisions' }];
@@ -374,6 +376,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
       this.closeAddSheet = () => this.addOpen(false);
       this.importVersion = ko.observable('25.2');
       this.importPatchset = ko.observable('');
+      // A manual, or an Oracle support note (bug text, patch readme, knowledge article) with Oracle's reference
+      this.importKind = ko.observable('MANUAL');
+      this.importKindOptions = [{ value: 'MANUAL', label: 'Manual or guide' },
+        { value: 'ORACLE_NOTE', label: 'Oracle support note', description: 'A bug text, patch readme or knowledge article; the Issues page cites it' }];
+      this.importReference = ko.observable('');
       this.importFolder = ko.observable('');
       this.importForBank = ko.observable(false);
       // Whose documents (administrators): Oracle's, shared by every workspace, or the bank's own for this workspace
@@ -427,6 +434,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', '..
           form.append('obdxVersion', this.importVersion());
           if (this.importPatchset()) { form.append('patchset', this.importPatchset()); }
           if (this.forBank() && this.workspaceId()) { form.append('workspaceId', this.workspaceId()); }
+          form.append('kind', this.importKind());
+          if (this.importKind() === 'ORACLE_NOTE' && this.importReference()) { form.append('reference', this.importReference()); }
           return api.upload('knowledge/documents', form).then(reportImport);
         }), Promise.resolve()).then(() => { this.chosenFiles([]); this.addOpen(false); })
           .catch((e) => toast.error(ui.errorText(e))).finally(() => this.importBusy(false));

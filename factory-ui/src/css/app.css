@@ -10199,3 +10199,14 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-is-more { margin-top: var(--fx-space-4); }
 .factory-is-more pre { max-height: 360px; }
 .factory-is-more > :not(summary) { margin: var(--fx-space-3); }
+.factory-is-answer { white-space: pre-wrap; overflow-wrap: anywhere; }
+.factory-is-url { display: block; margin: var(--fx-space-2) 0; overflow-wrap: anywhere; white-space: normal; }
+.factory-is-step .fx-btn--ghost { margin-left: var(--fx-space-2); }
+
+/* Report page for bank administrators (issue links and follow links, embedded) */
+.factory-rp { max-width: 760px; margin: 0 auto; padding: var(--fx-gutter); }
+.factory-rp .fx-card { margin-bottom: var(--fx-gap); }
+.factory-rp h1 { margin: 0 0 var(--fx-space-2); }
+.factory-rp h2 { margin: 0 0 var(--fx-space-3); }
+.factory-rp-step { margin: var(--fx-space-3) 0; overflow-wrap: anywhere; }
+.factory-is-failed { color: var(--fx-danger-text); }

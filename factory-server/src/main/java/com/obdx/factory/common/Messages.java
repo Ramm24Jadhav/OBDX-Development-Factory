@@ -29,7 +29,7 @@ public final class Messages {
     /**
      * "Bearer abc", an API key (sk-..., gsk_..., hf_..., AIza...), "api_key=abc", "?key=abc", "Authorization: abc",
      * "password": "abc", "Authorization: Basic abc", a session cookie (JSESSIONID=abc), the token of a review link
-     * (/api/review/abc) and the user and password in an address (https://user:pass@host). Group 1, 2 or 4 is what stays
+     * (/api/review/abc) or an issue or follow link (/api/issue-report/abc, /api/issue-follow/abc) and the user and password in an address (https://user:pass@host). Group 1, 2 or 4 is what stays
      * before the hidden part.
      */
     private static final java.util.regex.Pattern SECRET = java.util.regex.Pattern.compile(
@@ -39,7 +39,7 @@ public final class Messages {
                     + "|authorization)\"?\\s{0,3}+[=:]\\s{0,3}+\"?(?:(?:bearer|basic|digest|token)\\s++)?|[?&](?:key|token|sig|signature|code)="
                     + "|\\bjsessionid=)[^\\s\"',;&)]++"
                     + "|(\\b[a-z][a-z0-9+.-]{0,15}+://)[^\\s/?#]{1,200}@"
-                    + "|(/api/review/)[A-Za-z0-9_-]++");
+                    + "|(/api/(?:review|issue-report|issue-follow)/)[A-Za-z0-9_-]++");
 
     /**
      * The text with what looks like a secret replaced by "[hidden]": a bearer token, an API key (sk-..., gsk_...), a

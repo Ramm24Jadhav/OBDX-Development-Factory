@@ -46,7 +46,7 @@ class KnowledgeUpdatesTest {
     @Test
     void saysWhichCitedSectionsChanged() {
         var newer = new KnowledgeRepository.Document(UUID.randomUUID(), null, "25.2", "25", "Extensibility Guide", "guide.pdf", "sha",
-                10, 20, 20, "READY", null, "admin", null, null, "25.2.0.1", null, null, null);
+                10, 20, 20, "READY", null, "admin", null, null, "25.2.0.1", null, null, null, "MANUAL", null);
         String reason = KnowledgeRevisions.changedReason(newer, new LinkedHashSet<>(List.of("4.2 Limits", "4.3 Approvals")));
         assertThat(reason).isEqualTo("A newer revision of Extensibility Guide (25.2, 25.2.0.1) changed or removed what this note cites: "
                 + "\"4.2 Limits\", \"4.3 Approvals\". Check the note against the new text.");

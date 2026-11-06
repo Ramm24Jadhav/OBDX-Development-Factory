@@ -64,8 +64,11 @@ class IssueFlowIntegrationTest {
     static final String DIAGNOSIS = """
             {"category": "DEPENDENCY", "state": "PROBABLE", "summary": "The payment host refuses connections.",
              "rootCause": "The payment host at the configured address is not running", "evidence": ["E1", "E77"],
-             "steps": [{"action": "Check that the payment host is running", "risk": "LOW", "evidence": ["E1"]}]}
+             "steps": [{"action": "Check that the payment host is running", "risk": "LOW", "evidence": ["E1"], "audience": "ADMIN"},
+                       {"action": "Read the WebLogic log around the error", "risk": "LOW", "audience": "ENGINEER"}],
+             "oracleReferences": [{"id": "O1", "why": "The note describes this refused connection"}]}
             """;
+    static final String ANSWER = "Because E1 shows the payment host refuses the connection.";
 
     @TestConfiguration
     static class CannedModels {
@@ -75,7 +78,7 @@ class IssueFlowIntegrationTest {
             return new ModelGateway() {
                 @Override
                 public ChatResult chat(String systemPrompt, String userPrompt) {
-                    return chatJson(systemPrompt, userPrompt);
+                    return new ChatResult(ANSWER, "canned", 0);
                 }
 
                 @Override
@@ -192,6 +195,137 @@ class IssueFlowIntegrationTest {
         } finally {
             mvc.perform(delete("/api/workspaces/" + bankA).session(admin).with(csrf()));
             mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf()));
+        }
+    }
+
+    @Test
+    void bankReportsFollowsAndChecksAFixWithAnOracleNoteGroupedAndAnswered() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bank = UUID.fromString(send(admin, "/api/workspaces",
+                "{\"name\": \"issues-c-" + suffix + "\", \"bankName\": \"Gamma Bank\", \"obdxVersion\": \"22.x\"}", 201).get("id").asString());
+        String noteId = null;
+        try {
+            // An Oracle support note in the Library, shared with every workspace
+            JsonNode imported = json.readTree(mvc.perform(multipart("/api/knowledge/documents").session(admin).with(csrf())
+                            .file(new MockMultipartFile("file", "payment-host-" + suffix + ".txt", "text/plain", ("Payments: java.net.ConnectException: "
+                                    + "Connection refused when the payment host is down. Workaround: start the payment host. " + suffix).getBytes(StandardCharsets.UTF_8)))
+                            .param("obdxVersion", "22.2").param("kind", "ORACLE_NOTE").param("reference", "Doc ID 2345678.1"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+            noteId = imported.at("/queued/0/id").asString();
+            waitForDocument(admin, noteId);
+
+            // A lead makes an issue link; the bank reports through it without signing in
+            JsonNode link = send(admin, "/api/workspaces/" + bank + "/issue-links", "{\"label\": \"Gamma admins\", \"days\": 7}", 200);
+            String token = link.get("token").asString();
+            mvc.perform(get("/api/issue-report/" + token)).andExpect(status().isOk()).andExpect(jsonPath("$.bankName").value("Gamma Bank"));
+            mvc.perform(multipart("/api/issue-report/" + token).with(csrf()).param("description", "Transfers fail")).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value("Enter your name, so the support team knows who reported it"));
+            JsonNode reported = json.readTree(mvc.perform(multipart("/api/issue-report/" + token).with(csrf())
+                            .file(new MockMultipartFile("files", "server.log", "text/plain", LOG.getBytes(StandardCharsets.UTF_8)))
+                            .param("name", "Priya").param("email", "priya@gamma.example").param("description", "Transfers fail with a technical error"))
+                    .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString());
+            String follow = "/api/issue-follow/" + reported.get("followToken").asString();
+
+            JsonNode issues = json.readTree(mvc.perform(get("/api/workspaces/" + bank + "/issues").session(admin)).andReturn().getResponse().getContentAsString());
+            String issue = "/api/workspaces/" + bank + "/issues/" + issues.get(0).get("id").asString();
+            JsonNode diagnosed = waitFor(admin, issue, "DIAGNOSED");
+            assertThat(diagnosed.get("source").asString()).isEqualTo("BANK");
+            assertThat(diagnosed.get("createdBy").asString()).isEqualTo("bank: Priya");
+            assertThat(diagnosed.at("/diagnosis/oracleReferences/0/reference").asString()).isEqualTo("Doc ID 2345678.1");
+            assertThat(diagnosed.at("/diagnosis/oracleReferences/0/documentId").asString()).isEqualTo(noteId);
+
+            // Nothing is shown to the bank until an engineer releases it; then only the summary and the bank's steps
+            JsonNode before = json.readTree(mvc.perform(get(follow)).andReturn().getResponse().getContentAsString());
+            assertThat(before.get("released").asBoolean()).isFalse();
+            assertThat(before.get("summary").isNull()).isTrue();
+            assertThat(before.get("steps").size()).isZero();
+            send(admin, issue + "/release", "", 200);
+            JsonNode after = json.readTree(mvc.perform(get(follow)).andReturn().getResponse().getContentAsString());
+            assertThat(after.get("summary").asString()).isEqualTo("The payment host refuses connections.");
+            assertThat(after.get("steps").size()).isEqualTo(1);
+            assertThat(after.toString()).doesNotContain("WebLogic", "E1", "server.log", "FundTransferService");
+
+            // The bank says it still fails with a new log: the factory compares it with the original error
+            mvc.perform(multipart(follow + "/still-failing").with(csrf()).param("name", "Priya").param("logText", LOG)).andExpect(status().isOk());
+            assertThat(waitForCheck(admin, issue, 0).get("result").asString()).isEqualTo("STILL_FAILING");
+            // An engineer checks again after the real fix
+            mvc.perform(multipart(issue + "/checks").session(admin).with(csrf()).param("logText", "2026-11-06 12:00:00 INFO Transfer TX-9 completed"))
+                    .andExpect(status().isAccepted());
+            assertThat(waitForCheck(admin, issue, 1).get("result").asString()).isEqualTo("ERROR_GONE");
+            mvc.perform(post(follow + "/works").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"name\": \"Priya\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.checks.length()").value(3));
+
+            // A question about the issue
+            send(admin, issue + "/questions", "{\"text\": \"Why is it the payment host?\"}", 202);
+            JsonNode answered = waitForAnswer(admin, issue);
+            assertThat(answered.get("answer").asString()).isEqualTo(ANSWER);
+
+            // The same error filed again the same day joins a group
+            JsonNode again = json.readTree(mvc.perform(multipart("/api/workspaces/" + bank + "/issues").session(admin).with(csrf()).param("logText", LOG))
+                    .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString());
+            JsonNode grouped = waitFor(admin, "/api/workspaces/" + bank + "/issues/" + again.get("id").asString(), "DIAGNOSED");
+            assertThat(grouped.get("groupId").asString()).isEqualTo(issues.get(0).get("id").asString());
+            assertThat(grouped.get("group").size()).isEqualTo(1);
+            send(admin, issue + "/group-outcome", "{\"status\": \"RESOLVED\", \"resolution\": \"Started the payment host\"}", 200);
+            JsonNode list = json.readTree(mvc.perform(get("/api/workspaces/" + bank + "/issues").session(admin)).andReturn().getResponse().getContentAsString());
+            assertThat(list.size()).isEqualTo(2);
+            list.forEach(row -> assertThat(row.get("status").asString()).isEqualTo("RESOLVED"));
+
+            // A revoked link stops working; the follow link keeps working
+            mvc.perform(delete("/api/workspaces/" + bank + "/issue-links/" + link.at("/link/id").asString()).session(admin).with(csrf()))
+                    .andExpect(status().isNoContent());
+            mvc.perform(get("/api/issue-report/" + token)).andExpect(status().isNotFound());
+            mvc.perform(get(follow)).andExpect(status().isOk()).andExpect(jsonPath("$.statusText").value("Resolved"));
+            mvc.perform(get("/api/issue-follow/not-a-token")).andExpect(status().isNotFound());
+        } finally {
+            if (noteId != null) {
+                mvc.perform(delete("/api/knowledge/documents/" + noteId).session(admin).with(csrf()));
+            }
+            mvc.perform(delete("/api/workspaces/" + bank).session(admin).with(csrf()));
+        }
+    }
+
+    private void waitForDocument(MockHttpSession admin, String id) throws Exception {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(60));
+        while (true) {
+            JsonNode overview = json.readTree(mvc.perform(get("/api/knowledge").session(admin)).andReturn().getResponse().getContentAsString());
+            for (JsonNode d : overview.get("documents")) {
+                if (d.get("id").asString().equals(id)) {
+                    assertThat(d.get("status").asString()).as(d.toString()).isNotEqualTo("FAILED");
+                    if (d.get("status").asString().equals("READY")) {
+                        assertThat(d.get("kind").asString()).isEqualTo("ORACLE_NOTE");
+                        return;
+                    }
+                }
+            }
+            assertThat(Instant.now()).as("document not read in time").isBefore(deadline);
+            Thread.sleep(300);
+        }
+    }
+
+    private JsonNode waitForCheck(MockHttpSession session, String issue, int index) throws Exception {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(30));
+        while (true) {
+            JsonNode checks = json.readTree(mvc.perform(get(issue).session(session)).andReturn().getResponse().getContentAsString()).get("checks");
+            if (checks.size() > index && !checks.get(index).get("result").asString().equals("CHECKING")) {
+                return checks.get(index);
+            }
+            assertThat(Instant.now()).as("check still running").isBefore(deadline);
+            Thread.sleep(200);
+        }
+    }
+
+    private JsonNode waitForAnswer(MockHttpSession session, String issue) throws Exception {
+        Instant deadline = Instant.now().plus(Duration.ofSeconds(30));
+        while (true) {
+            JsonNode questions = json.readTree(mvc.perform(get(issue).session(session)).andReturn().getResponse().getContentAsString()).get("questions");
+            if (questions.size() > 0 && !questions.get(0).get("status").asString().equals("ANSWERING")) {
+                assertThat(questions.get(0).get("status").asString()).isEqualTo("ANSWERED");
+                return questions.get(0);
+            }
+            assertThat(Instant.now()).as("answer still running").isBefore(deadline);
+            Thread.sleep(200);
         }
     }
 

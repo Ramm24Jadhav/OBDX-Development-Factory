@@ -1,0 +1,101 @@
+<div class="factory-rp">
+  <oj-bind-if test="[[errorMessage()]]">
+    <div class="fx-alert fx-alert--danger" id="reportError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
+  </oj-bind-if>
+  <oj-bind-if test="[[loading()]]"><p class="fx-muted">Loading…</p></oj-bind-if>
+
+  <oj-bind-if test="[[page() && !followUrl()]]">
+    <section class="fx-card" aria-labelledby="reportTitle">
+      <h1 id="reportTitle">Report an issue</h1>
+      <p class="fx-muted">For <oj-bind-text value="[[page().bankName]]"></oj-bind-text> (OBDX <oj-bind-text value="[[page().obdxVersion]]"></oj-bind-text>).
+        Tell the support team what went wrong; logs and screenshots help them find the cause.</p>
+      <div class="fx-form fx-form--2">
+        <fx-input id="reporterName" label="Your name" required value="{{name}}"></fx-input>
+        <fx-input id="reporterEmail" label="Email (optional)" type="email" value="{{email}}"></fx-input>
+        <fx-select id="reportEnvironment" label="Environment" options="[[environmentOptions]]" value="{{environment}}"></fx-select>
+      </div>
+      <fx-textarea id="reportDescription" label="What happened" rows="4" value="{{description}}"
+                   help="What you did, the message you saw, when it started, who is affected."></fx-textarea>
+      <fx-textarea id="reportLog" label="Log or error text (optional, paste)" rows="5" mono value="{{logText}}"></fx-textarea>
+      <div class="fx-field"><span class="fx-label">Logs and screenshots (optional)</span>
+        <input type="file" id="reportFiles" class="fx-visually-hidden" multiple :accept="[[accepted]]" on-change="[[filesSelected]]">
+        <label for="reportFiles" class="fx-dropzone"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>
+          <strong>Choose files</strong><span>Logs (.log, .txt) and screenshots (.png, .jpg). Crop out customer names and account numbers first.</span></label>
+        <oj-bind-if test="[[fileRows().length > 0]]">
+          <ul class="factory-is-chosen" aria-label="Chosen files">
+            <oj-bind-for-each data="[[fileRows]]" as="f"><template><li><span class="factory-is-name"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + f.data.name]]" on-click="[[f.data.remove]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></li></template></oj-bind-for-each>
+          </ul>
+        </oj-bind-if>
+      </div>
+      <div class="factory-btn-row"><button type="button" id="sendReport" class="fx-btn fx-btn--primary" on-click="[[send]]" :disabled="[[!canSend()]]">Send to the support team</button></div>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[followUrl()]]">
+    <section class="fx-card" id="reportSent" aria-labelledby="sentTitle">
+      <h1 id="sentTitle">Sent</h1>
+      <p>The support team has your report. Keep this link to follow it: it shows what they found and lets you tell them
+        whether it works.</p>
+      <code class="factory-is-url" id="followUrl"><oj-bind-text value="[[followUrl]]"></oj-bind-text></code>
+      <div class="factory-btn-row">
+        <button type="button" class="fx-btn fx-btn--secondary" on-click="[[copyFollow]]">Copy the link</button>
+        <a class="fx-btn fx-btn--primary" :href="[[followUrl]]">Open it</a>
+        <button type="button" class="fx-btn fx-btn--ghost" on-click="[[reportAnother]]">Report another issue</button>
+      </div>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[view()]]">
+    <section class="fx-card" id="followView" aria-labelledby="followTitle">
+      <h1 id="followTitle"><oj-bind-text value="[[view().title]]"></oj-bind-text></h1>
+      <p><span :class="[[statusCss]]"><oj-bind-text value="[[view().statusText]]"></oj-bind-text></span></p>
+      <oj-bind-if test="[[!view().released]]">
+        <p class="fx-muted">The support team is looking at it. This page shows what they found once they have checked it.</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[view().summary]]">
+        <h2>What happened</h2>
+        <p id="followSummary"><oj-bind-text value="[[view().summary]]"></oj-bind-text></p>
+      </oj-bind-if>
+      <oj-bind-if test="[[steps().length > 0]]">
+        <h2>What you can do</h2>
+        <oj-bind-for-each data="[[steps]]" as="s">
+          <template><div class="factory-rp-step"><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong>
+            <oj-bind-if test="[[s.data.why]]"><div><oj-bind-text value="[[s.data.why]]"></oj-bind-text></div></oj-bind-if></div></template>
+        </oj-bind-for-each>
+      </oj-bind-if>
+      <oj-bind-if test="[[view().released && steps().length === 0]]">
+        <p class="fx-muted">Nothing for you to do: the support team fixes it on their side.</p>
+      </oj-bind-if>
+    </section>
+
+    <section class="fx-card" aria-labelledby="answerTitle">
+      <h2 id="answerTitle">Does it work now?</h2>
+      <fx-input id="answerName" label="Your name" value="{{answerName}}"></fx-input>
+      <div class="factory-btn-row">
+        <button type="button" id="worksNow" class="fx-btn fx-btn--primary" on-click="[[works]]" :disabled="[[!answerName().trim()]]">It works now</button>
+      </div>
+      <fx-textarea id="stillLog" label="If it still fails: the new error or log (optional)" rows="4" mono value="{{stillLog}}"></fx-textarea>
+      <input type="file" id="stillFiles" class="fx-visually-hidden" multiple :accept="[[accepted]]" on-change="[[stillSelected]]">
+      <label for="stillFiles" class="fx-dropzone"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span><strong>Add new logs or screenshots</strong></label>
+      <oj-bind-if test="[[stillRows().length > 0]]">
+        <ul class="factory-is-chosen" aria-label="New files">
+          <oj-bind-for-each data="[[stillRows]]" as="f"><template><li><span class="factory-is-name"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>
+            <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + f.data.name]]" on-click="[[f.data.remove]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></li></template></oj-bind-for-each>
+        </ul>
+      </oj-bind-if>
+      <div class="factory-btn-row">
+        <button type="button" id="stillFailing" class="fx-btn fx-btn--secondary" on-click="[[stillFailing]]" :disabled="[[!answerName().trim()]]">It still fails</button>
+      </div>
+      <oj-bind-if test="[[checks().length > 0]]">
+        <h2>So far</h2>
+        <oj-bind-for-each data="[[checks]]" as="c">
+          <template><div class="factory-rp-step"><strong><oj-bind-text value="[[c.data.result]]"></oj-bind-text></strong>
+            <span class="fx-muted"> <oj-bind-text value="[[c.data.meta]]"></oj-bind-text></span>
+            <div><oj-bind-text value="[[c.data.summary]]"></oj-bind-text></div></div></template>
+        </oj-bind-for-each>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+</div>
