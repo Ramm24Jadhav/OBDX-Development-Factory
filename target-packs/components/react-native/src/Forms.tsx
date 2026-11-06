@@ -4,10 +4,11 @@
  * lists open as sheets, the keypads fit the value, and the app brings its own document picker to FileUpload.
  */
 import { ReactNode, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Animated, FlatList, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { DatePicker } from './DatePicker';
 import { FieldProps, FieldShell, Option, controlStyle, isEmpty, options as toOptions, styles, useField } from './field';
+import { Enter, Pop, Press, Roll, Shake, useOpen } from './motion';
 import { Theme, useTheme } from './theme';
 
 /* ---------- TextArea (oj-text-area) ---------- */
@@ -84,11 +85,11 @@ export interface NumberInputProps extends FieldProps<number | null> {
 
 function Stepper({ testID, label, sign, disabled, onPress, t }: { testID: string; label: string; sign: string; disabled: boolean; onPress: () => void; t: Theme }) {
   return (
-    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+    <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
                style={{ minWidth: t.minTouch - 8, minHeight: t.minTouch - 8, alignItems: 'center', justifyContent: 'center', borderRadius: t.radius.control,
                  backgroundColor: t.color.surface2, opacity: disabled ? 0.45 : 1 }}>
       <Text style={{ fontSize: 18, color: t.color.text }} importantForAccessibility="no">{sign}</Text>
-    </Pressable>
+    </Press>
   );
 }
 
@@ -126,11 +127,13 @@ export function NumberInput(props: NumberInputProps) {
       <View style={[controlStyle(t, { focused: f.focused, error: f.error, disabled, readOnly }), { paddingHorizontal: 4, gap: 4 }]}>
         {steppable ? <Stepper testID={`${testID}-decrease`} label={`Decrease ${label}`} sign="−" t={t} onPress={() => nudge(-step)}
                               disabled={min !== undefined && value !== null && value <= min} /> : null}
+        <Roll on={value} style={{ flex: 1 }}>
         <TextInput testID={`${testID}-input`} style={[s.input, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}
                    keyboardType={decimals ? 'decimal-pad' : 'number-pad'} value={typed ?? (value === null || value === undefined ? '' : String(value))}
                    placeholder={placeholder} placeholderTextColor={t.color.textMuted} editable={!readOnly && !disabled}
                    accessibilityLabel={label} accessibilityHint={f.error || helpText} aria-required={required} aria-invalid={!!f.error}
                    onFocus={f.onFocus} onBlur={() => { f.onBlur(); commit(); }} onSubmitEditing={commit} onChangeText={setTyped} />
+        </Roll>
         {steppable ? <Stepper testID={`${testID}-increase`} label={`Increase ${label}`} sign="+" t={t} onPress={() => nudge(step)}
                               disabled={max !== undefined && value !== null && value >= max} /> : null}
       </View>
@@ -141,13 +144,15 @@ export function NumberInput(props: NumberInputProps) {
 /* ---------- A sheet of choices (CurrencySelector, MultiSelect) ---------- */
 
 function Sheet({ open, title, onClose, children, t }: { open: boolean; title: string; onClose: () => void; children: ReactNode; t: Theme }) {
+  const spring = useOpen(open);
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={sheet.backdrop} accessibilityLabel="Close the list" onPress={onClose} />
-      <View style={[sheet.panel, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]} accessibilityViewIsModal>
+      <Animated.View style={[sheet.panel, spring, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
+                     accessibilityViewIsModal>
         <Text style={[sheet.title, { color: t.color.text }]} accessibilityRole="header">{title}</Text>
         {children}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -158,12 +163,12 @@ function SheetField({ testID, label, shown, empty, error, disabled, readOnly, on
 }) {
   const s = styles(t);
   return (
-    <Pressable testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${shown || 'nothing chosen'}`}
+    <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${shown || 'nothing chosen'}`}
                accessibilityHint={error || 'Opens the list of choices'} accessibilityState={{ disabled: !!(disabled || readOnly) }}
                disabled={disabled || readOnly} onPress={onPress} style={[controlStyle(t, { error, disabled, readOnly }), { justifyContent: 'space-between' }]}>
       <Text style={[s.input, shown ? null : { color: t.color.textMuted }]} numberOfLines={1}>{shown || empty}</Text>
       <Text style={s.side} importantForAccessibility="no">▾</Text>
-    </Pressable>
+    </Press>
   );
 }
 
@@ -235,7 +240,7 @@ export function MultiSelect(props: MultiSelectProps) {
       {chosen.length
         ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
             {chosen.map((v) => (
-              <View key={v} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.color.primarySoft, borderRadius: 999, paddingLeft: 12,
+              <Pop key={v} on={v} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.color.primarySoft, borderRadius: 999, paddingLeft: 12,
                 paddingRight: editable ? 2 : 12, minHeight: 32 }}>
                 <Text style={{ fontSize: 14, color: t.color.primaryText }}>{labelOf(v)}</Text>
                 {editable
@@ -244,7 +249,7 @@ export function MultiSelect(props: MultiSelectProps) {
                       <Text style={{ fontSize: 16, color: t.color.primaryText }} importantForAccessibility="no">×</Text>
                     </Pressable>
                   : null}
-              </View>
+              </Pop>
             ))}
           </View>
         : null}
@@ -413,7 +418,7 @@ export function Autocomplete(props: AutocompleteProps) {
                    onFocus={f.onFocus} onBlur={leave} onChangeText={(x) => { setTyped(x); setOwn(''); }} />
       </View>
       {matches.length && f.focused
-        ? <View testID={`${testID}-suggestions`} accessibilityLabel={`${matches.length} suggestions`}
+        ? <Enter effect="slide-down" testID={`${testID}-suggestions`} accessibilityLabel={`${matches.length} suggestions`}
                 style={{ marginTop: 4, borderWidth: t.border, borderColor: t.color.border, borderRadius: t.radius.control, backgroundColor: t.color.surface, overflow: 'hidden' }}>
             {matches.map((o) => (
               <Pressable key={o.value} testID={`${testID}-option-${o.value}`} accessibilityRole="button" accessibilityLabel={o.label}
@@ -422,7 +427,7 @@ export function Autocomplete(props: AutocompleteProps) {
                 <Text style={{ fontSize: 15, color: t.color.text }}>{o.label}</Text>
               </Pressable>
             ))}
-          </View>
+          </Enter>
         : null}
     </FieldShell>
   );
@@ -476,17 +481,19 @@ export function FileUpload(props: FileUploadProps) {
   };
   const hint = [accept ? accept.replace(/,/g, ', ') : '', maxSize !== undefined ? `up to ${fileSize(maxSize)}` : ''].filter(Boolean).join(', ');
   return (
-    <View testID={testID} style={s.field}>
+    <Enter testID={testID} style={s.field}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
-      <Pressable testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}, ${label}`}
+      <Shake error={message}>
+      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}, ${label}`}
                  accessibilityHint={message || hint || helpText} accessibilityState={{ disabled: !!disabled }} disabled={disabled} onPress={choose}
                  style={{ minHeight: t.minTouch + 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: message ? t.color.danger : t.color.borderStrong,
                    borderRadius: t.radius.card, alignItems: 'center', justifyContent: 'center', padding: 12, opacity: disabled ? 0.6 : 1 }}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.color.primaryText }}>{multiple ? 'Add files' : 'Choose a file'}</Text>
         {hint ? <Text style={[s.help, { marginTop: 2 }]} importantForAccessibility="no">{hint}</Text> : null}
-      </Pressable>
+      </Press>
+      </Shake>
       {files.map((f, i) => (
-        <View key={`${f.name}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', minHeight: t.minTouch, marginTop: 8, paddingLeft: 14,
+        <Enter key={`${f.name}-${i}`} effect="settle" style={{ flexDirection: 'row', alignItems: 'center', minHeight: t.minTouch, marginTop: 8, paddingLeft: 14,
           borderWidth: t.border, borderColor: t.color.border, borderRadius: t.radius.control, backgroundColor: t.color.surface }}>
           <Text style={{ flex: 1, fontSize: 15, color: t.color.text }} numberOfLines={1}>{f.name}</Text>
           <Text style={s.side}>{fileSize(f.size)}</Text>
@@ -496,12 +503,12 @@ export function FileUpload(props: FileUploadProps) {
                 <Text style={{ fontSize: 18, color: t.color.textMuted }} importantForAccessibility="no">×</Text>
               </Pressable>
             : null}
-        </View>
+        </Enter>
       ))}
       {message
         ? <Text testID={`${testID}-error`} style={s.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">{message}</Text>
         : helpText ? <Text style={s.help}>{helpText}</Text> : null}
-    </View>
+    </Enter>
   );
 }
 

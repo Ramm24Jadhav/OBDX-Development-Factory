@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 @Component
 public class TargetPacks {
 
-    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter", "jet-core-pack");
+    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter", "jet-core-pack", "vue", "capacitor", "native");
     private static final Logger log = LoggerFactory.getLogger(TargetPacks.class);
     private static final String BASE = "target-packs";
 
@@ -154,8 +154,20 @@ public class TargetPacks {
             }
         }
         String syntax = string(file, "syntax", TargetPack.JSX);
-        if (!List.of(TargetPack.JSX, TargetPack.ANGULAR, TargetPack.DART).contains(syntax)) {
-            throw new IllegalStateException(where + "syntax must be jsx, angular or dart");
+        if (!List.of(TargetPack.JSX, TargetPack.ANGULAR, TargetPack.DART, TargetPack.VUE, TargetPack.NATIVE).contains(syntax)) {
+            throw new IllegalStateException(where + "syntax must be jsx, angular, dart, vue or native");
+        }
+        if (TargetPack.NATIVE.equals(syntax)) {
+            for (String kind : List.of("screenIos", "testIos", "apiIos", "navigationIos")) {
+                if (!structure.containsKey(kind)) {
+                    throw new IllegalStateException(where + "structure." + kind + " is missing (a native pack writes each screen for iOS too)");
+                }
+            }
+            for (String name : List.of("screenIos", "testIos")) {
+                if (!templates.containsKey(name)) {
+                    throw new IllegalStateException(where + "templates." + name + " is missing");
+                }
+            }
         }
         if (TargetPack.ANGULAR.equals(syntax)) {
             components.forEach((type, m) -> {

@@ -21,7 +21,28 @@ class TargetPacksTest {
     @Test
     void builtInPacksLoadWithStarterProjects() {
         TargetPacks packs = TargetPacks.builtIn();
-        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter", "jet-core-pack");
+        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter", "jet-core-pack", "vue",
+                "capacitor", "native");
+        TargetPack nativePack = packs.find("native").orElseThrow();
+        assertThat(nativePack.isNative()).isTrue();
+        assertThat(nativePack.structure()).containsKeys("screen", "test", "screenIos", "testIos", "apiIos", "navigationIos");
+        assertThat(nativePack.templates()).containsKeys("screen", "test", "screenIos", "testIos");
+        assertThat(nativePack.starter()).containsKeys("Package.swift", "android/app/build.gradle.kts", "android/app/src/main/java/com/bank/obdx/api/ApiClient.kt",
+                "android/app/src/main/java/com/bank/obdx/components/Fields.kt", "ios/Sources/ObdxApp/Components/Fields.swift",
+                "ios/Sources/ObdxApp/Api/ApiClient.swift", "shared/i18n/en.json");
+        assertThat(nativePack.rules()).extracting(r -> r.id()).contains("native-no-webview", "native-no-secrets-on-device", "native-no-cleartext");
+        assertThat(nativePack.recipeFor("mobile-native/ios/Sources/ObdxApp/Screens/payments/FundTransferView.swift", "create", "ui"))
+                .hasValueSatisfying(m -> assertThat(m.part().id()).isEqualTo("screenIos"));
+        TargetPack vue = packs.find("vue").orElseThrow();
+        assertThat(vue.isVue()).isTrue();
+        assertThat(vue.structure().get("screen")).isEqualTo("src/screens/{module}/{Screen}Page.vue");
+        assertThat(vue.starter()).containsKeys("package.json", "vite.config.ts", "src/main.ts", "src/api/client.ts", "src/forms/useForm.ts",
+                "src/components/TextField.vue", "src/components/index.ts", "src/i18n/en.json", "src/router/index.ts");
+        assertThat(vue.rules()).extracting(r -> r.id()).contains("vue-no-v-html", "app-api-through-client", "app-no-secrets-in-storage");
+        TargetPack capacitor = packs.find("capacitor").orElseThrow();
+        assertThat(capacitor.syntax()).isEqualTo("jsx");
+        assertThat(capacitor.starter()).containsKeys("capacitor.config.ts", "src/native/device.ts", "src/components/fields.tsx", "vite.config.ts");
+        assertThat(capacitor.rules()).extracting(r -> r.id()).contains("capacitor-no-live-server", "capacitor-no-secrets-on-device", "react-no-react-native");
         assertThat(packs.find("flutter").orElseThrow().isDart()).isTrue();
         assertThat(packs.find("flutter").orElseThrow().starter()).containsKeys("pubspec.yaml", "lib/api/client.dart", "lib/components/tokens.dart", "assets/i18n/en.json");
         assertThat(packs.jet().isJet()).isTrue();
@@ -69,6 +90,17 @@ class TargetPacksTest {
                         .isEqualToNormalizingNewlines(java.nio.file.Files.readString(file));
             }
         }
+    }
+
+    @Test
+    void theCapacitorStarterCarriesTheReactComponentsUnchanged() {
+        // Capacitor wraps the React web screens, so a screen generated for React works in the app unchanged
+        TargetPacks packs = TargetPacks.builtIn();
+        TargetPack react = packs.find("react").orElseThrow();
+        TargetPack capacitor = packs.find("capacitor").orElseThrow();
+        react.starter().keySet().stream().filter(p -> p.startsWith("src/components/") || p.startsWith("src/forms/") || p.startsWith("src/i18n/"))
+                .forEach(p -> assertThat(capacitor.starter().get(p)).as(p).isEqualToNormalizingNewlines(react.starter().get(p)));
+        assertThat(capacitor.templates()).isEqualTo(react.templates());
     }
 
     @Test

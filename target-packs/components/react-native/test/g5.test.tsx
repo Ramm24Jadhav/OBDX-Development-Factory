@@ -14,7 +14,7 @@ function Controlled<T>({ initial, children }: { initial: T; children: (value: T,
 
 const noop = () => undefined;
 const accounts = [{ id: 'sav', name: 'Savings', number: '0012004821', currency: 'USD' }];
-const docs = [{ id: 'r1', title: 'Transfer to A. Rao', meta: '14 Jan · 1,250.00', side: 'PDF' }];
+const docs = [{ id: 'r1', title: 'Transfer to A. Rao', meta: '14 Jan · 1,250.00', value: 'PDF' }];
 const terms = [{ value: 'tc', label: 'I accept the terms and conditions' }, { value: 'offers', label: 'Send me offers by email' }];
 const places = [{ id: 'a', name: 'Bridge St', kind: 'atm' as const, address: '12 Bridge St', distance: '0.4 km' },
   { id: 'b', name: 'London Bridge', kind: 'branch' as const, address: '1 Tooley St', distance: '0.9 km' }];
@@ -23,17 +23,17 @@ describe('group 5', () => {
   it('every component renders with a name and a role on each control, and touch targets of at least 44 points', async () => {
     const all: [string, ReactElement][] = [
       ['RaiseRequest', <RaiseRequest testID="x" types={['Cheque book']} accounts={accounts} value={{ type: '', account: '', details: '' }} onSubmit={noop} />],
-      ['TrackRequests', <TrackRequests testID="x" events={[{ title: 'Received', detail: 'SR-2210' }]} />],
+      ['TrackRequests', <TrackRequests testID="x" items={[{ label: 'Received', meta: 'SR-2210' }]} />],
       ['Mailbox', <Mailbox testID="x" messages={[{ id: 'm', title: 'Your cheque book is on the way', unread: true }]} onOpen={noop} />],
       ['ComposeMessage', <ComposeMessage testID="x" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} />],
       ['EReceipts', <EReceipts testID="x" documents={docs} onDownload={noop} />],
       ['Certificates', <Certificates testID="x" documents={docs} onDownload={noop} />],
       ['StatementRequest', <StatementRequest testID="x" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} />],
       ['StatementFormat', <StatementFormat testID="x" label="Format" value="pdf" />],
-      ['SelfRegister', <SelfRegister testID="x" steps={['Details', 'Verify', 'Password', 'Done']} value={1} />],
-      ['TaxSelfCertification', <TaxSelfCertification testID="x" steps={['Identity', 'Tax residency']} value={0} />],
+      ['SelfRegister', <SelfRegister testID="x" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" />],
+      ['TaxSelfCertification', <TaxSelfCertification testID="x" steps={['Identity', 'Tax residency']} selectedStep="Identity" />],
       ['ProductCard', <ProductCard testID="x" title="Platinum credit card" body="2% cashback" badge="New" onAction={noop} />],
-      ['ApplicationTracker', <ApplicationTracker testID="x" events={[{ title: 'Submitted', detail: '12 Jan' }]} />],
+      ['ApplicationTracker', <ApplicationTracker testID="x" items={[{ label: 'Submitted', meta: '12 Jan' }]} />],
       ['TermsConsent', <TermsConsent testID="x" label="Before you continue" options={terms} mustAccept={['tc']} value={[]} onContinue={noop} />],
       ['LoanCalculator', <LoanCalculator testID="x" value={{ amount: 10000, rate: 9, months: 24 }} currency="USD" />],
       ['EligibilityCalculator', <EligibilityCalculator testID="x" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" />],
@@ -43,8 +43,8 @@ describe('group 5', () => {
       ['Locator', <Locator testID="x" places={places} onDirections={noop} map={<Text>Map</Text>} />],
       ['LiveChat', <LiveChat testID="x" messages={[{ id: '1', from: 'bank', text: 'Hello, how can we help?' }]} suggestions={['Block my card']} onSend={noop} />],
       ['FeedbackRating', <FeedbackRating testID="x" label="How was this payment?" value={4} onSubmit={noop} />],
-      ['Nominations', <Nominations testID="x" nominees={[{ id: 's', title: 'S. Rao · spouse', side: '50%' }]} onEdit={noop} />],
-      ['Faq', <Faq testID="x" sections={[{ id: 'a', title: 'How do I reset my password?', body: 'Choose Forgot password.' }]} />],
+      ['Nominations', <Nominations testID="x" nominees={[{ id: 's', title: 'S. Rao · spouse', value: '50%' }]} onEdit={noop} />],
+      ['Faq', <Faq testID="x" items={[{ id: 'a', title: 'How do I reset my password?', body: 'Choose Forgot password.' }]} />],
     ];
     for (const [name, element] of all) {
       await render(element);
@@ -108,7 +108,7 @@ describe('group 5', () => {
     await render(<Locator testID="l" places={places} onDirections={go} />);
     await fireEvent.press(screen.getByRole('radio', { name: 'Branches' }));
     expect(screen.queryByText('Bridge St')).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Directions London Bridge' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Directions: London Bridge' }));
     expect(go.mock.calls[0][0].id).toBe('b');
   });
 

@@ -13368,7 +13368,8 @@
           "names": {
             "jet-premium": "bx-rolling-digits",
             "react": "RollingDigits",
-            "angular": "bx-rolling-digits"
+            "angular": "bx-rolling-digits",
+            "react-native": "RollingDigits"
           },
           "sample": {
             "value": 12400.5,
@@ -13445,7 +13446,8 @@
           "names": {
             "jet-premium": "bx-count-up",
             "react": "CountUp",
-            "angular": "bx-count-up"
+            "angular": "bx-count-up",
+            "react-native": "CountUp"
           },
           "sample": {
             "value": 1840.2,
@@ -13522,7 +13524,8 @@
           "names": {
             "jet-premium": "bx-split-flap-board",
             "react": "SplitFlapBoard",
-            "angular": "bx-split-flap-board"
+            "angular": "bx-split-flap-board",
+            "react-native": "SplitFlapBoard"
           },
           "sample": {
             "items": [
@@ -13583,7 +13586,8 @@
           "names": {
             "jet-premium": "bx-reveal-digits",
             "react": "RevealDigits",
-            "angular": "bx-reveal-digits"
+            "angular": "bx-reveal-digits",
+            "react-native": "RevealDigits"
           },
           "sample": {
             "value": "GB29 NWBK 6016 1331 9268 19"
@@ -13635,7 +13639,8 @@
           "names": {
             "jet-premium": "bx-blur-in-text",
             "react": "BlurInText",
-            "angular": "bx-blur-in-text"
+            "angular": "bx-blur-in-text",
+            "react-native": "BlurInText"
           },
           "sample": {
             "text": "Your money, clearly."
@@ -13687,7 +13692,8 @@
           "names": {
             "jet-premium": "bx-text-reveal",
             "react": "TextReveal",
-            "angular": "bx-text-reveal"
+            "angular": "bx-text-reveal",
+            "react-native": "TextReveal"
           },
           "sample": {
             "text": "Welcome back, Asha"
@@ -13739,7 +13745,8 @@
           "names": {
             "jet-premium": "bx-rotating-text",
             "react": "RotatingText",
-            "angular": "bx-rotating-text"
+            "angular": "bx-rotating-text",
+            "react-native": "RotatingText"
           },
           "sample": {
             "prefix": "Pay",
@@ -13802,7 +13809,8 @@
           "names": {
             "jet-premium": "bx-shimmer-text",
             "react": "ShimmerText",
-            "angular": "bx-shimmer-text"
+            "angular": "bx-shimmer-text",
+            "react-native": "ShimmerText"
           },
           "sample": {
             "text": "New: instant transfers"
@@ -13854,7 +13862,8 @@
           "names": {
             "jet-premium": "bx-gradient-text",
             "react": "GradientText",
-            "angular": "bx-gradient-text"
+            "angular": "bx-gradient-text",
+            "react-native": "GradientText"
           },
           "sample": {
             "text": "Platinum"
@@ -13906,7 +13915,8 @@
           "names": {
             "jet-premium": "bx-typed-text",
             "react": "TypedText",
-            "angular": "bx-typed-text"
+            "angular": "bx-typed-text",
+            "react-native": "TypedText"
           },
           "sample": {
             "text": "You spent 320.00 on groceries this month, 40.00 less than last month."
@@ -13964,7 +13974,8 @@
           "names": {
             "jet-premium": "bx-focus-word",
             "react": "FocusWord",
-            "angular": "bx-focus-word"
+            "angular": "bx-focus-word",
+            "react-native": "FocusWord"
           },
           "sample": {
             "text": "Save a little every day"
@@ -14022,7 +14033,8 @@
           "names": {
             "jet-premium": "bx-scroll-float-text",
             "react": "ScrollFloatText",
-            "angular": "bx-scroll-float-text"
+            "angular": "bx-scroll-float-text",
+            "react-native": "ScrollFloatText"
           },
           "sample": {
             "text": "Grow your savings"
@@ -14080,7 +14092,8 @@
           "names": {
             "jet-premium": "bx-fade-in-content",
             "react": "FadeInContent",
-            "angular": "bx-fade-in-content"
+            "angular": "bx-fade-in-content",
+            "react-native": "FadeInContent"
           },
           "sample": {
             "effect": "fadeup"
@@ -14138,7 +14151,8 @@
           "names": {
             "jet-premium": "bx-scroll-reveal",
             "react": "ScrollReveal",
-            "angular": "bx-scroll-reveal"
+            "angular": "bx-scroll-reveal",
+            "react-native": "ScrollReveal"
           },
           "sample": {
             "effect": "scale"
@@ -14196,7 +14210,8 @@
           "names": {
             "jet-premium": "bx-scroll-expand",
             "react": "ScrollExpand",
-            "angular": "bx-scroll-expand"
+            "angular": "bx-scroll-expand",
+            "react-native": "ScrollExpand"
           },
           "sample": {},
           "builtOn": {
@@ -14252,7 +14267,8 @@
           "names": {
             "jet-premium": "bx-edge-blur",
             "react": "EdgeBlur",
-            "angular": "bx-edge-blur"
+            "angular": "bx-edge-blur",
+            "react-native": "EdgeBlur"
           },
           "sample": {},
           "builtOn": {
@@ -14308,7 +14324,8 @@
           "names": {
             "jet-premium": "bx-glare-hover",
             "react": "GlareHover",
-            "angular": "bx-glare-hover"
+            "angular": "bx-glare-hover",
+            "react-native": "GlareHover"
           },
           "sample": {},
           "builtOn": {
@@ -14364,7 +14381,8 @@
           "names": {
             "jet-premium": "bx-magnetic-button",
             "react": "MagneticButton",
-            "angular": "bx-magnetic-button"
+            "angular": "bx-magnetic-button",
+            "react-native": "MagneticButton"
           },
           "sample": {
             "label": "Open an account"
@@ -14422,7 +14440,8 @@
           "names": {
             "jet-premium": "bx-highlight-border",
             "react": "HighlightBorder",
-            "angular": "bx-highlight-border"
+            "angular": "bx-highlight-border",
+            "react-native": "HighlightBorder"
           },
           "sample": {},
           "builtOn": {
@@ -14478,7 +14497,8 @@
           "names": {
             "jet-premium": "bx-click-burst",
             "react": "ClickBurst",
-            "angular": "bx-click-burst"
+            "angular": "bx-click-burst",
+            "react-native": "ClickBurst"
           },
           "sample": {},
           "builtOn": {
@@ -14534,7 +14554,8 @@
           "names": {
             "jet-premium": "bx-marquee",
             "react": "Marquee",
-            "angular": "bx-marquee"
+            "angular": "bx-marquee",
+            "react-native": "Marquee"
           },
           "sample": {
             "items": [
@@ -14602,7 +14623,8 @@
           "names": {
             "jet-premium": "bx-animated-list",
             "react": "AnimatedList",
-            "angular": "bx-animated-list"
+            "angular": "bx-animated-list",
+            "react-native": "AnimatedList"
           },
           "sample": {
             "label": "Recent",
@@ -14661,7 +14683,8 @@
           "names": {
             "jet-premium": "bx-spotlight-card",
             "react": "SpotlightCard",
-            "angular": "bx-spotlight-card"
+            "angular": "bx-spotlight-card",
+            "react-native": "SpotlightCard"
           },
           "sample": {
             "heading": "Platinum card",
@@ -14720,7 +14743,8 @@
           "names": {
             "jet-premium": "bx-tilt-card",
             "react": "TiltCard",
-            "angular": "bx-tilt-card"
+            "angular": "bx-tilt-card",
+            "react-native": "TiltCard"
           },
           "sample": {
             "heading": "Savings",
@@ -14779,7 +14803,8 @@
           "names": {
             "jet-premium": "bx-flip-card",
             "react": "FlipCard",
-            "angular": "bx-flip-card"
+            "angular": "bx-flip-card",
+            "react-native": "FlipCard"
           },
           "sample": {
             "heading": "Platinum",
@@ -14863,7 +14888,8 @@
           "names": {
             "jet-premium": "bx-card-stack",
             "react": "CardStack",
-            "angular": "bx-card-stack"
+            "angular": "bx-card-stack",
+            "react-native": "CardStack"
           },
           "sample": {
             "items": [
@@ -14930,7 +14956,8 @@
           "names": {
             "jet-premium": "bx-glow-border-card",
             "react": "GlowBorderCard",
-            "angular": "bx-glow-border-card"
+            "angular": "bx-glow-border-card",
+            "react-native": "GlowBorderCard"
           },
           "sample": {
             "heading": "Premium account"
@@ -14988,7 +15015,8 @@
           "names": {
             "jet-premium": "bx-bento-grid",
             "react": "BentoGrid",
-            "angular": "bx-bento-grid"
+            "angular": "bx-bento-grid",
+            "react-native": "BentoGrid"
           },
           "sample": {
             "label": "Dashboard",
@@ -15070,7 +15098,8 @@
           "names": {
             "jet-premium": "bx-carousel",
             "react": "Carousel",
-            "angular": "bx-carousel"
+            "angular": "bx-carousel",
+            "react-native": "Carousel"
           },
           "sample": {
             "slides": [
@@ -15137,7 +15166,8 @@
           "names": {
             "jet-premium": "bx-elastic-slider",
             "react": "ElasticSlider",
-            "angular": "bx-elastic-slider"
+            "angular": "bx-elastic-slider",
+            "react-native": "ElasticSlider"
           },
           "sample": {
             "label": "Amount",
@@ -15239,7 +15269,8 @@
           "names": {
             "jet-premium": "bx-option-wheel",
             "react": "OptionWheel",
-            "angular": "bx-option-wheel"
+            "angular": "bx-option-wheel",
+            "react-native": "OptionWheel"
           },
           "sample": {
             "label": "Tenure",
@@ -15309,7 +15340,8 @@
           "names": {
             "jet-premium": "bx-pill-nav",
             "react": "PillNav",
-            "angular": "bx-pill-nav"
+            "angular": "bx-pill-nav",
+            "react-native": "PillNav"
           },
           "sample": {
             "items": [
@@ -15378,7 +15410,8 @@
           "names": {
             "jet-premium": "bx-dock-nav",
             "react": "DockNav",
-            "angular": "bx-dock-nav"
+            "angular": "bx-dock-nav",
+            "react-native": "DockNav"
           },
           "sample": {
             "items": [
@@ -15452,7 +15485,8 @@
           "names": {
             "jet-premium": "bx-card-nav",
             "react": "CardNav",
-            "angular": "bx-card-nav"
+            "angular": "bx-card-nav",
+            "react-native": "CardNav"
           },
           "sample": {
             "items": [
@@ -15521,7 +15555,8 @@
           "names": {
             "jet-premium": "bx-staggered-menu",
             "react": "StaggeredMenu",
-            "angular": "bx-staggered-menu"
+            "angular": "bx-staggered-menu",
+            "react-native": "StaggeredMenu"
           },
           "sample": {
             "items": [
@@ -15589,7 +15624,8 @@
           "names": {
             "jet-premium": "bx-document-folder",
             "react": "DocumentFolder",
-            "angular": "bx-document-folder"
+            "angular": "bx-document-folder",
+            "react-native": "DocumentFolder"
           },
           "sample": {
             "items": [
@@ -15664,7 +15700,8 @@
           "names": {
             "jet-premium": "bx-scroll-stack",
             "react": "ScrollStack",
-            "angular": "bx-scroll-stack"
+            "angular": "bx-scroll-stack",
+            "react-native": "ScrollStack"
           },
           "sample": {
             "items": [
@@ -15731,7 +15768,8 @@
           "names": {
             "jet-premium": "bx-profile-card",
             "react": "ProfileCard",
-            "angular": "bx-profile-card"
+            "angular": "bx-profile-card",
+            "react-native": "ProfileCard"
           },
           "sample": {
             "name": "Priya Nair",
@@ -15815,7 +15853,8 @@
           "names": {
             "jet-premium": "bx-glass-panel",
             "react": "GlassPanel",
-            "angular": "bx-glass-panel"
+            "angular": "bx-glass-panel",
+            "react-native": "GlassPanel"
           },
           "sample": {},
           "builtOn": {
@@ -15877,7 +15916,8 @@
           "names": {
             "jet-premium": "bx-gradient-backdrop",
             "react": "GradientBackdrop",
-            "angular": "bx-gradient-backdrop"
+            "angular": "bx-gradient-backdrop",
+            "react-native": "GradientBackdrop"
           },
           "sample": {},
           "builtOn": {
@@ -15933,7 +15973,8 @@
           "names": {
             "jet-premium": "bx-soft-aurora",
             "react": "SoftAurora",
-            "angular": "bx-soft-aurora"
+            "angular": "bx-soft-aurora",
+            "react-native": "SoftAurora"
           },
           "sample": {},
           "builtOn": {
@@ -15989,7 +16030,8 @@
           "names": {
             "jet-premium": "bx-silk-backdrop",
             "react": "SilkBackdrop",
-            "angular": "bx-silk-backdrop"
+            "angular": "bx-silk-backdrop",
+            "react-native": "SilkBackdrop"
           },
           "sample": {},
           "builtOn": {
@@ -16045,7 +16087,8 @@
           "names": {
             "jet-premium": "bx-dot-grid",
             "react": "DotGrid",
-            "angular": "bx-dot-grid"
+            "angular": "bx-dot-grid",
+            "react-native": "DotGrid"
           },
           "sample": {},
           "builtOn": {
@@ -16101,7 +16144,8 @@
           "names": {
             "jet-premium": "bx-line-waves",
             "react": "LineWaves",
-            "angular": "bx-line-waves"
+            "angular": "bx-line-waves",
+            "react-native": "LineWaves"
           },
           "sample": {},
           "builtOn": {
@@ -16157,7 +16201,8 @@
           "names": {
             "jet-premium": "bx-light-beams",
             "react": "LightBeams",
-            "angular": "bx-light-beams"
+            "angular": "bx-light-beams",
+            "react-native": "LightBeams"
           },
           "sample": {},
           "builtOn": {
@@ -16213,7 +16258,8 @@
           "names": {
             "jet-premium": "bx-topography",
             "react": "Topography",
-            "angular": "bx-topography"
+            "angular": "bx-topography",
+            "react-native": "Topography"
           },
           "sample": {},
           "builtOn": {
@@ -16269,7 +16315,8 @@
           "names": {
             "jet-premium": "bx-particle-backdrop",
             "react": "ParticleBackdrop",
-            "angular": "bx-particle-backdrop"
+            "angular": "bx-particle-backdrop",
+            "react-native": "ParticleBackdrop"
           },
           "sample": {},
           "builtOn": {
@@ -16331,7 +16378,8 @@
           "names": {
             "jet-premium": "bx-slide-to-confirm",
             "react": "SlideToConfirm",
-            "angular": "bx-slide-to-confirm"
+            "angular": "bx-slide-to-confirm",
+            "react-native": "SlideToConfirm"
           },
           "sample": {
             "label": "Slide to pay 1,250.00"
@@ -16395,7 +16443,8 @@
           "names": {
             "jet-premium": "bx-hold-to-confirm",
             "react": "HoldToConfirm",
-            "angular": "bx-hold-to-confirm"
+            "angular": "bx-hold-to-confirm",
+            "react-native": "HoldToConfirm"
           },
           "sample": {
             "label": "Hold to close the account"
@@ -16465,7 +16514,8 @@
           "names": {
             "jet-premium": "bx-otp-slots",
             "react": "OtpSlots",
-            "angular": "bx-otp-slots"
+            "angular": "bx-otp-slots",
+            "react-native": "OtpSlots"
           },
           "sample": {
             "value": "12"
@@ -16570,7 +16620,8 @@
           "names": {
             "jet-premium": "bx-receipt-tear",
             "react": "ReceiptTear",
-            "angular": "bx-receipt-tear"
+            "angular": "bx-receipt-tear",
+            "react-native": "ReceiptTear"
           },
           "sample": {
             "amount": 1250,
@@ -16648,7 +16699,8 @@
           "names": {
             "jet-premium": "bx-success-check",
             "react": "SuccessCheck",
-            "angular": "bx-success-check"
+            "angular": "bx-success-check",
+            "react-native": "SuccessCheck"
           },
           "sample": {
             "label": "Payment sent",
@@ -16701,7 +16753,8 @@
           "names": {
             "jet-premium": "bx-swipe-row",
             "react": "SwipeRow",
-            "angular": "bx-swipe-row"
+            "angular": "bx-swipe-row",
+            "react-native": "SwipeRow"
           },
           "sample": {
             "heading": "Coffee House",
@@ -16784,7 +16837,8 @@
           "names": {
             "jet-premium": "bx-swipe-toast",
             "react": "SwipeToast",
-            "angular": "bx-swipe-toast"
+            "angular": "bx-swipe-toast",
+            "react-native": "SwipeToast"
           },
           "sample": {
             "message": "Saved as a payee"
@@ -16842,7 +16896,8 @@
           "names": {
             "jet-premium": "bx-bell-toggle",
             "react": "BellToggle",
-            "angular": "bx-bell-toggle"
+            "angular": "bx-bell-toggle",
+            "react-native": "BellToggle"
           },
           "sample": {
             "value": true
@@ -16912,7 +16967,8 @@
           "names": {
             "jet-premium": "bx-squish-switch",
             "react": "SquishSwitch",
-            "angular": "bx-squish-switch"
+            "angular": "bx-squish-switch",
+            "react-native": "SquishSwitch"
           },
           "sample": {
             "label": "Round up to save",
@@ -16989,7 +17045,8 @@
           "names": {
             "jet-premium": "bx-jelly-radio",
             "react": "JellyRadio",
-            "angular": "bx-jelly-radio"
+            "angular": "bx-jelly-radio",
+            "react-native": "JellyRadio"
           },
           "sample": {
             "label": "Card design",
@@ -17065,7 +17122,8 @@
           "names": {
             "jet-premium": "bx-glide-select",
             "react": "GlideSelect",
-            "angular": "bx-glide-select"
+            "angular": "bx-glide-select",
+            "react-native": "GlideSelect"
           },
           "sample": {
             "label": "Show",
@@ -17141,7 +17199,8 @@
           "names": {
             "jet-premium": "bx-rubber-segment",
             "react": "RubberSegment",
-            "angular": "bx-rubber-segment"
+            "angular": "bx-rubber-segment",
+            "react-native": "RubberSegment"
           },
           "sample": {
             "label": "Period",
@@ -17217,7 +17276,8 @@
           "names": {
             "jet-premium": "bx-scrub-field",
             "react": "ScrubField",
-            "angular": "bx-scrub-field"
+            "angular": "bx-scrub-field",
+            "react-native": "ScrubField"
           },
           "sample": {
             "value": 250,
@@ -17300,7 +17360,8 @@
           "names": {
             "jet-premium": "bx-budget-gauge",
             "react": "BudgetGauge",
-            "angular": "bx-budget-gauge"
+            "angular": "bx-budget-gauge",
+            "react-native": "BudgetGauge"
           },
           "sample": {
             "label": "Groceries",
@@ -17367,7 +17428,8 @@
           "names": {
             "jet-premium": "bx-status-mark",
             "react": "StatusMark",
-            "angular": "bx-status-mark"
+            "angular": "bx-status-mark",
+            "react-native": "StatusMark"
           },
           "sample": {
             "label": "Approved",
@@ -17420,7 +17482,8 @@
           "names": {
             "jet-premium": "bx-favourite-heart",
             "react": "FavouriteHeart",
-            "angular": "bx-favourite-heart"
+            "angular": "bx-favourite-heart",
+            "react-native": "FavouriteHeart"
           },
           "sample": {
             "name": "A. Rao",
@@ -17491,7 +17554,8 @@
           "names": {
             "jet-premium": "bx-peek-rating",
             "react": "PeekRating",
-            "angular": "bx-peek-rating"
+            "angular": "bx-peek-rating",
+            "react-native": "PeekRating"
           },
           "sample": {
             "label": "How was this payment?",
@@ -17550,7 +17614,8 @@
           "names": {
             "jet-premium": "bx-warm-tooltip",
             "react": "WarmTooltip",
-            "angular": "bx-warm-tooltip"
+            "angular": "bx-warm-tooltip",
+            "react-native": "WarmTooltip"
           },
           "sample": {
             "label": "Reward points",
@@ -17603,7 +17668,8 @@
           "names": {
             "jet-premium": "bx-prompt-bar",
             "react": "PromptBar",
-            "angular": "bx-prompt-bar"
+            "angular": "bx-prompt-bar",
+            "react-native": "PromptBar"
           },
           "sample": {
             "suggestions": [
@@ -17676,7 +17742,8 @@
           "names": {
             "jet-premium": "bx-voice-pill",
             "react": "VoicePill",
-            "angular": "bx-voice-pill"
+            "angular": "bx-voice-pill",
+            "react-native": "VoicePill"
           },
           "sample": {},
           "builtOn": {
@@ -17738,7 +17805,8 @@
           "names": {
             "jet-premium": "bx-call-chip",
             "react": "CallChip",
-            "angular": "bx-call-chip"
+            "angular": "bx-call-chip",
+            "react-native": "CallChip"
           },
           "sample": {
             "number": "+44 20 7946 0000"
@@ -17790,7 +17858,8 @@
           "names": {
             "jet-premium": "bx-lattice-loader",
             "react": "LatticeLoader",
-            "angular": "bx-lattice-loader"
+            "angular": "bx-lattice-loader",
+            "react-native": "LatticeLoader"
           },
           "sample": {
             "label": "Loading your accounts"

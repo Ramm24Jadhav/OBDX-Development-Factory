@@ -12,6 +12,7 @@ import { AmountInput, TextField, formatAmount } from './TextField';
 import { FieldProps, FieldShell, Option, controlStyle, styles, useField } from './field';
 import { Chips, FormProps, ChipsProps, Item, ItemList, KeyValues, KeyValuesProps, Segment, SegmentProps, Steps, Tiles, TilesProps, Touch, maskNumber, panel,
   toneColors } from './parts';
+import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
 
 export interface Account {
@@ -81,21 +82,23 @@ export function AccountBalance({ testID, label, balance, available, currency, hi
   const off = hidden ?? own;
   const flip = () => { setOwn(!off); onHiddenChange?.(!off); };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 14, color: t.color.textMuted }}>{label}</Text>
         <Touch testID={`${testID}-hide`} label={off ? 'Show balance' : 'Hide balance'} selected={off} onPress={flip} style={{ paddingHorizontal: 8 }}>
           <Text style={{ fontSize: 13.5, fontWeight: '600', color: t.color.primaryText }}>{off ? 'Show' : 'Hide'}</Text>
         </Touch>
       </View>
+      <Roll on={off ? 'hidden' : balance}>
       <Text testID={`${testID}-amount`} accessibilityLabel={off ? 'Balance hidden' : `Balance ${money(balance, currency)}`}
             style={{ fontSize: 30, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>
         {off ? '••••••' : formatAmount(balance, currency)}{off || !currency ? '' : <Text style={{ fontSize: 15, color: t.color.textMuted }}> {currency}</Text>}
       </Text>
+      </Roll>
       {available !== undefined ? (
         <Text style={{ fontSize: 13.5, color: t.color.textMuted }}>Available {off ? '••••' : money(available, currency)}</Text>
       ) : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -115,7 +118,7 @@ export function AccountCard({ testID, account, badge, actionLabel = 'View detail
   const t = useTheme();
   const c = toneColors(t, 'info');
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{accountLabel(account)}</Text>
         {badge ? <Text style={{ fontSize: 12, fontWeight: '700', color: c.fg, backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
@@ -129,7 +132,7 @@ export function AccountCard({ testID, account, badge, actionLabel = 'View detail
           <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>{actionLabel} →</Text>
         </Touch>
       ) : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -273,7 +276,7 @@ export function BeneficiarySelector(props: BeneficiarySelectorProps) {
     <View testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
       {payees.length > 5 ? <TextField testID={`${testID}-search`} label={`Search ${label}`} value={query} onChange={setQuery} clearable /> : null}
-      <View style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
+      <Enter style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
         {shown.length === 0 ? <Text style={{ padding: 12, color: t.color.textMuted }}>{q ? `No payee matches "${query}".` : 'No saved payees yet.'}</Text> : null}
         {shown.map((p) => {
           const on = p.id === value;
@@ -290,7 +293,7 @@ export function BeneficiarySelector(props: BeneficiarySelectorProps) {
             </Touch>
           );
         })}
-      </View>
+      </Enter>
       {onAdd ? <Button testID={`${testID}-add`} label="Add a new payee" chroming="borderless" onAction={onAdd} /> : null}
       {error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : helpText ? <Text style={s.help}>{helpText}</Text> : null}
     </View>
@@ -309,7 +312,7 @@ export interface BeneficiaryCardProps {
 export function BeneficiaryCard({ testID, payee, note, onPay }: BeneficiaryCardProps) {
   const t = useTheme();
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
         <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{payee.name}</Text>
         {payee.bank ? <Text style={{ fontSize: 13, color: t.color.textMuted }}>{payee.bank}</Text> : null}
@@ -320,7 +323,7 @@ export function BeneficiaryCard({ testID, payee, note, onPay }: BeneficiaryCardP
           <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>Pay now →</Text>
         </Touch>
       ) : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -358,7 +361,7 @@ export function PaymentForm(props: PaymentFormProps) {
   };
   const ok = !problems.from && !problems.to && !problems.amount;
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <AccountSelector testID={`${testID}-from`} label="From account" accounts={accounts} value={v.from} onChange={(x) => set({ from: x })} required
                        disabled={disabled} error={tried ? problems.from : undefined} />
@@ -370,7 +373,7 @@ export function PaymentForm(props: PaymentFormProps) {
       <TextField testID={`${testID}-note`} label="Note to the payee" value={v.note} onChange={(x) => set({ note: x })} maxLength={140} disabled={disabled} />
       {error ? <Text style={styles(t).error} accessibilityRole="alert">{error}</Text> : null}
       <Button testID={`${testID}-review`} label={reviewLabel} disabled={disabled} onAction={() => { setTried(true); if (ok) { onReview(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -420,14 +423,14 @@ export function TransactionHistory({ testID, label = 'Transactions', transaction
   const f = filter ?? own;
   const list = transactions.filter((x) => (f === 'in' ? x.amount > 0 : f === 'out' ? x.amount < 0 : true));
   const rows: Item[] = (limit ? list.slice(0, limit) : list).map((x) => ({ id: x.id, title: x.description, meta: x.date, tone: x.amount > 0 ? 'success' : undefined,
-    side: `${x.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(x.amount), x.currency)}${x.currency ? ` ${x.currency}` : ''}` }));
+    value: `${x.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(x.amount), x.currency)}${x.currency ? ` ${x.currency}` : ''}` }));
   return (
     <View testID={testID} style={{ gap: 8 }}>
       {limit ? null : (
         <Segment testID={`${testID}-filter`} label="Show" value={f} options={[{ value: 'all', label: 'All' }, { value: 'in', label: 'Money in' },
           { value: 'out', label: 'Money out' }]} onChange={(x) => { const v = x as 'all' | 'in' | 'out'; setOwn(v); onFilterChange?.(v); }} />
       )}
-      <ItemList testID={`${testID}-list`} label={label} items={rows} emptyText="No transactions in this view."
+      <ItemList testID={`${testID}-list`} heading={label} items={rows} emptyText="No transactions in this view."
                 onSelect={onSelect ? (i) => onSelect(transactions.find((x) => x.id === i.id)!) : undefined} />
       {onViewAll ? <Button testID={`${testID}-all`} label="View all" chroming="borderless" onAction={onViewAll} /> : null}
     </View>
@@ -464,7 +467,7 @@ export interface TransactionReceiptProps {
 export function TransactionReceipt({ testID, title = 'Payment sent', amount, currency, rows, onShare, onDownload }: TransactionReceiptProps) {
   const t = useTheme();
   return (
-    <View testID={testID} style={[panel(t), { alignItems: 'stretch' }]}>
+    <Enter testID={testID} style={[panel(t), { alignItems: 'stretch' }]}>
       <View style={{ alignItems: 'center', gap: 6 }} accessible accessibilityRole="summary" accessibilityLiveRegion="polite"
             accessibilityLabel={`${title}, ${money(amount, currency)}`}>
         <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: t.color.successSoft, alignItems: 'center', justifyContent: 'center' }}>
@@ -478,7 +481,7 @@ export function TransactionReceipt({ testID, title = 'Payment sent', amount, cur
         {onShare ? <View style={{ flex: 1 }}><Button testID={`${testID}-share`} label="Share" chroming="outlined" onAction={onShare} /></View> : null}
         {onDownload ? <View style={{ flex: 1 }}><Button testID={`${testID}-download`} label="Download" chroming="outlined" onAction={onDownload} /></View> : null}
       </View>
-    </View>
+    </Enter>
   );
 }
 
@@ -505,8 +508,8 @@ export interface UpcomingBillsProps {
 /** Bills due soon, pay from the list; overdue ones are marked in words. */
 export function UpcomingBills({ testID, label = 'Upcoming bills', bills, onPay, actionLabel = 'Pay' }: UpcomingBillsProps) {
   const items: Item[] = bills.map((b) => ({ id: b.id, title: b.payee, meta: b.overdue ? `Overdue · ${b.due}` : b.due, tone: b.overdue ? 'danger' : undefined,
-    side: money(b.amount, b.currency) }));
-  return <ItemList testID={testID} label={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
+    value: money(b.amount, b.currency) }));
+  return <ItemList testID={testID} heading={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
                    onAction={(i) => onPay?.(bills.find((b) => b.id === i.id)!)} />;
 }
 
@@ -554,7 +557,7 @@ export function NewDepositForm(props: NewDepositFormProps) {
     months: v.months ? '' : 'Choose the tenure.',
   };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <AccountSelector testID={`${testID}-from`} label="From account" accounts={accounts} value={v.from} onChange={(x) => set({ from: x })} required
                        disabled={disabled} error={tried ? problems.from : undefined} />
@@ -565,7 +568,7 @@ export function NewDepositForm(props: NewDepositFormProps) {
                error={tried ? problems.months : undefined} />
       <Button testID={`${testID}-review`} label="Review deposit" disabled={disabled}
               onAction={() => { setTried(true); if (!problems.from && !problems.amount && !problems.months) { onReview(v); } }} />
-    </View>
+    </Enter>
   );
 }
 

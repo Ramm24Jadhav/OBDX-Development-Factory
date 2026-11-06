@@ -14,8 +14,9 @@ import { TextArea, Toggle } from './Forms';
 import { Account, AccountSelector } from './G2';
 import { AmountInput, TextField, formatAmount } from './TextField';
 import { FieldProps, Option, styles } from './field';
-import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, Event, Item, ItemList, KeyValues, KeyValuesProps, Segment, SliderControl, SliderControlProps, Steps,
+import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem, Item, ItemList, KeyValues, KeyValuesProps, Segment, SliderControl, SliderControlProps, Steps,
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
+import { Enter } from './motion';
 import { useTheme } from './theme';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
@@ -73,7 +74,7 @@ export function LoanRepayment(props: LoanRepaymentProps) {
     from: v.from ? '' : 'Choose the account to pay from.',
   };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <Dropdown testID={`${testID}-loan`} label="Loan" options={loans} value={v.loan} onChange={(x) => set({ loan: x })} required disabled={disabled}
                 error={tried ? problems.loan : undefined} />
@@ -85,7 +86,7 @@ export function LoanRepayment(props: LoanRepaymentProps) {
                        error={tried ? problems.from : undefined} />
       <Button testID={`${testID}-review`} label="Review repayment" disabled={disabled}
               onAction={() => { setTried(true); if (!problems.loan && !problems.amount && !problems.from) { onReview(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -112,7 +113,7 @@ export function RaiseDispute(props: RaiseDisputeProps) {
   const set = (patch: Partial<DisputeValue>) => onChange?.({ ...v, ...patch });
   const problems = { reason: v.reason ? '' : 'Choose a reason.', details: v.reason === 'Other' && !v.details.trim() ? 'Say what happened.' : '' };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Text style={{ fontSize: 14, color: t.color.textBody }}>Transaction: {transaction}</Text>
       <Dropdown testID={`${testID}-reason`} label="Reason" options={reasons} value={v.reason} onChange={(x) => set({ reason: x })} required disabled={disabled}
@@ -121,7 +122,7 @@ export function RaiseDispute(props: RaiseDisputeProps) {
                 error={tried ? problems.details : undefined} />
       <Button testID={`${testID}-submit`} label="Raise dispute" busy={busy} disabled={disabled}
               onAction={() => { setTried(true); if (!problems.reason && !problems.details) { onSubmit(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -154,7 +155,7 @@ export function AddOnCard(props: AddOnCardProps) {
     limit: !v.limit ? 'Enter the limit.' : maxLimit !== undefined && v.limit > maxLimit ? `The limit can be at most ${money(maxLimit, currency)}.` : '',
   };
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <TextField testID={`${testID}-name`} label="Name on the card" value={v.name} onChange={(x) => set({ name: x })} maxLength={26} required disabled={disabled}
                  error={tried ? problems.name : undefined} />
@@ -164,7 +165,7 @@ export function AddOnCard(props: AddOnCardProps) {
                    max={maxLimit} error={tried ? problems.limit : undefined} />
       <Button testID={`${testID}-submit`} label="Apply" busy={busy} disabled={disabled}
               onAction={() => { setTried(true); if (!problems.name && !problems.relationship && !problems.limit) { onSubmit(v); } }} />
-    </View>
+    </Enter>
   );
 }
 
@@ -223,7 +224,7 @@ export function PromiseToPay({ testID, label, value, onChange, rows, min, max, o
 export interface DisbursementTimelineProps {
   testID: string;
   label?: string;
-  events: ReadonlyArray<Event>;
+  items: ReadonlyArray<TimelineItem>;
 }
 
 /** Each disbursement of the loan, in order; future ones take state "todo". */
@@ -415,13 +416,13 @@ export function CardControls({ testID, label, value, onChange, disabled, readOnl
   const t = useTheme();
   const on = value ?? [];
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       {options.map((o) => (
         <Toggle key={o.value} testID={`${testID}-${o.value}`} label={o.label} value={on.includes(o.value)} disabled={disabled || o.disabled} readOnly={readOnly}
                 onChange={(x) => onChange?.(x ? [...on, o.value] : on.filter((v) => v !== o.value))} />
       ))}
-    </View>
+    </Enter>
   );
 }
 
@@ -456,7 +457,7 @@ export interface CardStatementsProps {
 
 /** Past statements, ready to download. */
 export function CardStatements({ testID, label = 'Statements', statements, onDownload }: CardStatementsProps) {
-  return <ItemList testID={testID} label={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
+  return <ItemList testID={testID} heading={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
 }
 
 /* ---------- AuthChallenge ---------- */
@@ -482,7 +483,7 @@ export function AuthChallenge({ testID, label, authenticate, onSuccess, onFallba
     if (ok) { setState('idle'); onSuccess(); } else { setState('failed'); }
   };
   return (
-    <View testID={testID} style={[panel(t), { alignItems: 'center' }]}>
+    <Enter testID={testID} style={[panel(t), { alignItems: 'center' }]}>
       <View importantForAccessibility="no" style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: t.color.primarySoft, alignItems: 'center',
         justifyContent: 'center' }}>
         <Text style={{ fontSize: 28, color: t.color.primaryText }}>◉</Text>
@@ -491,7 +492,7 @@ export function AuthChallenge({ testID, label, authenticate, onSuccess, onFallba
       {state === 'failed' ? <Text testID={`${testID}-failed`} style={styles(t).error} accessibilityRole="alert">That did not work. Try again or use a code.</Text> : null}
       <Button testID={`${testID}-start`} label={state === 'failed' ? 'Try again' : 'Use fingerprint or face'} busy={state === 'busy'} onAction={run} />
       {onFallback ? <Button testID={`${testID}-code`} label="Use a code instead" chroming="borderless" onAction={onFallback} /> : null}
-    </View>
+    </Enter>
   );
 }
 
@@ -596,7 +597,7 @@ export function KycSteps({ label = 'Identity check', ...props }: StepsProps) {
   return <Steps {...props} label={label} />;
 }
 
-export interface FraudAlertProps extends Omit<BannerProps, 'tone' | 'actionLabel' | 'onAction'> {
+export interface FraudAlertProps extends Omit<BannerProps, 'severity' | 'actionLabel' | 'onAction'> {
   /** It was the customer: let it through. */
   onAllow?: () => void;
   /** It was not: block the card. */
@@ -607,7 +608,7 @@ export interface FraudAlertProps extends Omit<BannerProps, 'tone' | 'actionLabel
 export function FraudAlert({ onAllow, onBlock, ...props }: FraudAlertProps) {
   return (
     <View style={{ gap: 8 }}>
-      <Banner {...props} tone="danger" />
+      <Banner {...props} severity="error" />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {onAllow ? <View style={{ flex: 1 }}><Button testID={`${props.testID}-allow`} label="It was me" chroming="outlined" onAction={onAllow} /></View> : null}
         {onBlock ? <View style={{ flex: 1 }}><Button testID={`${props.testID}-block`} label="Block the card" chroming="danger" onAction={onBlock} /></View> : null}

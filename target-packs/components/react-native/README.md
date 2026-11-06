@@ -30,8 +30,9 @@ app's document picker (expo-document-picker, for example) and resolves with the 
 ## Checks
 
 `npm ci` then `npm run check` (Node 22): the typecheck, then Jest with React Native Testing Library for behaviour,
-writeback and announcements. The same run checks every control's role, name, state and touch target. Screen reader
-runs on devices, screenshots and themes are the next gates.
+writeback and announcements. The same run checks every control's role, name, state and touch target. `gates/` renders
+the pack in a browser through react-native-web for screenshots, the light and dark themes, contrast and touch targets
+(`cd gates && npm install && npm run gates`); screen reader runs stay on devices.
 
 ## The banking groups
 
@@ -39,7 +40,22 @@ Groups 1 to 6 (`src/G1.tsx` … `src/G6.tsx`) are the components `catalogue.json
 shared parts in `src/parts.tsx` (sheet, banner, key-value card, tiles, item list, steps, timeline, progress bars, bar
 chart, segmented choice, chips, code boxes, slider), so they look and read alike. Fields take the same props as the
 foundation (`testID`, `label`, `value`, `onChange`, `required`, `readOnly`, `disabled`, `helpText`, `error`); display
-components take their data (`rows`, `tiles`, `items`, `events`, `steps`) and report actions as events. Account and card
+components take their data (`rows`, `tiles`, `items`, `steps`, with the web packs' names and shapes) and report actions as events. Account and card
 numbers show only their last four digits, IBANs are checked with their check digits, codes and PINs are never kept, and
 nothing calls a service: `AuthChallenge` takes the app's own biometric check as `authenticate`, as `FileUpload` takes
 `pick`. Charts are plain views, so the pack needs no drawing library.
+
+## Motion
+
+`src/motion.tsx` is the motion layer, on React Native's own `Animated` (no Reanimated, no other library), following
+`../motion.json`: enter (the component style's scroll effect: fade up, scale, slide or blur), press (its click
+effect: press, bounce, or the Android ripple), shake (a field's error), pop (a chosen mark, chip or code slot), roll (a
+changed number), grow (bars and meters), settle (new rows and files), spring (sheets and dialogs), slide (the chosen
+tab or segment) and shimmer (a busy button, a skeleton). The shared parts carry it, so every component moves the same
+way. Durations come from the bank tokens. When the device asks for reduced motion (`AccessibilityInfo`), everything
+shows its end state at once.
+
+The five effect categories (69 components, our own code) are in `TextEffects.tsx`, `MotionEffects.tsx`,
+`Showcase.tsx`, `Backdrops.tsx` and `Micro.tsx`. Phones have no hover or cursor, so the hover ideas answer the finger
+instead. Every gesture has a screen reader action as well, text effects read their whole text at once, and backdrops
+are hidden from screen readers and take no touches.

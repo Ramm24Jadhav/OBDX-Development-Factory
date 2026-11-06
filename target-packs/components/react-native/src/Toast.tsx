@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Text, View } from 'react-native';
 
 import { IconButton } from './Button';
+import { Enter } from './motion';
 import { Theme, useTheme } from './theme';
 
 export type Severity = 'error' | 'warning' | 'confirmation' | 'info';
@@ -55,7 +56,7 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
       {messages.map((m) => {
         const severity = m.severity ?? 'info';
         return (
-          <View key={m.id} testID={`toast-${m.id}`}
+          <Enter key={m.id} effect="slide-down" testID={`toast-${m.id}`}
                 style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12, borderRadius: 14, backgroundColor: t.color.surface,
                   borderWidth: 1, borderColor: t.color.border, borderLeftWidth: 4, borderLeftColor: tone(t, severity),
                   shadowColor: '#0f172a', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
@@ -70,7 +71,7 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
               {m.detail ? <Text style={{ fontSize: 14, color: t.color.textBody }}>{m.detail}</Text> : null}
             </View>
             <IconButton label="Close the message" icon="close" onAction={() => onClose(m)} />
-          </View>
+          </Enter>
         );
       })}
     </View>

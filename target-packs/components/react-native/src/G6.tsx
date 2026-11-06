@@ -12,6 +12,7 @@ import { ApprovalQueue, ApprovalQueueProps } from './G4';
 import { CalculatorProps, DepositCalculator, ForexCalculator, LoanCalculator, LoanInputs } from './G5';
 import { Tabs } from './Tabs';
 import { Banner, BannerProps, Bars, BarsProps, InfoCard, InfoCardProps, Item, ItemList, Meter, ProgressList, Tiles, TilesProps, panel } from './parts';
+import { Enter } from './motion';
 import { useTheme } from './theme';
 
 /* ---------- Tile widgets ---------- */
@@ -54,7 +55,7 @@ export interface QuickInsightsWidgetProps {
 
 /** Events that need attention, each with an action. */
 export function QuickInsightsWidget({ testID, label = 'Quick insights', insights, actionLabel = 'View', onAction }: QuickInsightsWidgetProps) {
-  return <ItemList testID={testID} label={label} items={insights} actionLabel={actionLabel} onAction={onAction} emptyText="Nothing needs you today." />;
+  return <ItemList testID={testID} heading={label} items={insights} actionLabel={actionLabel} onAction={onAction} emptyText="Nothing needs you today." />;
 }
 
 /** The latest activity, five rows, with View all. */
@@ -152,14 +153,14 @@ export function SpecialOffersWidget({ actionLabel = 'Apply now', ...props }: Inf
   return <InfoCard {...props} actionLabel={actionLabel} />;
 }
 
-export interface DelinquencyNoticeProps extends Omit<BannerProps, 'tone'> {
+export interface DelinquencyNoticeProps extends Omit<BannerProps, 'severity'> {
   /** The notice shows only while a loan is overdue. */
   overdue: boolean;
 }
 
 /** Shown only when a loan is overdue, with Pay now. */
 export function DelinquencyNotice({ overdue, actionLabel = 'Pay now', ...props }: DelinquencyNoticeProps) {
-  return overdue ? <Banner {...props} tone="danger" actionLabel={actionLabel} /> : null;
+  return overdue ? <Banner {...props} severity="error" actionLabel={actionLabel} /> : null;
 }
 
 /* ---------- Tab widgets ---------- */
@@ -187,7 +188,7 @@ function SummaryTabs({ testID, label, tabs, value, onChange, onOpen }: TabsWidge
   const [own, setOwn] = useState(tabs[0]?.id ?? '');
   const current = value ?? own;
   return (
-    <View testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Tabs testID={`${testID}-tabs`} label={label} selection={current} onSelectionChange={(id) => { setOwn(id); onChange?.(id); }}
             tabs={tabs.map((x) => ({ id: x.id, label: x.label, content: (
@@ -196,7 +197,7 @@ function SummaryTabs({ testID, label, tabs, value, onChange, onOpen }: TabsWidge
                 {onOpen ? <Button testID={`${testID}-${x.id}-open`} label={`Open ${x.label}`} chroming="borderless" onAction={() => onOpen(x.id)} /> : null}
               </View>
             ) }))} />
-    </View>
+    </Enter>
   );
 }
 

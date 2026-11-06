@@ -1,6 +1,8 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { Enter, Press } from './motion';
+
 import { useTheme } from './theme';
 
 export interface Column<R> {
@@ -88,12 +90,14 @@ export function DataTable<R extends object>({ caption, rows, columns, keyField, 
         const box = { gap: 6, padding: 14, borderRadius: t.radius.card, borderWidth: on ? 1.5 : 1, borderColor: on ? t.color.primary : t.color.border,
           backgroundColor: on ? t.color.primarySoft : t.color.surface };
         return selectionMode === 'none'
-          ? <View key={key} testID={testID ? `${testID}-row-${key}` : undefined} style={box}>{cells}</View>
+          ? <Enter key={key} effect="settle" testID={testID ? `${testID}-row-${key}` : undefined} style={box}>{cells}</Enter>
           : (
-            <Pressable key={key} testID={testID ? `${testID}-row-${key}` : undefined} accessibilityRole={selectionMode === 'single' ? 'radio' : 'checkbox'}
-                       accessibilityState={{ checked: on }} onPress={() => toggleRow(key)} style={box}>
-              {cells}
-            </Pressable>
+            <Enter key={key} effect="settle">
+              <Press testID={testID ? `${testID}-row-${key}` : undefined} accessibilityRole={selectionMode === 'single' ? 'radio' : 'checkbox'}
+                     accessibilityState={{ checked: on }} onPress={() => toggleRow(key)} style={box}>
+                {cells}
+              </Press>
+            </Enter>
           );
       })}
     </View>

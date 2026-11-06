@@ -34,6 +34,9 @@
   "jest": {
     "preset": "@react-native/jest-preset",
     "testRegex": "/test/.*.test.tsx$",
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setup.ts"
+    ]
   }
 }

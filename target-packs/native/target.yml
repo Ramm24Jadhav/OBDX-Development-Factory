@@ -1,0 +1,174 @@
+# Native target pack: two native apps on the bank's OBDX REST services, Android in Kotlin (Jetpack Compose) and iOS in
+# Swift (SwiftUI). Each approved screen is written for both, with the same fields, texts, rules and identifiers.
+id: native
+title: Swift and Kotlin (native mobile)
+description: Native Android (Kotlin, Jetpack Compose) and iOS (Swift, SwiftUI) apps that call the bank's OBDX REST services.
+# The Design Studio shows the screen in its mobile preview (the same tokens); native views do not run in a browser
+preview: react-native
+defaultAppFolder: mobile-native
+# Each screen is a Compose function (Kotlin) and a SwiftUI view (Swift)
+syntax: native
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {Screen} the screen name in PascalCase (FundTransfer). The Kotlin package is com.bank.obdx.screens.<module>.
+structure:
+  screen: android/app/src/main/java/com/bank/obdx/screens/{module}/{Screen}Screen.kt
+  test: android/app/src/test/java/com/bank/obdx/screens/{module}/{Screen}ScreenTest.kt
+  api: android/app/src/main/java/com/bank/obdx/api/{module}Api.kt
+  navigation: android/app/src/main/java/com/bank/obdx/AppNavigation.kt
+  screenIos: ios/Sources/ObdxApp/Screens/{module}/{Screen}View.swift
+  testIos: ios/Tests/ObdxAppTests/{module}/{Screen}ViewTests.swift
+  apiIos: ios/Sources/ObdxApp/Api/{module}Api.swift
+  navigationIos: ios/Sources/ObdxApp/AppNavigation.swift
+  # One texts file for both apps (Gradle puts it on the Android classpath, the Swift package bundles it)
+  texts: shared/i18n/en.json
+
+# Screen Model component type -> component (the same name on both platforms). value: string, list, boolean or number.
+components:
+  text: {component: BxTextField, value: string}
+  textarea: {component: BxTextArea, value: string}
+  number: {component: BxNumberField, value: number}
+  amount: {component: BxAmountField, value: number}
+  date: {component: BxDateField, value: string}
+  select: {component: BxSelectField, value: string, options: true}
+  account: {component: BxSelectField, value: string, options: true}
+  radio: {component: BxRadioGroup, value: string, options: true}
+  checkbox: {component: BxCheckboxGroup, value: list, options: true}
+  switch: {component: BxSwitchField, value: boolean}
+  display: {component: BxReadOnlyField, value: string}
+  # No table or OBDX JET components in these apps yet: shown read-only until the screen is completed
+  table: {component: BxReadOnlyField, value: string}
+  component: {component: BxReadOnlyField, value: string}
+
+templates:
+  screen: templates/Screen.kt
+  test: templates/ScreenTest.kt
+  screenIos: templates/View.swift
+  testIos: templates/ViewTests.swift
+
+guidance: |
+  - These are two native apps in one folder: android/ (Kotlin, Jetpack Compose, Material 3) and ios/ (Swift, SwiftUI,
+    a Swift package the Xcode app target uses). They call the bank's OBDX REST services. Do not change the OBDX JET UI.
+  - Write every screen twice, with the same fields, actions, texts and rules: a Compose screen in
+    android/.../screens/<module>/<Screen>Screen.kt and a SwiftUI view in ios/Sources/ObdxApp/Screens/<module>/<Screen>View.swift.
+    The generated starting points already do this for the approved Screen Model.
+  - Build screens only from the starter's components, named the same on both platforms: BxScreen, BxSection,
+    BxTextField, BxTextArea, BxNumberField, BxAmountField, BxDateField, BxSelectField, BxRadioGroup, BxCheckboxGroup,
+    BxSwitchField, BxReadOnlyField and BxButton. Colours, sizes and motion come from BxTheme (the bank tokens), not
+    literal values.
+  - Every field and action keeps its Screen Model id: testTag on Android (Modifier.testTag), testID on iOS (the
+    accessibility identifier).
+  - Keep form state and validation in FormModel (forms/FormModel.kt, Forms/FormModel.swift): FieldRule for required
+    and maxLength, check for the spec's other validations.
+  - All visible texts come from shared/i18n/en.json through t("screenKey.name") on both platforms.
+  - Call OBDX services only through the API client (api/ApiClient.kt, Api/ApiClient.swift) in a <module>Api file per
+    platform, with typed request and response classes; the client keeps the session cookie and adds the nonce.
+  - Screens do not navigate themselves: they call onAction(actionId) and onDone, which AppNavigation wires up.
+  - Motion follows the bank tokens and stops under the system's reduced-motion setting (BxMotion on both platforms).
+  - Tests: Robolectric with the Compose test rule on Android (./gradlew test), XCTest with ViewInspector on iOS
+    (swift test or Xcode).
+
+rules:
+  - id: native-no-webview
+    title: No web views for screens
+    severity: error
+    files: ["**/*.kt", "**/*.swift"]
+    forbid: '\bWebView\b|\bWKWebView\b|\bSFSafariViewController\b'
+    message: Build screens natively with the starter's components; web views lose the platforms' accessibility and security.
+  - id: app-api-through-client
+    title: Services through the API client
+    severity: error
+    files: ["**/*.kt", "**/*.swift"]
+    exclude: ["**/api/**", "**/Api/**", "**/test/**", "**/Tests/**"]
+    forbid: '\bHttpURLConnection\b|\bOkHttpClient\b|\bURLSession\b|\bRetrofit\b|\bAlamofire\b'
+    message: Call OBDX services through the API client (a <module>Api file using ApiClient), not directly.
+  - id: native-no-secrets-on-device
+    title: No secrets on the device
+    severity: error
+    files: ["**/*.kt", "**/*.swift"]
+    forbid: '(SharedPreferences|getSharedPreferences|UserDefaults)[^\n]*(password|token|pin|otp|nonce)'
+    message: Do not keep passwords, tokens, PINs or one-time codes on the device; OBDX keeps the session in its cookie.
+  - id: native-no-cleartext
+    title: Only https
+    severity: error
+    files: ["**/*.kt", "**/*.swift", "**/*.xml", "**/*.plist"]
+    forbid: '"http://(?!schemas\.android\.com/|www\.w3\.org/|www\.apple\.com/DTDs/)|usesCleartextTraffic="true"|NSAllowsArbitraryLoads</key>\s*<true'
+    message: Talk to the bank only over https; remove cleartext traffic and arbitrary loads.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/screens/**/*.kt", "**/Screens/**/*.swift"]
+    forbid: '\b(label|title|placeholder|helpText)\s*[=:]\s*"[^"]*[A-Za-z]'
+    message: Take visible texts from shared/i18n/en.json with t("screenKey.name") so they can be translated.
+  - id: app-theme-colors
+    title: Colours from the theme
+    severity: warning
+    files: ["**/screens/**/*.kt", "**/Screens/**/*.swift"]
+    forbid: 'Color\(0x[0-9a-fA-F]{6,8}\)|Color\.(Red|Blue|Green|Black|White)\b|Color\((red|\.sRGB)'
+    message: Use BxTheme (the bank tokens), not literal colours, so the bank's design applies.
+  - id: app-no-logging
+    title: No logging of data
+    severity: warning
+    files: ["**/*.kt", "**/*.swift"]
+    exclude: ["**/test/**", "**/Tests/**"]
+    forbid: '\bprintln\s*\(|\bLog\.[dvi]\s*\(|\bprint\s*\(|\bNSLog\s*\('
+    message: Remove logging from app code; it can leak customer data into device logs.
+
+recipes:
+  - id: app-screen
+    title: Screen in the native apps
+    when: A screen of the requirement is built (or changed) in the native Android and iOS apps.
+    guidance: |
+      - Start from the two generated starting points (Compose and SwiftUI): they already map every field and action of
+        the approved Screen Model to the components, with identifiers, texts, required and length rules.
+      - Change both the same way; a field or action in one app and not the other fails the parity check.
+      - Load data and send the form through the module's API files; on success call onDone, on an ApiError show its
+        message (failure, above the actions).
+    parts:
+      - id: screen
+        name: Android screen
+        files: ["**/android/**/screens/**/*Screen.kt"]
+        examples: {files: ["**/android/**/screens/**/*Screen.kt"], contains: 'FormModel|BxScreen'}
+      - id: screenIos
+        name: iOS view
+        files: ["**/ios/Sources/**/Screens/**/*View.swift"]
+        examples: {files: ["**/ios/Sources/**/Screens/**/*View.swift"], contains: 'FormModel|BxScreen'}
+      - id: test
+        name: Android screen test
+        files: ["**/android/**/src/test/**/*ScreenTest.kt"]
+      - id: testIos
+        name: iOS view test
+        files: ["**/ios/Tests/**/*ViewTests.swift"]
+  - id: app-api
+    title: API files for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module and platform, with typed functions (suspend fun transfer(request): TransferResult in Kotlin,
+        func transfer(_ request:) async throws -> TransferResult in Swift) that call the API client with the OBDX path.
+      - Declare request and response types with the field names the OBDX service uses (Codable in Swift, org.json
+        mapping in Kotlin).
+    parts:
+      - id: api
+        name: Android API file
+        files: ["**/android/**/api/*Api.kt"]
+        template: templates/Api.kt
+      - id: apiIos
+        name: iOS API file
+        files: ["**/ios/Sources/**/Api/*Api.swift"]
+        template: templates/Api.swift
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - AppNavigation.kt and AppNavigation.swift: add one destination for the screen on each; wire onAction and onDone.
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/shared/i18n/*.json"]
+      - id: navigation
+        name: Android navigation
+        files: ["**/android/**/AppNavigation.kt"]
+      - id: navigationIos
+        name: iOS navigation
+        files: ["**/ios/Sources/**/AppNavigation.swift"]

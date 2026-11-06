@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, FlatList, Modal, Pressable, StyleSheet, Text } from 'react-native';
 
 import { FieldProps, FieldShell, Option, controlStyle, options as toOptions, styles, useField } from './field';
+import { Press, useOpen } from './motion';
 import { useTheme } from './theme';
 
 export interface DropdownProps extends FieldProps<string> {
@@ -18,18 +19,19 @@ export function Dropdown(props: DropdownProps) {
   const list = toOptions(props.options);
   const chosen = list.find((o) => o.value === value);
   const close = () => { setOpen(false); f.touch(); };
+  const spring = useOpen(open);
   return (
     <FieldShell testID={testID} label={label} required={required} error={f.error} helpText={helpText}>
-      <Pressable testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${chosen ? chosen.label : 'nothing chosen'}`}
+      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${chosen ? chosen.label : 'nothing chosen'}`}
                  accessibilityHint={f.error || 'Opens the list of choices'} accessibilityState={{ disabled: !!(disabled || readOnly), expanded: open }}
                  disabled={disabled || readOnly} onPress={() => setOpen(true)}
                  style={[controlStyle(t, { error: f.error, disabled, readOnly }), { justifyContent: 'space-between' }]}>
         <Text style={[s.input, chosen ? null : { color: t.color.textMuted }]}>{chosen ? chosen.label : placeholder || 'Choose'}</Text>
         <Text style={s.side} importantForAccessibility="no">▾</Text>
-      </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
+      </Press>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
         <Pressable style={sheet.backdrop} accessibilityLabel="Close the list" onPress={close} />
-        <View style={[sheet.panel, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
+        <Animated.View style={[sheet.panel, spring, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
               accessibilityViewIsModal>
           <Text style={[sheet.title, { color: t.color.text }]} accessibilityRole="header">{label}</Text>
           <FlatList data={list} keyExtractor={(o) => o.value} renderItem={({ item }) => {
@@ -50,7 +52,7 @@ export function Dropdown(props: DropdownProps) {
                 <Text style={{ fontSize: 15, color: t.color.primaryText }}>Clear the choice</Text>
               </Pressable>
             : null}
-        </View>
+        </Animated.View>
       </Modal>
     </FieldShell>
   );

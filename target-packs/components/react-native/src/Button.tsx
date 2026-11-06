@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Text, View } from 'react-native';
 
+import { Press, useShimmer } from './motion';
 import { Theme, useTheme } from './theme';
 
 export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger';
@@ -32,14 +33,18 @@ export function Button({ testID, label, chroming = 'callToAction', disabled, bus
   const t = useTheme();
   const l = look(t, chroming);
   const off = !!(disabled || busy);
+  const shimmer = useShimmer(!!busy);
   return (
-    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: off, busy: !!busy }}
+    <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: off, busy: !!busy }}
                disabled={off} onPress={onAction}
-               style={({ pressed }) => [{ minHeight: t.minTouch, paddingHorizontal: 20, borderRadius: t.radius.control, flexDirection: 'row', alignItems: 'center',
-                 justifyContent: 'center', gap: 8, opacity: off ? 0.5 : 1, transform: [{ scale: pressed ? t.pressScale : 1 }] }, l.box]}>
-      {busy ? <ActivityIndicator size="small" color={l.text} /> : startIcon}
-      <Text style={{ color: l.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
+               style={[{ minHeight: t.minTouch, paddingHorizontal: 20, borderRadius: t.radius.control, flexDirection: 'row', alignItems: 'center',
+                 justifyContent: 'center', opacity: off ? 0.5 : 1, overflow: 'hidden' }, l.box]}>
+      {/* the busy button shimmers (motion.json: loading) */}
+      <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 8 }, shimmer]}>
+        {busy ? <ActivityIndicator size="small" color={l.text} /> : startIcon}
+        <Text style={{ color: l.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+      </Animated.View>
+    </Press>
   );
 }
 
@@ -58,13 +63,13 @@ export function IconButton({ testID, label, icon = 'more', chroming = 'borderles
   const t = useTheme();
   const l = look(t, chroming);
   return (
-    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
-               onPress={onAction} hitSlop={4}
-               style={({ pressed }) => [{ width: t.minTouch, height: t.minTouch, borderRadius: t.radius.control, alignItems: 'center', justifyContent: 'center',
-                 opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? t.pressScale : 1 }] }, l.box]}>
+    <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
+           onPress={onAction} hitSlop={4}
+           style={[{ width: t.minTouch, height: t.minTouch, borderRadius: t.radius.control, alignItems: 'center', justifyContent: 'center',
+             opacity: disabled ? 0.5 : 1 }, l.box]}>
       {typeof icon === 'string'
         ? <Text style={{ color: l.text, fontSize: 20 }} importantForAccessibility="no">{icon === 'close' ? '×' : '⋯'}</Text>
         : <View importantForAccessibility="no-hide-descendants">{icon}</View>}
-    </Pressable>
+    </Press>
   );
 }

@@ -30,7 +30,7 @@
       "limits": [["Knockout", "Screens are written again as VDOM (Preact and TypeScript), not edited in place"], ["JET release", "JET 21 with the Core Pack 21"]]
     },
     {
-      "id": "vue", "pack": "vue", "platform": "web", "name": "Vue 3", "logo": "V",
+      "id": "vue", "pack": "vue", "packVersions": [["1.0.0", "2026-11-06", "First release: single-file screens with Vitest tests"]], "platform": "web", "name": "Vue 3", "logo": "V",
       "text": "Light and quick to learn; a good fit for smaller teams.",
       "meta": "Static build served through Oracle HTTP Server", "language": "TypeScript", "usedByBanks": "Medium", "besideJet": true,
       "points": ["Same OBDX REST services, session cookie and nonce", "Small and fast", "Easy to learn"],
@@ -44,14 +44,14 @@
       "limits": [["Web", "Flutter Web is not offered: see below"], ["Dart", "A new language for most bank teams"]]
     },
     {
-      "id": "native", "pack": "native", "platform": "mobile", "name": "Swift and Kotlin", "logo": "S/K",
+      "id": "native", "pack": "native", "packVersions": [["1.0.0", "2026-11-06", "First release: Compose and SwiftUI screens from one Screen Model, with tests"]], "platform": "mobile", "name": "Swift and Kotlin", "logo": "S/K",
       "text": "Fully native iOS and Android apps, two code bases.",
       "meta": "App stores", "language": "Swift, Kotlin", "usedByBanks": "High", "besideJet": false,
       "points": ["Same OBDX REST services", "Best device integration", "Platform look and accessibility"],
       "limits": [["Two code bases", "Twice the screens to build and test"]]
     },
     {
-      "id": "capacitor", "pack": "capacitor", "platform": "mobile", "name": "Capacitor", "logo": "C",
+      "id": "capacitor", "pack": "capacitor", "packVersions": [["1.0.0", "2026-11-06", "First release: the React screens in a Capacitor shell for Android and iOS"]], "platform": "mobile", "name": "Capacitor", "logo": "C",
       "text": "Wraps the React or Angular web app as a mobile app.",
       "meta": "App stores", "language": "TypeScript", "usedByBanks": "Medium", "besideJet": false,
       "points": ["Reuses the web screens", "One team for web and mobile", "Device features through plugins"],

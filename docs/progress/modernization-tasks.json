@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06T11:05:50.424Z",
+ "generated": "2026-11-06T11:46:52.291Z",
  "rows": [
   {
    "id": "P0",
@@ -11,7 +11,7 @@
    "unit": "steps",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "SCR",
@@ -23,7 +23,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Work; being brought to the boards one by one",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "S0",
@@ -35,7 +35,7 @@
    "unit": "parts",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "S1",
@@ -47,7 +47,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "S2",
@@ -59,7 +59,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "C0",
@@ -95,19 +95,19 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "M1",
    "track": "Components",
    "task": "M1 Motion layer on every built component (all packs)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 23,
    "total": 23,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W1",
@@ -119,79 +119,79 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W2",
    "track": "Components",
    "task": "W2 Accounts, payments, deposits (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 23,
    "total": 23,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W3",
    "track": "Components",
    "task": "W3 Loans, cards, security (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 24,
    "total": 24,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W4",
    "track": "Components",
    "task": "W4 Insights, approvals, liquidity, settings (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 26,
    "total": 26,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W5",
    "track": "Components",
    "task": "W5 Service, documents, onboarding, calculators, help (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 23,
    "total": 23,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W6",
    "track": "Components",
    "task": "W6 Dashboard widgets (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 32,
    "total": 32,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "W7",
    "track": "Components",
    "task": "W7 Motion and effects: five new categories (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 69,
    "total": 69,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "N1",
@@ -203,7 +203,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "N2",
@@ -215,19 +215,19 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "N3",
    "track": "Components",
    "task": "N3 React Native: motion layer and the five categories",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 69,
    "total": 69,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "TP0",
@@ -239,31 +239,31 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "T1",
    "track": "Target packs",
    "task": "T1 Vue 3 and Capacitor",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 2,
    "total": 2,
    "unit": "packs",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "T2",
    "track": "Target packs",
    "task": "T2 Native Swift and Kotlin",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 1,
    "total": 1,
    "unit": "packs",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "G0",
@@ -275,7 +275,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "Q1",
@@ -287,7 +287,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   },
   {
    "id": "SHIP",
@@ -299,7 +299,7 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T11:05:50.424Z"
+   "asOf": "2026-11-06T11:46:52.291Z"
   }
  ]
 }

@@ -29,12 +29,12 @@ describe('group 6', () => {
       ['SpecialOffersWidget', <SpecialOffersWidget testID="x" title="Pre-approved personal loan" badge="Offer" onAction={noop} />],
       ['CreditCardsWidget', <CreditCardsWidget testID="x" tiles={tiles} />],
       ['LoansWidget', <LoansWidget testID="x" tiles={tiles} />],
-      ['DelinquencyNotice', <DelinquencyNotice testID="x" overdue label="Your car loan is 12 days overdue: 412.00." onAction={noop} />],
+      ['DelinquencyNotice', <DelinquencyNotice testID="x" overdue message="Your car loan is 12 days overdue: 412.00." onAction={noop} />],
       ['AccountsWidget', <AccountsWidget testID="x" label="Accounts" tabs={tabs} onOpen={noop} />],
       ['TransactionsWidget', <TransactionsWidget testID="x" label="Transactions" tabs={tabs} />],
       ['QuickLinksWidget', <QuickLinksWidget testID="x" actions={[{ id: 'own', label: 'Own account', icon: '⇄' }]} onAction={noop} />],
       ['WorkSnapshotWidget', <WorkSnapshotWidget testID="x" tiles={tiles} />],
-      ['NotificationsWidget', <NotificationsWidget testID="x" items={[{ id: 'n', title: 'USD cut-off moves to 3 pm', unread: true }]} onRead={noop} />],
+      ['NotificationsWidget', <NotificationsWidget testID="x" items={[{ id: 'n', title: 'USD cut-off moves to 3 pm', unread: true }]} onAction={noop} />],
       ['PendingActionWidget', <PendingActionWidget testID="x" bars={[{ label: 'Payments', value: 70 }, { label: 'Trade', value: 35 }]} />],
       ['PendingApprovalsWidget', <PendingApprovalsWidget testID="x" items={[{ id: 'p', title: 'Payroll Feb', priority: true }]} onApprove={noop} />],
     ];
@@ -54,9 +54,9 @@ describe('group 6', () => {
   });
 
   it('DelinquencyNotice shows only while a loan is overdue', async () => {
-    await render(<DelinquencyNotice testID="d" overdue={false} label="Overdue" />);
+    await render(<DelinquencyNotice testID="d" overdue={false} message="Overdue" />);
     expect(screen.queryByRole('alert')).toBeNull();
-    await render(<DelinquencyNotice testID="d" overdue label="Your car loan is 12 days overdue: 412.00." />);
+    await render(<DelinquencyNotice testID="d" overdue message="Your car loan is 12 days overdue: 412.00." />);
     expect(screen.getByRole('alert')).toHaveTextContent('Your car loan is 12 days overdue: 412.00.');
     expect(screen.getByRole('button', { name: 'Pay now' })).toBeTruthy();
   });

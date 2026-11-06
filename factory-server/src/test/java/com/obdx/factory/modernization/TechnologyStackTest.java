@@ -21,5 +21,13 @@ class TechnologyStackTest {
         List<String[]> flutter = TechnologyCatalogue.pubspec("environment:\n  sdk: ^3.9.0\ndependencies:\n  http: ^1.4.0\n");
         assertThat(flutter).extracting(s -> s[0] + " " + s[1]).containsExactly("Flutter stable", "Dart 3.9.0", "http 1.4.0");
         assertThat(TechnologyCatalogue.build(flutter)).isEqualTo("Flutter (Gradle and Xcode)");
+        List<String[]> vue = TechnologyCatalogue.stack("{\"vue\": \"^3.5.22\", \"@vitejs/plugin-vue\": \"^6.0.1\", \"vite\": \"^8.3.5\"}");
+        assertThat(vue).extracting(s -> s[0] + " " + s[1]).containsExactly("Vue 3.5.22", "Vite 8.3.5");
+        List<String[]> capacitor = TechnologyCatalogue.stack("{\"react\": \"19.3.0\", \"@capacitor/core\": \"^7.4.3\", \"vite\": \"^8.3.5\"}");
+        assertThat(TechnologyCatalogue.build(capacitor)).isEqualTo("Vite and Capacitor (Gradle and Xcode)");
+        List<String[]> nativeApps = TechnologyCatalogue.nativeStack("id(\"org.jetbrains.kotlin.android\") version \"2.2.20\" apply false",
+                "// swift-tools-version: 6.0\n");
+        assertThat(nativeApps).extracting(s -> s[0] + " " + s[1]).containsExactly("Kotlin 2.2.20", "Jetpack Compose Material 3", "Swift 6.0", "SwiftUI iOS 17");
+        assertThat(TechnologyCatalogue.build(nativeApps)).isEqualTo("Gradle and Xcode");
     }
 }

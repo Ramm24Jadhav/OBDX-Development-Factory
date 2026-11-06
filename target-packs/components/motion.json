@@ -29,7 +29,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "icon-button": {
       "enter": null,
@@ -39,7 +39,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "text-field": {
       "enter": "style",
@@ -49,7 +49,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "text-area": {
       "enter": "style",
@@ -59,7 +59,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "password": {
       "enter": "style",
@@ -69,7 +69,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "number-input": {
       "enter": "style",
@@ -79,7 +79,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "amount": {
       "enter": "style",
@@ -89,7 +89,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "currency-picker": {
       "enter": "style",
@@ -99,7 +99,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "select": {
       "enter": "style",
@@ -109,7 +109,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "multi-select": {
       "enter": "style",
@@ -119,7 +119,7 @@
       "open": "drop",
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "autocomplete": {
       "enter": "style",
@@ -129,7 +129,7 @@
       "open": "drop",
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "search": {
       "enter": "style",
@@ -139,7 +139,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "checkbox-group": {
       "enter": "style",
@@ -149,7 +149,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "choice-group": {
       "enter": "style",
@@ -159,7 +159,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "switch": {
       "enter": null,
@@ -169,7 +169,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "date": {
       "enter": "style",
@@ -179,7 +179,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "date-range": {
       "enter": "style",
@@ -189,7 +189,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "document-upload": {
       "enter": "style",
@@ -199,7 +199,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "card": {
       "enter": "style",
@@ -209,7 +209,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "tabs": {
       "enter": null,
@@ -219,7 +219,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "data-grid": {
       "enter": "style",
@@ -229,7 +229,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "toast": {
       "enter": "slide-down",
@@ -239,7 +239,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "dialog": {
       "enter": "fade",
@@ -249,7 +249,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "secondary-button": {
       "enter": null,
@@ -259,7 +259,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "danger-button": {
       "enter": null,
@@ -269,7 +269,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "savings-slider": {
       "enter": "style",
@@ -279,7 +279,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "segmented": {
       "enter": null,
@@ -289,7 +289,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "filter-chips": {
       "enter": null,
@@ -299,7 +299,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "action-menu": {
       "enter": null,
@@ -309,7 +309,7 @@
       "open": "drop",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "accordion": {
       "enter": "style",
@@ -319,7 +319,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "stepper": {
       "enter": "style",
@@ -329,7 +329,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "breadcrumb": {
       "enter": "style",
@@ -349,7 +349,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "sheet": {
       "enter": "fade",
@@ -359,7 +359,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "grid": {
       "enter": "style",
@@ -369,7 +369,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "divider": {
       "enter": "style",
@@ -379,7 +379,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "avatar": {
       "enter": "style",
@@ -389,7 +389,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "pagination": {
       "enter": null,
@@ -399,7 +399,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "status-badge": {
       "enter": null,
@@ -409,7 +409,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "timeline": {
       "enter": "style",
@@ -419,7 +419,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "spinner": {
       "enter": null,
@@ -429,7 +429,7 @@
       "open": null,
       "error": null,
       "loading": "spin",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "skeleton": {
       "enter": null,
@@ -439,7 +439,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "empty-state": {
       "enter": "style",
@@ -449,7 +449,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "tooltip": {
       "enter": null,
@@ -459,7 +459,7 @@
       "open": "fade",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "alert-banner": {
       "enter": "slide-down",
@@ -469,7 +469,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "error-message": {
       "enter": "slide-down",
@@ -479,7 +479,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "success-message": {
       "enter": "slide-down",
@@ -489,7 +489,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "notification-panel": {
       "enter": "style",
@@ -499,7 +499,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "account-picker": {
       "enter": "style",
@@ -509,7 +509,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "account-summary": {
       "enter": "style",
@@ -519,7 +519,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "balance-card": {
       "enter": "style",
@@ -529,7 +529,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "account-card": {
       "enter": "style",
@@ -539,7 +539,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "account-details": {
       "enter": "style",
@@ -549,7 +549,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "iban": {
       "enter": "style",
@@ -559,7 +559,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "quick-actions": {
       "enter": "style",
@@ -569,7 +569,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "payee-list": {
       "enter": "style",
@@ -579,7 +579,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "beneficiary-card": {
       "enter": "style",
@@ -589,7 +589,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "payment-form": {
       "enter": "style",
@@ -599,7 +599,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "transfer-summary": {
       "enter": "style",
@@ -609,7 +609,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "payment-status": {
       "enter": "style",
@@ -619,7 +619,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "transaction-list": {
       "enter": "style",
@@ -629,7 +629,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "transaction-filter": {
       "enter": null,
@@ -639,7 +639,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "transaction-details": {
       "enter": "style",
@@ -649,7 +649,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "repeat": {
       "enter": null,
@@ -659,7 +659,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "receipt": {
       "enter": "rise",
@@ -669,7 +669,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "upcoming-bills": {
       "enter": "style",
@@ -679,7 +679,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "td-summary": {
       "enter": "style",
@@ -689,7 +689,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "new-td": {
       "enter": "style",
@@ -699,7 +699,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "maturity-instructions": {
       "enter": "style",
@@ -709,7 +709,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "td-topup": {
       "enter": "style",
@@ -719,7 +719,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "td-redemption": {
       "enter": "style",
@@ -729,7 +729,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "loan-summary": {
       "enter": "style",
@@ -739,7 +739,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "loan-repayment": {
       "enter": "style",
@@ -749,7 +749,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "loan-schedule": {
       "enter": "style",
@@ -759,7 +759,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "promise-to-pay": {
       "enter": "style",
@@ -769,7 +769,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "disbursement": {
       "enter": "style",
@@ -779,7 +779,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "card-tile": {
       "enter": "style",
@@ -789,7 +789,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "card-list": {
       "enter": "style",
@@ -799,7 +799,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "activate-card": {
       "enter": "style",
@@ -809,7 +809,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "convert-emi": {
       "enter": null,
@@ -819,7 +819,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "redeem-points": {
       "enter": "style",
@@ -829,7 +829,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "spend-limit": {
       "enter": "style",
@@ -839,7 +839,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "card-controls": {
       "enter": null,
@@ -849,7 +849,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "block-card": {
       "enter": null,
@@ -859,7 +859,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "reset-pin": {
       "enter": "style",
@@ -869,7 +869,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "raise-dispute": {
       "enter": "style",
@@ -879,7 +879,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "add-on-card": {
       "enter": "style",
@@ -889,7 +889,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "card-statements": {
       "enter": "style",
@@ -899,7 +899,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "otp": {
       "enter": "style",
@@ -909,7 +909,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "biometric": {
       "enter": "style",
@@ -919,7 +919,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "session-timeout": {
       "enter": "fade",
@@ -929,7 +929,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "secure-confirmation": {
       "enter": "style",
@@ -939,7 +939,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "sensitive": {
       "enter": "style",
@@ -949,7 +949,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "kyc-steps": {
       "enter": "style",
@@ -959,7 +959,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "fraud-alert": {
       "enter": "slide-down",
@@ -969,7 +969,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "spending-chart": {
       "enter": "style",
@@ -979,7 +979,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "budget-progress": {
       "enter": "style",
@@ -989,7 +989,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "savings-goal": {
       "enter": "style",
@@ -999,7 +999,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "spend-categories": {
       "enter": null,
@@ -1009,7 +1009,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "approval-queue": {
       "enter": "style",
@@ -1019,7 +1019,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "approval-detail": {
       "enter": "style",
@@ -1029,7 +1029,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "approval-journey": {
       "enter": "style",
@@ -1039,7 +1039,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "reroute": {
       "enter": "style",
@@ -1059,7 +1059,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "pending-release": {
       "enter": "style",
@@ -1129,7 +1129,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "sign-in-options": {
       "enter": null,
@@ -1139,7 +1139,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "otp-delivery": {
       "enter": null,
@@ -1149,7 +1149,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "devices": {
       "enter": "style",
@@ -1159,7 +1159,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "appearance": {
       "enter": null,
@@ -1169,7 +1169,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "language": {
       "enter": "style",
@@ -1179,7 +1179,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "alerts-subscription": {
       "enter": null,
@@ -1189,7 +1189,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "do-not-disturb": {
       "enter": null,
@@ -1199,7 +1199,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "consents": {
       "enter": "style",
@@ -1209,7 +1209,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "transaction-limits": {
       "enter": "style",
@@ -1219,7 +1219,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "session-summary": {
       "enter": "style",
@@ -1229,7 +1229,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "raise-request": {
       "enter": "style",
@@ -1239,7 +1239,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "track-requests": {
       "enter": "style",
@@ -1249,7 +1249,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "mailbox": {
       "enter": "style",
@@ -1259,7 +1259,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "compose-mail": {
       "enter": "style",
@@ -1269,7 +1269,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "e-receipts": {
       "enter": "style",
@@ -1279,7 +1279,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "certificates": {
       "enter": "style",
@@ -1289,7 +1289,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "statement-request": {
       "enter": "style",
@@ -1299,7 +1299,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "statement-format": {
       "enter": null,
@@ -1309,7 +1309,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "self-register": {
       "enter": "style",
@@ -1319,7 +1319,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "fatca-crs": {
       "enter": "style",
@@ -1329,7 +1329,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "product-showcase": {
       "enter": "style",
@@ -1339,7 +1339,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "application-tracker": {
       "enter": "style",
@@ -1349,7 +1349,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "terms-consent": {
       "enter": "style",
@@ -1359,7 +1359,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "loan-calculator": {
       "enter": "style",
@@ -1369,7 +1369,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "eligibility-calculator": {
       "enter": "style",
@@ -1379,7 +1379,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "td-calculator": {
       "enter": "style",
@@ -1389,7 +1389,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "currency-converter": {
       "enter": "style",
@@ -1399,7 +1399,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "goal-calculator": {
       "enter": "style",
@@ -1409,7 +1409,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "locator": {
       "enter": "style",
@@ -1419,7 +1419,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "live-chat": {
       "enter": "style",
@@ -1429,7 +1429,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "feedback": {
       "enter": "style",
@@ -1439,7 +1439,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "nominations": {
       "enter": "style",
@@ -1449,7 +1449,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "faq": {
       "enter": "style",
@@ -1459,7 +1459,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "overview": {
       "enter": "style",
@@ -1469,7 +1469,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "quick-insights": {
       "enter": "style",
@@ -1479,7 +1479,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "recent-transactions": {
       "enter": "style",
@@ -1489,7 +1489,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "bills-widget": {
       "enter": "style",
@@ -1499,7 +1499,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "spend-analysis": {
       "enter": "style",
@@ -1509,7 +1509,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "goals": {
       "enter": "style",
@@ -1519,7 +1519,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "budgets": {
       "enter": "style",
@@ -1529,7 +1529,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "calculators": {
       "enter": "style",
@@ -1539,7 +1539,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "credit-score": {
       "enter": "style",
@@ -1549,7 +1549,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "rewards": {
       "enter": "style",
@@ -1559,7 +1559,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "financial-advisor": {
       "enter": "style",
@@ -1569,7 +1569,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "special-offers": {
       "enter": "style",
@@ -1579,7 +1579,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "credit-cards-overview": {
       "enter": "style",
@@ -1589,7 +1589,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "loans-overview": {
       "enter": "style",
@@ -1599,7 +1599,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "delinquency-notice": {
       "enter": "slide-down",
@@ -1609,7 +1609,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
     },
     "financial-overview": {
       "enter": "style",
@@ -1679,7 +1679,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "corporate-limits": {
       "enter": "style",
@@ -1699,7 +1699,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "last-5-payments": {
       "enter": "style",
@@ -1729,7 +1729,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "work-snapshot": {
       "enter": "style",
@@ -1739,7 +1739,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "notifications-widget": {
       "enter": "style",
@@ -1749,7 +1749,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "pending-for-action": {
       "enter": "style",
@@ -1759,7 +1759,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "my-limits": {
       "enter": "style",
@@ -1779,7 +1779,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "rolling-digits": {
       "enter": "effect",
@@ -1789,7 +1789,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "count-up": {
       "enter": "effect",
@@ -1799,7 +1799,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "split-flap-board": {
       "enter": "effect",
@@ -1809,7 +1809,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "reveal-digits": {
       "enter": "effect",
@@ -1819,7 +1819,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "blur-in-text": {
       "enter": "effect",
@@ -1829,7 +1829,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "text-reveal": {
       "enter": "effect",
@@ -1839,7 +1839,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "rotating-text": {
       "enter": "effect",
@@ -1849,7 +1849,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "shimmer-text": {
       "enter": "effect",
@@ -1859,7 +1859,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "gradient-text": {
       "enter": "effect",
@@ -1869,7 +1869,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "typed-text": {
       "enter": "effect",
@@ -1879,7 +1879,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "focus-word": {
       "enter": "effect",
@@ -1889,7 +1889,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "scroll-float-text": {
       "enter": "effect",
@@ -1899,7 +1899,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "fade-in-content": {
       "enter": "effect",
@@ -1909,7 +1909,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "scroll-reveal": {
       "enter": "effect",
@@ -1919,7 +1919,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "scroll-expand": {
       "enter": "effect",
@@ -1929,7 +1929,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "edge-blur": {
       "enter": "style",
@@ -1939,7 +1939,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "glare-hover": {
       "enter": null,
@@ -1949,7 +1949,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "magnetic-button": {
       "enter": null,
@@ -1959,7 +1959,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "highlight-border": {
       "enter": null,
@@ -1969,7 +1969,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "click-burst": {
       "enter": null,
@@ -1979,7 +1979,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "marquee": {
       "enter": "effect",
@@ -1989,7 +1989,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "animated-list": {
       "enter": "effect",
@@ -1999,7 +1999,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "spotlight-card": {
       "enter": null,
@@ -2009,7 +2009,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "tilt-card": {
       "enter": null,
@@ -2019,7 +2019,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "flip-card": {
       "enter": "style",
@@ -2029,7 +2029,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "card-stack": {
       "enter": "style",
@@ -2039,7 +2039,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "glow-border-card": {
       "enter": null,
@@ -2049,7 +2049,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "bento-grid": {
       "enter": "style",
@@ -2059,7 +2059,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "carousel": {
       "enter": "style",
@@ -2069,7 +2069,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "elastic-slider": {
       "enter": "style",
@@ -2079,7 +2079,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "option-wheel": {
       "enter": null,
@@ -2089,7 +2089,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "pill-nav": {
       "enter": null,
@@ -2099,7 +2099,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "dock-nav": {
       "enter": null,
@@ -2109,7 +2109,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "card-nav": {
       "enter": null,
@@ -2119,7 +2119,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "staggered-menu": {
       "enter": null,
@@ -2129,7 +2129,7 @@
       "open": "drop",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "document-folder": {
       "enter": "style",
@@ -2139,7 +2139,7 @@
       "open": "spring",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "scroll-stack": {
       "enter": "effect",
@@ -2149,7 +2149,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "profile-card": {
       "enter": "style",
@@ -2159,7 +2159,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "glass-panel": {
       "enter": "style",
@@ -2169,7 +2169,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "gradient-backdrop": {
       "enter": "fade",
@@ -2179,7 +2179,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "soft-aurora": {
       "enter": "fade",
@@ -2189,7 +2189,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "silk-backdrop": {
       "enter": "fade",
@@ -2199,7 +2199,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "dot-grid": {
       "enter": "fade",
@@ -2209,7 +2209,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "line-waves": {
       "enter": "fade",
@@ -2219,7 +2219,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "light-beams": {
       "enter": "fade",
@@ -2229,7 +2229,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "topography": {
       "enter": "fade",
@@ -2239,7 +2239,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "particle-backdrop": {
       "enter": "fade",
@@ -2249,7 +2249,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "slide-to-confirm": {
       "enter": null,
@@ -2259,7 +2259,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "hold-to-confirm": {
       "enter": null,
@@ -2269,7 +2269,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "otp-slots": {
       "enter": "style",
@@ -2279,7 +2279,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "receipt-tear": {
       "enter": "rise",
@@ -2289,7 +2289,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "success-check": {
       "enter": "rise",
@@ -2299,7 +2299,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "swipe-row": {
       "enter": null,
@@ -2309,7 +2309,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "swipe-toast": {
       "enter": "slide-down",
@@ -2319,7 +2319,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "bell-toggle": {
       "enter": null,
@@ -2329,7 +2329,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "squish-switch": {
       "enter": null,
@@ -2339,7 +2339,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "jelly-radio": {
       "enter": null,
@@ -2349,7 +2349,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "glide-select": {
       "enter": null,
@@ -2359,7 +2359,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "rubber-segment": {
       "enter": null,
@@ -2369,7 +2369,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "scrub-field": {
       "enter": null,
@@ -2379,7 +2379,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "budget-gauge": {
       "enter": "style",
@@ -2389,7 +2389,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "status-mark": {
       "enter": null,
@@ -2399,7 +2399,7 @@
       "open": null,
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "favourite-heart": {
       "enter": null,
@@ -2409,7 +2409,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "peek-rating": {
       "enter": null,
@@ -2419,7 +2419,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "warm-tooltip": {
       "enter": null,
@@ -2429,7 +2429,7 @@
       "open": "fade",
       "error": null,
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "prompt-bar": {
       "enter": "style",
@@ -2439,7 +2439,7 @@
       "open": null,
       "error": "shake",
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "voice-pill": {
       "enter": null,
@@ -2449,7 +2449,7 @@
       "open": null,
       "error": "shake",
       "loading": null,
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "call-chip": {
       "enter": null,
@@ -2459,7 +2459,7 @@
       "open": null,
       "error": null,
       "loading": "shimmer",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     },
     "lattice-loader": {
       "enter": null,
@@ -2469,7 +2469,7 @@
       "open": null,
       "error": null,
       "loading": "spin",
-      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     }
   }
 }

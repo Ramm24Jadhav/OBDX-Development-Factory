@@ -31,7 +31,7 @@ export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePick
 export { Accordion, ActionMenu, ActivityIndicator, Alert, Avatar, BottomSheet, DestructiveButton, Divider, Drawer, EmptyState, ErrorMessage, FilterChips,
   NotificationPanel, Pagination, SecondaryButton, Skeleton, Slider, Stack, StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip, initials } from './G1';
 export type { AccordionProps, ActionMenuProps, ActivityIndicatorProps, AlertProps, AvatarProps, BottomSheetProps, DestructiveButtonProps, DrawerProps,
-  EmptyStateProps, FilterChipsProps, MenuAction, MessageProps, NotificationPanelProps, PaginationProps, SecondaryButtonProps, Section, SkeletonProps, SliderProps,
+  EmptyStateProps, FilterChipsProps, MenuItem, NavItem, MessageProps, NotificationPanelProps, PaginationProps, SecondaryButtonProps, PanelItem, SkeletonProps, SliderProps,
   StackProps, StatusBadgeProps, StepperProps, TimelineProps, ToggleGroupProps, TooltipProps } from './G1';
 export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption,
   DepositTopUp, DepositsSummary, MaturityInstructions, NewDepositForm, PaymentForm, PaymentSchedule, PaymentStatus, QuickActions, TransactionDetails,
@@ -47,7 +47,8 @@ export type { AddOnCardProps, AddOnValue, AuthChallengeProps, BlockCardProps, Ca
   RaiseDisputeProps, RedeemPointsProps, RepaymentScheduleProps, RepaymentValue, ResetPinProps, SecureConfirmationProps, SensitiveFieldProps,
   SessionExpiryWarningProps } from './G3';
 export { maskNumber } from './parts';
-export type { Bar, BannerProps, Event, Item, KeyValuesProps, Meter, Row, Tile, TilesProps, Tone } from './parts';
+export { toItems } from './parts';
+export type { Bar, BannerProps, ItemLike, ListEntry, StepItem, StepState, TimelineItem, Item, KeyValuesProps, Meter, Row, Tile, TilesProps, Tone } from './parts';
 export { AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, BarChart, CodeDelivery, Consents, Devices, DoNotDisturb, LanguagePicker,
   ModificationNotice, Profile, ProgressBar, SavingsGoal, SessionSummary, SignInOptions, SpendCategories, TransactionLimits } from './G4';
 export type { Approval, ApprovalDetailProps, ApprovalQueueProps, ChoicesProps, ConsentsProps, Device, DevicesProps, JourneyProps, LanguagePickerProps,
@@ -64,3 +65,21 @@ export { AccountsWidget, BillsWidget, BudgetsWidget, CalculatorsWidget, CreditCa
 export type { CalculatorsWidgetProps, CreditScoreWidgetProps, DelinquencyNoticeProps, ProgressWidgetProps, QuickInsightsWidgetProps, SummaryTab,
   TabsWidgetProps } from './G6';
 export type { BarsProps, InfoCardProps, ProgressListProps } from './parts';
+export { DURATION, EASING, Enter, Pop, Press, Roll, Shake, useCycle, useEnter, useGrow, useOpen, usePop, useProgress, useReducedMotion, useRoll, useShake, useShimmer,
+  useSlide, useStagger } from './motion';
+export type { EnterEffect, PressProps } from './motion';
+export { BlurInText, CountUp, FocusWord, GradientText, RevealDigits, RollingDigits, RotatingText, ScrollFloatText, ShimmerText, SplitFlapBoard, TextReveal, TypedText,
+  mix } from './TextEffects';
+export type { CountUpProps, FocusWordProps, GradientTextProps, RevealDigitsProps, RollingDigitsProps, RotatingTextProps, ScrollFloatTextProps, SplitFlapBoardProps,
+  TextEffectProps, TextProps, TypedTextProps } from './TextEffects';
+export { ClickBurst, EdgeBlur, FadeInContent, GlareHover, HighlightBorder, MagneticButton, Marquee, ScrollExpand, ScrollReveal } from './MotionEffects';
+export type { MagneticButtonProps, MarqueeProps, ScrollExpandProps, ScrollRevealProps, WrapProps } from './MotionEffects';
+export { AnimatedList, BentoGrid, CardNav, CardStack, Carousel, DockNav, DocumentFolder, ElasticSlider, FlipCard, GlassPanel, GlowBorderCard, OptionWheel, PillNav,
+  ProfileCard, ScrollStack, SpotlightCard, StaggeredMenu, TiltCard } from './Showcase';
+export type { AnimatedListProps, BentoTile, CardStackProps, CarouselProps, DocumentFolderProps, FlipCardProps, MenuGroup, NavProps, OptionWheelProps,
+  ProfileCardProps } from './Showcase';
+export { DotGrid, GradientBackdrop, LightBeams, LineWaves, ParticleBackdrop, SilkBackdrop, SoftAurora, Topography } from './Backdrops';
+export type { BackdropProps } from './Backdrops';
+export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
+  RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
+export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';

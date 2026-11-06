@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { FieldProps, Option, isEmpty, options as toOptions, styles } from './field';
+import { Enter, Pop, Press, Shake } from './motion';
 import { useTheme } from './theme';
 
 interface ChoiceProps<T> extends FieldProps<T> {
@@ -26,32 +27,32 @@ function ChoiceGroup<T extends string | string[]>(props: ChoiceProps<T> & { mult
     }
   };
   return (
-    <View testID={testID} style={s.field} accessibilityRole={multiple ? undefined : 'radiogroup'} accessibilityLabel={label}>
+    <Enter testID={testID} style={s.field} accessibilityRole={multiple ? undefined : 'radiogroup'} accessibilityLabel={label}>
       <Text style={s.label} accessibilityRole="header">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
-      <View style={{ flexDirection: horizontal ? 'row' : 'column', flexWrap: 'wrap', gap: 8 }}>
+      <Shake error={message} style={{ flexDirection: horizontal ? 'row' : 'column', flexWrap: 'wrap', gap: 8 }}>
         {toOptions(props.options).map((o) => {
           const on = picked(o.value);
           const off = !!(disabled || readOnly || o.disabled);
           return (
-            <Pressable key={o.value} testID={`${testID}-option-${o.value}`} accessibilityRole={multiple ? 'checkbox' : 'radio'} accessibilityLabel={o.label}
+            <Press key={o.value} testID={`${testID}-option-${o.value}`} accessibilityRole={multiple ? 'checkbox' : 'radio'} accessibilityLabel={o.label}
                        accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => pick(o.value)}
                        style={{ minHeight: t.minTouch, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14,
                          borderWidth: on ? 1.5 : t.border, borderColor: on ? t.color.primary : t.color.borderStrong, borderRadius: t.radius.control,
                          backgroundColor: on ? t.color.primarySoft : t.color.surface, opacity: off ? 0.55 : 1 }}>
-              <View importantForAccessibility="no-hide-descendants"
+              <Pop on={on} importantForAccessibility="no-hide-descendants"
                     style={{ width: 20, height: 20, borderRadius: multiple ? 6 : 10, borderWidth: 1.5, borderColor: on ? t.color.primary : t.color.borderStrong,
                       backgroundColor: on ? t.color.primary : t.color.surface, alignItems: 'center', justifyContent: 'center' }}>
                 {on ? <Text style={{ color: t.color.onPrimary, fontSize: 12, fontWeight: '700' }}>{multiple ? '✓' : '•'}</Text> : null}
-              </View>
+              </Pop>
               <Text style={{ fontSize: 15, color: t.color.text }}>{o.label}</Text>
-            </Pressable>
+            </Press>
           );
         })}
-      </View>
+      </Shake>
       {message
         ? <Text testID={`${testID}-error`} style={s.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">{message}</Text>
         : helpText ? <Text style={s.help}>{helpText}</Text> : null}
-    </View>
+    </Enter>
   );
 }
 

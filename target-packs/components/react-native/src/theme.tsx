@@ -26,6 +26,8 @@ export interface Theme {
   /** Pressing a button scales it a little when the style asks for it. */
   pressScale: number;
   look: NonNullable<ComponentStyle['look']>;
+  /** The click and entrance effects of the component style (see motion.tsx); none when the style sets none. */
+  motion: { click: 'press' | 'ripple' | 'bounce' | 'none'; scroll: 'fadeup' | 'scale' | 'slide' | 'blur' | 'none' };
 }
 
 /** Builds the theme from the bank tokens, the bank's brand colour and the component style. */
@@ -43,6 +45,7 @@ export function makeTheme(style: ComponentStyle = {}, brand?: string): Theme {
     minTouch: 48,
     pressScale: style.motion?.click === 'press' || style.motion?.click === 'bounce' ? 0.97 : 1,
     look,
+    motion: { click: style.motion?.click ?? 'none', scroll: style.motion?.scroll ?? 'none' },
   };
 }
 
