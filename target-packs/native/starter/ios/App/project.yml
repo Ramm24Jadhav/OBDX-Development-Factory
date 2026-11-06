@@ -30,6 +30,16 @@ targets:
         # Empty pins turn pinning off: set them for every build that talks to a real bank.
         OBDX_PINS: ""
         OBDX_PINS_EXPIRE: ""
+        # YES builds a Release without pins on purpose (a test server); otherwise a Release with empty pins fails
+        OBDX_ALLOW_NO_PINS: "NO"
+    preBuildScripts:
+      - name: Certificate pins for release
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Release" ] && [ -z "$OBDX_PINS" ] && [ "$OBDX_ALLOW_NO_PINS" != "YES" ]; then
+            echo "error: A release build needs the bank's certificate pins. Set OBDX_PINS and OBDX_PINS_EXPIRE in ios/App/project.yml (see the README), or OBDX_ALLOW_NO_PINS: YES to build a release without pinning on purpose."
+            exit 1
+          fi
     info:
       path: Info.plist
       properties:

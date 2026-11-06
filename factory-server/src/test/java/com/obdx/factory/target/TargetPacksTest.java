@@ -31,7 +31,8 @@ class TargetPacksTest {
                 "android/app/src/main/java/com/bank/obdx/components/Fields.kt", "ios/Sources/ObdxApp/Components/Fields.swift",
                 "ios/Sources/ObdxApp/Api/ApiClient.swift", "shared/i18n/en.json", "android/app/src/main/java/com/bank/obdx/api/CertificatePins.kt",
                 "ios/Sources/ObdxApp/Api/CertificatePins.swift", "ios/App/project.yml", "ios/Tests/ObdxAppTests/Home/HomeViewTests.swift",
-                "scripts/run-on-device.sh");
+                "scripts/run-on-device.sh", "android/gradlew", "android/gradle/wrapper/gradle-wrapper.properties");
+        assertThat(nativePack.starter()).doesNotContainKey("android/gradle/wrapper/gradle-wrapper.jar");
         assertThat(nativePack.recipeFor("mobile-native/ios/App/project.yml", "modify", "ui"))
                 .hasValueSatisfying(m -> assertThat(m.part().id()).isEqualTo("project-ios"));
         assertThat(nativePack.rules()).extracting(r -> r.id()).contains("native-no-webview", "native-no-secrets-on-device", "native-no-cleartext");

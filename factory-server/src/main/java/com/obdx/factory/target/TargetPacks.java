@@ -203,7 +203,8 @@ public class TargetPacks {
             for (Resource resource : new PathMatchingResourcePatternResolver().getResources("classpath*:" + prefix + "**/*")) {
                 String url = resource.getURL().toString();
                 int at = url.lastIndexOf(prefix);
-                if (at < 0 || url.endsWith("/") || !resource.isReadable()) {
+                // Starter files are text; a binary one (the Gradle wrapper's jar) would be corrupted, so it stays in the repository
+                if (at < 0 || url.endsWith("/") || url.endsWith(".jar") || !resource.isReadable()) {
                     continue;
                 }
                 try (InputStream in = resource.getInputStream()) {
@@ -213,7 +214,7 @@ public class TargetPacks {
             Path teamStarter = teamDir == null ? null : teamDir.resolve("starter");
             if (teamStarter != null && Files.isDirectory(teamStarter)) {
                 try (Stream<Path> walk = Files.walk(teamStarter)) {
-                    for (Path file : walk.filter(Files::isRegularFile).toList()) {
+                    for (Path file : walk.filter(f -> Files.isRegularFile(f) && !f.toString().endsWith(".jar")).toList()) {
                         files.put(teamStarter.relativize(file).toString().replace('\\', '/'), Files.readString(file, StandardCharsets.UTF_8));
                     }
                 }

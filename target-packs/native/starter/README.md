@@ -26,6 +26,14 @@ screen reads alike in both.
 - **Privacy**: the Android window is secure (no screenshots or recent-apps preview of balances); the iOS app blurs
   when it leaves the foreground. Nothing secret is kept on the device.
 
+## Gradle wrapper
+
+`android/gradlew` (`gradlew.bat` on Windows) runs Gradle 8.14.2, the version the Android Gradle plugin needs (8.13 or
+newer); an older installed `gradle` fails. The first run downloads it and checks its SHA-256
+(`gradle/wrapper/gradle-wrapper.properties`). The factory's starter download is text only and has no
+`gradle/wrapper/gradle-wrapper.jar`: open `android/` in Android Studio once (it needs only the properties file), or
+run `gradle wrapper --gradle-version 8.14.2` in `android/` with Gradle 8.13 or newer, and commit the jar.
+
 ## Certificate pinning
 
 Both apps talk only to a server whose certificate chain holds one of the bank's public keys (`CertificatePins` in
@@ -54,6 +62,9 @@ openssl x509 -in next.pem -pubkey -noout | openssl pkey -pubin -outform der | op
 - **The expiry** is the safety net for apps nobody updated: after that day the pins are not checked (the platform's
   normal certificate checks still are). Set it a few months past the next planned certificate change.
 - Keys: RSA 2048 and 4096, EC P-256 and P-384. Empty pins turn pinning off: only for development against a test server.
+  A release build with empty pins fails (Android when the APK or bundle is packaged, iOS before the Release build).
+  To build a release without pins on purpose: `./gradlew assembleRelease -Pobdx.allowNoPins=true`, and
+  `OBDX_ALLOW_NO_PINS: YES` in `project.yml`.
 - Tests: `CertificatePinsTest.kt` and `CertificatePinsTests.swift` check the same certificate gives the openssl pin.
 
 ## The iOS project (XcodeGen)
