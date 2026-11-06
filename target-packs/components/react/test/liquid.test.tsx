@@ -43,5 +43,7 @@ describe('Liquid glass', () => {
     }
     expect(css).toContain('rgb(255 255 255 / 0.6)');
     expect(css).toContain('rgb(40 40 40 / 0.62)');
+    expect(css).toContain('.bx-look-liquid .bx-range-input::-webkit-slider-thumb');
+    expect(css).toContain('.bx-look-liquid .bx-range-input::-moz-range-thumb');
   });
 });

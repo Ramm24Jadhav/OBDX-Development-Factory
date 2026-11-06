@@ -191,6 +191,16 @@ bx-button, bx-icon-button { display: inline-block; }
 .bx-look-liquid .bx-btn:focus-visible { box-shadow: var(--bx-lg-rim), var(--bx-focus); }
 .bx-look-liquid .bx-btn:not(:disabled):active { transform: scale(1.03, 0.97); }
 .bx-look-liquid .bx-tab.is-on, .bx-look-liquid .bx-segment:has(:checked) { background: var(--bx-lg-hover); box-shadow: var(--bx-lg-rim); }
+/* The slider: a frosted glass thumb on a thin track, the filled part in the brand (Firefox draws the fill; Chromium and Safari show the track) */
+.bx-look-liquid .bx-range-input { -webkit-appearance: none; appearance: none; background: transparent; --bx-lg-thumb: var(--bx-lg-rim), 0 0 0 1px color-mix(in srgb, var(--bx-text) 50%, transparent), var(--bx-lg-drop); }
+.bx-look-liquid .bx-range-input::-webkit-slider-runnable-track { height: 6px; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 30%, var(--bx-surface-3)); }
+.bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 22px; margin-top: -8px; border: 0; border-radius: var(--bx-radius-pill); background: var(--bx-lg-tint);
+  box-shadow: var(--bx-lg-thumb); -webkit-backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); }
+.bx-look-liquid .bx-range-input::-moz-range-track { height: 6px; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 30%, var(--bx-surface-3)); }
+.bx-look-liquid .bx-range-input::-moz-range-progress { height: 6px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); }
+.bx-look-liquid .bx-range-input::-moz-range-thumb { width: 34px; height: 22px; border: 0; border-radius: var(--bx-radius-pill); background: var(--bx-lg-tint); box-shadow: var(--bx-lg-thumb); backdrop-filter: blur(var(--bx-lg-blur)); }
+.bx-look-liquid .bx-range-input:not(:disabled):active::-webkit-slider-thumb { transform: scale(1.08, 0.94); }
+.bx-look-liquid .bx-range-input:not(:disabled):active::-moz-range-thumb { transform: scale(1.08, 0.94); }
 /* The bending lens: Glisse bends the backdrop through it (Chromium); the host stops its own frost so the lens sees the page */
 .bx-lens { position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; --lg-glass: transparent; --lg-blur: var(--bx-lg-blur); box-shadow: none !important; }
 .bx-look-liquid :has(> .bx-lens) { position: relative; isolation: isolate; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -207,9 +217,15 @@ bx-button, bx-icon-button { display: inline-block; }
   .bx-look-liquid :is(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
     .bx-fx-pill-nav .bx-nav ul, .bx-fx-dock .bx-quick ul, .bx-glass-panel) { background: Canvas; color: CanvasText; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .bx-look-liquid .bx-btn { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
+  .bx-look-liquid .bx-range-input { -webkit-appearance: auto; appearance: auto; }
+  .bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-appearance: auto; }
   .bx-lens { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .bx-look-liquid .bx-btn:not(:disabled):active { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .bx-look-liquid .bx-btn:not(:disabled):active { transform: none; }
+  .bx-look-liquid .bx-range-input:active::-webkit-slider-thumb { transform: none; }
+  .bx-look-liquid .bx-range-input:active::-moz-range-thumb { transform: none; }
+}
 
 /* Motion: hover, click, scroll */
 .bx-motion-hover-lift .bx-btn:not(:disabled):hover, .bx-motion-hover-lift .bx-card.is-interactive:hover { transform: translateY(-2px); box-shadow: var(--bx-shadow-2); }

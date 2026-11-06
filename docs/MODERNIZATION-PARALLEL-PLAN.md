@@ -254,8 +254,11 @@ and no backdrop-filter (92% surface). React adds Glisse's `Glass` as a lens (`Le
 buttons, the action menu, tabs, segmented and the switch, imported only under `liquid`; nothing is marked as moving
 backdrop, so no frame loop runs. React Native draws a translucent fill and rim (`theme.glass`), solid when the phone
 asks for less transparency; a real frost needs a native blur view (expo-blur or @react-native-community/blur, not
-added). Open: the browser gates of LG5 (contrast over a busy backdrop, screenshots per browser, frame rate), the slider
-thumb in glass, Vue 3, Capacitor, JET Core Pack and Flutter (LG4).
+added). The slider has a frosted glass thumb (native slider back in forced colours). The web packs have no bottom nav
+component; the pill and dock navs are glass. LG4: Vue 3, Capacitor, JET Core Pack and Flutter starters have no design
+list yet (no component style, no look choice; Capacitor has its own CSS, not the React pack), so there is no look to
+add Liquid glass to until a component style reaches them. Open: the browser gates of LG5 (contrast over a busy
+backdrop, screenshots per browser, frame rate).
 
 Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.
 It starts after this round ships (SHIP), so the current gates are not run twice.
