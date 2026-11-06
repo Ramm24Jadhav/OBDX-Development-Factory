@@ -177,8 +177,9 @@ export abstract class ChipsBase extends Part {
   protected readonly legend = computed(() => this.label() ?? this.defaultLabel);
   readonly options = input<ReadonlyArray<ItemLike>>([]);
   readonly value = model<string[]>([]);
-  /** Several at once (the default), or one. */
-  readonly multiple = input(true);
+  /** Several at once, or one; leave out for the component's own (several). */
+  readonly multiple = input<boolean | undefined>(undefined);
+  protected readonly defaultMultiple: boolean = true;
   protected readonly rows = computed(() => toItems(this.options()).map((o) => {
     const on = this.value().includes(valueOf(o));
     return { ...o, on, css: 'bx-filter-chip' + (on ? ' is-on' : '') };
@@ -186,7 +187,7 @@ export abstract class ChipsBase extends Part {
   protected toggle(o: ListItem): void {
     const v = valueOf(o);
     const now = this.value();
-    this.value.set(now.includes(v) ? now.filter((x) => x !== v) : this.multiple() ? [...now, v] : [v]);
+    this.value.set(now.includes(v) ? now.filter((x) => x !== v) : (this.multiple() ?? this.defaultMultiple) ? [...now, v] : [v]);
   }
 }
 
@@ -260,15 +261,16 @@ export abstract class AccordionBase extends Part {
   readonly items = input<ReadonlyArray<PanelItem>>([]);
   /** The open sections' ids (or titles): [(expanded)]. */
   readonly expanded = model<string[]>([]);
-  /** Several sections open at once. */
-  readonly multiple = input(false);
+  /** Several sections open at once; leave out for the component's own (one). */
+  readonly multiple = input<boolean | undefined>(undefined);
+  protected readonly defaultMultiple: boolean = false;
   protected readonly rows = computed(() => this.items().map((o, i) => {
     const key = o.id ?? o.title;
     return { key, title: o.title, body: o.body ?? '', on: this.expanded().includes(key), head: `${this.id}-${i}-h`, panel: `${this.id}-${i}-p` };
   }));
   protected toggle(key: string): void {
     const open = this.expanded();
-    this.expanded.set(open.includes(key) ? open.filter((x) => x !== key) : this.multiple() ? [...open, key] : [key]);
+    this.expanded.set(open.includes(key) ? open.filter((x) => x !== key) : (this.multiple() ?? this.defaultMultiple) ? [...open, key] : [key]);
   }
 }
 
@@ -587,8 +589,8 @@ export const ALERT = `
   @if (!gone()) {
     <div [class]="'bx-alert is-' + sev()" [attr.role]="sev() === 'error' ? 'alert' : 'status'" [attr.data-testid]="testID() || null">
       <span class="bx-alert-icon" aria-hidden="true">{{ icon() }}</span>
-      <div class="bx-alert-text">@if (heading()) {<strong>{{ heading() }}</strong>}<span>{{ message() }}</span></div>
-      @if (actionLabel()) { <button type="button" class="bx-alert-action" (click)="action.emit()">{{ actionLabel() }}</button> }
+      <div class="bx-alert-text">@if (head()) {<strong>{{ head() }}</strong>}<span>{{ message() }}</span></div>
+      @if (act()) { <button type="button" class="bx-alert-action" (click)="action.emit()">{{ act() }}</button> }
       @if (dismissible()) {
         <button type="button" class="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Dismiss" (click)="dismiss()"><span aria-hidden="true">×</span></button>
       }
@@ -597,16 +599,21 @@ export const ALERT = `
 
 @Directive()
 export abstract class AlertBase extends Part {
-  readonly heading = input('');
+  /** Leave out for the component's own heading. */
+  readonly heading = input<string | undefined>(undefined);
   readonly message = input.required<string>();
   /** Leave out for the component's own severity. */
   readonly severity = input<Severity | ''>('');
-  readonly actionLabel = input('');
+  /** Leave out for the component's own action. */
+  readonly actionLabel = input<string | undefined>(undefined);
   /** Shows Dismiss; the alert hides and (closed) tells the screen. */
   readonly dismissible = input(false);
   readonly action = output<void>();
   readonly closed = output<void>();
   protected readonly defaultSeverity: Severity = 'info';
+  protected readonly defaults: { heading?: string; actionLabel?: string } = {};
+  protected readonly head = computed(() => this.heading() ?? this.defaults.heading ?? '');
+  protected readonly act = computed(() => this.actionLabel() ?? this.defaults.actionLabel ?? '');
   protected readonly gone = signal(false);
   protected readonly sev = computed<Severity>(() => this.severity() || this.defaultSeverity);
   protected readonly icon = computed(() => ICON[this.sev()]);

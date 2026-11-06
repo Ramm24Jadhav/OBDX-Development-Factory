@@ -46,16 +46,13 @@ export abstract class Titled extends Part {
 
 /* ---------- AccountSelector ---------- */
 
-/** Choose an account (oj-select-single); the chosen one's detail, such as its available balance, is the help line. [(value)]. */
-@Component({
-  selector: 'bx-account-picker',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Dropdown],
-  template: `<bx-select [testID]="testID()" [label]="label()" [options]="options()" [(value)]="value" [helpText]="help()" [required]="required()" [disabled]="disabled()"
-                       [placeholder]="placeholder()" [error]="error()" />`,
-})
-export class AccountSelector extends Part {
-  readonly label = input('From account');
+export const PICKER = `<bx-select [testID]="testID()" [label]="name()" [options]="options()" [(value)]="value" [helpText]="help()" [required]="required()"
+  [disabled]="disabled()" [placeholder]="placeholder()" [error]="error()" />`;
+
+@Directive()
+export abstract class PickerBase extends Part {
+  /** Leave out for the component's own label. */
+  readonly label = input<string | undefined>(undefined);
   readonly options = input<ReadonlyArray<AccountOption>>([]);
   readonly value = model<string>('');
   readonly required = input(false);
@@ -63,8 +60,14 @@ export class AccountSelector extends Part {
   readonly placeholder = input('');
   readonly helpText = input('');
   readonly error = input('');
+  protected readonly defaultLabel: string = '';
+  protected readonly name = computed(() => this.label() ?? this.defaultLabel);
   protected readonly help = computed(() => this.helpText() || this.options().find((o) => o.value === this.value())?.meta || '');
 }
+
+/** Choose an account (oj-select-single); the chosen one's detail, such as its available balance, is the help line. [(value)]. */
+@Component({ selector: 'bx-account-picker', changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
+export class AccountSelector extends PickerBase { protected override readonly defaultLabel = 'From account'; }
 
 /* ---------- tiles ---------- */
 

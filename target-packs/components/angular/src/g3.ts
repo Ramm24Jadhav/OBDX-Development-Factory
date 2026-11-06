@@ -3,7 +3,7 @@
  * Nothing secret is kept: a code lives only in the field until the screen takes it, a card number is shown masked (the
  * last four digits); the screen talks to the device and the bank.
  */
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Directive, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 
 import { Dialog } from './dialog';
 import { FieldMessage } from './field';
@@ -98,29 +98,37 @@ export class OtpInput extends Part {
   }
 }
 
-/* ---------- BlockCard ---------- */
+/* ---------- settings ---------- */
 
-/** Block the card, and what that means, said when it changes. [(value)]. */
-@Component({
-  selector: 'bx-block-card',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div [class]="value() ? 'bx-field bx-toggle is-danger' : 'bx-field bx-toggle'" [attr.data-testid]="testID() || null">
-      <div class="bx-switch-row">
-        <span class="bx-switch-label" [id]="id">{{ label() }}</span>
-        <button type="button" role="switch" class="bx-switch" [attr.aria-checked]="value()" [attr.aria-labelledby]="id" [attr.aria-describedby]="note() ? id + '-note' : null"
-                [disabled]="disabled()" (click)="value.set(!value())"></button>
-      </div>
-      @if (note()) { <span class="bx-help" role="status" [id]="id + '-note'">{{ note() }}</span> }
-    </div>`,
-})
-export class BlockCard extends Part {
-  readonly label = input('Block the card');
+export const SETTING = `
+  <div [class]="value() && tone() ? 'bx-field bx-toggle is-' + tone() : 'bx-field bx-toggle'" [attr.data-testid]="testID() || null">
+    <div class="bx-switch-row">
+      <span class="bx-switch-label" [id]="id">{{ name() }}</span>
+      <button type="button" role="switch" class="bx-switch" [attr.aria-checked]="value()" [attr.aria-labelledby]="id" [attr.aria-describedby]="note() ? id + '-note' : null"
+              [disabled]="disabled()" (click)="value.set(!value())"></button>
+    </div>
+    @if (note()) { <span class="bx-help" role="status" [id]="id + '-note'">{{ note() }}</span> }
+  </div>`;
+
+/** One setting with what it means when on (or off), said when it changes. [(value)]. */
+@Directive()
+export abstract class SettingBase extends Part {
+  /** Leave out for the component's own label and texts. */
+  readonly label = input<string | undefined>(undefined);
   readonly value = model(false);
-  readonly onText = input('The card is blocked: payments and withdrawals are refused until you unblock it.');
+  readonly onText = input<string | undefined>(undefined);
   readonly offText = input('');
   readonly disabled = input(false);
-  protected readonly note = computed(() => (this.value() ? this.onText() : this.offText()));
+  protected readonly defaults: { label?: string; onText?: string; tone?: string } = {};
+  protected readonly name = computed(() => this.label() ?? this.defaults.label ?? '');
+  protected readonly tone = computed(() => this.defaults.tone ?? '');
+  protected readonly note = computed(() => (this.value() ? this.onText() ?? this.defaults.onText ?? '' : this.offText()));
+}
+
+/** Block the card, and what that means. */
+@Component({ selector: 'bx-block-card', changeDetection: ChangeDetectionStrategy.OnPush, template: SETTING })
+export class BlockCard extends SettingBase {
+  protected override readonly defaults = { label: 'Block the card', onText: 'The card is blocked: payments and withdrawals are refused until you unblock it.', tone: 'danger' };
 }
 
 /* ---------- SessionExpiryWarning ---------- */

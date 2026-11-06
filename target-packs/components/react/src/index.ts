@@ -44,3 +44,7 @@ export { ActivateCard, AddOnCard, AuthChallenge, BlockCard, CardControls, CardLi
   KycSteps, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute, RedeemPoints, RepaymentSchedule, ResetPin, SecureConfirmation, SensitiveField,
   SessionExpiryWarning, masked } from './G3';
 export type { CardTileProps, ChallengeProps, ChecksProps, CodeProps, ScheduleColumn, ScheduleProps, SessionExpiryProps, SettingProps, SwitchOption } from './G3';
+export { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, BarChart, CodeDelivery, Consents, Devices, DoNotDisturb,
+  LanguagePicker, LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SavingsGoal, SessionSummary, SignInOptions, SpendCategories, SpendingChart,
+  StructureSimulation, StructureType, SweepMonitor, TransactionLimits } from './G4';
+export type { Bar, BarChartProps, Meter, MetersProps } from './G4';

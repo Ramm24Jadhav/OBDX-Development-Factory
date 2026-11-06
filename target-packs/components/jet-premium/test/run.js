@@ -82,7 +82,11 @@ const G2 = ['bx-account-picker', 'bx-account-summary', 'bx-balance-card', 'bx-ac
 const G3 = ['bx-loan-summary', 'bx-loan-repayment', 'bx-loan-schedule', 'bx-promise-to-pay', 'bx-disbursement', 'bx-card-tile', 'bx-card-list', 'bx-activate-card',
   'bx-convert-emi', 'bx-redeem-points', 'bx-spend-limit', 'bx-card-controls', 'bx-block-card', 'bx-reset-pin', 'bx-raise-dispute', 'bx-add-on-card', 'bx-card-statements', 'bx-otp',
   'bx-biometric', 'bx-session-timeout', 'bx-secure-confirmation', 'bx-sensitive', 'bx-kyc-steps', 'bx-fraud-alert'];
-const GROUPS = [G1, G2, G3];
+const G4 = ['bx-spending-chart', 'bx-budget-progress', 'bx-savings-goal', 'bx-spend-categories', 'bx-approval-queue', 'bx-approval-detail', 'bx-approval-journey', 'bx-reroute',
+  'bx-modification-requested', 'bx-pending-release', 'bx-structure-type', 'bx-account-structure', 'bx-structure-simulation', 'bx-intercompany-limits', 'bx-sweep-monitor', 'bx-profile',
+  'bx-sign-in-options', 'bx-otp-delivery', 'bx-devices', 'bx-appearance', 'bx-language', 'bx-alerts-subscription', 'bx-do-not-disturb', 'bx-consents', 'bx-transaction-limits',
+  'bx-session-summary'];
+const GROUPS = [G1, G2, G3, G4];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -709,6 +713,36 @@ test('g3 bx-session-timeout: counts down, says it at the start and in the last t
 test('g3 reused kinds have their own defaults', () => {
   eq([create('bx-kyc-steps', {}).vm.items().length, create('bx-fraud-alert', {}).vm.role(), create('bx-convert-emi', {}).vm.items().length, create('bx-card-statements', {}).props.actionLabel,
     create('bx-redeem-points', {}).props.max, create('bx-loan-repayment', {}).props.submitLabel], [3, 'alert', 3, 'Download', 12400, 'Review repayment'], 'defaults');
+});
+
+// Group 4: insights, approvals, liquidity, settings
+const g4 = load(path.join(BX, 'bx-g4.js')).kit;
+test('g4 bars are widths in steps of 5%, never past the end', () => {
+  eq([g4.step(320, 400), g4.step(1, 3), g4.step(500, 400), g4.step(5, 0), g4.step(-1, 10)], [80, 35, 100, 0, 0], 'steps');
+});
+test('g4 bx-spending-chart: bars against the largest value, the figure as text', () => {
+  const c = create('bx-spending-chart', { unit: 'USD', items: [{ label: 'Oct', value: 820 }, { label: 'Nov', value: 1640 }, { label: 'Dec', value: 410, display: '410.00' }] });
+  eq(c.vm.bars().map((b) => [b.css, b.value]), [['bx-bar-fill bx-h-50', '820 USD'], ['bx-bar-fill bx-h-100', (1640).toLocaleString() + ' USD'], ['bx-bar-fill bx-h-25', '410.00']], 'bars');
+  eq(create('bx-spending-chart', { orientation: 'bars', max: 100, items: [{ label: 'A', value: 30 }] }).vm.bars()[0].css, 'bx-bar-fill bx-w-30', 'own max');
+  if (!/<figure/.test(registry['bx-spending-chart'].view) || !/<figcaption/.test(registry['bx-spending-chart'].view)) { throw new Error('chart figure'); }
+});
+test('g4 meters: used of the limit, over by, near the end; the progressbar says it all', () => {
+  const m = create('bx-budget-progress', { items: [{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }, { label: 'Travel', value: 290, max: 300 }] });
+  const r = m.vm.rows();
+  eq(r.map((x) => x.css), ['bx-meter-fill bx-w-80', 'bx-meter-fill bx-w-100 is-over', 'bx-meter-fill bx-w-95 is-near'], 'classes');
+  eq([r[1].text, r[1].now, r[1].max], ['210 of 200, over by 10', '200', '200'], 'over');
+  if (!/role="progressbar"[^>]*:aria-valuetext/.test(registry['bx-budget-progress'].view)) { throw new Error('progressbar'); }
+});
+test('g4 reused kinds have their own defaults', () => {
+  const s = create('bx-spend-categories', { options: ['Eating out', 'Groceries'] });
+  s.vm.items()[0].toggle();
+  s.vm.items()[1].toggle();
+  eq(s.props.value, ['Groceries'], 'one category');
+  eq([create('bx-appearance', {}).props.value, create('bx-otp-delivery', {}).vm.items().length, create('bx-modification-requested', {}).vm.role(), create('bx-account-structure', {}).props.multiple,
+    create('bx-devices', {}).props.actionLabel, create('bx-reroute', {}).props.labelHint], ['System', 3, 'status', true, 'Remove', 'Re-route to'], 'defaults');
+  const d = create('bx-do-not-disturb', {});
+  d.vm.toggle();
+  eq(d.vm.note().indexOf('Alerts wait') === 0, true, 'quiet hours');
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)
