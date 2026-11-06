@@ -6835,6 +6835,12 @@
           "name": "@radix-ui/react-tabs",
           "version": "1.2",
           "licence": "MIT"
+        },
+        {
+          "name": "glisse",
+          "version": "0.5",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2026 Kelvin Zhang. Loaded only under the Liquid glass look, for the bending lens."
         }
       ],
       "built": [
@@ -13575,6 +13581,12 @@
           "name": "react-native",
           "version": "0.88",
           "licence": "MIT"
+        },
+        {
+          "name": "expo-blur",
+          "version": "58",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2015-present 650 Industries, Inc. (aka Expo). Optional: the frost of the Liquid glass look; without it the look keeps its fill and rim."
         }
       ],
       "built": [

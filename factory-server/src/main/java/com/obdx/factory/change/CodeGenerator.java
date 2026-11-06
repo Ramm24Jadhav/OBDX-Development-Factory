@@ -124,7 +124,7 @@ public class CodeGenerator {
                            Map<String, String> examples, Map<String, String> earlier, String note, ScreenScaffolder.Scaffold scaffold,
                            String partial, boolean partialComplete) {
         if (scaffold != null && ScreenScaffolder.FIXED.equals(scaffold.kind())) {
-            // A file the factory ships (the premium pack): written as it is, and checked like any other
+            // A file the factory ships or writes itself (the premium pack, a starter's style file): written as it is, and checked like any other
             return new Result(scaffold.content(), checked(context, item, original, scaffold.content(), scaffold, false), 0);
         }
         Recipe.Match recipe = checks.recipeFor(context.checks(), item.path(), item.action(), item.layer()).orElse(null);

@@ -59,6 +59,9 @@ guidance: |
     and response types; the client adds the session cookie and the nonce.
   - Pages do not navigate themselves: they call onAction(actionId) and onDone(), which routes.tsx wires up.
   - Write tests with Jest (the JET preset, npm test) and @testing-library/preact.
+  - The app's design comes from the factory's component style in src/component-style.json (look, motion, mode, brand;
+    style.ts puts obdx-look-* on <html>, styles/looks.css draws the nine designs over Redwood through the Core
+    Pack's --oj-c-* variables, Liquid glass included). Do not style a page for one design: use the components, and every design applies.
 
 rules:
   - id: jetcp-no-legacy-jet

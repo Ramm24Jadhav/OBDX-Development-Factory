@@ -1,7 +1,8 @@
 /*
  * The premium Oracle JET pack's skin (obdx-jet 0.1.0). Link once. Tokens are --bx-*; set --bx-brand (and --bx-brand-2)
  * to the bank's colours. Design options and motion are classes on any ancestor (the component style): bx-look-elevated
- * (the default), bx-look-soft, bx-look-glass, bx-look-outline, bx-look-vivid, bx-look-pill, bx-look-brutal, bx-look-redwood;
+ * (the default), bx-look-soft, bx-look-glass, bx-look-outline, bx-look-vivid, bx-look-pill, bx-look-brutal, bx-look-redwood,
+ * bx-look-liquid (Liquid glass);
  * bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur; bx-dark.
  */
 :root, .bx-theme {
@@ -173,6 +174,58 @@ bx-button, bx-icon-button { display: inline-block; }
 .bx-look-brutal .bx-btn--callToAction { background: var(--bx-brand); }
 .bx-look-redwood { --bx-brand: #c74634; --bx-brand-2: #a33b2b; --bx-radius: 6px; --bx-radius-lg: 8px; }
 .bx-look-redwood .bx-btn--callToAction { background: var(--bx-brand); box-shadow: none; }
+/* Liquid glass (target-packs/components/glass.json): controls and floating surfaces are frosted, saturated glass with a lit rim;
+   fields and tables keep a solid fill behind their text. React adds a bending lens (.bx-lens, Glisse) on its controls. */
+.bx-look-liquid { --bx-lg-tint: rgb(255 255 255 / 0.6); --bx-lg-blur: 3px; --bx-lg-saturate: 1.5; --bx-lg-hover: rgb(255 255 255 / 0.72);
+  --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.3), inset 0 1px 1px rgb(255 255 255 / 0.6); --bx-lg-drop: 0 6px 20px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08); }
+.bx-look-liquid.bx-dark, .bx-dark .bx-look-liquid, .bx-look-liquid .bx-dark { --bx-lg-tint: rgb(40 40 40 / 0.62); --bx-lg-hover: rgb(56 56 56 / 0.7);
+  --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.13), inset 0 1px 1px rgb(255 255 255 / 0.2); --bx-lg-drop: 0 6px 20px rgba(0, 0, 0, 0.45); }
+.bx-look-liquid :is(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
+  .bx-fx-pill-nav .bx-nav ul, .bx-fx-dock .bx-quick ul, .bx-glass-panel) {
+  /* muted text reads as body text on glass, so it keeps AA over a busy backdrop */
+  --bx-muted: var(--bx-text-body); background: var(--bx-lg-tint); border-color: transparent; box-shadow: var(--bx-lg-rim), var(--bx-lg-drop);
+  -webkit-backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); }
+.bx-look-liquid .bx-btn:not(:disabled):hover, .bx-look-liquid .bx-tab:not(.is-on):hover { background: var(--bx-lg-hover); }
+.bx-look-liquid .bx-btn--callToAction, .bx-look-liquid .bx-btn--primary, .bx-look-liquid .bx-btn--solid, .bx-look-liquid .bx-switch[aria-checked="true"] { background: color-mix(in srgb, var(--bx-brand) 88%, transparent); }
+.bx-look-liquid .bx-btn--danger { background: color-mix(in srgb, var(--bx-danger-button) 88%, transparent); }
+.bx-look-liquid .bx-btn:focus-visible { box-shadow: var(--bx-lg-rim), var(--bx-focus); }
+.bx-look-liquid .bx-btn:not(:disabled):active { transform: scale(1.03, 0.97); }
+.bx-look-liquid .bx-tab.is-on, .bx-look-liquid .bx-segment:has(:checked) { background: var(--bx-lg-hover); box-shadow: var(--bx-lg-rim); }
+/* The slider: a frosted glass thumb on a thin track, the filled part in the brand (Firefox draws the fill; Chromium and Safari show the track) */
+.bx-look-liquid .bx-range-input { -webkit-appearance: none; appearance: none; background: transparent; --bx-lg-thumb: var(--bx-lg-rim), 0 0 0 1px color-mix(in srgb, var(--bx-text) 50%, transparent), var(--bx-lg-drop); }
+.bx-look-liquid .bx-range-input::-webkit-slider-runnable-track { height: 6px; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 30%, var(--bx-surface-3)); }
+.bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 22px; margin-top: -8px; border: 0; border-radius: var(--bx-radius-pill); background: var(--bx-lg-tint);
+  box-shadow: var(--bx-lg-thumb); -webkit-backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); }
+.bx-look-liquid .bx-range-input::-moz-range-track { height: 6px; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 30%, var(--bx-surface-3)); }
+.bx-look-liquid .bx-range-input::-moz-range-progress { height: 6px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); }
+.bx-look-liquid .bx-range-input::-moz-range-thumb { width: 34px; height: 22px; border: 0; border-radius: var(--bx-radius-pill); background: var(--bx-lg-tint); box-shadow: var(--bx-lg-thumb); backdrop-filter: blur(var(--bx-lg-blur)); }
+.bx-look-liquid .bx-range-input:not(:disabled):active::-webkit-slider-thumb { transform: scale(1.08, 0.94); }
+.bx-look-liquid .bx-range-input:not(:disabled):active::-moz-range-thumb { transform: scale(1.08, 0.94); }
+/* The bending lens: Glisse bends the backdrop through it (Chromium); the host stops its own frost so the lens sees the page */
+.bx-lens { position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; --lg-glass: transparent; --lg-blur: var(--bx-lg-blur); box-shadow: none !important; }
+.bx-look-liquid :has(> .bx-lens) { position: relative; isolation: isolate; -webkit-backdrop-filter: none; backdrop-filter: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bx-look-liquid { --bx-lg-tint: color-mix(in srgb, var(--bx-surface) 92%, transparent); --bx-lg-hover: var(--bx-surface-3); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bx-look-liquid { --bx-lg-tint: var(--bx-surface); --bx-lg-hover: var(--bx-surface-3); --bx-lg-blur: 0px; --bx-lg-saturate: 1; }
+  .bx-look-liquid .bx-btn--callToAction, .bx-look-liquid .bx-btn--primary, .bx-look-liquid .bx-btn--solid, .bx-look-liquid .bx-switch[aria-checked="true"] { background: var(--bx-brand); }
+  .bx-look-liquid .bx-btn--danger { background: var(--bx-danger-button); }
+  .bx-lens { display: none; }
+}
+@media (forced-colors: active) {
+  .bx-look-liquid :is(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
+    .bx-fx-pill-nav .bx-nav ul, .bx-fx-dock .bx-quick ul, .bx-glass-panel) { background: Canvas; color: CanvasText; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .bx-look-liquid .bx-btn { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
+  .bx-look-liquid .bx-range-input { -webkit-appearance: auto; appearance: auto; }
+  .bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-appearance: auto; }
+  .bx-lens { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bx-look-liquid .bx-btn:not(:disabled):active { transform: none; }
+  .bx-look-liquid .bx-range-input:active::-webkit-slider-thumb { transform: none; }
+  .bx-look-liquid .bx-range-input:active::-moz-range-thumb { transform: none; }
+}
 
 /* Motion: hover, click, scroll */
 .bx-motion-hover-lift .bx-btn:not(:disabled):hover, .bx-motion-hover-lift .bx-card.is-interactive:hover { transform: translateY(-2px); box-shadow: var(--bx-shadow-2); }

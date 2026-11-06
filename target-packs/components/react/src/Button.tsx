@@ -1,5 +1,7 @@
 import { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react';
 
+import { Lens } from './lens';
+
 export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger';
 
 interface BaseProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'onClick'> {
@@ -34,6 +36,7 @@ export function Button({ testID, label, chroming = 'callToAction', size, startIc
   return (
     <button {...rest} type={type ?? 'button'} className={css(chroming, size, className)} data-testid={testID} disabled={disabled || busy}
             aria-busy={busy || undefined} onClick={(e) => { ripple(e); onAction?.(e); }}>
+      <Lens />
       {startIcon}
       <span className="bx-btn-label">{label}</span>
       {endIcon}
@@ -52,6 +55,7 @@ export function IconButton({ testID, label, icon = 'more', chroming = 'borderles
   return (
     <button {...rest} type={type ?? 'button'} className={css(chroming, size, `bx-btn--icon${className ? ` ${className}` : ''}`)} data-testid={testID}
             disabled={disabled} aria-label={label} title={label} onClick={(e) => { ripple(e); onAction?.(e); }}>
+      <Lens />
       {typeof icon === 'string' ? <span className={`bx-icon bx-icon--${icon}`} aria-hidden="true" /> : icon}
     </button>
   );

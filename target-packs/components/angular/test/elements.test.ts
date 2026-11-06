@@ -204,5 +204,6 @@ describe('The skin and the component style', () => {
   it('turns a component style into the same classes as the JET pack', () => {
     expect(styleClasses({ look: 'glass', motion: { hover: 'lift', click: 'ripple' }, mode: 'dark' }))
       .toBe('bx-theme bx-look-glass bx-motion-hover-lift bx-motion-click-ripple bx-dark');
+    expect(styleClasses({ look: 'liquid' })).toBe('bx-theme bx-look-liquid');
   });
 });

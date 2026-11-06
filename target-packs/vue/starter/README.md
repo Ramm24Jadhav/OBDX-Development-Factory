@@ -19,6 +19,11 @@ npm run build      # vue-tsc, then the static build in dist/ for Oracle HTTP Ser
 - `src/api/client.ts`: every OBDX call, with the session cookie and a nonce on each call that changes something
   (`src/api/config.ts` says which service gives it and the header it goes in).
 - `src/i18n`: the texts (`t('screenKey.name')`).
+- The design: `src/component-style.json` is the factory's component style (the factory writes the workspace's there: its
+  starter download `/api/workspaces/{id}/targets/{target}/starter.zip`, and changes). `style.ts` puts its look, motion, dark mode and brand on the
+  page, and `components/looks.css` draws the nine designs: Elevated, Soft, Glass, Outline, Vivid, Pill, Neo-brutalist,
+  Redwood and Liquid glass. Liquid glass frosts sections and buttons and keeps fields solid; it falls back to a solid
+  surface for reduced transparency, system colours under forced colours, and a 92% surface without backdrop-filter.
 - Motion follows `target-packs/components/motion.json` with the bank's `--bx-dur-*` and `--bx-ease-*` tokens: sections
   rise in, a field shakes once when its error appears, a chosen option pops, a busy button shimmers. Under reduced
   motion nothing moves.

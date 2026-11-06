@@ -8,3 +8,7 @@
 // injector:preactDebugImport
 // endinjector
 import './components/app';
+import { applyStyle, saved } from './style';
+
+// The design, motion, mode and brand of the factory's component style (style.ts)
+applyStyle(document.documentElement, saved.defaults);

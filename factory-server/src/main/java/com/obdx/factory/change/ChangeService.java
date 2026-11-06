@@ -610,7 +610,7 @@ public class ChangeService {
                     change = changes.save(change);
                     try {
                         fitToOthers(files, generator, localChecks, scope, id, context, plan, item, fitNote(unfit.get(path), onlyPath, note),
-                                scaffold(context, path, files.file(id, path).map(ChangeFileStore.ChangeFile::original).orElse(null)));
+                                scaffold(workspace.getId(), context, path, files.file(id, path).map(ChangeFileStore.ChangeFile::original).orElse(null)));
                     } catch (ModelLimitReachedException e) {
                         // Every file is written; only these fixes wait for the model
                         log.warn("Fixing the files of change {} by the other files stopped at the model's limit: {}", id, e.getMessage());
@@ -923,7 +923,7 @@ public class ChangeService {
                 current = read(file);
             }
             Map<String, String> examples = examples(workspaceId, workingCopy, item);
-            ScreenScaffolder.Scaffold scaffold = scaffold(context, item.path(), current);
+            ScreenScaffolder.Scaffold scaffold = scaffold(workspaceId, context, item.path(), current);
             CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold,
                     partial == null ? null : partial.text(), partial != null && partial.complete());
             ChangeFileStore.Status status = modify && result.content().equals(current)
@@ -1952,7 +1952,7 @@ public class ChangeService {
      * For files of a React Native or React app: the starting point generated from the approved Screen Model (screen,
      * test or texts), or null.
      */
-    ScreenScaffolder.Scaffold scaffold(ChangeContext context, String path, String current) {
+    ScreenScaffolder.Scaffold scaffold(UUID workspaceId, ChangeContext context, String path, String current) {
         // The premium JET pack's own files are written as the factory ships them (installing or upgrading the pack)
         java.util.Optional<String> shipped = com.obdx.factory.componentpack.PackFiles.forPath(path);
         if (shipped.isPresent()) {
@@ -1962,8 +1962,12 @@ public class ChangeService {
         if (!scope.inApp(path)) {
             return null;
         }
+        // The starter's style file holds the workspace's saved component style, written as it is
+        String relative = path.replace('\\', '/').substring(scope.appFolder().length() + 1);
         return targetPacks.screens(scope.target(), scope.appFolder(), context.fileExists())
-                .flatMap(pack -> ScreenScaffolder.forFile(pack, scope.appFolder(), path, context.models(), current)).orElse(null);
+                .flatMap(pack -> targets.styleFile(workspaceId, pack, relative)
+                        .map(style -> new ScreenScaffolder.Scaffold(ScreenScaffolder.FIXED, style, List.of()))
+                        .or(() -> ScreenScaffolder.forFile(pack, scope.appFolder(), path, context.models(), current))).orElse(null);
     }
 
     /** The pack an app file's starting point comes from: Angular for a Capacitor app wrapping the Angular app. */

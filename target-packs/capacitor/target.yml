@@ -63,6 +63,10 @@ guidance: |
     and response types; take the service paths and fields from the bank's OBDX REST services.
   - Pages do not navigate themselves: they call onAction(actionId) and onDone(), which routes.tsx wires up.
   - Write tests with vitest and @testing-library/react.
+  - The app's design comes from the factory's component style in src/component-style.json (look, motion, mode, brand;
+    style.ts puts obdx-look-* on the root, components/looks.css draws the nine designs, Liquid glass included). A
+    wrapped Angular app reads src/app/component-style.json and draws them with the Angular pack's bx.css. Do not style
+    a page for one design: use the components and their classes, and every design applies.
 
 rules:
   - id: capacitor-no-live-server

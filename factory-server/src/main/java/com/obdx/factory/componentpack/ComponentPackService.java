@@ -299,7 +299,7 @@ public class ComponentPackService {
 
     // The component style --------------------------------------------------------------------------------------------
 
-    static final Set<String> LOOKS = Set.of("elevated", "soft", "glass", "outline", "vivid", "pill", "brutal", "redwood");
+    static final Set<String> LOOKS = Set.of("elevated", "soft", "glass", "outline", "vivid", "pill", "brutal", "redwood", "liquid");
     static final Set<String> HOVER = Set.of("none", "lift", "glow", "shine");
     static final Set<String> CLICK = Set.of("none", "press", "ripple", "bounce");
     static final Set<String> SCROLL = Set.of("none", "fadeup", "scale", "slide", "blur");

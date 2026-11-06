@@ -581,7 +581,7 @@ Each workspace has a **UI target** (Code page, **UI target**; changes need Manag
 - **Oracle JET** (default): enhance the bank's existing OBDX UI, as described above.
 - **React Native** (iOS and Android, Expo, TypeScript) or **React** (web, Vite, TypeScript): build the screens of a **new app** that lives in its own **app folder** of the same repository (default `mobile` or `web`, relative to the workspace's SVN URL) and calls the existing OBDX REST services. OBDX backend changes still follow the version pack.
 
-The packs are in `target-packs/` (see its README). Each has a **starter project**: navigation, API client for OBDX services, texts (`src/i18n/en.json`), form handling (`useForm`) and one form component per Screen Model type (`TextField`, `AmountField`, `SelectField`, `AccountField`, ...). Download it from the Code page (**Download starter project**), commit it to the app folder with TortoiseSVN and import again; the Code page says whether the app was found. Restyle the components or rebuild them with the bank's design system; generated screens keep working because they only use the components' props.
+The packs are in `target-packs/` (see its README). Each has a **starter project**: navigation, API client for OBDX services, texts (`src/i18n/en.json`), form handling (`useForm`) and one form component per Screen Model type (`TextField`, `AmountField`, `SelectField`, `AccountField`, ...). Download it from the Code page (**Download starter project**), commit it to the app folder with TortoiseSVN and import again; the Code page says whether the app was found. The download carries the workspace's saved component style (Component factory) in the starter's `component-style.json` (Vue, Capacitor, Angular, JET Core Pack, Flutter), and a change that writes that file writes the same style. Restyle the components or rebuild them with the bank's design system; generated screens keep working because they only use the components' props.
 
 What changes with a React Native or React target:
 
@@ -1013,6 +1013,7 @@ object: compute those in the view model.
 | `POST /api/changes/{id}/close` | Close the change (`reason`: `MERGED` or `ABANDONED`, `force` to close as merged without the merge check); removes its branch |
 | `GET /api/targets` | The UI target packs with their component mapping and structure |
 | `GET /api/targets/{id}/starter.zip` | Download a target pack's starter project |
+| `GET /api/workspaces/{workspaceId}/targets/{id}/starter.zip` | The starter project with the workspace's saved component style in its style file (`component-style.json`); the UI offers this one |
 | `GET /api/component-packs` | The premium component packs and the catalogue: per component and pack its name, readiness (from the registry's built list and gate results), proposed mapping from JET and what it is built on |
 | `GET /api/workspaces/{id}/component-packs` | The same catalogue for a workspace: `jet` gives the JET version from its Project Profile, the premium JET build chosen for it and a note; what each premium JET component is built on follows that build |
 | `GET /api/workspaces/{id}/component-style` | The workspace's component style (the default when never saved: savedAt is null) |

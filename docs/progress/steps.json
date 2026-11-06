@@ -254,15 +254,15 @@
       "items": [
         {
           "name": "Glisse source read",
-          "done": false
+          "done": true
         },
         {
           "name": "Glass spec in the component style",
-          "done": false
+          "done": true
         },
         {
           "name": "Glisse in the React pack with its licence",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -275,11 +275,11 @@
       "items": [
         {
           "name": "Glisse components mapped",
-          "done": false
+          "done": true
         },
         {
           "name": "Glass surface on the rest",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -292,11 +292,11 @@
       "items": [
         {
           "name": "JET 6 and JET 21",
-          "done": false
+          "done": true
         },
         {
           "name": "Angular",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -309,13 +309,14 @@
       "items": [
         {
           "name": "Blur view glass",
-          "done": false
+          "done": true
         },
         {
           "name": "iOS 26 glass where available",
           "done": false
         }
-      ]
+      ],
+      "note": "expo-blur BlurView (optional), fill and rim as the fallback"
     },
     {
       "id": "LG4",
@@ -326,17 +327,18 @@
       "items": [
         {
           "name": "Vue 3 and Capacitor",
-          "done": false
+          "done": true
         },
         {
           "name": "JET Core Pack",
-          "done": false
+          "done": true
         },
         {
           "name": "Flutter",
-          "done": false
+          "done": true
         }
-      ]
+      ],
+      "note": "The factory does not write the bank's style into the starters yet"
     },
     {
       "id": "LG5",

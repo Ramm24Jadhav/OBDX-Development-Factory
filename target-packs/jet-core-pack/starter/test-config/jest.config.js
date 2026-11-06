@@ -11,7 +11,9 @@ module.exports = {
     setupFiles: [
       "<rootDir>/test-config/testSetup.ts"
     ],
+    // roots and a relative glob: a <rootDir> glob matches nothing on Windows, where rootDir has backslashes
+    roots: ["<rootDir>/src"],
     testMatch: [
-      "<rootDir>/src/**/__tests__/**/*.spec.tsx"
+      "**/__tests__/**/*.spec.tsx"
     ]
 }
