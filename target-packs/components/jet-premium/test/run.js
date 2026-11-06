@@ -1029,6 +1029,14 @@ test('bx-number-input: a step rolls the number in', () => {
   n.vm.up();
   eq([n.props.value, played.length], [3, 1], 'stepped and rolled');
 });
+test('badges use the -text tokens; the danger button and avatar change in dark; the tooltip trigger is 24 px', () => {
+  const dark = css.slice(css.indexOf('.bx-dark, .bx-dark .bx-theme {'), css.indexOf('}', css.indexOf('.bx-dark, .bx-dark .bx-theme {')));
+  const need = ['.bx-badge.is-success { background: var(--bx-success-soft); color: var(--bx-success-text); }', '.bx-badge.is-warning { background: var(--bx-warning-soft); color: var(--bx-warning-text); }',
+    '.bx-btn--danger { color: var(--bx-on-danger); background: var(--bx-danger-button); }', 'background: var(--bx-avatar-bg); color: var(--bx-avatar-text);', '.bx-tip-button { width: 24px; height: 24px;'];
+  eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
+  eq(['--bx-success-text', '--bx-warning-text', '--bx-danger-button', '--bx-on-danger', '--bx-avatar-bg', '--bx-avatar-text'].filter((t) => dark.indexOf(t) < 0), [], 'no dark value');
+  eq((css.match(/\.bx-badge\.is-\w+ \{[^}]*color: var\(--bx-(success|warning|info)\);/g) || []), [], 'a badge on a base tone colour');
+});
 test('the skin has the motion tokens, the effects and a reduced-motion rule for every bx- class', () => {
   const need = ['--bx-dur-fast', '--bx-dur-base', '--bx-dur-slow', '--bx-ease-standard', '--bx-ease-spring', '@keyframes bx-shake', '@keyframes bx-pop', '@keyframes bx-settle',
     '@keyframes bx-shimmer', '.bx-field.is-error .bx-control', '[class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important;'];
