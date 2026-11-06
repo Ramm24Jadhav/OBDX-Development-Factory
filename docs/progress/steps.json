@@ -1,0 +1,249 @@
+{
+ "rows": [
+  {
+   "id": "P0",
+   "track": "Set up",
+   "task": "Board reference images, side-by-side check, plan",
+   "session": "Main",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Plan and handoff template",
+     "done": true
+    },
+    {
+     "name": "Progress dashboard",
+     "done": true
+    },
+    {
+     "name": "Board reference images",
+     "done": false
+    },
+    {
+     "name": "Side-by-side check tool",
+     "done": false
+    },
+    {
+     "name": "Catalogue sessions started",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "SCR",
+   "track": "Screens",
+   "task": "Screens built and working (all 14)",
+   "session": "Earlier",
+   "unit": "screens",
+   "note": "Work, but do not match the boards yet",
+   "items": [
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    },
+    {
+     "done": true
+    }
+   ]
+  },
+  {
+   "id": "S0",
+   "track": "Screens",
+   "task": "S0 Shared parts: steps bar, chips, charts, cards, states",
+   "session": "Main",
+   "unit": "parts",
+   "items": [
+    {
+     "name": "Path steps bar",
+     "done": false
+    },
+    {
+     "name": "Count chips",
+     "done": false
+    },
+    {
+     "name": "Ring chart and legend",
+     "done": false
+    },
+    {
+     "name": "Stacked bars",
+     "done": false
+    },
+    {
+     "name": "Timeline",
+     "done": false
+    },
+    {
+     "name": "Dependency diagram",
+     "done": false
+    },
+    {
+     "name": "Path card",
+     "done": false
+    },
+    {
+     "name": "Activity list",
+     "done": false
+    },
+    {
+     "name": "Screen states",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "S1",
+   "track": "Screens",
+   "task": "S1 Overview, Choose a path, Technology settings",
+   "session": "Main",
+   "unit": "screens",
+   "note": "Overview differences found",
+   "items": [
+    {
+     "name": "Overview",
+     "done": false
+    },
+    {
+     "name": "Choose a path",
+     "done": false
+    },
+    {
+     "name": "Technology settings",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "S2",
+   "track": "Screens",
+   "task": "S2 Inventory, Mapping, Upgrade plan, Technology catalogue",
+   "session": "Main",
+   "unit": "screens",
+   "items": [
+    {
+     "name": "Component inventory",
+     "done": false
+    },
+    {
+     "name": "Component mapping",
+     "done": false
+    },
+    {
+     "name": "Upgrade plan",
+     "done": false
+    },
+    {
+     "name": "Technology catalogue",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "S3",
+   "track": "Screens",
+   "task": "S3 Migration planner, Workspace, Validation",
+   "session": "Main",
+   "unit": "screens",
+   "items": [
+    {
+     "name": "Migration planner",
+     "done": false
+    },
+    {
+     "name": "Migration workspace",
+     "done": false
+    },
+    {
+     "name": "Validation",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "S4",
+   "track": "Screens",
+   "task": "S4 Review, Decisions, History, Component factory",
+   "session": "Main",
+   "unit": "screens",
+   "items": [
+    {
+     "name": "Review and approval",
+     "done": false
+    },
+    {
+     "name": "Review decisions",
+     "done": false
+    },
+    {
+     "name": "History",
+     "done": false
+    },
+    {
+     "name": "Component factory",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "SHIP",
+   "track": "Ship",
+   "task": "Full build, push, CI green, 8081 updated for your review",
+   "session": "Main",
+   "unit": "phases",
+   "note": "One per phase",
+   "items": [
+    {
+     "name": "Screens",
+     "done": false
+    },
+    {
+     "name": "Catalogue and packs",
+     "done": false
+    },
+    {
+     "name": "Gates",
+     "done": false
+    },
+    {
+     "name": "Final",
+     "done": false
+    }
+   ]
+  }
+ ]
+}

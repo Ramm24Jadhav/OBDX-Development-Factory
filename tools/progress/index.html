@@ -1,0 +1,208 @@
+<meta name="dash-one-writer">
+<style>
+  .mp { display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); }
+  .mp-head h1 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); }
+  .mp-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); max-width: 60rem; }
+  .mp-fresh { font-size: var(--cds-font-size-caption); }
+  .mp-fresh .is-stale { color: var(--color-warn); font-weight: 600; }
+  .mp-head p b { font-weight: 600; color: var(--color-fg); }
+  .mp-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+  .mp-card h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .mp-card .mp-note { margin: var(--cds-gap-xs) 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mp-overall { display: flex; align-items: baseline; gap: var(--cds-gap-md); flex-wrap: wrap; }
+  .mp-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .mp-bar { height: 10px; border-radius: 999px; background: var(--cds-chart-grid); overflow: hidden; }
+  .mp-bar > span { display: block; height: 100%; border-radius: 999px; }
+  .mp-tracks { display: grid; gap: var(--cds-gap-md); min-height: 12rem; }
+  .mp-track { display: grid; grid-template-columns: minmax(7rem, 10rem) 1fr 3.5rem; align-items: center; gap: var(--cds-gap-md); }
+  .mp-track-name { font-weight: 600; }
+  .mp-track-sub { display: block; font-weight: 400; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mp-pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .mp-table-box { overflow-x: auto; }
+  .mp-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+  .mp-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 0 var(--cds-pad-sm) var(--cds-pad-sm) 0; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .mp-table td { padding: var(--cds-pad-sm) var(--cds-pad-sm) var(--cds-pad-sm) 0; border-bottom: 1px solid var(--color-border-line); vertical-align: middle; }
+  .mp-table td.mp-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mp-cellbar { display: flex; align-items: center; gap: var(--cds-gap-sm); min-width: 9rem; }
+  .mp-cellbar .mp-bar { flex: 1; height: 8px; }
+  .mp-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: var(--cds-font-size-caption); font-weight: 600; white-space: nowrap; border: 1px solid var(--color-border-line); }
+  .mp-chip.is-done { color: var(--color-ok); }
+  .mp-chip.is-progress { color: var(--color-warn); }
+  .mp-chip.is-todo { color: var(--color-fg-muted); }
+  .mp-muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  @media (max-width: 640px) { .mp-hide-narrow { display: none; } .mp-track { grid-template-columns: 1fr 3rem; } .mp-track .mp-bar { grid-column: 1 / -1; grid-row: 2; } }
+  @media (prefers-reduced-motion: no-preference) { .mp-bar > span { transition: width var(--cds-dur-slow) var(--cds-ease-out); } }
+</style>
+<div class="mp">
+  <header class="mp-head">
+    <h1 id="title">Modernization progress</h1>
+    <p class="mp-fresh"><span data-draw="freshness" data-source="tasks" data-field="asOf" data-row="0">—</span></p>
+    <p><b data-draw="tasksDone" data-source="overall" data-field="tasksDone">—</b> of <b data-draw="tasks" data-source="overall" data-field="tasks">—</b> tasks are done. The screens come first: each is brought to its approved board, then the catalogue, the new target packs and the gates.</p>
+  </header>
+
+  <section class="mp-card" id="overall">
+    <h2>Overall</h2>
+    <p class="mp-note">The average of every task's own progress (done out of its total).</p>
+    <div class="mp-overall">
+      <span class="mp-big" data-draw="overallPct" data-source="overall" data-field="pct">—</span>
+      <span class="mp-muted">complete</span>
+    </div>
+    <div class="mp-bar" style="margin-top: var(--cds-gap-md)" data-draw="overallBar" data-source="overall"></div>
+  </section>
+
+  <section class="mp-card" id="tracks">
+    <h2>By track</h2>
+    <p class="mp-note">Each track's progress, with its tasks done.</p>
+    <div class="mp-tracks" data-draw="trackList" data-source="tracks"></div>
+  </section>
+
+  <section class="mp-card" id="tasks">
+    <h2>Every task</h2>
+    <p class="mp-note">Which session does it, how far it is, and what is next. Updated as each piece lands.</p>
+    <div class="mp-table-box">
+      <table class="mp-table" data-source="tasks" data-row-key="id">
+        <thead>
+          <tr>
+            <th data-field="id">Id</th>
+            <th data-field="task">Task</th>
+            <th data-field="track" class="mp-hide-narrow">Track</th>
+            <th data-field="session" class="mp-hide-narrow">Session</th>
+            <th data-field="status">Status</th>
+            <th data-source="taskPct" data-field="pct">Progress</th>
+            <th data-field="done">Done</th>
+            <th data-field="total">Of</th>
+            <th data-field="note" class="mp-hide-narrow">Note</th>
+          </tr>
+        </thead>
+        <tbody data-draw="taskRows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<script>
+  const pctFmt = d3.format('.0%');
+  dash.calc('taskPct', {
+    title: 'Progress of each task',
+    description: 'Done divided by total for each task.',
+    inputs: ['tasks'],
+    fn: (tasks) => tasks.map((t) => ({ id: t.id, pct: Number(t.total) ? Number(t.done) / Number(t.total) : 0 })),
+  });
+  dash.calc('overall', {
+    title: 'Overall progress',
+    description: 'The average of every task\'s progress, and how many tasks are done.',
+    inputs: ['tasks'],
+    fn: (tasks) => [{
+      pct: tasks.length ? d3.mean(tasks, (t) => (Number(t.total) ? Number(t.done) / Number(t.total) : 0)) : 0,
+      tasksDone: tasks.filter((t) => t.status === 'Done').length,
+      tasks: tasks.length,
+    }],
+  });
+  dash.calc('tracks', {
+    title: 'Progress by track',
+    description: 'For each track, the average progress of its tasks and how many are done.',
+    inputs: ['tasks'],
+    fn: (tasks) => d3.groups(tasks, (t) => t.track).map(([track, list]) => ({
+      track,
+      pct: d3.mean(list, (t) => (Number(t.total) ? Number(t.done) / Number(t.total) : 0)),
+      done: list.filter((t) => t.status === 'Done').length,
+      tasks: list.length,
+    })),
+  });
+
+  const one = (id) => { const d = dash.data(id); return d.status === 'ok' && d.data.length ? d.data[0] : null; };
+  const barColor = (p) => (p >= 1 ? 'var(--color-ok)' : p > 0 ? dash.colors[0] : 'var(--cds-chart-muted)');
+
+  // Updated from the repository after every merge; more than three hours without an update means the updater needs a look
+  const STALE_HOURS = 3;
+  dash.draw('freshness', (el) => {
+    const d = dash.data('tasks');
+    el.replaceChildren();
+    if (d.status !== 'ok' || !d.data.length || !d.data[0].asOf) { el.textContent = '—'; return; }
+    const at = new Date(d.data[0].asOf);
+    const hours = (Date.now() - at.getTime()) / 3600000;
+    const when = d3.timeFormat('%-d %b %Y, %H:%M')(at);
+    const s = document.createElement('span');
+    s.textContent = 'Updated ' + when + (hours > STALE_HOURS ? ' · no update for ' + Math.floor(hours) + ' hours' : '');
+    if (hours > STALE_HOURS) { s.className = 'is-stale'; }
+    el.append(s);
+  });
+  dash.draw('tasksDone', (el) => { const o = one('overall'); el.textContent = o ? String(o.tasksDone) : '—'; });
+  dash.draw('tasks', (el) => { const o = one('overall'); el.textContent = o ? String(o.tasks) : '—'; });
+  dash.draw('overallPct', (el) => { const o = one('overall'); el.textContent = o ? pctFmt(o.pct) : '—'; });
+  dash.draw('overallBar', (el) => {
+    const o = one('overall');
+    el.replaceChildren();
+    if (!o) { return; }
+    const s = document.createElement('span');
+    s.style.width = (o.pct * 100).toFixed(1) + '%';
+    s.style.background = barColor(o.pct);
+    el.append(s);
+  });
+
+  dash.draw('trackList', (el) => {
+    const d = dash.data('tracks');
+    if (d.status !== 'ok') { el.textContent = '—'; return; }
+    el.replaceChildren(...d.data.map((t) => {
+      const row = document.createElement('div');
+      row.className = 'mp-track';
+      const name = document.createElement('span');
+      name.className = 'mp-track-name';
+      name.textContent = t.track;
+      const sub = document.createElement('span');
+      sub.className = 'mp-track-sub';
+      sub.textContent = `${t.done} of ${t.tasks} tasks done`;
+      name.append(sub);
+      const bar = document.createElement('div');
+      bar.className = 'mp-bar';
+      const fill = document.createElement('span');
+      fill.style.width = (t.pct * 100).toFixed(1) + '%';
+      fill.style.background = barColor(t.pct);
+      bar.append(fill);
+      const pct = document.createElement('span');
+      pct.className = 'mp-pct';
+      pct.textContent = pctFmt(t.pct);
+      row.append(name, bar, pct);
+      return row;
+    }));
+  });
+
+  dash.draw('taskRows', (el) => {
+    const d = dash.data('tasks');
+    const p = dash.data('taskPct');
+    el.replaceChildren();
+    if (d.status !== 'ok') { return; }
+    const pct = new Map((p.status === 'ok' ? p.data : []).map((r) => [r.id, r.pct]));
+    for (const t of d.data) {
+      const tr = document.createElement('tr');
+      const cell = (text, cls) => { const td = document.createElement('td'); if (cls) { td.className = cls; } td.textContent = text; tr.append(td); return td; };
+      cell(t.id, 'mp-num');
+      cell(t.task);
+      cell(t.track, 'mp-hide-narrow');
+      cell(t.session, 'mp-hide-narrow');
+      const st = cell('');
+      const chip = document.createElement('span');
+      chip.className = 'mp-chip ' + (t.status === 'Done' ? 'is-done' : t.status === 'In progress' ? 'is-progress' : 'is-todo');
+      chip.textContent = t.status;
+      st.append(chip);
+      const v = pct.get(t.id) ?? 0;
+      const pc = cell('');
+      const wrap = document.createElement('div');
+      wrap.className = 'mp-cellbar';
+      const bar = document.createElement('div');
+      bar.className = 'mp-bar';
+      const fill = document.createElement('span');
+      fill.style.width = (v * 100).toFixed(1) + '%';
+      fill.style.background = barColor(v);
+      bar.append(fill);
+      const lbl = document.createElement('span');
+      lbl.className = 'mp-num';
+      lbl.textContent = pctFmt(v);
+      wrap.append(bar, lbl);
+      pc.append(wrap);
+      cell(`${t.done} ${t.unit}`, 'mp-num');
+      cell(String(t.total), 'mp-num');
+      cell(t.note || '', 'mp-hide-narrow mp-muted');
+      el.append(tr);
+    }
+  });
+</script>
