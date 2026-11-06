@@ -76,7 +76,32 @@ const FORMS = ['bx-text-area', 'bx-password', 'bx-number-input', 'bx-currency-pi
 const G1 = ['bx-secondary-button', 'bx-danger-button', 'bx-savings-slider', 'bx-segmented', 'bx-filter-chips', 'bx-action-menu', 'bx-accordion', 'bx-stepper', 'bx-breadcrumb',
   'bx-side-nav', 'bx-sheet', 'bx-grid', 'bx-divider', 'bx-avatar', 'bx-pagination', 'bx-status-badge', 'bx-timeline', 'bx-spinner', 'bx-skeleton', 'bx-empty-state', 'bx-tooltip',
   'bx-alert-banner', 'bx-error-message', 'bx-success-message', 'bx-notification-panel'];
-const GROUPS = [G1];
+const G2 = ['bx-account-picker', 'bx-account-summary', 'bx-balance-card', 'bx-account-card', 'bx-account-details', 'bx-iban', 'bx-quick-actions', 'bx-payee-list',
+  'bx-beneficiary-card', 'bx-payment-form', 'bx-transfer-summary', 'bx-payment-status', 'bx-transaction-list', 'bx-transaction-filter', 'bx-transaction-details', 'bx-repeat',
+  'bx-receipt', 'bx-upcoming-bills', 'bx-td-summary', 'bx-new-td', 'bx-maturity-instructions', 'bx-td-topup', 'bx-td-redemption'];
+const G3 = ['bx-loan-summary', 'bx-loan-repayment', 'bx-loan-schedule', 'bx-promise-to-pay', 'bx-disbursement', 'bx-card-tile', 'bx-card-list', 'bx-activate-card',
+  'bx-convert-emi', 'bx-redeem-points', 'bx-spend-limit', 'bx-card-controls', 'bx-block-card', 'bx-reset-pin', 'bx-raise-dispute', 'bx-add-on-card', 'bx-card-statements', 'bx-otp',
+  'bx-biometric', 'bx-session-timeout', 'bx-secure-confirmation', 'bx-sensitive', 'bx-kyc-steps', 'bx-fraud-alert'];
+const G4 = ['bx-spending-chart', 'bx-budget-progress', 'bx-savings-goal', 'bx-spend-categories', 'bx-approval-queue', 'bx-approval-detail', 'bx-approval-journey', 'bx-reroute',
+  'bx-modification-requested', 'bx-pending-release', 'bx-structure-type', 'bx-account-structure', 'bx-structure-simulation', 'bx-intercompany-limits', 'bx-sweep-monitor', 'bx-profile',
+  'bx-sign-in-options', 'bx-otp-delivery', 'bx-devices', 'bx-appearance', 'bx-language', 'bx-alerts-subscription', 'bx-do-not-disturb', 'bx-consents', 'bx-transaction-limits',
+  'bx-session-summary'];
+const G5 = ['bx-raise-request', 'bx-track-requests', 'bx-mailbox', 'bx-compose-mail', 'bx-e-receipts', 'bx-certificates', 'bx-statement-request', 'bx-statement-format',
+  'bx-self-register', 'bx-fatca-crs', 'bx-product-showcase', 'bx-application-tracker', 'bx-terms-consent', 'bx-loan-calculator', 'bx-eligibility-calculator', 'bx-td-calculator',
+  'bx-currency-converter', 'bx-goal-calculator', 'bx-locator', 'bx-live-chat', 'bx-feedback', 'bx-nominations', 'bx-faq'];
+const G6 = ['bx-overview', 'bx-quick-insights', 'bx-recent-transactions', 'bx-bills-widget', 'bx-spend-analysis', 'bx-goals', 'bx-budgets', 'bx-calculators', 'bx-credit-score',
+  'bx-rewards', 'bx-financial-advisor', 'bx-special-offers', 'bx-credit-cards-overview', 'bx-loans-overview', 'bx-delinquency-notice', 'bx-financial-overview', 'bx-position-by-currency',
+  'bx-credit-line-usage', 'bx-bills-receivable-payable', 'bx-trade-instruments', 'bx-reports', 'bx-accounts-corp', 'bx-corporate-limits', 'bx-transactions-widget', 'bx-last-5-payments',
+  'bx-bulk-file-upload', 'bx-quick-links-corp', 'bx-work-snapshot', 'bx-notifications-widget', 'bx-pending-for-action', 'bx-my-limits', 'bx-pending-approvals'];
+const G7 = ['bx-rolling-digits', 'bx-count-up', 'bx-split-flap-board', 'bx-reveal-digits', 'bx-blur-in-text', 'bx-text-reveal', 'bx-rotating-text', 'bx-shimmer-text',
+  'bx-gradient-text', 'bx-typed-text', 'bx-focus-word', 'bx-scroll-float-text', 'bx-fade-in-content', 'bx-scroll-reveal', 'bx-scroll-expand', 'bx-edge-blur', 'bx-glare-hover',
+  'bx-magnetic-button', 'bx-highlight-border', 'bx-click-burst', 'bx-marquee', 'bx-animated-list', 'bx-spotlight-card', 'bx-tilt-card', 'bx-flip-card', 'bx-card-stack',
+  'bx-glow-border-card', 'bx-bento-grid', 'bx-carousel', 'bx-elastic-slider', 'bx-option-wheel', 'bx-pill-nav', 'bx-dock-nav', 'bx-card-nav', 'bx-staggered-menu', 'bx-document-folder',
+  'bx-scroll-stack', 'bx-profile-card', 'bx-glass-panel', 'bx-gradient-backdrop', 'bx-soft-aurora', 'bx-silk-backdrop', 'bx-dot-grid', 'bx-line-waves', 'bx-light-beams', 'bx-topography',
+  'bx-particle-backdrop', 'bx-slide-to-confirm', 'bx-hold-to-confirm', 'bx-otp-slots', 'bx-receipt-tear', 'bx-success-check', 'bx-swipe-row', 'bx-swipe-toast', 'bx-bell-toggle',
+  'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment', 'bx-scrub-field', 'bx-budget-gauge', 'bx-status-mark', 'bx-favourite-heart', 'bx-peek-rating',
+  'bx-warm-tooltip', 'bx-prompt-bar', 'bx-voice-pill', 'bx-call-chip', 'bx-lattice-loader'];
+const GROUPS = [G1, G2, G3, G4, G5, G6, G7];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -551,6 +576,433 @@ test('g1 views have their roles', () => {
   has('bx-stepper', /<ol class="bx-steps" :aria-label/);
 });
 
+// Group 2: accounts, payments, deposits
+const g2 = load(path.join(BX, 'bx-g2.js')).kit;
+test('g2 amounts: the currency\'s decimals; text is shown as given', () => {
+  eq([g2.money(1250, 'USD'), g2.money(1250, 'JPY'), g2.money(1.5, 'KWD'), g2.money('12,400.00'), g2.money(null)],
+    [(1250).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', (1250).toLocaleString() + ' JPY', (1.5).toLocaleString(undefined, { minimumFractionDigits: 3 }) + ' KWD', '12,400.00', ''], 'money');
+});
+test('g2 bx-iban: groups of four, the ISO checksum on blur, a tick when valid', () => {
+  eq([g2.ibanValid('GB29 NWBK 6016 1331 9268 19'), g2.ibanValid('GB28 NWBK 6016 1331 9268 19'), g2.ibanValid('12'), g2.ibanGroups('gb29nwbk60161331926819')],
+    [true, false, false, 'GB29 NWBK 6016 1331 9268 19'], 'checks');
+  const i = create('bx-iban', { required: true });
+  i.vm.onInput(input('gb29 nwbk 6016 1331 9268 19'));
+  i.vm.onBlur();
+  eq([i.props.value, i.vm.text(), i.vm.ok(), i.vm.error()], ['GB29NWBK60161331926819', 'GB29 NWBK 6016 1331 9268 19', true, ''], 'valid');
+  i.vm.onInput(input('GB28 NWBK 6016 1331 9268 19'));
+  i.vm.onBlur();
+  eq([i.vm.error().indexOf('Check the IBAN') === 0, i.props.value], [true, 'GB29NWBK60161331926819'], 'invalid keeps the last good value');
+});
+test('g2 bx-account-picker: the chosen account\'s detail is its help line', () => {
+  const p = create('bx-account-picker', { options: [{ value: 's', label: 'Savings ·· 4821', meta: 'Available 12,150.00' }, { value: 'c', label: 'Current ·· 7730' }] });
+  p.vm.onChange(input('s'));
+  eq([p.props.value, p.vm.detail(), p.vm.options()[0].selected], ['s', 'Available 12,150.00', true], 'chosen');
+});
+test('g2 tiles, cards and details fire ojAction with what was picked', () => {
+  const t = create('bx-account-summary', { items: [{ id: 'sav', label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }] });
+  t.vm.tiles()[0].open();
+  eq([t.events[0].detail.item.id, t.vm.tiles()[0].value], ['sav', '12,400.00'], 'tile');
+  const c = create('bx-beneficiary-card', { heading: 'A. Rao' });
+  c.vm.act();
+  eq([c.vm.actionName(), types(c)], ['Pay now: A. Rao', ['ojAction']], 'card');
+  const d = create('bx-td-redemption', { items: [{ label: 'Principal', value: '25,000.00' }, { label: 'You receive', value: '25,549.90', total: true }], busy: true });
+  d.vm.act();
+  eq([d.vm.rows()[1].css, types(d)], ['bx-kv-row is-total', []], 'details busy');
+});
+test('g2 bx-balance-card: the amount in its currency, hidden and shown on request', () => {
+  const b = create('bx-balance-card', { label: 'Savings ·· 4821', amount: 12400, currency: 'USD' });
+  eq(b.vm.shown(), (12400).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'shown');
+  b.vm.toggle();
+  eq([b.vm.shown(), b.vm.toggleText(), b.props.amountHidden], ['••••••', 'Show balance', true], 'hidden');
+});
+test('g2 bx-payee-list: found by name, picked with ojAction', () => {
+  const p = create('bx-payee-list', { items: [{ id: 'p1', name: 'A. Rao', meta: 'HSBC ·· 9268' }, { id: 'p2', name: 'J. Mehta' }] });
+  p.vm.onQuery(input('meh'));
+  eq(p.vm.rows().map((r) => r.name), ['J. Mehta'], 'filtered');
+  p.vm.rows()[0].pick();
+  eq(p.events[0].detail.item.id, 'p2', 'picked');
+  p.vm.onQuery(input('zzz'));
+  eq(p.vm.none(), true, 'none');
+});
+test('g2 bx-transaction-list: money in and out, the currency\'s decimals', () => {
+  const t = create('bx-transaction-list', { currency: 'USD', items: [{ id: 't1', description: 'Coffee House', date: 'Today', amount: -4.5 }, { id: 't2', description: 'Salary', amount: 3200 }] });
+  const r = t.vm.rows();
+  eq([r[0].amount, r[0].direction, r[1].css, r[1].direction], ['−' + (4.5).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'Money out', 'bx-tx-amount is-in', 'Money in'], 'rows');
+  r[0].open();
+  eq(t.events[0].detail.item.id, 't1', 'open');
+});
+test('g2 forms: submit and cancel fire ojAction; busy stops a second submit', () => {
+  const f = create('bx-payment-form', { cancelLabel: 'Cancel' });
+  f.vm.submit();
+  f.vm.cancel();
+  eq(f.events.map((e) => e.detail.action), ['submit', 'cancel'], 'actions');
+  const b = create('bx-new-td', { busy: true });
+  b.vm.submit();
+  eq([types(b), b.vm.busyAttr(), b.props.submitLabel], [[], 'true', 'Review deposit'], 'busy');
+});
+test('g2 reused kinds have their own defaults', () => {
+  eq([create('bx-repeat', {}).props.value, create('bx-repeat', {}).vm.items().length, create('bx-upcoming-bills', {}).props.actionLabel, create('bx-payment-status', {}).props.label],
+    ['Once', 3, 'Pay', 'Payment status'], 'defaults');
+  const m = create('bx-maturity-instructions', { options: ['Renew principal and interest', 'Close and pay out'] });
+  m.vm.items()[1].pick();
+  eq([m.props.value, m.vm.items()[1].css], ['Close and pay out', 'bx-choice is-on'], 'choice');
+  const r = create('bx-receipt', { amount: 1250, currency: 'USD', reference: 'FX-20391' });
+  eq(r.vm.amountText(), (1250).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'receipt');
+});
+test('g2 views have their names and roles', () => {
+  const has = (e, re) => { if (!re.test(registry[e].view)) { throw new Error(e + ': ' + re); } };
+  has('bx-account-picker', /<label class="bx-label" :for="\[\[id\]\]"/);
+  has('bx-iban', /:aria-describedby="\[\[describedBy\]\]"/);
+  has('bx-iban', /role="alert"/);
+  has('bx-payee-list', /:aria-label="\[\['Search ' \+ \$properties\.heading\]\]"/);
+  has('bx-transaction-list', /bx-visually-hidden/);
+  has('bx-account-details', /<dl class="bx-kv-list">/);
+  has('bx-maturity-instructions', /<fieldset/);
+  has('bx-quick-actions', /<nav class="bx-quick" :aria-label/);
+  has('bx-beneficiary-card', /:aria-label="\[\[actionName\]\]"/);
+});
+
+// Group 3: loans, cards, security
+const g3 = load(path.join(BX, 'bx-g3.js')).kit;
+test('g3 a card number shows its last four digits only', () => {
+  eq([g3.masked('4111 1111 1111 4821'), g3.masked(''), create('bx-card-tile', { number: '4111111111114821', label: 'Platinum', network: 'Visa', frozen: true }).vm.name()],
+    ['•••• 4821', '', 'Platinum, Visa, ending 4821, blocked'], 'masked');
+  const s = create('bx-sensitive', { value: '4111 1111 1111 4821' });
+  eq([s.vm.text(), s.vm.toggleName()], ['•••• 4821', 'Show Card number'], 'masked first');
+  s.vm.toggle();
+  eq([s.vm.text(), s.vm.pressed()], ['4111 1111 1111 4821', 'true'], 'shown on request');
+});
+test('g3 bx-loan-schedule: a row per instalment, amounts on the right', () => {
+  const t = create('bx-loan-schedule', { rows: [{ date: '05 Feb', amount: '412.00' }, { date: '05 Mar', amount: '412.00', status: 'due' }] });
+  eq([t.vm.cols().map((c) => c.css), t.vm.rows()[1].css, t.vm.rows()[1].cells.map((c) => c.text)], [['bx-th', 'bx-th is-end'], 'bx-tr is-due', ['05 Mar', '412.00']], 'table');
+  if (!/<caption>/.test(registry['bx-loan-schedule'].view) || !/<th scope="col"/.test(registry['bx-loan-schedule'].view)) { throw new Error('schedule headers'); }
+});
+test('g3 codes: digits only, slots filled, ojComplete at the last digit; a PIN is masked', () => {
+  const o = create('bx-otp', {});
+  const el = { value: '12a34' };
+  o.vm.onInput({ target: el });
+  eq([o.props.value, el.value, o.vm.slots().map((s) => s.ch).join(''), types(o)], ['1234', '1234', '1234', []], 'partial');
+  o.vm.onInput(input('123456'));
+  eq([types(o), o.events[0].detail.value, o.vm.auto()], [['ojComplete'], '123456', 'one-time-code'], 'complete');
+  o.vm.resend();
+  eq(types(o), ['ojComplete', 'ojAction'], 'resend');
+  const p = create('bx-reset-pin', {});
+  p.vm.onInput(input('98'));
+  eq([p.vm.type(), p.vm.slots().map((s) => s.ch), p.vm.auto()], ['password', ['•', '•', '', ''], 'off'], 'pin');
+});
+test('g3 checks and toggles: card controls switch on and off; blocking says what it means', () => {
+  const c = create('bx-card-controls', { options: ['Online payments', 'ATM withdrawals', 'Use abroad'], value: ['Online payments'] });
+  c.vm.items()[2].toggle();
+  c.vm.items()[0].toggle();
+  eq([c.props.value, c.vm.items()[2].checked], [['Use abroad'], 'true'], 'controls');
+  const b = create('bx-block-card', {});
+  eq(b.vm.note(), '', 'no note when off');
+  b.vm.toggle();
+  eq([b.props.value, b.vm.checked(), b.vm.note().indexOf('The card is blocked') === 0], [true, 'true', true], 'blocked');
+});
+test('g3 bx-biometric: verify and the other way fire ojAction; waiting stops a second ask', () => {
+  const b = create('bx-biometric', { state: 'waiting' });
+  b.vm.go();
+  b.vm.other();
+  eq(b.events.map((e) => e.detail.action), ['other'], 'waiting');
+  const f = create('bx-biometric', { state: 'failed' });
+  f.vm.go();
+  eq([f.vm.failed(), f.events[0].detail.action], [true, 'verify'], 'failed');
+});
+test('g3 bx-session-timeout: counts down, says it at the start and in the last ten seconds, signs out at zero', () => {
+  timers.length = 0;
+  const t = create('bx-session-timeout', { open: true, seconds: 12 });
+  eq([t.vm.left(), t.vm.spoken().indexOf('12 seconds') > 0], [12, true], 'start');
+  const run = () => { const next = timers.filter((x) => x.fn && x.ms === 1000).pop(); const fn = next.fn; next.fn = null; fn(); };
+  run();
+  eq([t.vm.left(), t.vm.spoken()], [11, ''], 'quiet');
+  run();
+  eq(t.vm.spoken().indexOf('10 seconds') > 0, true, 'last ten');
+  for (let i = 0; i < 10; i++) { run(); }
+  eq([t.props.open, t.events.map((e) => e.detail.action)], [false, ['expired']], 'expired');
+  const s = create('bx-session-timeout', { open: true });
+  s.vm.stay();
+  eq([s.props.open, s.events[0].detail.action, s.vm.text()], [false, 'stay', 'For your security you will be signed out in 1 minute.'], 'stay');
+  if (!/role="alertdialog" aria-modal="true"/.test(registry['bx-session-timeout'].view)) { throw new Error('alertdialog'); }
+});
+test('g3 reused kinds have their own defaults', () => {
+  eq([create('bx-kyc-steps', {}).vm.items().length, create('bx-fraud-alert', {}).vm.role(), create('bx-convert-emi', {}).vm.items().length, create('bx-card-statements', {}).props.actionLabel,
+    create('bx-redeem-points', {}).props.max, create('bx-loan-repayment', {}).props.submitLabel], [3, 'alert', 3, 'Download', 12400, 'Review repayment'], 'defaults');
+});
+
+// Group 4: insights, approvals, liquidity, settings
+const g4 = load(path.join(BX, 'bx-g4.js')).kit;
+test('g4 bars are widths in steps of 5%, never past the end', () => {
+  eq([g4.step(320, 400), g4.step(1, 3), g4.step(500, 400), g4.step(5, 0), g4.step(-1, 10)], [80, 35, 100, 0, 0], 'steps');
+});
+test('g4 bx-spending-chart: bars against the largest value, the figure as text', () => {
+  const c = create('bx-spending-chart', { unit: 'USD', items: [{ label: 'Oct', value: 820 }, { label: 'Nov', value: 1640 }, { label: 'Dec', value: 410, display: '410.00' }] });
+  eq(c.vm.bars().map((b) => [b.css, b.value]), [['bx-bar-fill bx-h-50', '820 USD'], ['bx-bar-fill bx-h-100', (1640).toLocaleString() + ' USD'], ['bx-bar-fill bx-h-25', '410.00']], 'bars');
+  eq(create('bx-spending-chart', { orientation: 'bars', max: 100, items: [{ label: 'A', value: 30 }] }).vm.bars()[0].css, 'bx-bar-fill bx-w-30', 'own max');
+  if (!/<figure/.test(registry['bx-spending-chart'].view) || !/<figcaption/.test(registry['bx-spending-chart'].view)) { throw new Error('chart figure'); }
+});
+test('g4 meters: used of the limit, over by, near the end; the progressbar says it all', () => {
+  const m = create('bx-budget-progress', { items: [{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }, { label: 'Travel', value: 290, max: 300 }] });
+  const r = m.vm.rows();
+  eq(r.map((x) => x.css), ['bx-meter-fill bx-w-80', 'bx-meter-fill bx-w-100 is-over', 'bx-meter-fill bx-w-95 is-near'], 'classes');
+  eq([r[1].text, r[1].now, r[1].max], ['210 of 200, over by 10', '200', '200'], 'over');
+  if (!/role="progressbar"[^>]*:aria-valuetext/.test(registry['bx-budget-progress'].view)) { throw new Error('progressbar'); }
+});
+test('g4 reused kinds have their own defaults', () => {
+  const s = create('bx-spend-categories', { options: ['Eating out', 'Groceries'] });
+  s.vm.items()[0].toggle();
+  s.vm.items()[1].toggle();
+  eq(s.props.value, ['Groceries'], 'one category');
+  eq([create('bx-appearance', {}).props.value, create('bx-otp-delivery', {}).vm.items().length, create('bx-modification-requested', {}).vm.role(), create('bx-account-structure', {}).props.multiple,
+    create('bx-devices', {}).props.actionLabel, create('bx-reroute', {}).props.labelHint], ['System', 3, 'status', true, 'Remove', 'Re-route to'], 'defaults');
+  const d = create('bx-do-not-disturb', {});
+  d.vm.toggle();
+  eq(d.vm.note().indexOf('Alerts wait') === 0, true, 'quiet hours');
+});
+
+// Group 5: service, documents, onboarding, calculators, help
+const g5 = load(path.join(BX, 'bx-g5.js')).kit;
+test('g5 the calculators\' formulas: an instalment, compound interest', () => {
+  eq([Math.round(g5.instalment(100000, 12, 12) * 100) / 100, g5.instalment(1200, 0, 12), g5.instalment(0, 10, 12), Math.round(g5.maturity(10000, 8, 12, 4) * 100) / 100, g5.maturity(500, 8, 0)],
+    [8884.88, 100, 0, 10824.32, 500], 'formulas');
+});
+test('g5 calculators work out as the customer types; the converter uses the screen\'s rate', () => {
+  const l = create('bx-loan-calculator', { amount: 100000, rate: 12, months: 12, currency: 'USD' });
+  eq(l.vm.result().main, (8884.88).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'loan');
+  l.vm.onMonths(input('24'));
+  eq(l.vm.result().value, 4707.35, 'retyped');
+  const f = create('bx-currency-converter', { currency: 'USD', toCurrency: 'EUR', rate: 0.92 });
+  eq([f.vm.result().main, f.vm.result().line, f.vm.isFx()], [(920).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' EUR', '1 USD = 0.92 EUR', true], 'fx');
+  const t = create('bx-td-calculator', { currency: 'USD', rate: 8 });
+  t.vm.act();
+  eq([t.vm.title(), t.events[0].detail.result], ['At maturity', 10824.32], 'td');
+});
+test('g5 bx-statement-request: both days, in order, within max-days; then ojAction', () => {
+  const s = create('bx-statement-request', { maxDays: 92 });
+  s.vm.request();
+  eq(s.vm.problem(), 'Choose the first and the last day.', 'empty');
+  s.vm.onFrom(input('2025-12-31'));
+  s.vm.onTo(input('2025-10-01'));
+  s.vm.request();
+  eq(s.vm.problem(), 'The last day is before the first. Swap them.', 'order');
+  s.vm.onFrom(input('2025-01-01'));
+  s.vm.request();
+  eq(s.vm.problem(), 'Choose up to 92 days.', 'too long');
+  s.vm.onFrom(input('2025-10-01'));
+  s.vm.onTo(input('2025-12-31'));
+  s.vm.request();
+  eq([s.vm.problem(), s.events[0].detail.value], ['', { from: '2025-10-01', to: '2025-12-31' }], 'ok');
+});
+test('g5 compose, chat, locator and rating', () => {
+  const m = create('bx-compose-mail', {});
+  m.vm.send();
+  m.vm.onInput(input('Please send a cheque book.'));
+  m.vm.send();
+  eq([types(m), m.events[0].detail.value, m.vm.count()], [['ojAction'], 'Please send a cheque book.', '26 / 500'], 'compose');
+  const c = create('bx-live-chat', { messages: [{ from: 'agent', name: 'Priya', text: 'Hello, how can I help?', time: '10:02' }, { from: 'customer', text: 'My card is stuck.' }] });
+  eq(c.vm.lines().map((x) => [x.who, x.css]), [['Priya', 'bx-msg'], ['You', 'bx-msg is-mine']], 'chat lines');
+  c.vm.onDraft(input('  It is in the ATM  '));
+  c.vm.onKey(key('Enter'));
+  eq([c.events[0].detail.text, c.vm.draft()], ['It is in the ATM', ''], 'sent on Enter');
+  const l = create('bx-locator', { items: [{ id: 'b1', name: 'London Bridge', type: 'branch', distance: '0.4 km' }, { id: 'a1', name: 'Borough ATM', type: 'atm' }] });
+  l.vm.kinds()[2].pick();
+  eq(l.vm.rows().map((r) => r.name), ['Borough ATM'], 'ATMs');
+  l.vm.kinds()[0].pick();
+  l.vm.onQuery(input('bridge'));
+  eq([l.vm.rows().map((r) => r.meta), l.vm.rows()[0].actionName], [['Branch · 0.4 km'], 'Directions to London Bridge'], 'search');
+  const r = create('bx-feedback', {});
+  r.vm.stars()[3].pick();
+  eq([r.props.value, r.vm.word(), r.vm.stars()[3].label, r.vm.stars().filter((s) => s.css === 'bx-star is-on').length], [4, 'Good', '4 stars, Good', 4], 'rating');
+  if (!/role="log" aria-live="polite"/.test(registry['bx-live-chat'].view) || !/<fieldset class="bx-field bx-rating">/.test(registry['bx-feedback'].view)) { throw new Error('roles'); }
+});
+test('g5 reused kinds have their own defaults', () => {
+  eq([create('bx-statement-format', {}).props.value, create('bx-self-register', {}).vm.items().length, create('bx-terms-consent', {}).props.control, create('bx-mailbox', {}).props.actionLabel],
+    ['PDF', 4, 'checkbox', 'Open'], 'defaults');
+});
+
+// Group 6: dashboard widgets
+test('g6 tab summaries: the first tab until one is chosen; arrows move; View all says which', () => {
+  const a = create('bx-accounts-corp', { items: [{ id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M' }, { id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M' }] });
+  eq([a.vm.tabs().map((t) => t.selected), a.vm.current().summary], [['true', 'false'], '12 accounts · 3.4M'], 'first');
+  a.vm.onKey(key('ArrowRight'));
+  eq([a.props.selection, a.vm.current().summary, a.vm.current().tabId], ['td', '4 deposits · 1.2M', a.vm.tabs()[1].tabId], 'arrow');
+  a.vm.act();
+  eq(a.events[0].detail.value, 'td', 'view all');
+  if (!/role="tablist"/.test(registry['bx-accounts-corp'].view) || !/role="tabpanel"/.test(registry['bx-accounts-corp'].view)) { throw new Error('tab roles'); }
+});
+test('g6 bx-bulk-file-upload: uses bx-document-upload; Upload needs a file; the template is asked for', () => {
+  const u = create('bx-bulk-file-upload', {});
+  u.vm.upload();
+  eq(types(u), [], 'no file');
+  u.vm.onValue({ detail: { value: [{ name: 'payroll.csv', size: 10 }], updatedFrom: 'internal' } });
+  u.vm.upload();
+  u.vm.template();
+  eq(u.events.map((e) => e.detail.action), ['upload', 'template'], 'actions');
+  if (!/<bx-document-upload /.test(registry['bx-bulk-file-upload'].view)) { throw new Error('upload not reused'); }
+});
+test('g6 widgets keep their kinds\' behaviour with their own defaults', () => {
+  eq([create('bx-delinquency-notice', {}).vm.role(), create('bx-rewards', {}).props.interactive, create('bx-pending-approvals', {}).props.actionLabel, create('bx-calculators', {}).props.mode,
+    create('bx-quick-links-corp', {}).props.label, create('bx-credit-score', { items: [{ label: 'Credit score', value: 742, max: 900 }] }).vm.rows()[0].css],
+    ['alert', false, 'Approve', 'loan', 'Quick links', 'bx-meter-fill bx-w-80'], 'defaults');
+});
+
+// Group 7: text effects, motion, showcase, backdrops, micro interactions
+const runTimers = (ms, times) => { for (let i = 0; i < (times || 1); i++) { const t = timers.filter((x) => x.fn && (ms === undefined || x.ms === ms)).shift(); if (!t) { return; } const fn = t.fn; t.fn = null; fn(); } };
+const style = () => { const v = {}; return { v, setProperty: (n, x) => { v[n] = x; } }; };
+test('g7 G7 has 69 components', () => eq(G7.length, 69, 'count'));
+test('g7 text: every moving piece is hidden from screen readers and the whole text is there once', () => {
+  G7.slice(0, 12).forEach((e) => {
+    const v = registry[e].view;
+    if (!/bx-visually-hidden/.test(v) && !/bx-fx-text/.test(v)) { throw new Error(e + ': no text for screen readers'); }
+    if (/bx-visually-hidden/.test(v) && !/aria-hidden="true"/.test(v)) { throw new Error(e + ': the moving copy is read too'); }
+  });
+});
+test('g7 bx-rolling-digits: a column per digit, set to its digit; separators stay', () => {
+  const r = create('bx-rolling-digits', { value: 1250.5, currency: 'USD' });
+  const text = (1250.5).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD';
+  eq([r.vm.text(), r.vm.cols().filter((c) => c.digit).map((c) => c.css.slice(-1)).join('')], [text, text.replace(/\D/g, '')], 'columns');
+});
+test('g7 bx-count-up counts to the value in steps; bx-typed-text types to the end', () => {
+  timers.length = 0;
+  const c = create('bx-count-up', { value: 1000, duration: 300 });
+  eq([c.vm.now(), c.vm.final()], [0, (1000).toLocaleString(undefined, { minimumFractionDigits: 2 })], 'start');
+  runTimers(10, 30);
+  eq(c.vm.now(), 1000, 'end');
+  timers.length = 0;
+  const t = create('bx-typed-text', { text: 'Hi there', speed: 20 });
+  runTimers(20, 3);
+  eq([t.vm.shown(), t.vm.typing()], ['Hi ', true], 'typing');
+  runTimers(20, 10);
+  eq([t.vm.shown(), t.vm.typing()], ['Hi there', false], 'typed');
+});
+test('g7 under reduced motion the numbers and text show their end at once', () => {
+  window.matchMedia = () => ({ matches: true });
+  timers.length = 0;
+  eq([create('bx-count-up', { value: 5 }).vm.now(), create('bx-typed-text', { text: 'Done' }).vm.shown(), timers.length], [5, 'Done', 0], 'end state, no timers');
+  delete window.matchMedia;
+});
+test('g7 bx-rotating-text and bx-focus-word move on; screen readers hear all the words', () => {
+  timers.length = 0;
+  const r = create('bx-rotating-text', { prefix: 'Pay', words: ['bills', 'friends', 'cards'], interval: 100 });
+  eq([r.vm.word(), r.vm.all()], ['bills', 'Pay bills, friends or cards'], 'first');
+  runTimers(100);
+  eq(r.vm.shown()[0].word, 'friends', 'next');
+  timers.length = 0;
+  const f = create('bx-focus-word', { text: 'Save a little every day', interval: 100 });
+  runTimers(100);
+  eq(f.vm.words().map((w) => w.css.includes('is-focus')), [false, true, false, false, false], 'focus');
+});
+test('g7 bx-reveal-digits: masked to the last four, shown on request', () => {
+  const r = create('bx-reveal-digits', { value: 'GB29 NWBK 6016 1331 9268 19' });
+  eq(r.vm.text(), '•••• 6819', 'masked');
+  r.vm.toggle();
+  eq([r.vm.text(), r.vm.pressed(), r.vm.tiles().length], ['GB29 NWBK 6016 1331 9268 19', 'true', 27], 'shown');
+});
+test('g7 pointer effects set CSS variables on the element; click burst adds and removes dots', () => {
+  const s = style();
+  const target = { style: s, getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }) };
+  create('bx-tilt-card', {}).vm.move({ currentTarget: target, clientX: 200, clientY: 0 });
+  eq([s.v['--bx-sx'], s.v['--bx-ry'], s.v['--bx-rx']], ['100%', '5.00deg', '4.00deg'], 'tilt');
+  create('bx-magnetic-button', {}).vm.move({ currentTarget: target, clientX: 100, clientY: 50 });
+  eq(s.v['--bx-mx'], '0.0px', 'magnet at the centre');
+  const kids = [];
+  const host = { getBoundingClientRect: () => ({ left: 0, top: 0 }), ownerDocument: { createElement: () => ({ style: {}, setAttribute() {}, parentNode: null }) }, appendChild: (x) => { kids.push(x); x.parentNode = { removeChild: () => kids.splice(kids.indexOf(x), 1) }; } };
+  timers.length = 0;
+  create('bx-click-burst', {}).vm.burst({ currentTarget: host, clientX: 5, clientY: 5 });
+  eq(kids.length, 8, 'dots');
+  runTimers(700, 8);
+  eq(kids.length, 0, 'removed');
+});
+test('g7 showcase: deck and carousel go round; the flip card hides the face it turned away', () => {
+  const deck = create('bx-card-stack', { items: [{ title: 'A' }, { title: 'B' }, { title: 'C' }] });
+  deck.vm.prev();
+  eq([deck.props.index, deck.vm.where(), deck.vm.cards().map((c) => c.hidden)], [2, 'Card 3 of 3', ['true', 'true', null]], 'deck');
+  const car = create('bx-carousel', { slides: [{ title: 'One' }, { title: 'Two' }] });
+  car.vm.next();
+  car.vm.next();
+  car.vm.slides()[1].go();
+  eq([car.props.index, car.vm.slides()[1].of, car.vm.slides()[0].hidden, car.vm.slides()[1].current], [1, '2 of 2', true, 'true'], 'carousel');
+  const f = create('bx-flip-card', { heading: 'Platinum', front: 'Cashback', back: 'Fees' });
+  f.vm.flip();
+  eq([f.props.flipped, f.vm.frontHidden(), f.vm.backHidden()], [true, 'true', null], 'flipped');
+  if (!/aria-roledescription="carousel"/.test(registry['bx-carousel'].view) || !/aria-roledescription="slide"/.test(registry['bx-carousel'].view)) { throw new Error('carousel roles'); }
+});
+test('g7 bx-option-wheel, bx-document-folder, bx-marquee, bx-bento-grid', () => {
+  const w = create('bx-option-wheel', { options: ['3 months', '6 months', '12 months'], value: '3 months' });
+  w.vm.onKey(key('ArrowDown'));
+  eq([w.props.value, w.vm.active() === w.vm.options()[1].key], ['6 months', true], 'wheel');
+  const f = create('bx-document-folder', { items: [{ id: 'd1', title: 'Statement Dec' }] });
+  f.vm.toggle();
+  f.vm.docs()[0].open();
+  eq([f.props.open, f.vm.expanded(), f.vm.count(), f.events[0].detail.item.id], [true, 'true', '1 document', 'd1'], 'folder');
+  const m = create('bx-marquee', { items: ['USD 0.92 EUR'] });
+  m.vm.toggle();
+  eq([m.vm.css(), m.vm.toggleText()], ['bx-marquee-track is-normal is-paused', 'Play'], 'paused');
+  const b = create('bx-bento-grid', { interactive: true, items: [{ id: 't', title: 'Spending', size: 'wide' }] });
+  b.vm.tiles()[0].open();
+  eq([b.vm.tiles()[0].css, b.events[0].detail.item.id], ['bx-bento-tile is-wide bx-d-0', 't'], 'bento');
+});
+test('g7 confirms: a press confirms the slide (no drag needed); a partial drag does not; hold needs the full time', () => {
+  const s = create('bx-slide-to-confirm', {});
+  const handle = { style: style(), parentNode: { getBoundingClientRect: () => ({ width: 300 }) }, getBoundingClientRect: () => ({ width: 50 }) };
+  s.vm.down({ currentTarget: handle, clientX: 0 });
+  s.vm.move({ currentTarget: handle, clientX: 100 });
+  s.vm.up({ currentTarget: handle });
+  s.vm.click();
+  eq([s.vm.done(), types(s)], [false, []], 'partial drag');
+  s.vm.click();
+  eq([s.vm.done(), types(s), s.vm.text()], [true, ['ojAction'], 'Paid'], 'pressed');
+  timers.length = 0;
+  const h = create('bx-hold-to-confirm', { duration: 1000 });
+  h.vm.start();
+  h.vm.cancel();
+  runTimers(1000);
+  eq([h.vm.done(), types(h)], [false, []], 'let go early');
+  h.vm.onKey(key(' '));
+  eq(h.vm.holding(), true, 'held by Space');
+  runTimers(1000);
+  eq([h.vm.done(), types(h), h.vm.hint()], [true, ['ojAction'], 'Press and hold for 1 seconds'], 'held');
+});
+test('g7 micro: swipe row actions, swipe toast, toggles, gauge, scrub, prompt, voice, call', () => {
+  const r = create('bx-swipe-row', { heading: 'Coffee House', actions: [{ value: 'dispute', label: 'Dispute', tone: 'danger' }] });
+  r.vm.down({ clientX: 200 });
+  r.vm.up({ clientX: 100 });
+  eq([r.vm.open(), r.vm.actions()[0].name], [true, 'Dispute: Coffee House'], 'swiped');
+  r.vm.actions()[0].go();
+  eq([r.events[0].detail.value, r.vm.open()], ['dispute', false], 'action');
+  const t = create('bx-swipe-toast', { message: 'Saved' });
+  t.vm.down({ clientX: 0 });
+  t.vm.up({ clientX: 80 });
+  eq([t.vm.gone(), types(t)], [true, ['ojClose']], 'toast');
+  const heart = create('bx-favourite-heart', { name: 'A. Rao' });
+  heart.vm.toggle();
+  eq([heart.props.value, heart.vm.pressed(), heart.vm.name()], [true, 'true', 'Favourite A. Rao'], 'heart');
+  const gauge = create('bx-budget-gauge', { value: 450, max: 400, unit: 'USD' });
+  eq([gauge.vm.offset(), gauge.vm.text(), gauge.vm.css()], ['0', '450 USD of 400 USD, over budget', 'bx-gauge is-over'], 'gauge');
+  eq(create('bx-budget-gauge', { value: 100, max: 400 }).vm.offset(), '94.5', 'quarter');
+  const sc = create('bx-scrub-field', { value: 100, max: 120, step: 10 });
+  sc.vm.down({ clientX: 0 });
+  sc.vm.move({ clientX: 40 });
+  eq(sc.props.value, 120, 'scrub clamps');
+  sc.vm.up();
+  const p = create('bx-prompt-bar', { suggestions: ['What did I spend on travel?'] });
+  p.vm.chips()[0].use();
+  p.vm.onKey(key('Enter'));
+  eq([p.events[0].detail.text, p.vm.draft()], ['What did I spend on travel?', ''], 'prompt');
+  const v = create('bx-voice-pill', {});
+  v.vm.toggle();
+  eq([v.props.listening, v.events[0].detail.listening, v.vm.text()], [true, true, 'Listening… press to stop'], 'voice');
+  eq(create('bx-call-chip', { number: '+44 20 7946 0000' }).vm.href(), 'tel:+442079460000', 'call');
+});
+test('g7 reused kinds keep their behaviour inside the effect classes', () => {
+  ['bx-elastic-slider', 'bx-pill-nav', 'bx-dock-nav', 'bx-staggered-menu', 'bx-otp-slots', 'bx-receipt-tear', 'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment',
+    'bx-peek-rating', 'bx-warm-tooltip'].forEach((e) => { if (!/^<div class="bx-fx-/.test(registry[e].view)) { throw new Error(e + ': no effect class'); } });
+  const s = create('bx-squish-switch', { labelHint: 'Round up to save' });
+  s.vm.toggle();
+  eq(s.props.value, true, 'switch');
+  eq(create('bx-gradient-backdrop', {}).vm.css(), 'bx-backdrop is-gradient', 'backdrop');
+});
+
 // The motion layer (motion.json, bx.css and bx-motion.js)
 const motionSpec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'motion.json'), 'utf8')).components;
 const motion = load(path.join(BX, 'bx-motion.js'));
@@ -576,6 +1028,14 @@ test('bx-number-input: a step rolls the number in', () => {
   n.vm.element.querySelector = (s) => (s === '.bx-num' ? { animate: (f, o) => { played.push(o.duration); } } : null);
   n.vm.up();
   eq([n.props.value, played.length], [3, 1], 'stepped and rolled');
+});
+test('badges use the -text tokens; the danger button and avatar change in dark; the tooltip trigger is 24 px', () => {
+  const dark = css.slice(css.indexOf('.bx-dark, .bx-dark .bx-theme {'), css.indexOf('}', css.indexOf('.bx-dark, .bx-dark .bx-theme {')));
+  const need = ['.bx-badge.is-success { background: var(--bx-success-soft); color: var(--bx-success-text); }', '.bx-badge.is-warning { background: var(--bx-warning-soft); color: var(--bx-warning-text); }',
+    '.bx-btn--danger { color: var(--bx-on-danger); background: var(--bx-danger-button); }', 'background: var(--bx-avatar-bg); color: var(--bx-avatar-text);', '.bx-tip-button { width: 24px; height: 24px;'];
+  eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
+  eq(['--bx-success-text', '--bx-warning-text', '--bx-danger-button', '--bx-on-danger', '--bx-avatar-bg', '--bx-avatar-text'].filter((t) => dark.indexOf(t) < 0), [], 'no dark value');
+  eq((css.match(/\.bx-badge\.is-\w+ \{[^}]*color: var\(--bx-(success|warning|info)\);/g) || []), [], 'a badge on a base tone colour');
 });
 test('the skin has the motion tokens, the effects and a reduced-motion rule for every bx- class', () => {
   const need = ['--bx-dur-fast', '--bx-dur-base', '--bx-dur-slow', '--bx-ease-standard', '--bx-ease-spring', '@keyframes bx-shake', '@keyframes bx-pop', '@keyframes bx-settle',
