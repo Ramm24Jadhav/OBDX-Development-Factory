@@ -1,0 +1,505 @@
+{
+  "$comment": "The motion spec: what each component does on enter, hover, press, a value change, open and close, an error and while loading, the same in every pack. 'style' follows the component style saved in the Component factory (bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur); the other names are in effects. Durations and easing are the --bx-dur-* and --bx-ease-* tokens. Under reduced motion every component shows its end state. packs says where the motion is built.",
+  "version": 1,
+  "effects": {
+    "style": "Follows the component style (hover, click or scroll effect chosen in the Component factory)",
+    "border": "The border takes the brand colour on hover",
+    "tint": "A row or item takes a light tint on hover",
+    "shake": "The field shakes once when its error appears",
+    "shimmer": "A light sweeps across while it loads",
+    "spin": "Turns while it waits",
+    "roll": "A changed number rolls up into place",
+    "pop": "A chosen mark, chip or code slot pops",
+    "spring": "Opens and closes on a spring; the switch knob springs across",
+    "slide": "The chosen tab, step or segment slides into place",
+    "settle": "New rows and files settle in from above",
+    "grow": "Bars and meters grow to their value",
+    "drop": "A list or menu drops down from its field",
+    "fade": "Fades in",
+    "rise": "Rises and fades in",
+    "slide-down": "Slides down into place",
+    "effect": "The component is the effect itself (text, motion, backdrop and micro interaction categories)"
+  },
+  "components": {
+    "button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "icon-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "text-field": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "text-area": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "password": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "number-input": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "amount": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "currency-picker": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "select": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "multi-select": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": "drop",
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "autocomplete": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": "drop",
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "search": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "checkbox-group": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "choice-group": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "switch": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "date": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "date-range": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "document-upload": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "tabs": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "data-grid": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "toast": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "dialog": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "secondary-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "danger-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "savings-slider": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "segmented": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "filter-chips": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "action-menu": {
+      "enter": null,
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "drop",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "accordion": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "stepper": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "breadcrumb": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "side-nav": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "sheet": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "grid": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "divider": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "avatar": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "pagination": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "status-badge": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "timeline": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "spinner": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "spin",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "skeleton": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "empty-state": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "tooltip": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "fade",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "alert-banner": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "error-message": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "success-message": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "notification-panel": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    }
+  }
+}

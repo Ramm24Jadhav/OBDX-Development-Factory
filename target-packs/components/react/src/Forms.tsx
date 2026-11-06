@@ -6,6 +6,7 @@
 import { KeyboardEvent, useId, useMemo, useRef, useState } from 'react';
 
 import { FieldMessage, FieldProps, FieldShell, Option, fieldClass, isEmpty, options as toOptions, useField } from './field';
+import { play } from './motion';
 
 /* ---------- TextArea (oj-text-area) ---------- */
 
@@ -92,6 +93,7 @@ export function NumberInput(props: NumberInputProps) {
     const base = value ?? (min ?? 0) - (by > 0 ? step : -step);
     const next = round(base + by);
     check(min !== undefined && next < min ? min : max !== undefined && next > max ? max : next);
+    play(document.getElementById(f.id), 'roll');
   };
   const fixed = !readOnly && !disabled;
   return (
