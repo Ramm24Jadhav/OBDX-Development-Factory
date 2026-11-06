@@ -9951,3 +9951,22 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mc-table.factory-mb-table th:nth-child(8) { width: 7%; }
 .factory-mc-table.factory-mb-table th:last-child { width: 64px; }
 .factory-mc-table.factory-mb-table .fx-num { padding-right: 14px; }
+/* Component mapping, as drawn: the two previews with what it touches beside them; the switches; the tabs with the checks */
+.factory-mb .factory-mm-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; border-radius: var(--fx-radius-lg); padding: 12px 16px; margin: 0; }
+.factory-mb-btn.is-xs { height: 32px; font-size: 13px; padding: 0 12px; }
+.factory-mb-mapgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 330px); grid-template-areas: "sides sides touch" "bar bar checks" "main main checks"; gap: 14px; align-items: start; }
+.factory-mb-mapsides { grid-area: sides; }
+.factory-mb-mapsides .factory-mm-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.factory-mb-mapsides .factory-mm-side { background: var(--fx-surface); border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-lg); padding: 14px 16px; min-height: 150px; }
+.factory-mb-mapsides .factory-mm-side.is-premium { border: 1.5px solid var(--fx-primary-border); background: var(--fx-primary-soft); }
+.factory-mb-maptouch { grid-area: touch; }
+.factory-mb-mapbar { grid-area: bar; }
+.factory-mb-mapbar .factory-mm-previewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.factory-mb-mapbar .factory-mm-codeswitch { margin-left: auto; }
+.factory-mb-mapmain { grid-area: main; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.factory-mb-mapmain > .fx-card { border-radius: var(--fx-radius-lg); }
+.factory-mb-mapchecks { grid-area: checks; }
+.factory-mb-sidecard { border-radius: var(--fx-radius-lg); padding: 14px 16px; }
+.factory-mb-footer-end { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 1180px) { .factory-mb-mapgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "sides sides" "touch checks" "bar bar" "main main"; } }
+@media (max-width: 900px) { .factory-mb-mapgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sides" "bar" "main" "touch" "checks"; } .factory-mb-mapsides .factory-mm-sides { grid-template-columns: minmax(0, 1fr); } }
