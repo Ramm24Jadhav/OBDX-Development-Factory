@@ -10,6 +10,9 @@ import java.net.CookieManager
 import java.net.CookiePolicy
 import java.net.HttpURLConnection
 import java.net.URL
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLPeerUnverifiedException
 
 /** Where the bank's OBDX REST services are (https), and the nonce OBDX asks for on calls that change something. */
 object ApiConfig {
@@ -60,7 +63,7 @@ class ApiClient {
             }
             return mapOf(ApiConfig.nonceHeader to value)
         } catch (e: IOException) {
-            throw ApiError(0, "The bank could not be reached. Check your connection and try again.")
+            throw unreachable(e)
         } finally {
             connection.disconnect()
         }
@@ -77,7 +80,7 @@ class ApiClient {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             return status to (stream?.bufferedReader()?.use { it.readText() } ?: "")
         } catch (e: IOException) {
-            throw ApiError(0, "The bank could not be reached. Check your connection and try again.")
+            throw unreachable(e)
         } finally {
             connection.disconnect()
         }
@@ -93,8 +96,18 @@ class ApiClient {
             doOutput = method != "GET" && method != "DELETE"
             setRequestProperty("Accept", "application/json")
             headers.forEach { (k, v) -> setRequestProperty(k, v) }
+            if (this is HttpsURLConnection) hostnameVerifier = pinnedVerifier
         }
     }
+
+    /** The platform's host name check, then the bank's pins, during the TLS handshake (before anything is sent). */
+    private val pinnedVerifier = HostnameVerifier { host, session ->
+        HttpsURLConnection.getDefaultHostnameVerifier().verify(host, session) && CertificatePins.accepts(session.peerCertificates)
+    }
+
+    // A failed pin check (or a certificate for another host) surfaces as SSLPeerUnverifiedException
+    private fun unreachable(e: IOException) = ApiError(0,
+        if (e is SSLPeerUnverifiedException) CertificatePins.UPDATE_MESSAGE else "The bank could not be reached. Check your connection and try again.")
 
     /** OBDX error answers carry their message in status.message.detail or a top-level message. */
     private fun messageOf(json: JSONObject): String? =

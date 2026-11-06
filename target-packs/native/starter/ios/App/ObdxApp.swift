@@ -1,5 +1,4 @@
-// The app target's entry point. Create the iOS app in Xcode (File › New › Project › App, named ObdxApp, in ios/App),
-// add this folder's Swift package as a local dependency, and replace the generated App file with this one.
+// The app target's entry point. The Xcode project is generated from project.yml (cd ios/App && xcodegen generate).
 import ObdxApp
 import SwiftUI
 
