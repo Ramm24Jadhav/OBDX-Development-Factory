@@ -103,6 +103,18 @@ class IssueAnalyzerTest {
     }
 
     @Test
+    void keepsTheLibraryInsideTheBankWhenTheModelIsOutside() {
+        Evidence withNote = new Evidence(List.of(EVIDENCE.items().get(0),
+                new Evidence.Item("O1", "ORACLE_NOTE", "Secret bank runbook", 1, "Internal procedure text", java.util.UUID.randomUUID(), "Doc ID 1.1", "22.2")),
+                EVIDENCE.signature());
+        ScriptedModel model = new ScriptedModel("{\"rootCause\": \"Host down\", \"evidence\": [\"E1\", \"O1\"], \"oracleReferences\": [{\"id\": \"O1\"}]}");
+        Diagnosis d = new IssueAnalyzer(model).diagnose(new IssueAnalyzer.Context("t", "d", "UAT", "22.2", "", false), withNote, List.of());
+        assertThat(model.prompts.getFirst()).doesNotContain("Secret bank runbook", "Internal procedure text").contains("not available to you");
+        assertThat(d.oracleReferences()).isEmpty();
+        assertThat(d.evidence()).containsExactly("E1");
+    }
+
+    @Test
     void notesWhatToCheckAboutAVersion() {
         assertThat(IssueAnalyzer.versionNote("22.2, patchset 22.2.0.3", "22.x")).isEqualTo("Written for patchset 22.2.0.3. Check which patchset the bank runs.");
         assertThat(IssueAnalyzer.versionNote("22.2", "22.2.0.1")).isNull();

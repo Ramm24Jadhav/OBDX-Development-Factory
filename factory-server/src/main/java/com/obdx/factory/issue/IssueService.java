@@ -7,6 +7,7 @@ import com.obdx.factory.issue.IssueRepository.IssueFile;
 import com.obdx.factory.issue.IssueRepository.Knowledge;
 import com.obdx.factory.issue.IssueRepository.Status;
 import com.obdx.factory.knowledge.KnowledgeImporter;
+import com.obdx.factory.knowledge.KnowledgePolicy;
 import com.obdx.factory.knowledge.KnowledgeRepository;
 import com.obdx.factory.knowledge.KnowledgeSearch;
 import com.obdx.factory.model.ModelGatewayException;
@@ -101,11 +102,18 @@ public class IssueService {
     private final KnowledgeRepository knowledgeDocuments;
     private final TaskExecutor executor;
     private final Duration repeatWindow;
+    private final ScreenshotBlur blur;
+    private final LiveChecks liveChecks;
+    private final KnowledgePolicy knowledgePolicy;
 
     public IssueService(IssueRepository issues, IssueAnalyzer analyzer, CodeSearchService codeSearch, ProjectProfileService profiles,
                         WorkspaceRepository workspaces, KnowledgeSearch knowledgeSearch, KnowledgeRepository knowledgeDocuments,
                         @Qualifier("issueExecutor") TaskExecutor executor,
-                        @Value("${factory.issue.repeat-window:24h}") Duration repeatWindow) {
+                        @Value("${factory.issue.repeat-window:24h}") Duration repeatWindow, ScreenshotBlur blur, LiveChecks liveChecks,
+                        KnowledgePolicy knowledgePolicy) {
+        this.knowledgePolicy = knowledgePolicy;
+        this.blur = blur;
+        this.liveChecks = liveChecks;
         this.issues = issues;
         this.analyzer = analyzer;
         this.codeSearch = codeSearch;
@@ -191,19 +199,110 @@ public class IssueService {
         Evidence evidence = Evidence.empty();
         try {
             Workspace workspace = workspaces.findById(issue.workspaceId()).orElseThrow();
+            hideCustomerData(id, issues.files(id), notes);
             readScreenshots(id, notes);
-            evidence = withLibrary(workspace, withCode(issue.workspaceId(), LogEvidenceParser.parse(sources(issue))));
+            evidence = withLiveChecks(id, withLibrary(workspace, withCode(issue.workspaceId(), LogEvidenceParser.parse(sources(issue)))));
             List<Diagnosis.Similar> similar = similar(issue.workspaceId(), id, evidence.signature());
-            Diagnosis diagnosis = analyzer.diagnose(context(issue, workspace), evidence, similar);
+            IssueAnalyzer.Context context = context(issue, workspace);
+            if (!context.libraryAllowed() && evidence.items().stream().anyMatch(i -> i.kind().equals("ORACLE_NOTE") || i.kind().equals("MANUAL"))) {
+                notes.add("Matching Oracle notes and manuals are listed with the evidence but were not given to the model: "
+                        + knowledgePolicy.chatProblem());
+            }
+            Diagnosis diagnosis = analyzer.diagnose(context, evidence, similar);
             issues.saveAnalysis(id, evidence, diagnosis, Status.DIAGNOSED, notes.isEmpty() ? null : String.join(" ", notes));
+            issues.addEvent(issue.workspaceId(), id, "ANALYZED", "The diagnosis of \"" + issue.title() + "\" is ready: "
+                    + diagnosis.category().toLowerCase(Locale.ROOT).replace('_', ' ') + ".", false);
             group(issue, evidence.signature());
         } catch (ModelGatewayException e) {
             issues.saveAnalysis(id, evidence, null, Status.FAILED,
                     "The model could not be used: " + e.getMessage() + " Check the Models page, then analyze again.");
+            issues.addEvent(issue.workspaceId(), id, "ANALYZED", "Analyzing \"" + issue.title() + "\" failed: the model could not be used.", true);
         } catch (RuntimeException e) {
             log.warn("Issue analysis {} failed", id, e);
             issues.saveAnalysis(id, evidence, null, Status.FAILED, e.getMessage());
+            issues.addEvent(issue.workspaceId(), id, "ANALYZED", "Analyzing \"" + issue.title() + "\" failed.", true);
         }
+    }
+
+    /**
+     * Blacks out customer data in screenshots not checked yet, when the chat model is on this machine; the blurred
+     * copy replaces the original.
+     */
+    void hideCustomerData(UUID id, List<IssueFile> files, List<String> notes) {
+        if (!blur.enabled()) {
+            return;
+        }
+        for (IssueFile file : files) {
+            if (!file.kind().equals("SCREENSHOT") || file.hiddenAreas() != null) {
+                continue;
+            }
+            try {
+                ScreenshotBlur.Result result = blur.blur(issues.fileContent(id, file.position()).orElseThrow(), file.mimeType());
+                if (result.hidden() != null) {
+                    issues.replaceScreenshot(id, file.position(), result.image(), result.hidden());
+                }
+                if (result.note() != null) {
+                    notes.add(file.name() + ": " + result.note());
+                }
+            } catch (ModelGatewayException e) {
+                notes.add("Customer data in the screenshots could not be hidden (" + e.getMessage() + ").");
+                return;
+            }
+        }
+    }
+
+    /** The results of live checks (L ids), so the next diagnosis knows what the factory could reach. */
+    Evidence withLiveChecks(UUID id, Evidence evidence) {
+        List<Evidence.Item> items = new ArrayList<>(evidence.items());
+        int n = 0;
+        for (IssueRepository.Check check : issues.checks(id)) {
+            if (check.result().startsWith("LIVE_")) {
+                items.add(new Evidence.Item("L" + ++n, "LIVE_CHECK", "live check " + check.createdAt().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate(), null, check.summary()));
+            }
+        }
+        return n == 0 ? evidence : new Evidence(items, evidence.signature());
+    }
+
+    /** The hosts and ports of an issue that can be checked live. */
+    public List<LiveChecks.Target> liveTargets(UUID workspaceId, UUID id) {
+        return LiveChecks.targets(find(workspaceId, id).evidence());
+    }
+
+    /** A read-only check of a host the issue mentions, from the factory; kept with the fix checks. */
+    public IssueDetail liveCheck(UUID workspaceId, UUID id, String host, Integer port, String by) {
+        Issue issue = find(workspaceId, id);
+        LiveChecks.Target target = LiveChecks.targets(issue.evidence()).stream()
+                .filter(t -> t.host().equalsIgnoreCase(host == null ? "" : host.strip()) && port != null && t.port() == port)
+                .findFirst().orElseThrow(() -> new BadRequestException("Only hosts and ports found in this issue can be checked"));
+        LiveChecks.Result result;
+        try {
+            result = liveChecks.check(target);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+        Evidence details = new Evidence(result.details().stream().map(d -> new Evidence.Item("D", "LIVE_DETAIL", target.label(), null, d)).toList(), "");
+        issues.insertCheck(UUID.randomUUID(), id, result.result(), result.summary(), details, by);
+        issues.touch(id);
+        return detail(workspaceId, id);
+    }
+
+    /** Removes a screenshot (for example when customer data is still visible); analyze again afterwards. */
+    public IssueDetail removeScreenshot(UUID workspaceId, UUID id, int position) {
+        Issue issue = find(workspaceId, id);
+        if (issue.status() == Status.ANALYZING) {
+            throw new BadRequestException("Wait until the analysis finishes");
+        }
+        boolean screenshot = issues.allFiles(id).stream().anyMatch(f -> f.position() == position && f.kind().equals("SCREENSHOT"));
+        if (!screenshot || !issues.deleteFile(id, position)) {
+            throw new NotFoundException("Screenshot not found: " + position);
+        }
+        issues.touch(id);
+        return detail(workspaceId, id);
+    }
+
+    /** The issue events the user should see: all for leads, else those of issues they filed or released. */
+    public List<IssueRepository.Event> events(UUID workspaceId, String username, boolean all) {
+        return issues.events(workspaceId, OffsetDateTime.now().minusDays(30), username, all);
     }
 
     /** Reads screenshots that have no text yet; when the chat model cannot, notes why and goes on with text only. */
@@ -346,7 +445,7 @@ public class IssueService {
 
     IssueAnalyzer.Context context(Issue issue, Workspace workspace) {
         return new IssueAnalyzer.Context(issue.title(), issue.description(), issue.environment(), workspace.getObdxVersion(),
-                profile(issue.workspaceId()));
+                profile(issue.workspaceId()), knowledgePolicy.chatAllowed());
     }
 
     /** Joins the group of an issue of the same workspace with the same error, filed within the repeat window. */
@@ -362,18 +461,21 @@ public class IssueService {
                     issues.setGroup(other.id(), groupId);
                 }
                 issues.setGroup(issue.id(), groupId);
+                int size = issues.group(groupId).size();
+                issues.addEvent(issue.workspaceId(), issue.id(), "GROUPED", size + " issues with the same error, latest \"" + issue.title()
+                        + "\": probably one outage or configuration problem.", false);
                 return;
             }
         }
     }
 
     /** Shows the diagnosis to the bank on the issue's follow link. */
-    public IssueDetail release(UUID workspaceId, UUID id) {
+    public IssueDetail release(UUID workspaceId, UUID id, String by) {
         Issue issue = find(workspaceId, id);
         if (issue.diagnosis() == null || issue.status() == Status.ANALYZING) {
             throw new BadRequestException("Release a diagnosis once the analysis has finished");
         }
-        issues.setReleased(id, OffsetDateTime.now());
+        issues.setReleased(id, OffsetDateTime.now(), by);
         return detail(workspaceId, id);
     }
 
@@ -513,7 +615,9 @@ public class IssueService {
             sr.append("- (not analyzed yet)\n");
         }
         for (IssueRepository.Check check : issues.checks(id)) {
-            sr.append("- Fix check (").append(check.createdAt().toLocalDate()).append("): ").append(check.summary()).append('\n');
+            sr.append(check.result().startsWith("LIVE_") ? "- Live check (" : "- Fix check (")
+                    .append(check.createdAt().atZoneSameInstant(java.time.ZoneId.systemDefault()).toLocalDate()).append("): ")
+                    .append(check.summary()).append('\n');
         }
         if (!blank(issue.resolution())) {
             sr.append("- Tried: ").append(issue.resolution()).append('\n');
@@ -628,7 +732,18 @@ public class IssueService {
         if (text == null) {
             return "Issue from " + uploads.getFirst().name();
         }
-        return text.strip().lines().findFirst().orElse("Issue").strip();
+        return title(text.strip().lines().findFirst().orElse("Issue").strip());
+    }
+
+    /** The first sentence of a line, at most 100 characters (cut at a word). */
+    static String title(String line) {
+        java.util.regex.Matcher sentence = java.util.regex.Pattern.compile("^(.{12,}?[.!?])\\s").matcher(line + " ");
+        String first = sentence.find() ? sentence.group(1) : line;
+        if (first.length() <= 100) {
+            return first;
+        }
+        int space = first.lastIndexOf(' ', 99);
+        return first.substring(0, space > 40 ? space : 99) + "...";
     }
 
     private static boolean blank(String value) {

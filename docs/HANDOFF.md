@@ -75,7 +75,10 @@ Oracle SR draft, and resolutions leads share across workspaces. Screenshots are 
 the Design Studio uses), so it needs a chat model that reads images. Phase 2 (`docs/ISSUE-ANALYZER-PHASE-2.md`): Oracle
 support notes in the Library (kind ORACLE_NOTE) cited in diagnoses, links for bank administrators to report and follow
 issues (route `report`, embedded, no sign-in; diagnosis shown after "Release to the bank"), fix checks, questions, and
-groups of the same error within a day.
+groups of the same error within a day. Phase 3 (`docs/ISSUE-ANALYZER-PHASE-3.md`): screenshots blurred by a local model,
+issue notifications in the bell menu, read-only live checks of hosts the issue mentions. Tried on the 8081 test
+factory with Groq on 2026-11-07: diagnosis, live check, question, fix check, SR draft, bank link, release, follow
+page, "still fails" check and notifications all worked; Library text is not sent to Groq (KnowledgePolicy).
 
 ## The user's installation
 
@@ -109,8 +112,8 @@ stand-in on Windows. The trial database itself runs on the user's laptop.
 
 - Exact format of `about.json` in releases other than 22.2 (the detector reads the first `NN.N` release number in it).
 - Sign-ins end when the factory restarts (sessions are in memory).
-- Issue Analyzer, later (only on request): live checks against the bank's environment, blurring customer data in
-  screenshots, notifications when a bank answers or a group forms, grouping across workspaces. Not yet tried with a
-  real model server and real OBDX logs; the report and follow pages are not checked in a browser yet.
+- Issue Analyzer, later (only on request): drawing or moving blur boxes by hand, email notifications, grouping across
+  workspaces. Not yet tried: blurring with a real local model (the laptop is slow for vision models), file uploads
+  from the browser (the in-app browser cannot pick files; the database tests cover them), real bank OBDX logs.
 - Remaining roadmap (only on request): reverse-engineering JET screens into Screen Models, wave planning on the
   inventory, Jenkins Android/iOS builds.

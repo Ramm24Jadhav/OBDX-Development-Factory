@@ -121,6 +121,7 @@ public class IssueLinks {
                 "bank: " + reporter, "BANK", email == null ? null : email.strip());
         String follow = newToken();
         issues.insertFollow(created.id(), link.id(), hash(follow));
+        issues.addEvent(link.workspaceId(), created.id(), "FILED", reporter + " reported \"" + created.title() + "\" through " + link.label() + ".", false);
         return new Reported(created.title(), follow);
     }
 

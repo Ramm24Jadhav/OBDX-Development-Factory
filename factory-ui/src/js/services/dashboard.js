@@ -7,7 +7,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
   const OPEN_CHANGES = ['ANALYZING', 'PLAN_READY', 'GENERATING', 'GENERATED'];
   // The parts of a workspace's data, by endpoint. A part that could not be loaded is named in the entry's `missing`
   // (pages say so rather than showing it as empty).
-  const PARTS = ['requirements', 'designs', 'changes', 'index', 'imports', 'changes/details'];
+  const PARTS = ['requirements', 'designs', 'changes', 'index', 'imports', 'changes/details', 'issue-events'];
   const data = ko.observableArray([]);
   const model = ko.observable(null);
   const loading = ko.observable(false);
@@ -77,7 +77,7 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
     // Every change's detail (its files and builds) comes in one request, not one per change
     return Promise.all(PARTS.map((part) => api.get('workspaces/' + w.id + '/' + part)
       .catch(() => { missing.push(part === 'changes/details' ? 'builds' : part); return null; })))
-      .then(([requirements, designs, changes, index, imports, changeDetails]) => {
+      .then(([requirements, designs, changes, index, imports, changeDetails, issueEvents]) => {
         const details = (changeDetails || []).filter(Boolean);
         return {
           workspace: w,
@@ -90,7 +90,8 @@ define(['knockout', './api', './session', './workspaceSelection', './preferences
           }))), []),
           index: index,
           imports: imports || [],
-          missing: missing
+          issueEvents: issueEvents || [],
+          missing: missing.filter((part) => part !== 'issue-events')
         };
       });
   }

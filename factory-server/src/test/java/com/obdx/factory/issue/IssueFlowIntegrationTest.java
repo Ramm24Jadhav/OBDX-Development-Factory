@@ -286,6 +286,59 @@ class IssueFlowIntegrationTest {
         }
     }
 
+    @Test
+    void notifiesTheFilerAndLeadsAndGuardsLiveChecks() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bank = UUID.fromString(send(admin, "/api/workspaces",
+                "{\"name\": \"issues-d-" + suffix + "\", \"bankName\": \"Delta Bank\", \"obdxVersion\": \"22.x\"}", 201).get("id").asString());
+        try {
+            UUID dev = UUID.fromString(send(admin, "/api/admin/users",
+                    "{\"username\": \"issue-dev-" + suffix + "\", \"password\": \"Developer-Password-1\"}", 201).get("id").asString());
+            UUID analyst = UUID.fromString(send(admin, "/api/admin/users",
+                    "{\"username\": \"issue-an-" + suffix + "\", \"password\": \"Analyst-Password-1\"}", 201).get("id").asString());
+            mvc.perform(put("/api/workspaces/" + bank + "/members/" + dev).session(admin).with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"role\": \"DEVELOPER\"}")).andExpect(status().isOk());
+            mvc.perform(put("/api/workspaces/" + bank + "/members/" + analyst).session(admin).with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"role\": \"ANALYST\"}")).andExpect(status().isOk());
+            MockHttpSession devSession = login("issue-dev-" + suffix, "Developer-Password-1");
+            MockHttpSession analystSession = login("issue-an-" + suffix, "Analyst-Password-1");
+
+            // A developer files a production issue whose log names the factory's own machine
+            String log = LOG + "Calling https://localhost:8443/pay failed\n";
+            JsonNode created = json.readTree(mvc.perform(multipart("/api/workspaces/" + bank + "/issues").session(devSession).with(csrf())
+                            .file(new MockMultipartFile("files", "error.png", "image/png", PNG))
+                            .param("logText", log).param("environment", "PROD"))
+                    .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString());
+            String issue = "/api/workspaces/" + bank + "/issues/" + created.get("id").asString();
+            waitFor(devSession, issue, "DIAGNOSED");
+
+            // The filer and the lead are told; another member is not
+            String events = "/api/workspaces/" + bank + "/issue-events";
+            mvc.perform(get(events).session(devSession)).andExpect(jsonPath("$[0].kind").value("ANALYZED"));
+            mvc.perform(get(events).session(admin)).andExpect(jsonPath("$.length()").value(1));
+            mvc.perform(get(events).session(analystSession)).andExpect(jsonPath("$.length()").value(0));
+
+            // Live checks: only targets of the issue, PROD needs a lead, the factory's own machine is refused
+            mvc.perform(get(issue + "/live-targets").session(devSession)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].host").value("localhost")).andExpect(jsonPath("$[0].port").value(8443));
+            mvc.perform(get(issue + "/live-targets").session(analystSession)).andExpect(status().isForbidden());
+            send(devSession, issue + "/live-checks", "{\"host\": \"localhost\", \"port\": 8443}", 403);
+            send(admin, issue + "/live-checks", "{\"host\": \"example.org\", \"port\": 443}", 400);
+            mvc.perform(post(issue + "/live-checks").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"host\": \"localhost\", \"port\": 8443}"))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("not checked")));
+
+            // A screenshot can be removed (the canned model is not local, so nothing was blurred)
+            JsonNode before = json.readTree(mvc.perform(get(issue).session(devSession)).andReturn().getResponse().getContentAsString());
+            assertThat(before.at("/files/0/hiddenAreas").isNull()).isTrue();
+            mvc.perform(delete(issue + "/files/0").session(devSession).with(csrf())).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.files.length()").value(0));
+        } finally {
+            mvc.perform(delete("/api/workspaces/" + bank).session(admin).with(csrf()));
+        }
+    }
+
     private void waitForDocument(MockHttpSession admin, String id) throws Exception {
         Instant deadline = Instant.now().plus(Duration.ofSeconds(60));
         while (true) {

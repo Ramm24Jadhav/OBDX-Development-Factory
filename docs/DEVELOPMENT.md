@@ -679,6 +679,29 @@ Phase 2 (plan and decisions in `docs/ISSUE-ANALYZER-PHASE-2.md`):
   within `FACTORY_ISSUE_REPEAT_WINDOW` (default `24h`) with the same error (two signature tokens in common, or the same
   error code). The Issues page shows a bar for groups with an issue in the last day and can filter to one group; the
   issue lists the others, and a lead can resolve or escalate the whole group at once.
+- **The Library stays inside the bank.** Oracle notes and manual sections go to the chat model only when
+  `KnowledgePolicy.chatAllowed()` (the chat server is on the bank's network). Otherwise they are still listed with
+  the evidence, the model gets none of their text and cannot cite them, and the issue says why.
+
+Phase 3 (plan and decisions in `docs/ISSUE-ANALYZER-PHASE-3.md`):
+
+- **Customer data in screenshots.** When the chat model runs on this machine (`ModelGateway.local()`, Ollama), each
+  new screenshot (from the team or a bank link) is first sent to it to find names, account, card, phone and ID
+  numbers, email and postal addresses; the factory fills those boxes black (`ScreenshotBlur`, Java 2D) and keeps only
+  the blurred copy (`issue_file.hidden_areas`). The screenshot shows "Customer data hidden (N areas)". With a cloud
+  model nothing is checked and the upload text says screenshots go to it as they are. "Remove screenshot" deletes one.
+- **Notifications.** `issue_event` records a bank report, a bank answer, a diagnosis (ready or failed), a finished fix
+  check, an answered question and a group forming. `GET /api/workspaces/{id}/issue-events` returns the last 30 days'
+  events for leads, or those of issues the user filed or released; the bell menu (`services/notifications.js`, via
+  the dashboard data) shows them and opens the issue.
+- **Live checks.** "Check the bank's hosts" lists the hosts and ports the issue mentions (URLs, `host:port`, JDBC
+  addresses in its logs, screenshots and code excerpts; nothing can be typed). A check runs from the factory,
+  read-only, 5 second timeouts: name lookup, connection, and for TLS ports the certificate (subject, issuer, expiry,
+  whether Java trusts it; an untrusted one is read without sending anything). Results (LIVE_OK, LIVE_UNREACHABLE,
+  LIVE_CERTIFICATE) are kept with the checks, audited, never shown to the bank, and given to the next analysis as `L`
+  evidence. Developers and leads run them; production issues need a lead. The factory's own machine, link-local and
+  cloud metadata addresses are refused (`factory.issue.live-checks.allow-loopback`, for tests only, allows the
+  factory's own machine).
 
 ## Recipes, templates and reference examples
 
@@ -1073,6 +1096,10 @@ object: compute those in the view model.
 | `GET` / `POST /api/workspaces/{id}/issue-links`, `DELETE .../issue-links/{linkId}` | Links for the bank: list, make (`label`, `days`; the answer has the token, once), revoke (leads) |
 | `GET` / `POST /api/issue-report/{token}` | No sign-in: the report page's details; report an issue (multipart: `name`, `email`, `description`, `environment`, `logText`, `files`); answers the follow token |
 | `GET /api/issue-follow/{token}`, `POST .../works`, `POST .../still-failing` | No sign-in: the reported issue as the bank sees it; "it works now" (`name`); "it still fails" (multipart: `name`, `logText`, `files`) |
+| `GET /api/workspaces/{id}/issues/{issueId}/live-targets` | Hosts and ports the issue mentions (developers, leads) |
+| `POST /api/workspaces/{id}/issues/{issueId}/live-checks` | Check one of them from the factory (`host`, `port`; production issues: leads) |
+| `DELETE /api/workspaces/{id}/issues/{issueId}/files/{position}` | Remove a screenshot |
+| `GET /api/workspaces/{id}/issue-events` | Issue events of the last 30 days for the bell menu (leads: all; others: issues they filed or released) |
 | `GET /actuator/health` | Health check |
 
 Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.

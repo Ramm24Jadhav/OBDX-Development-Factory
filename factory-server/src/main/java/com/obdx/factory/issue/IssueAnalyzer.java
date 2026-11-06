@@ -94,7 +94,21 @@ public class IssueAnalyzer {
     /**
      * @param profile Project Profile facts, one per line; empty when there is none
      */
-    public record Context(String title, String description, String environment, String obdxVersion, String profile) {
+    public record Context(String title, String description, String environment, String obdxVersion, String profile,
+                          boolean libraryAllowed) {
+
+        public Context(String title, String description, String environment, String obdxVersion, String profile) {
+            this(title, description, environment, obdxVersion, profile, true);
+        }
+    }
+
+    /** The evidence the model may see: without Library documents when they must stay inside the bank (KnowledgePolicy). */
+    static Evidence forModel(Context context, Evidence evidence) {
+        if (context.libraryAllowed()) {
+            return evidence;
+        }
+        return new Evidence(evidence.items().stream().filter(i -> !i.kind().equals("ORACLE_NOTE") && !i.kind().equals("MANUAL")).toList(),
+                evidence.signature());
     }
 
     private final ModelGateway modelGateway;
@@ -132,7 +146,8 @@ public class IssueAnalyzer {
         return plain.length() > 2000 ? plain.substring(0, 2000) : plain;
     }
 
-    public Diagnosis diagnose(Context context, Evidence evidence, List<Diagnosis.Similar> similar) {
+    public Diagnosis diagnose(Context context, Evidence all, List<Diagnosis.Similar> similar) {
+        Evidence evidence = forModel(context, all);
         String prompt = SecretMasker.mask(prompt(context, evidence, similar));
         BadRequestException last = null;
         String attempt = prompt;
@@ -176,9 +191,13 @@ public class IssueAnalyzer {
             user.append("--- ").append(item.id()).append(' ').append(item.source())
                     .append(item.line() == null ? "" : " (from line " + item.line() + ")").append('\n').append(item.text()).append('\n');
         }
-        library(user, evidence, "ORACLE_NOTE", "Oracle support notes, bug texts and patch readmes",
-                "(none uploaded to the Library match; do not name Oracle bugs or patches)");
-        library(user, evidence, "MANUAL", "OBDX manuals and Library notes", "(nothing found)");
+        if (context.libraryAllowed()) {
+            library(user, evidence, "ORACLE_NOTE", "Oracle support notes, bug texts and patch readmes",
+                    "(none uploaded to the Library match; do not name Oracle bugs or patches)");
+            library(user, evidence, "MANUAL", "OBDX manuals and Library notes", "(nothing found)");
+        } else {
+            user.append("\nOracle notes and OBDX manuals: (not available to you; do not name Oracle bugs or patches)\n");
+        }
         user.append("END DATA\n\nSimilar issues solved before:\n");
         if (similar.isEmpty()) {
             user.append("(none)\n");
@@ -210,7 +229,8 @@ public class IssueAnalyzer {
      *
      * @param earlier earlier questions and answers, oldest first, as "Q: ... A: ..." lines
      */
-    public ModelGateway.ChatResult answer(Context context, Evidence evidence, Diagnosis diagnosis, List<String> earlier, String question) {
+    public ModelGateway.ChatResult answer(Context context, Evidence all, Diagnosis diagnosis, List<String> earlier, String question) {
+        Evidence evidence = forModel(context, all);
         StringBuilder user = new StringBuilder(prompt(context, evidence, diagnosis == null ? List.of() : diagnosis.similar()));
         user.append("\nYour diagnosis:\n");
         if (diagnosis == null) {

@@ -87,15 +87,19 @@ public class IssueFollowUps {
     void runCheck(UUID id, UUID checkId) {
         try {
             Issue issue = issues.find(id).orElseThrow();
-            List<IssueFile> files = issues.checkFiles(checkId);
             List<String> notes = new ArrayList<>();
+            service.hideCustomerData(id, issues.checkFiles(checkId), notes);
+            List<IssueFile> files = issues.checkFiles(checkId);
             service.readScreenshots(id, files, notes);
             Evidence latest = LogEvidenceParser.parse(service.fileSources(id, issues.checkFiles(checkId)));
             Signatures.Comparison comparison = Signatures.compare(issue.evidence(), latest);
             issues.updateCheck(checkId, comparison.result(), comparison.summary() + (notes.isEmpty() ? "" : " " + String.join(" ", notes)), latest);
+            issues.addEvent(issue.workspaceId(), id, "CHECK_DONE", "Fix check of \"" + issue.title() + "\": " + comparison.summary(),
+                    comparison.result().equals("STILL_FAILING") || comparison.result().equals("DIFFERENT_ERROR"));
         } catch (RuntimeException e) {
             log.warn("Fix check {} of issue {} failed", checkId, id, e);
             issues.updateCheck(checkId, "FAILED", "The check failed: " + e.getMessage(), Evidence.empty());
+            issues.find(id).ifPresent(i -> issues.addEvent(i.workspaceId(), id, "CHECK_DONE", "A fix check of \"" + i.title() + "\" failed.", true));
         }
         issues.touch(id);
     }
@@ -104,6 +108,8 @@ public class IssueFollowUps {
     void bankAnswer(UUID id, String result, String summary, String by) {
         issues.insertCheck(UUID.randomUUID(), id, result, summary, Evidence.empty(), by);
         issues.touch(id);
+        issues.find(id).ifPresent(i -> issues.addEvent(i.workspaceId(), id, "BANK_ANSWER", "\"" + i.title() + "\": " + summary,
+                result.equals("BANK_STILL_FAILING")));
     }
 
     /** An engineer's question about the issue, answered by the model in the background. */
@@ -138,6 +144,7 @@ public class IssueFollowUps {
             ModelGateway.ChatResult result = analyzer.answer(service.context(issue, workspace),
                     issue.evidence() == null ? Evidence.empty() : issue.evidence(), issue.diagnosis(), earlier, question);
             issues.setAnswer(questionId, "ANSWERED", result.reply() == null ? "" : result.reply().strip(), result.model());
+            issues.addEvent(issue.workspaceId(), id, "ANSWERED", "Your question about \"" + issue.title() + "\" is answered.", false);
         } catch (ModelGatewayException e) {
             issues.setAnswer(questionId, "FAILED", "The model could not be used: " + e.getMessage() + " Check the Models page, then ask again.", null);
         } catch (RuntimeException e) {
@@ -160,7 +167,8 @@ public class IssueFollowUps {
         String summary = !released ? null : d.summary() != null && !d.summary().isBlank() ? d.summary() : d.rootCause();
         List<FollowStep> steps = !released ? List.of() : d.steps().stream().filter(s -> Diagnosis.ADMIN.equals(s.audience()))
                 .map(s -> new FollowStep(s.action(), s.why())).toList();
-        List<FollowCheck> checks = issues.checks(issue.id()).stream()
+        // Live checks of the bank's hosts are for the support team only
+        List<FollowCheck> checks = issues.checks(issue.id()).stream().filter(c -> !c.result().startsWith("LIVE_"))
                 .map(c -> new FollowCheck(c.result(), c.summary(), c.createdBy(), c.createdAt())).toList();
         return new FollowView(issue.title(), issue.status().name(), statusText, released, summary, steps, checks, issue.createdAt());
     }
