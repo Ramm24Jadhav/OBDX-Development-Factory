@@ -68,6 +68,12 @@ Edit, and `?ojr=studio&requirement=<id>&screen=<id>` is a real link. Every appro
 (`services/designActions`). `scripts/check-studio.js` and `scripts/check-designer.js` (which now opens the designer
 through the Studio) check it.
 
+The **Issue Analyzer** (route `issues`, branch `claude/chatgpt-conversation-review-6b861b`, plan and decisions in
+`docs/ISSUE-ANALYZER-PLAN.md`): a bank's error report, logs and screenshots become evidence (found without a model),
+the bank's matching code from the index, similar solved issues and a checked diagnosis with fix steps; outcomes, an
+Oracle SR draft, and resolutions leads share across workspaces. Screenshots are read by the chat model (the image path
+the Design Studio uses), so it needs a chat model that reads images.
+
 ## The user's installation
 
 - The Windows download from `https://github.com/Ramm24Jadhav/OBDX-Development-Factory/releases/download/latest/obdx-factory-windows-x64.zip`,
@@ -100,5 +106,8 @@ stand-in on Windows. The trial database itself runs on the user's laptop.
 
 - Exact format of `about.json` in releases other than 22.2 (the detector reads the first `NN.N` release number in it).
 - Sign-ins end when the factory restarts (sessions are in memory).
+- Issue Analyzer, later phases (only on request): bank administrators filing issues without an account, Oracle
+  notes and bug texts the bank may use, live checks against the bank's environment, blurring customer data in
+  screenshots. Not yet tried with a real model server and real OBDX logs.
 - Remaining roadmap (only on request): reverse-engineering JET screens into Screen Models, wave planning on the
   inventory, Jenkins Android/iOS builds.

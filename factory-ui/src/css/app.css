@@ -10172,3 +10172,30 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mb .fx-empty-icon { width: 56px; height: 56px; }
 .factory-mb .fx-empty strong { font-size: 18px; font-weight: 700; }
 .factory-mb .fx-empty .fx-btn { margin-top: 6px; }
+/* Issues (Issue Analyzer) */
+.factory-is .fx-card { margin-bottom: var(--fx-gap); }
+.factory-is h2 { margin: 0 0 var(--fx-space-3); }
+.factory-is h3 { margin: var(--fx-space-5) 0 var(--fx-space-2); }
+.factory-is h4 { margin: var(--fx-space-4) 0 var(--fx-space-2); }
+.factory-is-alert { margin: var(--fx-space-3) 0; }
+.factory-is-note { margin: var(--fx-space-2) 0 var(--fx-space-3); }
+.factory-is-drop { width: 100%; }
+.factory-is-chosen { list-style: none; margin: var(--fx-space-2) 0 0; padding: 0; display: grid; gap: var(--fx-space-1); }
+.factory-is-chosen li { display: flex; align-items: center; gap: var(--fx-space-2); min-width: 0; }
+.factory-is-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.factory-is-open { text-align: left; overflow-wrap: anywhere; }
+.factory-is-list tr[aria-current="true"] td { background: var(--fx-primary-soft); }
+.factory-is-dhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: var(--fx-space-3); }
+.factory-is-dhead h2 { overflow-wrap: anywhere; }
+.factory-is-box { margin: var(--fx-space-4) 0; padding: var(--fx-card-pad); border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-lg); background: var(--fx-surface-2); }
+.factory-is-box h3 { margin-top: 0; }
+.factory-is-step { margin: var(--fx-space-3) 0; max-width: 900px; overflow-wrap: anywhere; }
+.factory-is-step .fx-badge { margin-left: var(--fx-space-2); }
+.factory-is-evidence li, .factory-is-etable td { overflow-wrap: anywhere; }
+.factory-is-evidence code, .factory-is-etable code, .factory-is-step code { white-space: pre-wrap; }
+.factory-is-shot { display: flex; flex-wrap: wrap; gap: var(--fx-space-4); align-items: flex-start; margin-bottom: var(--fx-space-4); }
+.factory-is-thumb { width: 280px; max-width: 100%; max-height: 220px; object-fit: contain; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface); }
+.factory-is-shottext { flex: 1 1 320px; min-width: 0; }
+.factory-is-more { margin-top: var(--fx-space-4); }
+.factory-is-more pre { max-height: 360px; }
+.factory-is-more > :not(summary) { margin: var(--fx-space-3); }

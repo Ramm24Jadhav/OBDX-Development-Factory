@@ -25,6 +25,7 @@ Backend packages (`factory-server/src/main/java/com/obdx/factory/`):
 - `pack/`: version packs. `VersionPacks` loads the YAML rule and recipe files (`RecipeLoader` for recipes and templates); `LocalChecks` runs syntax checks and rules on a file; `PackService` gives each workspace its rules and on/off settings; `RecipeService` finds and pins reference examples.
 - `target/`: UI targets. `TargetPacks` loads `target-packs/`; `ScreenScaffolder` turns an approved Screen Model into a screen, test and texts for React Native or React; `TargetService` holds each workspace's target and app folder, the starter download and the planner's guide.
 - `modernization/`: the modernization inventory and both modernization paths (docs/MODERNIZATION.md). `InventoryScanner` scans a working copy into screens (with each oj-* element counted), services, roles and flows; `InventoryService` stores it after each import and exports the screens as CSV. `ComponentInventory` and `MarkupConverter` give the UI path's inventory and mapping from the JET mapping registry; `UpgradePlans` and `MigrationPlans` the waves and the module order; `RunBriefs` writes a run's brief, which `ModernizationRunService` records as an approved requirement and a change; `TechnologyCatalogue` and `TechnologySettings` the migration's technologies; `ModernizationStore` the V35 and V36 records.
+- `issue/`: the Issue Analyzer. `LogEvidenceParser` finds the evidence in logs and screenshot text without a model; `SecretMasker` masks secrets and customer numbers and finds bank data before sharing; `IssueAnalyzer` holds the prompts, reads screenshots and checks the model's diagnosis; `IssueService` runs the analysis in the background (code search, similar issues), records outcomes, drafts SRs and shares knowledge.
 - `jenkins/`: Jenkins settings, REST client and build log parsing.
 - `auth/`: sign-in and roles. `SecurityConfig` sets up sessions, CSRF and the sign-in options (local accounts, LDAP, OIDC, SAML); `AccessGuard` checks the signed-in user's permissions and is called by every controller; `UserDirectory` manages users; `AuditLog` records who did what.
 - `security/`: encryption of stored secrets such as SVN passwords.
@@ -618,6 +619,36 @@ run by the `component-packs` CI job and locally with Node 22 (the version the bu
 `node target-packs/components/tools/build-tokens.js`. The browser gates and parity tests are in
 `target-packs/components/gates` (its README says how to run them and record the results).
 
+## Issue Analyzer
+
+The **Issues** page (Build & Deliver) helps find why a bank's OBDX application shows an error. Any member of the
+workspace files an issue: what the bank reported, a pasted log or stack trace, log files (`.log`, `.txt`, `.out`, up to
+5 MB each) and screenshots (`.png`, `.jpg`, up to 10 MB each, at most 10 files). Analysis starts at once and runs in
+the background, one issue at a time:
+
+1. **Screenshots** are read by the chat model (error text, error code, screen, what the user did), through the same
+   image path the Design Studio uses, so the chat model must read images. The text is shown and can be corrected; if
+   the model cannot read images, type it there and analyze again.
+2. **Evidence** is found without a model (`LogEvidenceParser`): exceptions and `Caused by` chains, stack frames outside
+   the Java and server platform, HTTP status codes, error codes (`DIGX_PY_0131`, `ORA-12541`), URLs, correlation ids,
+   configuration keys on lines about configuration, and error lines, each with its file and line. Only these lines go
+   to the model.
+3. **The bank's code and configuration** for that evidence come from the code search (frames, keys, error codes and
+   hosts), so the analysis knows this bank's files.
+4. **Similar issues**: resolved issues of the workspace and shared product knowledge whose signatures (exception
+   classes, error codes, top frame) overlap.
+5. **Diagnosis** by the chat model, as JSON: category, state (probable, possible, inconclusive), root cause, the
+   evidence it is based on, other causes, what to collect next, and fix steps with a risk. The factory drops evidence
+   ids and files it did not give the model and downgrades "probable" without evidence. Text is masked first
+   (`SecretMasker`: passwords, tokens, Authorization headers, JWTs, 9-19 digit numbers keep their last 4 digits).
+   Screenshots are sent as they are, so the page asks to crop customer data first.
+
+Then record the outcome (resolved needs what fixed it), draft an Oracle SR (Markdown with the error details and log
+extract, masked, to copy into My Oracle Support; nothing is sent), and, as a lead, share a resolved issue as product
+knowledge: title, component, category, root cause and fix only, refused when it contains URLs, IP addresses or the
+bank's or workspace's name. Every workspace's analysis then uses it; the person who shared it or an administrator can
+withdraw it. Leads delete issues. Analyses running when the server stops are marked failed at the next start.
+
 ## Recipes, templates and reference examples
 
 The version packs also hold **recipes**: how the usual kinds of OBDX work are built. They are in `factory-server/src/main/resources/packs/recipes.yml` (all versions; a version file can add or replace recipes by `id`), with templates in `packs/templates/`. Built in: new UI screen, enhance an existing UI screen, new backend class, enhance a backend class, host integration (adapter), database script and unit test.
@@ -992,6 +1023,18 @@ object: compute those in the view model.
 | `POST /api/knowledge/notes/{id}/review` | Approve or reject a note (`status`: TRUSTED, REJECTED, SUGGESTED) |
 | `POST /api/knowledge/summaries` | Draft a suggested note on a topic from the manuals (`topic`, `workspaceId`) |
 | `POST /api/knowledge/feedback` | Rate an answer (`question`, `answer`, `helpful`, `comment`, `sources`) |
+| `GET /api/workspaces/{id}/issues` | The workspace's issues |
+| `POST /api/workspaces/{id}/issues` | File an issue and start analyzing it (multipart: `title`, `description`, `environment` DEV/SIT/UAT/PROD, `logText`, `files`) |
+| `GET /api/workspaces/{id}/issues/{issueId}` | An issue with its evidence, diagnosis, files and outcome |
+| `GET /api/workspaces/{id}/issues/{issueId}/files/{position}` | An attached log or screenshot |
+| `PUT /api/workspaces/{id}/issues/{issueId}/files/{position}/text` | Correct the text read from a screenshot (`text`) |
+| `POST /api/workspaces/{id}/issues/{issueId}/analyze` | Analyze again (background) |
+| `POST /api/workspaces/{id}/issues/{issueId}/outcome` | `status` RESOLVED (with `resolution`), NOT_RESOLVED or ESCALATED |
+| `POST /api/workspaces/{id}/issues/{issueId}/sr-draft` | Draft an Oracle Service Request |
+| `POST /api/workspaces/{id}/issues/{issueId}/share` | Share a resolved issue as product knowledge (`title`, `component`, `category`, `rootCause`, `resolution`) (leads) |
+| `DELETE /api/workspaces/{id}/issues/{issueId}` | Delete an issue (leads) |
+| `GET /api/issue-knowledge` | Shared product knowledge |
+| `DELETE /api/issue-knowledge/{id}` | Withdraw shared knowledge (the person who shared it, or administrators) |
 | `GET /actuator/health` | Health check |
 
 Errors are returned as problem details (`status`, `title`, `detail`). Without a session the API answers 401; without permission, 403.

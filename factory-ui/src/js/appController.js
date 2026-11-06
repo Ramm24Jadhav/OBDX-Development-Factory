@@ -50,6 +50,7 @@ define(['knockout', './services/session', './services/updates', './services/dash
         { path: 'changes', detail: { label: 'Changes', icon: 'branch', group: 'deliver' } },
         { path: 'build', detail: { label: 'Build, Test & Review', icon: 'flask', group: 'deliver' } },
         { path: 'reviews', detail: { label: 'External Review', icon: 'share', group: 'deliver' } },
+        { path: 'issues', detail: { label: 'Issues', icon: 'alert', group: 'deliver' } },
         // Modernization folds open its four reference pages (subs); the steps of each path open from the flow, not the menu
         { path: 'modernization', detail: { label: 'Modernization', icon: 'refresh', group: 'modernize', subLabel: 'Overview',
           subs: ['modernization', 'components', 'modernization-settings', 'modernization-history'] } },

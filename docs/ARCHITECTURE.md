@@ -287,6 +287,17 @@ unsupported details, they do not prove an answer right.
 
 *Not yet:* a 22.x/25.x difference view.
 
+### 5.10 Issue Analyzer
+
+Support for errors banks report in their running OBDX application: wrong or missing configuration, unreachable
+dependencies, certificates, access rights, data, or a product defect. Evidence is found without a model in logs and in
+text the chat model reads from screenshots; the workspace's code index then finds the bank's own code and
+configuration for it, so advice names files that exist. The chat model diagnoses the evidence; the factory checks the
+answer (known categories, cited evidence and files that were given, "probable" only with evidence). Fixes are
+guided: the factory never changes the bank's systems. Resolutions become knowledge for the workspace and, when a lead
+shares them without bank data, for every workspace. Product defects get an Oracle SR draft to copy into My Oracle
+Support (no MOS integration: it has no open API).
+
 ---
 
 ## 6. Modernization mode

@@ -11,7 +11,7 @@ configure; every setting and REST endpoint).
   shared services in `src/js/services/`; styles in `src/css/app.css` (the build serves `app.css`).
 - `factory-server/`: Spring Boot 4 / Java 21 server, one package per feature under `com.obdx.factory` (workspace,
   importing, indexing, profile, requirements, design, change, pack, target, modernization, source, model, update,
-  trial, auth, svn, jenkins, knowledge, componentpack). Flyway migrations in `src/main/resources/db/migration` (V1..V36; add V37 next).
+  trial, auth, svn, jenkins, knowledge, componentpack, issue). Flyway migrations in `src/main/resources/db/migration` (V1..V40; add V41 next).
 - `target-packs/`: React Native, React, Angular, Flutter and JET Core Pack target packs (rules, templates, starter projects); `target-packs/components/` is the
   premium component pack registry (catalogue.json, packs.json, schemas; plan in `docs/COMPONENT-PACKS.md`).
 - `deploy/`: systemd unit and env template, `ohs/` (Oracle HTTP Server), `docker/` (compose stack, demo code),
@@ -28,7 +28,7 @@ FACTORY_TEST_DB_URL=jdbc:postgresql://localhost:5432/factory_test mvn clean veri
 
 Integration tests need PostgreSQL with pgvector (user/password `factory`/`factory`, or FACTORY_TEST_DB_USER/PASSWORD)
 and the svn tools. Run from the repository root (running Maven inside `factory-server/` cannot find `factory-ui`).
-All 115 tests pass at the last commit.
+All 705 tests pass at the last commit (1 skipped).
 
 ## Conventions
 
