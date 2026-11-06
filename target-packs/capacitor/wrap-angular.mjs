@@ -25,6 +25,12 @@ if (!config.includes("webDir: 'dist'")) {
 }
 writeFileSync(join(app, 'capacitor.config.ts'), config.replace("webDir: 'dist'", `webDir: '${webDir.replace(/\/$/, '')}'`));
 
+// The component style: the Angular app reads src/app/component-style.json (the Angular starter has one); an app
+// without it takes the Capacitor starter's, so the factory's design reaches the wrapped app too
+if (!existsSync(join(app, 'src/app/component-style.json'))) {
+  copyFileSync(join(starter, 'src/component-style.json'), join(app, 'src/app/component-style.json'));
+}
+
 mkdirSync(join(app, 'src/app/native'), { recursive: true });
 copyFileSync(join(starter, 'src/native/device.ts'), join(app, 'src/app/native/device.ts'));
 

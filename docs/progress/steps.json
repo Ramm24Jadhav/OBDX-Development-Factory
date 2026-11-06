@@ -327,7 +327,7 @@
    "items": [
     {
      "name": "Vue 3 and Capacitor",
-     "done": false
+     "done": true
     },
     {
      "name": "JET Core Pack",
@@ -338,7 +338,7 @@
      "done": true
     }
    ],
-   "note": "Vue done; Capacitor after the capacitor-angular merge"
+   "note": "The factory does not write the bank's style into the starters yet"
   },
   {
    "id": "LG5",

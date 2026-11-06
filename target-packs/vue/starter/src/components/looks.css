@@ -1,6 +1,6 @@
 /*
  * The nine designs of the factory's Component factory (style.ts puts obdx-look-* on the root), dark mode and motion.
- * Liquid glass follows target-packs/components/glass.json: glass on sections and buttons; fields stay solid behind their text.
+ * The same file in the Vue and Capacitor starters. Liquid glass follows target-packs/components/glass.json: glass on sections and buttons; fields stay solid behind their text.
  */
 .obdx-dark { --obdx-text: #f1f5f9; --obdx-muted: #a3aebd; --obdx-border: #475569; --obdx-background: #0f172a; --obdx-surface: #1e293b; --obdx-error: #f87171; color-scheme: dark; }
 .obdx-dark .obdx-button-secondary, .obdx-dark .obdx-button-link { color: color-mix(in srgb, var(--obdx-primary) 45%, #ffffff); }
@@ -47,9 +47,11 @@
 .obdx-motion-hover-glow .obdx-button:hover:not(:disabled) { box-shadow: 0 0 0 4px color-mix(in srgb, var(--obdx-primary) 18%, transparent); }
 .obdx-motion-hover-shine .obdx-button::after { content: ""; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
   background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%); }
-.obdx-motion-hover-shine .obdx-button:hover:not(:disabled)::after { transform: translateX(120%); transition: transform 700ms var(--bx-ease-standard); }
+.obdx-motion-hover-shine .obdx-button:hover:not(:disabled)::after { transform: translateX(120%); transition: transform 700ms var(--bx-ease-standard, cubic-bezier(0.2, 0, 0, 1)); }
 .obdx-motion-click-ripple .obdx-button:active:not(:disabled) { transform: none; box-shadow: 0 0 0 6px color-mix(in srgb, var(--obdx-primary) 22%, transparent); }
-.obdx-motion-click-bounce .obdx-button:active:not(:disabled) { animation: obdx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.obdx-motion-click-bounce .obdx-button:active:not(:disabled) { animation: obdx-pop var(--bx-dur-slow, 320ms) var(--bx-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)); }
+@keyframes obdx-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes obdx-pop { 0% { transform: scale(0.85); } 60% { transform: scale(1.06); } }
 @keyframes obdx-scale-in { from { opacity: 0; transform: scale(0.94); } }
 @keyframes obdx-slide-in { from { opacity: 0; transform: translateX(-24px); } }
 @keyframes obdx-blur-in { from { opacity: 0; filter: blur(8px); } }

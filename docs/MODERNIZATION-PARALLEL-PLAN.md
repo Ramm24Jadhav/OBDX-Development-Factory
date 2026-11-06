@@ -259,7 +259,9 @@ gallery) the fill and rim stay alone. The slider has a frosted glass thumb (nati
 component; the pill and dock navs are glass. LG4 (the user chose all four, 7 Nov): the Vue 3, JET Core Pack and Flutter
 starters read the component style and draw the nine designs (Vue: component-style.json and looks.css; JET Core Pack:
 looks.css over Redwood through the Core Pack's --oj-c-* variables; Flutter: bxTheme per design and BxGlass with a
-BackdropFilter). Capacitor waits for the capacitor-angular branch to merge. Open: the browser gates of LG5 (contrast over a busy
+BackdropFilter). Capacitor shares the Vue files; a wrapped Angular app reads
+src/app/component-style.json (the Angular starter now reads it too; wrap-angular.mjs adds it when missing). Open: the
+factory does not write the bank's style into these files yet (TargetService.starterZip copies the starter as it is). Open: the browser gates of LG5 (contrast over a busy
 backdrop, screenshots per browser, frame rate).
 
 Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.
