@@ -10166,3 +10166,9 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-cf .factory-cf-design:empty { display: none; }
 .factory-cf-side-body .factory-cf-pv-row { justify-content: center; }
 .factory-cf-side.is-jet .factory-cf-jetlook > code, .factory-cf-side.is-jet .factory-cf-jetlook { text-align: center; }
+
+/* States on every modernization screen, as on the States board: an empty state is an icon, one sentence and one action */
+.factory-mb .fx-empty { padding: 40px 20px; gap: 10px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius-lg); background: var(--fx-surface); color: var(--fx-text-body); font-size: 14px; }
+.factory-mb .fx-empty-icon { width: 56px; height: 56px; }
+.factory-mb .fx-empty strong { font-size: 18px; font-weight: 700; }
+.factory-mb .fx-empty .fx-btn { margin-top: 6px; }

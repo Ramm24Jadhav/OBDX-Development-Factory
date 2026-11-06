@@ -102,7 +102,7 @@
     },
     {
      "name": "Stacked bars",
-     "done": false
+     "done": true
     },
     {
      "name": "Timeline",
@@ -122,7 +122,7 @@
     },
     {
      "name": "Screen states",
-     "done": false
+     "done": true
     }
    ]
   },

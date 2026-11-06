@@ -59,7 +59,8 @@ try {
       const page = await context.newPage();
       if (example) {
         // The run pages get the example run (tools/fidelity/example-run.mjs) in place of the run endpoints, in this browser only
-        const routes = exampleRoutes(process.env.EXAMPLE_CHANGE);
+        // EXAMPLE_EMPTY=1 answers with no runs, for the empty states
+        const routes = process.env.EXAMPLE_EMPTY ? [[/\/modernization\/(runs|history)$/, []]] : exampleRoutes(process.env.EXAMPLE_CHANGE);
         await page.route(/\/api\/workspaces\/[^?]*\/modernization\/(runs|history)/, (route) => {
           const url = new URL(route.request().url()).pathname;
           const hit = routes.find((r) => r[0].test(url));
