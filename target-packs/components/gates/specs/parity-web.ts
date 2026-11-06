@@ -140,7 +140,7 @@ export function webParity(pack: string, gallery: string) {
         const table = async (el: Locator) => {
           await expect(el.getByText('Electricity bill')).toBeVisible();
           const headers = (await el.getByRole('columnheader').allInnerTexts()).map((t) => t.replace(/[↑↓]/g, '').trim().toLowerCase())
-            .filter((t) => t && t !== 'select row');
+            .filter((t) => t && t !== 'select row' && t !== 'select');
           const cells = await el.getByRole('cell').allInnerTexts();
           return { headers, rows: cells.map((t) => t.trim()).filter((t) => /Electricity bill|Salary|Card payment/.test(t)) };
         };
@@ -231,7 +231,7 @@ export function webParity(pack: string, gallery: string) {
         await expect(field(page, 'du1').getByText('statement.pdf')).toBeVisible();
         await choose('setup.exe', 'application/octet-stream');
         await expect(field(page, 'du1').getByRole('alert')).toBeVisible();
-        await expect(field(page, 'du1').getByText('setup.exe')).toHaveCount(0);
+        await expect(field(page, 'du1').getByText('setup.exe', { exact: true })).toHaveCount(0);
         // JET 21's oj-file-picker refuses it the same way (JET 6.2 passes any type: see parity.spec.ts)
       });
     });

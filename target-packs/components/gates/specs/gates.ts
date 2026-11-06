@@ -36,6 +36,8 @@ export const G7 = ["rolling-digits","count-up","split-flap-board","reveal-digits
 
 export const VIEWPORTS = { phone: { width: 375, height: 812 }, tablet: { width: 768, height: 1024 }, laptop: { width: 1280, height: 800 } } as const;
 export const THEMES = ['light', 'dark'] as const;
+/** Drawn only in the brand colours (white on the brand gradient), so the same in both themes by design. */
+const BRAND_ONLY: readonly string[] = ['card-tile', 'gradient-text', 'magnetic-button'];
 
 /** Opens a pack's gallery in a theme and waits until every section is drawn. */
 export async function openGallery(page: Page, url: string, theme: string, query = '') {
@@ -87,7 +89,7 @@ export async function layout(page: Page, selector: string, phone: boolean): Prom
 export async function colours(page: Page, selector: string): Promise<string> {
   return page.evaluate((sel) => {
     const parts = document.querySelector(sel)!.querySelectorAll<HTMLElement>('.gate-body *');
-    return Array.from(parts).map((el) => { const s = getComputedStyle(el); return `${s.backgroundColor} ${s.color} ${s.borderTopColor}`; }).join('|');
+    return Array.from(parts).map((el) => { const s = getComputedStyle(el); return `${s.backgroundColor} ${s.backgroundImage} ${s.color} ${s.borderTopColor}`; }).join('|');
   }, selector);
 }
 
@@ -116,7 +118,7 @@ export function packGates(pack: string, url: string, components: readonly string
         const light = await colours(page, sel);
         await openGallery(page, url, 'dark', query);
         expect(await axe(page, sel)).toEqual([]);
-        expect(await colours(page, sel)).not.toBe(light);
+        if (!BRAND_ONLY.includes(id)) { expect(await colours(page, sel)).not.toBe(light); }
       });
       test(`${id} · responsive`, async ({ page }) => {
         for (const [name, size] of Object.entries(VIEWPORTS)) {

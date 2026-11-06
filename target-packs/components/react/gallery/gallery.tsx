@@ -51,7 +51,7 @@ function Gallery() {
   const [period, setPeriod] = useState({ from: '2026-10-01', to: '2026-10-31' });
   const [query, setQuery] = useState('rent');
   const [payee, setPayee] = useState('P1');
-  const [proof] = useState(() => [new File([new Uint8Array(248000)], 'statement-october.pdf', { type: 'application/pdf' })]);
+  const [proof, setProof] = useState(() => [new File([new Uint8Array(248000)], 'statement-october.pdf', { type: 'application/pdf' })]);
   return (
     <main className={styleClasses({ look: 'elevated', mode }) + ' gallery'} data-gallery-ready>
       <h1>obdx-react foundation set</h1>
@@ -158,7 +158,7 @@ function Gallery() {
                       options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} />
       </Section>
       <Section id="document-upload" title="Document upload">
-        <FileUpload testID="du1" label="Proof of address" value={proof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" />
+        <FileUpload testID="du1" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" />
       </Section>
       <Section id="secondary-button" title="Secondary button">
         <SecondaryButton testID="sb1" label="Save for later" />
