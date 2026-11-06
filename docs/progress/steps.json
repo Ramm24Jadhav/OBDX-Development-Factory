@@ -1,367 +1,450 @@
 {
- "rows": [
-  {
-   "id": "P0",
-   "track": "Set up",
-   "task": "Board reference images, side-by-side check, plan",
-   "session": "Main",
-   "unit": "steps",
-   "items": [
+  "rows": [
     {
-     "name": "Plan and handoff template",
-     "done": true
+      "id": "P0",
+      "track": "Set up",
+      "task": "Board reference images, side-by-side check, plan",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Plan and handoff template",
+          "done": true
+        },
+        {
+          "name": "Progress dashboard",
+          "done": true
+        },
+        {
+          "name": "Board reference images",
+          "done": true
+        },
+        {
+          "name": "Side-by-side check tool",
+          "done": true
+        },
+        {
+          "name": "Catalogue sessions started",
+          "done": true
+        }
+      ]
     },
     {
-     "name": "Progress dashboard",
-     "done": true
+      "id": "SCR",
+      "track": "Screens",
+      "task": "Screens built and working (all 14)",
+      "session": "Earlier",
+      "unit": "screens",
+      "note": "Work; being brought to the boards one by one",
+      "items": [
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        }
+      ]
     },
     {
-     "name": "Board reference images",
-     "done": true
+      "id": "S0",
+      "track": "Screens",
+      "task": "S0 Shared parts: steps bar, chips, charts, cards, states",
+      "session": "Main",
+      "unit": "parts",
+      "items": [
+        {
+          "name": "Path steps bar",
+          "done": true
+        },
+        {
+          "name": "Count chips",
+          "done": true
+        },
+        {
+          "name": "Ring chart and legend",
+          "done": true
+        },
+        {
+          "name": "Stacked bars",
+          "done": true
+        },
+        {
+          "name": "Timeline",
+          "done": true
+        },
+        {
+          "name": "Dependency diagram",
+          "done": true
+        },
+        {
+          "name": "Path card",
+          "done": true
+        },
+        {
+          "name": "Activity list",
+          "done": true
+        },
+        {
+          "name": "Screen states",
+          "done": true
+        }
+      ]
     },
     {
-     "name": "Side-by-side check tool",
-     "done": true
+      "id": "S1",
+      "track": "Screens",
+      "task": "S1 Overview, Choose a path, Technology settings",
+      "session": "Main",
+      "unit": "screens",
+      "note": "Overview differences found",
+      "items": [
+        {
+          "name": "Overview",
+          "done": true
+        },
+        {
+          "name": "Choose a path",
+          "done": true
+        },
+        {
+          "name": "Technology settings",
+          "done": true
+        }
+      ]
     },
     {
-     "name": "Catalogue sessions started",
-     "done": true
+      "id": "S2",
+      "track": "Screens",
+      "task": "S2 Inventory, Mapping, Upgrade plan, Technology catalogue",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Component inventory",
+          "done": true
+        },
+        {
+          "name": "Component mapping",
+          "done": true
+        },
+        {
+          "name": "Upgrade plan",
+          "done": true
+        },
+        {
+          "name": "Technology catalogue",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "track": "Screens",
+      "task": "S3 Migration planner, Workspace, Validation",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Migration planner",
+          "done": true
+        },
+        {
+          "name": "Migration workspace",
+          "done": true
+        },
+        {
+          "name": "Validation",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "track": "Screens",
+      "task": "S4 Review, Decisions, History, Component factory",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Review and approval",
+          "done": true
+        },
+        {
+          "name": "Review decisions",
+          "done": true
+        },
+        {
+          "name": "History",
+          "done": true
+        },
+        {
+          "name": "Component factory",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "SHIP",
+      "track": "Ship",
+      "task": "Full build, push, CI green, 8081 updated for your review",
+      "session": "Main",
+      "unit": "phases",
+      "note": "One per phase",
+      "items": [
+        {
+          "name": "Screens",
+          "done": false
+        },
+        {
+          "name": "Catalogue and packs",
+          "done": false
+        },
+        {
+          "name": "Gates",
+          "done": false
+        },
+        {
+          "name": "Final",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG0",
+      "track": "Liquid glass",
+      "task": "LG0 Glisse research and the glass spec",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Glisse source read",
+          "done": false
+        },
+        {
+          "name": "Glass spec in the component style",
+          "done": false
+        },
+        {
+          "name": "Glisse in the React pack with its licence",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG1",
+      "track": "Liquid glass",
+      "task": "LG1 Liquid glass in React (Glisse)",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Glisse components mapped",
+          "done": false
+        },
+        {
+          "name": "Glass surface on the rest",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG2",
+      "track": "Liquid glass",
+      "task": "LG2 Liquid glass in JET and Angular (CSS and SVG)",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "JET 6 and JET 21",
+          "done": false
+        },
+        {
+          "name": "Angular",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG3",
+      "track": "Liquid glass",
+      "task": "LG3 Liquid glass in React Native",
+      "session": "Catalogue (phone)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Blur view glass",
+          "done": false
+        },
+        {
+          "name": "iOS 26 glass where available",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG4",
+      "track": "Liquid glass",
+      "task": "LG4 Liquid glass in the other technologies",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Vue 3 and Capacitor",
+          "done": false
+        },
+        {
+          "name": "JET Core Pack",
+          "done": false
+        },
+        {
+          "name": "Flutter",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "LG5",
+      "track": "Liquid glass",
+      "task": "LG5 Liquid glass gates",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Contrast on glass",
+          "done": false
+        },
+        {
+          "name": "Reduced transparency and forced colours",
+          "done": false
+        },
+        {
+          "name": "Screenshots per browser",
+          "done": false
+        },
+        {
+          "name": "Frame rate",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "AC",
+      "track": "Decisions of 7 Nov",
+      "task": "Angular pack: the 34 missing components",
+      "session": "Angular components",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Built with gallery sections and unit tests",
+          "done": true
+        },
+        {
+          "name": "Full build passed",
+          "done": false
+        },
+        {
+          "name": "Browser gates passed",
+          "done": false
+        },
+        {
+          "name": "Merged",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "CA",
+      "track": "Decisions of 7 Nov",
+      "task": "Capacitor wraps the Angular app too",
+      "session": "Capacitor for Angular",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Wrap script and rules",
+          "done": true
+        },
+        {
+          "name": "Angular screens for a wrapped Angular app",
+          "done": true
+        },
+        {
+          "name": "Full build passed",
+          "done": true
+        },
+        {
+          "name": "Merged",
+          "done": true
+        },
+        {
+          "name": "GitHub build of the wrapped app",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "NX",
+      "track": "Decisions of 7 Nov",
+      "task": "Native starters: pinning, XcodeGen, ViewInspector, device run",
+      "session": "Native extras",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Certificate pinning",
+          "done": true
+        },
+        {
+          "name": "XcodeGen and ViewInspector tests",
+          "done": true
+        },
+        {
+          "name": "Device-run harness (Android emulator run)",
+          "done": true
+        },
+        {
+          "name": "Gradle wrapper and release pin guard",
+          "done": false
+        },
+        {
+          "name": "iOS built on a Mac",
+          "done": false
+        }
+      ]
     }
-   ]
-  },
-  {
-   "id": "SCR",
-   "track": "Screens",
-   "task": "Screens built and working (all 14)",
-   "session": "Earlier",
-   "unit": "screens",
-   "note": "Work; being brought to the boards one by one",
-   "items": [
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    },
-    {
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "S0",
-   "track": "Screens",
-   "task": "S0 Shared parts: steps bar, chips, charts, cards, states",
-   "session": "Main",
-   "unit": "parts",
-   "items": [
-    {
-     "name": "Path steps bar",
-     "done": true
-    },
-    {
-     "name": "Count chips",
-     "done": true
-    },
-    {
-     "name": "Ring chart and legend",
-     "done": true
-    },
-    {
-     "name": "Stacked bars",
-     "done": true
-    },
-    {
-     "name": "Timeline",
-     "done": true
-    },
-    {
-     "name": "Dependency diagram",
-     "done": true
-    },
-    {
-     "name": "Path card",
-     "done": true
-    },
-    {
-     "name": "Activity list",
-     "done": true
-    },
-    {
-     "name": "Screen states",
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "S1",
-   "track": "Screens",
-   "task": "S1 Overview, Choose a path, Technology settings",
-   "session": "Main",
-   "unit": "screens",
-   "note": "Overview differences found",
-   "items": [
-    {
-     "name": "Overview",
-     "done": true
-    },
-    {
-     "name": "Choose a path",
-     "done": true
-    },
-    {
-     "name": "Technology settings",
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "S2",
-   "track": "Screens",
-   "task": "S2 Inventory, Mapping, Upgrade plan, Technology catalogue",
-   "session": "Main",
-   "unit": "screens",
-   "items": [
-    {
-     "name": "Component inventory",
-     "done": true
-    },
-    {
-     "name": "Component mapping",
-     "done": true
-    },
-    {
-     "name": "Upgrade plan",
-     "done": true
-    },
-    {
-     "name": "Technology catalogue",
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "S3",
-   "track": "Screens",
-   "task": "S3 Migration planner, Workspace, Validation",
-   "session": "Main",
-   "unit": "screens",
-   "items": [
-    {
-     "name": "Migration planner",
-     "done": true
-    },
-    {
-     "name": "Migration workspace",
-     "done": true
-    },
-    {
-     "name": "Validation",
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "S4",
-   "track": "Screens",
-   "task": "S4 Review, Decisions, History, Component factory",
-   "session": "Main",
-   "unit": "screens",
-   "items": [
-    {
-     "name": "Review and approval",
-     "done": true
-    },
-    {
-     "name": "Review decisions",
-     "done": true
-    },
-    {
-     "name": "History",
-     "done": true
-    },
-    {
-     "name": "Component factory",
-     "done": true
-    }
-   ]
-  },
-  {
-   "id": "SHIP",
-   "track": "Ship",
-   "task": "Full build, push, CI green, 8081 updated for your review",
-   "session": "Main",
-   "unit": "phases",
-   "note": "One per phase",
-   "items": [
-    {
-     "name": "Screens",
-     "done": false
-    },
-    {
-     "name": "Catalogue and packs",
-     "done": false
-    },
-    {
-     "name": "Gates",
-     "done": false
-    },
-    {
-     "name": "Final",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG0",
-   "track": "Liquid glass",
-   "task": "LG0 Glisse research and the glass spec",
-   "session": "Catalogue (web)",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "Glisse source read",
-     "done": false
-    },
-    {
-     "name": "Glass spec in the component style",
-     "done": false
-    },
-    {
-     "name": "Glisse in the React pack with its licence",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG1",
-   "track": "Liquid glass",
-   "task": "LG1 Liquid glass in React (Glisse)",
-   "session": "Catalogue (web)",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "Glisse components mapped",
-     "done": false
-    },
-    {
-     "name": "Glass surface on the rest",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG2",
-   "track": "Liquid glass",
-   "task": "LG2 Liquid glass in JET and Angular (CSS and SVG)",
-   "session": "Catalogue (web)",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "JET 6 and JET 21",
-     "done": false
-    },
-    {
-     "name": "Angular",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG3",
-   "track": "Liquid glass",
-   "task": "LG3 Liquid glass in React Native",
-   "session": "Catalogue (phone)",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "Blur view glass",
-     "done": false
-    },
-    {
-     "name": "iOS 26 glass where available",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG4",
-   "track": "Liquid glass",
-   "task": "LG4 Liquid glass in the other technologies",
-   "session": "Main",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "Vue 3 and Capacitor",
-     "done": false
-    },
-    {
-     "name": "JET Core Pack",
-     "done": false
-    },
-    {
-     "name": "Flutter",
-     "done": false
-    }
-   ]
-  },
-  {
-   "id": "LG5",
-   "track": "Liquid glass",
-   "task": "LG5 Liquid glass gates",
-   "session": "Main",
-   "unit": "steps",
-   "items": [
-    {
-     "name": "Contrast on glass",
-     "done": false
-    },
-    {
-     "name": "Reduced transparency and forced colours",
-     "done": false
-    },
-    {
-     "name": "Screenshots per browser",
-     "done": false
-    },
-    {
-     "name": "Frame rate",
-     "done": false
-    }
-   ]
-  }
- ]
+  ]
 }

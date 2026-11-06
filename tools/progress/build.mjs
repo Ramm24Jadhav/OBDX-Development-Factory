@@ -24,7 +24,10 @@ for (const s of steps.rows) { add(s.id, s.track, s.task, s.session, s.items.filt
 // Components: a web group's component is done when every web pack that names it has built it; a phone group's when React Native has
 const web = ['jet-premium', 'react', 'angular'];
 // A planned component not yet in the catalogue (the motion group) counts as to do in every pack
-const doneWeb = (c) => { const e = entries.get(c); if (!e) { return false; } return web.filter((p) => e.names?.[p]).every((p) => built(p, c)); };
+const GATES = ['accessibility', 'themes', 'responsive', 'visual'];
+const gated = (packId, c) => GATES.every((g) => pack(packId).checks[c]?.[g]?.status === 'passed');
+// A web component counts once every web pack that names it has built it and its browser gates passed there (decided 7 Nov)
+const doneWeb = (c) => { const e = entries.get(c); if (!e) { return false; } return web.filter((p) => e.names?.[p]).every((p) => built(p, c) && gated(p, c)); };
 const doneRn = (c) => (entries.get(c) && !entries.get(c).names?.['react-native']) || built('react-native', c);
 const first = new Set(groups.done);
 add('C0', 'Components', 'Foundation set and forms wave (all four packs)', 'Earlier', groups.done.filter((c) => doneWeb(c) && doneRn(c)).length, first.size, 'components');
@@ -54,11 +57,15 @@ const allPassed = (packId, gate) => {
   const list = p.built.filter((b) => b.source.startsWith('target-packs/components/') && applies(b.component, gate));
   return list.length > 0 && list.every((b) => p.checks[b.component]?.[gate]?.status === 'passed');
 };
-add('G0', 'Gates', 'Premium JET parity on JET 6.2 and the current JET', 'Earlier', allPassed('jet-premium', 'parity') ? 1 : 0, 1, 'gates');
+const elements = [...entries.values()].filter((e) => e.workspace?.kind === 'element').map((e) => e.id);
+const passedOf = (packId, gate, list) => list.filter((c) => pack(packId).checks[c]?.[gate]?.status === 'passed').length;
+add('G0', 'Gates', 'Premium JET parity on JET 6.2 and the current JET', 'Earlier', passedOf('jet-premium', 'parity', elements), elements.length, 'components');
+const rnBuilt = pack('react-native').built.filter((b) => b.source.startsWith('target-packs/components/')).map((b) => b.component);
+const rnShown = rnBuilt.filter((c) => ['visual', 'themes'].every((g) => pack('react-native').checks[c]?.[g]?.status === 'passed')).length;
 add('Q1', 'Gates', 'Q1 React and Angular parity; React Native screenshots and themes', 'Phone and packs',
-  [allPassed('react', 'parity'), allPassed('angular', 'parity'), allPassed('react-native', 'visual') && allPassed('react-native', 'themes')].filter(Boolean).length, 3, 'gates');
+  passedOf('react', 'parity', elements) + passedOf('angular', 'parity', elements) + rnShown, elements.length * 2 + rnBuilt.length, 'checks');
 
-const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'M1', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'N1', 'N2', 'N3', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP', 'LG0', 'LG1', 'LG2', 'LG3', 'LG4', 'LG5'];
+const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'M1', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'N1', 'N2', 'N3', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP', 'LG0', 'LG1', 'LG2', 'LG3', 'LG4', 'LG5', 'AC', 'CA', 'NX'];
 rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 const asOf = new Date().toISOString();
 for (const r of rows) { r.asOf = asOf; }
