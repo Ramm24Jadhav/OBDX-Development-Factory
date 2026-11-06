@@ -31,16 +31,17 @@ export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSele
   DepositsSummary, G2_COMPONENTS, MaturityInstructions, NewDepositForm, PaymentForm, PaymentSchedule, PaymentStatus, QuickActions, TransactionDetails, TransactionFilter,
   TransactionHistory, TransactionReceipt, TransferSummary, UpcomingBills, ibanValid, money } from './g2';
 export type { AccountOption, ChoiceOption, Detail, Payee, Tile, Transaction } from './g2';
-export { AddOnCard, BlockCard, CardList, CardStatements, ConvertToEmi, DisbursementTimeline, G3_COMPONENTS, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute,
-  RedeemPoints, RepaymentSchedule, SecureConfirmation, SensitiveField, SessionExpiryWarning, masked } from './g3';
+export { ActivateCard, AddOnCard, AuthChallenge, BlockCard, CardLimits, CardList, CardStatements, CardTile, ConvertToEmi, DisbursementTimeline, FraudAlert, G3_COMPONENTS,
+  KycSteps, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute, RedeemPoints, RepaymentSchedule, ResetPin, SecureConfirmation, SensitiveField,
+  SessionExpiryWarning, masked } from './g3';
 export type { ScheduleColumn } from './g3';
-export { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, CodeDelivery, Consents, Devices, DoNotDisturb, G4_COMPONENTS,
-  LanguagePicker, LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SessionSummary, SignInOptions, SpendCategories, SpendingChart, StructureSimulation,
-  StructureType, SweepMonitor, TransactionLimits, step } from './g4';
+export { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, CardControls, CodeDelivery, Consents, Devices, DoNotDisturb,
+  G4_COMPONENTS, LanguagePicker, LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SavingsGoal, SessionSummary, SignInOptions, SpendCategories,
+  SpendingChart, StructureSimulation, StructureType, SweepMonitor, TransactionLimits, step } from './g4';
 export type { Bar, Meter, SwitchOption } from './g4';
-export { ApplicationTracker, Certificates, ComposeMessage, DepositCalculator, EReceipts, EligibilityCalculator, Faq, FeedbackRating, G5_COMPONENTS, GoalCalculator, LiveChat,
-  Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification, TermsConsent, TrackRequests, instalment,
-  maturity } from './g5';
+export { ApplicationTracker, Certificates, ComposeMessage, DepositCalculator, EReceipts, EligibilityCalculator, Faq, FeedbackRating, ForexCalculator, G5_COMPONENTS,
+  GoalCalculator, LiveChat, LoanCalculator, Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification,
+  TermsConsent, TrackRequests, instalment, maturity } from './g5';
 export type { ChatMessage, Period, Place } from './g5';
 export { AccountsWidget, BulkUploadWidget, CorporateLimitsWidget, CreditLineWidget, CurrencyPositionWidget, FinancialOverviewWidget, G6_COMPONENTS, LastPaymentsWidget,
   MyLimitsWidget, NotificationsWidget, PendingActionWidget, PendingApprovalsWidget, QuickLinksWidget, ReportsWidget, TradeBillsWidget, TradeInstrumentsWidget, TransactionsWidget,

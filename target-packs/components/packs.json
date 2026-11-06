@@ -11639,6 +11639,61 @@
           "component": "upcoming-bills",
           "source": "target-packs/components/angular/src",
           "export": "bx-upcoming-bills"
+        },
+        {
+          "component": "card-tile",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-card-tile"
+        },
+        {
+          "component": "activate-card",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-activate-card"
+        },
+        {
+          "component": "spend-limit",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-spend-limit"
+        },
+        {
+          "component": "card-controls",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-card-controls"
+        },
+        {
+          "component": "reset-pin",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-reset-pin"
+        },
+        {
+          "component": "biometric",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-biometric"
+        },
+        {
+          "component": "kyc-steps",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-kyc-steps"
+        },
+        {
+          "component": "fraud-alert",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-fraud-alert"
+        },
+        {
+          "component": "savings-goal",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-savings-goal"
+        },
+        {
+          "component": "loan-calculator",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-loan-calculator"
+        },
+        {
+          "component": "currency-converter",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-currency-converter"
         }
       ],
       "checks": {

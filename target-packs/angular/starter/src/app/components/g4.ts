@@ -81,15 +81,16 @@ export abstract class MetersBase extends Part {
   readonly heading = input<string | undefined>(undefined);
   readonly items = input<ReadonlyArray<Meter>>([]);
   readonly unit = input('');
-  /** From this share (%) the bar turns amber. */
-  readonly warnAt = input(90);
+  /** From this share (%) the bar turns amber; leave out for the component's own (90). */
+  readonly warnAt = input<number | undefined>(undefined);
+  protected readonly defaultWarnAt: number = 90;
   protected readonly defaultHeading: string = '';
   protected readonly head = computed(() => this.heading() ?? this.defaultHeading);
   protected readonly rows = computed(() => this.items().map((o) => {
     const over = o.max > 0 && o.value > o.max;
     const share = step(o.value, o.max);
     const text = `${figure(o.value, this.unit())} of ${figure(o.max, this.unit())}` + (over ? `, over by ${figure(Math.round((o.value - o.max) * 100) / 100, this.unit())}` : '');
-    return { label: o.label, text, over, max: o.max, now: Math.min(o.value, o.max), css: `bx-meter-fill bx-w-${share}` + (over ? ' is-over' : share >= this.warnAt() ? ' is-near' : '') };
+    return { label: o.label, text, over, max: o.max, now: Math.min(o.value, o.max), css: `bx-meter-fill bx-w-${share}` + (over ? ' is-over' : share >= (this.warnAt() ?? this.defaultWarnAt) ? ' is-near' : '') };
   }));
 }
 
@@ -102,6 +103,9 @@ export class LendLimits extends MetersBase { protected override readonly default
 /** How much of each limit is used today. */
 @Component({ selector: 'bx-transaction-limits', changeDetection: ChangeDetectionStrategy.OnPush, template: METERS })
 export class TransactionLimits extends MetersBase { protected override readonly defaultHeading = 'Your limits today'; }
+/** A savings goal and how far along it is. */
+@Component({ selector: 'bx-savings-goal', changeDetection: ChangeDetectionStrategy.OnPush, template: METERS })
+export class SavingsGoal extends MetersBase { protected override readonly defaultHeading = 'Savings goal'; }
 
 /* ---------- checks: several settings, each a switch or a checkbox ---------- */
 
@@ -148,6 +152,9 @@ export abstract class ChecksBase extends Part {
 /** Ways to sign in, each on or off. [(value)]. */
 @Component({ selector: 'bx-sign-in-options', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class SignInOptions extends ChecksBase { protected override readonly defaultLabel = 'Sign in with'; }
+/** Where the card can be used, each a switch. [(value)]. */
+@Component({ selector: 'bx-card-controls', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
+export class CardControls extends ChecksBase { protected override readonly defaultLabel = 'Allow'; }
 /** Which alerts to get. [(value)]. */
 @Component({ selector: 'bx-alerts-subscription', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class AlertSubscriptions extends ChecksBase { protected override readonly defaultLabel = 'Tell me about'; }
@@ -220,4 +227,4 @@ export class DoNotDisturb extends SettingBase {
 /** Group 4's components, for a screen's imports. */
 export const G4_COMPONENTS = [SpendingChart, ProgressBar, SpendCategories, ApprovalQueue, ApprovalDetail, ApprovalJourney, Reroute, ModificationNotice, PendingRelease, StructureType,
   AccountStructure, StructureSimulation, LendLimits, SweepMonitor, Profile, SignInOptions, CodeDelivery, Devices, Appearance, LanguagePicker, AlertSubscriptions, DoNotDisturb,
-  Consents, TransactionLimits, SessionSummary] as const;
+  Consents, TransactionLimits, SessionSummary, SavingsGoal, CardControls] as const;

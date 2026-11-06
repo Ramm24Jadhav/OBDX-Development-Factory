@@ -455,6 +455,41 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="faq" aria-labelledby="aw5-20-h"><h2 id="aw5-20-h">FAQ</h2><div class="gate-body">
         <bx-faq [items]="faq" />
       </div></section>
+      <section class="gate" data-component="card-tile" aria-labelledby="ap-card-tile-h"><h2 id="ap-card-tile-h">Card tile</h2><div class="gate-body">
+        <bx-card-tile testID="ct1" label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa" />
+        <bx-card-tile testID="ct2" label="Classic" number="4111111111117710" network="Visa" [frozen]="true" />
+      </div></section>
+      <section class="gate" data-component="activate-card" aria-labelledby="ap-activate-card-h"><h2 id="ap-activate-card-h">Activate card</h2><div class="gate-body">
+        <bx-activate-card testID="ak1" />
+      </div></section>
+      <section class="gate" data-component="spend-limit" aria-labelledby="ap-spend-limit-h"><h2 id="ap-spend-limit-h">Card limits</h2><div class="gate-body">
+        <bx-spend-limit testID="sl1" [value]="2000" prefix="USD" />
+      </div></section>
+      <section class="gate" data-component="card-controls" aria-labelledby="ap-card-controls-h"><h2 id="ap-card-controls-h">Card controls</h2><div class="gate-body">
+        <bx-card-controls testID="cc1" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" />
+      </div></section>
+      <section class="gate" data-component="reset-pin" aria-labelledby="ap-reset-pin-h"><h2 id="ap-reset-pin-h">Reset PIN</h2><div class="gate-body">
+        <bx-reset-pin testID="pn1" />
+      </div></section>
+      <section class="gate" data-component="biometric" aria-labelledby="ap-biometric-h"><h2 id="ap-biometric-h">Biometric</h2><div class="gate-body">
+        <bx-biometric testID="bm1" text="Touch the sensor to approve 1,250.00 to A. Rao." />
+        <bx-biometric testID="bm2" method="face" actionLabel="Use Face ID" state="failed" />
+      </div></section>
+      <section class="gate" data-component="kyc-steps" aria-labelledby="ap-kyc-steps-h"><h2 id="ap-kyc-steps-h">KYC steps</h2><div class="gate-body">
+        <bx-kyc-steps testID="ky1" selectedStep="Selfie" />
+      </div></section>
+      <section class="gate" data-component="fraud-alert" aria-labelledby="ap-fraud-alert-h"><h2 id="ap-fraud-alert-h">Fraud alert</h2><div class="gate-body">
+        <bx-fraud-alert testID="fa1" message="We stopped a payment of 899.00 to Unknown Ltd." />
+      </div></section>
+      <section class="gate" data-component="savings-goal" aria-labelledby="ap-savings-goal-h"><h2 id="ap-savings-goal-h">Savings goal</h2><div class="gate-body">
+        <bx-savings-goal [items]="[{ label: 'Holiday fund', value: 1800, max: 3000 }]" unit="USD" />
+      </div></section>
+      <section class="gate" data-component="loan-calculator" aria-labelledby="ap-loan-calculator-h"><h2 id="ap-loan-calculator-h">Loan calculator</h2><div class="gate-body">
+        <bx-loan-calculator currency="USD" actionLabel="Apply for this loan" />
+      </div></section>
+      <section class="gate" data-component="currency-converter" aria-labelledby="ap-currency-converter-h"><h2 id="ap-currency-converter-h">Currency converter</h2><div class="gate-body">
+        <bx-currency-converter currency="USD" toCurrency="EUR" [rate]="0.92" />
+      </div></section>
       <section class="gate" data-component="financial-overview" aria-labelledby="aw6-0-h"><h2 id="aw6-0-h">Financial overview</h2><div class="gate-body">
         <bx-financial-overview [items]="[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]" />
       </div></section>

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, ApprovalJourney, ApprovalQueue, CodeDelivery, Consents, Devices, DoNotDisturb, LanguagePicker,
   LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SessionSummary, SignInOptions, SpendCategories, SpendingChart, StructureSimulation,
   StructureType, SweepMonitor, TransactionLimits, step } from '../src';
+import { CardControls, SavingsGoal } from '../src';
 import { violations } from './a11y';
 
 async function mount<T>(host: Type<T>) {
@@ -80,5 +81,22 @@ describe('group 4', () => {
     await userEvent.click(getByRole(el, 'switch', { name: 'Low balance' }));
     await settle();
     expect(host.alerts()).toEqual(['Low balance']);
+  });
+});
+
+describe('group 4, the components React and JET have', () => {
+  it('each renders with its sample and passes axe', async () => {
+    @Component({ imports: [CardControls, SavingsGoal], template: `
+      <bx-card-controls [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [(value)]="allowed" />
+      <bx-savings-goal [items]="[{ label: 'Holiday fund', value: 1800, max: 3000 }]" unit="USD" />` })
+    class Host { allowed = signal(['Online payments']); }
+    const { el, host, settle } = await mount(Host);
+    expect(getByRole(el, 'group', { name: 'Allow' })).toBeTruthy();
+    await userEvent.click(getByRole(el, 'switch', { name: 'Use abroad' }));
+    await settle();
+    expect(host.allowed()).toEqual(['Online payments', 'Use abroad']);
+    expect(getByRole(el, 'progressbar', { name: 'Holiday fund' }).getAttribute('aria-valuetext')).toBe('1,800 USD of 3,000 USD');
+    expect(getByRole(el, 'region', { name: 'Savings goal' })).toBeTruthy();
+    expect(await violations(el)).toEqual([]);
   });
 });

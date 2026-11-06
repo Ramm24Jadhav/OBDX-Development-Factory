@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AddOnCard, BlockCard, CardList, CardStatements, ConvertToEmi, DisbursementTimeline, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute, RedeemPoints,
   RepaymentSchedule, SecureConfirmation, SensitiveField, SessionExpiryWarning, masked } from '../src';
+import { ActivateCard, AuthChallenge, CardLimits, CardTile, FraudAlert, KycSteps, ResetPin } from '../src';
 import { violations } from './a11y';
 
 async function mount<T>(host: Type<T>) {
@@ -95,5 +96,47 @@ describe('group 3', () => {
     expect(getByRole(el, 'table', { name: 'Repayment schedule' })).toBeTruthy();
     expect(getAllByRole(el, 'columnheader').map((h) => h.textContent)).toEqual(['Due date', 'Instalment']);
     expect(getByRole(el, 'row', { name: /05 Feb/ }).className).toBe('bx-tr is-overdue');
+  });
+});
+
+describe('group 3, the components React and JET have', () => {
+  it('each renders with its sample and passes axe', async () => {
+    @Component({ imports: [CardTile, ActivateCard, CardLimits, ResetPin, AuthChallenge, KycSteps, FraudAlert], template: `
+      <bx-card-tile label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa" />
+      <bx-card-tile label="Classic" number="4111111111117710" network="Visa" [frozen]="true" />
+      <bx-activate-card />
+      <bx-spend-limit [value]="2000" prefix="USD" />
+      <bx-reset-pin [(value)]="pin" (completed)="done = $event" />
+      <bx-biometric (verify)="verified = verified + 1" />
+      <bx-kyc-steps selectedStep="Selfie" />
+      <bx-fraud-alert message="We stopped a payment of 899.00 to Unknown Ltd." />` })
+    class Host { pin = signal(''); done = ''; verified = 0; }
+    const { el, host, settle } = await mount(Host);
+    expect(getByRole(el, 'img', { name: 'Platinum, Visa, ending 4821' })).toBeTruthy();
+    expect(getByRole(el, 'img', { name: 'Classic, Visa, ending 7710, blocked' })).toBeTruthy();
+    expect(getByText(el, '•••• 4821')).toBeTruthy();
+    expect(getByLabelText(el, 'Enter the activation code').getAttribute('autocomplete')).toBe('one-time-code');
+    expect(getByLabelText(el, 'Daily card limit').getAttribute('max')).toBe('10000');
+    const pin = getByLabelText(el, 'Choose a new PIN') as HTMLInputElement;
+    expect([pin.type, pin.getAttribute('maxlength')]).toEqual(['password', '4']);
+    await userEvent.type(pin, '12a345');
+    await settle();
+    expect([host.pin(), host.done]).toEqual(['1234', '1234']);
+    await userEvent.click(getByRole(el, 'button', { name: 'Use fingerprint' }));
+    expect(host.verified).toBe(1);
+    expect(getByRole(el, 'list', { name: 'Verify your identity' }).querySelector('[aria-current="step"]')?.textContent).toContain('Selfie');
+    expect(getByRole(el, 'alert').textContent).toContain('Was this you?');
+    expect(await violations(el)).toEqual([]);
+  });
+
+  it('a failed biometric says so, and a waiting one does not ask twice', async () => {
+    @Component({ imports: [AuthChallenge], template: `<bx-biometric [state]="state()" (verify)="asked = asked + 1" />` })
+    class Host { state = signal<'ready' | 'waiting' | 'failed'>('failed'); asked = 0; }
+    const { el, host, settle } = await mount(Host);
+    expect(getByRole(el, 'alert').textContent).toContain('That did not work.');
+    host.state.set('waiting');
+    await settle();
+    await userEvent.click(getByRole(el, 'button', { name: 'Use fingerprint' }));
+    expect([host.asked, getByRole(el, 'button', { name: 'Use fingerprint' }).getAttribute('aria-busy')]).toEqual([0, 'true']);
   });
 });
