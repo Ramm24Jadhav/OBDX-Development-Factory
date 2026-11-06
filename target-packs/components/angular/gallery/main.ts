@@ -175,6 +175,35 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-notification-panel testID="np1" [items]="notes" />
         <bx-notification-panel testID="np2" heading="Alerts" [items]="[]" emptyText="No alerts." />
       </div></section>
+      <section class="gate" data-component="danger-button" aria-labelledby="ap-danger-button-h"><h2 id="ap-danger-button-h">Danger button</h2><div class="gate-body">
+        <bx-danger-button testID="db1" label="Cancel payment" />
+        <bx-danger-button testID="db2" label="Cancel payment" [busy]="true" />
+      </div></section>
+      <section class="gate" data-component="filter-chips" aria-labelledby="ap-filter-chips-h"><h2 id="ap-filter-chips-h">Filter chips</h2><div class="gate-body">
+        <bx-filter-chips testID="fc1" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" />
+      </div></section>
+      <section class="gate" data-component="accordion" aria-labelledby="ap-accordion-h"><h2 id="ap-accordion-h">Accordion</h2><div class="gate-body">
+        <bx-accordion testID="ac1" [items]="[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]" />
+      </div></section>
+      <section class="gate" data-component="avatar" aria-labelledby="ap-avatar-h"><h2 id="ap-avatar-h">Avatar</h2><div class="gate-body">
+        <bx-avatar testID="av1" name="Asha Rao" />
+        <bx-avatar testID="av2" name="J. Mehta" size="sm" />
+        <bx-avatar testID="av3" name="S. Kapoor" size="lg" />
+      </div></section>
+      <section class="gate" data-component="skeleton" aria-labelledby="ap-skeleton-h"><h2 id="ap-skeleton-h">Skeleton</h2><div class="gate-body">
+        <bx-skeleton testID="sk1" />
+        <bx-skeleton testID="sk2" shape="card" [lines]="2" />
+        <bx-skeleton testID="sk3" shape="circle" [lines]="1" />
+      </div></section>
+      <section class="gate" data-component="quick-actions" aria-labelledby="ap-quick-actions-h"><h2 id="ap-quick-actions-h">Quick actions</h2><div class="gate-body">
+        <bx-quick-actions testID="qa1" [items]="[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]" />
+      </div></section>
+      <section class="gate" data-component="repeat" aria-labelledby="ap-repeat-h"><h2 id="ap-repeat-h">Repeat</h2><div class="gate-body">
+        <bx-repeat testID="rp1" value="Once" />
+      </div></section>
+      <section class="gate" data-component="upcoming-bills" aria-labelledby="ap-upcoming-bills-h"><h2 id="ap-upcoming-bills-h">Upcoming bills</h2><div class="gate-body">
+        <bx-upcoming-bills testID="ub1" [items]="[{ id: 'b1', title: 'Electricity', meta: 'Due 20 Jan', value: '86.20' }, { id: 'b2', title: 'Card ·· 4821', meta: 'Due 18 Jan', value: '640.00' }]" />
+      </div></section>
       <section class="gate" data-component="account-picker" aria-labelledby="aw2-0-h"><h2 id="aw2-0-h">Account picker</h2><div class="gate-body">
         <bx-account-picker testID="ap1" [options]="accounts" [(value)]="account" />
       </div></section>

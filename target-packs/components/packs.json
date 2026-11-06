@@ -11599,6 +11599,46 @@
           "component": "lattice-loader",
           "source": "target-packs/components/angular/src",
           "export": "bx-lattice-loader"
+        },
+        {
+          "component": "danger-button",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-danger-button"
+        },
+        {
+          "component": "filter-chips",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-filter-chips"
+        },
+        {
+          "component": "accordion",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-accordion"
+        },
+        {
+          "component": "avatar",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-avatar"
+        },
+        {
+          "component": "skeleton",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-skeleton"
+        },
+        {
+          "component": "quick-actions",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-quick-actions"
+        },
+        {
+          "component": "repeat",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-repeat"
+        },
+        {
+          "component": "upcoming-bills",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-upcoming-bills"
         }
       ],
       "checks": {

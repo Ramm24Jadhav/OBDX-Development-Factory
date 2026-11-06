@@ -24,12 +24,12 @@ export type { Option } from './field';
 export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle,
   fileSize } from './forms';
 export type { DateRange } from './forms';
-export { ActionMenu, Alert, Breadcrumb, Divider, EmptyState, ErrorMessage, G1_COMPONENTS, Grid, NotificationPanel, Pagination, SecondaryButton, Sheet, SideNav, Slider, Spinner,
-  StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip } from './g1';
+export { Accordion, ActionMenu, Alert, Avatar, Breadcrumb, DestructiveButton, Divider, EmptyState, ErrorMessage, FilterChips, G1_COMPONENTS, Grid, NotificationPanel,
+  Pagination, SecondaryButton, Sheet, SideNav, Skeleton, Slider, Spinner, StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip } from './g1';
 export type { Item, ItemLike, MenuItem, NavItem, PanelItem, RowItem, StepItem, StepState, TimelineItem, Tone } from './g1';
 export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption, DepositTopUp,
-  DepositsSummary, G2_COMPONENTS, MaturityInstructions, NewDepositForm, PaymentForm, PaymentStatus, TransactionDetails, TransactionFilter, TransactionHistory, TransactionReceipt,
-  TransferSummary, ibanValid, money } from './g2';
+  DepositsSummary, G2_COMPONENTS, MaturityInstructions, NewDepositForm, PaymentForm, PaymentSchedule, PaymentStatus, QuickActions, TransactionDetails, TransactionFilter,
+  TransactionHistory, TransactionReceipt, TransferSummary, UpcomingBills, ibanValid, money } from './g2';
 export type { AccountOption, ChoiceOption, Detail, Payee, Tile, Transaction } from './g2';
 export { AddOnCard, BlockCard, CardList, CardStatements, ConvertToEmi, DisbursementTimeline, G3_COMPONENTS, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute,
   RedeemPoints, RepaymentSchedule, SecureConfirmation, SensitiveField, SessionExpiryWarning, masked } from './g3';

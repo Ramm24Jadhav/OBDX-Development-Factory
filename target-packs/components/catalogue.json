@@ -222,13 +222,14 @@
           "names": {
             "jet-premium": "bx-danger-button",
             "react": "DestructiveButton",
-            "react-native": "DestructiveButton"
+            "react-native": "DestructiveButton",
+            "angular": "bx-danger-button"
           },
           "builtOn": {
             "jet-premium": "bx-button markup (oj-c-button look)",
             "react": "Button",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatButton"
+            "angular": "bx-button"
           },
           "sample": {
             "label": "Cancel payment",
@@ -270,7 +271,8 @@
             ],
             "example": {
               "jet-premium": "<bx-danger-button label=\"Cancel payment\"></bx-danger-button>",
-              "react": "<DestructiveButton testID=\"db1\" label=\"Cancel payment\" />"
+              "react": "<DestructiveButton testID=\"db1\" label=\"Cancel payment\" />",
+              "angular": "<bx-danger-button label=\"Cancel payment\" (action)=\"cancel()\" />"
             }
           }
         },
@@ -1970,13 +1972,14 @@
           "names": {
             "jet-premium": "bx-filter-chips",
             "react": "FilterChips",
-            "react-native": "FilterChips"
+            "react-native": "FilterChips",
+            "angular": "bx-filter-chips"
           },
           "builtOn": {
             "jet-premium": "toggle buttons (aria-pressed)",
             "react": "toggle buttons (aria-pressed)",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatChipListbox"
+            "angular": "toggle buttons (aria-pressed)"
           },
           "sample": {
             "label": "Filter",
@@ -2024,7 +2027,8 @@
             ],
             "example": {
               "jet-premium": "<bx-filter-chips label-hint=\"Filter\" options='[\"Card\", \"Transfer\", \"Bills\", \"Salary\"]' value=\"{{filters}}\"></bx-filter-chips>",
-              "react": "<FilterChips testID=\"fc1\" label=\"Filter\" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />"
+              "react": "<FilterChips testID=\"fc1\" label=\"Filter\" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />",
+              "angular": "<bx-filter-chips label=\"Filter\" [options]=\"['Card', 'Transfer', 'Bills']\" [(value)]=\"filters\" />"
             }
           }
         },
@@ -2351,13 +2355,14 @@
           "names": {
             "jet-premium": "bx-accordion",
             "react": "Accordion",
-            "react-native": "Accordion"
+            "react-native": "Accordion",
+            "angular": "bx-accordion"
           },
           "builtOn": {
             "jet-premium": "disclosure buttons and regions (oj-collapsible look)",
             "react": "disclosure buttons and regions",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatExpansionPanel (CDK Accordion)"
+            "angular": "disclosure buttons and regions"
           },
           "sample": {
             "value": "How long does a transfer take?|Can I cancel a payment?|Are there fees?",
@@ -2399,7 +2404,8 @@
             ],
             "example": {
               "jet-premium": "<bx-accordion items=\"[[faq]]\" expanded=\"{{openFaq}}\"></bx-accordion>",
-              "react": "<Accordion testID=\"ac1\" items={faq} />"
+              "react": "<Accordion testID=\"ac1\" items={faq} />",
+              "angular": "<bx-accordion [items]=\"faq\" [(expanded)]=\"open\" />"
             }
           }
         },
@@ -2763,13 +2769,14 @@
           "names": {
             "jet-premium": "bx-avatar",
             "react": "Avatar",
-            "react-native": "Avatar"
+            "react-native": "Avatar",
+            "angular": "bx-avatar"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "Own (Material has none)"
+            "angular": "standalone component, signal inputs"
           },
           "sample": {
             "value": "AR|JM|SK"
@@ -2804,7 +2811,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-avatar name=\"Asha Rao\"></bx-avatar>",
-              "react": "<Avatar testID=\"av1\" name=\"Asha Rao\" />"
+              "react": "<Avatar testID=\"av1\" name=\"Asha Rao\" />",
+              "angular": "<bx-avatar name=\"Asha Rao\" />"
             }
           }
         }
@@ -3130,13 +3138,14 @@
           "names": {
             "jet-premium": "bx-skeleton",
             "react": "Skeleton",
-            "react-native": "Skeleton"
+            "react-native": "Skeleton",
+            "angular": "bx-skeleton"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "Own, Animated View",
-            "angular": "Own"
+            "angular": "the status role"
           },
           "api": {
             "properties": [
@@ -3168,7 +3177,8 @@
             "events": [],
             "example": {
               "jet-premium": "<bx-skeleton></bx-skeleton>",
-              "react": "<Skeleton testID=\"sk1\" />"
+              "react": "<Skeleton testID=\"sk1\" />",
+              "angular": "<bx-skeleton shape=\"card\" [lines]=\"2\" />"
             }
           }
         },
@@ -4251,13 +4261,14 @@
           "names": {
             "jet-premium": "bx-quick-actions",
             "react": "QuickActions",
-            "react-native": "QuickActions"
+            "react-native": "QuickActions",
+            "angular": "bx-quick-actions"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatButton grid"
+            "angular": "navigation of buttons"
           },
           "sample": {
             "value": "Send|Pay bills|Top up|Scan to pay",
@@ -4293,7 +4304,8 @@
             ],
             "example": {
               "jet-premium": "<bx-quick-actions items='[{\"id\": \"send\", \"label\": \"Send\", \"icon\": \"↗\"}, {\"id\": \"bills\", \"label\": \"Pay bills\", \"icon\": \"≡\"}, {\"id\": \"topup\", \"label\": \"Top up\", \"icon\": \"+\"}, {\"id\": \"scan\", \"label\": \"Scan to pay\", \"icon\": \"⌗\"}]'></bx-quick-actions>",
-              "react": "<QuickActions testID=\"qa1\" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />"
+              "react": "<QuickActions testID=\"qa1\" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />",
+              "angular": "<bx-quick-actions [items]=\"actions\" (action)=\"go($event)\" />"
             }
           }
         }
@@ -4903,13 +4915,14 @@
           "names": {
             "jet-premium": "bx-repeat",
             "react": "PaymentSchedule",
-            "react-native": "PaymentSchedule"
+            "react-native": "PaymentSchedule",
+            "angular": "bx-repeat"
           },
           "builtOn": {
             "jet-premium": "buttons with the radio role (oj-buttonset-one look)",
             "react": "buttons with the radio role",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatButtonToggleGroup"
+            "angular": "buttons with the radio role"
           },
           "sample": {
             "label": "Repeat",
@@ -4957,7 +4970,8 @@
             ],
             "example": {
               "jet-premium": "<bx-repeat value=\"{{repeat}}\"></bx-repeat>",
-              "react": "<PaymentSchedule testID=\"rp1\" value={repeat} onChange={setRepeat} />"
+              "react": "<PaymentSchedule testID=\"rp1\" value={repeat} onChange={setRepeat} />",
+              "angular": "<bx-repeat [(value)]=\"repeat\" />"
             }
           }
         },
@@ -5053,13 +5067,14 @@
           "names": {
             "jet-premium": "bx-upcoming-bills",
             "react": "UpcomingBills",
-            "react-native": "UpcomingBills"
+            "react-native": "UpcomingBills",
+            "angular": "bx-upcoming-bills"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
             "react-native": "React Native View, Pressable, Modal and TextInput",
-            "angular": "MatList"
+            "angular": "standalone component, signal inputs"
           },
           "sample": {
             "extra": "Pay"
@@ -5106,7 +5121,8 @@
             ],
             "example": {
               "jet-premium": "<bx-upcoming-bills items=\"[[bills]]\"></bx-upcoming-bills>",
-              "react": "<UpcomingBills testID=\"ub1\" items={bills} />"
+              "react": "<UpcomingBills testID=\"ub1\" items={bills} />",
+              "angular": "<bx-upcoming-bills [items]=\"bills\" (action)=\"pay($event)\" />"
             }
           }
         }

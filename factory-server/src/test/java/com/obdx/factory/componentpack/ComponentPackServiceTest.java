@@ -91,7 +91,7 @@ class ComponentPackServiceTest {
         assertThat(c.packs().get(1).counts().inTest()).isEqualTo(234);
         assertThat(c.packs().get(2).counts().available()).isZero();
         assertThat(c.packs().get(3).counts().available()).isEqualTo(9);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(202);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(210);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");

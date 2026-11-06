@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { ActionMenu, Alert, Breadcrumb, Divider, EmptyState, ErrorMessage, Grid, NotificationPanel, Pagination, RowItem, SecondaryButton, Sheet, SideNav, Slider,
   Spinner, StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip } from '../src';
+import { Accordion, Avatar, DestructiveButton, FilterChips, Skeleton } from '../src';
 import { violations } from './a11y';
 
 async function mount<T>(host: Type<T>) {
@@ -169,5 +170,36 @@ describe('group 1', () => {
     expect(host.seen?.id).toBe('n1');
     expect(getByRole(el, 'heading', { name: 'Alerts' })).toBeTruthy();
     expect(getByText(el, 'No alerts.')).toBeTruthy();
+  });
+});
+
+describe('group 1, the components React and JET have', () => {
+  it('each renders with its sample and passes axe', async () => {
+    @Component({ imports: [DestructiveButton, FilterChips, Accordion, Avatar, Skeleton], template: `
+      <bx-danger-button label="Cancel payment" (action)="pressed = pressed + 1" />
+      <bx-filter-chips label="Filter" [options]="['Card', 'Transfer', 'Bills']" [(value)]="chips" />
+      <bx-accordion [items]="faq" [(expanded)]="open" />
+      <bx-avatar name="Asha Rao" /><bx-avatar name="J. Mehta" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" size="sm" />
+      <bx-skeleton shape="card" [lines]="2" />` })
+    class Host {
+      pressed = 0;
+      chips = signal(['Card']);
+      open = signal<string[]>([]);
+      faq = [{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }];
+    }
+    const { el, host, settle } = await mount(Host);
+    await userEvent.click(getByRole(el, 'button', { name: 'Cancel payment' }));
+    expect(host.pressed).toBe(1);
+    expect(el.querySelector('bx-danger-button .bx-btn--danger')).not.toBeNull();
+    await userEvent.click(getByRole(el, 'button', { name: 'Bills' }));
+    await settle();
+    expect([host.chips(), getByRole(el, 'button', { name: 'Card' }).getAttribute('aria-pressed')]).toEqual([['Card', 'Bills'], 'true']);
+    await userEvent.click(getByRole(el, 'button', { name: 'Can I cancel a payment?' }));
+    await settle();
+    expect([host.open(), getByRole(el, 'region', { name: 'Can I cancel a payment?' }).textContent]).toEqual([['b'], 'Yes, until it is sent.']);
+    expect(getByRole(el, 'img', { name: 'Asha Rao' }).textContent).toBe('AR');
+    expect(getByRole(el, 'img', { name: 'J. Mehta' }).tagName).toBe('IMG');
+    expect(getByRole(el, 'status').querySelectorAll('.bx-skel-line').length).toBe(2);
+    expect(await violations(el)).toEqual([]);
   });
 });
