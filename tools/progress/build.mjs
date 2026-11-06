@@ -58,7 +58,7 @@ add('G0', 'Gates', 'Premium JET parity on JET 6.2 and the current JET', 'Earlier
 add('Q1', 'Gates', 'Q1 React and Angular parity; React Native screenshots and themes', 'Phone and packs',
   [allPassed('react', 'parity'), allPassed('angular', 'parity'), allPassed('react-native', 'visual') && allPassed('react-native', 'themes')].filter(Boolean).length, 3, 'gates');
 
-const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'M1', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'N1', 'N2', 'N3', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP'];
+const order = ['P0', 'SCR', 'S0', 'S1', 'S2', 'S3', 'S4', 'C0', 'M1', 'W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'N1', 'N2', 'N3', 'TP0', 'T1', 'T2', 'G0', 'Q1', 'SHIP', 'LG0', 'LG1', 'LG2', 'LG3', 'LG4', 'LG5'];
 rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 const asOf = new Date().toISOString();
 for (const r of rows) { r.asOf = asOf; }

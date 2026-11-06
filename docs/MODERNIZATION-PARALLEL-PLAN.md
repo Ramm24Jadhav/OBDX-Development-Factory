@@ -212,3 +212,27 @@ motion spec, so a screen moved to any technology moves the same way.
 | W7 (catalogue web session, after W6) | The five new categories in the web packs |
 | N3 (phone session, after N2) | The motion layer and the five categories in React Native |
 | T1, and the main session for the starters | The same motion in Flutter, JET Core Pack, Vue 3 and Capacitor |
+
+## Liquid glass (added 6 Nov 2026)
+
+A new look for the components, after Apple's Liquid Glass: glass surfaces that bend and tint what is behind them, with
+a bright rim. It is a **design in the Component factory** ("Liquid glass", next to the eight there), so a bank turns it
+on for the workspace's component style; it is not the default, because a bank's forms must stay readable.
+
+**Glisse** (`glisse` on npm, 0.5.0, MIT, by Kelvin Zhang) does this for React: Button, TabBar, SegmentedControl, Menu,
+Input, Slider, Switch and a `Glass` surface over a `data-glisse-backdrop` area, tuned with `--lg-glass-bend`,
+`--lg-glass-dispersion`, `--lg-blur` and `--lg-rim-shine`. It is React only (react and react-dom 18 or later as peers,
+no other dependency). MIT allows using it and adapting its code, with its licence notice kept. Its documentation does
+not say how it renders, which browsers it supports or how it falls back; LG0 settles that from its source first.
+
+| Step | Work |
+|---|---|
+| LG0 · Research and spec | Read Glisse's source: how it draws (SVG displacement in backdrop-filter, canvas or WebGL), what Safari and Firefox show, its cost on a slow laptop. Write the glass spec into the component style (`look: "glass"`: bend, dispersion, blur, rim, tint per theme) and which components take glass: buttons, segmented, tabs, switch, slider, search, menus, cards, sheets, dialogs, toasts, the nav bars; fields keep a solid fill behind their text. Add Glisse to the React pack's dependencies and packs.json with its licence. |
+| LG1 · React | The "Liquid glass" design on every React component: Glisse's own components where it has one, its `Glass` surface for the rest. |
+| LG2 · JET and Angular | The same glass in CSS and SVG in `bx.css` (adapted from Glisse under its MIT licence, the notice kept), on the same `--lg-*` tokens, so JET 6, JET 21 and Angular look the same as React. |
+| LG3 · React Native | React Native has no CSS backdrop, so Glisse does not run there: glass from a blur view (expo-blur, MIT, if approved) with a rim gradient and the same tokens; iOS 26's own Liquid Glass view where the device has it. |
+| LG4 · Other technologies | The starters of Vue 3 and Capacitor use the CSS glass from LG2; JET Core Pack the same CSS; Flutter with its BackdropFilter. |
+| LG5 · Gates | Text on glass passes contrast (axe) in both themes over a busy backdrop; reduced transparency and forced colours fall back to a solid surface; reduced motion keeps the glass still; screenshots per browser; no page drops frames on a slow laptop. |
+
+Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.
+It starts after this round ships (SHIP), so the current gates are not run twice.

@@ -244,6 +244,124 @@
      "done": false
     }
    ]
+  },
+  {
+   "id": "LG0",
+   "track": "Liquid glass",
+   "task": "LG0 Glisse research and the glass spec",
+   "session": "Catalogue (web)",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Glisse source read",
+     "done": false
+    },
+    {
+     "name": "Glass spec in the component style",
+     "done": false
+    },
+    {
+     "name": "Glisse in the React pack with its licence",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "LG1",
+   "track": "Liquid glass",
+   "task": "LG1 Liquid glass in React (Glisse)",
+   "session": "Catalogue (web)",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Glisse components mapped",
+     "done": false
+    },
+    {
+     "name": "Glass surface on the rest",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "LG2",
+   "track": "Liquid glass",
+   "task": "LG2 Liquid glass in JET and Angular (CSS and SVG)",
+   "session": "Catalogue (web)",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "JET 6 and JET 21",
+     "done": false
+    },
+    {
+     "name": "Angular",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "LG3",
+   "track": "Liquid glass",
+   "task": "LG3 Liquid glass in React Native",
+   "session": "Catalogue (phone)",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Blur view glass",
+     "done": false
+    },
+    {
+     "name": "iOS 26 glass where available",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "LG4",
+   "track": "Liquid glass",
+   "task": "LG4 Liquid glass in the other technologies",
+   "session": "Main",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Vue 3 and Capacitor",
+     "done": false
+    },
+    {
+     "name": "JET Core Pack",
+     "done": false
+    },
+    {
+     "name": "Flutter",
+     "done": false
+    }
+   ]
+  },
+  {
+   "id": "LG5",
+   "track": "Liquid glass",
+   "task": "LG5 Liquid glass gates",
+   "session": "Main",
+   "unit": "steps",
+   "items": [
+    {
+     "name": "Contrast on glass",
+     "done": false
+    },
+    {
+     "name": "Reduced transparency and forced colours",
+     "done": false
+    },
+    {
+     "name": "Screenshots per browser",
+     "done": false
+    },
+    {
+     "name": "Frame rate",
+     "done": false
+    }
+   ]
   }
  ]
 }
