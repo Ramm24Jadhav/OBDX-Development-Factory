@@ -218,6 +218,52 @@ class ScreenScaffolderTest {
     }
 
     @Test
+    void scaffoldsANativeScreenForAndroidAndIos() throws Exception {
+        TargetPack pack = packs.find("native").orElseThrow();
+        String app = "mobile-native/";
+        ScreenScaffolder.Scaffold kotlin = ScreenScaffolder.forFile(pack, "mobile-native",
+                app + "android/app/src/main/java/com/bank/obdx/screens/payments/FundTransferScreen.kt", List.of(TRANSFER), null).orElseThrow();
+        ScreenScaffolder.Scaffold swift = ScreenScaffolder.forFile(pack, "mobile-native",
+                app + "ios/Sources/ObdxApp/Screens/payments/FundTransferView.swift", List.of(TRANSFER), null).orElseThrow();
+        // Both apps carry every field and action of the approved design
+        assertThat(kotlin.expectedIds()).isEqualTo(swift.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed",
+                "alerts", "save", "fee", "count", "ref", "submit", "cancel", "help");
+        assertThat(kotlin.content()).contains("package com.bank.obdx.screens.payments", "fun FundTransferScreen(onAction: (String) -> Unit = {}, onDone: () -> Unit = {}) {",
+                "val purposeOptions = listOf(\"Family support\", \"Rent\", \"Other's \\\"bill\\\"\")", "\"amount\" to null,", "\"alerts\" to listOf(\"SMS\"),",
+                "\"savePayee\" to true,", "\"reference\" to FieldRule(label = t(\"fundTransfer.reference\"), required = true, maxLength = 16),",
+                "BxSection(title = t(\"fundTransfer.detailsSection\"), columns = 2) {", "BxAmountField(", "testTag = \"amount\",",
+                "value = form.number(\"amount\"),", "onValueChange = { form.set(\"amount\", it) },", "error = form.error(\"amount\"),",
+                "value = form.display(\"fee\"),", "readOnly = true,", "maxLength = 35,",
+                "BxButton(testTag = \"submit\", label = t(\"fundTransfer.submit\"), variant = BxVariant.Primary, busy = busy, onClick = { submit() })",
+                "onClick = { onAction(\"cancel\") })", "variant = BxVariant.Link")
+                .doesNotContain("className", "ValueKey", "testID").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        assertThat(swift.content()).contains("public struct FundTransferView: View {", "private let purposeOptions: [String] = [\"Family support\", \"Rent\", \"Other's \\\"bill\\\"\"]",
+                "\"amount\": Double?.none,", "\"alerts\": [\"SMS\"] as [String],", "\"savePayee\": true,",
+                "\"reference\": FieldRule(label: t(\"fundTransfer.reference\"), required: true, maxLength: 16),",
+                "BxSection(title: t(\"fundTransfer.detailsSection\"), columns: 2) {", "testID: \"amount\",", "value: form.number(\"amount\"),",
+                "error: form.error(\"amount\"),", "value: form.display(\"fee\")\n", "options: purposeOptions,",
+                "BxButton(testID: \"submit\", label: t(\"fundTransfer.submit\"), variant: .primary, busy: busy, action: submit)",
+                "action: { onAction(\"cancel\") })")
+                .doesNotContain("onValueChange", "testTag", "ValueKey").doesNotContainPattern("\\{\\{\\w+(}}|:)").doesNotContainPattern(",\\n\\s*\\)");
+        ScreenScaffolder.Scaffold kotlinTest = ScreenScaffolder.forFile(pack, "mobile-native",
+                app + "android/app/src/test/java/com/bank/obdx/screens/payments/FundTransferScreenTest.kt", List.of(TRANSFER), null).orElseThrow();
+        ScreenScaffolder.Scaffold swiftTest = ScreenScaffolder.forFile(pack, "mobile-native",
+                app + "ios/Tests/ObdxAppTests/payments/FundTransferViewTests.swift", List.of(TRANSFER), null).orElseThrow();
+        assertThat(kotlinTest.content()).contains("class FundTransferScreenTest {", "listOf(\"fromAccount\", \"amount\"", "assertCountEquals(3)")
+                .doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        assertThat(swiftTest.content()).contains("final class FundTransferViewTests: XCTestCase {", "[\"fromAccount\", \"amount\"", "FundTransferView()")
+                .doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        assertThat(ScreenScaffolder.kotlinQuote("Pay $5 to \"A\"")).isEqualTo("\"Pay \\$5 to \\\"A\\\"\"");
+        assertThat(ScreenScaffolder.swiftQuote("Pay $5 to \"A\"")).isEqualTo("\"Pay $5 to \\\"A\\\"\"");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "native/android/app/src/main/java/com/bank/obdx/screens/payments/FundTransferScreen.kt"), kotlin.content());
+            write(Path.of(out, "native/ios/Sources/ObdxApp/Screens/payments/FundTransferView.swift"), swift.content());
+            write(Path.of(out, "native/shared/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("shared/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
+    @Test
     void scaffoldsACapacitorPageAsTheReactOne() {
         TargetPack capacitor = packs.find("capacitor").orElseThrow();
         TargetPack react = packs.find("react").orElseThrow();

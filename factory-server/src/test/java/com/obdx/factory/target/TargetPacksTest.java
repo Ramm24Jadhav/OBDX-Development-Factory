@@ -22,7 +22,17 @@ class TargetPacksTest {
     void builtInPacksLoadWithStarterProjects() {
         TargetPacks packs = TargetPacks.builtIn();
         assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter", "jet-core-pack", "vue",
-                "capacitor");
+                "capacitor", "native");
+        TargetPack nativePack = packs.find("native").orElseThrow();
+        assertThat(nativePack.isNative()).isTrue();
+        assertThat(nativePack.structure()).containsKeys("screen", "test", "screenIos", "testIos", "apiIos", "navigationIos");
+        assertThat(nativePack.templates()).containsKeys("screen", "test", "screenIos", "testIos");
+        assertThat(nativePack.starter()).containsKeys("Package.swift", "android/app/build.gradle.kts", "android/app/src/main/java/com/bank/obdx/api/ApiClient.kt",
+                "android/app/src/main/java/com/bank/obdx/components/Fields.kt", "ios/Sources/ObdxApp/Components/Fields.swift",
+                "ios/Sources/ObdxApp/Api/ApiClient.swift", "shared/i18n/en.json");
+        assertThat(nativePack.rules()).extracting(r -> r.id()).contains("native-no-webview", "native-no-secrets-on-device", "native-no-cleartext");
+        assertThat(nativePack.recipeFor("mobile-native/ios/Sources/ObdxApp/Screens/payments/FundTransferView.swift", "create", "ui"))
+                .hasValueSatisfying(m -> assertThat(m.part().id()).isEqualTo("screenIos"));
         TargetPack vue = packs.find("vue").orElseThrow();
         assertThat(vue.isVue()).isTrue();
         assertThat(vue.structure().get("screen")).isEqualTo("src/screens/{module}/{Screen}Page.vue");

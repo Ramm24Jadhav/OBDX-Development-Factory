@@ -41,9 +41,9 @@ public class TechnologySettings {
                            String savedBy, OffsetDateTime savedAt) {
     }
 
-    static final List<String> TECHNOLOGIES = List.of("react", "react-native", "angular", "flutter", "jet-core-pack", "vue", "capacitor");
+    static final List<String> TECHNOLOGIES = List.of("react", "react-native", "angular", "flutter", "jet-core-pack", "vue", "capacitor", "native");
     private static final Map<String, String> NAMES = Map.of("react", "React", "react-native", "React Native", "angular", "Angular", "flutter", "Flutter",
-            "jet-core-pack", "JET Core Pack", "vue", "Vue 3", "capacitor", "Capacitor");
+            "jet-core-pack", "JET Core Pack", "vue", "Vue 3", "capacitor", "Capacitor", "native", "Swift and Kotlin");
     /** The defaults that do not come from the pack files, per technology: build, unit tests, journey tests, Jenkins job. */
     private static final Map<String, String[]> DEFAULTS = Map.of(
             "react", new String[]{"Vite", "Vitest and Testing Library", "Playwright", "modernize-react"},
@@ -52,7 +52,8 @@ public class TechnologySettings {
             "flutter", new String[]{"Flutter (Gradle and Xcode)", "flutter_test widget tests", "integration_test on a device", "modernize-flutter"},
             "jet-core-pack", new String[]{"ojet build (RequireJS)", "Jest with the JET preset", "Playwright", "modernize-jet"},
             "vue", new String[]{"Vite (vue-tsc)", "Vitest and Vue Test Utils", "Playwright", "modernize-vue"},
-            "capacitor", new String[]{"Vite and Capacitor (Gradle and Xcode)", "Vitest and Testing Library", "Appium on a device", "modernize-capacitor"});
+            "capacitor", new String[]{"Vite and Capacitor (Gradle and Xcode)", "Vitest and Testing Library", "Appium on a device", "modernize-capacitor"},
+            "native", new String[]{"Gradle and Xcode", "Robolectric and XCTest with ViewInspector", "Espresso and XCUITest on devices", "modernize-native"});
     private static final String CHOOSE = "Choose one of: " + String.join(", ", TECHNOLOGIES.stream().map(NAMES::get).toList()) + ".";
     static final List<String> EDITABLE = List.of("project.library", "project.language", "project.build", "project.folder", "rules.lint", "rules.accessibility",
             "rules.labels", "rules.validation", "tests.unit", "tests.journey", "tests.job", "tests.coverage");
@@ -98,7 +99,8 @@ public class TechnologySettings {
                 new Row("project.pack", "Target pack", target.map(p -> p.id() + " (" + p.rules().size() + " rules, " + p.templates().size() + " templates)").orElse("Not ready yet"),
                         false, false, true, "pack"),
                 edit.apply("project.library", components == null ? "The pack's starter components" : components.packageName() + " " + components.version()),
-                edit.apply("project.language", "flutter".equals(tech) ? "Dart, strict casts" : "TypeScript, strict"), edit.apply("project.build", d[0]), edit.apply("project.folder", folder))));
+                edit.apply("project.language", "flutter".equals(tech) ? "Dart, strict casts"
+                        : "native".equals(tech) ? "Kotlin and Swift 6, strict concurrency" : "TypeScript, strict"), edit.apply("project.build", d[0]), edit.apply("project.folder", folder))));
         groups.add(new Group("obdx", "OBDX connection", "How the new UI talks to OBDX. Fixed: changing them would break the bank's session, security or services.", List.of(
                 new Row("obdx.services", "Services", "/digx/v1, /digx/ext, /digx-auth", false, true, true, "fixed"),
                 new Row("obdx.session", "Session", "Secure, HttpOnly cookie through Oracle HTTP Server", false, true, false, "fixed"),

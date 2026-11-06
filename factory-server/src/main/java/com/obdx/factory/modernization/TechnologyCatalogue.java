@@ -75,7 +75,9 @@ public class TechnologyCatalogue {
             String readiness = target.isPresent() ? "ready" : components != null ? "in-progress" : "planned";
             List<String[]> versions = triples(t.path("packVersions"));
             PackFacts facts = target.map(p -> {
-                List<String[]> stack = p.starter().containsKey("pubspec.yaml") ? pubspec(p.starter().get("pubspec.yaml")) : stack(p.starter().get("package.json"));
+                List<String[]> stack = p.starter().containsKey("pubspec.yaml") ? pubspec(p.starter().get("pubspec.yaml"))
+                        : p.starter().containsKey("Package.swift") ? nativeStack(p.starter().get("android/build.gradle.kts"), p.starter().get("Package.swift"))
+                        : stack(p.starter().get("package.json"));
                 return new PackFacts(p.id(), p.title(), p.description(), p.rules().size(), p.templates().size(), p.starter().size(),
                         p.components().size(), p.defaultAppFolder(), p.rules().stream().map(com.obdx.factory.pack.PackRule::title).limit(12).toList(),
                         stack, build(stack), p.templates().keySet().stream().sorted().toList(), versions);
@@ -127,9 +129,22 @@ public class TechnologyCatalogue {
         return out;
     }
 
+    /** A native starter's Kotlin (from the Android build) and Swift (from the Swift package) versions. */
+    static List<String[]> nativeStack(String gradle, String packageSwift) {
+        List<String[]> out = new ArrayList<>();
+        java.util.regex.Matcher kotlin = java.util.regex.Pattern.compile("org\\.jetbrains\\.kotlin\\.android\"\\)\\s*version\\s*\"([0-9.]+)\"")
+                .matcher(gradle == null ? "" : gradle);
+        out.add(new String[]{"Kotlin", kotlin.find() ? kotlin.group(1) : "2"});
+        out.add(new String[]{"Jetpack Compose", "Material 3"});
+        java.util.regex.Matcher swift = java.util.regex.Pattern.compile("swift-tools-version:\\s*([0-9.]+)").matcher(packageSwift == null ? "" : packageSwift);
+        out.add(new String[]{"Swift", swift.find() ? swift.group(1) : "6"});
+        out.add(new String[]{"SwiftUI", "iOS 17"});
+        return out;
+    }
+
     static String build(List<String[]> stack) {
         List<String> names = stack.stream().map(s -> s[0]).toList();
-        return names.contains("Flutter") ? "Flutter (Gradle and Xcode)" : names.contains("Oracle JET") ? "ojet build" : names.contains("Expo") ? "Expo (Gradle and Xcode)"
+        return names.contains("Swift") ? "Gradle and Xcode" : names.contains("Flutter") ? "Flutter (Gradle and Xcode)" : names.contains("Oracle JET") ? "ojet build" : names.contains("Expo") ? "Expo (Gradle and Xcode)"
                 : names.contains("Capacitor") ? "Vite and Capacitor (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
     }
 
