@@ -103,6 +103,74 @@ const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark
       <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
         <bx-document-upload testID="du1" label="Proof of address" [(value)]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" />
       </div></section>
+      <section class="gate" data-component="secondary-button" aria-labelledby="aw1-0-h"><h2 id="aw1-0-h">Secondary button</h2><div class="gate-body">
+        <bx-secondary-button testID="sb1" label="Save for later" />
+        <bx-secondary-button testID="sb2" label="Save for later" [disabled]="true" />
+      </div></section>
+      <section class="gate" data-component="savings-slider" aria-labelledby="aw1-1-h"><h2 id="aw1-1-h">Savings slider</h2><div class="gate-body">
+        <bx-savings-slider testID="sl1" label="Monthly saving" [(value)]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" />
+      </div></section>
+      <section class="gate" data-component="segmented" aria-labelledby="aw1-2-h"><h2 id="aw1-2-h">Segmented control</h2><div class="gate-body">
+        <bx-segmented testID="sg1" label="Show" [options]="['Day', 'Week', 'Month']" [(value)]="show" />
+      </div></section>
+      <section class="gate" data-component="action-menu" aria-labelledby="aw1-3-h"><h2 id="aw1-3-h">Action menu</h2><div class="gate-body">
+        <bx-action-menu testID="am1" [items]="['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]" />
+      </div></section>
+      <section class="gate" data-component="stepper" aria-labelledby="aw1-4-h"><h2 id="aw1-4-h">Stepper</h2><div class="gate-body">
+        <bx-stepper testID="st1" [steps]="['Details', 'Review', 'Done']" selectedStep="Review" />
+      </div></section>
+      <section class="gate" data-component="breadcrumb" aria-labelledby="aw1-5-h"><h2 id="aw1-5-h">Breadcrumb</h2><div class="gate-body">
+        <bx-breadcrumb testID="bc1" [items]="['Accounts', 'Savings ·· 4821', 'Statement']" />
+      </div></section>
+      <section class="gate" data-component="side-nav" aria-labelledby="aw1-6-h"><h2 id="aw1-6-h">Side navigation</h2><div class="gate-body">
+        <bx-side-nav testID="sn1" [items]="['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]" [(selection)]="navSel" />
+      </div></section>
+      <section class="gate" data-component="sheet" aria-labelledby="aw1-7-h"><h2 id="aw1-7-h">Sheet</h2><div class="gate-body">
+        <bx-secondary-button label="Filter" (action)="sheet.set(true)" />
+        <bx-sheet testID="sh1" [(open)]="sheet" heading="Filter transactions"><p>Choose what to show.</p></bx-sheet>
+      </div></section>
+      <section class="gate" data-component="grid" aria-labelledby="aw1-8-h"><h2 id="aw1-8-h">Grid</h2><div class="gate-body">
+        <bx-grid testID="gr1" [columns]="3"><bx-card heading="Savings" /><bx-card heading="Current" /><bx-card heading="Deposits" /></bx-grid>
+      </div></section>
+      <section class="gate" data-component="divider" aria-labelledby="aw1-9-h"><h2 id="aw1-9-h">Divider</h2><div class="gate-body">
+        <bx-divider testID="dv1" />
+        <bx-divider testID="dv2" label="Or" />
+      </div></section>
+      <section class="gate" data-component="pagination" aria-labelledby="aw1-10-h"><h2 id="aw1-10-h">Pagination</h2><div class="gate-body">
+        <bx-pagination testID="pg1" [(page)]="page" [pageCount]="4" />
+      </div></section>
+      <section class="gate" data-component="status-badge" aria-labelledby="aw1-11-h"><h2 id="aw1-11-h">Status badge</h2><div class="gate-body">
+        <bx-status-badge testID="sb1" label="Completed" tone="success" />
+        <bx-status-badge label="Pending" tone="warning" />
+        <bx-status-badge label="Rejected" tone="danger" />
+      </div></section>
+      <section class="gate" data-component="timeline" aria-labelledby="aw1-12-h"><h2 id="aw1-12-h">Timeline</h2><div class="gate-body">
+        <bx-timeline testID="tl1" [items]="[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]" />
+      </div></section>
+      <section class="gate" data-component="spinner" aria-labelledby="aw1-13-h"><h2 id="aw1-13-h">Spinner</h2><div class="gate-body">
+        <bx-spinner testID="sp1" />
+        <bx-spinner testID="sp2" size="lg" label="Loading accounts" />
+      </div></section>
+      <section class="gate" data-component="empty-state" aria-labelledby="aw1-14-h"><h2 id="aw1-14-h">Empty state</h2><div class="gate-body">
+        <bx-empty-state testID="es1" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" />
+      </div></section>
+      <section class="gate" data-component="tooltip" aria-labelledby="aw1-15-h"><h2 id="aw1-15-h">Tooltip</h2><div class="gate-body">
+        <bx-tooltip testID="tt1" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." />
+      </div></section>
+      <section class="gate" data-component="alert-banner" aria-labelledby="aw1-16-h"><h2 id="aw1-16-h">Alert banner</h2><div class="gate-body">
+        <bx-alert-banner testID="ab1" message="Transfers after 6 pm arrive the next working day." />
+        <bx-alert-banner testID="ab2" severity="warning" message="Your session ends in 2 minutes." [dismissible]="true" />
+      </div></section>
+      <section class="gate" data-component="error-message" aria-labelledby="aw1-17-h"><h2 id="aw1-17-h">Error message</h2><div class="gate-body">
+        <bx-error-message testID="em1" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" />
+      </div></section>
+      <section class="gate" data-component="success-message" aria-labelledby="aw1-18-h"><h2 id="aw1-18-h">Success message</h2><div class="gate-body">
+        <bx-success-message testID="sm1" message="Payment sent. Reference FX-20391." actionLabel="View receipt" />
+      </div></section>
+      <section class="gate" data-component="notification-panel" aria-labelledby="aw1-19-h"><h2 id="aw1-19-h">Notification panel</h2><div class="gate-body">
+        <bx-notification-panel testID="np1" [items]="notes" />
+        <bx-notification-panel testID="np2" heading="Alerts" [items]="[]" emptyText="No alerts." />
+      </div></section>
     </main>
   `,
 })
@@ -116,6 +184,12 @@ class Gallery {
   day = signal('2026-11-12');
   tab = signal('c');
   selected = signal<readonly string[]>(['t2']);
+  saving = signal(5000);
+  show = signal('Week');
+  navSel = signal('Accounts');
+  sheet = signal(false);
+  page = signal(2);
+  notes = [{ id: 'n1', title: 'Card payment due', meta: 'Due 18 Jan', value: '640.00', unread: true }, { id: 'n2', title: 'New statement ready', meta: 'Today', value: 'Dec' }];
   remarks = signal('Rent for November');
   secret = signal('s3cret-pass');
   copies = signal<number | null>(2);

@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06T09:47:09.259Z",
+ "generated": "2026-11-06T10:24:01.924Z",
  "rows": [
   {
    "id": "P0",
@@ -11,7 +11,7 @@
    "unit": "steps",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "SCR",
@@ -23,7 +23,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Work; being brought to the boards one by one",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "S0",
@@ -35,7 +35,7 @@
    "unit": "parts",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "S1",
@@ -47,7 +47,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "S2",
@@ -59,7 +59,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "C0",
@@ -95,7 +95,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "M1",
@@ -107,19 +107,19 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W1",
    "track": "Components",
    "task": "W1 Foundation rest, layout, data, feedback (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 25,
    "total": 25,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W2",
@@ -131,7 +131,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W3",
@@ -143,7 +143,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W4",
@@ -155,7 +155,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W5",
@@ -167,7 +167,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W6",
@@ -179,7 +179,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "W7",
@@ -191,31 +191,31 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "N1",
    "track": "Components",
    "task": "N1 React Native, groups 1 to 3",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 71,
    "total": 71,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "N2",
    "track": "Components",
    "task": "N2 React Native, groups 4 to 6",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 64,
    "total": 64,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "N3",
@@ -227,7 +227,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "TP0",
@@ -239,7 +239,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "T1",
@@ -251,7 +251,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "T2",
@@ -263,19 +263,19 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "G0",
    "track": "Gates",
    "task": "Premium JET parity on JET 6.2 and the current JET",
    "session": "Earlier",
-   "done": 1,
+   "done": 0,
    "total": 1,
    "unit": "gates",
-   "status": "Done",
+   "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "Q1",
@@ -287,7 +287,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   },
   {
    "id": "SHIP",
@@ -299,7 +299,7 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T09:47:09.259Z"
+   "asOf": "2026-11-06T10:24:01.924Z"
   }
  ]
 }

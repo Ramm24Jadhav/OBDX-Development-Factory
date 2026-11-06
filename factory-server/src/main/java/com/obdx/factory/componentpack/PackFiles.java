@@ -15,7 +15,7 @@ import java.util.Optional;
 public final class PackFiles {
 
     /** The files of the premium JET pack (target-packs/components/jet-premium/bx). */
-    public static final List<String> JET_PREMIUM = List.of("bx.js", "bx-core.js", "bx-fields.js", "bx-elements.js", "bx-forms.js", "bx.css");
+    public static final List<String> JET_PREMIUM = List.of("bx.js", "bx-core.js", "bx-fields.js", "bx-elements.js", "bx-forms.js", "bx-motion.js", "bx-g1.js", "bx.css");
 
     private static final String BASE = "/target-packs/components/jet-premium/bx/";
 

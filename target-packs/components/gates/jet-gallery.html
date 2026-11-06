@@ -97,6 +97,94 @@
     <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
       <bx-document-upload label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload>
     </div></section>
+    <section class="gate" data-component="secondary-button" aria-labelledby="w1-0-h"><h2 id="w1-0-h">Secondary button</h2><div class="gate-body">
+      <bx-secondary-button label="Save for later"></bx-secondary-button>
+      <bx-secondary-button label="Save for later" disabled="true"></bx-secondary-button>
+    </div></section>
+    <section class="gate" data-component="danger-button" aria-labelledby="w1-1-h"><h2 id="w1-1-h">Danger button</h2><div class="gate-body">
+      <bx-danger-button label="Cancel payment"></bx-danger-button>
+      <bx-danger-button label="Cancel payment" busy="true"></bx-danger-button>
+    </div></section>
+    <section class="gate" data-component="savings-slider" aria-labelledby="w1-2-h"><h2 id="w1-2-h">Savings slider</h2><div class="gate-body">
+      <bx-savings-slider label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider>
+    </div></section>
+    <section class="gate" data-component="segmented" aria-labelledby="w1-3-h"><h2 id="w1-3-h">Segmented control</h2><div class="gate-body">
+      <bx-segmented label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented>
+    </div></section>
+    <section class="gate" data-component="filter-chips" aria-labelledby="w1-4-h"><h2 id="w1-4-h">Filter chips</h2><div class="gate-body">
+      <bx-filter-chips label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips>
+    </div></section>
+    <section class="gate" data-component="action-menu" aria-labelledby="w1-5-h"><h2 id="w1-5-h">Action menu</h2><div class="gate-body">
+      <bx-action-menu items='["Download statement", "Set a nickname", {"value": "close", "label": "Close the account", "danger": true}]'></bx-action-menu>
+    </div></section>
+    <section class="gate" data-component="accordion" aria-labelledby="w1-6-h"><h2 id="w1-6-h">Accordion</h2><div class="gate-body">
+      <bx-accordion items="[[faq]]" expanded="{{openFaq}}"></bx-accordion>
+    </div></section>
+    <section class="gate" data-component="stepper" aria-labelledby="w1-7-h"><h2 id="w1-7-h">Stepper</h2><div class="gate-body">
+      <bx-stepper steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper>
+    </div></section>
+    <section class="gate" data-component="breadcrumb" aria-labelledby="w1-8-h"><h2 id="w1-8-h">Breadcrumb</h2><div class="gate-body">
+      <bx-breadcrumb items="[[crumbs]]"></bx-breadcrumb>
+    </div></section>
+    <section class="gate" data-component="side-nav" aria-labelledby="w1-9-h"><h2 id="w1-9-h">Side navigation</h2><div class="gate-body">
+      <bx-side-nav items='["Accounts", "Payments", {"id": "Cards", "label": "Cards", "badge": 2}]' selection="{{navSel}}"></bx-side-nav>
+    </div></section>
+    <section class="gate" data-component="sheet" aria-labelledby="w1-10-h"><h2 id="w1-10-h">Sheet</h2><div class="gate-body">
+      <bx-secondary-button label="Filter" on-oj-action="[[openSheet]]"></bx-secondary-button>
+      <bx-sheet heading="Filter transactions" open="{{sheetOpen}}"><p>Choose what to show.</p></bx-sheet>
+    </div></section>
+    <section class="gate" data-component="grid" aria-labelledby="w1-11-h"><h2 id="w1-11-h">Grid</h2><div class="gate-body">
+      <bx-grid columns="3"><bx-card heading="Savings"></bx-card><bx-card heading="Current"></bx-card><bx-card heading="Deposits"></bx-card></bx-grid>
+    </div></section>
+    <section class="gate" data-component="divider" aria-labelledby="w1-12-h"><h2 id="w1-12-h">Divider</h2><div class="gate-body">
+      <bx-divider></bx-divider>
+      <bx-divider label="Or"></bx-divider>
+    </div></section>
+    <section class="gate" data-component="avatar" aria-labelledby="w1-13-h"><h2 id="w1-13-h">Avatar</h2><div class="gate-body">
+      <bx-avatar name="Asha Rao"></bx-avatar>
+      <bx-avatar name="J. Mehta" size="sm"></bx-avatar>
+      <bx-avatar name="S. Kapoor" size="lg"></bx-avatar>
+    </div></section>
+    <section class="gate" data-component="pagination" aria-labelledby="w1-14-h"><h2 id="w1-14-h">Pagination</h2><div class="gate-body">
+      <bx-pagination page="{{page}}" page-count="4"></bx-pagination>
+    </div></section>
+    <section class="gate" data-component="status-badge" aria-labelledby="w1-15-h"><h2 id="w1-15-h">Status badge</h2><div class="gate-body">
+      <bx-status-badge label="Completed" tone="success"></bx-status-badge>
+      <bx-status-badge label="Pending" tone="warning"></bx-status-badge>
+      <bx-status-badge label="Rejected" tone="danger"></bx-status-badge>
+    </div></section>
+    <section class="gate" data-component="timeline" aria-labelledby="w1-16-h"><h2 id="w1-16-h">Timeline</h2><div class="gate-body">
+      <bx-timeline items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline>
+    </div></section>
+    <section class="gate" data-component="spinner" aria-labelledby="w1-17-h"><h2 id="w1-17-h">Spinner</h2><div class="gate-body">
+      <bx-spinner></bx-spinner>
+      <bx-spinner size="lg" label="Loading accounts"></bx-spinner>
+    </div></section>
+    <section class="gate" data-component="skeleton" aria-labelledby="w1-18-h"><h2 id="w1-18-h">Skeleton</h2><div class="gate-body">
+      <bx-skeleton></bx-skeleton>
+      <bx-skeleton shape="card" lines="2"></bx-skeleton>
+      <bx-skeleton shape="circle" lines="1"></bx-skeleton>
+    </div></section>
+    <section class="gate" data-component="empty-state" aria-labelledby="w1-19-h"><h2 id="w1-19-h">Empty state</h2><div class="gate-body">
+      <bx-empty-state heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state>
+    </div></section>
+    <section class="gate" data-component="tooltip" aria-labelledby="w1-20-h"><h2 id="w1-20-h">Tooltip</h2><div class="gate-body">
+      <bx-tooltip label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip>
+    </div></section>
+    <section class="gate" data-component="alert-banner" aria-labelledby="w1-21-h"><h2 id="w1-21-h">Alert banner</h2><div class="gate-body">
+      <bx-alert-banner message="Transfers after 6 pm arrive the next working day."></bx-alert-banner>
+      <bx-alert-banner severity="warning" message="Your session ends in 2 minutes." dismissible="true"></bx-alert-banner>
+    </div></section>
+    <section class="gate" data-component="error-message" aria-labelledby="w1-22-h"><h2 id="w1-22-h">Error message</h2><div class="gate-body">
+      <bx-error-message message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message>
+    </div></section>
+    <section class="gate" data-component="success-message" aria-labelledby="w1-23-h"><h2 id="w1-23-h">Success message</h2><div class="gate-body">
+      <bx-success-message message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message>
+    </div></section>
+    <section class="gate" data-component="notification-panel" aria-labelledby="w1-24-h"><h2 id="w1-24-h">Notification panel</h2><div class="gate-body">
+      <bx-notification-panel items="[[notes]]"></bx-notification-panel>
+      <bx-notification-panel heading="Alerts" items="[[[]]]" empty-text="No alerts."></bx-notification-panel>
+    </div></section>
   </main>
   <script>
     // The JET release to load: its libraries are where npm put them
@@ -135,6 +223,7 @@
           speed: ko.observable('N'),
           day: ko.observable('2026-11-12'),
           tab: ko.observable('c'),
+          saving: ko.observable(5000), show: ko.observable('Week'), filters: ko.observableArray(['Card']), crumbs: ['Accounts', 'Savings ·· 4821', 'Statement'], navSel: ko.observable('Accounts'), sheetOpen: ko.observable(false), openSheet: function () { vm.sheetOpen(true); }, page: ko.observable(2), faq: [{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }], openFaq: ko.observableArray(['a']), notes: [{ id: 'n1', title: 'Card payment due', meta: 'Due 18 Jan', value: '640.00', unread: true }, { id: 'n2', title: 'New statement ready', meta: 'Today', value: 'Dec' }],
           remarks: ko.observable('Rent for November'),
           secret: ko.observable('s3cret-pass'),
           copies: ko.observable(2),

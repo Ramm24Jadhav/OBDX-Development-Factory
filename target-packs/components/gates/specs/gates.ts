@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Page, expect, test } from '@playwright/test';
 import { createRequire } from 'node:module';
 
@@ -11,6 +12,9 @@ export const FOUNDATION = ['button', 'icon-button', 'text-field', 'amount', 'sel
 /** The forms wave (0.2.0), in the galleries of the packs that have it. */
 export const FORMS = ['text-area', 'password', 'number-input', 'currency-picker', 'multi-select', 'switch', 'date-range', 'search', 'autocomplete',
   'document-upload'] as const;
+
+/** Group 1 of the catalogue, in the galleries of the web packs. */
+export const G1 = ["secondary-button","danger-button","savings-slider","segmented","filter-chips","action-menu","accordion","stepper","breadcrumb","side-nav","sheet","grid","divider","avatar","pagination","status-badge","timeline","spinner","skeleton","empty-state","tooltip","alert-banner","error-message","success-message","notification-panel"] as const;
 
 export const VIEWPORTS = { phone: { width: 375, height: 812 }, tablet: { width: 768, height: 1024 }, laptop: { width: 1280, height: 800 } } as const;
 export const THEMES = ['light', 'dark'] as const;
@@ -72,9 +76,15 @@ export async function colours(page: Page, selector: string): Promise<string> {
  * The gates for one pack's gallery: per component, accessibility (light), themes (dark: contrast holds and the
  * colours change), responsive (phone, tablet, laptop) and a visual snapshot per theme.
  */
+/** The catalogue's name for each component per pack; a component a pack has no name for is not built there. */
+const CATALOGUE = JSON.parse(readFileSync(new URL('../../catalogue.json', import.meta.url), 'utf8')) as { categories: { components: { id: string; names?: Record<string, string> }[] }[] };
+const NAMED = new Map(CATALOGUE.categories.flatMap((c) => c.components).map((e) => [e.id, e.names || {}]));
+const PACK_OF: Record<string, string> = { jet6: 'jet-premium', jet21: 'jet-premium', react: 'react', angular: 'angular' };
+
 export function packGates(pack: string, url: string, components: readonly string[] = FOUNDATION, query = '') {
+  const inPack = components.filter((id) => !NAMED.has(id) || !!NAMED.get(id)![PACK_OF[pack] || pack]);
   test.describe(pack, () => {
-    for (const id of components) {
+    for (const id of inPack) {
       const sel = `[data-component="${id}"]`;
       test(`${id} · accessibility`, async ({ page }) => {
         await page.setViewportSize(VIEWPORTS.laptop);

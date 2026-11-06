@@ -159,14 +159,54 @@
             "angular": "bx-secondary-button"
           },
           "builtOn": {
-            "jet-premium": "oj-c-button",
-            "react": "shadcn Button (Radix Slot)",
-            "react-native": "Paper Button",
-            "angular": "MatButton"
+            "jet-premium": "bx-button markup (oj-c-button look)",
+            "react": "Button",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "bx-button"
           },
           "sample": {
             "label": "Save for later",
             "value": "secondary"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "What the button does"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows it busy and stops a second press"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-secondary-button label=\"Save for later\"></bx-secondary-button>",
+              "react": "<SecondaryButton testID=\"sb1\" label=\"Save for later\" />",
+              "angular": "<bx-secondary-button testID=\"sb1\" label=\"Save for later\" />"
+            }
           }
         },
         {
@@ -185,14 +225,53 @@
             "react-native": "DestructiveButton"
           },
           "builtOn": {
-            "jet-premium": "oj-c-button",
-            "react": "shadcn Button (Radix Slot)",
-            "react-native": "Paper Button",
+            "jet-premium": "bx-button markup (oj-c-button look)",
+            "react": "Button",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButton"
           },
           "sample": {
             "label": "Cancel payment",
             "value": "danger"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "What the button does"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "busy",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows it busy and stops a second press"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-danger-button label=\"Cancel payment\"></bx-danger-button>",
+              "react": "<DestructiveButton testID=\"db1\" label=\"Cancel payment\" />"
+            }
           }
         },
         {
@@ -1717,16 +1796,92 @@
             "angular": "bx-savings-slider"
           },
           "builtOn": {
-            "jet-premium": "oj-slider",
-            "react": "Radix Slider",
+            "jet-premium": "input type=range in the field shell",
+            "react": "input type=range",
             "react-native": "Own, on PanResponder",
-            "angular": "MatSlider"
+            "angular": "input type=range"
           },
           "sample": {
             "label": "Monthly saving",
             "value": "5000",
             "extra": "USD ",
             "config": "1500"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The field's label (JET: label-hint)"
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "default": "—",
+                "doc": "The value; written back (JET: value=\"{{…}}\"; Angular: [(value)])"
+              },
+              {
+                "name": "min",
+                "type": "number",
+                "default": "0",
+                "doc": "Lowest value"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "100",
+                "doc": "Highest value"
+              },
+              {
+                "name": "step",
+                "type": "number",
+                "default": "1",
+                "doc": "Step between values"
+              },
+              {
+                "name": "prefix",
+                "type": "string",
+                "default": "''",
+                "doc": "Shown before the value, such as the currency code"
+              },
+              {
+                "name": "decimals",
+                "type": "number",
+                "default": "0",
+                "doc": "Digits after the point"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "helpText",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under the field"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the number",
+                "when": "The customer changes the value (JET: value-changed; Angular: (valueChange))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-savings-slider label-hint=\"Monthly saving\" value=\"{{saving}}\" prefix=\"USD\" min=\"1500\" max=\"20000\" step=\"500\"></bx-savings-slider>",
+              "react": "<Slider testID=\"sl1\" label=\"Monthly saving\" value={saving} onChange={setSaving} prefix=\"USD\" min={1500} max={20000} step={500} />",
+              "angular": "<bx-savings-slider testID=\"sl1\" label=\"Monthly saving\" [(value)]=\"saving\" prefix=\"USD\" [min]=\"1500\" [max]=\"20000\" [step]=\"500\" />"
+            }
           }
         },
         {
@@ -1746,14 +1901,60 @@
             "angular": "bx-segmented"
           },
           "builtOn": {
-            "jet-premium": "oj-c-buttonset-single",
-            "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
-            "angular": "MatButtonToggleGroup"
+            "jet-premium": "buttons with the radio role (oj-buttonset-one look)",
+            "react": "buttons with the radio role",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "buttons with the radio role"
           },
           "sample": {
             "label": "Show",
             "value": "Day|Week|Month"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "Names the group (JET: label-hint)"
+              },
+              {
+                "name": "options",
+                "type": "Array<string | {value, label, disabled}>",
+                "default": "[]",
+                "doc": "The choices"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "—",
+                "doc": "The chosen option's value; written back (JET: value=\"{{…}}\"; Angular: [(value)])"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the option value",
+                "when": "The customer changes the value (JET: value-changed; Angular: (valueChange))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-segmented label-hint=\"Show\" options='[\"Day\", \"Week\", \"Month\"]' value=\"{{show}}\"></bx-segmented>",
+              "react": "<ToggleGroup testID=\"sg1\" label=\"Show\" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} />",
+              "angular": "<bx-segmented testID=\"sg1\" label=\"Show\" [options]=\"['Day', 'Week', 'Month']\" [(value)]=\"show\" />"
+            }
           }
         },
         {
@@ -1772,14 +1973,59 @@
             "react-native": "FilterChips"
           },
           "builtOn": {
-            "jet-premium": "oj-c-buttonset-multiple",
-            "react": "Radix ToggleGroup (multiple)",
-            "react-native": "Paper Chip",
+            "jet-premium": "toggle buttons (aria-pressed)",
+            "react": "toggle buttons (aria-pressed)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatChipListbox"
           },
           "sample": {
             "label": "Filter",
             "value": "Card|Transfer|Bills|Salary"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "Names the group (JET: label-hint)"
+              },
+              {
+                "name": "options",
+                "type": "Array<string | {value, label, disabled}>",
+                "default": "[]",
+                "doc": "The filters"
+              },
+              {
+                "name": "value",
+                "type": "string[]",
+                "default": "—",
+                "doc": "The values turned on; written back (JET: value=\"{{…}}\"; Angular: [(value)])"
+              },
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "default": "true",
+                "doc": "Several on at once; false keeps one"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onChange",
+                "payload": "the values turned on",
+                "when": "The customer changes the value (JET: value-changed; Angular: (valueChange))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-filter-chips label-hint=\"Filter\" options='[\"Card\", \"Transfer\", \"Bills\", \"Salary\"]' value=\"{{filters}}\"></bx-filter-chips>",
+              "react": "<FilterChips testID=\"fc1\" label=\"Filter\" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />"
+            }
           }
         },
         {
@@ -1799,14 +2045,54 @@
             "angular": "bx-action-menu"
           },
           "builtOn": {
-            "jet-premium": "oj-c-menu-button",
-            "react": "Radix DropdownMenu",
-            "react-native": "Paper Menu",
-            "angular": "MatMenu"
+            "jet-premium": "menu button pattern (oj-menu-button look)",
+            "react": "menu button pattern",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "menu button pattern"
           },
           "sample": {
             "label": "More",
             "value": "Download statement|Set a nickname|Close the account"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'More'",
+                "doc": "The button's text"
+              },
+              {
+                "name": "items",
+                "type": "Array<string | {value, label, disabled, danger}>",
+                "default": "[]",
+                "doc": "The actions; danger ones are red"
+              },
+              {
+                "name": "disabled",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Greyed out"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "the item value",
+                "when": "An action is chosen (JET: ojAction, detail.value; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-action-menu items='[\"Download statement\", \"Set a nickname\", {\"value\": \"close\", \"label\": \"Close the account\", \"danger\": true}]'></bx-action-menu>",
+              "react": "<ActionMenu testID=\"am1\" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />",
+              "angular": "<bx-action-menu testID=\"am1\" [items]=\"['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]\" />"
+            }
           }
         },
         {
@@ -2068,14 +2354,53 @@
             "react-native": "Accordion"
           },
           "builtOn": {
-            "jet-premium": "oj-c-accordion-item-single",
-            "react": "Radix Accordion",
-            "react-native": "Paper List.Accordion",
+            "jet-premium": "disclosure buttons and regions (oj-collapsible look)",
+            "react": "disclosure buttons and regions",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatExpansionPanel (CDK Accordion)"
           },
           "sample": {
             "value": "How long does a transfer take?|Can I cancel a payment?|Are there fees?",
             "extra": "Same day inside the bank; up to 2 working days to other banks.|Yes, until it is sent. Scheduled ones any time before the date.|No fees for transfers in the same currency."
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "items",
+                "type": "Array<{id, title, body}>",
+                "default": "[]",
+                "doc": "The sections"
+              },
+              {
+                "name": "expanded",
+                "type": "string[]",
+                "default": "[]",
+                "doc": "The open sections (ids, or titles); written back (Angular: [(expanded)])"
+              },
+              {
+                "name": "multiple",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Several sections open at once"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onExpandedChange",
+                "payload": "the open ids",
+                "when": "A section opens or closes (JET: expanded-changed)"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-accordion items=\"[[faq]]\" expanded=\"{{openFaq}}\"></bx-accordion>",
+              "react": "<Accordion testID=\"ac1\" items={faq} />"
+            }
           }
         },
         {
@@ -2095,13 +2420,47 @@
             "angular": "bx-stepper"
           },
           "builtOn": {
-            "jet-premium": "oj-c-train",
-            "react": "Own (no Radix stepper)",
+            "jet-premium": "ordered list (oj-train look)",
+            "react": "ordered list",
             "react-native": "Own, on React Native View",
-            "angular": "MatStepper (CDK Stepper)"
+            "angular": "ordered list"
           },
           "sample": {
             "value": "Details|Review|Done"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Progress'",
+                "doc": "Names the list of steps"
+              },
+              {
+                "name": "steps",
+                "type": "Array<string | {id, label, state}>",
+                "default": "[]",
+                "doc": "The steps; state done, current, next or failed overrides"
+              },
+              {
+                "name": "selectedStep",
+                "type": "string",
+                "default": "''",
+                "doc": "The current step's id; the ones before it are done"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-stepper steps='[\"Details\", \"Review\", \"Done\"]' selected-step=\"Review\"></bx-stepper>",
+              "react": "<Stepper testID=\"st1\" steps={['Details', 'Review', 'Done']} selectedStep=\"Review\" />",
+              "angular": "<bx-stepper testID=\"st1\" [steps]=\"['Details', 'Review', 'Done']\" selectedStep=\"Review\" />"
+            }
           }
         },
         {
@@ -2120,13 +2479,47 @@
             "angular": "bx-breadcrumb"
           },
           "builtOn": {
-            "jet-premium": "Own, on oj-c-labelled-link",
-            "react": "shadcn Breadcrumb",
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
             "react-native": "Not used on mobile",
-            "angular": "Own, on Router links"
+            "angular": "standalone component, signal inputs"
           },
           "sample": {
             "value": "Accounts|Savings ·· 4821|Statement"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Breadcrumb'",
+                "doc": "Names the navigation"
+              },
+              {
+                "name": "items",
+                "type": "Array<string | {id, label}>",
+                "default": "[]",
+                "doc": "The pages, the current one last"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "the item id",
+                "when": "An earlier page is chosen (JET: ojAction, detail.value; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-breadcrumb items=\"[[crumbs]]\"></bx-breadcrumb>",
+              "react": "<Breadcrumb testID=\"bc1\" items={['Accounts', 'Savings ·· 4821', 'Statement']} />",
+              "angular": "<bx-breadcrumb testID=\"bc1\" [items]=\"['Accounts', 'Savings ·· 4821', 'Statement']\" />"
+            }
           }
         },
         {
@@ -2146,13 +2539,53 @@
             "angular": "bx-side-nav"
           },
           "builtOn": {
-            "jet-premium": "oj-c-drawer-layout",
-            "react": "shadcn Sidebar",
-            "react-native": "Paper Drawer",
-            "angular": "MatSidenav"
+            "jet-premium": "navigation list (oj-navigation-list look)",
+            "react": "navigation list",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "navigation list"
           },
           "sample": {
             "value": "Accounts|Payments|Cards"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Main'",
+                "doc": "Names the navigation"
+              },
+              {
+                "name": "items",
+                "type": "Array<string | {id, label, badge, disabled}>",
+                "default": "[]",
+                "doc": "The sections"
+              },
+              {
+                "name": "selection",
+                "type": "string",
+                "default": "—",
+                "doc": "The current section; written back (Angular: [(selection)])"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onSelectionChange",
+                "payload": "the item id",
+                "when": "A section is chosen (JET: selection-changed)"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-side-nav items='[\"Accounts\", \"Payments\", {\"id\": \"Cards\", \"label\": \"Cards\", \"badge\": 2}]' selection=\"{{navSel}}\"></bx-side-nav>",
+              "react": "<SideNav testID=\"sn1\" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} />",
+              "angular": "<bx-side-nav testID=\"sn1\" [items]=\"['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]\" [(selection)]=\"navSel\" />"
+            }
           }
         },
         {
@@ -2172,13 +2605,53 @@
             "angular": "bx-sheet"
           },
           "builtOn": {
-            "jet-premium": "oj-c-drawer-popup",
-            "react": "shadcn Sheet (Radix Dialog)",
-            "react-native": "Paper Modal",
-            "angular": "MatBottomSheet"
+            "jet-premium": "modal panel with its own focus trap (oj-popup look)",
+            "react": "Radix Dialog",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "CDK A11yModule focus trap"
           },
           "sample": {
             "label": "Filter transactions"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shown; written back (Angular: [(open)])"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "—",
+                "doc": "The title"
+              },
+              {
+                "name": "position",
+                "type": "'end' | 'bottom'",
+                "default": "'end'",
+                "doc": "From the side or the bottom"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onOpenChange",
+                "payload": "false",
+                "when": "Closed by Close, Escape or the backdrop (JET: ojClose and open-changed; Angular: (openChange))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-secondary-button label=\"Filter\" on-oj-action=\"[[openSheet]]\"></bx-secondary-button>",
+              "react": "<SecondaryButton label=\"Filter\" onAction={() => setSheet(true)} />",
+              "angular": "<bx-secondary-button label=\"Filter\" (action)=\"sheet.set(true)\" />"
+            }
           }
         },
         {
@@ -2198,10 +2671,38 @@
             "angular": "bx-grid"
           },
           "builtOn": {
-            "jet-premium": "oj-c-form-layout",
-            "react": "Own CSS grid and stack",
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
             "react-native": "React Native View (flex)",
-            "angular": "CDK Layout (BreakpointObserver)"
+            "angular": "standalone component, signal inputs"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "columns",
+                "type": "1 | 2 | 3 | 4 | 'auto'",
+                "default": "'auto'",
+                "doc": "Columns; fewer on narrow screens"
+              },
+              {
+                "name": "gap",
+                "type": "'sm' | 'md' | 'lg'",
+                "default": "'md'",
+                "doc": "Space between"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-grid columns=\"3\"><bx-card heading=\"Savings\"></bx-card><bx-card heading=\"Current\"></bx-card><bx-card heading=\"Deposits\"></bx-card></bx-grid>",
+              "react": "<Grid testID=\"gr1\" columns={3}><Card heading=\"Savings\" /><Card heading=\"Current\" /><Card heading=\"Deposits\" /></Grid>",
+              "angular": "<bx-grid testID=\"gr1\" [columns]=\"3\"><bx-card heading=\"Savings\" /><bx-card heading=\"Current\" /><bx-card heading=\"Deposits\" /></bx-grid>"
+            }
           }
         },
         {
@@ -2221,10 +2722,32 @@
             "angular": "bx-divider"
           },
           "builtOn": {
-            "jet-premium": "Own, hr",
-            "react": "Radix Separator",
-            "react-native": "Paper Divider",
-            "angular": "MatDivider"
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "standalone component, signal inputs"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "''",
+                "doc": "A word in the line, such as Or"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-divider></bx-divider>",
+              "react": "<Divider testID=\"dv1\" />",
+              "angular": "<bx-divider testID=\"dv1\" />"
+            }
           }
         },
         {
@@ -2243,13 +2766,46 @@
             "react-native": "Avatar"
           },
           "builtOn": {
-            "jet-premium": "oj-c-avatar",
-            "react": "Radix Avatar",
-            "react-native": "Paper Avatar",
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own (Material has none)"
           },
           "sample": {
             "value": "AR|JM|SK"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "name",
+                "type": "string",
+                "default": "—",
+                "doc": "Whose; a screen reader says it, the initials show without a photo"
+              },
+              {
+                "name": "src",
+                "type": "string",
+                "default": "''",
+                "doc": "The photo"
+              },
+              {
+                "name": "size",
+                "type": "'sm' | 'md' | 'lg'",
+                "default": "'md'",
+                "doc": "Size"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-avatar name=\"Asha Rao\"></bx-avatar>",
+              "react": "<Avatar testID=\"av1\" name=\"Asha Rao\" />"
+            }
           }
         }
       ]
@@ -2356,13 +2912,53 @@
             "angular": "bx-pagination"
           },
           "builtOn": {
-            "jet-premium": "oj-paging-control",
-            "react": "shadcn Pagination",
-            "react-native": "Paper DataTable.Pagination",
-            "angular": "MatPaginator"
+            "jet-premium": "navigation of buttons (oj-paging-control look)",
+            "react": "navigation of buttons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "navigation of buttons"
           },
           "sample": {
             "value": "1|2|3|4"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Pages'",
+                "doc": "Names the navigation"
+              },
+              {
+                "name": "page",
+                "type": "number",
+                "default": "1",
+                "doc": "The page shown; written back (Angular: [(page)])"
+              },
+              {
+                "name": "pageCount",
+                "type": "number",
+                "default": "1",
+                "doc": "How many pages"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onPageChange",
+                "payload": "the page",
+                "when": "Another page is chosen (JET: page-changed)"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-pagination page=\"{{page}}\" page-count=\"4\"></bx-pagination>",
+              "react": "<Pagination testID=\"pg1\" page={page} pageCount={4} onPageChange={setPage} />",
+              "angular": "<bx-pagination testID=\"pg1\" [(page)]=\"page\" [pageCount]=\"4\" />"
+            }
           }
         },
         {
@@ -2382,10 +2978,38 @@
             "angular": "bx-status-badge"
           },
           "builtOn": {
-            "jet-premium": "oj-c-badge",
-            "react": "shadcn Badge",
-            "react-native": "Paper Chip / Badge",
-            "angular": "MatChip"
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "standalone component, signal inputs"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The status"
+              },
+              {
+                "name": "tone",
+                "type": "'neutral' | 'info' | 'success' | 'warning' | 'danger'",
+                "default": "'neutral'",
+                "doc": "Its colour"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-status-badge label=\"Completed\" tone=\"success\"></bx-status-badge>",
+              "react": "<StatusBadge testID=\"sb1\" label=\"Completed\" tone=\"success\" />",
+              "angular": "<bx-status-badge testID=\"sb1\" label=\"Completed\" tone=\"success\" />"
+            }
           }
         },
         {
@@ -2405,13 +3029,41 @@
             "angular": "bx-timeline"
           },
           "builtOn": {
-            "jet-premium": "Own, on oj-c-list-view",
-            "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
-            "angular": "Own, on MatList"
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "standalone component, signal inputs"
           },
           "sample": {
             "value": "Initiated|09:12 · A. Rao;Approved|10:40 · Priya Nair;Sent to the bank|10:41;Completed|10:44"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Timeline'",
+                "doc": "Names the list"
+              },
+              {
+                "name": "items",
+                "type": "Array<{label, meta, state}>",
+                "default": "[]",
+                "doc": "The events in order; state done (default), current, pending or failed"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-timeline items='[{\"label\": \"Initiated\", \"meta\": \"09:12 · A. Rao\"}, {\"label\": \"Approved\", \"meta\": \"10:40 · Priya Nair\"}, {\"label\": \"Sent to the bank\", \"meta\": \"10:41\", \"state\": \"current\"}, {\"label\": \"Completed\", \"state\": \"pending\"}]'></bx-timeline>",
+              "react": "<Timeline testID=\"tl1\" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} />",
+              "angular": "<bx-timeline testID=\"tl1\" [items]=\"[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]\" />"
+            }
           }
         },
         {
@@ -2431,10 +3083,38 @@
             "angular": "bx-spinner"
           },
           "builtOn": {
-            "jet-premium": "oj-c-progress-circle",
-            "react": "shadcn Spinner",
-            "react-native": "Paper ActivityIndicator",
-            "angular": "MatProgressSpinner"
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "standalone component, signal inputs"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Loading'",
+                "doc": "What a screen reader says"
+              },
+              {
+                "name": "size",
+                "type": "'sm' | 'md' | 'lg'",
+                "default": "'md'",
+                "doc": "Size"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-spinner></bx-spinner>",
+              "react": "<Spinner testID=\"sp1\" />",
+              "angular": "<bx-spinner testID=\"sp1\" />"
+            }
           }
         },
         {
@@ -2453,10 +3133,43 @@
             "react-native": "Skeleton"
           },
           "builtOn": {
-            "jet-premium": "oj-c-skeleton",
-            "react": "shadcn Skeleton",
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
             "react-native": "Own, Animated View",
             "angular": "Own"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Loading'",
+                "doc": "What a screen reader says"
+              },
+              {
+                "name": "lines",
+                "type": "number",
+                "default": "3",
+                "doc": "Lines of text"
+              },
+              {
+                "name": "shape",
+                "type": "'text' | 'card' | 'circle'",
+                "default": "'text'",
+                "doc": "What is coming"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-skeleton></bx-skeleton>",
+              "react": "<Skeleton testID=\"sk1\" />"
+            }
           }
         },
         {
@@ -2476,10 +3189,56 @@
             "angular": "bx-empty-state"
           },
           "builtOn": {
-            "jet-premium": "Own",
-            "react": "shadcn Empty",
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
             "react-native": "Own",
-            "angular": "Own"
+            "angular": "standalone component, signal inputs"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "—",
+                "doc": "What is empty"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "doc": "What to do"
+              },
+              {
+                "name": "actionLabel",
+                "type": "string",
+                "default": "''",
+                "doc": "A button"
+              },
+              {
+                "name": "icon",
+                "type": "string",
+                "default": "'○'",
+                "doc": "A glyph"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-empty-state heading=\"No payees yet\" text=\"Add one to pay faster next time.\" action-label=\"Add a payee\"></bx-empty-state>",
+              "react": "<EmptyState testID=\"es1\" heading=\"No payees yet\" text=\"Add one to pay faster next time.\" actionLabel=\"Add a payee\" />",
+              "angular": "<bx-empty-state testID=\"es1\" heading=\"No payees yet\" text=\"Add one to pay faster next time.\" actionLabel=\"Add a payee\" />"
+            }
           }
         },
         {
@@ -2499,13 +3258,41 @@
             "angular": "bx-tooltip"
           },
           "builtOn": {
-            "jet-premium": "oj-c-popup",
-            "react": "Radix Tooltip",
-            "react-native": "Paper Tooltip",
-            "angular": "MatTooltip"
+            "jet-premium": "a button with aria-describedby and the tooltip role",
+            "react": "a button with aria-describedby and the tooltip role",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "a button with aria-describedby and the tooltip role"
           },
           "sample": {
             "label": "Available balance"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "—",
+                "doc": "The term"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "—",
+                "doc": "The note, on hover and focus"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-tooltip label=\"Available balance\" text=\"What you can spend now: the balance less holds and pending card payments.\"></bx-tooltip>",
+              "react": "<Tooltip testID=\"tt1\" label=\"Available balance\" text=\"What you can spend now: the balance less holds and pending card payments.\" />",
+              "angular": "<bx-tooltip testID=\"tt1\" label=\"Available balance\" text=\"What you can spend now: the balance less holds and pending card payments.\" />"
+            }
           }
         }
       ]
@@ -2653,14 +3440,71 @@
             "angular": "bx-alert-banner"
           },
           "builtOn": {
-            "jet-premium": "oj-c-message-banner",
-            "react": "shadcn Alert",
-            "react-native": "Paper Banner",
-            "angular": "Own, on MatCard"
+            "jet-premium": "the status or alert role (oj-messages inline look)",
+            "react": "the status or alert role",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "the status or alert role"
           },
           "sample": {
             "label": "Transfers after 6 pm arrive the next working day.",
             "value": "info"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "doc": "A bold first line"
+              },
+              {
+                "name": "message",
+                "type": "string",
+                "default": "—",
+                "doc": "What happened and what to do"
+              },
+              {
+                "name": "severity",
+                "type": "'error' | 'warning' | 'confirmation' | 'info'",
+                "default": "the component's own",
+                "doc": "Errors are announced at once, the others politely"
+              },
+              {
+                "name": "actionLabel",
+                "type": "string",
+                "default": "''",
+                "doc": "A button beside the message"
+              },
+              {
+                "name": "dismissible",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows Dismiss"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              },
+              {
+                "name": "onClose",
+                "payload": "—",
+                "when": "The customer dismisses it (JET: ojClose; Angular: (closed))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-alert-banner message=\"Transfers after 6 pm arrive the next working day.\"></bx-alert-banner>",
+              "react": "<Alert testID=\"ab1\" message=\"Transfers after 6 pm arrive the next working day.\" />",
+              "angular": "<bx-alert-banner testID=\"ab1\" message=\"Transfers after 6 pm arrive the next working day.\" />"
+            }
           }
         },
         {
@@ -2680,15 +3524,72 @@
             "angular": "bx-error-message"
           },
           "builtOn": {
-            "jet-premium": "oj-c-message-banner",
-            "react": "shadcn Alert (destructive)",
-            "react-native": "Paper HelperText",
-            "angular": "MatError"
+            "jet-premium": "the status or alert role (oj-messages inline look)",
+            "react": "the status or alert role",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "the status or alert role"
           },
           "sample": {
             "label": "The amount is more than your daily limit of 5,000.00.",
             "value": "danger",
             "extra": "Change the amount"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "doc": "A bold first line"
+              },
+              {
+                "name": "message",
+                "type": "string",
+                "default": "—",
+                "doc": "What happened and what to do"
+              },
+              {
+                "name": "severity",
+                "type": "'error' | 'warning' | 'confirmation' | 'info'",
+                "default": "the component's own",
+                "doc": "Errors are announced at once, the others politely"
+              },
+              {
+                "name": "actionLabel",
+                "type": "string",
+                "default": "''",
+                "doc": "A button beside the message"
+              },
+              {
+                "name": "dismissible",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows Dismiss"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              },
+              {
+                "name": "onClose",
+                "payload": "—",
+                "when": "The customer dismisses it (JET: ojClose; Angular: (closed))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-error-message message=\"The amount is more than your daily limit of 5,000.00.\" action-label=\"Change the amount\"></bx-error-message>",
+              "react": "<ErrorMessage testID=\"em1\" message=\"The amount is more than your daily limit of 5,000.00.\" actionLabel=\"Change the amount\" />",
+              "angular": "<bx-error-message testID=\"em1\" message=\"The amount is more than your daily limit of 5,000.00.\" actionLabel=\"Change the amount\" />"
+            }
           }
         },
         {
@@ -2708,15 +3609,72 @@
             "angular": "bx-success-message"
           },
           "builtOn": {
-            "jet-premium": "oj-c-message-banner",
-            "react": "shadcn Alert",
-            "react-native": "Paper Banner",
-            "angular": "Own, on MatCard"
+            "jet-premium": "the status or alert role (oj-messages inline look)",
+            "react": "the status or alert role",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "the status or alert role"
           },
           "sample": {
             "label": "Payment sent. Reference FX-20391.",
             "value": "success",
             "extra": "View receipt"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "''",
+                "doc": "A bold first line"
+              },
+              {
+                "name": "message",
+                "type": "string",
+                "default": "—",
+                "doc": "What happened and what to do"
+              },
+              {
+                "name": "severity",
+                "type": "'error' | 'warning' | 'confirmation' | 'info'",
+                "default": "the component's own",
+                "doc": "Errors are announced at once, the others politely"
+              },
+              {
+                "name": "actionLabel",
+                "type": "string",
+                "default": "''",
+                "doc": "A button beside the message"
+              },
+              {
+                "name": "dismissible",
+                "type": "boolean",
+                "default": "false",
+                "doc": "Shows Dismiss"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "—",
+                "when": "The button is pressed (JET: ojAction; Angular: (action))"
+              },
+              {
+                "name": "onClose",
+                "payload": "—",
+                "when": "The customer dismisses it (JET: ojClose; Angular: (closed))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-success-message message=\"Payment sent. Reference FX-20391.\" action-label=\"View receipt\"></bx-success-message>",
+              "react": "<SuccessMessage testID=\"sm1\" message=\"Payment sent. Reference FX-20391.\" actionLabel=\"View receipt\" />",
+              "angular": "<bx-success-message testID=\"sm1\" message=\"Payment sent. Reference FX-20391.\" actionLabel=\"View receipt\" />"
+            }
           }
         },
         {
@@ -2736,14 +3694,60 @@
             "angular": "bx-notification-panel"
           },
           "builtOn": {
-            "jet-premium": "oj-c-list-view in oj-c-popup",
-            "react": "Radix Popover + Item",
-            "react-native": "Paper List in a Portal",
-            "angular": "MatMenu (CDK Overlay)"
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
+            "react": "React, no library",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
+            "angular": "standalone component, signal inputs"
           },
           "sample": {
             "value": "Card payment due|Due 18 Jan|640.00;New statement ready|Today|Dec;Login from a new device|Yesterday|Chrome",
             "extra": "Read"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "the component's own",
+                "doc": "The title"
+              },
+              {
+                "name": "items",
+                "type": "Array<{id, title, meta, value, tone, unread}>",
+                "default": "[]",
+                "doc": "The rows"
+              },
+              {
+                "name": "actionLabel",
+                "type": "string",
+                "default": "the component's own",
+                "doc": "The button on each row; its name says which row"
+              },
+              {
+                "name": "emptyText",
+                "type": "string",
+                "default": "'Nothing here yet.'",
+                "doc": "Shown when there are no rows"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "the row item",
+                "when": "A row's button is pressed (JET: ojAction, detail.item; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-notification-panel items=\"[[notes]]\"></bx-notification-panel>",
+              "react": "<NotificationPanel testID=\"np1\" items={notes} />",
+              "angular": "<bx-notification-panel testID=\"np1\" [items]=\"notes\" />"
+            }
           }
         }
       ]
@@ -2771,7 +3775,7 @@
           "builtOn": {
             "jet-premium": "oj-c-select-single",
             "react": "Radix Select",
-            "react-native": "Paper Menu",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSelect"
           },
           "sample": {
@@ -2798,7 +3802,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "sample": {
@@ -2824,7 +3828,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "sample": {
@@ -2851,7 +3855,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "sample": {
@@ -2880,7 +3884,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -2907,7 +3911,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-sensitive-text",
             "react": "Own, on Input",
-            "react-native": "Paper TextInput",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput + mask"
           },
           "sample": {
@@ -2934,7 +3938,7 @@
           "builtOn": {
             "jet-premium": "oj-c-toolbar + oj-c-button",
             "react": "shadcn Button Group",
-            "react-native": "Paper IconButton / FAB.Group",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButton grid"
           },
           "sample": {
@@ -2967,7 +3971,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "Radix RadioGroup + shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSelectionList"
           }
         },
@@ -2990,7 +3994,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "sample": {
@@ -3019,7 +4023,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -3045,7 +4049,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3098,7 +4102,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item / Table",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           }
         },
@@ -3121,7 +4125,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-multiple",
             "react": "Radix ToggleGroup (multiple)",
-            "react-native": "Paper Chip",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatChipListbox"
           },
           "sample": {
@@ -3148,7 +4152,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3174,7 +4178,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-single",
             "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButtonToggleGroup"
           },
           "sample": {
@@ -3201,7 +4205,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "sample": {
@@ -3227,7 +4231,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3259,7 +4263,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "sample": {
@@ -3285,7 +4289,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -3312,7 +4316,7 @@
           "builtOn": {
             "jet-premium": "oj-c-radioset",
             "react": "Radix RadioGroup",
-            "react-native": "Paper RadioButton.Group",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatRadioGroup"
           },
           "sample": {
@@ -3339,7 +4343,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3366,7 +4370,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3399,7 +4403,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "sample": {
@@ -3425,7 +4429,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -3452,7 +4456,7 @@
           "builtOn": {
             "jet-premium": "oj-c-table",
             "react": "shadcn Data Table (TanStack Table)",
-            "react-native": "Paper DataTable",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatTable + CDK Table"
           },
           "sample": {
@@ -3478,7 +4482,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3505,7 +4509,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view",
             "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatList"
           },
           "sample": {
@@ -3536,7 +4540,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-action-card",
             "react": "Own, on shadcn Card",
-            "react-native": "Own, on Paper Surface",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatCard"
           }
         },
@@ -3559,7 +4563,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "sample": {
@@ -3584,7 +4588,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-text, one per digit",
             "react": "Radix OneTimePasswordField",
-            "react-native": "Paper TextInput, one per digit",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on the CDK"
           },
           "sample": {
@@ -3610,7 +4614,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-single",
             "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButtonToggleGroup"
           },
           "sample": {
@@ -3637,7 +4641,7 @@
           "builtOn": {
             "jet-premium": "oj-slider",
             "react": "Radix Slider",
-            "react-native": "Own, on PanResponder (Paper has none)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlider"
           },
           "sample": {
@@ -3664,7 +4668,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-number",
             "react": "Radix Slider",
-            "react-native": "Paper TextInput",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlider"
           },
           "sample": {
@@ -3689,7 +4693,7 @@
           "builtOn": {
             "jet-premium": "oj-c-checkboxset",
             "react": "Radix Switch",
-            "react-native": "Paper Switch",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlideToggle"
           },
           "sample": {
@@ -3716,7 +4720,7 @@
           "builtOn": {
             "jet-premium": "oj-c-switch",
             "react": "Radix Switch",
-            "react-native": "Paper Switch",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlideToggle"
           },
           "sample": {
@@ -3741,7 +4745,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-text, one per digit",
             "react": "Radix OneTimePasswordField",
-            "react-native": "Paper TextInput, one per digit",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on the CDK"
           },
           "sample": {
@@ -3767,7 +4771,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -3794,7 +4798,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -3821,7 +4825,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3854,7 +4858,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-text, one per digit",
             "react": "Radix OneTimePasswordField",
-            "react-native": "Paper TextInput, one per digit",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on the CDK"
           },
           "sample": {
@@ -3902,7 +4906,7 @@
           "builtOn": {
             "jet-premium": "oj-c-dialog",
             "react": "Radix AlertDialog",
-            "react-native": "Paper Dialog",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatDialog"
           }
         },
@@ -3925,7 +4929,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -3952,7 +4956,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-sensitive-text",
             "react": "Radix PasswordToggleField",
-            "react-native": "Paper TextInput (secure)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput + reveal"
           },
           "sample": {
@@ -4003,7 +5007,7 @@
           "builtOn": {
             "jet-premium": "oj-c-message-banner",
             "react": "shadcn Alert",
-            "react-native": "Paper Banner",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatCard"
           },
           "sample": {
@@ -4059,7 +5063,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-bar",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressBar"
           },
           "sample": {
@@ -4084,7 +5088,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-bar",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressBar"
           },
           "sample": {
@@ -4110,7 +5114,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-multiple",
             "react": "Radix ToggleGroup (multiple)",
-            "react-native": "Paper Chip",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatChipListbox"
           },
           "sample": {
@@ -4143,7 +5147,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4170,7 +5174,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4197,7 +5201,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view",
             "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatList"
           },
           "sample": {
@@ -4249,7 +5253,7 @@
           "builtOn": {
             "jet-premium": "oj-c-message-banner",
             "react": "shadcn Alert",
-            "react-native": "Paper Banner",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatCard"
           },
           "sample": {
@@ -4443,7 +5447,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout (read-only)",
             "react": "shadcn Card + Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4470,7 +5474,7 @@
           "builtOn": {
             "jet-premium": "oj-c-checkboxset",
             "react": "Radix Checkbox",
-            "react-native": "Paper Checkbox.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCheckbox"
           },
           "sample": {
@@ -4497,7 +5501,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-single",
             "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButtonToggleGroup"
           },
           "sample": {
@@ -4524,7 +5528,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4551,7 +5555,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-single",
             "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButtonToggleGroup"
           },
           "sample": {
@@ -4578,7 +5582,7 @@
           "builtOn": {
             "jet-premium": "oj-c-select-single",
             "react": "Radix Select",
-            "react-native": "Paper Menu",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSelect"
           },
           "sample": {
@@ -4605,7 +5609,7 @@
           "builtOn": {
             "jet-premium": "oj-c-checkboxset",
             "react": "Radix Checkbox",
-            "react-native": "Paper Checkbox.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCheckbox"
           },
           "sample": {
@@ -4632,7 +5636,7 @@
           "builtOn": {
             "jet-premium": "oj-c-switch",
             "react": "Radix Switch",
-            "react-native": "Paper Switch",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlideToggle"
           },
           "sample": {
@@ -4658,7 +5662,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4685,7 +5689,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-bar",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressBar"
           },
           "sample": {
@@ -4711,7 +5715,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view",
             "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatList"
           },
           "sample": {
@@ -4743,7 +5747,7 @@
           "builtOn": {
             "jet-premium": "oj-c-form-layout + inputs",
             "react": "shadcn Field + React Hook Form",
-            "react-native": "Paper TextInput set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Reactive Forms + MatFormField"
           },
           "sample": {
@@ -4770,7 +5774,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view",
             "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatList"
           },
           "sample": {
@@ -4796,7 +5800,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4823,7 +5827,7 @@
           "builtOn": {
             "jet-premium": "oj-c-text-area",
             "react": "shadcn Textarea",
-            "react-native": "Paper TextInput (multiline)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput, textarea"
           },
           "sample": {
@@ -4849,7 +5853,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4882,7 +5886,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -4936,7 +5940,7 @@
           "builtOn": {
             "jet-premium": "oj-c-buttonset-single",
             "react": "Radix ToggleGroup",
-            "react-native": "Paper SegmentedButtons",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButtonToggleGroup"
           },
           "sample": {
@@ -5021,7 +6025,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "sample": {
@@ -5050,7 +6054,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view",
             "react": "Own (MUI Lab Timeline as reference)",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatList"
           },
           "sample": {
@@ -5076,7 +6080,7 @@
           "builtOn": {
             "jet-premium": "oj-c-checkboxset",
             "react": "Radix Checkbox",
-            "react-native": "Paper Checkbox.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCheckbox"
           },
           "sample": {
@@ -5108,7 +6112,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-number",
             "react": "shadcn Input Group + Button",
-            "react-native": "Paper TextInput + IconButton",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput + MatButton"
           },
           "sample": {
@@ -5134,7 +6138,7 @@
           "builtOn": {
             "jet-premium": "oj-slider",
             "react": "Radix Slider",
-            "react-native": "Own, on PanResponder (Paper has none)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlider"
           },
           "sample": {
@@ -5163,7 +6167,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-number",
             "react": "shadcn Input Group + Button",
-            "react-native": "Paper TextInput + IconButton",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput + MatButton"
           },
           "sample": {
@@ -5188,7 +6192,7 @@
           "builtOn": {
             "jet-premium": "oj-c-input-number",
             "react": "shadcn Input Group + Button",
-            "react-native": "Paper TextInput + IconButton",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatInput + MatButton"
           },
           "sample": {
@@ -5214,7 +6218,7 @@
           "builtOn": {
             "jet-premium": "oj-slider",
             "react": "Radix Slider",
-            "react-native": "Own, on PanResponder (Paper has none)",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatSlider"
           },
           "sample": {
@@ -5249,7 +6253,7 @@
           "builtOn": {
             "jet-premium": "Own map, on oj-c-list-view",
             "react": "Own map, on shadcn Item",
-            "react-native": "react-native-maps + Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own map, on MatList"
           }
         },
@@ -5272,7 +6276,7 @@
           "builtOn": {
             "jet-premium": "Own, on oj-c-list-view + oj-c-input-text",
             "react": "shadcn Message + Message Scroller",
-            "react-native": "Own, on FlatList + Paper TextInput",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on CDK Scrolling"
           }
         },
@@ -5321,7 +6325,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "sample": {
@@ -5348,7 +6352,7 @@
           "builtOn": {
             "jet-premium": "oj-c-accordion-item-single",
             "react": "Radix Accordion",
-            "react-native": "Paper List.Accordion",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatExpansionPanel (CDK Accordion)"
           },
           "sample": {
@@ -5380,7 +6384,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5406,7 +6410,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5433,7 +6437,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item / Table",
-            "react-native": "Paper List",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "dashboard": "Retail and SMB dashboard"
@@ -5456,7 +6460,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5505,7 +6509,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-bar",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressBar"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5531,7 +6535,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-bar",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressBar"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5583,7 +6587,7 @@
           "builtOn": {
             "jet-premium": "oj-c-meter-circle",
             "react": "Radix Progress",
-            "react-native": "Paper ProgressBar",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatProgressSpinner (determinate)"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5609,7 +6613,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5635,7 +6639,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5664,7 +6668,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card",
             "react": "shadcn Card",
-            "react-native": "Paper Card",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5693,7 +6697,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5719,7 +6723,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5745,7 +6749,7 @@
           "builtOn": {
             "jet-premium": "oj-c-message-banner",
             "react": "shadcn Alert",
-            "react-native": "Paper Banner",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "Own, on MatCard"
           },
           "dashboard": "Retail and SMB dashboard",
@@ -5933,7 +6937,7 @@
           "builtOn": {
             "jet-premium": "oj-c-tab-bar",
             "react": "Radix Tabs",
-            "react-native": "Paper SegmentedButtons / BottomNavigation",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatTabGroup"
           },
           "dashboard": "Corporate dashboard · all roles",
@@ -5987,7 +6991,7 @@
           "builtOn": {
             "jet-premium": "oj-c-tab-bar",
             "react": "Radix Tabs",
-            "react-native": "Paper SegmentedButtons / BottomNavigation",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatTabGroup"
           },
           "dashboard": "Corporate dashboard · all roles",
@@ -6065,7 +7069,7 @@
           "builtOn": {
             "jet-premium": "oj-c-toolbar + oj-c-button",
             "react": "shadcn Button Group",
-            "react-native": "Paper IconButton / FAB.Group",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatButton grid"
           },
           "dashboard": "Corporate dashboard · all roles",
@@ -6093,7 +7097,7 @@
           "builtOn": {
             "jet-premium": "oj-c-action-card set",
             "react": "shadcn Card set",
-            "react-native": "Paper Card set",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatCard set"
           },
           "dashboard": "Corporate dashboard · Maker",
@@ -6120,7 +7124,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "dashboard": "Corporate dashboard · Approver",
@@ -6202,7 +7206,7 @@
           "builtOn": {
             "jet-premium": "oj-c-list-view",
             "react": "shadcn Item",
-            "react-native": "Paper List.Item",
+            "react-native": "React Native View, Pressable, Modal and TextInput",
             "angular": "MatList"
           },
           "dashboard": "Corporate dashboard · Approver",

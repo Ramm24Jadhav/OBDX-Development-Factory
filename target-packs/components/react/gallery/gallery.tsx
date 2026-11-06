@@ -6,8 +6,7 @@ import { ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import '../src/bx.css';
-import { AmountInput, Autocomplete, Button, Card, CheckboxGroup, CurrencySelector, DataTable, DatePicker, DateRangePicker, Dialog, Dropdown, FileUpload, IconButton,
-  MultiSelect, NumberInput, PasswordField, RadioGroup, SearchField, Tabs, TextArea, TextField, Toast, Toggle, styleClasses } from '../src';
+import { Accordion, ActionMenu, Alert, AmountInput, Autocomplete, Avatar, Breadcrumb, Button, Card, CheckboxGroup, CurrencySelector, DataTable, DatePicker, DateRangePicker, DestructiveButton, Dialog, Divider, Dropdown, EmptyState, ErrorMessage, FileUpload, FilterChips, Grid, IconButton, MultiSelect, NotificationPanel, NumberInput, Pagination, PasswordField, RadioGroup, SearchField, SecondaryButton, Sheet, SideNav, Skeleton, Slider, Spinner, StatusBadge, Stepper, SuccessMessage, Tabs, TextArea, TextField, Timeline, Toast, Toggle, ToggleGroup, Tooltip, styleClasses } from '../src';
 import './gallery.css';
 
 const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark' : 'light';
@@ -37,6 +36,7 @@ function Gallery() {
   const [tab, setTab] = useState('c');
   const [selected, setSelected] = useState<string[]>(['t2']);
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [saving, setSaving] = useState(5000); const [show, setShow] = useState('Week'); const [filters, setFilters] = useState(['Card']); const [navSel, setNavSel] = useState('Accounts'); const [sheet, setSheet] = useState(false); const [page, setPage] = useState(2); const faq = [{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]; const notes = [{ id: 'n1', title: 'Card payment due', meta: 'Due 18 Jan', value: '640.00', unread: true }, { id: 'n2', title: 'New statement ready', meta: 'Today', value: 'Dec' }];
   const [remarks, setRemarks] = useState('Rent for November');
   const [secret, setSecret] = useState('s3cret-pass');
   const [copies, setCopies] = useState<number | null>(2);
@@ -154,6 +154,94 @@ function Gallery() {
       </Section>
       <Section id="document-upload" title="Document upload">
         <FileUpload testID="du1" label="Proof of address" value={proof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" />
+      </Section>
+      <Section id="secondary-button" title="Secondary button">
+        <SecondaryButton testID="sb1" label="Save for later" />
+        <SecondaryButton testID="sb2" label="Save for later" disabled />
+      </Section>
+      <Section id="danger-button" title="Danger button">
+        <DestructiveButton testID="db1" label="Cancel payment" />
+        <DestructiveButton testID="db2" label="Cancel payment" busy />
+      </Section>
+      <Section id="savings-slider" title="Savings slider">
+        <Slider testID="sl1" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} />
+      </Section>
+      <Section id="segmented" title="Segmented control">
+        <ToggleGroup testID="sg1" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} />
+      </Section>
+      <Section id="filter-chips" title="Filter chips">
+        <FilterChips testID="fc1" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />
+      </Section>
+      <Section id="action-menu" title="Action menu">
+        <ActionMenu testID="am1" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />
+      </Section>
+      <Section id="accordion" title="Accordion">
+        <Accordion testID="ac1" items={faq} />
+      </Section>
+      <Section id="stepper" title="Stepper">
+        <Stepper testID="st1" steps={['Details', 'Review', 'Done']} selectedStep="Review" />
+      </Section>
+      <Section id="breadcrumb" title="Breadcrumb">
+        <Breadcrumb testID="bc1" items={['Accounts', 'Savings ·· 4821', 'Statement']} />
+      </Section>
+      <Section id="side-nav" title="Side navigation">
+        <SideNav testID="sn1" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} />
+      </Section>
+      <Section id="sheet" title="Sheet">
+        <SecondaryButton label="Filter" onAction={() => setSheet(true)} />
+        <Sheet testID="sh1" open={sheet} onOpenChange={setSheet} heading="Filter transactions"><p>Choose what to show.</p></Sheet>
+      </Section>
+      <Section id="grid" title="Grid">
+        <Grid testID="gr1" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid>
+      </Section>
+      <Section id="divider" title="Divider">
+        <Divider testID="dv1" />
+        <Divider testID="dv2" label="Or" />
+      </Section>
+      <Section id="avatar" title="Avatar">
+        <Avatar testID="av1" name="Asha Rao" />
+        <Avatar testID="av2" name="J. Mehta" size="sm" />
+        <Avatar testID="av3" name="S. Kapoor" size="lg" />
+      </Section>
+      <Section id="pagination" title="Pagination">
+        <Pagination testID="pg1" page={page} pageCount={4} onPageChange={setPage} />
+      </Section>
+      <Section id="status-badge" title="Status badge">
+        <StatusBadge testID="sb1" label="Completed" tone="success" />
+        <StatusBadge label="Pending" tone="warning" />
+        <StatusBadge label="Rejected" tone="danger" />
+      </Section>
+      <Section id="timeline" title="Timeline">
+        <Timeline testID="tl1" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} />
+      </Section>
+      <Section id="spinner" title="Spinner">
+        <Spinner testID="sp1" />
+        <Spinner testID="sp2" size="lg" label="Loading accounts" />
+      </Section>
+      <Section id="skeleton" title="Skeleton">
+        <Skeleton testID="sk1" />
+        <Skeleton testID="sk2" shape="card" lines={2} />
+        <Skeleton testID="sk3" shape="circle" lines={1} />
+      </Section>
+      <Section id="empty-state" title="Empty state">
+        <EmptyState testID="es1" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" />
+      </Section>
+      <Section id="tooltip" title="Tooltip">
+        <Tooltip testID="tt1" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." />
+      </Section>
+      <Section id="alert-banner" title="Alert banner">
+        <Alert testID="ab1" message="Transfers after 6 pm arrive the next working day." />
+        <Alert testID="ab2" severity="warning" message="Your session ends in 2 minutes." dismissible />
+      </Section>
+      <Section id="error-message" title="Error message">
+        <ErrorMessage testID="em1" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" />
+      </Section>
+      <Section id="success-message" title="Success message">
+        <SuccessMessage testID="sm1" message="Payment sent. Reference FX-20391." actionLabel="View receipt" />
+      </Section>
+      <Section id="notification-panel" title="Notification panel">
+        <NotificationPanel testID="np1" items={notes} />
+        <NotificationPanel testID="np2" heading="Alerts" items={[]} emptyText="No alerts." />
       </Section>
     </main>
   );
