@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Page, expect, test } from '@playwright/test';
 import { createRequire } from 'node:module';
 
@@ -12,10 +13,13 @@ const URL = 'http://localhost:5184/';
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 768, height: 1024 };
 
-async function open(page: Page, theme: 'light' | 'dark') {
+/** The components the gallery draws only alone (?only=id): the keys of SAMPLES in samples.tsx. */
+const SAMPLE_IDS = [...readFileSync(new globalThis.URL('../samples.tsx', import.meta.url), 'utf8').matchAll(/^\s+'([a-z0-9-]+)': \[['"]/gm)].map((m) => m[1]);
+
+async function open(page: Page, theme: 'light' | 'dark', only?: string) {
   // Reduced motion before the page loads, so the pack's AccessibilityInfo reads it and every effect is at its end
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme });
-  await page.goto(`${URL}?mode=${theme}`);
+  await page.goto(`${URL}?mode=${theme}${only ? `&only=${only}` : ''}`);
   await page.waitForSelector('[data-gallery-ready]', { timeout: 60_000 });
   await page.evaluate(() => document.fonts && document.fonts.ready);
 }
@@ -55,6 +59,24 @@ async function smallTargets(page: Page, sel: string): Promise<string[]> {
   }, sel);
 }
 
+/** The light checks of one section; returns its colours for the dark check. */
+async function lightChecks(page: Page, id: string): Promise<string> {
+  const sel = `[data-component="${id}"]`;
+  expect.soft(await axe(page, sel), `${id} · accessibility (light)`).toEqual([]);
+  expect.soft(await smallTargets(page, sel), `${id} · touch targets`).toEqual([]);
+  await expect.soft(page.locator(sel), `${id} · screenshot (light)`).toHaveScreenshot(`react-native-${id}-light.png`,
+    { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.01 });
+  return colours(page, sel);
+}
+
+async function darkChecks(page: Page, id: string, light: string) {
+  const sel = `[data-component="${id}"]`;
+  expect.soft(await axe(page, sel), `${id} · accessibility (dark)`).toEqual([]);
+  expect.soft(await colours(page, sel), `${id} · the dark theme changes its colours`).not.toBe(light);
+  await expect.soft(page.locator(sel), `${id} · screenshot (dark)`).toHaveScreenshot(`react-native-${id}-dark.png`,
+    { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.01 });
+}
+
 test('the gallery shows every section it lists', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, 'light');
@@ -67,23 +89,25 @@ test.describe('react-native', () => {
     await open(page, 'light');
     const all = await ids(page);
     const light: Record<string, string> = {};
-    for (const id of all) {
-      const sel = `[data-component="${id}"]`;
-      expect.soft(await axe(page, sel), `${id} · accessibility (light)`).toEqual([]);
-      expect.soft(await smallTargets(page, sel), `${id} · touch targets`).toEqual([]);
-      light[id] = await colours(page, sel);
-      await expect.soft(page.locator(sel), `${id} · screenshot (light)`).toHaveScreenshot(`react-native-${id}-light.png`,
-        { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.01 });
-    }
+    for (const id of all) { light[id] = await lightChecks(page, id); }
     await open(page, 'dark');
-    for (const id of all) {
-      const sel = `[data-component="${id}"]`;
-      expect.soft(await axe(page, sel), `${id} · accessibility (dark)`).toEqual([]);
-      expect.soft(await colours(page, sel), `${id} · the dark theme changes its colours`).not.toBe(light[id]);
-      await expect.soft(page.locator(sel), `${id} · screenshot (dark)`).toHaveScreenshot(`react-native-${id}-dark.png`,
-        { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: 0.01 });
-    }
+    for (const id of all) { await darkChecks(page, id, light[id]); }
   });
+
+  // The components the gallery draws only alone (?only=id), each in a test of its own: the same checks as the sections
+  test('every sample the gallery draws alone is listed', () => {
+    expect(SAMPLE_IDS.length).toBeGreaterThanOrEqual(180);
+  });
+  for (const id of SAMPLE_IDS) {
+    test(`${id} · accessibility, themes, touch targets and screenshots, drawn alone`, async ({ page }) => {
+      await page.setViewportSize(PHONE);
+      await open(page, 'light', id);
+      await expect(page.locator('[data-component]')).toHaveCount(1);
+      const light = await lightChecks(page, id);
+      await open(page, 'dark', id);
+      await darkChecks(page, id, light);
+    });
+  }
 
   test('nothing scrolls sideways on a phone or a tablet', async ({ page }) => {
     for (const size of [PHONE, TABLET]) {
