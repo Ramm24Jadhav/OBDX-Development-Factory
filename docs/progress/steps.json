@@ -157,7 +157,7 @@
    "items": [
     {
      "name": "Component inventory",
-     "done": false
+     "done": true
     },
     {
      "name": "Component mapping",
