@@ -79,6 +79,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.dashboard = ko.observable('all');
       self.limits = ko.observable({});
 
+      self.readinessChips = [['all', 'All'], ['available', 'Available'], ['in-test', 'In test'], ['planned', 'Planned']].map((g) => ({ label: g[1],
+        pressed: ko.pureComputed(() => (self.readiness() === g[0] ? 'true' : 'false')), css: ko.pureComputed(() => 'factory-cf-chip' + (self.readiness() === g[0] ? ' is-on' : '')), pick: () => self.readiness(g[0]) }));
       self.readinessOptions = [{ value: 'all', label: 'All' }, { value: 'available', label: 'Available' }, { value: 'in-test', label: 'In test' }, { value: 'planned', label: 'Planned' }];
       self.mapChips = MAP_GROUPS.map((g) => ({ label: g[1], pressed: ko.pureComputed(() => (self.mapGroup() === g[0] ? 'true' : 'false')),
         css: ko.pureComputed(() => 'factory-cf-chip' + (self.mapGroup() === g[0] ? ' is-on' : '')), pick: () => self.mapGroup(g[0]) }));

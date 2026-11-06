@@ -10135,3 +10135,34 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mb-dialogfoot { display: flex; justify-content: flex-end; gap: 8px; }
 .factory-mb-approve [role="status"] .factory-mb-kv > div { padding-bottom: 8px; border-bottom: var(--fx-border-width) solid var(--fx-border); }
 .factory-mb-donehead strong { font-size: 18px; }
+
+/* Component factory, as on the Packs board: the toolbar in two rows, and each card with its theme strip on top and
+   the two sides as panels with a tag bar, the preview (the design arrows and dots on the pack side) and a foot */
+.factory-cf.factory-mb { gap: 12px; }
+.factory-cf .factory-cf-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; margin: 0; }
+.factory-cf-toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.factory-cf-toolrow .factory-cf-search { flex: 0 1 300px; min-width: 220px; }
+.factory-cf .factory-cf-mapchips { margin: 0; }
+.factory-cf .factory-cf-card { display: flex; flex-direction: column; gap: 10px; }
+.factory-cf .factory-cf-theme { padding: 8px 10px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); }
+.factory-cf .factory-cf-theme .factory-cf-chips-label { text-transform: uppercase; letter-spacing: .06em; font-size: 11px; font-weight: 700; }
+.factory-cf .factory-cf-side { padding: 0; gap: 0; background: var(--fx-surface); overflow: hidden; }
+.factory-cf .factory-cf-side-tag { padding: 8px 12px; border-bottom: var(--fx-border-width) solid var(--fx-border); background: var(--fx-surface-2); color: var(--fx-text); font-size: 12px; }
+.factory-cf-ws { padding: 2px 8px; border-radius: var(--fx-radius-pill); background: var(--fx-surface-3); color: var(--fx-text-body); font-size: 11px; }
+.factory-cf .factory-cf-side-tag .factory-cf-look { margin-left: auto; font-weight: 600; color: var(--fx-text-body); }
+.factory-cf-side-body { position: relative; flex: 1; min-height: 120px; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; padding: 16px 40px; }
+.factory-cf-side.is-jet .factory-cf-side-body { padding: 16px; }
+.factory-cf-stage { display: flex; justify-content: center; }
+.factory-cf-stage > * { flex: 1; min-width: 0; }
+.factory-cf-side-body .factory-cf-dots { display: flex; justify-content: center; gap: 4px; }
+.factory-cf-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; border: var(--fx-border-width) solid var(--fx-border);
+  background: var(--fx-surface); color: var(--fx-text-body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: border-color var(--fx-dur-hover) var(--fx-ease-out); }
+.factory-cf-nav:hover { border-color: var(--fx-primary-border); color: var(--fx-primary-text); }
+.factory-cf-nav.is-prev { left: 8px; } .factory-cf-nav.is-next { right: 8px; }
+.factory-cf-side-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-top: var(--fx-border-width) solid var(--fx-border); font-size: 12px; font-weight: 600; color: var(--fx-text); }
+.factory-cf-side-foot .factory-cf-side-name { color: var(--fx-text); font-size: 12px; }
+.factory-cf .factory-cf-side-foot .factory-cf-card-actions { margin-left: auto; display: flex; gap: 6px; }
+.factory-cf-side-foot .factory-mb-btn.is-xs { height: 28px; padding: 0 10px; font-size: 12px; color: var(--fx-text); }
+.factory-cf .factory-cf-design:empty { display: none; }
+.factory-cf-side-body .factory-cf-pv-row { justify-content: center; }
+.factory-cf-side.is-jet .factory-cf-jetlook > code, .factory-cf-side.is-jet .factory-cf-jetlook { text-align: center; }
