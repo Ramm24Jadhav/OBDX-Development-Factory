@@ -192,7 +192,7 @@ const mode = new URLSearchParams(location.search).get('mode') === 'dark' ? 'dark
         <bx-iban testID="ib2" label="Account number (IBAN)" value="GB28NWBK60161331926819" error="Check the IBAN: it starts with the country code." />
       </div></section>
       <section class="gate" data-component="payee-list" aria-labelledby="aw2-6-h"><h2 id="aw2-6-h">Payee list</h2><div class="gate-body">
-        <bx-payee-list testID="pl1" [items]="payees" />
+        <bx-payee-list testID="pl1" [items]="payeeRows" />
       </div></section>
       <section class="gate" data-component="beneficiary-card" aria-labelledby="aw2-7-h"><h2 id="aw2-7-h">Beneficiary card</h2><div class="gate-body">
         <bx-beneficiary-card testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
@@ -738,6 +738,7 @@ class Gallery {
   payee = signal('P1');
   proof = signal([new File([new Uint8Array(248000)], 'statement-october.pdf', { type: 'application/pdf' })]);
   payees = [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }];
+  payeeRows = [{ id: 'p1', name: 'A. Rao', meta: 'HSBC ·· 9268' }, { id: 'p2', name: 'J. Mehta', meta: 'Barclays ·· 1180' }];
   accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
   channels = [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }];
   speeds = [{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }];

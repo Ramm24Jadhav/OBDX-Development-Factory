@@ -12,7 +12,7 @@ export interface DialogProps {
   /** 'none' keeps the dialog open on Escape and outside clicks, and hides the close button (a step that must be answered). */
   cancelBehavior?: 'icon' | 'escape' | 'none';
   testID?: string;
-  /** Where the dialog is drawn (a preview panel); the page's body when left out. */
+  /** Where the dialog is drawn (a preview panel); the page's body when left out. Drawn in a panel, it does not lock the rest of the page. */
   container?: HTMLElement | null;
 }
 
@@ -31,9 +31,9 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
   }
   wasOpen.current = open;
   return (
-    <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
+    <RadixDialog.Root open={open} onOpenChange={onOpenChange} modal={!container}>
       <RadixDialog.Portal container={container ?? undefined}>
-        <RadixDialog.Overlay className="bx-dialog-backdrop" />
+        {container ? (open ? <div className="bx-dialog-backdrop" aria-hidden="true" /> : null) : <RadixDialog.Overlay className="bx-dialog-backdrop" />}
         <RadixDialog.Content className="bx-dialog" data-testid={testID} {...(description ? {} : { 'aria-describedby': undefined })}
                              onEscapeKeyDown={(e) => { if (locked) { e.preventDefault(); } }}
                              onPointerDownOutside={(e) => { if (locked) { e.preventDefault(); } }}
