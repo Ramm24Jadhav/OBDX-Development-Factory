@@ -79,7 +79,10 @@ const G1 = ['bx-secondary-button', 'bx-danger-button', 'bx-savings-slider', 'bx-
 const G2 = ['bx-account-picker', 'bx-account-summary', 'bx-balance-card', 'bx-account-card', 'bx-account-details', 'bx-iban', 'bx-quick-actions', 'bx-payee-list',
   'bx-beneficiary-card', 'bx-payment-form', 'bx-transfer-summary', 'bx-payment-status', 'bx-transaction-list', 'bx-transaction-filter', 'bx-transaction-details', 'bx-repeat',
   'bx-receipt', 'bx-upcoming-bills', 'bx-td-summary', 'bx-new-td', 'bx-maturity-instructions', 'bx-td-topup', 'bx-td-redemption'];
-const GROUPS = [G1, G2];
+const G3 = ['bx-loan-summary', 'bx-loan-repayment', 'bx-loan-schedule', 'bx-promise-to-pay', 'bx-disbursement', 'bx-card-tile', 'bx-card-list', 'bx-activate-card',
+  'bx-convert-emi', 'bx-redeem-points', 'bx-spend-limit', 'bx-card-controls', 'bx-block-card', 'bx-reset-pin', 'bx-raise-dispute', 'bx-add-on-card', 'bx-card-statements', 'bx-otp',
+  'bx-biometric', 'bx-session-timeout', 'bx-secure-confirmation', 'bx-sensitive', 'bx-kyc-steps', 'bx-fraud-alert'];
+const GROUPS = [G1, G2, G3];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -638,6 +641,74 @@ test('g2 views have their names and roles', () => {
   has('bx-maturity-instructions', /<fieldset/);
   has('bx-quick-actions', /<nav class="bx-quick" :aria-label/);
   has('bx-beneficiary-card', /:aria-label="\[\[actionName\]\]"/);
+});
+
+// Group 3: loans, cards, security
+const g3 = load(path.join(BX, 'bx-g3.js')).kit;
+test('g3 a card number shows its last four digits only', () => {
+  eq([g3.masked('4111 1111 1111 4821'), g3.masked(''), create('bx-card-tile', { number: '4111111111114821', label: 'Platinum', network: 'Visa', frozen: true }).vm.name()],
+    ['•••• 4821', '', 'Platinum, Visa, ending 4821, blocked'], 'masked');
+  const s = create('bx-sensitive', { value: '4111 1111 1111 4821' });
+  eq([s.vm.text(), s.vm.toggleName()], ['•••• 4821', 'Show Card number'], 'masked first');
+  s.vm.toggle();
+  eq([s.vm.text(), s.vm.pressed()], ['4111 1111 1111 4821', 'true'], 'shown on request');
+});
+test('g3 bx-loan-schedule: a row per instalment, amounts on the right', () => {
+  const t = create('bx-loan-schedule', { rows: [{ date: '05 Feb', amount: '412.00' }, { date: '05 Mar', amount: '412.00', status: 'due' }] });
+  eq([t.vm.cols().map((c) => c.css), t.vm.rows()[1].css, t.vm.rows()[1].cells.map((c) => c.text)], [['bx-th', 'bx-th is-end'], 'bx-tr is-due', ['05 Mar', '412.00']], 'table');
+  if (!/<caption>/.test(registry['bx-loan-schedule'].view) || !/<th scope="col"/.test(registry['bx-loan-schedule'].view)) { throw new Error('schedule headers'); }
+});
+test('g3 codes: digits only, slots filled, ojComplete at the last digit; a PIN is masked', () => {
+  const o = create('bx-otp', {});
+  const el = { value: '12a34' };
+  o.vm.onInput({ target: el });
+  eq([o.props.value, el.value, o.vm.slots().map((s) => s.ch).join(''), types(o)], ['1234', '1234', '1234', []], 'partial');
+  o.vm.onInput(input('123456'));
+  eq([types(o), o.events[0].detail.value, o.vm.auto()], [['ojComplete'], '123456', 'one-time-code'], 'complete');
+  o.vm.resend();
+  eq(types(o), ['ojComplete', 'ojAction'], 'resend');
+  const p = create('bx-reset-pin', {});
+  p.vm.onInput(input('98'));
+  eq([p.vm.type(), p.vm.slots().map((s) => s.ch), p.vm.auto()], ['password', ['•', '•', '', ''], 'off'], 'pin');
+});
+test('g3 checks and toggles: card controls switch on and off; blocking says what it means', () => {
+  const c = create('bx-card-controls', { options: ['Online payments', 'ATM withdrawals', 'Use abroad'], value: ['Online payments'] });
+  c.vm.items()[2].toggle();
+  c.vm.items()[0].toggle();
+  eq([c.props.value, c.vm.items()[2].checked], [['Use abroad'], 'true'], 'controls');
+  const b = create('bx-block-card', {});
+  eq(b.vm.note(), '', 'no note when off');
+  b.vm.toggle();
+  eq([b.props.value, b.vm.checked(), b.vm.note().indexOf('The card is blocked') === 0], [true, 'true', true], 'blocked');
+});
+test('g3 bx-biometric: verify and the other way fire ojAction; waiting stops a second ask', () => {
+  const b = create('bx-biometric', { state: 'waiting' });
+  b.vm.go();
+  b.vm.other();
+  eq(b.events.map((e) => e.detail.action), ['other'], 'waiting');
+  const f = create('bx-biometric', { state: 'failed' });
+  f.vm.go();
+  eq([f.vm.failed(), f.events[0].detail.action], [true, 'verify'], 'failed');
+});
+test('g3 bx-session-timeout: counts down, says it at the start and in the last ten seconds, signs out at zero', () => {
+  timers.length = 0;
+  const t = create('bx-session-timeout', { open: true, seconds: 12 });
+  eq([t.vm.left(), t.vm.spoken().indexOf('12 seconds') > 0], [12, true], 'start');
+  const run = () => { const next = timers.filter((x) => x.fn && x.ms === 1000).pop(); const fn = next.fn; next.fn = null; fn(); };
+  run();
+  eq([t.vm.left(), t.vm.spoken()], [11, ''], 'quiet');
+  run();
+  eq(t.vm.spoken().indexOf('10 seconds') > 0, true, 'last ten');
+  for (let i = 0; i < 10; i++) { run(); }
+  eq([t.props.open, t.events.map((e) => e.detail.action)], [false, ['expired']], 'expired');
+  const s = create('bx-session-timeout', { open: true });
+  s.vm.stay();
+  eq([s.props.open, s.events[0].detail.action, s.vm.text()], [false, 'stay', 'For your security you will be signed out in 1 minute.'], 'stay');
+  if (!/role="alertdialog" aria-modal="true"/.test(registry['bx-session-timeout'].view)) { throw new Error('alertdialog'); }
+});
+test('g3 reused kinds have their own defaults', () => {
+  eq([create('bx-kyc-steps', {}).vm.items().length, create('bx-fraud-alert', {}).vm.role(), create('bx-convert-emi', {}).vm.items().length, create('bx-card-statements', {}).props.actionLabel,
+    create('bx-redeem-points', {}).props.max, create('bx-loan-repayment', {}).props.submitLabel], [3, 'alert', 3, 'Download', 12400, 'Review repayment'], 'defaults');
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)

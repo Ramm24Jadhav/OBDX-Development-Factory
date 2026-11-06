@@ -40,3 +40,7 @@ export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSele
   TransactionReceipt, TransferSummary, UpcomingBills, ibanValid, money } from './G2';
 export type { AccountOption, AccountSelectorProps, BalanceProps, ChoiceCardsProps, ChoiceOption, Detail, DetailsProps, Payee, PayeesProps, QuickActionsProps, QuickItem,
   ReceiptProps, StepFormProps, ThingCardProps, Tile, TilesProps, Transaction, TransactionsProps } from './G2';
+export { ActivateCard, AddOnCard, AuthChallenge, BlockCard, CardControls, CardLimits, CardList, CardStatements, CardTile, ConvertToEmi, DisbursementTimeline, FraudAlert,
+  KycSteps, LoanRepayment, LoansSummary, OtpInput, PromiseToPay, RaiseDispute, RedeemPoints, RepaymentSchedule, ResetPin, SecureConfirmation, SensitiveField,
+  SessionExpiryWarning, masked } from './G3';
+export type { CardTileProps, ChallengeProps, ChecksProps, CodeProps, ScheduleColumn, ScheduleProps, SessionExpiryProps, SettingProps, SwitchOption } from './G3';

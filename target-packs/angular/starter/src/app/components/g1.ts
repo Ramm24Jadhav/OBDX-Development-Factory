@@ -74,13 +74,13 @@ export class SecondaryButton {
 
 /* ---------- Slider ---------- */
 
-const SLIDER = `
+export const SLIDER = `
   <div class="bx-field bx-slider" [attr.data-testid]="testID() || null">
     <div class="bx-slider-head">
-      <label class="bx-label" [attr.for]="id">{{ label() }}</label>
+      <label class="bx-label" [attr.for]="id">{{ name() }}</label>
       <output class="bx-slider-value" [attr.for]="id">{{ shown() }}</output>
     </div>
-    <input type="range" class="bx-range-input" [id]="id" [min]="min()" [max]="max()" [step]="step()" [value]="value()" [disabled]="disabled()"
+    <input type="range" class="bx-range-input" [id]="id" [min]="min()" [max]="top()" [step]="by()" [value]="value()" [disabled]="disabled()"
            [attr.aria-valuetext]="shown()" [attr.aria-describedby]="helpText() ? id + '-help' : null" (input)="value.set(+$any($event.target).value)" />
     <div class="bx-slider-scale" aria-hidden="true"><span>{{ ends().min }}</span><span>{{ ends().max }}</span></div>
     @if (helpText()) { <span class="bx-help" [id]="id + '-help'">{{ helpText() }}</span> }
@@ -88,11 +88,16 @@ const SLIDER = `
 
 @Directive()
 export abstract class SliderBase extends Part {
-  readonly label = input.required<string>();
+  /** Leave out for the component's own label, max and step. */
+  readonly label = input<string | undefined>(undefined);
+  protected readonly defaults: { label?: string; max?: number; step?: number } = {};
+  protected readonly name = computed(() => this.label() ?? this.defaults.label ?? '');
+  protected readonly top = computed(() => this.max() ?? this.defaults.max ?? 100);
+  protected readonly by = computed(() => this.step() ?? this.defaults.step ?? 1);
   readonly value = model(0);
   readonly min = input(0);
-  readonly max = input(100);
-  readonly step = input(1);
+  readonly max = input<number | undefined>(undefined);
+  readonly step = input<number | undefined>(undefined);
   /** Shown before the value, for example the currency code. */
   readonly prefix = input('');
   readonly decimals = input(0);
@@ -100,18 +105,18 @@ export abstract class SliderBase extends Part {
   readonly helpText = input('');
   private readonly p = computed(() => (this.prefix() ? `${this.prefix()} ` : ''));
   protected readonly shown = computed(() => this.p() + Number(this.value() || 0).toLocaleString(undefined, { maximumFractionDigits: this.decimals() }));
-  protected readonly ends = computed(() => ({ min: this.p() + this.min().toLocaleString(), max: this.p() + this.max().toLocaleString() }));
+  protected readonly ends = computed(() => ({ min: this.p() + this.min().toLocaleString(), max: this.p() + this.top().toLocaleString() }));
 }
 
 /** An amount or a count on a range, the value shown beside the label. */
 @Component({ selector: 'bx-savings-slider', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
-export class Slider extends SliderBase {}
+export class Slider extends SliderBase { protected override readonly defaults = { max: 20000, step: 500 }; }
 
 /* ---------- ToggleGroup (segmented) ---------- */
 
-const SEGMENTS = `
+export const SEGMENTS = `
   <div class="bx-field bx-segmented-field" [attr.data-testid]="testID() || null">
-    <span class="bx-label" [id]="id + '-label'">{{ label() }}</span>
+    <span class="bx-label" [id]="id + '-label'">{{ name() }}</span>
     <div class="bx-segmented" role="radiogroup" [attr.aria-labelledby]="id + '-label'" (keydown)="key($event)">
       @for (o of rows(); track o.id) {
         <button type="button" role="radio" [class]="o.css" [attr.aria-checked]="o.on" [attr.tabindex]="o.tab" [disabled]="o.off" (click)="pick(o)">{{ o.label }}</button>
@@ -121,12 +126,16 @@ const SEGMENTS = `
 
 @Directive()
 export abstract class SegmentsBase extends Part {
-  readonly label = input.required<string>();
-  readonly options = input<ReadonlyArray<ItemLike>>([]);
+  /** Leave out for the component's own label and options. */
+  readonly label = input<string | undefined>(undefined);
+  readonly options = input<ReadonlyArray<ItemLike> | undefined>(undefined);
+  protected readonly defaults: { label?: string; options?: ReadonlyArray<ItemLike> } = {};
+  protected readonly name = computed(() => this.label() ?? this.defaults.label ?? '');
+  protected readonly choices = computed(() => this.options() ?? this.defaults.options ?? []);
   readonly value = model('');
   readonly disabled = input(false);
   protected readonly rows = computed(() => {
-    const list = toItems(this.options());
+    const list = toItems(this.choices());
     const picked = list.some((o) => valueOf(o) === this.value());
     return list.map((o, i) => {
       const on = valueOf(o) === this.value();
@@ -135,7 +144,7 @@ export abstract class SegmentsBase extends Part {
   });
   protected pick(o: ListItem): void { if (!o.disabled && !this.disabled()) { this.value.set(valueOf(o)); } }
   protected key(e: KeyboardEvent): void {
-    const live = toItems(this.options()).filter((o) => !o.disabled);
+    const live = toItems(this.choices()).filter((o) => !o.disabled);
     const next = arrow(e.key, Math.max(0, live.findIndex((o) => valueOf(o) === this.value())), live.length);
     if (next < 0 || this.disabled()) { return; }
     e.preventDefault();
@@ -494,7 +503,7 @@ export class StatusBadge extends Part {
 export interface TimelineItem { id?: string; label: string; meta?: string; state?: 'done' | 'current' | 'pending' | 'failed' }
 
 export const TIMELINE = `
-  <ol class="bx-timeline" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
+  <ol class="bx-timeline" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
     @for (o of rows(); track $index) {
       <li [class]="'bx-tl-item is-' + o.state" [attr.aria-current]="o.state === 'current' ? 'step' : null">
         <span class="bx-tl-dot" aria-hidden="true"></span>
@@ -506,7 +515,9 @@ export const TIMELINE = `
 
 @Directive()
 export abstract class TimelineBase extends Part {
-  readonly label = input('Timeline');
+  readonly label = input<string | undefined>(undefined);
+  protected readonly defaultLabel: string = 'Timeline';
+  protected readonly name = computed(() => this.label() ?? this.defaultLabel);
   readonly items = input<ReadonlyArray<TimelineItem>>([]);
   protected readonly rows = computed(() => this.items().map((o) => {
     const state = o.state ?? 'done';
