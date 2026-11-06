@@ -30,8 +30,9 @@ app's document picker (expo-document-picker, for example) and resolves with the 
 ## Checks
 
 `npm ci` then `npm run check` (Node 22): the typecheck, then Jest with React Native Testing Library for behaviour,
-writeback and announcements. The same run checks every control's role, name, state and touch target. Screen reader
-runs on devices, screenshots and themes are the next gates.
+writeback and announcements. The same run checks every control's role, name, state and touch target. `gates/` renders
+the pack in a browser through react-native-web for screenshots, the light and dark themes, contrast and touch targets
+(`cd gates && npm install && npm run gates`); screen reader runs stay on devices.
 
 ## The banking groups
 
