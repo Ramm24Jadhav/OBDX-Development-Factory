@@ -73,8 +73,12 @@ const input = (value) => ({ target: { value: value } });
 
 const FOUNDATION = ['bx-button', 'bx-icon-button', 'bx-text-field', 'bx-amount', 'bx-select', 'bx-checkbox-group', 'bx-choice-group', 'bx-date', 'bx-dialog', 'bx-toast', 'bx-card', 'bx-tabs', 'bx-data-grid'];
 const FORMS = ['bx-text-area', 'bx-password', 'bx-number-input', 'bx-currency-picker', 'bx-multi-select', 'bx-switch', 'bx-date-range', 'bx-search', 'bx-autocomplete', 'bx-document-upload'];
-const ELEMENTS = FOUNDATION.concat(FORMS);
-test('every foundation and forms element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
+const G1 = ['bx-secondary-button', 'bx-danger-button', 'bx-savings-slider', 'bx-segmented', 'bx-filter-chips', 'bx-action-menu', 'bx-accordion', 'bx-stepper', 'bx-breadcrumb',
+  'bx-side-nav', 'bx-sheet', 'bx-grid', 'bx-divider', 'bx-avatar', 'bx-pagination', 'bx-status-badge', 'bx-timeline', 'bx-spinner', 'bx-skeleton', 'bx-empty-state', 'bx-tooltip',
+  'bx-alert-banner', 'bx-error-message', 'bx-success-message', 'bx-notification-panel'];
+const GROUPS = [G1];
+const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
+test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
 
 test('bx-text-field: raw-value as typed, value on blur, required and JET validators', () => {
@@ -401,6 +405,152 @@ test('the skin has every design option and motion of the component style', () =>
   eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
 });
 
+// Group 1: the rest of the foundation, layout, data and feedback
+const types = (x) => x.events.map((e) => e.type);
+test('g1 buttons: secondary is outlined, danger is danger; busy or disabled does not fire', () => {
+  const s = create('bx-secondary-button', { label: 'Save for later' });
+  const d = create('bx-danger-button', { label: 'Cancel payment', busy: true });
+  s.vm.press();
+  d.vm.press();
+  eq([s.vm.css(), d.vm.css(), types(s), types(d), d.vm.busyAttr()], ['bx-btn bx-btn--outlined', 'bx-btn bx-btn--danger', ['ojAction'], [], 'true'], 'buttons');
+});
+test('g1 bx-savings-slider: the value with its currency, written back as a number', () => {
+  const s = create('bx-savings-slider', { labelHint: 'Monthly saving', prefix: 'USD', value: 5000 });
+  eq(s.vm.shown(), 'USD ' + (5000).toLocaleString(), 'shown');
+  s.vm.onInput(input('5500'));
+  eq(s.props.value, 5500, 'value');
+});
+test('g1 bx-segmented: a click and the arrow keys choose; one option is in the tab order', () => {
+  const s = create('bx-segmented', { labelHint: 'Show', options: ['Day', 'Week', 'Month'], value: 'Week' });
+  eq(s.vm.items().map((i) => i.tab), ['-1', '0', '-1'], 'tab order');
+  s.vm.onKey(key('ArrowRight'));
+  eq(s.props.value, 'Month', 'arrow');
+  s.vm.items()[0].pick();
+  eq([s.props.value, s.vm.items()[0].checked], ['Day', 'true'], 'click');
+  eq(create('bx-segmented', { options: ['A', 'B'] }).vm.items()[0].tab, '0', 'first is focusable when none is chosen');
+});
+test('g1 bx-filter-chips: several turn on and off; single keeps one', () => {
+  const c = create('bx-filter-chips', { options: ['Card', 'Transfer', 'Bills'] });
+  c.vm.items()[0].toggle();
+  c.vm.items()[2].toggle();
+  eq(c.props.value, ['Card', 'Bills'], 'two on');
+  c.vm.items()[0].toggle();
+  eq([c.props.value, c.vm.items()[2].pressed], [['Bills'], 'true'], 'one off');
+  const one = create('bx-filter-chips', { options: ['A', 'B'], multiple: false });
+  one.vm.items()[0].toggle();
+  one.vm.items()[1].toggle();
+  eq(one.props.value, ['B'], 'single');
+});
+test('g1 bx-action-menu: opens, fires ojAction with the item, closes; Escape closes', () => {
+  const m = create('bx-action-menu', { items: ['Download statement', { value: 'close', label: 'Close the account', danger: true }, { label: 'Off', disabled: true }] });
+  m.vm.toggle();
+  eq(m.vm.expanded(), 'true', 'open');
+  m.vm.items()[2].pick();
+  eq(types(m), [], 'disabled item');
+  m.vm.items()[1].pick();
+  eq([m.events[0].detail.value, m.vm.open(), m.vm.items()[1].css], ['close', false, 'bx-menu-item is-danger'], 'picked');
+  m.vm.toggle();
+  m.vm.onMenuKey(key('Escape'));
+  eq(m.vm.open(), false, 'Escape');
+});
+test('g1 bx-accordion: one section at a time, or several when multiple', () => {
+  const items = [{ id: 'a', title: 'How long?', body: 'Same day.' }, { id: 'b', title: 'Fees?', body: 'None.' }];
+  const a = create('bx-accordion', { items: items });
+  a.vm.items()[0].toggle();
+  a.vm.items()[1].toggle();
+  eq([a.props.expanded, a.vm.items()[1].expanded], [['b'], 'true'], 'single');
+  const m = create('bx-accordion', { items: items, multiple: true });
+  m.vm.items()[0].toggle();
+  m.vm.items()[1].toggle();
+  m.vm.items()[0].toggle();
+  eq(m.props.expanded, ['b'], 'multiple');
+});
+test('g1 bx-stepper: done, current and next steps from selected-step', () => {
+  const s = create('bx-stepper', { steps: ['Details', 'Review', 'Done'], selectedStep: 'Review' });
+  eq(s.vm.items().map((i) => [i.css, i.mark, i.current]), [['bx-step-item is-done', '✓', null], ['bx-step-item is-current', '2', 'step'], ['bx-step-item is-next', '3', null]], 'states');
+});
+test('g1 bx-breadcrumb and bx-side-nav: the last crumb is the page; nav selection writes back', () => {
+  const b = create('bx-breadcrumb', { items: ['Accounts', 'Savings ·· 4821', 'Statement'] });
+  eq(b.vm.items().map((i) => i.last), [false, false, true], 'last');
+  b.vm.items()[0].go();
+  eq(b.events[0].detail.value, 'Accounts', 'go');
+  const n = create('bx-side-nav', { items: ['Accounts', 'Payments', { id: 'cards', label: 'Cards', badge: 2 }], selection: 'Accounts' });
+  n.vm.items()[2].pick();
+  eq([n.props.selection, n.vm.items()[2].current, n.vm.items()[2].badge], ['cards', 'page', '2'], 'nav');
+});
+test('g1 bx-sheet: Close sets open to false and fires ojClose; Escape closes', () => {
+  const s = create('bx-sheet', { heading: 'Filter transactions', open: true });
+  s.vm.onKey(key('Escape'));
+  eq([s.props.open, types(s)], [false, ['ojClose']], 'closed');
+  s.vm.close();
+  eq(types(s), ['ojClose'], 'only once');
+});
+test('g1 layout: grid columns and gap, divider label, avatar initials and photo', () => {
+  eq(create('bx-grid', { columns: 3, gap: 'lg' }).vm.css(), 'bx-layout-grid is-cols-3 is-gap-lg', 'grid');
+  eq([create('bx-avatar', { name: 'asha rao' }).vm.initials(), create('bx-avatar', {}).vm.initials()], ['AR', '?'], 'initials');
+  if (!/<hr class="bx-divider"\/>/.test(registry['bx-divider'].view) || !/role="separator" :aria-label/.test(registry['bx-divider'].view)) { throw new Error('divider markup'); }
+  if (!/:alt="\[\[\$properties\.name\]\]"/.test(registry['bx-avatar'].view) || !/role="img" :aria-label/.test(registry['bx-avatar'].view)) { throw new Error('avatar has no name'); }
+});
+test('g1 bx-pagination: first, last and the pages around the current one; next and previous stop at the ends', () => {
+  const p = create('bx-pagination', { page: 5, pageCount: 9 });
+  eq(p.vm.pages().map((x) => (x.gap ? '…' : x.label)), ['1', '…', '4', '5', '6', '…', '9'], 'pages');
+  eq(p.vm.pages()[3].current, 'page', 'current');
+  p.vm.next();
+  eq(p.props.page, 6, 'next');
+  const one = create('bx-pagination', { page: 1, pageCount: 1 });
+  one.vm.prev();
+  eq([one.props.page, one.vm.atFirst(), one.vm.atLast()], [1, true, true], 'ends');
+});
+test('g1 data: badge tone, timeline states, spinner and skeleton say they are loading', () => {
+  eq(create('bx-status-badge', { label: 'Overdue', tone: 'danger' }).vm.css(), 'bx-badge is-danger', 'badge');
+  const t = create('bx-timeline', { items: [{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', state: 'current' }, { label: 'Completed', state: 'pending' }] });
+  eq(t.vm.items().map((i) => [i.css, i.status, i.current]), [['bx-tl-item is-done', '', null], ['bx-tl-item is-current', 'In progress', 'step'], ['bx-tl-item is-pending', 'Not yet', null]], 'timeline');
+  ['bx-spinner', 'bx-skeleton'].forEach((e) => { if (!/role="status"/.test(registry[e].view) || !/bx-visually-hidden/.test(registry[e].view)) { throw new Error(e + ' is not announced'); } });
+  eq(create('bx-skeleton', { lines: 2 }).vm.lines().map((l) => l.css), ['bx-skel-line', 'bx-skel-line is-short'], 'skeleton');
+});
+test('g1 bx-empty-state and bx-tooltip: the action fires; the tip shows on focus and hides on Escape', () => {
+  const e = create('bx-empty-state', { heading: 'No payees yet', actionLabel: 'Add a payee' });
+  e.vm.act();
+  eq(types(e), ['ojAction'], 'action');
+  const t = create('bx-tooltip', { label: 'Available balance', text: 'What you can spend now.' });
+  t.vm.show();
+  eq([t.vm.open(), t.vm.name()], [true, 'About Available balance'], 'shown');
+  t.vm.onKey(key('Escape'));
+  eq(t.vm.open(), false, 'Escape');
+  if (!/role="tooltip" :id="\[\[id\]\]"/.test(registry['bx-tooltip'].view) || !/:aria-describedby="\[\[id\]\]"/.test(registry['bx-tooltip'].view)) { throw new Error('tooltip not tied'); }
+});
+test('g1 messages: errors are announced at once, others politely; the action and Dismiss fire', () => {
+  const e = create('bx-error-message', { message: 'The amount is more than your daily limit.', actionLabel: 'Change the amount', dismissible: true });
+  eq([e.vm.role(), e.vm.css(), e.vm.icon()], ['alert', 'bx-alert is-error', '!'], 'error');
+  e.vm.act();
+  e.vm.dismiss();
+  eq([types(e), e.vm.dismissed()], [['ojAction', 'ojClose'], true], 'events');
+  eq([create('bx-success-message', {}).vm.role(), create('bx-alert-banner', {}).vm.css()], ['status', 'bx-alert is-info'], 'others');
+});
+test('g1 bx-notification-panel: rows with their action named per row; empty text', () => {
+  const n = create('bx-notification-panel', { items: [{ id: 'n1', title: 'Card payment due', meta: 'Due 18 Jan', value: '640.00', unread: true }] });
+  const r = n.vm.rows()[0];
+  eq([r.actionName, r.value, r.css], ['Read: Card payment due', '640.00', 'bx-row is-unread'], 'row');
+  r.act();
+  eq(n.events[0].detail.item.id, 'n1', 'action item');
+  eq(create('bx-notification-panel', {}).vm.empty(), true, 'empty');
+});
+test('g1 views have their roles', () => {
+  const has = (e, re) => { if (!re.test(registry[e].view)) { throw new Error(e + ': ' + re); } };
+  has('bx-segmented', /role="radiogroup"[^>]*:aria-labelledby/);
+  has('bx-segmented', /role="radio"/);
+  has('bx-filter-chips', /:aria-pressed=/);
+  has('bx-action-menu', /aria-haspopup="menu"/);
+  has('bx-action-menu', /role="menuitem"/);
+  has('bx-accordion', /:aria-controls=[^>]*on-click/);
+  has('bx-accordion', /role="region"/);
+  has('bx-breadcrumb', /<nav class="bx-crumbs" :aria-label/);
+  has('bx-side-nav', /:aria-current="\[\[n\.data\.current\]\]"/);
+  has('bx-sheet', /role="dialog" aria-modal="true"/);
+  has('bx-pagination', /aria-label="Next page"/);
+  has('bx-stepper', /<ol class="bx-steps" :aria-label/);
+});
+
 // The motion layer (motion.json, bx.css and bx-motion.js)
 const motionSpec = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'motion.json'), 'utf8')).components;
 const motion = load(path.join(BX, 'bx-motion.js'));
@@ -432,7 +582,7 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
     '@keyframes bx-shimmer', '.bx-field.is-error .bx-control', '[class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important;'];
   eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');
   // The effects animate from a start state, so with motion off the element shows its own (end) style
-  const toFrames = (css.match(/@keyframes [\w-]+ \{[^}]*\bto\b/g) || []).map((k) => k.split(' ')[1]).filter((k) => !['bx-ripple', 'bx-shimmer'].includes(k));
+  const toFrames = (css.match(/@keyframes [\w-]+ \{[^}]*\bto\b/g) || []).map((k) => k.split(' ')[1]).filter((k) => !['bx-ripple', 'bx-shimmer', 'bx-spin', 'bx-skel'].includes(k));
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
