@@ -9,10 +9,10 @@ export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'd
 function look(t: Theme, chroming: Chroming) {
   const filled = chroming === 'callToAction' || chroming === 'solid' || chroming === 'danger';
   const outlineCta = t.look === 'outline' && chroming === 'callToAction';
-  const bg = chroming === 'danger' ? t.color.danger : filled && !outlineCta ? t.color.primary : chroming === 'outlined' ? t.color.surface : 'transparent';
+  const bg = chroming === 'danger' ? t.color.danger : filled && !outlineCta ? t.color.primary : t.glass ? t.glass.fill : chroming === 'outlined' ? t.color.surface : 'transparent';
   return {
-    box: { backgroundColor: bg, borderWidth: chroming === 'outlined' || outlineCta || t.look === 'brutal' ? Math.max(t.border, 1) : 0,
-      borderColor: outlineCta ? t.color.primary : t.look === 'brutal' ? t.color.text : t.color.borderStrong },
+    box: { backgroundColor: bg, borderWidth: chroming === 'outlined' || outlineCta || t.look === 'brutal' || t.glass ? Math.max(t.border, 1) : 0,
+      borderColor: outlineCta ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.borderStrong },
     text: filled && !outlineCta ? t.color.onPrimary : chroming === 'borderless' || outlineCta ? t.color.primaryText : t.color.text,
   };
 }

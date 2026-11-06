@@ -3651,6 +3651,12 @@
           "name": "@radix-ui/react-tabs",
           "version": "1.2",
           "licence": "MIT"
+        },
+        {
+          "name": "glisse",
+          "version": "0.5",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2026 Kelvin Zhang. Loaded only under the Liquid glass look, for the bending lens."
         }
       ],
       "built": [

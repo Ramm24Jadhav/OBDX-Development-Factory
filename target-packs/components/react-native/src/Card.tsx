@@ -19,8 +19,8 @@ export interface CardProps {
 export function Card({ heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
   const t = useTheme();
   const box = {
-    gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.color.surface, borderWidth: selected ? 1.5 : t.border,
-    borderColor: selected ? t.color.primary : t.look === 'brutal' ? t.color.text : t.color.border,
+    gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.color.surface, borderWidth: selected ? 1.5 : t.border,
+    borderColor: selected ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.border,
     ...(t.shadow ? { shadowColor: '#0f172a', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : {}),
   };
   const body = (

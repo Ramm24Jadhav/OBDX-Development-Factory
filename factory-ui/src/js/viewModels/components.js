@@ -22,7 +22,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
     const GROUP_OF = { 'direct-replacement': 'direct', 'property-mapping': 'needs', 'event-mapping': 'needs', 'custom-transformation': 'transform', 'manual-intervention': 'transform', unsupported: 'unsupported', new: 'new' };
     const GATE = { passed: ['Passed', 'green'], failed: ['Failing', 'red'], 'not-run': ['Not run yet', 'grey'], 'not-applicable': ['Not needed', 'grey'] };
     const GATE_NAMES = { unit: 'Unit tests', accessibility: 'Accessibility', visual: 'Visual snapshot', themes: 'Light and dark themes', responsive: 'Phone, tablet and laptop', parity: 'Parity with the JET element' };
-    const LOOKS = [['elevated', 'Elevated'], ['soft', 'Soft'], ['glass', 'Glass'], ['outline', 'Outline'], ['vivid', 'Vivid'], ['pill', 'Pill'], ['brutal', 'Neo-brutalist'], ['redwood', 'Redwood']];
+    const LOOKS = [['elevated', 'Elevated'], ['soft', 'Soft'], ['glass', 'Glass'], ['outline', 'Outline'], ['vivid', 'Vivid'], ['pill', 'Pill'], ['brutal', 'Neo-brutalist'], ['redwood', 'Redwood'], ['liquid', 'Liquid glass']];
     const HOVER = [['none', 'None'], ['lift', 'Lift'], ['glow', 'Glow'], ['shine', 'Shine']];
     const CLICK = [['none', 'None'], ['press', 'Press'], ['ripple', 'Ripple'], ['bounce', 'Bounce']];
     const SCROLL = [['none', 'None'], ['fadeup', 'Fade up'], ['scale', 'Scale in'], ['slide', 'Slide in'], ['blur', 'Blur in']];

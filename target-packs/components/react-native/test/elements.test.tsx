@@ -172,4 +172,13 @@ describe('Tokens and the component style', () => {
     await render(<ThemeProvider brand="#123456"><Button label="Pay now" /></ThemeProvider>);
     expect(screen.getByRole('button', { name: 'Pay now' })).toHaveStyle({ backgroundColor: '#123456' });
   });
+
+  it('draws Liquid glass as a translucent fill with a lit rim, and solid when the phone asks for less transparency', async () => {
+    expect(makeTheme({ look: 'liquid' }).glass).toEqual({ fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)' });
+    expect(makeTheme({ look: 'liquid', mode: 'dark' }).glass?.fill).toBe('rgba(40, 40, 40, 0.62)');
+    expect(makeTheme({ look: 'liquid' }, undefined, true).glass).toBeNull();
+    expect(makeTheme({ look: 'glass' }).glass).toBeNull();
+    await render(<ThemeProvider style={{ look: 'liquid' }}><Button label="Cancel" chroming="outlined" /></ThemeProvider>);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveStyle({ backgroundColor: 'rgba(255, 255, 255, 0.6)', borderColor: 'rgba(255, 255, 255, 0.3)' });
+  });
 });

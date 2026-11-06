@@ -59,7 +59,7 @@ copy someone made by hand.
 
 The look follows classes on any ancestor, the same values as the component style saved in the Component factory:
 `bx-look-elevated` (default), `bx-look-soft`, `bx-look-glass`, `bx-look-outline`, `bx-look-vivid`, `bx-look-pill`,
-`bx-look-brutal`, `bx-look-redwood`; `bx-motion-hover-lift|glow|shine`, `bx-motion-click-press|ripple|bounce`,
+`bx-look-brutal`, `bx-look-redwood`, `bx-look-liquid` (Liquid glass); `bx-motion-hover-lift|glow|shine`, `bx-motion-click-press|ripple|bounce`,
 `bx-motion-scroll-fadeup|scale|slide|blur`; `bx-dark` for the dark theme. Motion stops under
 `prefers-reduced-motion`.
 

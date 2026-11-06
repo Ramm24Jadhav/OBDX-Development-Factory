@@ -245,6 +245,18 @@ own fallbacks for reduced transparency, forced colours, reduced motion and brows
 its tokens and which components take glass are in `target-packs/components/glass.json`. The Component factory already
 has a frosted "Glass" design; this one is a ninth, "Liquid glass" (`liquid`).
 
+**LG1 to LG5 built (7 Nov 2026, branch `claude/liquid-glass-6f5de9`).** The look `liquid` ("Liquid glass") is in every
+look list (server, Component factory, the packs' `style.ts`, React Native's theme, the JET test). `.bx-look-liquid` in
+the four `bx.css` copies frosts the controls and floating surfaces of `glass.json` (tint, 3px blur, saturate 1.5, lit
+rim, light and dark), keeps fields and tables solid, makes muted text body-coloured on glass for contrast, and falls
+back for reduced transparency (solid), forced colours (system colours, 1px border), reduced motion (no press stretch)
+and no backdrop-filter (92% surface). React adds Glisse's `Glass` as a lens (`Lens`, `src/lens.tsx`) in buttons, icon
+buttons, the action menu, tabs, segmented and the switch, imported only under `liquid`; nothing is marked as moving
+backdrop, so no frame loop runs. React Native draws a translucent fill and rim (`theme.glass`), solid when the phone
+asks for less transparency; a real frost needs a native blur view (expo-blur or @react-native-community/blur, not
+added). Open: the browser gates of LG5 (contrast over a busy backdrop, screenshots per browser, frame rate), the slider
+thumb in glass, Vue 3, Capacitor, JET Core Pack and Flutter (LG4).
+
 Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.
 It starts after this round ships (SHIP), so the current gates are not run twice.
 

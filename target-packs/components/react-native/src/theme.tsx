@@ -1,10 +1,11 @@
-import { ReactNode, createContext, useContext, useMemo } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import { darkColors, lightTokens } from './tokens';
 
 /** The component style saved in the Component factory (the same values as the web packs). */
 export interface ComponentStyle {
-  look?: 'elevated' | 'soft' | 'glass' | 'outline' | 'vivid' | 'pill' | 'brutal' | 'redwood';
+  look?: 'elevated' | 'soft' | 'glass' | 'outline' | 'vivid' | 'pill' | 'brutal' | 'redwood' | 'liquid';
   /** Phones have no hover; press and the entrance animation are used. */
   motion?: { click?: 'press' | 'ripple' | 'bounce'; scroll?: 'fadeup' | 'scale' | 'slide' | 'blur' };
   mode?: 'light' | 'dark';
@@ -26,12 +27,14 @@ export interface Theme {
   /** Pressing a button scales it a little when the style asks for it. */
   pressScale: number;
   look: NonNullable<ComponentStyle['look']>;
+  /** Liquid glass (glass.json): the translucent fill and lit rim of controls and cards; null for the other looks or when the phone asks for less transparency. */
+  glass: { fill: string; rim: string } | null;
   /** The click and entrance effects of the component style (see motion.tsx); none when the style sets none. */
   motion: { click: 'press' | 'ripple' | 'bounce' | 'none'; scroll: 'fadeup' | 'scale' | 'slide' | 'blur' | 'none' };
 }
 
 /** Builds the theme from the bank tokens, the bank's brand colour and the component style. */
-export function makeTheme(style: ComponentStyle = {}, brand?: string): Theme {
+export function makeTheme(style: ComponentStyle = {}, brand?: string, reduceTransparency = false): Theme {
   const look = style.look ?? 'elevated';
   const color: Colors = { ...lightTokens.color, ...(style.mode === 'dark' ? darkColors : {}) } as Colors;
   if (look === 'redwood') { color.primary = '#c74634'; color.primaryText = '#a33b2b'; }
@@ -45,6 +48,9 @@ export function makeTheme(style: ComponentStyle = {}, brand?: string): Theme {
     minTouch: 48,
     pressScale: style.motion?.click === 'press' || style.motion?.click === 'bounce' ? 0.97 : 1,
     look,
+    // shortcut: a fill and rim, no blur; a real frost needs a native blur view (expo-blur or @react-native-community/blur)
+    glass: look !== 'liquid' || reduceTransparency ? null : style.mode === 'dark' ? { fill: 'rgba(40, 40, 40, 0.62)', rim: 'rgba(255, 255, 255, 0.13)' }
+      : { fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)' },
     motion: { click: style.motion?.click ?? 'none', scroll: style.motion?.scroll ?? 'none' },
   };
 }
@@ -53,7 +59,13 @@ const ThemeContext = createContext<Theme>(makeTheme());
 
 /** Gives every component below it the bank's theme. Without it the components use the neutral bank tokens. */
 export function ThemeProvider({ style, brand, children }: { style?: ComponentStyle; brand?: string; children: ReactNode }) {
-  const theme = useMemo(() => makeTheme(style, brand), [style, brand]);
+  const [solid, setSolid] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceTransparencyEnabled?.().then(setSolid, () => undefined);
+    const sub = AccessibilityInfo.addEventListener?.('reduceTransparencyChanged', setSolid);
+    return () => sub?.remove();
+  }, []);
+  const theme = useMemo(() => makeTheme(style, brand, solid), [style, brand, solid]);
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 

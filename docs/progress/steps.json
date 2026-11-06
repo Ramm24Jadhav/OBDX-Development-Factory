@@ -254,15 +254,15 @@
    "items": [
     {
      "name": "Glisse source read",
-     "done": false
+     "done": true
     },
     {
      "name": "Glass spec in the component style",
-     "done": false
+     "done": true
     },
     {
      "name": "Glisse in the React pack with its licence",
-     "done": false
+     "done": true
     }
    ]
   },
@@ -275,11 +275,11 @@
    "items": [
     {
      "name": "Glisse components mapped",
-     "done": false
+     "done": true
     },
     {
      "name": "Glass surface on the rest",
-     "done": false
+     "done": true
     }
    ]
   },
@@ -292,11 +292,11 @@
    "items": [
     {
      "name": "JET 6 and JET 21",
-     "done": false
+     "done": true
     },
     {
      "name": "Angular",
-     "done": false
+     "done": true
     }
    ]
   },
@@ -315,7 +315,8 @@
      "name": "iOS 26 glass where available",
      "done": false
     }
-   ]
+   ],
+   "note": "Fill and rim in theme.tsx; a native blur view needs approval"
   },
   {
    "id": "LG4",
