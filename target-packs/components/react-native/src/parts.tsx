@@ -233,6 +233,9 @@ export interface ItemListProps {
   /** The button on each row ("Pay", "Download"); it is named with the row, for example "Pay Electricity". */
   actionLabel?: string;
   onAction?: (item: Item) => void;
+  /** A second button on each row (Reject beside Approve). */
+  secondaryLabel?: string;
+  onSecondary?: (item: Item) => void;
   /** Which rows get the action; all by default. */
   showAction?: (item: Item) => boolean;
   /** Makes each row a button (open the item). */
@@ -241,7 +244,7 @@ export interface ItemListProps {
 }
 
 /** Rows with a title, a line under it, a value on the right and one action each. */
-export function ItemList({ testID, label, items, actionLabel, onAction, showAction, onSelect, emptyText = 'Nothing here yet.' }: ItemListProps) {
+export function ItemList({ testID, label, items, actionLabel, onAction, secondaryLabel, onSecondary, showAction, onSelect, emptyText = 'Nothing here yet.' }: ItemListProps) {
   const t = useTheme();
   return (
     <View testID={testID} style={[panel(t), { gap: 0, paddingVertical: 6 }]}>
@@ -263,6 +266,11 @@ export function ItemList({ testID, label, items, actionLabel, onAction, showActi
               : <View style={{ flex: 1 }} accessible accessibilityLabel={name}>{text}</View>}
             {x.side ? <Text importantForAccessibility="no" style={{ fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'],
               color: x.tone ? toneColors(t, x.tone).fg : t.color.text }}>{x.side}</Text> : null}
+            {secondaryLabel ? (
+              <Touch testID={`${testID}-${x.id}-secondary`} label={`${secondaryLabel} ${x.title}`} onPress={() => onSecondary?.(x)} style={{ paddingHorizontal: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: t.color.dangerText }}>{secondaryLabel}</Text>
+              </Touch>
+            ) : null}
             {actionLabel && (!showAction || showAction(x)) ? (
               <Touch testID={`${testID}-${x.id}-action`} label={`${actionLabel} ${x.title}`} onPress={() => onAction?.(x)} style={{ paddingHorizontal: 10 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>{actionLabel}</Text>
@@ -650,6 +658,38 @@ export function SliderControl(props: SliderControlProps) {
       </View>
       {note ? <Text testID={`${testID}-note`} style={{ fontSize: 14, color: t.color.textBody, marginTop: 4 }} accessibilityLiveRegion="polite">{note}</Text> : null}
       {error ? <Text style={s.error} accessibilityRole="alert">{error}</Text> : helpText ? <Text style={s.help}>{helpText}</Text> : null}
+    </View>
+  );
+}
+
+/* ---------- InfoCard ---------- */
+
+export interface InfoCardProps {
+  testID: string;
+  title: string;
+  body?: string;
+  /** A tag on the card: "New", "Offer". */
+  badge?: string;
+  /** A link at the foot: "Apply now". */
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+/** A card with a title, a line, a tag and one link (a product, an offer, the relationship manager). */
+export function InfoCard({ testID, title, body, badge, actionLabel, onAction }: InfoCardProps) {
+  const t = useTheme();
+  const c = toneColors(t, 'info');
+  return (
+    <View testID={testID} style={panel(t)}>
+      {badge ? <Text style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: '700', color: c.fg, backgroundColor: c.bg, paddingHorizontal: 8,
+        paddingVertical: 3, borderRadius: 999 }}>{badge}</Text> : null}
+      <Heading t={t}>{title}</Heading>
+      {body ? <Text style={{ fontSize: 14, color: t.color.textBody }}>{body}</Text> : null}
+      {actionLabel ? (
+        <Touch testID={`${testID}-action`} label={`${actionLabel}, ${title}`} role="link" onPress={onAction}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>{actionLabel} →</Text>
+        </Touch>
+      ) : null}
     </View>
   );
 }
