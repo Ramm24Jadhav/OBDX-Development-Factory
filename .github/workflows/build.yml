@@ -1,7 +1,7 @@
 # Builds and tests the factory on every push, and produces the downloads (Actions run page, "Artifacts"):
 #   obdx-factory-windows-x64: unzip and double-click start.bat; Java is included
 #   obdx-factory: the same without Java, for Linux or a machine that has Java 21
-# Each push also replaces the "latest" release (releases/download/latest/): the jar and version.json that installed
+# Each push to the integration branch (claude/ollama-models-setup-test-05b4a5) also replaces the "latest" release (releases/download/latest/): the jar and version.json that installed
 # factories update from ("Update now"), and both downloads.
 name: Build
 
@@ -58,7 +58,8 @@ jobs:
           # GitHub zips each artifact itself, so the Windows one is uploaded unpacked (one zip to download, not two).
           unzip -q dist/obdx-factory-windows-x64.zip -d dist/windows
       - name: Publish the latest build
-        if: github.event_name == 'push'
+        # Only the integration branch publishes what installed factories update to; other branches just build and test
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/ollama-models-setup-test-05b4a5'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
