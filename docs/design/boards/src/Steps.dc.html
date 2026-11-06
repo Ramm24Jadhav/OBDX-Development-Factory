@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Path steps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.fx-step-link{transition:background .15s ease,transform .15s ease}
+.fx-step-link:hover{transform:translateY(-1px)}
+.fx-step-link:focus-visible{outline:2px solid #4f46e5;outline-offset:2px}
+@media (max-width:1240px){.fx-step-label{display:none}}
+@media (max-width:640px){.fx-step-path{display:none !important}}
+@media (prefers-reduced-motion:reduce){.fx-step-link,.fx-step-link:hover{transition:none;transform:none}}
+</style>
+</helmet>
+<nav aria-label="{{label}}" style="display:flex;width:100%;align-items:center;gap:14px;box-sizing:border-box;padding:7px 10px 7px 16px;border-radius:999px;background:{{bar}};border:1px solid {{barLine}};box-shadow:{{barShadow}};font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:12.5px;white-space:nowrap">
+  <span class="fx-step-path" style="flex:none;display:flex;flex-direction:column;line-height:14px;padding-right:12px;border-right:1px solid {{barLine}}">
+    <b style="color:{{ink}};font-size:12px;letter-spacing:.02em">{{pathName}}</b>
+    <span style="color:{{muted}};font-size:11px">Step {{step}} of 5</span>
+  </span>
+  <ol style="flex:1;min-width:0;list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:6px">
+    <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+      <li style="display:flex;align-items:center;gap:6px;flex:{{s.grow}};min-width:0">
+        <sc-if value="{{s.notFirst}}" hint-placeholder-val="{{true}}"><span aria-hidden="true" style="flex:1;min-width:14px;height:3px;border-radius:2px;background:{{s.line}}"></span></sc-if>
+        <sc-if value="{{s.isLink}}" hint-placeholder-val="{{false}}">
+          <a class="fx-step-link" href="{{s.href}}" title="Back to {{s.name}}" aria-label="Back to {{s.name}}" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px 0 4px;border-radius:999px;text-decoration:none;color:{{s.fg}};background:{{s.bg}};font-weight:600"><span style="width:24px;height:24px;border-radius:50%;background:{{s.dot}};color:#ffffff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">✓</span><span class="fx-step-label">{{s.name}}</span></a>
+        </sc-if>
+        <sc-if value="{{s.isCurrent}}" hint-placeholder-val="{{true}}">
+          <span aria-current="step" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 14px 0 4px;border-radius:999px;color:#ffffff;background:linear-gradient(135deg,#3b82f6 0%,#4f46e5 55%,#8b5cf6 100%);box-shadow:0 6px 16px rgba(79,70,229,.35);font-weight:700"><span style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.22);color:#ffffff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55)">{{s.n}}</span>{{s.name}}</span>
+        </sc-if>
+        <sc-if value="{{s.isTodo}}" hint-placeholder-val="{{false}}">
+          <span title="{{s.name}}" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px 0 4px;color:{{muted}};font-weight:500"><span style="width:24px;height:24px;border-radius:50%;border:1.5px dashed {{todoRing}};color:{{muted}};font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">{{s.n}}</span><span class="fx-step-label">{{s.name}}</span></span>
+        </sc-if>
+      </li>
+    </sc-for>
+  </ol>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"path":{"editor":"enum","options":["ui","mig"],"default":"ui"},"step":{"editor":"int","default":1,"min":1,"max":5},"dark":{"editor":"boolean","default":false},"$preview":{"width":980,"height":48}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const path = this.props.path === 'mig' ? 'mig' : 'ui';
+    const step = Number(this.props.step) || 1;
+    const d = !!this.props.dark;
+    const P = {
+      ui: [['Choose a path', 'ChoosePath.dc.html'], ['Inventory and mapping', 'Components.dc.html'], ['Upgrade plan', 'UpgradePlan.dc.html'], ['Build and validate', 'Workspace.dc.html'], ['Review and deliver', 'Review.dc.html']],
+      mig: [['Choose a path', 'ChoosePath.dc.html'], ['Technology', 'Catalogue.dc.html'], ['Migration plan', 'Migrate.dc.html'], ['Build and validate', 'Workspace.dc.html'], ['Review and deliver', 'Review.dc.html']]
+    };
+    const c = d
+      ? { bar: 'linear-gradient(180deg,#162032,#111827)', barLine: '#263247', barShadow: '0 1px 2px rgba(0,0,0,.3)', ink: '#e5e7eb', muted: '#94a3b8', done: '#10b981', doneSoft: 'rgba(16,185,129,.14)', doneText: '#34d399', line: '#3b4a63', lineDone: 'linear-gradient(90deg,#10b981,#4f46e5)', todoRing: '#3b4a63' }
+      : { bar: 'linear-gradient(180deg,#ffffff,#f8fafc)', barLine: '#e5e7eb', barShadow: '0 1px 2px rgba(15,23,42,.06),0 6px 18px rgba(15,23,42,.05)', ink: '#0f172a', muted: '#64748b', done: '#10b981', doneSoft: '#ecfdf5', doneText: '#047857', line: '#e2e8f0', lineDone: 'linear-gradient(90deg,#10b981,#4f46e5)', todoRing: '#cbd5e1' };
+    return {
+      label: 'Steps of this path',
+      pathName: path === 'ui' ? 'UI path' : 'Migration path',
+      step: step,
+      bar: c.bar, barLine: c.barLine, barShadow: c.barShadow, ink: c.ink, muted: c.muted, todoRing: c.todoRing,
+      steps: P[path].map((x, i) => {
+        const n = i + 1, done = n < step, cur = n === step;
+        return { name: x[0], href: x[1], n: n, grow: i > 0 ? '1 1 0' : '0 0 auto', notFirst: i > 0, isLink: done, isCurrent: cur, isTodo: !done && !cur,
+          dot: c.done, bg: done ? c.doneSoft : 'transparent', fg: c.doneText, line: n <= step ? c.lineDone : c.line };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

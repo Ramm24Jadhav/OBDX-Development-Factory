@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Migration workspace</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+.mono{font-family:var(--fx-font-mono);font-size:11.5px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:12.5px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="workspace" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <main style="flex:1;min-height:0;padding:12px 22px;display:flex;flex-direction:column;gap:10px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> <a href="Migrate.dc.html" style="text-decoration:none">Migration planner</a> <span aria-hidden="true">›</span> Migration workspace</div>
+          <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Migration workspace</h1>
+          <p style="margin:0;color:var(--fx-text-body);font-size:13px">The Payments module, converted file by file.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="mig" step="4" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <section aria-label="This migration" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:center">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px"><span style="width:38px;height:38px;border-radius:var(--fx-radius);background:var(--fx-primary-soft);color:var(--fx-primary);display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-hidden="true">▤</span><span style="display:flex;flex-direction:column"><b style="font-size:15px;color:var(--fx-text)">Payments</b><span style="color:var(--fx-text-muted)">Module · CHG-0057</span></span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:1px solid var(--fx-border)"><span style="width:34px;height:34px;border-radius:var(--fx-radius);background:var(--fx-info-soft);color:var(--fx-info-text);display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-hidden="true">R</span><span style="display:flex;flex-direction:column"><b style="color:var(--fx-text)">React + TypeScript</b><span style="color:var(--fx-text-muted)">Target</span></span></div>
+        <div style="display:flex;flex-direction:column;padding:10px 14px;border-left:1px solid var(--fx-border)"><b style="color:var(--fx-text)">Oracle JET → React</b><span style="color:var(--fx-text-muted)">Conversion</span></div>
+        <div style="display:flex;flex-direction:column;padding:10px 14px;border-left:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted);font-size:11.5px">Source</span><b class="mono" style="color:var(--fx-text)">trunk @ r1490</b></div>
+        <div style="display:flex;flex-direction:column;padding:10px 14px;border-left:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted);font-size:11.5px">Target branch</span><b class="mono" style="color:var(--fx-text)">branches/migration-react</b></div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px 14px;border-left:1px solid var(--fx-border)"><span style="display:flex;align-items:center;gap:8px"><span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-info-soft);color:var(--fx-info-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center">In progress</span><span style="margin-left:auto;font-weight:700;color:var(--fx-text)">4 of 5 steps</span></span><span role="progressbar" aria-valuenow="4" aria-valuemin="0" aria-valuemax="5" aria-label="Steps done" style="height:7px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);overflow:hidden"><span style="display:block;height:100%;width:80%;background:linear-gradient(90deg,var(--fx-success),var(--fx-info))"></span></span></div>
+      </section>
+
+      <div class="fx-cols3" style="flex:1;min-height:0;display:grid;grid-template-columns:250px minmax(0,1fr) 340px;gap:12px">
+        <section aria-labelledby="treeTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 10px;display:flex;flex-direction:column;gap:6px;min-height:0;overflow-x:auto;overflow-y:hidden">
+          <div style="display:flex;align-items:center;gap:6px"><h2 id="treeTitle" style="margin:0;flex:1;font-size:14px;font-weight:700;color:var(--fx-text)">New module files</h2><span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center">11 written</span></div>
+          <label style="height:30px;border:1px solid var(--fx-border-strong);border-radius:8px;display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--fx-text-muted)"><span aria-hidden="true">⌕</span><span style="position:absolute;left:-9999px">Search files</span><input type="search" placeholder="Search files" style="flex:1;border:0;outline:0;font:inherit;background:transparent;min-width:0"></label>
+          <sc-for list="{{tree}}" as="t" hint-placeholder-count="16">
+            <sc-if value="{{t.folder}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:6px;padding:3px 0 3px {{t.pad}};font-weight:600;color:var(--fx-text)"><span aria-hidden="true" style="color:var(--fx-text-muted)">⌄</span><span aria-hidden="true" style="color:var(--fx-primary)">▭</span>{{t.name}}</span></sc-if>
+            <sc-if value="{{t.file}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="font:inherit;color:var(--fx-text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;padding:4px 6px 4px {{t.pad}};border:0;border-radius:7px;background:{{t.bg}}"><span aria-hidden="true" style="color:var(--fx-text-muted)">▯</span><span style="flex:1">{{t.name}}</span><span style="width:14px;height:14px;border-radius:50%;background:var(--fx-success);color:#ffffff;font-size:9px;display:inline-flex;align-items:center;justify-content:center" aria-label="Written">✓</span></button></sc-if>
+          </sc-for>
+          <span style="margin-top:auto;border-top:1px solid var(--fx-border);padding-top:6px;display:flex;justify-content:space-between;font-weight:600;color:var(--fx-text)">› Shared components (3)</span>
+          <span style="display:flex;justify-content:space-between;font-weight:600;color:var(--fx-text)">› Configuration (2)</span>
+        </section>
+
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <section aria-label="Code" style="flex:1;min-height:0;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);display:flex;flex-direction:column;overflow-x:auto;overflow-y:hidden">
+            <div role="tablist" aria-label="Workspace views" style="display:flex;gap:18px;padding:0 12px;border-bottom:1px solid var(--fx-border)">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:36px;padding:0 2px;color:{{t.fg}};font-weight:{{t.weight}}">{{t.name}}</button></sc-for>
+            </div>
+<sc-if value="{{tbWorkspaceTopFirst}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px">
+              <span style="height:28px;padding:0 10px;border-radius:8px;background:var(--fx-primary-soft);color:var(--fx-primary-text);font-weight:600;display:inline-flex;align-items:center">Source · Oracle JET</span>
+              <span style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--fx-border);display:inline-flex;align-items:center">New · React + TypeScript</span>
+              <span style="margin-left:auto;height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;gap:10px">File: <b class="mono">{{file}}</b> ⌄</span>
+              <div role="group" aria-label="Layout" style="display:flex;background:var(--fx-surface-3);border-radius:8px;padding:2px"><sc-for list="{{layouts}}" as="c" hint-placeholder-count="2"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="font:inherit;cursor:pointer;height:24px;padding:0 10px;border-radius:6px;border:0;background:{{c.bg}};color:{{c.fg}};font-weight:600">{{c.name}}</button></sc-for></div>
+            </div>
+            <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{cols}};gap:10px;padding:0 12px 10px">
+              <div style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--fx-border)"><b style="color:var(--fx-text)">Source (Oracle JET)</b><span class="mono" style="padding:1px 7px;border-radius:6px;background:var(--fx-primary-soft);color:var(--fx-primary-text)">{{srcTag}}</span><button onClick="{{say0}}" type="button" style="margin-left:auto;border:0;background:transparent;color:var(--fx-text-muted);cursor:pointer;font:inherit">Copy</button></div>
+                <div style="padding:6px 0;overflow:hidden">
+                  <sc-for list="{{src}}" as="l" hint-placeholder-count="14"><div class="mono" style="display:flex;line-height:17px"><span style="width:30px;flex:none;text-align:right;padding-right:10px;color:var(--fx-text-faint)">{{l.n}}</span><span style="white-space:pre;color:{{l.c}}">{{l.t}}</span></div></sc-for>
+                </div>
+              </div>
+              <div style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--fx-border)"><b style="color:var(--fx-text)">New (React + TypeScript)</b><span class="mono" style="padding:1px 7px;border-radius:6px;background:var(--fx-primary-soft);color:var(--fx-primary-text)">{{dstTag}}</span><button onClick="{{say0}}" type="button" style="margin-left:auto;border:0;background:transparent;color:var(--fx-text-muted);cursor:pointer;font:inherit">Copy</button></div>
+                <div style="padding:6px 0;overflow:hidden">
+                  <sc-for list="{{dst}}" as="l" hint-placeholder-count="24"><div class="mono" style="display:flex;line-height:17px"><span style="width:30px;flex:none;text-align:right;padding-right:10px;color:var(--fx-text-faint)">{{l.n}}</span><span style="white-space:pre;color:{{l.c}}">{{l.t}}</span></div></sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+<sc-if value="{{tbWorkspaceTopOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbWorkspaceTopGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbWorkspaceTopGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbWorkspaceTopGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbWorkspaceTopGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbWorkspaceTopGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbWorkspaceTopGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbWorkspaceTopGen.note}}</p></sc-if></section></sc-if>
+</section>
+
+          <section aria-label="What changed" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:0 12px 10px">
+            <div role="tablist" aria-label="Change details" style="display:flex;gap:18px;border-bottom:1px solid var(--fx-border);margin-bottom:8px">
+              <sc-for list="{{btabs}}" as="t" hint-placeholder-count="4"><button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:32px;padding:0 2px;color:{{t.fg}};font-weight:{{t.weight}}">{{t.name}}</button></sc-for>
+            </div>
+<sc-if value="{{tbWorkspaceBottomFirst}}" hint-placeholder-val="{{true}}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+              <sc-for list="{{impact}}" as="i" hint-placeholder-count="5"><div style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:var(--fx-text-muted)">{{i.k}}</span><b style="font-size:18px;color:{{i.fg}}">{{i.v}}</b><span style="font-size:11px;color:var(--fx-text-muted)">{{i.sub}}</span></div></sc-for>
+            </div>
+          </sc-if>
+<sc-if value="{{tbWorkspaceBottomOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbWorkspaceBottomGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbWorkspaceBottomGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbWorkspaceBottomGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbWorkspaceBottomGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbWorkspaceBottomGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbWorkspaceBottomGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbWorkspaceBottomGen.note}}</p></sc-if></section></sc-if>
+</section>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <section aria-labelledby="asTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px"><h2 id="asTitle" style="margin:0;flex:1;font-size:15px;font-weight:700;color:var(--fx-text)">Assistant</h2><span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center">Ready</span></div>
+            <div style="border-radius:var(--fx-radius);background:var(--fx-primary-soft);padding:8px 10px;line-height:17px"><b>Convert PaymentForm to React with TypeScript.</b> Keep the validation rules, session handling and OBDX service calls.</div>
+            <div style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+              <b style="color:var(--fx-text)">Conversion done</b>
+              <sc-for list="{{done}}" as="d" hint-placeholder-count="6"><span style="display:flex;gap:7px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>{{d}}</span></sc-for>
+              <div style="display:flex;gap:6px;margin-top:4px"><button onClick="{{say1}}" type="button" style="flex:1;height:32px;border-radius:8px;border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text);font:inherit;font-weight:600">Write it again</button></div>
+            </div>
+            <details open="{{true}}" style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:8px 10px">
+              <summary style="cursor:pointer;font-weight:700;color:var(--fx-text)">Notes for the reviewer</summary>
+              <ul style="margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px;color:var(--fx-text-body)">
+                <li>Uses factory UI components for one consistent look.</li>
+                <li>Validation rules kept as they were.</li>
+                <li>Calls the same OBDX payment services.</li>
+                <li>The custom business rule in submit() needs a person to check it.</li>
+              </ul>
+            </details>
+          </section>
+
+          <section aria-labelledby="stTitle" style="flex:1;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+            <h2 id="stTitle" style="margin:0 0 2px;font-size:15px;font-weight:700;color:var(--fx-text)">Steps</h2>
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:8px;padding:3px 0"><span style="width:18px;height:18px;border-radius:50%;background:{{s.dot}};color:#ffffff;font-size:10px;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">{{s.mark}}</span><span style="flex:1;font-weight:600;color:var(--fx-text)">{{s.name}}</span><span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:{{s.bg}};color:{{s.fg}};font-size:10.5px;font-weight:700;display:inline-flex;align-items:center">{{s.state}}</span><span style="width:44px;text-align:right;color:var(--fx-text-muted)">{{s.time}}</span></div></sc-for>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)"><a href="Migrate.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface)">← Plan</a><span style="flex:1;min-width:12px"></span><div style="position:relative"><button type="button" onClick="{{toggleMore}}" aria-haspopup="menu" aria-expanded="{{moreStr}}" aria-label="More actions" title="More actions" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 12px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">More ⋯</button><sc-if value="{{moreOn}}" hint-placeholder-val="{{false}}"><div role="menu" aria-label="More actions" style="position:absolute;right:0;bottom:48px;min-width:250px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:8"><a role="menuitem" href="Review.dc.html" style="padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--fx-text);font-size:13px">Compare source and new</a></div></sc-if></div><a href="Validation.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 22px;background:var(--fx-primary);color:#ffffff">Run the tests →</a></footer>
+    </div>
+    </div>
+  </div>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { file: 'PaymentForm.tsx', layout: 'split' }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    {
+      const D = [null,{"title":"Components","lead":"Components this module uses.","cols":"1.4fr 1.4fr .8fr","head":["JET","Factory","Uses"],"rows":[["oj-input-text","TextField","42"],["oj-select-single","Select","18"],["oj-button","Button","31"]],"note":""},{"title":"Dependencies","lead":"Code this module needs.","cols":"1.6fr 1fr 1fr","head":["Needs","Kind","Moved"],"rows":[["usePayment","Hook","✓ Yes"],["Accounts module","Module","! In progress"],["Common UI","Shared","✓ Yes"]],"note":""},{"title":"Security rules","lead":"The OBDX rules, checked on this module.","cols":"2.2fr 1fr","head":["Rule","Result"],"rows":[["Same digx services","✓ Passed"],["Nonce with every request","✓ Passed"],["Server-driven 2FA","✓ Passed"],["Masked tokens","✓ Passed"]],"note":""}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.btabs || []);
+      const a = st.tbWorkspaceBottom || 0;
+      v.btabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbWorkspaceBottom: i }) }));
+      v.tbWorkspaceBottomFirst = a === 0;
+      v.tbWorkspaceBottomOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbWorkspaceBottomGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    {
+      const D = [null,{"title":"Assistant","lead":"What was asked and what the factory did, in order.","cols":".7fr 3fr","head":["Who","Said"],"rows":[["You","Convert PaymentForm to React with TypeScript. Keep the validation, session handling and service calls."],["Factory","Read 3 files and 2 components; oj-input-text becomes TextField, oj-radioset becomes RadioGroup."],["Factory","Wrote 28 lines; validation and bindings kept. One business rule in submit() needs a person to check it."],["You","Use the bank wording on the amount error."],["Factory","Updated the message from the resource bundle key amount.invalid."]],"note":""},{"title":"Differences","lead":"Every file in this module, source against new.","cols":"1.8fr .6fr .6fr 1.6fr","head":["File","Added","Removed","Note"],"rows":[["PaymentForm.tsx","28","15","New component"],["paymentApi.ts","12","13","Same services"],["usePayment.ts","24","0","New hook"],["PaymentSummary.tsx","18","11",""]],"note":""},{"title":"Tests","lead":"Tests written for this module.","cols":"2fr .7fr 1fr","head":["Test file","Tests","Result"],"rows":[["PaymentForm.test.tsx","12","✓ Passed"],["paymentApi.test.ts","8","✓ Passed"],["make-payment.journey.ts","6","! Writing"]],"note":""},{"title":"Log","lead":"What the factory did, with times.","cols":".7fr 1.2fr 3fr","head":["Time","Step","Message"],"rows":[["11:24:02","Read","3 files, 2 components"],["11:26:40","Map","oj-input-text → TextField, oj-radioset → RadioGroup"],["11:30:12","Write","PaymentForm.tsx written (28 lines)"],["11:32:05","Checks","Quick checks passed"],["11:32:20","Tests","Writing make-payment.journey.ts"]],"note":""}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.tabs || []);
+      const a = st.tbWorkspaceTop || 0;
+      v.tabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbWorkspaceTop: i }) }));
+      v.tbWorkspaceTopFirst = a === 0;
+      v.tbWorkspaceTopOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbWorkspaceTopGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    const M = ["Copied.","Writing PaymentForm.tsx again. The Steps list shows it running."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    [].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const LB = String.fromCharCode(123), RB = String.fromCharCode(125), L2 = LB + LB, R2 = RB + RB;
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', 'Mapping.dc.html'], ['Technology catalogue', 'Catalogue.dc.html'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', 'Workspace.dc.html'], ['Validation centre', '#'], ['Review and approval', '#'], ['History', '#']];
+    const tab = (list, cur) => list.map((t) => ({ name: t, on: t === cur ? 'true' : 'false', line: t === cur ? 'var(--fx-primary)' : 'transparent', fg: t === cur ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: t === cur ? 700 : 500 }));
+    const tagC = 'var(--fx-primary-text)', attrC = '#0f766e', strC = '#b45309', txt = 'var(--fx-text)';
+    const color = (line) => { const t = line.trim(); if (t.indexOf('<') === 0) { return tagC; } if (['import', 'const', 'return', 'export'].some((k) => t.indexOf(k) === 0)) { return 'var(--fx-info-text)'; } return t.indexOf('=') >= 0 ? attrC : txt; };
+    const files = {
+      'PaymentForm.tsx': {
+        srcTag: 'oj-input-text, oj-radioset', dstTag: 'TextField, RadioGroup',
+        src: ['<div class="oj-form-layout">', '  <oj-input-text', '    value="' + L2 + 'beneficiaryName' + R2 + '"', '    required="true"', '    label-hint="Beneficiary name"', '    max-chars="35">', '  </oj-input-text>', '', '  <oj-radioset', '    value="' + L2 + 'transferType' + R2 + '"', '    label-hint="Transfer type">', '    <oj-option value="self">Self</oj-option>', '    <oj-option value="other">Other</oj-option>', '  </oj-radioset>', '</div>'],
+        dst: ['import ' + LB + ' TextField, RadioGroup, RadioOption ' + RB, '  from "@factory/ui";', '', 'export const PaymentForm = () => ' + LB, '  const [beneficiaryName, setBeneficiaryName] =', '    useState("");', '  const [transferType, setTransferType] =', '    useState("self");', '', '  return (', '    <div className="fx-form-layout">', '      <TextField', '        value=' + LB + 'beneficiaryName' + RB, '        required', '        label="Beneficiary name"', '        maxLength=' + LB + '35' + RB, '        onChange=' + LB + '(e) => setBeneficiaryName(e.target.value)' + RB + ' />', '      <RadioGroup', '        value=' + LB + 'transferType' + RB, '        label="Transfer type"', '        onChange=' + LB + '(e) => setTransferType(e.target.value)' + RB + '>', '        <RadioOption value="self">Self</RadioOption>', '        <RadioOption value="other">Other</RadioOption>', '      </RadioGroup>', '    </div>', '  );', RB + ';'] },
+      'paymentApi.ts': {
+        srcTag: 'baseService.fetch', dstTag: 'obdxClient',
+        src: ['self.getPayees = function () ' + LB, '  return baseService.fetch(' + LB, '    url: "payments/payeeGroup",', '    version: "v1"', '  ' + RB + ');', RB + ';', '', 'self.transfer = function (payload) ' + LB, '  return baseService.add(' + LB, '    url: "payments/transfers/internal",', '    data: JSON.stringify(payload)', '  ' + RB + ');', RB + ';'],
+        dst: ['import ' + LB + ' obdxClient ' + RB + ' from "@factory/obdx";', '', '// Same OBDX services: session cookie, nonce and', '// 2FA challenges are handled by obdxClient.', 'export const getPayees = () =>', '  obdxClient.get("digx/v1/payments/payeeGroup");', '', 'export const transfer = (payload: Transfer) =>', '  obdxClient.post(', '    "digx/v1/payments/transfers/internal",', '    payload', '  );'] }
+    };
+    const f = files[s.file] || files['PaymentForm.tsx'];
+    const lines = (arr) => arr.map((t, i) => ({ n: i + 1, t: t, c: color(t) }));
+    const T = [['folder', 'payments', 0], ['folder', 'src', 1], ['file', 'PaymentForm.tsx', 2], ['file', 'PaymentService.ts', 2], ['file', 'PaymentValidation.ts', 2], ['folder', 'components', 1], ['file', 'BeneficiarySelector.tsx', 2], ['file', 'AmountInput.tsx', 2], ['file', 'PaymentSummary.tsx', 2], ['folder', 'hooks', 1], ['file', 'usePayment.ts', 2], ['folder', 'services', 1], ['file', 'paymentApi.ts', 2], ['file', 'beneficiaryApi.ts', 2], ['folder', 'styles', 1], ['file', 'payment.module.css', 2]];
+    const ST = { done: ['var(--fx-success)', '✓', 'Done', 'var(--fx-success-soft)', 'var(--fx-success-text)'], prog: ['var(--fx-info)', '…', 'Running', 'var(--fx-info-soft)', 'var(--fx-info-text)'] };
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 6 ? 'page' : 'false', bg: i === 6 ? 'var(--fx-primary)' : 'transparent', fg: i === 6 ? '#ffffff' : '#dcd7ff', weight: i === 6 ? 600 : 400 })),
+      tree: T.map((t) => ({ name: t[1], folder: t[0] === 'folder', file: t[0] === 'file', pad: (4 + t[2] * 14) + 'px', on: s.file === t[1] ? 'true' : 'false', bg: s.file === t[1] ? 'var(--fx-primary-soft)' : 'transparent', pick: () => this.setState({ file: files[t[1]] ? t[1] : s.file }) })),
+      tabs: tab(['Code', 'Assistant', 'Differences', 'Tests', 'Log'], 'Code'),
+      file: s.file,
+      layouts: [['split', 'Split'], ['stack', 'One above the other']].map((c) => ({ name: c[1], on: s.layout === c[0] ? 'true' : 'false', bg: s.layout === c[0] ? 'var(--fx-primary)' : 'transparent', fg: s.layout === c[0] ? '#ffffff' : 'var(--fx-text-body)', pick: () => this.setState({ layout: c[0] }) })),
+      cols: s.layout === 'split' ? 'minmax(0,.9fr) minmax(0,1.1fr)' : 'minmax(0,1fr)',
+      srcTag: f.srcTag, dstTag: f.dstTag, src: lines(f.src), dst: lines(f.dst),
+      btabs: tab(['What it touches', 'Components', 'Dependencies', 'Security rules'], 'What it touches'),
+      impact: [
+        { k: 'Files changed', v: '5', sub: 'in this module', fg: 'var(--fx-text)' },
+        { k: 'Components replaced', v: '3', sub: 'JET to factory', fg: 'var(--fx-text)' },
+        { k: 'Screens affected', v: '4', sub: 'in 2 modules', fg: 'var(--fx-text)' },
+        { k: 'OBDX rules', v: '8 of 8', sub: 'checks passed', fg: 'var(--fx-success-text)' },
+        { k: 'For a person', v: '1', sub: 'business rule to check', fg: 'var(--fx-warning-text)' }
+      ],
+      done: ['Read 3 files and 2 components', 'oj-input-text became TextField', 'oj-radioset became RadioGroup', 'Validation and bindings kept', 'Wrote 28 lines of new code', 'Found 1 dependency: usePayment'],
+      steps: [['Read the source', 'done', '2 min'], ['Map the components', 'done', '3 min'], ['Write the code', 'done', '4 min'], ['Quick checks', 'done', '2 min'], ['Write the tests', 'prog', '3 min']].map((x) => ({ name: x[0], dot: ST[x[1]][0], mark: ST[x[1]][1], state: ST[x[1]][2], bg: ST[x[1]][3], fg: ST[x[1]][4], time: x[2] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

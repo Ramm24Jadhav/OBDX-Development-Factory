@@ -1,17 +1,17 @@
 {
- "generated": "2026-11-06T09:18:16.008Z",
+ "generated": "2026-11-06T10:38:55.134Z",
  "rows": [
   {
    "id": "P0",
    "track": "Set up",
    "task": "Board reference images, side-by-side check, plan",
    "session": "Main",
-   "done": 2,
+   "done": 5,
    "total": 5,
    "unit": "steps",
-   "status": "In progress",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "SCR",
@@ -22,44 +22,44 @@
    "total": 14,
    "unit": "screens",
    "status": "Done",
-   "note": "Work, but do not match the boards yet",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "note": "Work; being brought to the boards one by one",
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "S0",
    "track": "Screens",
    "task": "S0 Shared parts: steps bar, chips, charts, cards, states",
    "session": "Main",
-   "done": 0,
+   "done": 5,
    "total": 9,
    "unit": "parts",
-   "status": "Not started",
+   "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "S1",
    "track": "Screens",
    "task": "S1 Overview, Choose a path, Technology settings",
    "session": "Main",
-   "done": 0,
+   "done": 3,
    "total": 3,
    "unit": "screens",
-   "status": "Not started",
+   "status": "Done",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "S2",
    "track": "Screens",
    "task": "S2 Inventory, Mapping, Upgrade plan, Technology catalogue",
    "session": "Main",
-   "done": 0,
+   "done": 3,
    "total": 4,
    "unit": "screens",
-   "status": "Not started",
+   "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "C0",
@@ -95,7 +95,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "M1",
@@ -107,19 +107,19 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W1",
    "track": "Components",
    "task": "W1 Foundation rest, layout, data, feedback (web)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 25,
    "total": 25,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W2",
@@ -131,7 +131,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W3",
@@ -143,7 +143,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W4",
@@ -155,7 +155,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W5",
@@ -167,7 +167,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W6",
@@ -179,7 +179,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "W7",
@@ -191,31 +191,31 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "N1",
    "track": "Components",
    "task": "N1 React Native, groups 1 to 3",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 71,
    "total": 71,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "N2",
    "track": "Components",
    "task": "N2 React Native, groups 4 to 6",
    "session": "Phone and packs",
-   "done": 0,
+   "done": 64,
    "total": 64,
    "unit": "components",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "N3",
@@ -227,7 +227,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "TP0",
@@ -239,7 +239,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "T1",
@@ -251,7 +251,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "T2",
@@ -263,19 +263,19 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "G0",
    "track": "Gates",
    "task": "Premium JET parity on JET 6.2 and the current JET",
    "session": "Earlier",
-   "done": 1,
+   "done": 0,
    "total": 1,
    "unit": "gates",
-   "status": "Done",
+   "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "Q1",
@@ -287,7 +287,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   },
   {
    "id": "SHIP",
@@ -299,7 +299,7 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T09:18:16.008Z"
+   "asOf": "2026-11-06T10:38:55.134Z"
   }
  ]
 }

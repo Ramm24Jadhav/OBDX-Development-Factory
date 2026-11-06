@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tablet layouts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-primary:#4f46e5;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-pill:999px}
+.fx-dark{--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="width:3240px;height:4260px;box-sizing:border-box;padding:32px;display:flex;flex-direction:column;gap:22px;background:#e2e8f0;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body)">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-size:13px;font-weight:600;letter-spacing:.08em;color:#475569">MODERNIZATION · TABLET, 1024 × 768</span>
+    <h1 style="margin:0;font-size:30px;font-weight:700;color:#0f172a">Every screen on a tablet</h1>
+    <p style="margin:0;font-size:14px;max-width:1500px;color:#334155">The factory's tablet rules: the menu starts as icons (the notch opens it), side-by-side layouts become one column below 1024 px, tiles wrap to two rows, tables keep their columns and scroll inside their own box, and side panels open over the page. Tap the notch on a frame to open the menu.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1024px);gap:36px 40px">
+    <sc-for list="{{frames}}" as="p" hint-placeholder-count="12">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <b style="font-size:14px;color:#0f172a">{{p.label}}</b>
+        <div style="position:relative;width:1024px;height:768px;border-radius:18px;overflow:hidden;background:var(--fx-bg);box-shadow:0 0 0 10px #0f172a,0 18px 40px rgba(15,23,42,.25);display:flex">
+          <nav aria-label="Main" style="width:{{p.navW}};flex:none;background:linear-gradient(180deg,#0f172a,#1e1b4b);display:flex;flex-direction:column;align-items:{{p.navAlign}};gap:6px;padding:12px 10px;position:relative">
+            <span style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#4338ca);margin-bottom:8px"></span>
+            <sc-for list="{{p.rail}}" as="r" hint-placeholder-count="8"><span title="{{r.n}}" style="height:38px;border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 11px;color:{{r.fg}};background:{{r.bg}};white-space:nowrap;overflow:hidden"><span aria-hidden="true" style="width:16px;height:16px;flex:none;border:1.6px solid currentColor;border-radius:4px"></span><span style="display:{{p.labels}}">{{r.n}}</span></span></sc-for>
+            <button type="button" onClick="{{p.toggle}}" aria-label="{{p.notchLabel}}" aria-expanded="{{p.open}}" style="position:absolute;top:16px;right:-14px;width:28px;height:28px;border-radius:50%;border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text);cursor:pointer;font-size:12px">{{p.notch}}</button>
+          </nav>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <header style="height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px 0 22px;background:var(--fx-surface);border-bottom:1px solid var(--fx-border)">
+              <span style="height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;gap:8px;color:var(--fx-text)">bank-b-25 ⌄</span>
+              <span style="flex:1;max-width:300px;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--fx-border);background:var(--fx-surface-2);display:inline-flex;align-items:center;color:var(--fx-text-muted)">⌕ Search or jump to…</span>
+              <span style="margin-left:auto;width:30px;height:30px;border-radius:50%;background:#4f46e5;color:#ffffff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">AB</span>
+            </header>
+            <main style="flex:1;min-height:0;overflow:hidden;padding:14px 18px 14px 22px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:12px;color:var(--fx-text-muted)">Modernization › {{p.crumb}}</span>
+              <div style="display:flex;align-items:flex-start;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:22px;font-weight:700;color:var(--fx-text)">{{p.title}}</h2><span>{{p.lead}}</span></div><span style="height:38px;padding:0 14px;border-radius:var(--fx-radius);background:var(--fx-primary);color:#ffffff;font-weight:600;display:inline-flex;align-items:center;white-space:nowrap">{{p.primary}}</span><span aria-label="More actions" style="width:38px;height:38px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;justify-content:center;color:var(--fx-text)">⋯</span></div>
+              <sc-if value="{{p.hasProblem}}" hint-placeholder-val="{{false}}"><div role="status" style="padding:9px 12px;border-radius:var(--fx-radius);background:{{p.pBg}};color:{{p.pFg}}">{{p.problem}}</div></sc-if>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+                <sc-for list="{{p.tiles}}" as="k" hint-placeholder-count="4"><div style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:9px 12px;display:flex;flex-direction:column"><b style="font-size:18px;color:{{k.fg}}">{{k.v}}</b><span style="font-size:11.5px;color:var(--fx-text-muted)">{{k.k}}</span></div></sc-for>
+              </div>
+              <div style="display:flex;gap:18px;border-bottom:1px solid var(--fx-border);overflow:hidden"><sc-for list="{{p.tabs}}" as="t" hint-placeholder-count="4"><span style="flex:none;height:32px;display:inline-flex;align-items:center;border-bottom:2px solid {{t.line}};color:{{t.fg}};font-weight:{{t.w}}">{{t.t}}</span></sc-for></div>
+              <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:10px">
+                <section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow:hidden">
+                  <sc-for list="{{p.rows}}" as="r" hint-placeholder-count="4">
+                    <div style="display:grid;grid-template-columns:1.6fr 1.4fr .9fr 24px;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--fx-border);min-height:24px">
+                      <b style="color:var(--fx-text);font-weight:600">{{r.t}}</b><span style="color:var(--fx-text-muted)">{{r.s}}</span>
+                      <span><span style="height:22px;padding:0 8px;border-radius:var(--fx-radius-pill);background:{{r.bg}};color:{{r.fg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center">{{r.c}}</span></span>
+                      <span aria-hidden="true" style="color:var(--fx-text-muted)">⋮</span>
+                    </div>
+                  </sc-for>
+                </section>
+                <section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:4px">
+                  <b style="color:var(--fx-text)">{{p.detailTitle}}</b>
+                  <span style="color:var(--fx-text-muted)">{{p.detail}}</span>
+                  <span style="font-size:11.5px;color:var(--fx-text-muted)">Beside the list at 1440 px; under it here.</span>
+                </section>
+              </div>
+            </main>
+          </div>
+          <sc-if value="{{p.panel}}" hint-placeholder-val="{{false}}">
+            <div style="position:absolute;inset:0;background:rgba(15,23,42,.35);display:flex;justify-content:flex-end">
+              <section role="dialog" aria-label="Target pack" style="width:440px;height:100%;background:var(--fx-surface);padding:18px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:-12px 0 32px rgba(15,23,42,.18)">
+                <b style="font-size:18px;color:var(--fx-text)">React: target pack</b>
+                <span style="color:var(--fx-text-muted)">Side panels open over the page on a tablet, 440 px wide, and close with Escape or a tap outside.</span>
+                <span style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--fx-border)"><span>Conversion rules</span><b>38</b></span>
+                <span style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--fx-border)"><span>Code templates</span><b>24</b></span>
+                <span style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--fx-border)"><span>OBDX rules checked</span><b style="color:var(--fx-success-text)">8 of 8</b></span>
+              </section>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":3240,"height":4260}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { open: -1 }; }
+  renderVals() {
+    const s = this.state;
+    const tone = { ok: ['var(--fx-success-soft)', 'var(--fx-success-text)'], warn: ['var(--fx-warning-soft)', 'var(--fx-warning-text)'], bad: ['var(--fx-danger-soft)', 'var(--fx-danger-text)'], info: ['var(--fx-primary-soft)', 'var(--fx-primary-text)'], none: ['var(--fx-surface-3)', 'var(--fx-text-body)'] };
+    const tile = (v, k, t) => ({ v: v, k: k, fg: t ? tone[t][1] : 'var(--fx-text)' });
+    const row = (t, sub, c, k) => ({ t: t, s: sub, c: c, bg: tone[k][0], fg: tone[k][1] });
+    const tabs = (list) => list.map((t, i) => ({ t: t, line: i === 0 ? 'var(--fx-primary)' : 'transparent', fg: i === 0 ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', w: i === 0 ? 700 : 500 }));
+    const F = [
+      ['1 · Overview', 'Overview', 'Modernization', 'Two paths; the OBDX services stay as they are.', 'Analyze again', ['The code changed after the last analysis.', 'warn'], [tile('18', 'Modules'), tile('214', 'Screens'), tile('76%', 'Direct', 'ok'), tile('7%', 'Custom', 'bad')], ['Paths', 'Findings', 'Activity'], [row('Modernize the OBDX UI', '68 of 214 screens delivered', 'Recommended', 'ok'), row('Migrate to a technology', '3 of 17 modules moved', 'Strategic', 'info')], 'Modules by state', '5 done, 2 in progress, 6 planned, 5 not started'],
+      ['2 · Choose a path', 'Choose a path', 'Choose your path', 'Step 1 of 5', 'Continue to analysis', null, [tile('1 of 5', 'Step'), tile('r1490', 'Revision'), tile('1,386', 'Components'), tile('214', 'Screens')], ['Path', 'Configuration'], [row('Modernize the OBDX UI', 'Keep JET, premium components', 'Chosen', 'info'), row('Migrate to a technology', 'React, React Native, Angular', 'Option', 'none')], 'Recommendation', 'Modernize the UI first: 76% of components have a drop-in'],
+      ['3 · Component inventory', 'Inventory', 'Component inventory', '31 types, 1,386 uses', 'Compare and preview', null, [tile('1,048', 'Direct', 'ok'), tile('236', 'Mapping required', 'warn'), tile('102', 'Transformation', 'bad'), tile('214', 'Screens')], ['Inventory', 'Matrix', 'Usage', 'Findings'], [row('oj-input-text', '142 screens → bx-text-field', 'Direct replacement', 'ok'), row('oj-select-single', '64 screens → bx-select', 'Direct replacement', 'ok'), row('oj-chart', '12 screens', 'Transformation', 'bad')], 'Filters', 'Open from the Filters button; they stack above the table here'],
+      ['4 · Component mapping', 'Mapping', 'oj-input-text → bx-text-field', 'All 7 properties map', 'Make the change', null, [tile('142', 'Screens'), tile('10', 'Modules'), tile('Low', 'Effort', 'ok'), tile('7 of 7', 'Properties', 'ok')], ['Properties', 'Events', 'Accessibility', 'Screens'], [row('value', 'Two-way binding kept', 'Same', 'ok'), row('maxlength', 'max-length', 'Renamed', 'warn')], 'Preview', 'Today and premium, one above the other'],
+      ['4b · Upgrade plan', 'Upgrade plan', 'Upgrade plan', '8 components, 6 waves', 'Start wave 2', null, [tile('8 of 8', 'Components'), tile('214', 'Screens'), tile('6', 'Waves'), tile('1 of 6', 'Delivered', 'ok')], ['By module', 'By component'], [row('1 · Dashboard', '12 screens · CHG-0050', 'Delivered', 'ok'), row('2 · Accounts', '24 screens · CHG-0057', 'In review', 'warn'), row('3 · Cards', '16 screens · CHG-0058', 'Planned', 'info')], 'Wave 2: Accounts', 'Waits for wave 1; 3 screens listed'],
+      ['5 · Technology catalogue (panel open)', 'Catalogue', 'Technology catalogue', 'Technologies that keep OBDX as it is', 'Use React', null, [tile('2', 'Packs ready', 'ok'), tile('1', 'In progress', 'warn'), tile('5', 'Planned'), tile('8', 'OBDX rules')], ['Technologies', 'Comparison', 'Target packs', 'How it connects'], [row('React + TypeScript', 'Web', 'Pack ready', 'ok'), row('React Native', 'Mobile', 'Pack ready', 'ok'), row('Angular', 'Web', 'In progress', 'warn')], 'React + TypeScript', 'Why it fits, target pack, OBDX rules covered'],
+      ['6 · Migration planner', 'Planner', 'Migration planner', 'React + TypeScript · 18 modules', 'Make the migration plan', null, [tile('18', 'Modules'), tile('214', 'Screens'), tile('4', 'Large', 'bad'), tile('6 weeks', 'Planned')], ['Module plan', 'Dependencies', 'Timeline', 'Risk'], [row('Dashboard', 'Small · 1 week', 'Delivered', 'ok'), row('Accounts', 'Needs Login and 2FA', 'In progress', 'warn'), row('Payments', 'Large · 2 weeks', 'Planned', 'info')], 'Module dependencies', 'The diagram sits under the table; Full screen opens it over the page'],
+      ['7 · Migration workspace', 'Workspace', 'Payments → React', '4 of 5 steps', 'Run the tests', null, [tile('11', 'Files written', 'ok'), tile('3', 'Components'), tile('8 of 8', 'OBDX rules', 'ok'), tile('1', 'For a person', 'warn')], ['Code', 'Assistant', 'Differences', 'Tests'], [row('PaymentForm.tsx', 'oj-input-text → TextField', 'Written', 'ok'), row('paymentApi.ts', 'Same services', 'Written', 'ok')], 'Code', 'Source and new one above the other; the file tree opens from a button'],
+      ['8 · Validation', 'Validation', 'Validation', 'Build #57', 'Run the failed tests again', ['5 tests failed. Fix them before review.', 'bad'], [tile('361 of 366', 'Tests', 'warn'), tile('3', 'Security', 'warn'), tile('94%', 'Coverage', 'ok'), tile('8 of 8', 'OBDX rules', 'ok')], ['Tests', 'Service calls', 'Security', 'Accessibility'], [row('Payment journey', '40 of 42', '2 failed', 'bad'), row('Login, session and nonce', '19 of 22', '3 failed', 'bad'), row('Payments UI components', '148 of 148', 'Passed', 'ok')], 'To look at', '3 security findings, 2 failing tests, 6 screens look different'],
+      ['9 · Review and approval', 'Review', 'Review and approval', 'CHG-0057 · 42 files', 'Request changes', null, [tile('42', 'Files'), tile('38', 'Screens'), tile('366 of 366', 'Tests', 'ok'), tile('3', 'Findings', 'warn')], ['Code changes', 'Mapping', 'Security', 'Comments'], [row('MakePayment.tsx', '+9 −12', 'Changed', 'info'), row('PaymentSummary.tsx', '+8', 'New', 'ok')], 'Review steps', 'Validation done, technical review in progress, security and approval waiting'],
+      ['9b · Review decisions', 'Review', 'Approve and deliver', 'All review steps done', 'Approve and deliver', null, [tile('42', 'Files'), tile('38', 'Screens'), tile('r1513', 'SVN', 'ok'), tile('4 of 18', 'Modules moved', 'ok')], ['Ready', 'Waiting', 'Delivered'], [row('Validation', 'All tests passed', 'Done', 'ok'), row('Security review', 'Priya Kulkarni', 'Done', 'ok'), row('Approval', 'You', 'Now', 'info')], 'After delivery', 'Start the next module, see it in History'],
+      ['10 · History', 'History', 'History', '24 runs, last 90 days', 'New modernization', null, [tile('19', 'Completed', 'ok'), tile('3', 'With problems', 'warn'), tile('1', 'Failed', 'bad'), tile('1 h', 'Average run')], ['Runs', 'Run details', 'Files', 'Delivery log'], [row('CHG-0057 · Payments', 'Oct 26 · 48 min', 'Completed', 'ok'), row('CHG-0056 · Accounts', 'Running', 'Running', 'info'), row('CHG-0052 · Customer profile', 'Build failed', 'Failed', 'bad')], 'Charts', 'Runs per week and By result sit side by side above the table'],
+      ['Component factory', 'Component factory', 'Component factory', '176 components · Premium Oracle JET', 'Save component style', null, [tile('176', 'Available', 'ok'), tile('0', 'In test'), tile('20', 'Categories'), tile('8', 'Designs')], ['Foundation', 'Layout', 'Data display', 'Widgets'], [row('Button', 'bx-button · Elevated · 1 of 8', 'Available', 'ok'), row('Text field', 'bx-text-field · Glass · 3 of 8', 'Available', 'ok'), row('Card', 'bx-card · Pill · 6 of 8', 'Available', 'ok')], 'Pairs', 'Below 1024 px the workspace and new component sit one above the other; the design carousel and Motion stay on the new one'],
+      ['Technology settings', 'Technology settings', 'Technology settings', 'React · settings for new migrations', 'Edit settings', null, [tile('Ready', 'React', 'ok'), tile('Ready', 'React Native', 'ok'), tile('Preview', 'Angular', 'warn'), tile('5', 'Groups')], ['React', 'React Native', 'Angular'], [row('Look', 'Saved from the Component factory', 'Saved', 'ok'), row('OBDX connection', 'Session, nonce, 2FA, masking', 'Fixed', 'none'), row('Tests and build', 'Jest, Playwright, 80% coverage', 'Set', 'info')], 'Look', 'Design Elevated, motion Lift · Press · Fade up, bank-b-25 brand']
+    ];
+    const rail = ['Home', 'Workspaces', 'Requirements', 'Code', 'Design Studio', 'Changes', 'Modernization', 'Administration'];
+    return {
+      themeClass: this.props.dark ? 'fx-dark' : '',
+      frames: F.map((f, i) => { const open = s.open === i; return { label: f[0], crumb: f[1], title: f[2], lead: f[3], primary: f[4], hasProblem: !!f[5], problem: f[5] ? f[5][0] : '', pBg: f[5] ? tone[f[5][1]][0] : '', pFg: f[5] ? tone[f[5][1]][1] : '', tiles: f[6], tabs: tabs(f[7]), rows: f[8], detailTitle: f[9], detail: f[10], panel: i === 5,
+        navW: open ? '230px' : '68px', navAlign: open ? 'stretch' : 'center', labels: open ? 'inline' : 'none', open: open ? 'true' : 'false', notch: open ? '‹' : '›', notchLabel: open ? 'Collapse sidebar' : 'Expand sidebar',
+        rail: rail.map((r) => ({ n: r, fg: r === 'Modernization' ? '#ffffff' : '#cbd5e1', bg: r === 'Modernization' ? 'linear-gradient(90deg,#4f46e5,#6366f1)' : 'transparent' })),
+        toggle: () => this.setState({ open: open ? -1 : i }) }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

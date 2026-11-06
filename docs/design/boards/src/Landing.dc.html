@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Modernization and Migration overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+
+.fx-cols3eq>*,.fx-leftside>*{min-width:0}
+@media (max-width:1500px){.fx-cols3eq{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3eq>:nth-child(3){grid-column:1/-1}}
+@media (max-width:900px){.fx-cols3eq{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:1100px){.fx-leftside{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:1500px){.fx-hero-art{display:none}}
+.fx-tile-badge{padding-right:58px !important}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="overview" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <main style="flex:1;min-width:0;padding:18px 22px;display:flex;flex-direction:column;gap:16px">
+
+      <div class="fx-cols2" style="display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:16px">
+        <section style="position:relative;overflow-x:auto;overflow-y:hidden;border-radius:var(--fx-radius-xl);background:linear-gradient(100deg,var(--fx-surface) 0%,var(--fx-primary-soft) 55%,var(--fx-primary-border) 100%);border:1px solid var(--fx-border);padding:26px 30px;min-height:190px">
+          <span style="display:inline-flex;height:24px;padding:0 10px;border-radius:7px;background:var(--fx-primary-soft);color:var(--fx-primary);font-weight:700;font-size:13px;align-items:center">OBDX</span>
+          <h1 style="margin:10px 0 8px;font-size:34px;line-height:40px;font-weight:700;color:var(--fx-text);letter-spacing:-.01em;max-width:520px;position:relative;z-index:1">Modernization</h1>
+          <p style="margin:0;max-width:470px;position:relative;z-index:1;font-size:14px;line-height:21px;color:var(--fx-text-body)">Give your OBDX channel premium components, or move it to a modern technology module by module. The OBDX services stay as they are.</p>
+          <a href="ChoosePath.dc.html" style="margin-top:14px;height:40px;padding:0 18px;border-radius:var(--fx-radius);background:var(--fx-primary);color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:8px;position:relative;z-index:1">＋ Start a modernization</a>
+          <div class="fx-hero-art" aria-hidden="true" style="position:absolute;right:34px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:14px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:132px;border-radius:6px;background:#ffffff;border:1px solid #cbd5e1;box-shadow:0 6px 16px rgba(15,23,42,.10);overflow:hidden"><div style="height:16px;background:#e2e8f0;display:flex;align-items:center;gap:3px;padding:0 6px"><span style="width:5px;height:5px;border-radius:50%;background:#94a3b8"></span><span style="width:5px;height:5px;border-radius:50%;background:#94a3b8"></span></div><div style="padding:8px;display:flex;flex-direction:column;gap:6px"><span style="font-size:9px;font-weight:700;color:#475569;font-family:Inter,sans-serif">Make a payment</span><span style="height:14px;border:1px solid #94a3b8;border-radius:2px;background:#ffffff"></span><span style="height:14px;border:1px solid #94a3b8;border-radius:2px;background:#ffffff"></span><span style="height:14px;width:52px;border-radius:2px;background:#64748b"></span></div></div><span style="font-size:10.5px;font-weight:600;color:#64748b;font-family:Inter,sans-serif">Today · Oracle JET</span></div><span style="width:34px;height:34px;border-radius:50%;background:#ffffff;border:1px solid #c7d2fe;color:#4f46e5;font-size:16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(79,70,229,.18)">→</span><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:140px;border-radius:12px;background:#ffffff;border:1px solid #c7d2fe;box-shadow:0 12px 28px rgba(79,70,229,.22);overflow:hidden"><div style="height:18px;background:linear-gradient(90deg,#4338ca,#6366f1);display:flex;align-items:center;padding:0 8px"><span style="width:26px;height:5px;border-radius:3px;background:rgba(255,255,255,.7)"></span></div><div style="padding:9px;display:flex;flex-direction:column;gap:6px"><span style="font-size:9px;font-weight:700;color:#0f172a;font-family:Inter,sans-serif">Make a payment</span><span style="height:18px;border:1.5px solid #a5b4fc;border-radius:7px;background:#f8faff;box-shadow:0 0 0 2px #eef2ff"></span><span style="height:18px;border:1px solid #c7d2fe;border-radius:7px;background:#ffffff"></span><span style="height:18px;width:64px;border-radius:7px;background:#4f46e5"></span></div></div><span style="font-size:10.5px;font-weight:600;color:#4338ca;font-family:Inter,sans-serif">Modernized</span></div></div>
+        </section>
+
+        <section aria-label="Analysis" style="border-radius:var(--fx-radius-xl);background:var(--fx-surface);border:1px solid var(--fx-border);padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--fx-text)">Workspace
+            <span style="height:36px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;padding:0 12px;font-weight:500;color:var(--fx-text-body);gap:8px">bank-b-25 · Retail and Corporate<span style="margin-left:auto;color:var(--fx-text-muted)">⌄</span></span>
+          </label>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;font-weight:600;color:var(--fx-text)">Code revision</span><span style="font-family:var(--fx-font-mono);font-size:12px">r1490</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;font-weight:600;color:var(--fx-text);display:flex;gap:6px;align-items:center">Last analysis <span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:10px;font-weight:600;display:inline-flex;align-items:center">Up to date</span></span><span>14 Jan, 10:24 am</span></div>
+          </div>
+          <button type="button" onClick="{{say0}}" style="height:40px;border-radius:var(--fx-radius);border:1.5px solid var(--fx-primary);background:var(--fx-surface);color:var(--fx-primary-text);font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"></path></svg>Analyze again</button>
+        </section>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="6"><span style="height:30px;padding:0 12px;border-radius:var(--fx-radius-pill);background:var(--fx-surface);display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;border:1px solid var(--fx-border)"><b style="color:{{k.iconFg}};font-variant-numeric:tabular-nums">{{k.value}}</b><span style="color:var(--fx-text-muted)">{{k.label}}</span></span></sc-for></div>
+
+      <section aria-labelledby="pathTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+        <h2 id="pathTitle" style="margin:0;font-size:19px;font-weight:700;color:var(--fx-text)">Choose your modernization path</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+          <sc-for list="{{paths}}" as="p" hint-placeholder-count="2">
+            <article style="border:{{p.border}};background:{{p.bg}};border-radius:var(--fx-radius-xl);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:14px;align-items:flex-start">
+                <span style="width:52px;height:52px;flex:none;border-radius:13px;background:var(--fx-primary-soft);color:var(--fx-primary);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:18px" aria-hidden="true">{{p.icon}}</span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:3px"><h3 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">{{p.title}}</h3><p style="margin:0;font-size:13px;line-height:19px;color:var(--fx-text-body)">{{p.text}}</p></div>
+                <span style="height:24px;padding:0 10px;border-radius:var(--fx-radius-pill);background:{{p.tagBg}};color:{{p.tagFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center">{{p.tag}}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--fx-border);border-bottom:1px solid var(--fx-border);padding:10px 0">
+                <sc-for list="{{p.facts}}" as="f" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:2px;padding:0 10px;border-left:{{f.sep}}"><b style="font-size:12px;color:var(--fx-text)">{{f.k}}</b><span style="font-size:12px;color:var(--fx-text-muted)">{{f.v}}</span></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font-weight:600;color:var(--fx-text)">Progress</span>
+                <span role="progressbar" aria-valuenow="{{p.pctNum}}" aria-valuemin="0" aria-valuemax="100" aria-label="{{p.title}} progress" style="flex:1;height:8px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);overflow:hidden"><span style="display:block;height:100%;width:{{p.pctW}};border-radius:var(--fx-radius-pill);background:linear-gradient(90deg,var(--fx-primary),var(--fx-primary))"></span></span>
+                <b style="color:var(--fx-text);font-variant-numeric:tabular-nums">{{p.pct}}</b>
+                <a href="{{p.href}}" style="height:38px;padding:0 18px;border-radius:var(--fx-radius);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px;background:{{p.btnBg}};color:{{p.btnFg}};border:1.5px solid var(--fx-primary)">{{p.btn}} →</a>
+              </div>
+              <span style="font-size:11px;color:var(--fx-text-muted)">{{p.note}}</span>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+
+      <div class="fx-cols3e" style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr) minmax(0,1fr);gap:16px;min-height:0">
+        <section aria-labelledby="insTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+          <h2 id="insTitle" style="margin:0 0 4px;font-size:16px;font-weight:700;color:var(--fx-text)">What the analysis found</h2>
+          <sc-for list="{{insights}}" as="i" hint-placeholder-count="5">
+            <a href="{{i.href}}" style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:var(--fx-radius);text-decoration:none;color:var(--fx-text-body);background:{{i.bg}}">
+              <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{i.dot}}" aria-hidden="true"></span>
+              <span style="flex:1">{{i.text}}</span><span aria-hidden="true" style="color:var(--fx-text-muted)">›</span>
+            </a>
+          </sc-for>
+        </section>
+
+        <section aria-labelledby="progTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <h2 id="progTitle" style="margin:0;font-size:16px;font-weight:700;color:var(--fx-text)">Modules by state</h2>
+          <div style="display:flex;align-items:center;gap:18px">
+            <div role="img" aria-label="5 of 18 modules done" style="width:124px;height:124px;flex:none;border-radius:50%;background:conic-gradient(var(--fx-primary) 0 28%,#818cf8 28% 39%,#c7d2fe 39% 72%,var(--fx-surface-3) 72% 100%);display:flex;align-items:center;justify-content:center">
+              <div style="width:86px;height:86px;border-radius:50%;background:var(--fx-surface);display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-size:22px;color:var(--fx-text)">5 of 18</b><span style="font-size:11px;color:var(--fx-text-muted)">done</span></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{legend}}" as="l" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:{{l.c}}" aria-hidden="true"></span><span style="flex:1">{{l.k}}</span><b style="font-variant-numeric:tabular-nums">{{l.v}}</b></div>
+              </sc-for>
+            </div>
+          </div>
+          <span style="font-size:11px;color:var(--fx-text-muted)">Done means the module's change is delivered to SVN.</span>
+        </section>
+
+        <section aria-labelledby="actTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center"><h2 id="actTitle" style="margin:0;flex:1;font-size:16px;font-weight:700;color:var(--fx-text)">Recent activity</h2><a href="History.dc.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-weight:600">View all</a></div>
+          <sc-for list="{{activity}}" as="a" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--fx-border)"><span style="width:24px;height:24px;border-radius:50%;background:var(--fx-success-soft);color:var(--fx-success-text);display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none" aria-hidden="true">✓</span><span style="flex:1">{{a.what}}</span><span style="font-size:11px;color:var(--fx-text-muted);white-space:nowrap">{{a.when}}</span></div>
+          </sc-for>
+        </section>
+      </div>
+    </main>
+    </div>
+  </div>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.kpis = (v.kpis || []).map((k) => Object.assign({}, k, { badgeClass: k.hasPct ? 'fx-tile-badge' : '' }));
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    const M = ["Analysis started. The top progress bar runs until it finishes."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    return v;
+  }
+  renderPage() {
+    const subs = ['Overview', 'Choose path', 'Component inventory', 'Component mapping', 'Technology catalogue', 'Migration planner', 'Migration workspace', 'Validation centre', 'Review and approval', 'History'];
+    return {
+      sub: subs.map((n, i) => ({ name: n, current: i === 0 ? 'page' : 'false', bg: i === 0 ? 'var(--fx-primary)' : 'transparent', fg: i === 0 ? '#ffffff' : '#dcd7ff', weight: i === 0 ? 600 : 400 })),
+      kpis: [
+        { icon: '▤', value: '18', label: 'Modules', iconBg: 'var(--fx-primary-soft)', iconFg: 'var(--fx-primary)', hasPct: false },
+        { icon: '▭', value: '214', label: 'Screens analysed', iconBg: 'var(--fx-primary-soft)', iconFg: 'var(--fx-primary)', hasPct: false },
+        { icon: '▦', value: '1,386', label: 'Components found', iconBg: 'var(--fx-primary-soft)', iconFg: 'var(--fx-primary)', hasPct: false },
+        { icon: '✓', value: '1,048', label: 'Direct replacements', iconBg: 'var(--fx-success-soft)', iconFg: 'var(--fx-success-text)', hasPct: true, pct: '76%', pctBg: 'var(--fx-success-soft)', pctFg: 'var(--fx-success-text)' },
+        { icon: '⇄', value: '236', label: 'Need mapping', iconBg: 'var(--fx-primary-soft)', iconFg: 'var(--fx-primary)', hasPct: true, pct: '17%', pctBg: 'var(--fx-warning-soft)', pctFg: 'var(--fx-warning-text)' },
+        { icon: '!', value: '102', label: 'Custom or not covered', iconBg: 'var(--fx-danger-soft)', iconFg: 'var(--fx-danger-text)', hasPct: true, pct: '7%', pctBg: 'var(--fx-danger-soft)', pctFg: 'var(--fx-danger-text)' }
+      ],
+      paths: [
+        { icon: '◈', title: 'Modernize the OBDX UI', text: 'Keep Oracle JET and swap the standard components for the factory’s premium ones, screen by screen.', tag: 'Recommended', tagBg: 'var(--fx-success-soft)', tagFg: 'var(--fx-success-text)', border: '1.5px solid var(--fx-primary)', bg: 'var(--fx-primary-soft)',
+          facts: [{ k: 'Scope', v: 'All modules', sep: '0' }, { k: 'Estimated effort', v: 'Low to medium', sep: '1px solid var(--fx-border)' }, { k: 'Covered by the pack', v: '76% of components', sep: '1px solid var(--fx-border)' }],
+          pct: '32%', pctNum: 32, pctW: '32%', btnBg: 'var(--fx-primary)', btnFg: '#ffffff', href: 'Components.dc.html', btn: 'Continue', note: '68 of 214 screens upgraded and delivered. Not started yet, this button reads Start and opens Choose a path.' },
+        { icon: '</>', title: 'Migrate to a modern technology', text: 'Move chosen modules to React, React Native or Angular while keeping the OBDX services.', tag: 'Strategic', tagBg: 'var(--fx-primary-soft)', tagFg: 'var(--fx-primary)', border: '1px solid var(--fx-border)', bg: 'var(--fx-surface)',
+          facts: [{ k: 'Scope', v: 'Chosen modules or all', sep: '0' }, { k: 'Estimated effort', v: 'Medium to high', sep: '1px solid var(--fx-border)' }, { k: 'Ready now', v: 'React, React Native', sep: '1px solid var(--fx-border)' }],
+          pct: '18%', pctNum: 18, pctW: '18%', btnBg: 'var(--fx-surface)', btnFg: 'var(--fx-primary)', href: 'Migrate.dc.html', btn: 'Continue', note: '3 of 17 modules moved and delivered. Not started yet, this button reads Start and opens Choose a path.' }
+      ],
+      insights: [
+        { href: 'ChoosePath.dc.html', text: 'Start with the component upgrade: less effort, value sooner', dot: 'var(--fx-primary)', bg: 'var(--fx-primary-soft)' },
+        { href: 'Components.dc.html', text: '22 components can be replaced directly with the factory’s', dot: 'var(--fx-warning)', bg: 'transparent' },
+        { href: 'Mapping.dc.html', text: '4 components need their properties or events mapped', dot: 'var(--fx-primary)', bg: 'transparent' },
+        { href: 'Components.dc.html', text: '5 components need a custom build', dot: 'var(--fx-danger-text)', bg: 'transparent' },
+        { href: 'Migrate.dc.html', text: 'Payments and Cards are the hardest modules to migrate', dot: '#0ea5e9', bg: 'transparent' }
+      ],
+      legend: [
+        { k: 'Done', v: '5', c: 'var(--fx-primary)' }, { k: 'In progress', v: '2', c: '#818cf8' }, { k: 'Planned', v: '6', c: '#c7d2fe' }, { k: 'Not started', v: '5', c: 'var(--fx-surface-3)' }
+      ],
+      activity: [
+        { what: 'Code analysis finished', when: '14 Jan, 10:24 am' },
+        { what: 'Component inventory updated', when: '14 Jan, 10:10 am' },
+        { what: 'Migration plan made', when: '13 Jan, 6:32 pm' },
+        { what: 'OBDX rule checks passed', when: '13 Jan, 4:18 pm' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

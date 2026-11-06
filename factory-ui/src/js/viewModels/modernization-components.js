@@ -37,6 +37,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const totals = ko.pureComputed(() => (self.data() ? self.data().totals : null));
       self.counted = ko.pureComputed(() => !!self.data() && self.data().counted);
       const pct = (n) => { const t = totals(); return t && t.uses ? Math.round(100 * n / t.uses) + '%' : ''; };
+      // A small mark per category in the table, as on the board
+      const GLYPH = { input: 'T', navigation: '☰', data: '▤', layout: '▢', overlay: '▢', other: '▥' };
       self.kpis = ko.pureComputed(() => {
         const t = totals();
         if (!t) { return []; }
@@ -46,7 +48,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           id: k[0], value: mz.num(k[2]), label: k[3], percent: k[4], percentCss: ui.pill('', k[5]).css, iconClass: 'factory-nav-icon factory-ico-' + k[1],
           filters: k[0] !== 'screens',
           pressed: ko.pureComputed(() => (self.compat() === k[0] ? 'true' : 'false')),
-          css: ko.pureComputed(() => 'fx-kpi factory-mc-kpi' + (k[0] !== 'screens' ? ' is-filter' : '') + (self.compat() === k[0] && k[0] !== 'screens' ? ' is-on' : '')),
+          // Chips as on the board: the figure coloured by what it means; the chosen filter outlined
+          css: ko.pureComputed(() => 'factory-mb-chip' + ({ direct: ' is-success', custom: ' is-danger' }[k[0]] || '') + (k[0] !== 'screens' ? ' is-filter' : '') + (self.compat() === k[0] && k[0] !== 'screens' ? ' is-on' : '')),
           pick: () => { if (k[0] !== 'screens') { self.compat(k[0]); self.tab('inventory'); } }
         }));
       });
@@ -125,7 +128,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           element: r.element, category: mz.CATEGORY[r.category] || r.category, uses: mz.num(r.uses), screens: mz.num(r.screens),
           modules: r.modules.slice(0, 2).join(', '), more: r.modules.length > 2 ? '+' + (r.modules.length - 2) : '',
           allModules: r.modules.join(', '), premium: r.premium, premiumMono: !!r.component,
-          compat: pill.text, compatCss: pill.css, status: mz.statusText(r.status), effort: r.effort, effortCss: ui.pill(r.effort, EFFORT[r.effort]).css,
+          glyph: GLYPH[r.category] || '▢',
+          compat: pill.text, compatCss: pill.css, status: mz.statusText(r.status), effort: r.effort, effortCss: 'factory-mb-effort is-' + String(r.effort || '').toLowerCase(),
           note: r.note || '', checked: on, css: ko.pureComputed(() => 'factory-mc-row' + (on() ? ' is-selected' : '')), cols: cols,
           toggle: () => { const n = Object.assign({}, self.selected()); if (n[r.element]) { delete n[r.element]; } else { n[r.element] = true; } self.selected(n); return true; },
           preview: () => mz.open('modernization-mapping', { element: r.element }),

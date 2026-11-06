@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component, computed, forwardRef, input, output
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldMessage, FieldShell, Option, isEmpty, nextId, toOptions } from './field';
+import { play } from './motion';
 
 /* ---------- TextArea (oj-text-area) ---------- */
 
@@ -124,6 +125,7 @@ export class NumberInput extends FieldBase<number | null> {
     const next = this.round(base + by);
     this.typed.set(null);
     this.set(min !== undefined && next < min ? min : max !== undefined && next > max ? max : next);
+    play(document.getElementById(this.id), 'roll');
   }
 
   protected key(e: KeyboardEvent): void {

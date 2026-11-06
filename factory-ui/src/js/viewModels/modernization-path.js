@@ -7,12 +7,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         '../services/modernization', 'ojs/ojknockout'],
   function (ko, accUtils, api, workspaceSelection, ui, toast, mz) {
     const PATHS = [
-      { id: 'ui', icon: 'design', title: 'Modernize the OBDX UI', text: 'Keep Oracle JET and swap the standard components for the factory’s premium ones.',
-        tags: [['Lower effort', 'green'], ['Faster delivery', 'blue'], ['Look and feel', 'blue']],
+      { id: 'ui', glyph: '◈', title: 'Modernize the OBDX UI', text: 'Keep Oracle JET and swap the standard components for the factory’s premium ones.',
+        tags: [['Lower effort', 'is-success'], ['Faster delivery', 'is-primary'], ['Look and feel', 'is-primary']],
         points: ['Keeps Oracle JET and today’s architecture', 'Premium, accessible components in place of JET ones', 'Same bindings, business logic and OBDX services', 'Screen by screen, each as a reviewed change'],
         benefits: [['Value sooner', 'New look with little disruption'], ['Lower risk', 'OBDX architecture and services stay'], ['One consistent look', 'A premium design system, themed for the bank']] },
-      { id: 'migration', icon: 'code', title: 'Migrate to a modern technology', text: 'Move chosen modules to React, React Native or Angular while keeping the OBDX services.',
-        tags: [['Strategic', 'violet'], ['Bigger change', 'amber'], ['Future ready', 'blue']],
+      { id: 'migration', glyph: '</>', title: 'Migrate to a modern technology', text: 'Move chosen modules to React, React Native or Angular while keeping the OBDX services.',
+        tags: [['Strategic', 'is-primary'], ['Bigger change', 'is-warning'], ['Future ready', 'is-primary']],
         points: ['Rebuild the UI in a technology from the approved list', 'Move modules one at a time', 'OBDX services and integrations unchanged', 'Old and new screens run side by side meanwhile'],
         benefits: [['Modern stack', 'Easier hiring and faster UI work'], ['Safe step by step', 'One module at a time, old and new side by side'], ['Web and mobile', 'React for web, React Native for apps']] }
     ];
@@ -74,31 +74,30 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.cards = ko.pureComputed(() => PATHS.map((p) => {
         const on = self.path() === p.id;
         const recommended = p.id === 'ui' && directShare() !== null && directShare() >= 50;
-        const tags = (recommended ? [['Recommended', 'green']] : []).concat(p.tags).map((t) => ui.pill(t[0], t[1]));
+        const tags = (recommended ? [['Recommended', 'is-solid']] : []).concat(p.tags).map((t) => ({ text: t[0], css: 'factory-mb-tagpill ' + t[1] }));
         let note = null;
         if (p.id === 'ui') {
-          note = directShare() === null ? { title: 'Analyze first.', text: 'The analysis says how much of this code the premium pack covers.', tone: 'info' }
-            : recommended ? { title: 'Recommended by the analysis.', text: directShare() + '% of this code’s components have a direct premium replacement, so this gives value soonest with little risk.', tone: 'success' }
-              : { title: 'Look at the mapping first.', text: 'Only ' + directShare() + '% of the components have a direct premium replacement.', tone: 'warning' };
+          note = directShare() === null ? { title: 'Analyze first.', text: 'The analysis says how much of this code the premium pack covers.', tone: 'info', icon: 'ⓘ' }
+            : recommended ? { title: 'Recommended by the analysis.', text: directShare() + '% of this code’s components have a direct premium replacement, so this gives value soonest with little risk.', tone: 'success', icon: '✓' }
+              : { title: 'Look at the mapping first.', text: 'Only ' + directShare() + '% of the components have a direct premium replacement.', tone: 'warning', icon: '!' };
         } else {
-          note = { title: 'When to choose it.', text: 'The bank wants a new technology for its channel. A bigger change, done module by module; the component upgrade can come first.', tone: 'info' };
+          note = { title: 'When to choose it.', text: 'The bank wants a new technology for its channel. A bigger change, done module by module; the component upgrade can come first.', tone: 'info', icon: 'ⓘ' };
         }
         return {
-          id: p.id, title: p.title, text: p.text, iconClass: 'factory-nav-icon factory-ico-' + p.icon, tags: tags, points: p.points, note: note,
-          noteCss: 'fx-alert fx-alert--' + note.tone + ' factory-mp-note',
+          id: p.id, title: p.title, text: p.text, glyph: p.glyph, tags: tags, points: p.points, note: note,
+          noteCss: 'factory-mb-choose-note is-' + note.tone,
           checked: on ? 'true' : 'false', tab: on ? '0' : '-1',
-          css: 'fx-card factory-mp-card' + (on ? ' is-on' : ''),
+          css: 'factory-mb-choose-card' + (on ? ' is-on' : ''),
           pick: () => self.path(p.id)
         };
       }));
       // Arrow keys move between the two path cards (a radio group)
-      self.cardKey = (vm, event) => {
-        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(event.key) < 0) { return true; }
+      self.cardKey = (event) => {
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(event.key) < 0) { return; }
         event.preventDefault();
         self.path(self.path() === 'ui' ? 'migration' : 'ui');
         const b = document.getElementById('mpCard-' + self.path());
         if (b) { b.focus(); }
-        return false;
       };
       self.benefits = ko.pureComputed(() => PATHS.find((p) => p.id === self.path()).benefits.map((b) => ({ title: b[0], text: b[1] })));
 
@@ -109,6 +108,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         const a = self.overview() && self.overview().analysis;
         return [opt('latest', 'Use the latest analysis' + (a && a.done ? (a.upToDate ? ' (up to date)' : ' (older than the code)') : ' (none yet)')), opt('new', 'Analyze again first')];
       });
+      // The three choices as the board draws them: a bordered option per value, the chosen one filled
+      const choice = (id, label, value, opts) => ({ id: id, label: label, opts: opts.map((o) => ({ name: o.label, tag: o.tag || null,
+        checked: value() === o.value ? 'true' : 'false', css: 'factory-mb-option' + (value() === o.value ? ' is-on' : ''), pick: () => value(o.value) })) });
+      self.choices = ko.pureComputed(() => {
+        const a = self.overview() && self.overview().analysis;
+        return [
+          choice('scope', 'Scope', self.scope, self.scopeOptions),
+          choice('mode', 'How it runs', self.mode, self.modeOptions),
+          choice('analysis', 'Analysis', self.analysis, [{ value: 'latest', label: 'Use the latest analysis', tag: a && a.done ? (a.upToDate ? 'Up to date' : null) : null },
+            { value: 'new', label: 'Analyze again first' }])
+        ];
+      });
       self.moduleOptions = ko.pureComputed(() => (self.overview() ? self.overview().moduleList : []).map((m) => ({ value: m.name, label: m.name + ' (' + m.screens + ' screens)' })));
       self.modulesError = ko.pureComputed(() => (self.scope() === 'some' && self.modules().length === 0 ? 'Choose at least one module.' : ''));
 
@@ -117,16 +128,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (!o) { return []; }
         const a = o.analysis;
         const kpi = (id) => { const k = o.kpis.find((x) => x.id === id); return k ? mz.num(k.value) : '–'; };
+        // The analysis facts row of the board
         return [
-          { k: 'Workspace', v: o.workspace + (o.info && o.info.bank ? ' · ' + o.info.bank : ''), mono: false },
-          { k: 'OBDX version', v: o.info ? o.info.obdxVersion : '–', mono: false },
-          { k: 'Source', v: o.info && o.info.svnUrl ? o.info.svnUrl : '–', mono: true },
-          { k: 'Code revision', v: a.codeRevision ? 'r' + a.codeRevision : 'Not imported', mono: true },
-          { k: 'Last analysis', v: a.done ? ui.when(a.at) + (a.upToDate ? '' : ' (older than the code)') : 'Not analysed', mono: false },
+          { k: 'Analysis', v: a.done ? (a.upToDate ? 'Finished' : 'Finished, older than the code') : 'Not analysed', mono: false },
+          { k: 'Last analysis', v: a.done ? ui.when(a.at) : '–', mono: false },
           { k: 'Analysed revision', v: a.revision ? 'r' + a.revision : '–', mono: true },
-          { k: 'Screens analysed', v: kpi('screens'), mono: false },
-          { k: 'Components found', v: kpi('components'), mono: false }
-        ].map((f) => Object.assign(f, { css: f.mono ? 'factory-mo-mono' : '' }));
+          { k: 'Components found', v: kpi('components'), mono: false },
+          { k: 'Screens analysed', v: kpi('screens'), mono: false }
+        ].map((f) => Object.assign(f, { css: f.mono ? 'factory-mb-mono' : '' }));
       });
       self.savedText = ko.pureComputed(() => {
         const s = self.saved();
@@ -148,7 +157,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       };
       self.retrySave = () => { self.saveError(''); self.proceed(); };
       self.cancel = () => mz.open('modernization');
-      self.moreItems = [{ value: 'draft', label: 'Save as draft' }, { value: 'overview', label: 'Back to Overview' }];
+      self.moreItems = ko.pureComputed(() => [{ value: 'draft', label: 'Save as draft', disabled: !!self.blocked() }]);
       self.more = (event) => { const v = event.detail && event.detail.value; if (v === 'draft') { self.saveDraft(); } else if (v === 'overview') { self.cancel(); } };
 
       const next = () => mz.open(self.path() === 'ui' ? 'modernization-components' : 'modernization-catalogue');

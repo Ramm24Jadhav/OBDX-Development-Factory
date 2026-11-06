@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review decisions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-primary:#4f46e5;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+a{color:var(--fx-primary-text)}
+@media (max-width:1100px){.fx-dec{grid-template-columns:minmax(0,1fr) !important}}
+.mono{font-family:var(--fx-font-mono);font-size:12px}
+</style>
+</helmet>
+<div style="width:100%;min-height:100vh;box-sizing:border-box;padding:28px 32px;display:flex;flex-direction:column;gap:16px;background:var(--fx-bg);font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body)">
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--fx-text-muted)">REVIEW AND APPROVAL · DECISIONS</span>
+      <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Approve and deliver, and what happens after</h1>
+      <p style="margin:0;max-width:900px">The Approve button on <a href="Review.dc.html">Review and approval</a> opens this dialog once validation, the technical review and the security review are all done. Request changes and Reject open their dialogs on the Review board itself.</p>
+          <dc-import name="Steps" path="mig" step="5" hint-size="760px,32px"></dc-import>
+    </div>
+    <div role="group" aria-label="Show" style="display:flex;background:var(--fx-surface-3);border-radius:var(--fx-radius);padding:3px">
+      <sc-for list="{{views}}" as="x" hint-placeholder-count="3"><button type="button" aria-pressed="{{x.on}}" onClick="{{x.pick}}" style="font:inherit;cursor:pointer;height:30px;padding:0 12px;border-radius:6px;border:0;background:{{x.bg}};color:{{x.fg}};font-weight:600">{{x.name}}</button></sc-for>
+    </div>
+  </div>
+
+  <div class="fx-dec" style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
+    <section role="dialog" aria-label="Approve and deliver to SVN" style="background:#ffffff;border-radius:var(--fx-radius-xl);box-shadow:0 24px 48px rgba(15,23,42,.16);border:1px solid var(--fx-border);display:flex;flex-direction:column">
+      <div style="padding:18px 20px 6px;display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">Approve and deliver to SVN</h2><span style="color:var(--fx-text-muted)">CHG-0057 · Payments · React + TypeScript</span></div>
+      <div style="padding:10px 20px;display:flex;flex-direction:column;gap:8px">
+        <b style="color:var(--fx-text)">Review steps</b>
+        <sc-for list="{{steps}}" as="s" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--fx-border)"><span style="width:20px;height:20px;border-radius:50%;background:{{s.dot}};color:#ffffff;font-size:11px;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">{{s.mark}}</span><span style="flex:1;color:var(--fx-text)">{{s.name}}</span><span style="color:var(--fx-text-muted)">{{s.who}}</span></span></sc-for>
+        <b style="color:var(--fx-text);margin-top:4px">What will be delivered</b>
+        <span style="display:flex;justify-content:space-between"><span style="color:var(--fx-text-muted)">Files</span><span>42 files, 38 screens</span></span>
+        <span style="display:flex;justify-content:space-between"><span style="color:var(--fx-text-muted)">SVN branch</span><span class="mono">branches/migration-react</span></span>
+        <span style="display:flex;justify-content:space-between"><span style="color:var(--fx-text-muted)">Commit message</span><span>CHG-0057 Payments moved to React</span></span>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" checked style="accent-color:var(--fx-primary);margin:0"> Close the change once it is delivered</label>
+        <sc-if value="{{blocked}}" hint-placeholder-val="{{false}}"><div style="padding:10px 12px;border-radius:var(--fx-radius);background:var(--fx-warning-soft);color:var(--fx-warning-text)">The security review is not done. Approve stays greyed out until Priya approves.</div></sc-if>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)">
+        <a href="Review.dc.html" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);color:var(--fx-text);font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Cancel</a>
+        <button type="button" onClick="{{approve}}" aria-disabled="{{blockedStr}}" style="height:36px;padding:0 16px;border-radius:var(--fx-radius);border:0;background:{{approveBg}};color:#ffffff;font:inherit;font-weight:600;cursor:pointer">✓ Approve and deliver</button>
+      </div>
+    </section>
+
+    <section aria-label="After delivery" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:20px;display:flex;flex-direction:column;gap:12px;opacity:{{doneOpacity}}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:44px;height:44px;border-radius:50%;background:var(--fx-success-soft);color:var(--fx-success-text);display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700" aria-hidden="true">✓</span>
+        <div style="display:flex;flex-direction:column"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">{{doneTitle}}</h2><span style="color:var(--fx-text-muted)">{{doneSub}}</span></div>
+      </div>
+      <span style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">SVN revision</span><span class="mono">r1513</span></span>
+      <span style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Approved by</span><span>Amit Mehta · 30 Oct, 4:02 pm</span></span>
+      <span style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Migration plan</span><span>Payments is Moved · 4 of 18 modules</span></span>
+      <span style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Told</span><span>The reviewers and the team, in Notifications</span></span>
+      <b style="color:var(--fx-text);margin-top:4px">Next</b>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="Migrate.dc.html" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);background:var(--fx-primary);color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Start the next module: Cards →</a>
+        <a href="History.dc.html" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);color:var(--fx-text);font-weight:600;text-decoration:none;display:inline-flex;align-items:center">See it in History</a>
+        <a href="Landing.dc.html" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);color:var(--fx-text);font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Back to Overview</a>
+      </div>
+      <span style="font-size:12px;color:var(--fx-text-muted)">If SVN refuses the commit (a conflict or a lost connection), this panel says so with the SVN message and a Try again button; nothing is marked delivered.</span>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { view: 'ready' }; }
+  renderVals() {
+    const s = this.state;
+    const blocked = s.view === 'waiting';
+    const done = s.view === 'delivered';
+    const st = [['Validation', 'All tests passed · build #58', 'done'], ['Technical review', 'Rahul Sharma approved', 'done'], ['Security review', blocked ? 'Priya Kulkarni · waiting' : 'Priya Kulkarni approved', blocked ? 'wait' : 'done'], ['Approval', 'Amit Mehta · you', 'now']];
+    return {
+      views: [['ready', 'Ready to approve'], ['waiting', 'Still waiting'], ['delivered', 'Delivered']].map((v) => ({ name: v[1], on: s.view === v[0] ? 'true' : 'false', bg: s.view === v[0] ? '#ffffff' : 'transparent', fg: s.view === v[0] ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', pick: () => this.setState({ view: v[0] }) })),
+      steps: st.map((x) => ({ name: x[0], who: x[1], dot: x[2] === 'done' ? 'var(--fx-success)' : (x[2] === 'wait' ? 'var(--fx-warning-text)' : 'var(--fx-primary)'), mark: x[2] === 'done' ? '✓' : (x[2] === 'wait' ? '!' : '•') })),
+      blocked: blocked, blockedStr: blocked ? 'true' : 'false',
+      approveBg: blocked ? 'var(--fx-text-muted)' : 'var(--fx-primary)',
+      approve: () => { if (!blocked) { this.setState({ view: 'delivered' }); } },
+      doneOpacity: done ? '1' : '.45',
+      doneTitle: done ? 'Delivered to SVN' : 'After delivery (shown once approved)',
+      doneSub: done ? 'CHG-0057 is closed. Payments now runs on React in the branch.' : 'Approve the change to see this.'
+    };
+  }
+}
+</script>
+</body>
+</html>

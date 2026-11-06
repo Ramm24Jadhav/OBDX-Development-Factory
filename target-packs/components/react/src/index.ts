@@ -25,6 +25,13 @@ export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload
   fileSize } from './Forms';
 export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePickerProps, FileUploadProps, MultiSelectProps, NumberInputProps,
   PasswordFieldProps, SearchFieldProps, TextAreaProps } from './Forms';
+export { EFFECTS, play, reducedMotion } from './motion';
+export type { Effect } from './motion';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { FieldProps, Option } from './field';
+export { Accordion, ActionMenu, Alert, Avatar, Breadcrumb, DestructiveButton, Divider, EmptyState, ErrorMessage, FilterChips, Grid, NotificationPanel, Pagination,
+  SecondaryButton, Sheet, SideNav, Skeleton, Slider, Spinner, StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip } from './G1';
+export type { AccordionProps, ActionMenuProps, AlertProps, AvatarProps, BreadcrumbProps, ChipsProps, EmptyStateProps, GridProps, Item, ItemLike, MenuItem, NavItem,
+  PaginationProps, PanelItem, RowItem, RowsProps, SegmentsProps, SheetProps, SideNavProps, SliderProps, StepItem, StepState, StepperProps, TimelineItem, TimelineProps,
+  Tone } from './G1';

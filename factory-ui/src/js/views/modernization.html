@@ -1,124 +1,127 @@
-<div class="factory-pg factory-mo">
-  <div class="factory-mo-top">
-    <section class="fx-card factory-mo-hero" aria-labelledby="moTitle">
-      <div class="factory-mo-hero-text">
-        <span class="fx-badge fx-badge--primary">OBDX</span>
-        <h1 id="moTitle">Modernization</h1>
-        <p class="factory-rq-lead">Give your OBDX channel premium components, or move it to a modern technology module by module. The OBDX services stay as they are.</p>
-        <div class="factory-mr-next">
-          <button type="button" id="moStartButton" class="fx-btn fx-btn--primary" on-click="[[start]]" :disabled="[[!workspaceId() || !canManage()]]" :title="[[startTitle]]">
-            <span class="factory-nav-icon factory-ico-plus" aria-hidden="true"></span>Start a modernization</button>
-          <button type="button" id="moAnalysisButton" class="fx-btn fx-btn--ghost" on-click="[[openAnalysis]]" :disabled="[[!analysed()]]" :title="[[analysed() ? null : 'Greyed out until the code is analysed']]">Code analysis</button>
+<!-- Modernization Overview, as on the approved board (docs/design/boards/Landing-*.png) -->
+<div class="factory-pg factory-mb factory-mo">
+  <div class="factory-mb-cols2">
+    <section class="factory-mb-hero" aria-labelledby="moTitle">
+      <span class="factory-mb-tag">OBDX</span>
+      <h1 id="moTitle">Modernization</h1>
+      <p>Give your OBDX channel premium components, or move it to a modern technology module by module. The OBDX services stay as they are.</p>
+      <button type="button" id="moStartButton" class="factory-mb-btn is-primary" on-click="[[start]]" :disabled="[[!workspaceId() || !canManage()]]" :title="[[startTitle]]">
+        <span aria-hidden="true">＋</span>Start a modernization</button>
+      <div class="factory-mb-art" aria-hidden="true">
+        <div class="factory-mb-art-side">
+          <div class="factory-mb-art-win"><div class="factory-mb-art-bar"><i></i><i></i></div><div class="factory-mb-art-body"><b>Make a payment</b><span></span><span></span><span class="is-btn"></span></div></div>
+          <small>Today · Oracle JET</small>
+        </div>
+        <span class="factory-mb-art-go">→</span>
+        <div class="factory-mb-art-side is-after">
+          <div class="factory-mb-art-win is-after"><div class="factory-mb-art-bar"><i></i></div><div class="factory-mb-art-body"><b>Make a payment</b><span></span><span></span><span class="is-btn"></span></div></div>
+          <small>Modernized</small>
         </div>
       </div>
-      <div class="factory-mo-art" aria-hidden="true">
-        <div class="factory-mo-art-card is-before"><small>Today · Oracle JET</small><strong>Make a payment</strong><span class="factory-mo-art-field"></span><span class="factory-mo-art-field"></span><span class="factory-mo-art-btn"></span></div>
-        <span class="factory-mo-art-arrow">→</span>
-        <div class="factory-mo-art-card is-after"><small>Modernized</small><strong>Make a payment</strong><span class="factory-mo-art-field"></span><span class="factory-mo-art-field"></span><span class="factory-mo-art-btn"></span></div>
-      </div>
     </section>
-    <oj-bind-if test="[[workspaceId()]]">
-    <section class="fx-card factory-mo-analysis" aria-label="Analysis">
-      <fx-select id="moWorkspace" label="Workspace" options="[[workspaceOptions]]" value="[[workspaceId]]" on-value-changed="[[pickWorkspace]]"></fx-select>
-      <dl class="factory-mo-facts">
-        <div><dt>Code revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[[revisionText]]"></oj-bind-text></dd></div>
-        <div><dt>Last analysis</dt><dd><span id="moAnalysisState" :class="[[analysisCss]]"><oj-bind-text value="[[analysisText]]"></oj-bind-text></span>
-          <oj-bind-if test="[[analysisWhen()]]"><small class="fx-muted factory-mo-when"><oj-bind-text value="[[analysisWhen]]"></oj-bind-text></small></oj-bind-if></dd></div>
-      </dl>
-      <oj-bind-if test="[[!running()]]"><button type="button" id="moAnalyzeButton" class="fx-btn fx-btn--secondary" on-click="[[analyze]]" :disabled="[[!canManage()]]" :title="[[analyzeTitle]]">
-        <span class="factory-nav-icon factory-ico-refresh" aria-hidden="true"></span><oj-bind-text value="[[analysed() ? 'Analyze again' : 'Analyze the code']]"></oj-bind-text></button></oj-bind-if>
-      <oj-bind-if test="[[running()]]"><div class="factory-mo-job" role="status" aria-live="polite" id="moJob">
-        <div class="fx-progress" role="progressbar" aria-label="Analysis" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[job().percent]]"><span :style="[[jobBar]]"></span></div>
-        <ol class="factory-mo-jobsteps"><oj-bind-for-each data="[[jobSteps]]" as="j"><template><li :class="[[j.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[j.data.mark]]"></oj-bind-text></span><oj-bind-text value="[[j.data.name]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
-        <p class="fx-help">You can leave this page; the bell tells you when it is done.</p>
-        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="moStop" on-click="[[stopAnalysis]]" :disabled="[[!canManage()]]">Stop</button></div></oj-bind-if>
+
+    <section class="factory-mb-card factory-mb-analysis" aria-label="Analysis">
+      <oj-bind-if test="[[workspaceId()]]">
+        <fx-select id="moWorkspace" label="Workspace" options="[[workspaceOptions]]" value="[[workspaceId]]" on-value-changed="[[pickWorkspace]]"></fx-select>
+        <dl class="factory-mb-facts2">
+          <div><dt>Code revision</dt><dd class="factory-mb-mono"><oj-bind-text value="[[revisionText]]"></oj-bind-text></dd></div>
+          <div><dt>Last analysis <span id="moAnalysisState" :class="[[analysisCss]]"><oj-bind-text value="[[analysisText]]"></oj-bind-text></span></dt>
+            <dd><oj-bind-if test="[[analysisWhen()]]"><a id="moAnalysisLink" href="?ojr=modernization-analysis" on-click="[[openAnalysis]]" title="Open the code analysis"><oj-bind-text value="[[analysisWhen]]"></oj-bind-text></a></oj-bind-if>
+              <oj-bind-if test="[[!analysisWhen()]]"><span class="factory-mb-muted">Not yet</span></oj-bind-if></dd></div>
+        </dl>
+        <oj-bind-if test="[[!running()]]"><button type="button" id="moAnalyzeButton" class="factory-mb-btn is-outline" on-click="[[analyze]]" :disabled="[[!canManage()]]" :title="[[analyzeTitle]]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"></path></svg>
+          <oj-bind-text value="[[analysed() ? 'Analyze again' : 'Analyze the code']]"></oj-bind-text></button></oj-bind-if>
+        <oj-bind-if test="[[running()]]"><div class="factory-mo-job" role="status" aria-live="polite" id="moJob">
+          <div class="fx-progress" role="progressbar" aria-label="Analysis" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[job().percent]]"><span :style="[[jobBar]]"></span></div>
+          <ol class="factory-mo-jobsteps"><oj-bind-for-each data="[[jobSteps]]" as="j"><template><li :class="[[j.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[j.data.mark]]"></oj-bind-text></span><oj-bind-text value="[[j.data.name]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+          <p class="factory-mb-note">You can leave this page; the bell tells you when it is done.</p>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="moStop" on-click="[[stopAnalysis]]" :disabled="[[!canManage()]]">Stop</button></div></oj-bind-if>
+      </oj-bind-if>
+      <oj-bind-if test="[[!workspaceId()]]">
+        <div class="fx-empty" id="moNoWorkspace"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No workspace chosen</strong>Choose a workspace in the top bar to see its modernization.</div>
+      </oj-bind-if>
     </section>
-    </oj-bind-if>
   </div>
 
-  <oj-bind-if test="[[!workspaceId()]]">
-    <div class="fx-empty" id="moNoWorkspace"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No workspace chosen</strong>Choose a workspace in the top bar to see its modernization.</div>
-  </oj-bind-if>
   <oj-bind-if test="[[error()]]"><div class="fx-alert fx-alert--danger" id="moError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>The overview did not load.</strong> <oj-bind-text value="[[error]]"></oj-bind-text></span>
     <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[tryAgain]]">Try again</button></div></oj-bind-if>
   <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the modernization overview"><span class="fx-skeleton"></span><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
 
   <oj-bind-if test="[[data()]]">
-    <!-- What was analysed -->
-    <oj-bind-if test="[[jobProblem()]]"><div class="fx-alert fx-alert--warning" role="status" id="moJobProblem"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
-      <span class="fx-alert-text"><strong><oj-bind-text value="[[jobProblem().state === 'stopped' ? 'The analysis was stopped.' : 'The analysis failed.']]"></oj-bind-text></strong> <oj-bind-text value="[[jobProblem().message]]"></oj-bind-text> The numbers below are from the last analysis.</span>
-      <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[analyze]]" :disabled="[[!canManage()]]">Try again</button></div></oj-bind-if>
+    <div>
+      <oj-bind-if test="[[jobProblem()]]"><div class="fx-alert fx-alert--warning" role="status" id="moJobProblem"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+        <span class="fx-alert-text"><strong><oj-bind-text value="[[jobProblem().state === 'stopped' ? 'The analysis was stopped.' : 'The analysis failed.']]"></oj-bind-text></strong> <oj-bind-text value="[[jobProblem().message]]"></oj-bind-text> The numbers below are from the last analysis.</span>
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[analyze]]" :disabled="[[!canManage()]]">Try again</button></div></oj-bind-if>
 
-    <oj-bind-if test="[[!analysed()]]">
-      <div class="fx-empty" id="moNotAnalysed"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>
-        <strong>The code has not been analysed yet</strong>Analyze the code to count its screens, modules and Oracle JET components. Both paths start from the analysis.
-        <button type="button" class="fx-btn fx-btn--primary" on-click="[[analyze]]" :disabled="[[!canManage() || running()]]" :title="[[analyzeTitle]]">Analyze the code</button></div>
-    </oj-bind-if>
+      <oj-bind-if test="[[!analysed()]]">
+        <div class="factory-mb-card fx-empty" id="moNotAnalysed"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-search" aria-hidden="true"></span></span>
+          <strong>The code has not been analysed yet</strong>The analysis finds the modules, screens and components to modernize.
+          <button type="button" class="factory-mb-btn is-primary" on-click="[[analyze]]" :disabled="[[!canManage() || running()]]" :title="[[analyzeTitle]]">Run the first analysis</button></div>
+      </oj-bind-if>
 
-    <oj-bind-if test="[[analysed()]]">
-      <div class="factory-mo-kpis" role="list" aria-label="What the analysis found">
-        <oj-bind-for-each data="[[kpis]]" as="k">
+      <oj-bind-if test="[[analysed()]]">
+        <ul class="factory-mb-chips" id="moKpis" aria-label="What the analysis found">
+          <oj-bind-for-each data="[[kpis]]" as="k">
+            <template><li :class="[[k.data.css]]"><b><oj-bind-text value="[[k.data.value]]"></oj-bind-text></b><span><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span></li></template>
+          </oj-bind-for-each>
+        </ul>
+      </oj-bind-if>
+    </div>
+
+    <section class="factory-mb-card factory-mb-section" aria-labelledby="moPathTitle">
+      <h2 id="moPathTitle">Choose your modernization path</h2>
+      <div class="factory-mb-paths">
+        <oj-bind-for-each data="[[paths]]" as="p">
           <template>
-            <div :class="[[k.data.css]]" role="listitem"><span class="fx-kpi-icon"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
-              <div><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span>
-                <span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text>
-                  <oj-bind-if test="[[k.data.hasPercent]]"><span :class="[[k.data.percentCss]]"><oj-bind-text value="[[k.data.percent]]"></oj-bind-text></span></oj-bind-if></span></div></div>
+            <article :class="[[p.data.css]]" :aria-labelledby="[['moPath-' + p.data.id]]">
+              <div class="factory-mb-path-head">
+                <span class="factory-mb-path-icon" aria-hidden="true"><oj-bind-text value="[[p.data.glyph]]"></oj-bind-text></span>
+                <div><h3 :id="[['moPath-' + p.data.id]]"><oj-bind-text value="[[p.data.title]]"></oj-bind-text></h3><p><oj-bind-text value="[[p.data.text]]"></oj-bind-text></p></div>
+                <oj-bind-if test="[[p.data.tag]]"><span :class="[[p.data.tagCss]]"><oj-bind-text value="[[p.data.tag]]"></oj-bind-text></span></oj-bind-if>
+              </div>
+              <dl class="factory-mb-path-facts"><oj-bind-for-each data="[[p.data.facts]]" as="f"><template><div :title="[[f.data.why]]"><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+              <div class="factory-mb-progress"><span>Progress</span>
+                <span class="factory-mb-bar" role="progressbar" :aria-valuenow="[[p.data.percentNum]]" aria-valuemin="0" aria-valuemax="100" :aria-label="[[p.data.title + ' progress']]"><span :style="[[p.data.barStyle]]"></span></span>
+                <b><oj-bind-text value="[[p.data.percent]]"></oj-bind-text></b>
+                <button type="button" :class="[[p.data.buttonCss]]" :id="[['moPathButton-' + p.data.id]]" on-click="[[p.data.go]]" :disabled="[[p.data.disabled]]" :title="[[p.data.buttonTitle]]">
+                  <oj-bind-text value="[[p.data.button]]"></oj-bind-text><span aria-hidden="true">→</span></button>
+              </div>
+              <span class="factory-mb-note"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></span>
+            </article>
           </template>
         </oj-bind-for-each>
       </div>
-    </oj-bind-if>
+    </section>
 
-    <h2 class="factory-mo-h2">Choose your modernization path</h2>
-    <div class="factory-mo-paths">
-      <oj-bind-for-each data="[[paths]]" as="p">
-        <template>
-          <section :class="[[p.data.css]]" :aria-labelledby="[['moPath-' + p.data.id]]">
-            <div class="factory-mo-path-head">
-              <span class="factory-mo-path-icon"><span :class="[[p.data.iconClass]]" aria-hidden="true"></span></span>
-              <div><h3 :id="[['moPath-' + p.data.id]]"><oj-bind-text value="[[p.data.title]]"></oj-bind-text></h3><p class="fx-muted"><oj-bind-text value="[[p.data.text]]"></oj-bind-text></p></div>
-              <oj-bind-if test="[[p.data.tag]]"><span :class="[[p.data.tagCss]]"><oj-bind-text value="[[p.data.tag]]"></oj-bind-text></span></oj-bind-if>
-            </div>
-            <dl class="factory-mo-path-facts"><oj-bind-for-each data="[[p.data.facts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
-            <div class="factory-mo-progress"><span class="fx-muted">Progress</span>
-              <div class="fx-progress" role="progressbar" :aria-valuenow="[[p.data.percent]]" aria-valuemin="0" aria-valuemax="100" :aria-label="[[p.data.title + ' progress']]"><span :style="[[p.data.barStyle]]"></span></div>
-              <strong><oj-bind-text value="[[p.data.percent]]"></oj-bind-text></strong></div>
-            <div class="factory-mo-path-foot"><p class="fx-help"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></p>
-              <button type="button" :class="[[p.data.buttonCss]]" :id="[['moPathButton-' + p.data.id]]" on-click="[[p.data.go]]" :disabled="[[p.data.disabled]]" :title="[[p.data.title]]">
-                <oj-bind-text value="[[p.data.button]]"></oj-bind-text><span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button></div>
-          </section>
-        </template>
-      </oj-bind-for-each>
-    </div>
-
-    <div class="factory-mo-row">
-      <section class="fx-card factory-mo-found" aria-labelledby="moFoundTitle">
-        <h2 class="fx-card-title" id="moFoundTitle">What the analysis found</h2>
-        <oj-bind-if test="[[insights().length === 0]]"><p class="fx-muted">Nothing to point out yet.</p></oj-bind-if>
-        <ul class="factory-mo-insights" id="moInsights">
+    <div class="factory-mb-cols3e">
+      <section class="factory-mb-card factory-mb-list-card" aria-labelledby="moFoundTitle">
+        <h2 class="factory-mb-h2" id="moFoundTitle">What the analysis found</h2>
+        <oj-bind-if test="[[insights().length === 0]]"><p class="factory-mb-muted">Nothing to point out yet.</p></oj-bind-if>
+        <ul class="factory-mb-findings" id="moInsights">
           <oj-bind-for-each data="[[insights]]" as="i">
-            <template><li :class="[[i.data.css]]"><span class="factory-mo-dot" aria-hidden="true"></span>
-              <oj-bind-if test="[[i.data.hasRoute]]"><a :href="[[i.data.href]]" on-click="[[i.data.go]]"><oj-bind-text value="[[i.data.text]]"></oj-bind-text><span aria-hidden="true"> ›</span></a></oj-bind-if>
-              <oj-bind-if test="[[!i.data.hasRoute]]"><span><oj-bind-text value="[[i.data.text]]"></oj-bind-text></span></oj-bind-if></li></template>
+            <template><li>
+              <oj-bind-if test="[[i.data.hasRoute]]"><a :class="[[i.data.css]]" :href="[[i.data.href]]" on-click="[[i.data.go]]"><i aria-hidden="true"></i><span><oj-bind-text value="[[i.data.text]]"></oj-bind-text></span><em aria-hidden="true">›</em></a></oj-bind-if>
+              <oj-bind-if test="[[!i.data.hasRoute]]"><span :class="[[i.data.css]]"><i aria-hidden="true"></i><span><oj-bind-text value="[[i.data.text]]"></oj-bind-text></span></span></oj-bind-if>
+            </li></template>
           </oj-bind-for-each>
         </ul>
       </section>
-      <section class="fx-card factory-mo-states" aria-labelledby="moStatesTitle">
-        <h2 class="fx-card-title" id="moStatesTitle">Modules by state</h2>
-        <div class="factory-mo-ringrow">
-          <span class="factory-ring" :style="[[ring().style]]" role="img" :aria-label="[[ring().text]]"><span><oj-bind-text value="[[ring().label]]"></oj-bind-text><small>done</small></span></span>
-          <ul class="factory-mo-legend"><oj-bind-for-each data="[[legend]]" as="l"><template><li><i :style="[[l.data.style]]" aria-hidden="true"></i><oj-bind-text value="[[l.data.label]]"></oj-bind-text><strong><oj-bind-text value="[[l.data.value]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ul>
+      <section class="factory-mb-card factory-mb-ring-card" aria-labelledby="moStatesTitle">
+        <h2 class="factory-mb-h2" id="moStatesTitle">Modules by state</h2>
+        <div class="factory-mb-ringrow">
+          <span class="factory-mb-ring" :style="[[ring().style]]" role="img" :aria-label="[[ring().text]]"><span><b><oj-bind-text value="[[ring().label]]"></oj-bind-text></b><small>done</small></span></span>
+          <ul class="factory-mb-legend"><oj-bind-for-each data="[[legend]]" as="l"><template><li><i :style="[[l.data.style]]" aria-hidden="true"></i><span><oj-bind-text value="[[l.data.label]]"></oj-bind-text></span><b><oj-bind-text value="[[l.data.value]]"></oj-bind-text></b></li></template></oj-bind-for-each></ul>
         </div>
-        <p class="fx-help">Done means the module's change is delivered to SVN.</p>
+        <span class="factory-mb-note">Done means the module's change is delivered to SVN.</span>
       </section>
-      <section class="fx-card factory-mo-activity" aria-labelledby="moActivityTitle">
-        <div class="fx-card-head"><h2 class="fx-card-title" id="moActivityTitle">Recent activity</h2>
-          <button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="moActivityAll" on-click="[[openHistory]]">View all</button></div>
-        <oj-bind-if test="[[activity().length === 0]]"><p class="fx-muted">Nothing yet: analyses, saved paths and plans, runs and deliveries show here.</p></oj-bind-if>
-        <ol class="fx-timeline factory-mo-timeline">
+      <section class="factory-mb-card factory-mb-list-card" aria-labelledby="moActivityTitle">
+        <div class="factory-mb-head"><h2 class="factory-mb-h2" id="moActivityTitle">Recent activity</h2>
+          <button type="button" class="factory-mb-link" id="moActivityAll" on-click="[[openHistory]]">View all</button></div>
+        <oj-bind-if test="[[activity().length === 0]]"><p class="factory-mb-muted">Nothing yet: analyses, saved paths and plans, runs and deliveries show here.</p></oj-bind-if>
+        <ol class="factory-mb-activity" id="moActivity">
           <oj-bind-for-each data="[[activity]]" as="a">
-            <template><li><span class="fx-timeline-dot fx-timeline-dot--success"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span></span>
-              <span><oj-bind-text value="[[a.data.what]]"></oj-bind-text><span class="fx-muted"><oj-bind-text value="[[a.data.by ? ' · ' + a.data.by : '']]"></oj-bind-text></span></span>
-              <span class="fx-timeline-time"><oj-bind-text value="[[a.data.when]]"></oj-bind-text></span></li></template>
+            <template><li :title="[[a.data.by]]"><i aria-hidden="true">✓</i><span><oj-bind-text value="[[a.data.what]]"></oj-bind-text></span><time><oj-bind-text value="[[a.data.when]]"></oj-bind-text></time></li></template>
           </oj-bind-for-each>
         </ol>
       </section>
