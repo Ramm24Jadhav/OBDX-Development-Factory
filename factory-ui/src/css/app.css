@@ -9992,3 +9992,19 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mu-comps .factory-mu-comp-text .fx-muted { font-size: 11.5px; }
 .factory-mu-comps .factory-mu-complist label > span:last-child { font-size: 10.5px; padding: 1px 6px; white-space: nowrap; }
 .factory-mu-comps .factory-mu-complist li, .factory-mu-comps .factory-mu-complist li > label, .factory-mu-comps .factory-mu-complist li.is-on { background: none; box-shadow: none; padding-left: 0; padding-right: 0; }
+/* Technology catalogue, as drawn: an inline filter row, the cards in two columns, the chosen technology's detail under them */
+.factory-mb-filterrow { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; background: none; border: 0; padding: 0; box-shadow: none; }
+.factory-mb-filterrow .factory-mc-search { margin-left: auto; min-width: 220px; }
+.factory-mb-catlayout { display: flex; flex-direction: column; gap: 14px; }
+.factory-mb-catlayout .factory-mt-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.factory-mb-catlayout .factory-mt-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.factory-mb-catlayout .factory-mo-h2 { margin: 6px 0 0; font-size: 15px; font-weight: 700; color: var(--fx-text); }
+.factory-mb-catlayout .factory-mt-detail { position: static; max-height: none; display: flex; flex-direction: column; gap: 10px; }
+.factory-mb-catlayout .factory-mt-detail-foot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; }
+.factory-mb-catlayout .factory-mt-detail-foot .fx-btn { width: 100%; justify-content: center; height: 40px; }
+@media (max-width: 900px) { .factory-mb-catlayout .factory-mt-cards { grid-template-columns: minmax(0, 1fr); } }
+.factory-mb-catlayout .factory-mt-card { position: relative; padding-right: 110px; }
+.factory-mb-catlayout .factory-mt-card-tags { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; }
+.factory-mb-cols2eq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.factory-mb-cols2eq > * { min-width: 0; }
+@media (max-width: 900px) { .factory-mb-cols2eq { grid-template-columns: minmax(0, 1fr); } }
