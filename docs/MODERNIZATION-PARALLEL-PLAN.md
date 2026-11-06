@@ -162,20 +162,53 @@ hover.
 
 A component a pack's `names` leaves out is not built in that pack.
 
-## Group 7: motion (added 6 Nov 2026)
+## Motion and effects (added 6 Nov 2026)
 
-Effects of the kind animated-component libraries offer, written as our own components. **Clean room:** no code is
-copied, ported or translated from React Bits or any other library (its licence, MIT with the Commons Clause, forbids
-redistributing its components in a bundle or as a port, which is what a pack is), and the agent does not work from
-their source. Our names, the `bx-` look and the motion tokens; no new dependency (CSS and the Web Animations API on the
-web, React Native's `Animated`, plain canvas for backgrounds); every one shows its end state under reduced motion and
-keeps its text readable to screen readers. The integrator adds them to the catalogue as a new category, `motion`.
+Three parts, in every component pack and the target packs' starters.
 
-- **G7** count-up (balances and totals), text-reveal (a heading that writes in), rotating-text, shimmer-text,
-  animated-list (rows that stagger in), spotlight-card (a soft light that follows the pointer), tilt-card (a card that
-  leans to the pointer, for payment cards), flip-card (a card's front and back), success-check (a payment done),
-  click-burst (a short burst on a pressed button), marquee (partner logos), card-stack (offers that swap), dock-nav
-  (a bottom bar that grows on hover or press), gradient-backdrop (a slow colour field behind a hero or sign-in),
-  particle-backdrop (a light field of points), scroll-reveal (sections that rise in)
+**The rule: our own code, written clean-room.** React Bits and Vue Bits are MIT with the Commons Clause, which forbids
+redistributing their components in a bundle or as a port, and a pack is both. So nothing is copied, ported or translated
+from them, and the agent does not work from their source; we take only the idea of an effect and the shape of their
+categories. MIT libraries (Magic UI, Motion Primitives, Inspira UI) may be read for ideas, but we still write our own
+code, because they need Tailwind and a motion library. No new dependency: CSS and the Web Animations API on the web,
+React Native's `Animated`, Flutter's own animation classes (flutter_animate, BSD-3, only if approved), plain canvas for
+backdrops. Every effect shows its end state under reduced motion, keeps text readable to screen readers, follows the
+`--bx-dur-*` and `--bx-ease-*` tokens and the component style saved in the Component factory, and works on JET 6.
 
-W7 builds them in the web packs after W6, and N3 in React Native after N2.
+### M1 · A motion layer on every component
+
+Each component, the 23 built ones first, gets the motion its kind calls for, from the component style's options:
+enter (fade up, scale, slide, blur), hover (lift, glow, shine), press (press, ripple, bounce), value change (a number
+rolls, a chip pops, a row settles), open and close (sheets, dialogs, menus, accordions spring), error (a field shakes
+once), and loading (shimmer). One motion spec per component in `target-packs/components/motion.json`; the same in JET,
+React, Angular, React Native, and the Flutter and JET Core Pack starters (Vue when T1 builds it). From then on, every
+component of every wave ships with its motion.
+
+### M2 · Five new catalogue categories, after React Bits' categories, with our own components
+
+| Category | Components (our names) |
+|---|---|
+| Text effects | rolling-digits (balances and rates), count-up, split-flap-board (exchange rates), reveal-digits (an account number unmasking), blur-in-text, text-reveal, rotating-text, shimmer-text, gradient-text, typed-text (the assistant), focus-word, scroll-float-text |
+| Motion | fade-in-content, scroll-reveal, scroll-expand, edge-blur, glare-hover, magnetic-button, highlight-border, click-burst, marquee |
+| Showcase components | animated-list, spotlight-card, tilt-card, flip-card, card-stack, glow-border-card, bento-grid (a dashboard of tiles), carousel, elastic-slider (an amount), option-wheel (a picker), pill-nav, dock-nav, card-nav, staggered-menu, document-folder, scroll-stack, profile-card, glass-panel |
+| Backdrops | gradient-backdrop, soft-aurora, silk-backdrop, dot-grid, line-waves, light-beams, topography, particle-backdrop |
+| Micro interactions | slide-to-confirm (pay), hold-to-confirm, otp-slots, receipt-tear, success-check, swipe-row (actions on a transaction), swipe-toast, bell-toggle (alerts), squish-switch, jelly-radio, glide-select, rubber-segment, scrub-field (an amount), budget-gauge, status-mark, favourite-heart (a payee), peek-rating, warm-tooltip, prompt-bar (the assistant), voice-pill, call-chip, lattice-loader |
+
+69 components (the 16 of the first motion list are among them). Left out, as not fitting a bank's screens: cursor
+effects (trails, blobs, crosshairs), glitch, ASCII and distorted text, 3D galleries and models, physics toys, and the
+loud backdrops (galaxy, hyperspeed, lightning, ball pit and the like). They are listed in the catalogue as "not for
+banking" so the choice is visible; any can be built on request.
+
+### M3 · The same motion in the other technologies
+
+The Flutter, JET Core Pack, Angular and (with T1) Vue 3 and Capacitor target packs' starter components use the same
+motion spec, so a screen moved to any technology moves the same way.
+
+### Who does it
+
+| Agent | Work |
+|---|---|
+| M1 (catalogue web session, first) | The motion spec and the motion layer on the 23 built components, in JET, React and Angular; then every later group ships with it |
+| W7 (catalogue web session, after W6) | The five new categories in the web packs |
+| N3 (phone session, after N2) | The motion layer and the five categories in React Native |
+| T1, and the main session for the starters | The same motion in Flutter, JET Core Pack, Vue 3 and Capacitor |

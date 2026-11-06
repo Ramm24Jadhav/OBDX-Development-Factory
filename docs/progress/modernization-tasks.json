@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06T09:13:22.644Z",
+ "generated": "2026-11-06T09:18:16.008Z",
  "rows": [
   {
    "id": "P0",
@@ -11,7 +11,7 @@
    "unit": "steps",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "SCR",
@@ -23,7 +23,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Work, but do not match the boards yet",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "S0",
@@ -35,7 +35,7 @@
    "unit": "parts",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "S1",
@@ -47,7 +47,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "S2",
@@ -59,7 +59,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "C0",
@@ -95,7 +95,19 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
+  },
+  {
+   "id": "M1",
+   "track": "Components",
+   "task": "M1 Motion layer on every built component (all packs)",
+   "session": "Catalogue (web)",
+   "done": 0,
+   "total": 23,
+   "unit": "components",
+   "status": "Not started",
+   "note": "",
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W1",
@@ -107,7 +119,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W2",
@@ -119,7 +131,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W3",
@@ -131,7 +143,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W4",
@@ -143,7 +155,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W5",
@@ -155,7 +167,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W6",
@@ -167,19 +179,19 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "W7",
    "track": "Components",
-   "task": "W7 Motion: count-up, reveals, cards, backdrops (web)",
+   "task": "W7 Motion and effects: five new categories (web)",
    "session": "Catalogue (web)",
    "done": 0,
-   "total": 16,
+   "total": 69,
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "N1",
@@ -191,7 +203,7 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "N2",
@@ -203,19 +215,19 @@
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "N3",
    "track": "Components",
-   "task": "N3 React Native, motion",
+   "task": "N3 React Native: motion layer and the five categories",
    "session": "Phone and packs",
    "done": 0,
-   "total": 16,
+   "total": 69,
    "unit": "components",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "TP0",
@@ -227,7 +239,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "T1",
@@ -239,7 +251,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "T2",
@@ -251,7 +263,7 @@
    "unit": "packs",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "G0",
@@ -263,7 +275,7 @@
    "unit": "gates",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "Q1",
@@ -275,7 +287,7 @@
    "unit": "gates",
    "status": "Not started",
    "note": "",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   },
   {
    "id": "SHIP",
@@ -287,7 +299,7 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T09:13:22.644Z"
+   "asOf": "2026-11-06T09:18:16.008Z"
   }
  ]
 }
