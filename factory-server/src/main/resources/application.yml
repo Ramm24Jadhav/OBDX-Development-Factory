@@ -113,6 +113,8 @@ factory:
     api-key: ${FACTORY_MODEL_API_KEY:not-needed}
     chat-model: ${FACTORY_MODEL_CHAT:qwen2.5-coder:7b}
     embedding-model: ${FACTORY_MODEL_EMBEDDING:nomic-embed-text}
+    # Reads screenshots on the Issues page: a model that accepts images. Empty: none.
+    vision-model: ${FACTORY_MODEL_VISION:}
     timeout: ${FACTORY_MODEL_TIMEOUT:120s}
 
 management:

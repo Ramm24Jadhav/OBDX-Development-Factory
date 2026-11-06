@@ -250,6 +250,17 @@ Version packs (5.3) describe OBDX release differences; target packs describe UI 
 
 ---
 
+### 5.9 Issue Analyzer
+
+Support for errors banks report in their running OBDX application: wrong or missing configuration, unreachable
+dependencies, certificates, access rights, data, or a product defect. Evidence is found without a model in logs and in
+text the screenshot model reads from screenshots; the workspace's code index then finds the bank's own code and
+configuration for it, so advice names files that exist. The chat model diagnoses the evidence; the factory checks the
+answer (known categories, cited evidence and files that were given, "probable" only with evidence). Fixes are
+guided: the factory never changes the bank's systems. Resolutions become knowledge for the workspace and, when a lead
+shares them without bank data, for every workspace. Product defects get an Oracle SR draft to copy into My Oracle
+Support (no MOS integration: it has no open API).
+
 ## 6. Modernization mode
 
 Some banks may ask to redesign their whole OBDX frontend in another technology, for example a React Native mobile app (iOS and Android) or a React web app. The OBDX backend and its REST services stay; the new frontend calls them. This is a different kind of job from enhancing screens, so it runs as a separate mode built on the same foundation.

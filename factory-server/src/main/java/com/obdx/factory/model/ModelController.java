@@ -43,7 +43,7 @@ public class ModelController {
     @GetMapping("/status")
     public StatusResponse status() {
         ModelSettings.Current current = settings.current();
-        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.saved(),
+        return new StatusResponse(current.baseUrl(), current.chatModel(), current.embeddingModel(), current.visionModel(), current.saved(),
                 current.apiKey() != null && !current.apiKey().isBlank() && !current.apiKey().equals("not-needed"),
                 current.updatedAt(), current.updatedBy());
     }
@@ -68,7 +68,8 @@ public class ModelController {
         String username = guard.requireAdmin().getUsername();
         boolean embeddingsRemoved = settings.save(request, username);
         ModelSettings.Current current = settings.current();
-        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel());
+        audit.record("MODEL_SETTINGS_CHANGED", null, current.baseUrl(), current.chatModel() + ", " + current.embeddingModel()
+                + (current.visionModel() == null ? "" : ", " + current.visionModel()));
         return new SaveResponse(status(), embeddingsRemoved);
     }
 
@@ -85,7 +86,7 @@ public class ModelController {
     /**
      * @param saved false while the FACTORY_MODEL_* settings apply (nothing chosen on the Models page yet)
      */
-    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, boolean saved, boolean apiKeySet,
+    public record StatusResponse(String baseUrl, String chatModel, String embeddingModel, String visionModel, boolean saved, boolean apiKeySet,
                                  OffsetDateTime updatedAt, String updatedBy) {
     }
 

@@ -521,3 +521,51 @@
     border-left: 4px solid #2c5f9e;
     background-color: #e8eef7;
 }
+
+/* Issues */
+.factory-issue-new,
+.factory-issue-analyzing { background-color: #e8eef7; }
+.factory-issue-diagnosed,
+.factory-issue-not_resolved { background-color: #fdf1d6; }
+.factory-issue-failed,
+.factory-issue-escalated { background-color: #f9dcdc; }
+.factory-issue-resolved { background-color: #e3f4e6; }
+.factory-issue-state-probable { background-color: #e3f4e6; }
+.factory-issue-state-possible { background-color: #fdf1d6; }
+.factory-issue-state-inconclusive { background-color: #f1efed; }
+.factory-issue-risk-low { background-color: #e3f4e6; }
+.factory-issue-risk-medium { background-color: #fdf1d6; }
+.factory-issue-risk-high { background-color: #f9dcdc; }
+
+.factory-issue-step {
+    margin: 10px 0;
+    max-width: 900px;
+}
+
+.factory-issue-box {
+    margin: 16px 0;
+    padding: 8px 16px;
+    border: 1px solid var(--oj-core-divider-color, #ddd);
+    border-radius: 6px;
+    max-width: 900px;
+}
+
+.factory-issue-shot {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    max-width: 1100px;
+}
+
+.factory-issue-thumb {
+    width: 280px;
+    max-height: 220px;
+    object-fit: contain;
+    border: 1px solid var(--oj-core-divider-color, #ddd);
+}
+
+.factory-issue-evidence th:nth-child(1) { width: 50px; }
+.factory-issue-evidence th:nth-child(2) { width: 120px; }
+.factory-issue-evidence th:nth-child(3) { width: 200px; }
+.factory-issue-evidence td { word-break: break-word; }

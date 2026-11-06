@@ -71,11 +71,11 @@ class ModelSettingsIntegrationTest {
 
     @Test
     void switchesServerAndModelsWithoutRestart() {
-        settings.save(new ModelSettings.Update(base + "/a/v1/", "", "chat-a", "embed-a"), "tester");
+        settings.save(new ModelSettings.Update(base + "/a/v1/", "", "chat-a", "embed-a", null), "tester");
         assertThat(gateway.chat(null, "hello").reply()).isEqualTo("server a");
         assertThat(lastRequest.get()).contains("\"chat-a\"");
 
-        settings.save(new ModelSettings.Update(base + "/b/v1", "secret-key-123", "chat-b", "embed-a"), "tester");
+        settings.save(new ModelSettings.Update(base + "/b/v1", "secret-key-123", "chat-b", "embed-a", null), "tester");
         assertThat(gateway.chat(null, "hello").reply()).isEqualTo("server b");
         assertThat(lastRequest.get()).contains("\"chat-b\"");
         assertThat(lastAuthorization.get()).isEqualTo("Bearer secret-key-123");
@@ -92,9 +92,9 @@ class ModelSettingsIntegrationTest {
 
     @Test
     void reportsWhenTheEmbeddingModelChanges() {
-        settings.save(new ModelSettings.Update(base + "/a/v1", "", "chat-a", "embed-a"), "tester");
-        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-a"), "tester")).isFalse();
-        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-b"), "tester")).isTrue();
+        settings.save(new ModelSettings.Update(base + "/a/v1", "", "chat-a", "embed-a", null), "tester");
+        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-a", null), "tester")).isFalse();
+        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-b", null), "tester")).isTrue();
     }
 
     private static void respond(HttpExchange exchange, String body) throws IOException {

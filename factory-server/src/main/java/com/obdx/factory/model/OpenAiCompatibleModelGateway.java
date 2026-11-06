@@ -2,7 +2,9 @@ package com.obdx.factory.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -28,8 +31,8 @@ import java.util.List;
 public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     /** The models of one choice of server; replaced as a whole when the settings change. */
-    private record Connection(String baseUrl, String chatModelName, String embeddingModelName, ChatModel chatModel,
-                              EmbeddingModel embeddingModel) {
+    private record Connection(String baseUrl, String chatModelName, String embeddingModelName, String visionModelName,
+                              ChatModel chatModel, EmbeddingModel embeddingModel, ChatModel visionModel) {
     }
 
     private final Duration timeout;
@@ -45,7 +48,7 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
     public OpenAiCompatibleModelGateway(ModelProperties properties) {
         this.timeout = properties.timeout();
         this.connection = connect(new ModelSettings.Current(properties.baseUrl(), properties.apiKey(), properties.chatModel(),
-                properties.embeddingModel(), false, null, null));
+                properties.embeddingModel(), properties.visionModel(), false, null, null));
     }
 
     @EventListener
@@ -55,21 +58,27 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
 
     private Connection connect(ModelSettings.Current settings) {
         String apiKey = settings.apiKey() == null || settings.apiKey().isBlank() ? "not-needed" : settings.apiKey();
-        return new Connection(settings.baseUrl(), settings.chatModel(), settings.embeddingModel(),
-                OpenAiChatModel.builder()
-                        .baseUrl(settings.baseUrl())
-                        .apiKey(apiKey)
-                        .modelName(settings.chatModel())
-                        .timeout(timeout)
-                        .maxRetries(0)
-                        .build(),
+        String vision = settings.visionModel() == null || settings.visionModel().isBlank() ? null : settings.visionModel();
+        return new Connection(settings.baseUrl(), settings.chatModel(), settings.embeddingModel(), vision,
+                chatModel(settings.baseUrl(), apiKey, settings.chatModel()),
                 OpenAiEmbeddingModel.builder()
                         .baseUrl(settings.baseUrl())
                         .apiKey(apiKey)
                         .modelName(settings.embeddingModel())
                         .timeout(timeout)
                         .maxRetries(0)
-                        .build());
+                        .build(),
+                vision == null ? null : chatModel(settings.baseUrl(), apiKey, vision));
+    }
+
+    private ChatModel chatModel(String baseUrl, String apiKey, String name) {
+        return OpenAiChatModel.builder()
+                .baseUrl(baseUrl)
+                .apiKey(apiKey)
+                .modelName(name)
+                .timeout(timeout)
+                .maxRetries(0)
+                .build();
     }
 
     @Override
@@ -103,6 +112,25 @@ public class OpenAiCompatibleModelGateway implements ModelGateway {
         } catch (RuntimeException e) {
             throw new ModelGatewayException(
                     "Chat model '" + current.chatModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public ChatResult describeImage(String prompt, byte[] image, String mimeType) {
+        Connection current = connection;
+        if (current.visionModel() == null) {
+            throw new ModelGatewayException(NO_VISION_MODEL, null);
+        }
+        long start = System.nanoTime();
+        try {
+            UserMessage message = UserMessage.from(TextContent.from(prompt),
+                    ImageContent.from(Base64.getEncoder().encodeToString(image), mimeType));
+            ChatResponse response = current.visionModel().chat(ChatRequest.builder().messages(message).build());
+            long latencyMs = (System.nanoTime() - start) / 1_000_000;
+            return new ChatResult(response.aiMessage().text(), current.visionModelName(), latencyMs);
+        } catch (RuntimeException e) {
+            throw new ModelGatewayException(
+                    "Screenshot model '" + current.visionModelName() + "' at " + current.baseUrl() + " failed: " + e.getMessage(), e);
         }
     }
 

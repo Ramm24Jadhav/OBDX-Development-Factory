@@ -20,7 +20,10 @@ changes; React Native and React target packs; modernization inventory; publishin
 Compose stack; the download zip with a built-in trial database; demo SVN repositories added automatically; new
 workspace from an SVN URL or a local folder with bank and OBDX version detected from the code (OBDX's
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
-that finds model servers on this computer or another server and switches models without a restart.
+that finds model servers on this computer or another server and switches models without a restart; Issue Analyzer
+(Issues page): logs and screenshots of a bank's error become evidence, the bank's matching code, similar solved
+issues and a checked diagnosis with fix steps, an Oracle SR draft, and resolutions leads share across workspaces
+(plan and decisions in `docs/ISSUE-ANALYZER-PLAN.md`; a screenshot model is chosen on the Models page).
 
 ## The user's installation
 
@@ -54,5 +57,8 @@ stand-in on Windows. The trial database itself runs on the user's laptop.
 
 - Exact format of `about.json` in releases other than 22.2 (the detector reads the first `NN.N` release number in it).
 - Sign-ins end when the factory restarts (sessions are in memory).
+- Issue Analyzer, later phases (only on request): bank administrators filing issues without an account, Oracle
+  notes and bug texts the bank may use, live checks against the bank's environment, blurring customer data in
+  screenshots. Not yet tried with a real model server and real OBDX logs.
 - Remaining roadmap (only on request): reverse-engineering JET screens into Screen Models, wave planning on the
   inventory, Jenkins Android/iOS builds.

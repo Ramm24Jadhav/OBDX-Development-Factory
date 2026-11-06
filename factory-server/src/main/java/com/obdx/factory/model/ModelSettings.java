@@ -18,7 +18,8 @@ import java.util.List;
 public class ModelSettings {
 
     /** The connection to use. */
-    public record Current(String baseUrl, String apiKey, String chatModel, String embeddingModel, boolean saved,
+    /** @param visionModel the model that reads screenshots; null when none is chosen */
+    public record Current(String baseUrl, String apiKey, String chatModel, String embeddingModel, String visionModel, boolean saved,
                           OffsetDateTime updatedAt, String updatedBy) {
     }
 
@@ -27,9 +28,10 @@ public class ModelSettings {
     }
 
     /**
-     * @param apiKey null keeps the stored key (when the server stays the same), empty removes it
+     * @param apiKey      null keeps the stored key (when the server stays the same), empty removes it
+     * @param visionModel null or empty: no screenshot model
      */
-    public record Update(String baseUrl, String apiKey, String chatModel, String embeddingModel) {
+    public record Update(String baseUrl, String apiKey, String chatModel, String embeddingModel, String visionModel) {
     }
 
     private final JdbcTemplate jdbc;
@@ -45,11 +47,12 @@ public class ModelSettings {
     }
 
     public Current current() {
-        List<Current> saved = jdbc.query("SELECT base_url, api_key, chat_model, embedding_model, updated_at, updated_by FROM model_settings WHERE id = 1",
+        List<Current> saved = jdbc.query("SELECT base_url, api_key, chat_model, embedding_model, vision_model, updated_at, updated_by FROM model_settings WHERE id = 1",
                 (rs, i) -> new Current(rs.getString(1), rs.getString(2) == null ? null : cipher.decrypt(rs.getString(2)),
-                        rs.getString(3), rs.getString(4), true, rs.getObject(5, OffsetDateTime.class), rs.getString(6)));
+                        rs.getString(3), rs.getString(4), rs.getString(5), true, rs.getObject(6, OffsetDateTime.class), rs.getString(7)));
         return saved.isEmpty()
-                ? new Current(defaults.baseUrl(), defaults.apiKey(), defaults.chatModel(), defaults.embeddingModel(), false, null, null)
+                ? new Current(defaults.baseUrl(), defaults.apiKey(), defaults.chatModel(), defaults.embeddingModel(),
+                        blank(defaults.visionModel()) ? null : defaults.visionModel(), false, null, null)
                 : saved.getFirst();
     }
 
@@ -83,11 +86,13 @@ public class ModelSettings {
             throw new BadRequestException("Set FACTORY_SECRET_KEY before storing an API key");
         }
         jdbc.update("""
-                INSERT INTO model_settings (id, base_url, api_key, chat_model, embedding_model, updated_at, updated_by)
-                VALUES (1, ?, ?, ?, ?, ?, ?)
+                INSERT INTO model_settings (id, base_url, api_key, chat_model, embedding_model, vision_model, updated_at, updated_by)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET base_url = excluded.base_url, api_key = excluded.api_key, chat_model = excluded.chat_model,
-                    embedding_model = excluded.embedding_model, updated_at = excluded.updated_at, updated_by = excluded.updated_by
-                """, baseUrl, encrypted, update.chatModel().strip(), update.embeddingModel().strip(), OffsetDateTime.now(), username);
+                    embedding_model = excluded.embedding_model, vision_model = excluded.vision_model, updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by
+                """, baseUrl, encrypted, update.chatModel().strip(), update.embeddingModel().strip(),
+                blank(update.visionModel()) ? null : update.visionModel().strip(), OffsetDateTime.now(), username);
         boolean embeddingChanged = !sameModel(before.embeddingModel(), update.embeddingModel());
         if (embeddingChanged) {
             jdbc.update("UPDATE code_chunk SET embedding = NULL WHERE embedding IS NOT NULL");

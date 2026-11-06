@@ -12,6 +12,7 @@ import java.time.Duration;
  * @param apiKey         API key; local servers usually accept any value
  * @param chatModel      model used for chat and code generation
  * @param embeddingModel model used for search embeddings
+ * @param visionModel    model that reads screenshots (accepts images); empty when none
  * @param timeout        maximum time to wait for one model call
  */
 @ConfigurationProperties(prefix = "factory.model")
@@ -20,5 +21,6 @@ public record ModelProperties(
         @DefaultValue("not-needed") String apiKey,
         @DefaultValue("qwen2.5-coder:7b") String chatModel,
         @DefaultValue("nomic-embed-text") String embeddingModel,
+        @DefaultValue("") String visionModel,
         @DefaultValue("120s") Duration timeout) {
 }

@@ -45,8 +45,12 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
       const embeddingOptions = ko.observableArray([]);
       this.chatProvider = new ArrayDataProvider(chatOptions, { keyAttributes: 'value' });
       this.embeddingProvider = new ArrayDataProvider(embeddingOptions, { keyAttributes: 'value' });
+      const NO_VISION = '-';
+      const visionOptions = ko.observableArray([]);
+      this.visionProvider = new ArrayDataProvider(visionOptions, { keyAttributes: 'value' });
       this.chatModel = ko.observable(null);
       this.embeddingModel = ko.observable(null);
+      this.visionModel = ko.observable(NO_VISION);
       this.hasEmbeddingModel = ko.pureComputed(() => this.models().some((m) => m.embedding));
       this.saving = ko.observable(false);
       this.savedMessage = ko.observable('');
@@ -60,12 +64,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
         const chats = options.filter((o, i) => !models[i].embedding);
         chatOptions(chats.filter(coder).concat(chats.filter((o) => !coder(o)), options.filter((o, i) => models[i].embedding)));
         embeddingOptions(options.filter((o, i) => models[i].embedding).concat(chats));
+        visionOptions([{ value: NO_VISION, label: 'None (screenshots are not read)' }].concat(chats));
         this.models(models);
         const current = this.status() || {};
         // The model in use, also when the server lists it with ":latest" (Ollama treats both names the same)
         const find = (name) => models.map((m) => m.id).find((id) => name && id.replace(/:latest$/, '') === name.replace(/:latest$/, ''));
         this.chatModel(find(current.chatModel) || (chatOptions()[0] || {}).value || null);
         this.embeddingModel(find(current.embeddingModel) || (embeddingOptions()[0] || {}).value || null);
+        this.visionModel(find(current.visionModel) || NO_VISION);
       };
       const clearModels = () => { this.models([]); this.savedMessage(''); };
       this.serverKind.subscribe(clearModels);
@@ -119,7 +125,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/session', 'oj
           baseUrl: this.modelsUrl(),
           apiKey: this.serverKind() === 'remote' ? (this.apiKey() || null) : '',
           chatModel: this.chatModel(),
-          embeddingModel: this.embeddingModel()
+          embeddingModel: this.embeddingModel(),
+          visionModel: this.visionModel() === NO_VISION ? null : this.visionModel()
         }).then((result) => {
           this.status(result.status);
           this.apiKey('');

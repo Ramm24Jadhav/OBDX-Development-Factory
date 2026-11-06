@@ -11,6 +11,7 @@
       <li>Model server: <oj-bind-text value="[[status().baseUrl]]"></oj-bind-text></li>
       <li>Chat model: <oj-bind-text value="[[status().chatModel]]"></oj-bind-text></li>
       <li>Embedding model (code search): <oj-bind-text value="[[status().embeddingModel]]"></oj-bind-text></li>
+      <li>Screenshot model: <oj-bind-text value="[[status().visionModel || 'none']]"></oj-bind-text></li>
       <li class="oj-text-color-secondary"><oj-bind-text value="[[statusSource]]"></oj-bind-text></li>
     </ul>
   </oj-bind-if>
@@ -48,6 +49,8 @@
       <oj-form-layout max-columns="2" direction="row">
         <oj-select-single id="chatModel" label-hint="Chat model (writing specs, designs and code)" data="[[chatProvider]]" value="{{chatModel}}"></oj-select-single>
         <oj-select-single id="embeddingModel" label-hint="Embedding model (code search)" data="[[embeddingProvider]]" value="{{embeddingModel}}"></oj-select-single>
+        <oj-select-single id="visionModel" label-hint="Screenshot model (reads screenshots on the Issues page)" data="[[visionProvider]]" value="{{visionModel}}"
+                          help-hints.definition="A model that accepts images. Without one, type the error text from screenshots."></oj-select-single>
       </oj-form-layout>
       <oj-bind-if test="[[!hasEmbeddingModel()]]">
         <p class="factory-warning">This server seems to have no embedding model; code search by meaning needs one. With Ollama:
