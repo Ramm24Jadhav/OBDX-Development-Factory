@@ -11,7 +11,12 @@ const dry = flag === '--dry';
 const md = fs.readFileSync(path.join(root, 'handoff', item + '.md'), 'utf8').replace(/\r\n/g, '\n');
 const blocks = [...md.matchAll(/```(\w+)\n([\s\S]*?)\n```/g)].map((m) => ({ lang: m[1], body: m[2], at: m.index }));
 const after = (marker) => { const i = md.indexOf(marker); if (i < 0) { throw new Error(item + ': no "' + marker + '"'); } return blocks.find((b) => b.at > i); };
-const line = (prefix) => { const m = md.match(new RegExp('^' + prefix.replace(/[()]/g, '\\$&') + '[^`]*`([^`]+)`', 'm')); return m ? m[1] : null; };
+const line = (prefix) => { const m = md.match(new RegExp('^' + prefix.replace(/[()]/g, '\\$&') + '[^`]*`([^`]+)`', 'm')); return m && !/^\(.*\)$/.test(m[1].trim()) ? m[1] : null; }; // a note in brackets ("(literal values)") adds nothing
+// The plain values the JET model gives for "(a, b and c as in the JET model)"
+const fromJetModel = (text) => ((text.match(/\(([^)]*) as in the JET model\)/) || [])[1] || '').split(/,| and /).map((x) => x.trim()).filter(Boolean)
+  .map((name) => { const m = jetModel && jetModel.match(new RegExp('\\b' + name + ': (\\[[\\s\\S]*?\\])(?=, \\w+:|$)')); return m ? [name, m[1]] : null; }).filter(Boolean);
+// Drops a declaration whose name the gallery already has (two groups can name the same piece of state)
+const fresh = (s, stmts, declared) => stmts.filter((x) => { const n = (x.match(/^const \[(\w+),|^const (\w+) =|^(\w+)(?:: [^=]+)? = /) || []).slice(1).find(Boolean); return n && !declared(s, n); });
 const ids = [...md.slice(md.indexOf('## Built'), md.indexOf('## For the shared')).matchAll(/^\| ([a-z0-9-]+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|/gm)]
   .map((m) => ({ id: m[1], jet: m[2].trim(), react: m[3].trim(), angular: m[4].trim() })).filter((r) => r.id !== 'component' && !r.id.startsWith('-'));
 if (!ids.length) { throw new Error(item + ': no components in the Built table'); }
@@ -46,15 +51,10 @@ edit('target-packs/components/react/gallery/gallery.tsx', (s) => {
   s = insertBefore(s, '    </main>', react.body, 'gallery.tsx');
   if (reactState) {
     // "(x as in the JET model)" means the plain values of the JET model, as constants
-    const fromJet = (reactState.match(/\(([^)]*) as in the JET model\)/) || [])[1];
-    let state = reactState.replace(/\([^)]*as in the JET model\)/, '').trim();
-    if (fromJet && jetModel) {
-      for (const name of fromJet.split(/,| and /).map((x) => x.trim()).filter(Boolean)) {
-        const m = jetModel.match(new RegExp('\\b' + name + ': (\\[[\\s\\S]*?\\])(?=, \\w+:|$)'));
-        if (m) { state += ` const ${name} = ${m[1]};`; }
-      }
-    }
-    s = insertAfter(s, `  const [host, setHost] = useState<HTMLElement | null>(null);`, '  ' + state, 'gallery.tsx');
+    const stmts = reactState.replace(/\([^)]*as in the JET model\)/, '').split(/;\s*(?=const )/).map((x) => x.trim().replace(/;$/, '')).filter(Boolean)
+      .concat(fromJetModel(reactState).map(([n, v]) => `const ${n} = ${v}`));
+    const state = fresh(s, stmts, (t, n) => new RegExp('const (\\[' + n + ',|' + n + ' =)').test(t));
+    if (state.length) { s = insertAfter(s, `  const [host, setHost] = useState<HTMLElement | null>(null);`, '  ' + state.join('; ') + ';', 'gallery.tsx'); }
   }
   const imp = s.match(/import \{([^}]*)\} from '\.\.\/src';/);
   const have = new Set(imp[1].split(',').map((x) => x.trim()).filter(Boolean));
@@ -72,7 +72,10 @@ edit('target-packs/components/angular/gallery/main.ts', (s) => {
     let fields = ngFields.replace(/\s*\w+ = \[\.\.\.\] \(as in the JET model\);?/, '');
     const notes = jetModel && jetModel.match(/\bnotes: (\[[\s\S]*?\])(?=, \w+:|$)/);
     if (/notes = \[\.\.\.\]/.test(ngFields) && notes) { fields += ` notes = ${notes[1]};`; }
-    s = insertAfter(s, `  selected = signal<readonly string[]>(['t2']);`, '  ' + fields.split(/;\s*/).filter(Boolean).map((x) => x.trim() + ';').join('\n  '), 'main.ts');
+    const stmts = fields.replace(/\([^)]*as in the JET model\);?/, '').split(/;\s*(?=\w+(?:: [^=]+)? = )/).map((x) => x.trim().replace(/;$/, '')).filter(Boolean)
+      .concat(fromJetModel(fields).map(([n, v]) => `${n} = ${v}`));
+    const add = fresh(s, stmts, (t, n) => new RegExp('^  ' + n + '(: [^=]+)? = ', 'm').test(t));
+    if (add.length) { s = insertAfter(s, `  selected = signal<readonly string[]>(['t2']);`, '  ' + add.map((x) => x + ';').join('\n  '), 'main.ts'); }
   }
   return s;
 });

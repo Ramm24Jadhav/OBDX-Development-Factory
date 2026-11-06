@@ -1,7 +1,7 @@
 // Screenshots the approved Modernization boards and the factory's built pages at the same sizes, for the side-by-side
 // design check (docs/MODERNIZATION-PARALLEL-PLAN.md, Phase 0).
 //   node tools/fidelity/shoot.mjs boards [Board ...]           every board (or the named ones) at 1440 and 1024, light and dark
-//   node tools/fidelity/shoot.mjs pages <route=Board> ...      the factory's pages, signed in to FACTORY_URL (default 8081)
+//   node tools/fidelity/shoot.mjs pages <route=Board[@sheetId]> ... the factory's pages, signed in to FACTORY_URL (default 8081)
 // Pages need FACTORY_USER (default admin) and FACTORY_PASSWORD in the environment; nothing secret is kept in the repository.
 // Output: docs/design/boards/<Board>-<width>-<light|dark>.png and target/fidelity/<Board>-<width>-<theme>-built.png.
 import fs from 'node:fs';
@@ -74,12 +74,15 @@ try {
       // The factory keeps its theme as a preference; the dark board compares with the factory's dark theme
       await page.evaluate((t) => { document.documentElement.setAttribute('data-theme', t); }, theme);
       for (const pair of args) {
-        const [route, board] = pair.split('=');
+        // route=Board@sheetId opens that sheet or dialog first (a dialog has its own board)
+        const [route, rest] = pair.split('=');
+        const [board, sheet] = rest.split('@');
         for (const width of WIDTHS) {
           await page.setViewportSize({ width, height: 1000 });
           await page.goto(`${base}/?ojr=${route}`, { waitUntil: 'networkidle' });
           await page.evaluate((t) => { document.documentElement.setAttribute('data-theme', t); }, theme);
           await page.waitForTimeout(2500);
+          if (sheet) { await page.evaluate((id) => { document.getElementById(id).open = true; }, sheet); await page.waitForTimeout(1200); }
           await page.screenshot({ path: path.join(out, `${board}-${width}-${theme}-built.png`), fullPage: true });
           console.log('page', route, width, theme);
         }
