@@ -234,5 +234,25 @@ not say how it renders, which browsers it supports or how it falls back; LG0 set
 | LG4 · Other technologies | The starters of Vue 3 and Capacitor use the CSS glass from LG2; JET Core Pack the same CSS; Flutter with its BackdropFilter. |
 | LG5 · Gates | Text on glass passes contrast (axe) in both themes over a busy backdrop; reduced transparency and forced colours fall back to a solid surface; reduced motion keeps the glass still; screenshots per browser; no page drops frames on a slow laptop. |
 
+**LG0 findings (Glisse's source, 6 Nov 2026).** It draws with SVG filters: `backdrop-filter: blur() saturate()` on
+each glass, and a lens from `feDisplacementMap` (three colour passes for the dispersion) over a map it computes per
+size on the CPU and caches. It picks the path by the browser's user agent: the bending lens on the live backdrop is
+Chromium only; Safari bends only content marked `data-glisse-backdrop` (on the CPU, about 40 ms a frame while a lens
+moves); Firefox gets frost and the rim. It has no fallback for reduced transparency or forced colours, and reduced
+motion only for its menu. A frame loop runs while a glass sits over marked content, and its caches never shrink. So the
+packs use it this way: glass is static (no marked, moving backdrop, so no frame loop), small surfaces only, and our
+own fallbacks for reduced transparency, forced colours, reduced motion and browsers without backdrop-filter. The spec,
+its tokens and which components take glass are in `target-packs/components/glass.json`. The Component factory already
+has a frosted "Glass" design; this one is a ninth, "Liquid glass" (`liquid`).
+
 Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.
 It starts after this round ships (SHIP), so the current gates are not run twice.
+
+## Decisions (7 Nov 2026)
+
+- Liquid glass is a ninth design a bank can choose ("Liquid glass", look `liquid`), not the default.
+- The Angular pack gets every component the catalogue has, wave by wave, each with its gates.
+- Capacitor wraps the Angular app as well as the React one.
+- The native starters get certificate pinning, XcodeGen (iOS), ViewInspector tests (iOS) and a device-run harness.
+- On the progress dashboard a web wave counts as done only after its browser gates pass.
+- When the gates are green, 8081 is updated with everything for review (after the Issue Analyzer test there).

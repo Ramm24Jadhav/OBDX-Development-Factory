@@ -1,0 +1,29 @@
+{
+  "$comment": "The Liquid glass design (component style look 'liquid'), the same in every pack. Web packs draw it in CSS (bx.css, .bx-look-liquid) on the tokens below; React adds Glisse (MIT, Copyright (c) 2026 Kelvin Zhang) for the bending lens on its own controls; React Native draws it with a blur view. Glass sits on surfaces that float over content, never behind body text in a field. See docs/MODERNIZATION-PARALLEL-PLAN.md, Liquid glass.",
+  "version": 1,
+  "tokens": {
+    "light": { "tint": "rgb(255 255 255 / 0.6)", "blur": "3px", "saturate": 1.5, "rimShine": 0.3, "lensShine": -1.5, "bend": 0.45, "dispersion": 0.4 },
+    "dark": { "tint": "rgb(40 40 40 / 0.62)", "blur": "3px", "saturate": 1.5, "rimShine": 0.13, "lensShine": 1, "bend": 0.45, "dispersion": 0.4 }
+  },
+  "surfaces": {
+    "glass": ["button", "icon-button", "secondary-button", "segmented", "tabs", "switch", "savings-slider", "search", "action-menu", "card", "dialog", "bottom-sheet", "toast", "tooltip", "bottom-nav", "pill-nav", "dock-nav", "glass-panel"],
+    "solid": ["text-field", "amount", "text-area", "password", "number-input", "select", "date", "date-range", "autocomplete", "data-grid"],
+    "$solid": "Fields and tables keep a solid fill behind their text; their menus and pop-ups take glass."
+  },
+  "bend": {
+    "how": "SVG feDisplacementMap from a per-size lens map, three colour passes for dispersion, over backdrop-filter blur and saturate",
+    "where": "Chromium only (the live backdrop); Safari and Firefox show frost and the lit rim without bending",
+    "packs": { "react": "Glisse", "jet-premium": "frost and rim", "angular": "frost and rim", "react-native": "blur view and rim" }
+  },
+  "fallbacks": {
+    "prefers-reduced-transparency": "a solid surface (--bx-surface) with the rim",
+    "forced-colors": "the system colours, no tint, a 1px border",
+    "prefers-reduced-motion": "the glass stays still: no lens following the pointer, no stretch on press",
+    "no-backdrop-filter": "a solid surface at 92% with the rim"
+  },
+  "rules": [
+    "Text on glass passes WCAG AA contrast over the busiest backdrop the screen shows, in both themes",
+    "No lens follows moving content: glass is static over its backdrop, so no frame loop runs (Glisse's follow loop is for marked, moving content)",
+    "At most a few large glass surfaces per screen; dialogs and sheets use one"
+  ]
+}
