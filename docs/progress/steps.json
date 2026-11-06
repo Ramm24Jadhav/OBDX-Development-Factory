@@ -106,11 +106,11 @@
     },
     {
      "name": "Timeline",
-     "done": false
+     "done": true
     },
     {
      "name": "Dependency diagram",
-     "done": false
+     "done": true
     },
     {
      "name": "Path card",
@@ -182,7 +182,7 @@
    "items": [
     {
      "name": "Migration planner",
-     "done": false
+     "done": true
     },
     {
      "name": "Migration workspace",

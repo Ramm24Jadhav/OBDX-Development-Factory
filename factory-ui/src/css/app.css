@@ -10008,3 +10008,24 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-mb-cols2eq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .factory-mb-cols2eq > * { min-width: 0; }
 @media (max-width: 900px) { .factory-mb-cols2eq { grid-template-columns: minmax(0, 1fr); } }
+/* Migration planner, as drawn: each part full width, one under the other */
+.factory-mb-stack { display: flex; flex-direction: column; gap: 14px; }
+.factory-mb-order .factory-mpl-suggested { list-style: none; margin: 8px 0; padding: 0; display: flex; align-items: center; gap: 0; }
+.factory-mb-order .factory-mpl-suggested li { flex: 1; display: flex; align-items: center; min-width: 0; }
+.factory-mb-order .factory-mpl-suggested li + li::before { content: ""; flex: 1; height: 2px; background: var(--fx-border); margin: 0 6px; }
+.factory-mb-order .factory-mpl-step { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; font: inherit; font-size: 12px; color: var(--fx-text); cursor: pointer; padding: 0; }
+.factory-mb-order .factory-mpl-step .factory-mz-dot { border: 1.5px solid var(--fx-primary-border); color: var(--fx-primary-text); background: var(--fx-surface); }
+.factory-mb-order .factory-mpl-step.is-on .factory-mz-dot { border: 0; background: var(--fx-primary); color: var(--fx-on-primary); }
+.factory-mb-order .factory-mpl-step.is-on { font-weight: 700; }
+/* The timeline as on the Charts board: rounded bars on a light track, the weeks with their dates, a Today line */
+.factory-mb .fx-tl-track { height: 14px; background: transparent; }
+.factory-mb .fx-tl-track i { top: 1px; bottom: 1px; border-radius: var(--fx-radius-pill); font-size: 0; padding: 0; }
+.factory-mb .fx-tl-scale span { border-left: 0; text-align: center; font-weight: 600; color: var(--fx-text); }
+.factory-mb .fx-tl-dates { color: var(--fx-text-muted); font-weight: 400; }
+/* Dependency nodes as on the boards: white rounded boxes, the chosen module filled */
+.factory-mb .fx-dep-node { border-radius: var(--fx-radius); border: var(--fx-border-width) solid var(--fx-border-strong); background: var(--fx-surface); color: var(--fx-text); font-size: 11.5px; font-weight: 600; }
+.factory-mb .fx-dep-node.is-selected { background: var(--fx-primary); border-color: var(--fx-primary); color: var(--fx-on-primary); }
+.factory-mb .fx-dep-node.is-related { border-color: var(--fx-primary); }
+.factory-mb .factory-mb-order ol.factory-mpl-suggested { flex-direction: row; flex-wrap: nowrap; }
+.factory-mb .factory-mb-order ol.factory-mpl-suggested > li { flex-direction: row; }
+.factory-mb .factory-mpl-tablecard tbody th { background: transparent; }
