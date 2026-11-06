@@ -13372,12 +13372,13 @@
             "react-native": "RollingDigits"
           },
           "sample": {
-            "value": 12400.5,
+            "value": "12400.5",
             "currency": "USD"
           },
           "builtOn": {
             "jet-premium": "a CSS transition per digit column, or timer steps",
             "react": "the same, with a timer hook",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same, with signals and a timer"
           },
           "api": {
@@ -13450,12 +13451,13 @@
             "react-native": "CountUp"
           },
           "sample": {
-            "value": 1840.2,
+            "value": "1840.2",
             "currency": "USD"
           },
           "builtOn": {
             "jet-premium": "a CSS transition per digit column, or timer steps",
             "react": "the same, with a timer hook",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same, with signals and a timer"
           },
           "api": {
@@ -13528,20 +13530,12 @@
             "react-native": "SplitFlapBoard"
           },
           "sample": {
-            "items": [
-              {
-                "label": "USD",
-                "value": "0.92 EUR"
-              },
-              {
-                "label": "GBP",
-                "value": "1.17 EUR"
-              }
-            ]
+            "items": "[{\"label\":\"USD\",\"value\":\"0.92 EUR\"},{\"label\":\"GBP\",\"value\":\"1.17 EUR\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -13595,6 +13589,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -13648,6 +13643,7 @@
           "builtOn": {
             "jet-premium": "CSS on the text (split into words or letters where it moves)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -13701,6 +13697,7 @@
           "builtOn": {
             "jet-premium": "CSS on the text (split into words or letters where it moves)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -13750,15 +13747,12 @@
           },
           "sample": {
             "prefix": "Pay",
-            "words": [
-              "bills",
-              "friends",
-              "cards"
-            ]
+            "words": "[\"bills\",\"friends\",\"cards\"]"
           },
           "builtOn": {
             "jet-premium": "a timer and CSS",
             "react": "a timer hook and CSS",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "a timer and CSS"
           },
           "api": {
@@ -13818,6 +13812,7 @@
           "builtOn": {
             "jet-premium": "CSS on the text (split into words or letters where it moves)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -13871,6 +13866,7 @@
           "builtOn": {
             "jet-premium": "CSS on the text (split into words or letters where it moves)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -13924,6 +13920,7 @@
           "builtOn": {
             "jet-premium": "a timer",
             "react": "a timer hook",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "a timer"
           },
           "api": {
@@ -13983,6 +13980,7 @@
           "builtOn": {
             "jet-premium": "a timer",
             "react": "a timer hook",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "a timer"
           },
           "api": {
@@ -14042,6 +14040,7 @@
           "builtOn": {
             "jet-premium": "CSS on the text (split into words or letters where it moves)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (TextEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -14101,6 +14100,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14160,6 +14160,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14217,6 +14218,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14274,6 +14276,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14331,6 +14334,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14390,6 +14394,7 @@
           "builtOn": {
             "jet-premium": "bx-btn with pointer CSS variables",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -14447,6 +14452,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14504,6 +14510,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -14558,15 +14565,12 @@
             "react-native": "Marquee"
           },
           "sample": {
-            "items": [
-              "USD 0.92 EUR",
-              "GBP 1.17 EUR",
-              "AED 0.25 EUR"
-            ]
+            "items": "[\"USD 0.92 EUR\",\"GBP 1.17 EUR\",\"AED 0.25 EUR\"]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (MotionEffects.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -14628,17 +14632,12 @@
           },
           "sample": {
             "label": "Recent",
-            "items": [
-              "Coffee House",
-              {
-                "title": "Salary",
-                "meta": "31 Dec"
-              }
-            ]
+            "items": "[\"Coffee House\",{\"title\":\"Salary\",\"meta\":\"31 Dec\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -14693,6 +14692,7 @@
           "builtOn": {
             "jet-premium": "bx-card with pointer CSS variables",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -14753,6 +14753,7 @@
           "builtOn": {
             "jet-premium": "bx-card with pointer CSS variables",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -14814,6 +14815,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -14892,20 +14894,12 @@
             "react-native": "CardStack"
           },
           "sample": {
-            "items": [
-              {
-                "title": "Set a budget",
-                "text": "See where your money goes"
-              },
-              {
-                "title": "Turn on alerts",
-                "text": "Know when a payment leaves"
-              }
-            ]
+            "items": "[{\"title\":\"Set a budget\",\"text\":\"See where your money goes\"},{\"title\":\"Turn on alerts\",\"text\":\"Know when a payment leaves\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -14965,6 +14959,7 @@
           "builtOn": {
             "jet-premium": "bx-card with pointer CSS variables",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -15020,28 +15015,12 @@
           },
           "sample": {
             "label": "Dashboard",
-            "items": [
-              {
-                "id": "spend",
-                "title": "Spending",
-                "figure": "1,240.00",
-                "size": "wide"
-              },
-              {
-                "id": "save",
-                "title": "Saved",
-                "figure": "320.00"
-              },
-              {
-                "id": "score",
-                "title": "Credit score",
-                "figure": "742"
-              }
-            ]
+            "items": "[{\"id\":\"spend\",\"title\":\"Spending\",\"figure\":\"1,240.00\",\"size\":\"wide\"},{\"id\":\"save\",\"title\":\"Saved\",\"figure\":\"320.00\"},{\"id\":\"score\",\"title\":\"Credit score\",\"figure\":\"742\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15102,20 +15081,12 @@
             "react-native": "Carousel"
           },
           "sample": {
-            "slides": [
-              {
-                "title": "Travel insurance",
-                "text": "Cover for the whole family"
-              },
-              {
-                "title": "Home loans",
-                "text": "From 6.9% a year"
-              }
-            ]
+            "slides": "[{\"title\":\"Travel insurance\",\"text\":\"Cover for the whole family\"},{\"title\":\"Home loans\",\"text\":\"From 6.9% a year\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15171,12 +15142,13 @@
           },
           "sample": {
             "label": "Amount",
-            "value": 500,
+            "value": "500",
             "prefix": "USD"
           },
           "builtOn": {
             "jet-premium": "input type=range in the field shell",
             "react": "input type=range",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "input type=range"
           },
           "api": {
@@ -15274,16 +15246,13 @@
           },
           "sample": {
             "label": "Tenure",
-            "options": [
-              "3 months",
-              "6 months",
-              "12 months"
-            ],
+            "options": "[\"3 months\",\"6 months\",\"12 months\"]",
             "value": "6 months"
           },
           "builtOn": {
             "jet-premium": "a listbox with scroll snapping",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -15344,16 +15313,13 @@
             "react-native": "PillNav"
           },
           "sample": {
-            "items": [
-              "Accounts",
-              "Payments",
-              "Cards"
-            ],
+            "items": "[\"Accounts\",\"Payments\",\"Cards\"]",
             "selection": "Accounts"
           },
           "builtOn": {
             "jet-premium": "navigation list (oj-navigation-list look)",
             "react": "navigation list",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "navigation list"
           },
           "api": {
@@ -15414,27 +15380,12 @@
             "react-native": "DockNav"
           },
           "sample": {
-            "items": [
-              {
-                "id": "pay",
-                "label": "Pay",
-                "icon": "↗"
-              },
-              {
-                "id": "cards",
-                "label": "Cards",
-                "icon": "▭"
-              },
-              {
-                "id": "help",
-                "label": "Help",
-                "icon": "?"
-              }
-            ]
+            "items": "[{\"id\":\"pay\",\"label\":\"Pay\",\"icon\":\"↗\"},{\"id\":\"cards\",\"label\":\"Cards\",\"icon\":\"▭\"},{\"id\":\"help\",\"label\":\"Help\",\"icon\":\"?\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15489,22 +15440,12 @@
             "react-native": "CardNav"
           },
           "sample": {
-            "items": [
-              {
-                "id": "loans",
-                "title": "Loans",
-                "text": "Home, car, personal"
-              },
-              {
-                "id": "cards",
-                "title": "Cards",
-                "text": "Credit and debit"
-              }
-            ]
+            "items": "[{\"id\":\"loans\",\"title\":\"Loans\",\"text\":\"Home, car, personal\"},{\"id\":\"cards\",\"title\":\"Cards\",\"text\":\"Credit and debit\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15559,15 +15500,12 @@
             "react-native": "StaggeredMenu"
           },
           "sample": {
-            "items": [
-              "Statements",
-              "Settings",
-              "Sign out"
-            ]
+            "items": "[\"Statements\",\"Settings\",\"Sign out\"]"
           },
           "builtOn": {
             "jet-premium": "menu button pattern (oj-menu-button look)",
             "react": "menu button pattern",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "menu button pattern"
           },
           "api": {
@@ -15628,22 +15566,12 @@
             "react-native": "DocumentFolder"
           },
           "sample": {
-            "items": [
-              {
-                "id": "d1",
-                "title": "Statement December",
-                "meta": "PDF · 120 KB"
-              },
-              {
-                "id": "d2",
-                "title": "Tax certificate 2025",
-                "meta": "PDF"
-              }
-            ]
+            "items": "[{\"id\":\"d1\",\"title\":\"Statement December\",\"meta\":\"PDF · 120 KB\"},{\"id\":\"d2\",\"title\":\"Tax certificate 2025\",\"meta\":\"PDF\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15704,20 +15632,12 @@
             "react-native": "ScrollStack"
           },
           "sample": {
-            "items": [
-              {
-                "title": "Choose an account",
-                "text": "Savings or current"
-              },
-              {
-                "title": "Verify",
-                "text": "Your ID and a selfie"
-              }
-            ]
+            "items": "[{\"title\":\"Choose an account\",\"text\":\"Savings or current\"},{\"title\":\"Verify\",\"text\":\"Your ID and a selfie\"}]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15774,17 +15694,13 @@
           "sample": {
             "name": "Priya Nair",
             "jobTitle": "Relationship manager",
-            "items": [
-              {
-                "label": "Phone",
-                "value": "+44 20 7946 0123"
-              }
-            ],
+            "items": "[{\"label\":\"Phone\",\"value\":\"+44 20 7946 0123\"}]",
             "actionLabel": "Send a message"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -15860,6 +15776,7 @@
           "builtOn": {
             "jet-premium": "a wrapper with an effect class (oj-bind-slot)",
             "react": "a wrapper with an effect class (children)",
+            "react-native": "React Native Animated and the shared motion layer (Showcase.tsx), the end state under reduced motion",
             "angular": "a wrapper with an effect class (ng-content)"
           },
           "api": {
@@ -15923,6 +15840,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -15980,6 +15898,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16037,6 +15956,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16094,6 +16014,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16151,6 +16072,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16208,6 +16130,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16265,6 +16188,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16322,6 +16246,7 @@
           "builtOn": {
             "jet-premium": "a decorative CSS layer (canvas for particles)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Backdrops.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16387,6 +16312,7 @@
           "builtOn": {
             "jet-premium": "a button handle with pointer events",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16452,6 +16378,7 @@
           "builtOn": {
             "jet-premium": "a button and a timer",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16523,6 +16450,7 @@
           "builtOn": {
             "jet-premium": "one input over slots (autocomplete one-time-code)",
             "react": "one input over slots (autocomplete one-time-code)",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "one input over slots (autocomplete one-time-code)"
           },
           "api": {
@@ -16624,13 +16552,14 @@
             "react-native": "ReceiptTear"
           },
           "sample": {
-            "amount": 1250,
+            "amount": "1250",
             "currency": "USD",
             "reference": "FX-20391"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -16709,6 +16638,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -16760,21 +16690,12 @@
             "heading": "Coffee House",
             "meta": "Today 08:14",
             "value": "-4.50",
-            "actions": [
-              {
-                "value": "split",
-                "label": "Split"
-              },
-              {
-                "value": "dispute",
-                "label": "Dispute",
-                "tone": "danger"
-              }
-            ]
+            "actions": "[{\"value\":\"split\",\"label\":\"Split\"},{\"value\":\"dispute\",\"label\":\"Dispute\",\"tone\":\"danger\"}]"
           },
           "builtOn": {
             "jet-premium": "pointer swipe; the actions are buttons reachable by keyboard",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16846,6 +16767,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -16900,11 +16822,12 @@
             "react-native": "BellToggle"
           },
           "sample": {
-            "value": true
+            "value": "true"
           },
           "builtOn": {
             "jet-premium": "a toggle button (aria-pressed)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -16972,11 +16895,12 @@
           },
           "sample": {
             "label": "Round up to save",
-            "value": true
+            "value": "true"
           },
           "builtOn": {
             "jet-premium": "a button with the switch role",
             "react": "a button with the switch role",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "a button with the switch role"
           },
           "api": {
@@ -17050,16 +16974,13 @@
           },
           "sample": {
             "label": "Card design",
-            "options": [
-              "Midnight",
-              "Ocean",
-              "Sunrise"
-            ],
+            "options": "[\"Midnight\",\"Ocean\",\"Sunrise\"]",
             "value": "Ocean"
           },
           "builtOn": {
             "jet-premium": "radio inputs in a fieldset",
             "react": "radio inputs in a fieldset",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "radio inputs in a fieldset"
           },
           "api": {
@@ -17127,16 +17048,13 @@
           },
           "sample": {
             "label": "Show",
-            "options": [
-              "Day",
-              "Week",
-              "Month"
-            ],
+            "options": "[\"Day\",\"Week\",\"Month\"]",
             "value": "Week"
           },
           "builtOn": {
             "jet-premium": "buttons with the radio role (oj-buttonset-one look)",
             "react": "buttons with the radio role",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "buttons with the radio role"
           },
           "api": {
@@ -17204,16 +17122,13 @@
           },
           "sample": {
             "label": "Period",
-            "options": [
-              "1M",
-              "3M",
-              "1Y"
-            ],
+            "options": "[\"1M\",\"3M\",\"1Y\"]",
             "value": "1M"
           },
           "builtOn": {
             "jet-premium": "buttons with the radio role (oj-buttonset-one look)",
             "react": "buttons with the radio role",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "buttons with the radio role"
           },
           "api": {
@@ -17280,12 +17195,13 @@
             "react-native": "ScrubField"
           },
           "sample": {
-            "value": 250,
+            "value": "250",
             "currency": "USD"
           },
           "builtOn": {
             "jet-premium": "a number input and a pointer handle",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -17365,13 +17281,14 @@
           },
           "sample": {
             "label": "Groceries",
-            "value": 320,
-            "max": 400,
+            "value": "320",
+            "max": "400",
             "unit": "USD"
           },
           "builtOn": {
             "jet-premium": "SVG with the progressbar role",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -17438,6 +17355,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -17487,11 +17405,12 @@
           },
           "sample": {
             "name": "A. Rao",
-            "value": true
+            "value": "true"
           },
           "builtOn": {
             "jet-premium": "a toggle button (aria-pressed)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -17559,11 +17478,12 @@
           },
           "sample": {
             "label": "How was this payment?",
-            "value": 4
+            "value": "4"
           },
           "builtOn": {
             "jet-premium": "radio inputs in a fieldset",
             "react": "radio inputs in a fieldset",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "radio inputs in a fieldset"
           },
           "api": {
@@ -17624,6 +17544,7 @@
           "builtOn": {
             "jet-premium": "a button with aria-describedby and the tooltip role",
             "react": "a button with aria-describedby and the tooltip role",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "a button with aria-describedby and the tooltip role"
           },
           "api": {
@@ -17672,14 +17593,12 @@
             "react-native": "PromptBar"
           },
           "sample": {
-            "suggestions": [
-              "What did I spend on travel?",
-              "When is my card bill due?"
-            ]
+            "suggestions": "[\"What did I spend on travel?\",\"When is my card bill due?\"]"
           },
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {
@@ -17749,6 +17668,7 @@
           "builtOn": {
             "jet-premium": "a toggle button (aria-pressed)",
             "react": "the same",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "the same"
           },
           "api": {
@@ -17814,6 +17734,7 @@
           "builtOn": {
             "jet-premium": "a tel: link",
             "react": "a tel: link",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "a tel: link"
           },
           "api": {
@@ -17867,6 +17788,7 @@
           "builtOn": {
             "jet-premium": "ojs/ojcomposite (Knockout view, no JET component)",
             "react": "React, no library",
+            "react-native": "React Native Animated and the shared motion layer (Micro.tsx), the end state under reduced motion",
             "angular": "standalone component, signal inputs"
           },
           "api": {

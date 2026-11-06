@@ -129,14 +129,14 @@ recipes:
         name: Android screen
         files: ["**/android/**/screens/**/*Screen.kt"]
         examples: {files: ["**/android/**/screens/**/*Screen.kt"], contains: 'FormModel|BxScreen'}
-      - id: screenIos
+      - id: screen-ios
         name: iOS view
         files: ["**/ios/Sources/**/Screens/**/*View.swift"]
         examples: {files: ["**/ios/Sources/**/Screens/**/*View.swift"], contains: 'FormModel|BxScreen'}
       - id: test
         name: Android screen test
         files: ["**/android/**/src/test/**/*ScreenTest.kt"]
-      - id: testIos
+      - id: test-ios
         name: iOS view test
         files: ["**/ios/Tests/**/*ViewTests.swift"]
   - id: app-api
@@ -152,7 +152,7 @@ recipes:
         name: Android API file
         files: ["**/android/**/api/*Api.kt"]
         template: templates/Api.kt
-      - id: apiIos
+      - id: api-ios
         name: iOS API file
         files: ["**/ios/Sources/**/Api/*Api.swift"]
         template: templates/Api.swift
@@ -169,6 +169,6 @@ recipes:
       - id: navigation
         name: Android navigation
         files: ["**/android/**/AppNavigation.kt"]
-      - id: navigationIos
+      - id: navigation-ios
         name: iOS navigation
         files: ["**/ios/Sources/**/AppNavigation.swift"]

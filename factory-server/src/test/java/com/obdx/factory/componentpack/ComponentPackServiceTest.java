@@ -30,8 +30,8 @@ class ComponentPackServiceTest {
 
     @Test
     void theRegistryLoadsEveryComponentWithItsNameAndFoundationInEveryPack() {
-        assertThat(REGISTRY.size()).isEqualTo(176);
-        assertThat(REGISTRY.categories()).hasSize(20);
+        assertThat(REGISTRY.size()).isEqualTo(245);
+        assertThat(REGISTRY.categories()).hasSize(25);
         assertThat(REGISTRY.packs()).extracting(Pack::id).containsExactlyElementsOf(ComponentRegistry.PACKS);
         REGISTRY.categories().forEach((c) -> c.components().forEach((m) -> {
             assertThat(m.names()).as(m.id()).containsKey("jet-premium");
@@ -52,10 +52,10 @@ class ComponentPackServiceTest {
                 Path folder = Path.of("..").resolve(b.source());
                 assertThat(folder).as(p.id() + " " + b.component()).isDirectory();
                 try (var files = Files.list(folder)) {
-                    // A React or React Native component is an exported function, an Angular one an exported class; a premium JET element a registered composite
+                    // A React or React Native component is an exported function, an Angular one an exported class or its element selector; a premium JET element a registered composite (directly or through its group file's register helper)
                     boolean exported = files.filter((f) -> f.toString().endsWith(".tsx") || f.toString().endsWith(".ts") || f.toString().endsWith(".js"))
-                            .anyMatch((f) -> { try { String s = Files.readString(f); return s.contains("export function " + b.export()) || s.contains("export class " + b.export() + " ")
-                                    || s.contains("Composite.register('" + b.export() + "'"); } catch (Exception e) { return false; } });
+                            .anyMatch((f) -> { try { String s = Files.readString(f); return s.contains("export function " + b.export()) || s.contains("export const " + b.export() + " = ") || s.contains("export class " + b.export() + " ") || s.contains("selector: '" + b.export() + "'")
+                                    || s.contains("Composite.register('" + b.export() + "'") || s.contains("register('" + b.export() + "'"); } catch (Exception e) { return false; } });
                     assertThat(exported).as(p.id() + " " + b.component() + " exports " + b.export()).isTrue();
                 }
             }
@@ -71,27 +71,27 @@ class ComponentPackServiceTest {
         assertThat(find(c, "data-grid").packs().get("angular").source()).isEqualTo("target-packs/components/angular/src#DataTable");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("accessibility")).isEqualTo("passed");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("not-run");
-        // What the starters had beyond the packs stays listed from the starter; the forms wave replaced their switch
-        assertThat(find(c, "account-picker").packs().get("react").source()).isEqualTo("target-packs/react/starter/src/components#AccountField");
+        // The group 2 pack components replaced the starters' own; the forms wave replaced their switch
+        assertThat(find(c, "account-picker").packs().get("react").source()).isEqualTo("target-packs/components/react/src#AccountSelector");
         assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/components/react/src#Toggle");
         assertThat(find(c, "document-upload").packs().get("react-native").source()).isEqualTo("target-packs/components/react-native/src#FileUpload");
         // The premium JET pack's foundation set and forms wave passed every gate, parity on JET 6.2 and the current release included
         assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("jet-premium").gates().get("parity")).isEqualTo("passed");
         assertThat(find(c, "date-range").packs().get("jet-premium").readiness()).isEqualTo("available");
-        assertThat(c.packs().get(0).counts().available()).isEqualTo(23);
-        // React and Angular passed the browser gates; parity with the JET screens is still to run, so only the card
-        // (which replaces nothing) is Available
+        assertThat(c.packs().get(0).counts().available()).isEqualTo(34);
+        // React and Angular passed the browser gates; parity with the JET screens is still to run, so only components
+        // that replace nothing (the card, and group 1's that passed) are Available
         assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
         // Angular does not carry the widgets
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("not-in-pack");
-        assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(176));
-        assertThat(c.packs().get(1).counts().available()).isEqualTo(1);
-        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(23);
+        assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
+        assertThat(c.packs().get(1).counts().available()).isEqualTo(11);
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(234);
         assertThat(c.packs().get(2).counts().available()).isZero();
-        assertThat(c.packs().get(3).counts().available()).isEqualTo(1);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(22);
+        assertThat(c.packs().get(3).counts().available()).isEqualTo(9);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(202);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");
