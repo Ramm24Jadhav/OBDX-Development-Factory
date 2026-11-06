@@ -35,3 +35,8 @@ export { Accordion, ActionMenu, Alert, Avatar, Breadcrumb, DestructiveButton, Di
 export type { AccordionProps, ActionMenuProps, AlertProps, AvatarProps, BreadcrumbProps, ChipsProps, EmptyStateProps, GridProps, Item, ItemLike, MenuItem, NavItem,
   PaginationProps, PanelItem, RowItem, RowsProps, SegmentsProps, SheetProps, SideNavProps, SliderProps, StepItem, StepState, StepperProps, TimelineItem, TimelineProps,
   Tone } from './G1';
+export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption, DepositTopUp,
+  DepositsSummary, MaturityInstructions, NewDepositForm, PaymentForm, PaymentSchedule, PaymentStatus, QuickActions, TransactionDetails, TransactionFilter, TransactionHistory,
+  TransactionReceipt, TransferSummary, UpcomingBills, ibanValid, money } from './G2';
+export type { AccountOption, AccountSelectorProps, BalanceProps, ChoiceCardsProps, ChoiceOption, Detail, DetailsProps, Payee, PayeesProps, QuickActionsProps, QuickItem,
+  ReceiptProps, StepFormProps, ThingCardProps, Tile, TilesProps, Transaction, TransactionsProps } from './G2';

@@ -76,7 +76,10 @@ const FORMS = ['bx-text-area', 'bx-password', 'bx-number-input', 'bx-currency-pi
 const G1 = ['bx-secondary-button', 'bx-danger-button', 'bx-savings-slider', 'bx-segmented', 'bx-filter-chips', 'bx-action-menu', 'bx-accordion', 'bx-stepper', 'bx-breadcrumb',
   'bx-side-nav', 'bx-sheet', 'bx-grid', 'bx-divider', 'bx-avatar', 'bx-pagination', 'bx-status-badge', 'bx-timeline', 'bx-spinner', 'bx-skeleton', 'bx-empty-state', 'bx-tooltip',
   'bx-alert-banner', 'bx-error-message', 'bx-success-message', 'bx-notification-panel'];
-const GROUPS = [G1];
+const G2 = ['bx-account-picker', 'bx-account-summary', 'bx-balance-card', 'bx-account-card', 'bx-account-details', 'bx-iban', 'bx-quick-actions', 'bx-payee-list',
+  'bx-beneficiary-card', 'bx-payment-form', 'bx-transfer-summary', 'bx-payment-status', 'bx-transaction-list', 'bx-transaction-filter', 'bx-transaction-details', 'bx-repeat',
+  'bx-receipt', 'bx-upcoming-bills', 'bx-td-summary', 'bx-new-td', 'bx-maturity-instructions', 'bx-td-topup', 'bx-td-redemption'];
+const GROUPS = [G1, G2];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -549,6 +552,92 @@ test('g1 views have their roles', () => {
   has('bx-sheet', /role="dialog" aria-modal="true"/);
   has('bx-pagination', /aria-label="Next page"/);
   has('bx-stepper', /<ol class="bx-steps" :aria-label/);
+});
+
+// Group 2: accounts, payments, deposits
+const g2 = load(path.join(BX, 'bx-g2.js')).kit;
+test('g2 amounts: the currency\'s decimals; text is shown as given', () => {
+  eq([g2.money(1250, 'USD'), g2.money(1250, 'JPY'), g2.money(1.5, 'KWD'), g2.money('12,400.00'), g2.money(null)],
+    [(1250).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', (1250).toLocaleString() + ' JPY', (1.5).toLocaleString(undefined, { minimumFractionDigits: 3 }) + ' KWD', '12,400.00', ''], 'money');
+});
+test('g2 bx-iban: groups of four, the ISO checksum on blur, a tick when valid', () => {
+  eq([g2.ibanValid('GB29 NWBK 6016 1331 9268 19'), g2.ibanValid('GB28 NWBK 6016 1331 9268 19'), g2.ibanValid('12'), g2.ibanGroups('gb29nwbk60161331926819')],
+    [true, false, false, 'GB29 NWBK 6016 1331 9268 19'], 'checks');
+  const i = create('bx-iban', { required: true });
+  i.vm.onInput(input('gb29 nwbk 6016 1331 9268 19'));
+  i.vm.onBlur();
+  eq([i.props.value, i.vm.text(), i.vm.ok(), i.vm.error()], ['GB29NWBK60161331926819', 'GB29 NWBK 6016 1331 9268 19', true, ''], 'valid');
+  i.vm.onInput(input('GB28 NWBK 6016 1331 9268 19'));
+  i.vm.onBlur();
+  eq([i.vm.error().indexOf('Check the IBAN') === 0, i.props.value], [true, 'GB29NWBK60161331926819'], 'invalid keeps the last good value');
+});
+test('g2 bx-account-picker: the chosen account\'s detail is its help line', () => {
+  const p = create('bx-account-picker', { options: [{ value: 's', label: 'Savings ·· 4821', meta: 'Available 12,150.00' }, { value: 'c', label: 'Current ·· 7730' }] });
+  p.vm.onChange(input('s'));
+  eq([p.props.value, p.vm.detail(), p.vm.options()[0].selected], ['s', 'Available 12,150.00', true], 'chosen');
+});
+test('g2 tiles, cards and details fire ojAction with what was picked', () => {
+  const t = create('bx-account-summary', { items: [{ id: 'sav', label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }] });
+  t.vm.tiles()[0].open();
+  eq([t.events[0].detail.item.id, t.vm.tiles()[0].value], ['sav', '12,400.00'], 'tile');
+  const c = create('bx-beneficiary-card', { heading: 'A. Rao' });
+  c.vm.act();
+  eq([c.vm.actionName(), types(c)], ['Pay now: A. Rao', ['ojAction']], 'card');
+  const d = create('bx-td-redemption', { items: [{ label: 'Principal', value: '25,000.00' }, { label: 'You receive', value: '25,549.90', total: true }], busy: true });
+  d.vm.act();
+  eq([d.vm.rows()[1].css, types(d)], ['bx-kv-row is-total', []], 'details busy');
+});
+test('g2 bx-balance-card: the amount in its currency, hidden and shown on request', () => {
+  const b = create('bx-balance-card', { label: 'Savings ·· 4821', amount: 12400, currency: 'USD' });
+  eq(b.vm.shown(), (12400).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'shown');
+  b.vm.toggle();
+  eq([b.vm.shown(), b.vm.toggleText(), b.props.hidden], ['••••••', 'Show balance', true], 'hidden');
+});
+test('g2 bx-payee-list: found by name, picked with ojAction', () => {
+  const p = create('bx-payee-list', { items: [{ id: 'p1', name: 'A. Rao', meta: 'HSBC ·· 9268' }, { id: 'p2', name: 'J. Mehta' }] });
+  p.vm.onQuery(input('meh'));
+  eq(p.vm.rows().map((r) => r.name), ['J. Mehta'], 'filtered');
+  p.vm.rows()[0].pick();
+  eq(p.events[0].detail.item.id, 'p2', 'picked');
+  p.vm.onQuery(input('zzz'));
+  eq(p.vm.none(), true, 'none');
+});
+test('g2 bx-transaction-list: money in and out, the currency\'s decimals', () => {
+  const t = create('bx-transaction-list', { currency: 'USD', items: [{ id: 't1', description: 'Coffee House', date: 'Today', amount: -4.5 }, { id: 't2', description: 'Salary', amount: 3200 }] });
+  const r = t.vm.rows();
+  eq([r[0].amount, r[0].direction, r[1].css, r[1].direction], ['−' + (4.5).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'Money out', 'bx-tx-amount is-in', 'Money in'], 'rows');
+  r[0].open();
+  eq(t.events[0].detail.item.id, 't1', 'open');
+});
+test('g2 forms: submit and cancel fire ojAction; busy stops a second submit', () => {
+  const f = create('bx-payment-form', { cancelLabel: 'Cancel' });
+  f.vm.submit();
+  f.vm.cancel();
+  eq(f.events.map((e) => e.detail.action), ['submit', 'cancel'], 'actions');
+  const b = create('bx-new-td', { busy: true });
+  b.vm.submit();
+  eq([types(b), b.vm.busyAttr(), b.props.submitLabel], [[], 'true', 'Review deposit'], 'busy');
+});
+test('g2 reused kinds have their own defaults', () => {
+  eq([create('bx-repeat', {}).props.value, create('bx-repeat', {}).vm.items().length, create('bx-upcoming-bills', {}).props.actionLabel, create('bx-payment-status', {}).props.label],
+    ['Once', 3, 'Pay', 'Payment status'], 'defaults');
+  const m = create('bx-maturity-instructions', { options: ['Renew principal and interest', 'Close and pay out'] });
+  m.vm.items()[1].pick();
+  eq([m.props.value, m.vm.items()[1].css], ['Close and pay out', 'bx-choice is-on'], 'choice');
+  const r = create('bx-receipt', { amount: 1250, currency: 'USD', reference: 'FX-20391' });
+  eq(r.vm.amountText(), (1250).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'receipt');
+});
+test('g2 views have their names and roles', () => {
+  const has = (e, re) => { if (!re.test(registry[e].view)) { throw new Error(e + ': ' + re); } };
+  has('bx-account-picker', /<label class="bx-label" :for="\[\[id\]\]"/);
+  has('bx-iban', /:aria-describedby="\[\[describedBy\]\]"/);
+  has('bx-iban', /role="alert"/);
+  has('bx-payee-list', /:aria-label="\[\['Search ' \+ \$properties\.heading\]\]"/);
+  has('bx-transaction-list', /bx-visually-hidden/);
+  has('bx-account-details', /<dl class="bx-kv-list">/);
+  has('bx-maturity-instructions', /<fieldset/);
+  has('bx-quick-actions', /<nav class="bx-quick" :aria-label/);
+  has('bx-beneficiary-card', /:aria-label="\[\[actionName\]\]"/);
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)

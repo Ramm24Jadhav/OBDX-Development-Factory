@@ -152,7 +152,7 @@ export class ToggleGroup extends SegmentsBase {}
 
 export const CHIPS = `
   <div class="bx-filter" role="group" [attr.aria-labelledby]="id + '-label'" [attr.data-testid]="testID() || null">
-    <span class="bx-label" [id]="id + '-label'">{{ label() }}</span>
+    <span class="bx-label" [id]="id + '-label'">{{ legend() }}</span>
     <div class="bx-chip-row">
       @for (o of rows(); track o.id) {
         <button type="button" [class]="o.css" [attr.aria-pressed]="o.on" [disabled]="!!o.disabled" (click)="toggle(o)">{{ o.label }}</button>
@@ -162,7 +162,10 @@ export const CHIPS = `
 
 @Directive()
 export abstract class ChipsBase extends Part {
-  readonly label = input.required<string>();
+  /** Names the group; leave out for the component's own. */
+  readonly label = input<string | undefined>(undefined);
+  protected readonly defaultLabel: string = 'Filter';
+  protected readonly legend = computed(() => this.label() ?? this.defaultLabel);
   readonly options = input<ReadonlyArray<ItemLike>>([]);
   readonly value = model<string[]>([]);
   /** Several at once (the default), or one. */
@@ -266,7 +269,7 @@ export type StepState = 'done' | 'current' | 'next' | 'failed';
 export interface StepItem extends Item { state?: StepState }
 
 export const STEPS = `
-  <ol class="bx-steps" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
+  <ol class="bx-steps" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
     @for (s of rows(); track s.id) {
       <li [class]="'bx-step-item is-' + s.state" [attr.aria-current]="s.state === 'current' ? 'step' : null">
         <span class="bx-step-mark" aria-hidden="true">{{ s.mark }}</span>
@@ -278,8 +281,10 @@ export const STEPS = `
 
 @Directive()
 export abstract class StepsBase extends Part {
-  /** Names the list of steps. */
-  readonly label = input('Progress');
+  /** Names the list of steps; leave out for the component's own. */
+  readonly label = input<string | undefined>(undefined);
+  protected readonly defaultLabel: string = 'Progress';
+  protected readonly name = computed(() => this.label() ?? this.defaultLabel);
   readonly steps = input<ReadonlyArray<string | StepItem>>([]);
   /** The current step's id; the ones before it are done. */
   readonly selectedStep = input('');

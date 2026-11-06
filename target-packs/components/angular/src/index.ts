@@ -27,6 +27,10 @@ export type { DateRange } from './forms';
 export { ActionMenu, Alert, Breadcrumb, Divider, EmptyState, ErrorMessage, G1_COMPONENTS, Grid, NotificationPanel, Pagination, SecondaryButton, Sheet, SideNav, Slider, Spinner,
   StatusBadge, Stepper, SuccessMessage, Timeline, ToggleGroup, Tooltip } from './g1';
 export type { Item, ItemLike, MenuItem, NavItem, PanelItem, RowItem, StepItem, StepState, TimelineItem, Tone } from './g1';
+export { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption, DepositTopUp,
+  DepositsSummary, G2_COMPONENTS, MaturityInstructions, NewDepositForm, PaymentForm, PaymentStatus, TransactionDetails, TransactionFilter, TransactionHistory, TransactionReceipt,
+  TransferSummary, ibanValid, money } from './g2';
+export type { AccountOption, ChoiceOption, Detail, Payee, Tile, Transaction } from './g2';
 
 import { AmountInput, TextField } from './text-field';
 import { Button, IconButton } from './button';
@@ -39,8 +43,9 @@ import { Dropdown } from './dropdown';
 import { Tabs } from './tabs';
 import { Toast } from './toast';
 import { G1_COMPONENTS } from './g1';
+import { G2_COMPONENTS } from './g2';
 import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle } from './forms';
 
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
-  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS] as const;
+  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS] as const;
