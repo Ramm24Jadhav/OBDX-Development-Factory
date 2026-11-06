@@ -90,7 +90,7 @@
    "items": [
     {
      "name": "Path steps bar",
-     "done": false
+     "done": true
     },
     {
      "name": "Count chips",
@@ -140,7 +140,7 @@
     },
     {
      "name": "Choose a path",
-     "done": false
+     "done": true
     },
     {
      "name": "Technology settings",

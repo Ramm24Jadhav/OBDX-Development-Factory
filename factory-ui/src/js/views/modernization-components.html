@@ -9,7 +9,7 @@
     </div>
   </div>
 
-  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><oj-bind-text value="[[pathName]]"></oj-bind-text></span>
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 2 of 5</small></span>
     <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
       <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
       <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
