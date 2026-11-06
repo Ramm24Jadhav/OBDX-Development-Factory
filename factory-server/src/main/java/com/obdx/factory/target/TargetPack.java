@@ -14,7 +14,8 @@ import java.util.Optional;
  * pack decide everything there.
  *
  * @param preview          which renderer the designer uses: jet, react-native, react or angular
- * @param syntax           how screens are written: jsx (React and React Native) or angular (a component class and its template)
+ * @param syntax           how screens are written: jsx (React and React Native), angular (a component class and its
+ *                         template) or dart (a Flutter widget)
  * @param defaultAppFolder suggested folder of the new app in the bank's repository
  * @param structure        where kinds of files go, relative to the app folder (screen, test, api, texts, navigation)
  * @param components       Screen Model component type to starter component
@@ -28,6 +29,7 @@ public record TargetPack(String id, String title, String description, String pre
     public static final String JET = "jet";
     public static final String JSX = "jsx";
     public static final String ANGULAR = "angular";
+    public static final String DART = "dart";
 
     /**
      * @param component starter component name, for example TextField (the class to import for Angular)
@@ -57,6 +59,10 @@ public record TargetPack(String id, String title, String description, String pre
 
     public boolean isAngular() {
         return ANGULAR.equals(syntax);
+    }
+
+    public boolean isDart() {
+        return DART.equals(syntax);
     }
 
     /** The first recipe part that covers a file of the app, if any. */

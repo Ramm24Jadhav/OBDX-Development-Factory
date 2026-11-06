@@ -37,7 +37,7 @@
       "limits": [["Fewer banking component libraries", "The pack's components fill the gap"]]
     },
     {
-      "id": "flutter", "pack": "flutter", "platform": "mobile", "name": "Flutter", "logo": "F",
+      "id": "flutter", "pack": "flutter", "packVersions": [["1.0.0", "2026-11-06", "First release: screens, forms, service calls and widget tests"]], "platform": "mobile", "name": "Flutter", "logo": "F",
       "text": "One code base for iOS and Android with its own rendering.",
       "meta": "App stores", "language": "Dart", "usedByBanks": "Medium", "besideJet": false,
       "points": ["Same OBDX REST services and server-driven 2FA", "Consistent look on every device", "Fast screens"],

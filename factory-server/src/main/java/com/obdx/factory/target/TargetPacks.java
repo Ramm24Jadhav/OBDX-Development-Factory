@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 @Component
 public class TargetPacks {
 
-    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular");
+    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter");
     private static final Logger log = LoggerFactory.getLogger(TargetPacks.class);
     private static final String BASE = "target-packs";
 
@@ -154,8 +154,8 @@ public class TargetPacks {
             }
         }
         String syntax = string(file, "syntax", TargetPack.JSX);
-        if (!List.of(TargetPack.JSX, TargetPack.ANGULAR).contains(syntax)) {
-            throw new IllegalStateException(where + "syntax must be jsx or angular");
+        if (!List.of(TargetPack.JSX, TargetPack.ANGULAR, TargetPack.DART).contains(syntax)) {
+            throw new IllegalStateException(where + "syntax must be jsx, angular or dart");
         }
         if (TargetPack.ANGULAR.equals(syntax)) {
             components.forEach((type, m) -> {

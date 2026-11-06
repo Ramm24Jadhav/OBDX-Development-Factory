@@ -137,6 +137,37 @@ class ScreenScaffolderTest {
         }
     }
 
+    @Test
+    void scaffoldsAFlutterPage() throws Exception {
+        TargetPack pack = packs.find("flutter").orElseThrow();
+        assertThat(ScreenScaffolder.screenPath(pack, TRANSFER, "payments")).isEqualTo("lib/screens/payments/fund_transfer_page.dart");
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "mobile-flutter", "mobile-flutter/lib/screens/payments/fund_transfer_page.dart",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed", "alerts", "save",
+                "fee", "count", "ref", "submit", "cancel", "help");
+        assertThat(page.content()).contains("class FundTransferPage extends StatefulWidget {", "class _FundTransferPageState extends State<FundTransferPage> {",
+                "final purposeOptions = const <String>['Family support', 'Rent', 'Other\\'s \"bill\"'];",
+                "'amount': null,", "'alerts': <String>['SMS'],", "'savePayee': true,",
+                "title: t('fundTransfer.detailsSection'),", "columns: 2,",
+                "BxAmountField(", "key: const ValueKey('amount'),", "value: form.number('amount'),", "onChanged: (value) => form.set('amount', value),",
+                "error: form.error('amount'),", "required: true,", "BxReadOnlyField(", "value: form.text('fee'),", "keyboardType: TextInputType.number,",
+                "maxLength: 35,", "variant: BxVariant.primary,", "busy: busy,", "onPressed: submit,",
+                "onPressed: () => widget.onAction?.call('cancel'),", "variant: BxVariant.link,", "lib/api/payments_api.dart")
+                .doesNotContain("className", "onPress=", "react", "<obdx").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "mobile-flutter", "mobile-flutter/test/screens/payments/fund_transfer_page_test.dart",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.kind()).isEqualTo("test");
+        assertThat(test.content()).contains("package:obdx_app/screens/payments/fund_transfer_page.dart", "home: const FundTransferPage()", "findsNWidgets(3)")
+                .doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        assertThat(ScreenScaffolder.dartQuote("Pay $5 to O'Neil")).isEqualTo("'Pay \\$5 to O\\'Neil'");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "flutter/lib/screens/payments/fund_transfer_page.dart"), page.content());
+            write(Path.of(out, "flutter/test/screens/payments/fund_transfer_page_test.dart"), test.content());
+            write(Path.of(out, "flutter/assets/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("assets/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content);

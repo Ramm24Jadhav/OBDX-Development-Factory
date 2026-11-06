@@ -125,7 +125,7 @@ public class TargetService {
         String folder = module == null || module.isBlank() ? "app" : module.toLowerCase().replaceAll("[^a-z0-9_-]", "");
         String app = workspace.getAppFolder() + "/";
         String screenPath = ScreenScaffolder.screenPath(pack, model, folder);
-        String testPath = pack.structure().get("test").replace("{module}", folder).replace("{Screen}", ScreenScaffolder.pascal(model.name()));
+        String testPath = ScreenScaffolder.path(pack.structure().get("test"), model, folder);
         String textsPath = pack.structure().get("texts");
         return List.of(
                 new CodeFile(app + screenPath, "screen", ScreenScaffolder.screen(pack, model, folder).content()),
@@ -153,7 +153,7 @@ public class TargetService {
             guide.append("- ").append(kind).append(": ").append(app).append(pack.structure().get(kind))
                     .append(kind.equals("texts") || kind.equals("navigation") ? " (modify; create only if it does not exist)" : "").append('\n');
         }
-        guide.append("{Screen} is the design's name in PascalCase (for example \"Fund Transfer\" gives FundTransfer).\n");
+        guide.append("{Screen} is the design's name in PascalCase (for example \"Fund Transfer\" gives FundTransfer); {screen_file} the same in snake_case (fund_transfer).\n");
         guide.append("Change OBDX backend services only when the requirement needs new service behavior; the app calls the existing OBDX REST services.\n");
         return guide.toString();
     }

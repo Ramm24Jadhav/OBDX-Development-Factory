@@ -12,7 +12,7 @@ configure; every setting and REST endpoint).
 - `factory-server/`: Spring Boot 4 / Java 21 server, one package per feature under `com.obdx.factory` (workspace,
   importing, indexing, profile, requirements, design, change, pack, target, modernization, source, model, update,
   trial, auth, svn, jenkins, knowledge, componentpack). Flyway migrations in `src/main/resources/db/migration` (V1..V36; add V37 next).
-- `target-packs/`: React Native and React target packs (rules, templates, starter projects); `target-packs/components/` is the
+- `target-packs/`: React Native, React, Angular and Flutter target packs (rules, templates, starter projects); `target-packs/components/` is the
   premium component pack registry (catalogue.json, packs.json, schemas; plan in `docs/COMPONENT-PACKS.md`).
 - `deploy/`: systemd unit and env template, `ohs/` (Oracle HTTP Server), `docker/` (compose stack, demo code),
   `bundle/` (the Windows/Linux download: start scripts, settings, README).

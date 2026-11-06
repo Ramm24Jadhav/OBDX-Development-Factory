@@ -73,7 +73,7 @@ public class TechnologyCatalogue {
             String readiness = target.isPresent() ? "ready" : components != null ? "in-progress" : "planned";
             List<String[]> versions = triples(t.path("packVersions"));
             PackFacts facts = target.map(p -> {
-                List<String[]> stack = stack(p.starter().get("package.json"));
+                List<String[]> stack = p.starter().containsKey("pubspec.yaml") ? pubspec(p.starter().get("pubspec.yaml")) : stack(p.starter().get("package.json"));
                 return new PackFacts(p.id(), p.title(), p.description(), p.rules().size(), p.templates().size(), p.starter().size(),
                         p.components().size(), p.defaultAppFolder(), p.rules().stream().map(com.obdx.factory.pack.PackRule::title).limit(12).toList(),
                         stack, build(stack), p.templates().keySet().stream().sorted().toList(), versions);
@@ -107,9 +107,27 @@ public class TechnologyCatalogue {
         return out;
     }
 
+    /** A Flutter starter's Dart SDK and packages from its pubspec.yaml. */
+    static List<String[]> pubspec(String yaml) {
+        List<String[]> out = new ArrayList<>();
+        if (yaml == null) {
+            return out;
+        }
+        java.util.regex.Matcher sdk = java.util.regex.Pattern.compile("(?m)^\\s+sdk:\\s*\\^?([0-9.]+)").matcher(yaml);
+        out.add(new String[]{"Flutter", "stable"});
+        if (sdk.find()) {
+            out.add(new String[]{"Dart", sdk.group(1)});
+        }
+        java.util.regex.Matcher http = java.util.regex.Pattern.compile("(?m)^\\s+http:\\s*\\^?([0-9.]+)").matcher(yaml);
+        if (http.find()) {
+            out.add(new String[]{"http", http.group(1)});
+        }
+        return out;
+    }
+
     static String build(List<String[]> stack) {
         List<String> names = stack.stream().map(s -> s[0]).toList();
-        return names.contains("Expo") ? "Expo (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
+        return names.contains("Flutter") ? "Flutter (Gradle and Xcode)" : names.contains("Expo") ? "Expo (Gradle and Xcode)" : names.contains("Angular") ? "Angular CLI" : names.contains("Vite") ? "Vite" : "npm";
     }
 
     private static List<String[]> triples(JsonNode node) {
