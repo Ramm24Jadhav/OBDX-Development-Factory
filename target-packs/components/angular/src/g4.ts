@@ -112,7 +112,7 @@ export const CHECKS = `
     <legend class="bx-label">{{ name() }}</legend>
     @for (o of rows(); track o.value; let i = $index) {
       <div class="bx-switch-row">
-        @if (control() === 'switch') {
+        @if (kind() === 'switch') {
           <span class="bx-choice-text"><span class="bx-switch-label" [id]="id + '-' + i">{{ o.label }}</span>@if (o.meta) {<span class="bx-choice-meta">{{ o.meta }}</span>}</span>
           <button type="button" role="switch" class="bx-switch" [attr.aria-checked]="o.on" [attr.aria-labelledby]="id + '-' + i" [disabled]="o.off" (click)="toggle(o)"></button>
         } @else {
@@ -129,7 +129,9 @@ export abstract class ChecksBase extends Part {
   readonly options = input<ReadonlyArray<string | SwitchOption>>([]);
   readonly value = model<string[]>([]);
   /** A switch for each (settings) or a checkbox (consents). */
-  readonly control = input<'switch' | 'checkbox'>('switch');
+  readonly control = input<'switch' | 'checkbox' | undefined>(undefined);
+  protected readonly defaultControl: 'switch' | 'checkbox' = 'switch';
+  protected readonly kind = computed(() => this.control() ?? this.defaultControl);
   readonly disabled = input(false);
   protected readonly defaultLabel: string = '';
   protected readonly name = computed(() => this.label() ?? this.defaultLabel);

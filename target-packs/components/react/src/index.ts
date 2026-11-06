@@ -48,3 +48,7 @@ export { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, Appro
   LanguagePicker, LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SavingsGoal, SessionSummary, SignInOptions, SpendCategories, SpendingChart,
   StructureSimulation, StructureType, SweepMonitor, TransactionLimits } from './G4';
 export type { Bar, BarChartProps, Meter, MetersProps } from './G4';
+export { ApplicationTracker, Calculator, Certificates, ComposeMessage, DepositCalculator, EReceipts, EligibilityCalculator, Faq, FeedbackRating, ForexCalculator,
+  GoalCalculator, LiveChat, LoanCalculator, Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification,
+  TermsConsent, TrackRequests, instalment, maturity } from './G5';
+export type { CalculatorProps, ChatMessage, ComposeProps, LiveChatProps, LocatorProps, Period, PeriodProps, Place, RatingProps } from './G5';

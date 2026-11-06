@@ -591,6 +591,33 @@ bx-devices, bx-appearance, bx-language, bx-alerts-subscription, bx-do-not-distur
 .bx-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: var(--bx-brand); transform-origin: left; animation: bx-grow-x var(--bx-dur-slow) var(--bx-ease-standard); }
 .bx-meter-fill.is-near { background: var(--bx-warning); }
 .bx-meter-fill.is-over { background: var(--bx-danger); }
+/* ---------- Group 5: service, documents, onboarding, calculators, help ---------- */
+bx-raise-request, bx-track-requests, bx-mailbox, bx-compose-mail, bx-e-receipts, bx-certificates, bx-statement-request, bx-statement-format, bx-self-register, bx-fatca-crs,
+bx-product-showcase, bx-application-tracker, bx-terms-consent, bx-loan-calculator, bx-eligibility-calculator, bx-td-calculator, bx-currency-converter, bx-goal-calculator,
+bx-locator, bx-live-chat, bx-feedback, bx-nominations, bx-faq { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+.bx-period { gap: 8px; }
+.bx-period.is-error .bx-control { border-color: var(--bx-danger); }
+.bx-calc-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 12px; }
+.bx-calc-result { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--bx-radius); background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
+.bx-calc-title { font-size: 13px; color: var(--bx-muted); font-weight: 600; }
+.bx-calc-main { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; animation: bx-roll-in var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-calc-line { font-size: 13px; color: var(--bx-text-body); }
+.bx-locator .bx-chip-row { margin-bottom: 6px; }
+.bx-chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 360px; margin: 0; padding: 4px 0; overflow-y: auto; list-style: none; }
+.bx-msg { align-self: flex-start; display: flex; flex-direction: column; gap: 2px; max-width: 80%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--bx-surface-3);
+  color: var(--bx-text); font-size: 14px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-msg.is-mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-msg-who { font-size: 11.5px; font-weight: 650; opacity: 0.8; }
+.bx-chat-typing { margin: 0; color: var(--bx-muted); font-size: 13px; font-style: italic; }
+.bx-chat-compose { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.bx-chat-compose .bx-control { flex: 1 1 auto; }
+.bx-stars { display: flex; align-items: center; gap: 4px; }
+.bx-star { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--bx-radius); color: var(--bx-border-strong);
+  font-size: 28px; cursor: pointer; transition: color var(--bx-dur-fast) var(--bx-ease-standard), transform var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-star.is-on { color: var(--bx-warning); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-star:focus-within { box-shadow: var(--bx-focus); }
+.bx-star:hover { transform: scale(1.1); }
+.bx-rating-word { margin-left: 8px; color: var(--bx-text-body); font-size: 14px; font-weight: 600; }
 /* Reduced motion: nothing moves, everything shows its end state */
 @media (prefers-reduced-motion: reduce) {
   [class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

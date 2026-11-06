@@ -38,6 +38,10 @@ export { AccountStructure, AlertSubscriptions, Appearance, ApprovalDetail, Appro
   LanguagePicker, LendLimits, ModificationNotice, PendingRelease, Profile, ProgressBar, Reroute, SessionSummary, SignInOptions, SpendCategories, SpendingChart, StructureSimulation,
   StructureType, SweepMonitor, TransactionLimits, step } from './g4';
 export type { Bar, Meter, SwitchOption } from './g4';
+export { ApplicationTracker, Certificates, ComposeMessage, DepositCalculator, EReceipts, EligibilityCalculator, Faq, FeedbackRating, G5_COMPONENTS, GoalCalculator, LiveChat,
+  Locator, Mailbox, Nominations, ProductCard, RaiseRequest, SelfRegister, StatementFormat, StatementRequest, TaxSelfCertification, TermsConsent, TrackRequests, instalment,
+  maturity } from './g5';
+export type { ChatMessage, Period, Place } from './g5';
 
 import { AmountInput, TextField } from './text-field';
 import { Button, IconButton } from './button';
@@ -53,8 +57,9 @@ import { G1_COMPONENTS } from './g1';
 import { G2_COMPONENTS } from './g2';
 import { G3_COMPONENTS } from './g3';
 import { G4_COMPONENTS } from './g4';
+import { G5_COMPONENTS } from './g5';
 import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle } from './forms';
 
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
-  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS] as const;
+  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS] as const;

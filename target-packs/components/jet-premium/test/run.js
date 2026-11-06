@@ -86,7 +86,10 @@ const G4 = ['bx-spending-chart', 'bx-budget-progress', 'bx-savings-goal', 'bx-sp
   'bx-modification-requested', 'bx-pending-release', 'bx-structure-type', 'bx-account-structure', 'bx-structure-simulation', 'bx-intercompany-limits', 'bx-sweep-monitor', 'bx-profile',
   'bx-sign-in-options', 'bx-otp-delivery', 'bx-devices', 'bx-appearance', 'bx-language', 'bx-alerts-subscription', 'bx-do-not-disturb', 'bx-consents', 'bx-transaction-limits',
   'bx-session-summary'];
-const GROUPS = [G1, G2, G3, G4];
+const G5 = ['bx-raise-request', 'bx-track-requests', 'bx-mailbox', 'bx-compose-mail', 'bx-e-receipts', 'bx-certificates', 'bx-statement-request', 'bx-statement-format',
+  'bx-self-register', 'bx-fatca-crs', 'bx-product-showcase', 'bx-application-tracker', 'bx-terms-consent', 'bx-loan-calculator', 'bx-eligibility-calculator', 'bx-td-calculator',
+  'bx-currency-converter', 'bx-goal-calculator', 'bx-locator', 'bx-live-chat', 'bx-feedback', 'bx-nominations', 'bx-faq'];
+const GROUPS = [G1, G2, G3, G4, G5];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -743,6 +746,66 @@ test('g4 reused kinds have their own defaults', () => {
   const d = create('bx-do-not-disturb', {});
   d.vm.toggle();
   eq(d.vm.note().indexOf('Alerts wait') === 0, true, 'quiet hours');
+});
+
+// Group 5: service, documents, onboarding, calculators, help
+const g5 = load(path.join(BX, 'bx-g5.js')).kit;
+test('g5 the calculators\' formulas: an instalment, compound interest', () => {
+  eq([Math.round(g5.instalment(100000, 12, 12) * 100) / 100, g5.instalment(1200, 0, 12), g5.instalment(0, 10, 12), Math.round(g5.maturity(10000, 8, 12, 4) * 100) / 100, g5.maturity(500, 8, 0)],
+    [8884.88, 100, 0, 10824.32, 500], 'formulas');
+});
+test('g5 calculators work out as the customer types; the converter uses the screen\'s rate', () => {
+  const l = create('bx-loan-calculator', { amount: 100000, rate: 12, months: 12, currency: 'USD' });
+  eq(l.vm.result().main, (8884.88).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' USD', 'loan');
+  l.vm.onMonths(input('24'));
+  eq(l.vm.result().value, 4707.35, 'retyped');
+  const f = create('bx-currency-converter', { currency: 'USD', toCurrency: 'EUR', rate: 0.92 });
+  eq([f.vm.result().main, f.vm.result().line, f.vm.isFx()], [(920).toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' EUR', '1 USD = 0.92 EUR', true], 'fx');
+  const t = create('bx-td-calculator', { currency: 'USD', rate: 8 });
+  t.vm.act();
+  eq([t.vm.title(), t.events[0].detail.result], ['At maturity', 10824.32], 'td');
+});
+test('g5 bx-statement-request: both days, in order, within max-days; then ojAction', () => {
+  const s = create('bx-statement-request', { maxDays: 92 });
+  s.vm.request();
+  eq(s.vm.problem(), 'Choose the first and the last day.', 'empty');
+  s.vm.onFrom(input('2025-12-31'));
+  s.vm.onTo(input('2025-10-01'));
+  s.vm.request();
+  eq(s.vm.problem(), 'The last day is before the first. Swap them.', 'order');
+  s.vm.onFrom(input('2025-01-01'));
+  s.vm.request();
+  eq(s.vm.problem(), 'Choose up to 92 days.', 'too long');
+  s.vm.onFrom(input('2025-10-01'));
+  s.vm.onTo(input('2025-12-31'));
+  s.vm.request();
+  eq([s.vm.problem(), s.events[0].detail.value], ['', { from: '2025-10-01', to: '2025-12-31' }], 'ok');
+});
+test('g5 compose, chat, locator and rating', () => {
+  const m = create('bx-compose-mail', {});
+  m.vm.send();
+  m.vm.onInput(input('Please send a cheque book.'));
+  m.vm.send();
+  eq([types(m), m.events[0].detail.value, m.vm.count()], [['ojAction'], 'Please send a cheque book.', '26 / 500'], 'compose');
+  const c = create('bx-live-chat', { messages: [{ from: 'agent', name: 'Priya', text: 'Hello, how can I help?', time: '10:02' }, { from: 'customer', text: 'My card is stuck.' }] });
+  eq(c.vm.lines().map((x) => [x.who, x.css]), [['Priya', 'bx-msg'], ['You', 'bx-msg is-mine']], 'chat lines');
+  c.vm.onDraft(input('  It is in the ATM  '));
+  c.vm.onKey(key('Enter'));
+  eq([c.events[0].detail.text, c.vm.draft()], ['It is in the ATM', ''], 'sent on Enter');
+  const l = create('bx-locator', { items: [{ id: 'b1', name: 'London Bridge', type: 'branch', distance: '0.4 km' }, { id: 'a1', name: 'Borough ATM', type: 'atm' }] });
+  l.vm.kinds()[2].pick();
+  eq(l.vm.rows().map((r) => r.name), ['Borough ATM'], 'ATMs');
+  l.vm.kinds()[0].pick();
+  l.vm.onQuery(input('bridge'));
+  eq([l.vm.rows().map((r) => r.meta), l.vm.rows()[0].actionName], [['Branch · 0.4 km'], 'Directions to London Bridge'], 'search');
+  const r = create('bx-feedback', {});
+  r.vm.stars()[3].pick();
+  eq([r.props.value, r.vm.word(), r.vm.stars()[3].label, r.vm.stars().filter((s) => s.css === 'bx-star is-on').length], [4, 'Good', '4 stars, Good', 4], 'rating');
+  if (!/role="log" aria-live="polite"/.test(registry['bx-live-chat'].view) || !/<fieldset class="bx-field bx-rating">/.test(registry['bx-feedback'].view)) { throw new Error('roles'); }
+});
+test('g5 reused kinds have their own defaults', () => {
+  eq([create('bx-statement-format', {}).props.value, create('bx-self-register', {}).vm.items().length, create('bx-terms-consent', {}).props.control, create('bx-mailbox', {}).props.actionLabel],
+    ['PDF', 4, 'checkbox', 'Open'], 'defaults');
 });
 
 // The motion layer (motion.json, bx.css and bx-motion.js)

@@ -296,11 +296,13 @@ export abstract class StepsBase extends Part {
   readonly label = input<string | undefined>(undefined);
   protected readonly defaultLabel: string = 'Progress';
   protected readonly name = computed(() => this.label() ?? this.defaultLabel);
-  readonly steps = input<ReadonlyArray<string | StepItem>>([]);
+  /** Leave out for the component's own steps. */
+  readonly steps = input<ReadonlyArray<string | StepItem> | undefined>(undefined);
+  protected readonly defaultSteps: ReadonlyArray<string | StepItem> = [];
   /** The current step's id; the ones before it are done. */
   readonly selectedStep = input('');
   protected readonly rows = computed(() => {
-    const list = toItems(this.steps());
+    const list = toItems(this.steps() ?? this.defaultSteps);
     const at = list.findIndex((s) => s.id === this.selectedStep());
     return list.map((s, i) => {
       const state: StepState = (s as StepItem).state ?? (i < at ? 'done' : i === at ? 'current' : 'next');

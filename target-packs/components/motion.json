@@ -1230,6 +1230,236 @@
       "error": null,
       "loading": null,
       "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "raise-request": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "track-requests": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "mailbox": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "compose-mail": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "e-receipts": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "certificates": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "statement-request": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "statement-format": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "self-register": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "fatca-crs": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "product-showcase": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "application-tracker": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "terms-consent": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "loan-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "eligibility-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "td-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "currency-converter": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": false }
+    },
+    "goal-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "locator": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "live-chat": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "feedback": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "nominations": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "faq": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
     }
   }
 }
