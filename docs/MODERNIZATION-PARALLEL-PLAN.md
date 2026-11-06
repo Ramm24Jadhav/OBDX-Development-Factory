@@ -256,9 +256,10 @@ backdrop, so no frame loop runs. React Native draws a translucent fill and rim (
 asks for less transparency. The user chose expo-blur (7 Nov): an optional peer dependency, loaded only if the app
 has it, so `GlassBlur` puts a BlurView behind buttons, icon buttons and cards; without it (a bare app, the web
 gallery) the fill and rim stay alone. The slider has a frosted glass thumb (native slider back in forced colours). The web packs have no bottom nav
-component; the pill and dock navs are glass. LG4: Vue 3, Capacitor, JET Core Pack and Flutter starters have no design
-list yet (no component style, no look choice; Capacitor has its own CSS, not the React pack), so there is no look to
-add Liquid glass to until a component style reaches them. Open: the browser gates of LG5 (contrast over a busy
+component; the pill and dock navs are glass. LG4 (the user chose all four, 7 Nov): the Vue 3, JET Core Pack and Flutter
+starters read the component style and draw the nine designs (Vue: component-style.json and looks.css; JET Core Pack:
+looks.css over Redwood through the Core Pack's --oj-c-* variables; Flutter: bxTheme per design and BxGlass with a
+BackdropFilter). Capacitor waits for the capacitor-angular branch to merge. Open: the browser gates of LG5 (contrast over a busy
 backdrop, screenshots per browser, frame rate).
 
 Who: the catalogue web session does LG0 to LG2, the phone session LG3, the main session LG4, the gates and the merges.

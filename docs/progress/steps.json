@@ -331,13 +331,14 @@
     },
     {
      "name": "JET Core Pack",
-     "done": false
+     "done": true
     },
     {
      "name": "Flutter",
-     "done": false
+     "done": true
     }
-   ]
+   ],
+   "note": "Vue done; Capacitor after the capacitor-angular merge"
   },
   {
    "id": "LG5",
