@@ -1403,7 +1403,7 @@ public class ChangeService {
         Map<String, String> failing = new LinkedHashMap<>();
         for (ChangeFileStore.ChangeFile file : files.files(change.getId())) {
             if (file.status() == ChangeFileStore.Status.GENERATED && file.generated() != null) {
-                ScreenScaffolder.Scaffold scaffold = scope.inApp(file.path()) ? targetPacks.find(scope.target())
+                ScreenScaffolder.Scaffold scaffold = scope.inApp(file.path()) ? screenPack(scope, change.getWorkspaceId())
                         .flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(), models, file.original())).orElse(null) : null;
                 FileChecks.Result check = CodeGenerator.withParity(localChecks.check(scope, file.path(), file.original(), file.generated()),
                         file.generated(), scaffold);
@@ -1467,7 +1467,7 @@ public class ChangeService {
             }
             // (the screen parity of a React Native or React app's file, as Check again has it, read only when needed)
             FileChecks.Status own = ownStatus(file, localChecks, scope, () -> scope.inApp(file.path()) && scope.appFolder() != null
-                    ? targetPacks.find(scope.target()).flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(),
+                    ? screenPack(scope, workspaceId).flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(),
                     designModels(find(changeId)), file.original())).orElse(null) : null);
             FileChecks.Result check = withCrossChecks(own, file.checkMessage(), problems);
             if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
@@ -1962,8 +1962,14 @@ public class ChangeService {
         if (!scope.inApp(path)) {
             return null;
         }
-        return targetPacks.find(scope.target())
+        return targetPacks.screens(scope.target(), scope.appFolder(), context.fileExists())
                 .flatMap(pack -> ScreenScaffolder.forFile(pack, scope.appFolder(), path, context.models(), current)).orElse(null);
+    }
+
+    /** The pack an app file's starting point comes from: Angular for a Capacitor app wrapping the Angular app. */
+    private java.util.Optional<com.obdx.factory.target.TargetPack> screenPack(CheckScope scope, UUID workspaceId) {
+        Path workingCopy = storage.workingCopy(workspaceId);
+        return targetPacks.screens(scope.target(), scope.appFolder(), path -> Files.isRegularFile(workingCopy.resolve(path)));
     }
 
     /** Folders of the indexed code with their number of files, so the model knows where things live. */

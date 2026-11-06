@@ -23,7 +23,7 @@ public final class ApiClient: @unchecked Sendable {
         let config = URLSessionConfiguration.ephemeral
         config.httpCookieAcceptPolicy = .onlyFromMainDocumentDomain
         config.timeoutIntervalForRequest = ApiConfig.timeout
-        return URLSession(configuration: config)
+        return URLSession(configuration: config, delegate: PinningDelegate(), delegateQueue: nil)
     }()
 
     public func get<T: Decodable>(_ path: String) async throws -> T { try await request("GET", path, nil as Empty?) }
@@ -75,6 +75,9 @@ public final class ApiClient: @unchecked Sendable {
             return (data, http)
         } catch let error as ApiError {
             throw error
+        } catch let error as URLError where error.code == .cancelled && !Task.isCancelled {
+            // PinningDelegate cancelled the handshake: the certificate or its key is not the bank's
+            throw ApiError(status: 0, message: CertificatePins.updateMessage)
         } catch {
             throw ApiError(status: 0, message: "The bank could not be reached. Check your connection and try again.")
         }

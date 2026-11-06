@@ -15,6 +15,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "OBDX_BASE_URL", "\"${providers.gradleProperty("obdx.baseUrl").get()}\"")
+        // Certificate pinning (api/CertificatePins.kt): the bank's key pins and the day they stop being enforced
+        buildConfigField("String", "OBDX_PINS", "\"${providers.gradleProperty("obdx.pins").orElse("").get()}\"")
+        buildConfigField("String", "OBDX_PINS_EXPIRE", "\"${providers.gradleProperty("obdx.pinsExpire").orElse("").get()}\"")
     }
 
     buildFeatures {
